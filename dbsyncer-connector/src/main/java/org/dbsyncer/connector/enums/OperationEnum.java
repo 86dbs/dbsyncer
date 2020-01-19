@@ -12,11 +12,11 @@ public enum OperationEnum {
     /**
      * 并且
      */
-    AND("并", "and"),
+    AND("and", "and"),
     /**
      * 或者
      */
-    OR("或", "or");
+    OR("or", "or");
 
     // 描述
     private String name;

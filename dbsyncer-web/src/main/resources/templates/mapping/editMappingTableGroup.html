@@ -125,7 +125,13 @@
                                         <th>操作</th>
                                     </tr>
                                     </thead>
-                                    <tbody id="fieldMappingList" ></tbody>
+                                    <tbody id="fieldMappingList">
+                                        <tr title='双击设为主键' th:each="f,s:${tableGroup?.fieldMapping}">
+                                            <td>[[${f?.source?.name}]]</td>
+                                            <td>[[${f?.target?.name}]]</td>
+                                            <td><a class='fa fa-remove fa-2x fieldMappingDelete dbsyncer_pointer' title='删除' ></a></td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                             </div>
                         </div>

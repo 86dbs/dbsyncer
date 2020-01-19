@@ -46,7 +46,7 @@ public abstract class BaseController {
     protected void initConfig(ModelMap model){
         model.put("condition", filterService.getCondition());
         model.put("convert", convertService.getConvertEnumAll());
-        model.put("plugins", pluginService.getPluginAll());
+        model.put("plugin", pluginService.getPluginAll());
     }
 
 }
