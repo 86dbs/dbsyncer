@@ -1,0 +1,15 @@
+{
+  "id": "100",
+  "type":"connector",
+  "name": "人力资源系统",
+  "createTime": "2019-10-08 21:32:00",
+  "updateTime": "2019-10-08 21:35:00",
+  "table":["MY_USER", "T_MY_USER", "table_999"],
+  "config": {
+    "connectorType": "Mysql",
+    "driverClassName": "com.mysql.jdbc.Driver",
+    "url": "jdbc:mysql://127.0.0.1:3306/test?seUnicode=true&characterEncoding=UTF8&useSSL=true",
+    "username": "root",
+    "password": "123"
+  }
+}

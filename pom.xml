@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.ghi</groupId>
+    <artifactId>dbsyncer</artifactId>
+    <version>1.0.0-Alpha</version>
+    <packaging>pom</packaging>
+    <name>dbsyncer</name>
+    <url>https://gitee.com/ghi/dbsyncer</url>
+
+    <!-- 管理的子模块(14个) -->
+    <modules>
+        <module>dbsyncer-biz</module>
+        <module>dbsyncer-cache</module>
+        <module>dbsyncer-cluster</module>
+        <module>dbsyncer-common</module>
+        <module>dbsyncer-connector</module>
+        <module>dbsyncer-listener</module>
+        <module>dbsyncer-manager</module>
+        <module>dbsyncer-message</module>
+        <module>dbsyncer-monitor</module>
+        <module>dbsyncer-parser</module>
+        <module>dbsyncer-plugin</module>
+        <module>dbsyncer-schedule</module>
+        <module>dbsyncer-storage</module>
+        <module>dbsyncer-web</module>
+    </modules>
+
+    <!-- 全局参数版本 -->
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- maven 编译资源 版本 -->
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <!-- maven 编译目标版本  -->
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <!-- maven 编译插件版本 -->
+        <maven.compiler.compilerVersion>1.8</maven.compiler.compilerVersion>
+        <java.version>1.8</java.version>
+        <spring-boot.version>2.1.7.RELEASE</spring-boot.version>
+        <commons-lang.version>2.6</commons-lang.version>
+        <commons-io.version>2.5</commons-io.version>
+        <commons-dbcp.version>1.4</commons-dbcp.version>
+        <commons-pool.version>1.6</commons-pool.version>
+        <lucene.version>7.6.0</lucene.version>
+        <oracle.version>10.2.0.4.0</oracle.version>
+        <mysql.version>5.1.40</mysql.version>
+        <sqljdbc.version>1.2</sqljdbc.version>
+        <json.version>20090211</json.version>
+        <junit.version>4.12</junit.version>
+    </properties>
+
+    <!-- 镜像仓库地址 -->
+    <repositories>
+        <repository>
+            <id>ali</id>
+            <name>ali Repository</name>
+            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <!-- 统一管理第三方依赖jar -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Import dependency management from Spring Boot -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Apache Commons 字符串工具类 -->
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>${commons-lang.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+
+            <!-- json -->
+            <dependency>
+                <groupId>org.json</groupId>
+                <artifactId>json</artifactId>
+                <version>${json.version}</version>
+            </dependency>
+
+            <!-- 全文检索 -->
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-core</artifactId>
+                <version>${lucene.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-queryparser</artifactId>
+                <version>${lucene.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-analyzers-common</artifactId>
+                <version>${lucene.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-highlighter</artifactId>
+                <version>${lucene.version}</version>
+            </dependency>
+            <!-- smartcn中文分词器 -->
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-analyzers-smartcn</artifactId>
+                <version>${lucene.version}</version>
+            </dependency>
+
+            <!-- 连接池 -->
+            <dependency>
+                <groupId>commons-pool</groupId>
+                <artifactId>commons-pool</artifactId>
+                <version>${commons-pool.version}</version>
+            </dependency>
+            <!-- 数据源 -->
+            <dependency>
+                <groupId>commons-dbcp</groupId>
+                <artifactId>commons-dbcp</artifactId>
+                <version>${commons-dbcp.version}</version>
+            </dependency>
+
+            <!-- mysql-driver -->
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>${mysql.version}</version>
+            </dependency>
+
+            <!-- mvn install:install-file -DgroupId=microsoft -DartifactId=sqljdbc
+                -Dversion=1.2 -Dpackaging=jar -Dfile=D:\sqljdbc-1.2.jar -->
+            <!-- sqlserver-driver -->
+            <dependency>
+                <groupId>microsoft</groupId>
+                <artifactId>sqljdbc</artifactId>
+                <version>${sqljdbc.version}</version>
+            </dependency>
+
+            <!-- mvn install:install-file -DgroupId=com.oracle -DartifactId=ojdbc14
+                -Dversion=10.2.0.4.0 -Dpackaging=jar -Dfile=D:\ojdbc14-10.2.0.4.0.jar -->
+            <!-- oracle-driver -->
+            <dependency>
+                <groupId>com.oracle</groupId>
+                <artifactId>ojdbc14</artifactId>
+                <version>${oracle.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+
+</project>

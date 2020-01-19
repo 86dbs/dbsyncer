@@ -1,0 +1,24 @@
+@charset "UTF-8";
+.connectorList img{width: 65px;height: 55px; border-radius: 20%;}
+.connectorList .well-sign-red{color: #ff0000;}
+.connectorList .well-sign-operation{color: #999999; border-radius: 50%; }
+.connectorList .well-sign-operation:hover {color: #333333;}
+.connectorList .dropdown {position: absolute; right:16px; top: 0px;}
+.connectorList .dropdown-menu {right: -86px;left: auto; top: 15px;}
+.connectorList .dropdown-menu i{font-size: 20px;}
+
+.mappingList .jumbotron .line{margin: 43px -30px;width: 188px;border-top: 1px solid #8c7c7c;}
+.mappingList .jumbotron .line .running-through-rate{position: absolute;left: calc(50% - 11px);top: 13px;font-size: 26px;font-weight: bold;}
+.mappingList .jumbotron .line .running-state{position: absolute;left: calc(50% - 22px);;top: 45px;font-weight: bold;}
+.mappingList .jumbotron .well-sign-left{position: absolute;top: -10px;left: 3px;}
+.mappingList .jumbotron .well-sign-right{position: absolute;top: -31px;left: -7px;}
+.mappingList .well { word-wrap: break-word;word-break: normal;overflow:hidden;}
+.mappingList .well img{float:left;padding:8px 2px; border-radius: 20%;}
+.mappingList .well span{float:left;margin:21px 10px;}
+.mappingList .well-sign-green{color: #808040;}
+.mappingList .well-sign-red{color: #ff0000;}
+.mappingList .well-sign-operation{position: absolute; right:12px; color: #999999; border-radius: 50%;}
+.mappingList .well-sign-operation:hover { color: #333333;}
+.mappingList .dropdown {position: absolute; right:0px; top: 0px;}
+.mappingList .dropdown-menu {right: -70px;left: auto; top: 28px;}
+.mappingList .dropdown-menu i{font-size: 20px;}

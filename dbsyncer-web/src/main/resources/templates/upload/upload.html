@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      lang="zh-CN">
+
+<div class="container">
+    <form class="form-horizontal" role="form">
+        <div class="row text-center">
+            <h3>文件上传测试</h3>
+        </div>
+
+        <!-- 操作 -->
+        <div class="row">
+            <form method="post" enctype="multipart/form-data">
+                File:<input id="formFile" type="file" name="flie"/>
+                <br>
+                <input id="subBtn" type="submit" value="Submit"/>
+            </form>
+        </div>
+    </form>
+</div>
+
+<script type="text/javascript">
+    $("#subBtn").click(function(){
+        // 创建表单数据对象
+        var obj = new FormData();
+        // 获取文件框中的数据
+        var file = document.getElementById("formFile").files[0];
+        // 将文件数据添加至表单数据对象中
+        obj.append("file", file);
+        $.ajax({
+            url:'/upload/upload',
+            type:'POST',
+            data: obj,
+            processData : false, // 使数据不做处理
+            contentType : false, // 不要设置Content-Type请求头
+            mimeType : 'multipart/form-data',
+            success: function(data){
+                console.log(data);
+                if (data.status == 'ok') {
+                    alert('上传成功！');
+                }
+            },
+            error:function(response){
+                console.log(response);
+            }
+        });
+    })
+
+</script>
+</html>

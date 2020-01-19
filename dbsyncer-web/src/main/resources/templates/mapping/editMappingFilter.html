@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <p class="text-muted">过滤条件</p>
+
+    <div class="form-group">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">组合</label>
+                <div class="col-sm-9">
+                    <select id="conditionOperation" class="form-control select-control">
+                        <option th:each="o,s:${condition?.operation}" th:value="${o?.code}" th:text="${o?.name}" />
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">数据源表字段</label>
+                <div class="col-sm-9">
+                    <select id="conditionSourceField" class="form-control select-control">
+                        <option th:each="c,s:${tableGroup?.sourceTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">条件</label>
+                <div class="col-sm-9">
+                    <select id="conditionFilter" class="form-control select-control">
+                        <option th:each="f,s:${condition?.filter}" th:value="${f?.name}" th:text="${f?.code}" />
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">参数</label>
+                <div class="col-sm-9">
+                    <textarea id="filterArg" class="form-control" rows="2" placeholder="请输入参数"></textarea>
+                </div>
+            </div>
+            <div class="col-md-7"></div>
+            <div class="col-md-1">
+                <button id="filterAdd" type="button" class="btn btn-primary">
+                    <span class="fa fa-plus"></span>添加
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="row">
+            <div class="col-md-1"></div>
+            <div class="col-md-11">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>组合</th>
+                        <th>数据源表字段</th>
+                        <th>条件</th>
+                        <th>参数</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody class="filterList">
+                    <tr>
+                        <td>and</td>
+                        <td>NAME</td>
+                        <td>=</td>
+                        <td>张三</td>
+                        <td><a class='fa fa-remove fa-2x filterDelete dbsyncer_pointer' title='删除' ></a></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+</html>

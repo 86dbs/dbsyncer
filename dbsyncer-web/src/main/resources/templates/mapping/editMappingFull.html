@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <p class="text-muted">全量配置</p>
+
+    <div class="form-group">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">线程<strong class="driverVerifcateRequired">*</strong></label>
+                <div class="col-sm-9">
+                    <input type="number" id="threadNum" class="form-control" min="1" dbsyncer-valid="require" th:value="${mapping?.threadNum}">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">批量<strong class="driverVerifcateRequired">*</strong></label>
+                <div class="col-sm-9">
+                    <input type="number" id="batchNum" class="form-control" min="1" dbsyncer-valid="require" th:value="${mapping?.batchNum}">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</html>

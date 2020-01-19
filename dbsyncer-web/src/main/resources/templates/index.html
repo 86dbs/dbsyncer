@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="cache-control" content="no-cache">
+    <meta http-equiv="expires" content="0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <meta name="description" content="search">
+    <meta name="author" content="AE86">
+    <title>dbsyncer</title>
+    <link type="image/x-icon" rel="icon" th:href="@{/images/sync.ico}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/bootstrap/bootstrap.min.css}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/bootstrap-dialog/bootstrap-dialog.min.css}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/icheck/all.css}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/font-awesome.min.css}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/loading-plus/loading-plus.css}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/select2/select2.min.css}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/css/common.css}">
+    <link type="text/css" rel="stylesheet" th:href="@{/css/index/index.css}">
+</head>
+<body>
+
+<!-- 导航栏 -->
+<div th:replace="nav :: nav"></div>
+
+<!-- 内容区域 -->
+<div th:replace="content :: content"></div>
+
+<!-- 底部区域 -->
+<div th:replace="footer :: copy"></div>
+
+</body>
+<script th:src="@{/plugins/js/bootstrap/respond.min.js}" ></script>
+<script th:src="@{/plugins/js/bootstrap/html5shiv.min.js}"></script>
+<!-- 上述2个js文件解决IE8以上bootstrap的兼容性问题 -->
+<script th:src="@{/plugins/js/jquery/jquery-1.11.3.min.js}"></script>
+<script th:src="@{/plugins/js/bootstrap/bootstrap.min.js}"></script>
+<script th:src="@{/plugins/js/bootstrap-dialog/bootstrap-dialog.min.js}"></script>
+<script th:src="@{/plugins/js/bootstrap-growl/jquery.bootstrap-growl.min.js}"></script>
+<script th:src="@{/plugins/js/icheck/icheck.min.js}"></script>
+<script th:src="@{/plugins/js/loading-plus/loading-plus.js}"></script>
+<script th:src="@{/plugins/js/placeholder/jquery.placeholder.js}"></script>
+<script th:src="@{/plugins/js/select2/select2.min.js}"></script>
+<script th:src="@{/plugins/js/formValidate/formValidate.js}"></script>
+<script th:src="@{/plugins/js/sql-formatter/sql-formatter.min.js}"></script>
+<script th:src="@{/js/index.js}"></script>
+<script th:src="@{/js/common.js}"></script>
+</html>

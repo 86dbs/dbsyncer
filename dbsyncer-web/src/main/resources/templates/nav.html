@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<nav th:fragment="nav" class="navbar navbar-inverse" role="navigation" >
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <span id="logoName" class="navbar-brand" href="javascript:;"></span>
+        </div>
+        <div>
+            <ul id="menu" class="nav navbar-nav">
+                <li class="active"><a href="javascript:void(0);" url="/index"><span class="fa fa-tachometer"></span>驱动管理</a></li>
+                <li><a href="javascript:void(0);" url="/monitor" ><span class="fa fa-line-chart"></span>监控</a></li>
+                <li class="dropdown">
+                    <a href="javascript:void(0);" class="dropdown-toggle" data-toggle="dropdown">参数<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="javascript:void(0);" url="/system"><span class="fa fa-cog"></span>系统参数</a></li>
+                        <li><a href="javascript:void(0);" url="/pwd"><span class="fa fa-lock"></span>修改密码</a></li>
+                    </ul>
+                </li>
+                <li><a href="javascript:void(0);" url="/upload" ><span class="fa fa-line-chart"></span>文件上传</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="javascript:void(0);" id="nav_logout"> <i class ="fa fa-power-off"></i>注销</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+</html>

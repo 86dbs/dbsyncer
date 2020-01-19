@@ -1,0 +1,15 @@
+@CHARSET "UTF-8";
+
+.dbsyncer_img {border-radius: 5%; border:1px solid rosybrown;}
+.dbsyncer_pointer{cursor:pointer;}
+.dbsyncer_over_hidden{overflow: hidden; text-overflow:ellipsis; white-space: nowrap;}
+.dbsyncer_block {border:1px solid #ffffff;}
+.dbsyncer_block:hover { cursor:pointer; background-color: #EBEBEB; -moz-box-shadow:2px 2px 5px; -webkit-box-shadow:2px 2px 5px; box-shadow:2px 2px 5px; -webkit-transform:translateY(-3px); transform: translateY(-3px); transition: all 0.3s ease-in-out;}
+.driverVerifcateRequired{color:#d9534f;}
+.dbsyncerVerifcateError{border-color: #b94a48;}
+.driver_add_vertical_center {padding-top: 100%;}
+#initContainer{min-height: 600px;}
+/**
+ * 强制单词换行
+ */
+.driver_break_word { word-break: break-all;word-wrap:break-word;white-space:normal}

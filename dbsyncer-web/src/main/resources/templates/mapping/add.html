@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="container-fluid">
+    <div class="container">
+        <form id="mappingAddForm" class="form-horizontal" role="form" method="post">
+            <!-- 标题 -->
+            <div class="row text-center">
+                <h3>添加驱动</h3>
+            </div>
+
+            <!-- 操作 -->
+            <div class="form-group">
+                <div class="col-md-10"></div>
+                <div class="col-md-2 text-right">
+                    <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
+                        <span class="fa fa-save"></span>保存
+                    </button>
+                    <button id="mappingBackBtn" type="button" class="btn btn-default">
+                        <span class="fa fa-reply"></span>返回
+                    </button>
+                </div>
+            </div>
+
+            <!-- 配置 -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="panel panel-info">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">驱动配置</h3>
+                        </div>
+
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <!-- 数据源 -->
+                                <label class="col-sm-2 control-label">数据源</label>
+                                <div class="col-sm-4">
+                                    <select name="sourceConnectorId" class="form-control select-control">
+                                        <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name}" />
+                                    </select>
+                                </div>
+                                <!-- 目标源 -->
+                                <label class="col-sm-2 control-label">目标源</label>
+                                <div class="col-sm-4">
+                                    <select name="targetConnectorId" class="form-control select-control">
+                                        <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name}" />
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- 驱动名称 -->
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">名称 <strong class="driverVerifcateRequired">*</strong></label>
+                                <div class="col-sm-10">
+                                    <input class="form-control" name="name" type="text" maxlength="50" dbsyncer-valid="require" placeholder="名称" />
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<script type="text/javascript">
+    //加载JS
+    $.getScript('/js/mapping/add.js');
+</script>
+</html>

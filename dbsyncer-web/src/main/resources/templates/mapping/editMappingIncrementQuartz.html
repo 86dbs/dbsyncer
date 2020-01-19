@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <div class="form-group">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">定时*</label>
+                <div class="col-sm-9">
+                    <input id="incrementStrategyQuartzCron" type="text" class="form-control" dbsyncer-valid="require" value="*/30 * * * * ?"/>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">事件</label>
+                <div class="col-sm-9" title="区分增删改">
+                    <select id="incrementStrategyQuartzEvent" class="form-control select-control">
+                        <option>EVENT_TYPE</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4"></div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">Insert*</label>
+                <div class="col-sm-9">
+                    <input id="incrementStrategyQuartzEventInsert" type="text" class="form-control" dbsyncer-valid="require" value="I" />
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">Update*</label>
+                <div class="col-sm-9">
+                    <input id="incrementStrategyQuartzEventUpdate" type="text" class="form-control" dbsyncer-valid="require" value="U" />
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">Delete*</label>
+                <div class="col-sm-9">
+                    <input id="incrementStrategyQuartzEventDelete" type="text" class="form-control" dbsyncer-valid="require" value="D" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</html>

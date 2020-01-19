@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <div class="form-group">
+        <label class="col-sm-2 control-label">名称 <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-10">
+            <input class="form-control" name="name" type="text" maxlength="32" dbsyncer-valid="require"
+                   placeholder="Cache_User" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label">密码 <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-10">
+            <input class="form-control" name="password" type="password" maxlength="32" dbsyncer-valid="require" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label">key <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-10">
+            <input class="form-control" name="key" type="text" maxlength="32" dbsyncer-valid="require"
+                   placeholder="key" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label">URL <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-10">
+            <textarea name="url" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="5" placeholder="127.0.0.1:6379,127.0.0.1:6380,...">127.0.0.1:6379</textarea>
+        </div>
+    </div>
+    <div id="driverRedisParamsContainer" class="driverEditHideItem">
+        <!-- 参数 -->
+        <div class="form-group">
+            <label class="col-sm-2 control-label">字段 </label>
+            <div class="col-sm-4">
+                <input class="form-control" maxlength="32" dbsyncer-valid="require" type="text" name="filedName" />
+            </div>
+            <div class="col-sm-4">
+                <select class="form-control select-control" name="filedTypeName">
+                    <option value="12">VARCHAR</option>
+                    <option value="2">NUMERIC</option>
+                    <option value="4">INTEGER</option>
+                    <option value="91">DATE</option>
+                    <option value="93">TIMESTAMP</option>
+                    <option value="6">FLOAT</option>
+                    <option value="8">DOUBLE</option>
+                    <option value="-1">LONGVARCHAR</option>
+                </select>
+            </div>
+            <span class="col-sm-2 dbsyncer_pointer fa fa-plus fa-2x" onclick="addParam(this)"></span>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    //加载JS
+</script>
+</html>

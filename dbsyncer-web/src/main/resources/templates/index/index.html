@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- Connector Mapping -->
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-4">
+            <form class="form-horizontal" role="form" method="post">
+                <!-- 连接器开始位置 -->
+                <div class="form-group">
+                    <div class="col-md-12">
+                        <button type="button" class="btn btn-primary" id="indexAddConnectorBtn">
+                            <span class="fa fa-plus"></span>添加连接([[${connectors?.size()} ?: 0]])
+                        </button>
+                    </div>
+                </div>
+                <!-- 显示连接器列表 -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="panel panel-default">
+                            <!-- 连接器 -->
+                            <div class="panel-body text-center">
+                                <div class="row connectorList">
+                                    <!-- 连接器__开始 -->
+                                    <div class="col-md-3" th:each="c,state : ${connectors}">
+                                        <div th:id="${c?.id}" class="jumbotron dbsyncer_block">
+                                            <div class="row">
+                                                <img th:src="@{'/images/'+ ${c?.config?.connectorType} + '.png'}">
+                                            </div>
+                                            <div class="row dbsyncer_over_hidden">
+                                                <span th:text="${c?.name}" th:title="${c?.name}" />
+                                            </div>
+                                        </div>
+                                        <!-- 删除操作 -->
+                                        <div class="dropdown">
+                                            <a data-toggle="dropdown" href="javascript:;"><span class="well-sign-operation"><i class="fa fa-gears fa-1x"></i></span></a>
+                                            <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                                                <li th:url="'/connector/remove?id='+${c?.id}"><a href="javascript:;"><i class="fa fa-trash well-sign-red"></i>&nbsp;&nbsp;删除</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <!-- 连接器__结束 -->
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <!-- 连接器开结束位置 -->
+
+                <!-- 驱动开始位置 -->
+                <div class="form-group">
+                    <div class="col-md-12">
+                        <button type="button" class="btn btn-primary" id="indexAddMappingBtn">
+                            <span class="fa fa-plus"></span>添加驱动([[${mappings?.size()} ?: 0]])
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 显示驱动列表 -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="panel panel-default">
+                            <div class="panel-body">
+                                <div class="row mappingList">
+                                    <!-- 驱动__开始 -->
+                                    <div class="col-md-12" th:each="m,state : ${mappings}">
+                                        <div th:id="${m?.id}" class="jumbotron dbsyncer_block">
+                                            <!--驱动标题信息 -->
+                                            <div class="row text-center" th:text="${m?.name}" th:title="${m?.name}"></div>
+
+                                            <div class="row">
+                                                <!--左边驱动信息 -->
+                                                <div class="col-md-5">
+                                                    <div class="well well-lg">
+                                                        <div class="col-md-4">
+                                                            <img th:src="@{'/images/'+ ${m?.sourceConnector?.config?.connectorType} + '.png'}">
+                                                        </div>
+                                                        <div class="col-md-7 dbsyncer_over_hidden">
+                                                            <span th:text="${m?.sourceConnector?.name}" th:title="${m?.sourceConnector?.name}"></span>
+                                                        </div>
+                                                        <div class="col-md-1"></div>
+                                                    </div>
+                                                    <span class="well-sign-left"><i class="fa fa-2x fa-circle well-sign-green"></i></span>
+                                                </div>
+
+                                                <!--中间图标 -->
+                                                <div class="col-md-2">
+                                                    <div class="line">
+                                                        <span class="running-through-rate well-sign-green">✔</span>
+                                                        <span class="running-state">[[${m?.running}]]</span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- 右边驱动信息 -->
+                                                <div class="col-md-5">
+                                                    <div class="well well-lg">
+                                                        <div class="col-md-4">
+                                                            <img th:src="@{'/images/'+ ${m?.targetConnector?.config?.connectorType} + '.png'}">
+                                                        </div>
+                                                        <div class="col-md-7 dbsyncer_over_hidden">
+                                                            <span th:text="${m?.targetConnector?.name}" th:title="${m?.targetConnector?.name}"></span>
+                                                        </div>
+                                                        <div class="col-md-1"></div>
+                                                        <span class="well-sign-right"><i class="fa fa-2x fa-times-circle-o well-sign-red"></i></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 右上角下拉菜单 -->
+                                        <div class="dropdown">
+                                            <a data-toggle="dropdown" href="javascript:;"><span class="well-sign-operation"><i class="fa fa-gears fa-2x"></i></span></a>
+                                            <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                                                <li th:url="'/mapping/start?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-check-circle-o well-sign-green"></i>&nbsp;&nbsp;启动</a></li>
+                                                <li th:url="'/mapping/stop?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-times-circle-o well-sign-red"></i>&nbsp;&nbsp;停止</a></li>
+                                                <li th:url="'/mapping/pageEdit?id='+${m?.id}" loadPage="true"><a href="javascript:;"><i class="fa fa-edit well-sign-green"></i>&nbsp;编辑</a></li>
+                                                <li th:url="'/mapping/remove?id='+${m?.id}" confirm="true" confirmMessage="确认删除?"><a href="javascript:;"><i class="fa fa-trash well-sign-red"></i>&nbsp;&nbsp;删除</a></li>
+                                            </ul>
+                                        </div>
+                                    <!-- 驱动__结束 -->
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                <!-- 驱动结束位置 -->
+            </form>
+        </div>
+
+        <!-- 实时数据 -->
+        <div class="col-md-8">实时数据区域</div>
+
+    </div>
+</div>
+
+<script type="text/javascript">
+    //加载JS
+    $.getScript('/js/index/index.js');
+</script>
+</html>

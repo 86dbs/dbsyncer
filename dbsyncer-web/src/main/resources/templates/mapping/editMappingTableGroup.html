@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="container-fluid">
+    <div class="container">
+        <form class="form-horizontal" role="form" method="post">
+            <!-- 标题 -->
+            <div class="row text-center">
+                <h3>[[${mapping?.name}]]</h3>
+                <p>&nbsp;</p>
+            </div>
+
+            <!-- 驱动信息面板 -->
+            <div class="row">
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="row">
+                                    <div class="col-md-4 text-right">
+                                        <img class="dbsyncer_img" th:src="@{'/images/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}">
+                                    </div>
+                                    <div class="col-md-8">
+                                        <p class="driver_break_word">[[${mapping?.sourceConnector?.name}]]</p>
+                                        <p>数据源表：[[${tableGroup?.sourceTable?.name}]]</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 text-center">
+                                <div class="row-fluid">
+                                    <div class="span4"><span class="fa fa-arrow-right fa-3x"></span></div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="row">
+                                    <div class="col-md-4 text-right">
+                                        <img class="dbsyncer_img" th:src="@{'/images/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}">
+                                    </div>
+                                    <div class="col-md-8">
+                                        <p class="driver_break_word">[[${mapping?.targetConnector?.name}]]</p>
+                                        <p>目标源表：[[${tableGroup?.targetTable?.name}]]</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 驱动配置操作 -->
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-sm-10"></div>
+                    <div class="col-md-2 text-right">
+                        <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
+                            <span class="fa fa-save"></span>保存
+                        </button>
+                        <button id="mappingTableGroupBackBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-default">
+                            <span class="fa fa-reply"></span>返回
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 基本配置区域 -->
+            <div class="row">
+                <div class="panel-group">
+                    <div class="panel panel-success">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#mappingBaseConfig">基本配置</u>
+                            </h4>
+                        </div>
+                        <div id="mappingBaseConfig" class="panel-body panel-collapse collapse in">
+                            <!-- 表映射映射 -->
+                            <p class="text-muted">映射关系</p>
+
+                            <div class="row">
+                                <!-- 数据源表字段配置 -->
+                                <div class="col-md-5">
+                                    <label class="col-sm-3 control-label text-right">数据源表字段</label>
+                                    <div class="col-sm-9">
+                                        <select id="sourceFieldMapping" class="form-control select-control">
+                                            <option th:each="c,s:${tableGroup?.sourceTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+                                        </select>
+                                    </div>
+                                </div>
+                                <!-- 中间图标 -->
+                                <div class="col-md-2 text-center">
+                                    <span class="fa fa-angle-double-right fa-2x"></span>
+                                </div>
+                                <!-- 目标源表字段配置 -->
+                                <div class="col-md-5">
+                                    <div class="form-group">
+                                        <label class="col-sm-3 control-label text-right">目标源表字段</label>
+                                        <div class="col-sm-9">
+                                            <select id="targetFieldMapping" class="form-control select-control">
+                                                <option th:each="c,s:${tableGroup?.targetTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="row">
+                                    <div class="col-md-11"></div>
+                                    <div class="col-md-1">
+                                        <button id="fieldMappingAdd" type="button" class="btn btn-primary">
+                                            <span class="fa fa-plus"></span>添加
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <table class="table table-hover">
+                                    <thead>
+                                    <tr>
+                                        <th>数据源表字段</th>
+                                        <th>目标源表字段</th>
+                                        <th>操作</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="fieldMappingList" ></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- 高级配置区域 -->
+            <div class="row">
+                <div class="panel-group mappingConfigPanel">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#mappingSuperConfig" title="该配置只对当前映射关系生效, 上一级的高级配置将失效">高级配置</u>
+                            </h4>
+                        </div>
+                        <div id="mappingSuperConfig" class="panel-body panel-collapse collapse">
+                            <!-- 全量配置 -->
+                            <div th:id="mappingFullConfig" class="hidden">
+                                <div th:replace="mapping/editMappingFull :: content"></div>
+                            </div>
+
+                            <!-- 增量配置 -->
+                            <div th:id="mappingIncrementConfig" class="hidden">
+                                <div th:replace="mapping/editMappingIncrement :: content"></div>
+                            </div>
+
+                            <!-- 过滤条件 -->
+                            <div th:replace="mapping/editMappingFilter :: content"></div>
+
+                            <!-- 转换配置 -->
+                            <div th:replace="mapping/editMappingConvert :: content"></div>
+
+                            <!-- 插件配置 -->
+                            <div th:replace="mapping/editMappingPlugin :: content"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+<script type="text/javascript">
+    //加载JS
+    $.getScript('/js/mapping/editMappingTableGroup.js');
+</script>
+</html>

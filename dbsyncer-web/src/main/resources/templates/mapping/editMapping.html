@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="container-fluid">
+    <div class="container">
+        <form class="form-horizontal" role="form" method="post">
+            <!-- 标题 -->
+            <div class="row text-center">
+                <h3>[[${mapping?.name}]]</h3>
+                <p>[[${mapping?.id}]]</p>
+            </div>
+
+            <!-- 驱动信息面板 -->
+            <div class="row">
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="row">
+                                    <div class="col-md-4 text-right">
+                                        <img class="dbsyncer_img" th:src="@{'/images/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}">
+                                    </div>
+                                    <div class="col-md-8">
+                                        <p class="driver_break_word">[[${mapping?.sourceConnector?.name}]]</p>
+                                        <p>数据源：[[${mapping?.sourceConnector?.config?.connectorType}]]</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 text-center">
+                                <div class="row-fluid">
+                                    <div class="span4"><span class="fa fa-arrow-right fa-3x"></span></div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="row">
+                                    <div class="col-md-4 text-right">
+                                        <img class="dbsyncer_img" th:src="@{'/images/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}">
+                                    </div>
+                                    <div class="col-md-8">
+                                        <p class="driver_break_word">[[${mapping?.targetConnector?.name}]]</p>
+                                        <p>目标源：[[${mapping?.targetConnector?.config?.connectorType}]]</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 驱动配置切换操作 -->
+            <div class="form-group" id="mappingModelChange">
+                <div class="row">
+                    <div class="col-sm-2">
+                        <input type="radio" name="model" value="full" checked="checked"> 全量同步
+                    </div>
+                    <div class="col-sm-2">
+                        <input type="radio" name="model" value="increment"> 增量同步
+                    </div>
+                    <div class="col-sm-6"></div>
+                    <div class="col-md-2 text-right">
+                        <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
+                            <span class="fa fa-save"></span>保存
+                        </button>
+                        <button id="mappingBackBtn" type="button" class="btn btn-default">
+                            <span class="fa fa-reply"></span>返回
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 基本配置区域 -->
+            <div class="row">
+                <div class="panel-group">
+                    <div class="panel panel-success">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#mappingBaseConfig">基本配置</u>
+                            </h4>
+                        </div>
+                        <div id="mappingBaseConfig" class="panel-body panel-collapse collapse in">
+                            <!-- 表映射 -->
+                            <div th:replace="mapping/editMappingTable :: content"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 高级配置区域 -->
+            <div class="row">
+                <div class="panel-group mappingConfigPanel">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#mappingSuperConfig" title="该配置使所有映射关系都生效">高级配置</u>
+                            </h4>
+                        </div>
+                        <div id="mappingSuperConfig" class="panel-body panel-collapse collapse">
+                            <!-- 全量配置 -->
+                            <div th:id="mappingFullConfig" class="hidden" th:fragment="content">
+                                <div th:replace="mapping/editMappingFull :: content"></div>
+                            </div>
+
+                            <!-- 增量配置 -->
+                            <div th:id="mappingIncrementConfig" class="hidden" th:fragment="content">
+                                <div th:replace="mapping/editMappingIncrement :: content"></div>
+                            </div>
+
+                            <!-- 过滤条件 -->
+                            <div th:replace="mapping/editMappingFilter :: content"></div>
+
+                            <!-- 转换配置 -->
+                            <div th:replace="mapping/editMappingConvert :: content"></div>
+
+                            <!-- 插件配置 -->
+                            <div th:replace="mapping/editMappingPlugin :: content"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<script type="text/javascript">
+    //加载JS
+    $.getScript('/js/mapping/editMapping.js');
+    $.getScript('/js/mapping/editMappingIncrement.js');
+</script>
+</html>

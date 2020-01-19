@@ -1,0 +1,58 @@
+{
+  "id": "11111",
+  "type":"mapping",
+  "name": "人力资源系统_审计系统",
+  "createTime": "2019-10-08 21:32:00",
+  "updateTime": "2019-10-08 21:35:00",
+  "sourceConnectorId": "100",
+  "targetConnectorId": "666",
+  "filter": {
+    "and": [
+      {
+        "name": "AGE",
+        "operator": "gt",
+        "value": "0"
+      }
+    ],
+    "or": [
+      {
+        "name": "NAME",
+        "operator": "equal",
+        "value": "hello"
+      }
+    ]
+  },
+  "fieldConvert": [
+    {
+      "name": "NAME",
+      "convert": [
+        {
+          "name": "append",
+          "args": [
+            "hello"
+          ]
+        }
+      ]
+    }
+  ],
+  "plugin": {
+    "className": "com.xx.hr.convert.MyImpl"
+  },
+  "listener": {
+    "listenerType": "Polling",
+    "cronExpression": "*/30 * * * * ?",
+    "eventFieldName": "MyEvent",
+    "update": [
+      "U",
+      "M"
+    ],
+    "insert": [
+      "I"
+    ],
+    "delete": [
+      "D"
+    ]
+  },
+  "batchNum": 200,
+  "threadNum": 5
+}

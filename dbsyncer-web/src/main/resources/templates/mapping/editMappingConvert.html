@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <p class="text-muted">转换配置</p>
+
+    <div class="form-group">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">转换</label>
+                <div class="col-sm-9">
+                    <select id="convertOperator" class="form-control select-control">
+                        <option th:value="${c?.code}" th:text="${c?.name}" th:argNum="${c?.argNum}" th:each="c,state : ${convert}"/ >
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">目标源表字段</label>
+                <div class="col-sm-9">
+                    <select id="convertTargetField" class="form-control select-control">
+                        <option th:each="c,s:${tableGroup?.targetTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="col-sm-2 control-label text-right">参数</label>
+                <div class="col-sm-5">
+                    <input class="form-control convertArg" type="text" maxlength="50" dbsyncer-valid="require" placeholder="参数" />
+                </div>
+                <div class="col-sm-5">
+                    <input class="form-control convertArg" type="text" maxlength="50" dbsyncer-valid="require" placeholder="参数" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="row">
+            <div class="col-md-11"></div>
+            <div class="col-md-1">
+                <button id="convertAdd" type="button" class="btn btn-primary">
+                    <span class="fa fa-plus"></span>添加
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="row">
+            <div class="col-md-1"></div>
+            <div class="col-md-11">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>转换</th>
+                        <th>目标源表字段</th>
+                        <th>参数</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody class="convertList">
+                    <tr>
+                        <td>追加</td>
+                        <td>NAME</td>
+                        <td>test</td>
+                        <td><a class='fa fa-remove fa-2x convertDelete dbsyncer_pointer' title='删除' ></a></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+</html>

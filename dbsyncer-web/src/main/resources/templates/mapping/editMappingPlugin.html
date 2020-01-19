@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <p class="text-muted">插件配置</p>
+
+    <div class="form-group">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">名称</label>
+                <div class="col-sm-9">
+                    <select id="sourceStrategyConvertRule" class="form-control select-control">
+                        <option value="">无</option>
+                        <option th:value="${p?.className}" th:text="${p?.name}" th:each="p,state : ${plugin}">
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-8"></div>
+        </div>
+    </div>
+</div>
+
+</html>

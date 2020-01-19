@@ -1,0 +1,87 @@
+{
+  "id":"tableGroupId_0",
+  "type":"tableGroup",
+  "name": "",
+  "createDateTime": "2019-10-08 21:32:00",
+  "updateDateTime": "2019-10-08 21:35:00",
+  "mappingId": "11111",
+  "sourceTable":{
+    "name":"MY_USER",
+    "column":[
+      {
+        "name": "ID",
+        "typeName": "VARCHAR",
+        "type": 12,
+        "pk":true
+      }
+    ]
+  },
+  "targetTable":{
+    "name":"T_MY_USER",
+    "column":[
+      {
+        "name": "ID",
+        "typeName": "VARCHAR",
+        "type": 12,
+        "pk":true
+      }
+    ]
+  },
+  "fieldMapping":[
+    {
+      "source":{
+        "name": "ID",
+        "typeName": "VARCHAR",
+        "type": 12,
+        "pk":true
+      },
+      "target":{
+        "name": "ID",
+        "typeName": "VARCHAR",
+        "type": 12,
+        "pk":true
+      }
+    }
+  ],
+  "command":{
+    "QUERY":"SELECT * FROM MY_USER where name = ?",
+    "INSERT":"INSERT INTO MY_USER(id,name)values(?,?)",
+    "UPDATE":"UPDATE MY_USER set name=? where MY_USER.id=?",
+    "DELETE":"DELETE MY_USER WHERE MY_USER.id=?",
+    "QUARTZ_RANGE":"select xxx",
+    "QUARTZ_ALL":"select xxx",
+    "QUARTZ_MAX":"select xxx"
+  },
+  "filter": {
+    "and": [
+      {
+        "name": "AGE",
+        "operator": "gt",
+        "value": "0"
+      }
+    ],
+    "or": [
+      {
+        "name": "NAME",
+        "operator": "equal",
+        "value": "hello"
+      }
+    ]
+  },
+  "fieldConvert": [
+    {
+      "name": "NAME",
+      "convert": [
+        {
+          "name": "append",
+          "args": [
+            "hello"
+          ]
+        }
+      ]
+    }
+  ],
+  "plugin": {
+    "className": "com.xx.hr.convert.MyImpl"
+  }
+}

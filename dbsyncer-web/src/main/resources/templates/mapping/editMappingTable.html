@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <p class="text-muted">映射关系</p>
+
+    <div class="row">
+        <!-- 数据源配置 -->
+        <div class="col-md-5">
+            <label class="col-sm-3 control-label text-right">数据源表</label>
+            <div class="col-sm-9">
+                <select id="sourceTable" class="form-control select-control">
+                    <option th:each="t,s:${mapping?.sourceConnector?.table}" th:value="${t}" th:text="${t}" />
+                </select>
+            </div>
+        </div>
+        <!-- 中间图标 -->
+        <div class="col-md-2 text-center">
+            <span class="fa fa-angle-double-right fa-2x"></span>
+        </div>
+        <!-- 目标源配置 -->
+        <div class="col-md-5">
+            <div class="form-group">
+                <label class="col-sm-3 control-label text-right">目标源表</label>
+                <div class="col-sm-9">
+                    <select id="targetTable" class="form-control select-control">
+                        <option th:each="t,s:${mapping?.targetConnector?.table}" th:value="${t}" th:text="${t}" />
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="row">
+            <div class="col-md-11"></div>
+            <div class="col-md-1">
+                <button id="tableGroupAdd" th:mappingId="${mapping?.id}" type="button" class="btn btn-primary">
+                    <span class="fa fa-plus"></span>添加
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th>数据源表</th>
+                <th>目标源表</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="tableGroupList">
+                <tr th:id="${t?.id}" title='点击编辑' class='dbsyncer_pointer' th:each="t,state : ${tableGroups}">
+                    <td th:text="${t?.sourceTable.name}"/>
+                    <td th:text="${t?.targetTable.name}"/>
+                    <td><a th:id="${t?.id}" th:mappingId="${mapping?.id}" class='fa fa-remove fa-2x tableGroupDelete dbsyncer_pointer' title='删除'></a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</html>

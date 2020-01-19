@@ -1,0 +1,13 @@
+.idea
+data
+*.iml
+out
+gen
+*.log
+velocity.log.1
+*.project
+*.classpath
+*.settings
+*/.settings/*
+target/
+log.txt

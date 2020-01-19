@@ -1,0 +1,27 @@
+package org.dbsyncer.storage.constant;
+
+/**
+ * @author AE86
+ * @version 1.0.0
+ * @date 2019/11/16 22:14
+ */
+public class ConfigConstant {
+
+    /**
+     * 公共属性
+     */
+    public static final String CONFIG_MODEL_ID = "id";
+    public static final String CONFIG_MODEL_NAME = "name";
+    public static final String CONFIG_MODEL_TYPE = "type";
+    public static final String CONFIG_MODEL_CREATE_TIME = "createTime";
+    public static final String CONFIG_MODEL_UPDATE_TIME = "updateTime";
+    public static final String CONFIG_MODEL_JSON = "json";
+
+    /**
+     * 配置类型
+     */
+    public static final String CONNECTOR = "connector";
+    public static final String MAPPING = "mapping";
+    public static final String TABLE_GROUP = "tableGroup";
+
+}
