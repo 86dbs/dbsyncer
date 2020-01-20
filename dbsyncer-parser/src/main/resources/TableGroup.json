@@ -52,22 +52,20 @@
     "QUARTZ_ALL":"select xxx",
     "QUARTZ_MAX":"select xxx"
   },
-  "filter": {
-    "and": [
-      {
-        "name": "AGE",
-        "operator": "gt",
-        "value": "0"
-      }
-    ],
-    "or": [
-      {
-        "name": "NAME",
-        "operator": "equal",
-        "value": "hello"
-      }
-    ]
-  },
+  "filter": [
+    {
+      "name": "AGE",
+      "operator": "and",
+      "filter": ">",
+      "value": "0"
+    },
+    {
+      "name": "NAME",
+      "operator": "or",
+      "filter": "=",
+      "value": "hello"
+    }
+  ],
   "fieldConvert": [
     {
       "name": "NAME",

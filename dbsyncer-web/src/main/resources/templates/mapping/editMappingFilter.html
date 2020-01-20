@@ -11,7 +11,7 @@
                 <label class="col-sm-3 control-label text-right">组合</label>
                 <div class="col-sm-9">
                     <select id="conditionOperation" class="form-control select-control">
-                        <option th:each="o,s:${condition?.operation}" th:value="${o?.code}" th:text="${o?.name}" />
+                        <option th:each="o,s:${condition?.operation}" th:value="${o?.name}" th:text="${o?.name}" />
                     </select>
                 </div>
             </div>
@@ -27,7 +27,7 @@
                 <label class="col-sm-3 control-label text-right">条件</label>
                 <div class="col-sm-9">
                     <select id="conditionFilter" class="form-control select-control">
-                        <option th:each="f,s:${condition?.filter}" th:value="${f?.name}" th:text="${f?.code}" />
+                        <option th:each="f,s:${condition?.filter}" th:value="${f?.name}" th:text="${f?.name}" />
                     </select>
                 </div>
             </div>
@@ -39,12 +39,12 @@
             <div class="col-md-4">
                 <label class="col-sm-3 control-label text-right">参数</label>
                 <div class="col-sm-9">
-                    <textarea id="filterArg" class="form-control" rows="2" placeholder="请输入参数"></textarea>
+                    <textarea id="conditionArg" class="form-control" rows="2" placeholder="请输入参数"></textarea>
                 </div>
             </div>
             <div class="col-md-7"></div>
             <div class="col-md-1">
-                <button id="filterAdd" type="button" class="btn btn-primary">
+                <button id="conditionAdd" type="button" class="btn btn-primary">
                     <span class="fa fa-plus"></span>添加
                 </button>
             </div>
@@ -65,13 +65,13 @@
                         <th>操作</th>
                     </tr>
                     </thead>
-                    <tbody class="filterList">
+                    <tbody id="conditionList">
                     <tr>
                         <td>and</td>
                         <td>NAME</td>
                         <td>=</td>
                         <td>张三</td>
-                        <td><a class='fa fa-remove fa-2x filterDelete dbsyncer_pointer' title='删除' ></a></td>
+                        <td><a class='fa fa-remove fa-2x conditionDelete dbsyncer_pointer' title='删除' ></a></td>
                     </tr>
                     </tbody>
                 </table>

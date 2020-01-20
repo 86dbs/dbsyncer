@@ -4,7 +4,6 @@ import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.*;
-import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
 import org.dbsyncer.connector.util.DatabaseUtil;
@@ -19,6 +18,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public abstract class AbstractDatabaseConnector implements Database {
 
@@ -98,24 +98,22 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
-    public String getQueryFilterSql(Filter filter) {
-        if (filter == null) {
+    public String getQueryFilterSql(List<Filter> filter) {
+        if (CollectionUtils.isEmpty(filter)) {
             return "";
         }
         // 过滤条件SQL
         StringBuilder condition = new StringBuilder();
 
         // 拼接并且SQL
-        List<FieldFilter> and = filter.getAnd();
-        String addSql = getFilterSql(OperationEnum.AND, and);
+        String addSql = getFilterSql(OperationEnum.AND.getName(), filter);
         // 如果Add条件存在
         if (StringUtils.isNotBlank(addSql)) {
             condition.append(addSql);
         }
 
         // 拼接或者SQL
-        List<FieldFilter> or = filter.getOr();
-        String orSql = getFilterSql(OperationEnum.OR, or);
+        String orSql = getFilterSql(OperationEnum.OR.getName(), filter);
         // 如果Or条件和Add条件都存在
         if (StringUtils.isNotBlank(orSql) && StringUtils.isNotBlank(addSql)) {
             condition.append(" OR ").append(orSql);
@@ -224,29 +222,27 @@ public abstract class AbstractDatabaseConnector implements Database {
     /**
      * 根据过滤条件获取查询SQL
      *
-     * @param operationEnum and/or
-     * @param list
+     * @param queryOperator and/or
+     * @param filter
      * @return
      */
-    private String getFilterSql(OperationEnum operationEnum, List<FieldFilter> list) {
-        if (null == operationEnum || CollectionUtils.isEmpty(list)) {
-            return null;
+    private String getFilterSql(String queryOperator, List<Filter> filter) {
+        List<Filter> list = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), queryOperator)).collect(Collectors.toList());
+        if(CollectionUtils.isEmpty(list)){
+            return "";
         }
-        String queryExpressionOperator = operationEnum.getCode();
 
         int size = list.size();
         int end = size - 1;
         StringBuilder sql = new StringBuilder();
         sql.append("(");
-        FieldFilter c = null;
-        String oper = null;
+        Filter c = null;
         for (int i = 0; i < size; i++) {
             c = list.get(i);
-            oper = FilterEnum.getCode(c.getOperator());
             // USER = 'zhangsan'
-            sql.append(c.getName()).append(oper).append("'").append(c.getValue()).append("'");
+            sql.append(c.getName()).append(c.getFilter()).append("'").append(c.getValue()).append("'");
             if (i < end) {
-                sql.append(" ").append(queryExpressionOperator).append(" ");
+                sql.append(" ").append(queryOperator).append(" ");
             }
         }
         sql.append(")");

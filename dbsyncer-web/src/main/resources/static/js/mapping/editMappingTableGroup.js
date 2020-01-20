@@ -30,7 +30,7 @@ function bindFieldMappingAddClick(){
              var tf = $(this).find("td:eq(1)").text();
              if(repeated = (sField==sf && tField==tf)){
                 bootGrowl("映射关系已存在.", "danger");
-                return;
+                return false;
              }
         });
         if(repeated){ return; }

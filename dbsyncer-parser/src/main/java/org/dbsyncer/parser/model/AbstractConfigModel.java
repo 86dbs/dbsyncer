@@ -9,7 +9,7 @@ import java.util.List;
 public abstract class AbstractConfigModel extends ConfigModel {
 
     // 过滤条件
-    private Filter filter;
+    private List<Filter> filter;
 
     // 转换配置
     private List<FieldConvert> fieldConvert;
@@ -17,11 +17,11 @@ public abstract class AbstractConfigModel extends ConfigModel {
     // 插件配置
     private Plugin plugin;
 
-    public Filter getFilter() {
+    public List<Filter> getFilter() {
         return filter;
     }
 
-    public void setFilter(Filter filter) {
+    public void setFilter(List<Filter> filter) {
         this.filter = filter;
     }
 

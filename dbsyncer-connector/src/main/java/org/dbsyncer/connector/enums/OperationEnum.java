@@ -12,29 +12,21 @@ public enum OperationEnum {
     /**
      * 并且
      */
-    AND("and", "and"),
+    AND("and"),
     /**
      * 或者
      */
-    OR("or", "or");
+    OR("or");
 
     // 描述
     private String name;
 
-    // 运算符
-    private String code;
-
-    OperationEnum(String name, String code) {
+    OperationEnum(String name) {
         this.name = name;
-        this.code = code;
     }
 
     public String getName() {
         return name;
-    }
-
-    public String getCode() {
-        return code;
     }
 
 }
