@@ -1,18 +1,68 @@
 // 绑定表格点击删除事件
-function bindConfigListClick($del){
+function bindConfigListClick($del, $callback){
     $del.unbind("click");
     $del.bind('click', function(){
         // 阻止tr触发click事件
         event.cancelBubble=true;
         $(this).parent().parent().remove();
+        $callback();
     });
+    $callback();
+}
+
+// 初始化过滤条件点击事件
+function initFilter(){
+    bindConfigListClick($(".conditionDelete"), function(){ initFilterParams(); });
+}
+
+// 初始化转换配置点击事件
+function initFieldConvert(){
+    bindConfigListClick($(".convertDelete"), function(){ initFieldConvertParams(); });
+}
+
+// 初始化映射关系参数
+function initFilterParams(){
+    // 生成JSON参数
+    var row = [];
+    var $conditionList = $("#conditionList");
+    $conditionList.find("tr").each(function(k,v){
+        var opr = $(this).find("td:eq(0)").text();
+        var sf = $(this).find("td:eq(1)").text();
+        var filter = $(this).find("td:eq(2)").text();
+        var arg = $(this).find("td:eq(3)").text();
+        row.push({
+           "name": sf,
+           "operator": opr,
+           "filter": filter,
+           "value": arg
+         });
+    });
+    $("#filter").val(JSON.stringify(row));
+}
+
+// 初始化映射关系参数
+function initFieldConvertParams(){
+    // 生成JSON参数
+    var row = [];
+    var $convertList = $("#convertList");
+    $convertList.find("tr").each(function(k,v){
+        var convert = $(this).find("td:eq(0)").attr("value");
+        var tf = $(this).find("td:eq(1)").text();
+        var args = $(this).find("td:eq(2)").text();
+        row.push({
+           "name": tf,
+           "convert": convert,
+           "args": args
+         });
+    });
+    $("#fieldConvert").val(JSON.stringify(row));
 }
 
 // 绑定新增条件点击事件
 function bindConditionAddClick() {
     var $conditionAdd = $("#conditionAdd");
-        $conditionAdd.unbind("click");
-        $conditionAdd.bind('click', function () {
+    $conditionAdd.unbind("click");
+    $conditionAdd.bind('click', function () {
         var conditionOperation = $("#conditionOperation").select2("val");
         var conditionSourceField = $("#conditionSourceField").select2("val");
         var conditionFilter = $("#conditionFilter").select2("val");
@@ -49,15 +99,15 @@ function bindConditionAddClick() {
         $conditionList.append(trHtml);
         // 清空参数
         $("#conditionArg").val("");
-        bindConditionListClick($(".conditionDelete"));
+        initFilter();
     });
 }
 
 // 绑定新增转换点击事件
 function bindConvertAddClick() {
     var $convertAdd = $("#convertAdd");
-        $convertAdd.unbind("click");
-        $convertAdd.bind('click', function () {
+    $convertAdd.unbind("click");
+    $convertAdd.bind('click', function () {
         var $convertOperator = $("#convertOperator");
         var convertOperatorVal = $convertOperator.select2("val");
         var convertOperatorText = $convertOperator.select2("data")[0].text;
@@ -96,16 +146,15 @@ function bindConvertAddClick() {
         $convertList.append(trHtml);
         // 清空参数
         $(".convertArg").val("");
-        bindConfigListClick($(".convertDelete"));
+        initFieldConvert();
     });
 }
 
 $(function() {
     // 过滤条件
-    bindConfigListClick($(".conditionDelete"));
+    initFilter();
     bindConditionAddClick();
-
     // 转换配置
-    bindConfigListClick($(".convertDelete"));
+    initFieldConvert();
     bindConvertAddClick();
 });

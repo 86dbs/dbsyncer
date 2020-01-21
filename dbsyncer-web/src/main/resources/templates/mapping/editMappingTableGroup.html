@@ -4,7 +4,7 @@
 
 <div class="container-fluid">
     <div class="container">
-        <form class="form-horizontal" role="form" method="post">
+        <form id="tableGroupModifyForm" class="form-horizontal" role="form" method="post">
             <!-- 标题 -->
             <div class="row text-center">
                 <h3>[[${mapping?.name}]]</h3>
@@ -55,10 +55,10 @@
                 <div class="row">
                     <div class="col-sm-10"></div>
                     <div class="col-md-2 text-right">
-                        <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
+                        <button id="tableGroupSubmitBtn" type="button" class="btn btn-primary">
                             <span class="fa fa-save"></span>保存
                         </button>
-                        <button id="mappingTableGroupBackBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-default">
+                        <button id="tableGroupBackBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-default">
                             <span class="fa fa-reply"></span>返回
                         </button>
                     </div>
@@ -71,10 +71,10 @@
                     <div class="panel panel-success">
                         <div class="panel-heading">
                             <h4 class="panel-title">
-                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#mappingBaseConfig">基本配置</u>
+                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#tableGroupBaseConfig">基本配置</u>
                             </h4>
                         </div>
-                        <div id="mappingBaseConfig" class="panel-body panel-collapse collapse in">
+                        <div id="tableGroupBaseConfig" class="panel-body panel-collapse collapse in">
                             <!-- 表映射映射 -->
                             <p class="text-muted">映射关系</p>
 
@@ -84,6 +84,7 @@
                                     <label class="col-sm-3 control-label text-right">数据源表字段</label>
                                     <div class="col-sm-9">
                                         <select id="sourceFieldMapping" class="form-control select-control">
+                                            <option value="">无</option>
                                             <option th:each="c,s:${tableGroup?.sourceTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
                                         </select>
                                     </div>
@@ -98,6 +99,7 @@
                                         <label class="col-sm-3 control-label text-right">目标源表字段</label>
                                         <div class="col-sm-9">
                                             <select id="targetFieldMapping" class="form-control select-control">
+                                                <option value="">无</option>
                                                 <option th:each="c,s:${tableGroup?.targetTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
                                             </select>
                                         </div>
@@ -134,6 +136,12 @@
                                     </tbody>
                                 </table>
                             </div>
+
+                            <!-- 隐藏表单值 -->
+                            <div class="form-group hidden">
+                                <input name="id" class="form-control" type="text" th:value="${tableGroup?.id}"/>
+                                <input id="fieldMapping" name="fieldMapping" class="form-control" type="text"/>
+                            </div>
                         </div>
 
                     </div>
@@ -142,24 +150,14 @@
 
             <!-- 高级配置区域 -->
             <div class="row">
-                <div class="panel-group mappingConfigPanel">
+                <div class="panel-group">
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <h4 class="panel-title">
-                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#mappingSuperConfig" title="该配置只对当前映射关系生效, 上一级的高级配置将失效">高级配置</u>
+                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#tableGroupSuperConfig" title="该配置只对当前映射关系生效, 上一级的高级配置将失效">高级配置</u>
                             </h4>
                         </div>
-                        <div id="mappingSuperConfig" class="panel-body panel-collapse collapse">
-                            <!-- 全量配置 -->
-                            <div th:id="mappingFullConfig" class="hidden">
-                                <div th:replace="mapping/editMappingFull :: content"></div>
-                            </div>
-
-                            <!-- 增量配置 -->
-                            <div th:id="mappingIncrementConfig" class="hidden">
-                                <div th:replace="mapping/editMappingIncrement :: content"></div>
-                            </div>
-
+                        <div id="tableGroupSuperConfig" class="panel-body panel-collapse collapse">
                             <!-- 过滤条件 -->
                             <div th:replace="mapping/editMappingFilter :: content"></div>
 

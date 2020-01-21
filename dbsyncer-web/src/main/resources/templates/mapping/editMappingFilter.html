@@ -66,17 +66,22 @@
                     </tr>
                     </thead>
                     <tbody id="conditionList">
-                    <tr>
-                        <td>and</td>
-                        <td>NAME</td>
-                        <td>=</td>
-                        <td>张三</td>
-                        <td><a class='fa fa-remove fa-2x conditionDelete dbsyncer_pointer' title='删除' ></a></td>
-                    </tr>
+                        <tr th:each="f,s:${tableGroup?.filter}">
+                            <td>[[${f?.operator}]]</td>
+                            <td>[[${f?.name}]]</td>
+                            <td>[[${f?.filter}]]</td>
+                            <td>[[${f?.value}]]</td>
+                            <td><a class='fa fa-remove fa-2x conditionDelete dbsyncer_pointer' title='删除' ></a></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
+    </div>
+
+    <!-- 隐藏表单值 -->
+    <div class="form-group hidden">
+        <input id="filter" name="filter" class="form-control" type="text"/>
     </div>
 
 </div>
