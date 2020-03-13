@@ -60,10 +60,10 @@
                     </tr>
                     </thead>
                     <tbody id="convertList">
-                    <tr>
-                        <td>追加</td>
-                        <td>NAME</td>
-                        <td>test</td>
+                    <tr th:each="f,s:${tableGroup?.filter}">
+                        <td th:value="${f?.convertValue}">[[${f?.convert}]]</td>
+                        <td>[[${f?.name}]]</td>
+                        <td>[[${f?.args}]]</td>
                         <td><a class='fa fa-remove fa-2x convertDelete dbsyncer_pointer' title='删除' ></a></td>
                     </tr>
                     </tbody>
