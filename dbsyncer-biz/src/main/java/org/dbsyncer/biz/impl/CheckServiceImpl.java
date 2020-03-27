@@ -47,7 +47,7 @@ public class CheckServiceImpl implements CheckService {
     public String checkConnector(Map<String, String> params) {
         logger.info("check connector params:{}", params);
         Assert.notEmpty(params, "CheckServiceImpl check connector params is null.");
-        String id = params.get("id");
+        String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Connector connector = manager.getConnector(id);
         Assert.notNull(connector, "Can not find connector.");
         ConnectorConfig config = connector.getConfig();
@@ -65,7 +65,7 @@ public class CheckServiceImpl implements CheckService {
     public String checkMapping(Map<String, String> params) {
         logger.info("check mapping params:{}", params);
         Assert.notEmpty(params, "CheckServiceImpl check mapping params is null.");
-        String id = params.get("id");
+        String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Mapping mapping = manager.getMapping(id);
         Assert.notNull(mapping, "Can not find mapping.");
         String type = mapping.getType();

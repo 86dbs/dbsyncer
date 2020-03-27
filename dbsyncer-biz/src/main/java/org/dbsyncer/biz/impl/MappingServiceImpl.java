@@ -9,6 +9,7 @@ import org.dbsyncer.listener.config.PollingListenerConfig;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -38,7 +39,7 @@ public class MappingServiceImpl implements MappingService {
 
     @Override
     public String add(Map<String, String> params) {
-        String name = params.get("name");
+        String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         String sourceConnectorId = params.get("sourceConnectorId");
         String targetConnectorId = params.get("targetConnectorId");
         Assert.hasText(name, "mapping name is empty.");
