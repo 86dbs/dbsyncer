@@ -34,6 +34,7 @@
     }
   ],
   "plugin": {
+    "name":"用户信息转换插件",
     "className": "com.xx.hr.convert.MyImpl"
   },
   "listener": {
