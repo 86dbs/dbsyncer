@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.listener.config.ListenerConfig;
+import org.dbsyncer.parser.constant.ModelConstant;
 
 /**
  * 驱动映射关系
@@ -16,6 +17,13 @@ public class Mapping extends AbstractConfigModel {
 
     // 目标源连接器ID
     private String targetConnectorId;
+
+    /**
+     * 同步方式
+     *
+     * @see ModelConstant
+     */
+    private String model;
 
     // 监听配置
     private ListenerConfig listener;
@@ -41,6 +49,15 @@ public class Mapping extends AbstractConfigModel {
 
     public Mapping setTargetConnectorId(String targetConnectorId) {
         this.targetConnectorId = targetConnectorId;
+        return this;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public Mapping setModel(String model) {
+        this.model = model;
         return this;
     }
 
