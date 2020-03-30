@@ -3,6 +3,7 @@ package org.dbsyncer.biz.checker.impl;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.storage.constant.ConfigConstant;
 import org.springframework.util.Assert;
 
 import java.util.Map;
@@ -16,7 +17,7 @@ public class MysqlChecker extends AbstractChecker {
 
     @Override
     public void modify(Connector connector, Map<String, String> params) {
-        String name = params.get("name");
+        String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         String username = params.get("username");
         String password = params.get("password");
         String url = params.get("url");

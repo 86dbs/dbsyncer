@@ -2,7 +2,6 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.manager.Manager;

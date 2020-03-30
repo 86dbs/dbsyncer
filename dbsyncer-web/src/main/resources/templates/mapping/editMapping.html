@@ -90,7 +90,7 @@
 
             <!-- 高级配置区域 -->
             <div class="row">
-                <div class="panel-group mappingConfigPanel">
+                <div class="panel-group">
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <h4 class="panel-title">
@@ -126,9 +126,7 @@
     </div>
 </div>
 
-<script type="text/javascript">
-    //加载JS
-    $.getScript('/js/mapping/editMapping.js');
-    $.getScript('/js/mapping/editMappingIncrement.js');
-</script>
+<script th:src="@{/js/mapping/editMapping.js}"></script>
+<script th:src="@{/js/mapping/editMappingFilterAndConvert.js}"></script>
+<script th:src="@{/js/mapping/editMappingIncrement.js}"></script>
 </html>

@@ -18,7 +18,7 @@ public interface Database extends Connector {
 
     void close(JdbcTemplate jdbcTemplate);
 
-    String getQueryFilterSql(Filter filter);
+    String getQueryFilterSql(List<Filter> filter);
 
     String getPageSql(DatabaseConfig config, String tableName, String pk, String querySQL);
 

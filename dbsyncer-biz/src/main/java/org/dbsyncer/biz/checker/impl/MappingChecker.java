@@ -3,9 +3,12 @@
  */
 package org.dbsyncer.biz.checker.impl;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.parser.constant.ModelConstant;
 import org.dbsyncer.parser.model.Mapping;
-import org.springframework.util.Assert;
+import org.dbsyncer.storage.constant.ConfigConstant;
 
 import java.util.Map;
 
@@ -18,10 +21,31 @@ public class MappingChecker extends AbstractChecker {
 
     @Override
     public void modify(Mapping mapping, Map<String, String> params) {
-        String name = params.get("name");
-        Assert.hasText(name, "MappingChecker modify name is empty.");
+        // 名称
+        String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
+        if(StringUtils.isNotBlank(name)){
+            mapping.setName(name);
+        }
 
-        mapping.setName(name);
+        // 同步方式(仅支持全量或增量同步方式)
+        String model = params.get("model");
+        if(StringUtils.isNotBlank(model)){
+            if(StringUtils.equals(ModelConstant.FULL, model) || StringUtils.equals(ModelConstant.INCREMENT, model)){
+                mapping.setModel(model);
+            }
+        }
+
+        // 全量配置
+        String threadNum = params.get("threadNum");
+        mapping.setThreadNum(NumberUtils.toInt(threadNum, mapping.getThreadNum()));
+        String batchNum = params.get("batchNum");
+        mapping.setBatchNum(NumberUtils.toInt(batchNum, mapping.getBatchNum()));
+        // TODO 增量配置
+
+        // 修改：过滤条件/转换配置/插件配置
+        modifyConfigModel(mapping, params);
+
+        // 增量配置
         mapping.setUpdateTime(System.currentTimeMillis());
     }
 

@@ -1,8 +1,5 @@
 package org.dbsyncer.connector.enums;
 
-import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.connector.ConnectorException;
-
 /**
  * 运算符表达式类型
  *
@@ -15,54 +12,37 @@ public enum FilterEnum {
     /**
      * 等于
      */
-    EQUAL("equal", "="),
+    EQUAL("="),
     /**
      * 不等于
      */
-    NOT_EQUAL("notEqual", "!="),
+    NOT_EQUAL("!="),
     /**
      * 大于
      */
-    GT("gt", ">"),
+    GT(">"),
     /**
      * 小于
      */
-    LT("lt", "<"),
+    LT("<"),
     /**
      * 大于等于
      */
-    GT_AND_EQUAL("gtAndEqual", ">="),
+    GT_AND_EQUAL(">="),
     /**
      * 小于等于
      */
-    LT_AND_EQUAL("ltAndEqual", "<=");
+    LT_AND_EQUAL("<=");
 
     // 运算符名称
     private String name;
 
-    // 运算符
-    private String code;
-
-    FilterEnum(String name, String code) {
+    FilterEnum(String name) {
         this.name = name;
-        this.code = code;
-    }
-
-    public static String getCode(String name){
-        for (FilterEnum e : FilterEnum.values()) {
-            if (StringUtils.equals(name, e.getName())) {
-                return e.getCode();
-            }
-        }
-        throw new ConnectorException(String.format("Filter name \"%s\" does not exist.", name));
     }
 
     public String getName() {
         return name;
-    }
-
-    public String getCode() {
-        return code;
     }
 
 }

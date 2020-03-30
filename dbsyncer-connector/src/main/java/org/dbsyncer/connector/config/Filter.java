@@ -1,8 +1,10 @@
 package org.dbsyncer.connector.config;
 
-import java.util.List;
+import org.dbsyncer.connector.enums.FilterEnum;
+import org.dbsyncer.connector.enums.OperationEnum;
 
 /**
+ * 字段属性条件
  * @author AE86
  * @version 1.0.0
  * @date 2019/9/30 15:10
@@ -10,28 +12,38 @@ import java.util.List;
 public class Filter {
 
     /**
-     * and 过滤
+     * 字段名，ID
      */
-    private List<FieldFilter> and;
+    private String name;
 
     /**
-     * or 过滤
+     * @see OperationEnum
      */
-    private List<FieldFilter> or;
+    private String operation;
 
-    public Filter() {
+    /**
+     * @see FilterEnum
+     */
+    private String filter;
+
+    /**
+     * 值
+     */
+    private String value;
+
+    public String getName() {
+        return name;
     }
 
-    public Filter(List<FieldFilter> and, List<FieldFilter> or) {
-        this.and = and;
-        this.or = or;
+    public String getOperation() {
+        return operation;
     }
 
-    public List<FieldFilter> getAnd() {
-        return and;
+    public String getFilter() {
+        return filter;
     }
 
-    public List<FieldFilter> getOr() {
-        return or;
+    public String getValue() {
+        return value;
     }
 }

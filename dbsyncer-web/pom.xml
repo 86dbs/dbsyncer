@@ -101,14 +101,14 @@
         <finalName>${project.parent.artifactId}-${project.parent.version}</finalName>
 
         <plugins>
-            <!-- 热部署 -->
+            <!-- 热部署
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <fork>true</fork>
                 </configuration>
-            </plugin>
+            </plugin> -->
 
             <!-- compiler插件参数设置，指定编码 -->
             <plugin>

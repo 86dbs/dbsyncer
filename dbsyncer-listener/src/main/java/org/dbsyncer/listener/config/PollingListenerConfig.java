@@ -1,6 +1,5 @@
 package org.dbsyncer.listener.config;
 
-import org.dbsyncer.connector.config.Filter;
 import org.dbsyncer.listener.enums.ListenerEnum;
 
 import java.util.List;
@@ -20,9 +19,6 @@ public class PollingListenerConfig extends ListenerConfig {
     // 定时表达式, 格式: [秒] [分] [小时] [日] [月] [周]
     private String cronExpression = "*/30 * * * * ?";
 
-    // 过滤条件
-    private Filter filter;
-
     // 事件字段
     private String eventFieldName;
 
@@ -41,15 +37,6 @@ public class PollingListenerConfig extends ListenerConfig {
 
     public PollingListenerConfig setCronExpression(String cronExpression) {
         this.cronExpression = cronExpression;
-        return this;
-    }
-
-    public Filter getFilter() {
-        return filter;
-    }
-
-    public PollingListenerConfig setFilter(Filter filter) {
-        this.filter = filter;
         return this;
     }
 
