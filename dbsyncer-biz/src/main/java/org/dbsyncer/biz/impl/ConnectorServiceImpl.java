@@ -5,6 +5,8 @@ import org.dbsyncer.biz.CheckService;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +27,7 @@ public class ConnectorServiceImpl implements ConnectorService {
 
     @Autowired
     private Manager manager;
-    
+
     @Autowired
     private CheckService checkService;
 
@@ -43,8 +45,8 @@ public class ConnectorServiceImpl implements ConnectorService {
 
     @Override
     public String edit(Map<String, String> params) {
-        String json = checkService.checkConnector(params);
-        return manager.editConnector(json);
+        Connector connector = checkService.check(params, Connector.class);
+        return manager.editConnector(null);
     }
 
     @Override

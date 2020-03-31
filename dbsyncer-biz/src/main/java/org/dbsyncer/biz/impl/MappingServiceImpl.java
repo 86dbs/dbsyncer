@@ -5,7 +5,7 @@ import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.listener.config.PollingListenerConfig;
+import org.dbsyncer.listener.config.TimingListenerConfig;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.constant.ModelConstant;
 import org.dbsyncer.parser.model.Connector;
@@ -54,7 +54,7 @@ public class MappingServiceImpl implements MappingService {
 
         // TODO 缺少默认值
         mapping.setModel(ModelConstant.FULL);
-        mapping.setListener(new PollingListenerConfig());
+        mapping.setListener(new TimingListenerConfig());
         String json = JsonUtil.objToJson(mapping);
         return manager.addMapping(json);
     }
@@ -62,8 +62,8 @@ public class MappingServiceImpl implements MappingService {
     @Override
     public String edit(Map<String, String> params) {
         logger.info("检查驱动是否停止运行");
-        String json = checkService.checkMapping(params);
-        return manager.editMapping(json);
+        Mapping mapping = checkService.check(params, Mapping.class);
+        return manager.editMapping(null);
     }
 
     @Override

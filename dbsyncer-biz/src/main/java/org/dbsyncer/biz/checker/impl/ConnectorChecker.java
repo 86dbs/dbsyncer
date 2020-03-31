@@ -22,7 +22,7 @@ import java.util.Map;
  * @date 2020/1/8 15:17
  */
 @Component
-public class MappingChecker extends AbstractChecker {
+public class ConnectorChecker extends AbstractChecker {
 
     @Autowired
     private CheckService checkService;

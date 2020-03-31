@@ -3,7 +3,7 @@ package org.dbsyncer.listener.enums;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.config.MysqlListenerConfig;
-import org.dbsyncer.listener.config.PollingListenerConfig;
+import org.dbsyncer.listener.config.TimingListenerConfig;
 
 /**
  * 支持监听器类型
@@ -21,7 +21,7 @@ public enum ListenerEnum {
     /**
      * 轮询
      */
-    POLLING("Polling", PollingListenerConfig.class);
+    POLLING("Polling", TimingListenerConfig.class);
 
     // 策略名称
     private String type;

@@ -5,14 +5,14 @@ import org.dbsyncer.listener.enums.ListenerEnum;
 import java.util.List;
 
 /**
- * 轮询配置
+ * 定时配置
  * @author AE86
  * @version 1.0.0
  * @date 2019/10/7 14:08
  */
-public class PollingListenerConfig extends ListenerConfig {
+public class TimingListenerConfig extends ListenerConfig {
 
-    public PollingListenerConfig() {
+    public TimingListenerConfig() {
         setListenerType(ListenerEnum.POLLING.getType());
     }
 
@@ -35,7 +35,7 @@ public class PollingListenerConfig extends ListenerConfig {
         return cronExpression;
     }
 
-    public PollingListenerConfig setCronExpression(String cronExpression) {
+    public TimingListenerConfig setCronExpression(String cronExpression) {
         this.cronExpression = cronExpression;
         return this;
     }
@@ -44,7 +44,7 @@ public class PollingListenerConfig extends ListenerConfig {
         return eventFieldName;
     }
 
-    public PollingListenerConfig setEventFieldName(String eventFieldName) {
+    public TimingListenerConfig setEventFieldName(String eventFieldName) {
         this.eventFieldName = eventFieldName;
         return this;
     }
@@ -53,7 +53,7 @@ public class PollingListenerConfig extends ListenerConfig {
         return update;
     }
 
-    public PollingListenerConfig setUpdate(List<String> update) {
+    public TimingListenerConfig setUpdate(List<String> update) {
         this.update = update;
         return this;
     }
@@ -62,7 +62,7 @@ public class PollingListenerConfig extends ListenerConfig {
         return insert;
     }
 
-    public PollingListenerConfig setInsert(List<String> insert) {
+    public TimingListenerConfig setInsert(List<String> insert) {
         this.insert = insert;
         return this;
     }
@@ -71,7 +71,7 @@ public class PollingListenerConfig extends ListenerConfig {
         return delete;
     }
 
-    public PollingListenerConfig setDelete(List<String> delete) {
+    public TimingListenerConfig setDelete(List<String> delete) {
         this.delete = delete;
         return this;
     }

@@ -4,6 +4,7 @@ import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import java.util.Map;
@@ -13,6 +14,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2020/1/7 23:16
  */
+@Component
 public class MysqlChecker extends AbstractChecker {
 
     @Override

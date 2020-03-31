@@ -9,8 +9,14 @@ import java.util.Map;
  */
 public interface CheckService {
 
-    String checkConnector(Map<String, String> params);
-
-    String checkMapping(Map<String, String> params);
+    /**
+     * 检查配置
+     *
+     * @param params 参数
+     * @param type 返回类型
+     * @param <T>
+     * @return
+     */
+    <T> T check(Map<String, String> params, Class<T> type);
 
 }
