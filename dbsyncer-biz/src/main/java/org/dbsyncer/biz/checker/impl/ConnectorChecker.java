@@ -4,15 +4,22 @@
 package org.dbsyncer.biz.checker.impl;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
-import org.dbsyncer.biz.CheckService;
 import org.dbsyncer.biz.checker.AbstractChecker;
-import org.dbsyncer.listener.config.ListenerConfig;
-import org.dbsyncer.parser.constant.ModelConstant;
-import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.biz.checker.ConnectorConfigChecker;
+import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import java.util.Map;
 
@@ -22,41 +29,51 @@ import java.util.Map;
  * @date 2020/1/8 15:17
  */
 @Component
-public class ConnectorChecker extends AbstractChecker {
+public class ConnectorChecker extends AbstractChecker implements ApplicationContextAware {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private CheckService checkService;
+    private Manager manager;
+
+    private Map<String, ConnectorConfigChecker> map;
 
     @Override
-    public void modify(Mapping mapping, Map<String, String> params) {
-        // 名称
-        String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
-        if(StringUtils.isNotBlank(name)){
-            mapping.setName(name);
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        map = applicationContext.getBeansOfType(ConnectorConfigChecker.class);
+    }
+
+    @Override
+    public ConfigModel checkConfigModel(Map<String, String> params) {
+        logger.info("check connector params:{}", params);
+        Assert.notEmpty(params, "ConnectorChecker check params is null.");
+        String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
+        Connector connector = manager.getConnector(id);
+        Assert.notNull(connector, "Can not find connector.");
+
+        // 修改基本配置
+        this.modifyConfigModel(connector, params);
+
+        // 配置连接器配置
+        ConnectorConfig config = connector.getConfig();
+        String type = toLowerCaseFirstOne(config.getConnectorType()) + "ConfigChecker";
+        ConnectorConfigChecker checker = map.get(type);
+        Assert.notNull(checker, "Checker can not be null.");
+        checker.modify(connector, params);
+        return connector;
+    }
+
+    /**
+     * 首字母转小写
+     *
+     * @param s
+     * @return
+     */
+    private String toLowerCaseFirstOne(String s) {
+        if (StringUtils.isBlank(s) || Character.isLowerCase(s.charAt(0))){
+            return s;
         }
-
-        // 同步方式(仅支持全量或增量同步方式)
-        String model = params.get("model");
-        if(StringUtils.isNotBlank(model)){
-            if(StringUtils.equals(ModelConstant.FULL, model) || StringUtils.equals(ModelConstant.INCREMENT, model)){
-                mapping.setModel(model);
-            }
-        }
-
-        // 全量配置
-        String threadNum = params.get("threadNum");
-        mapping.setThreadNum(NumberUtils.toInt(threadNum, mapping.getThreadNum()));
-        String batchNum = params.get("batchNum");
-        mapping.setBatchNum(NumberUtils.toInt(batchNum, mapping.getBatchNum()));
-        // TODO 增量配置(日志/定时)
-        String incrementStrategy = params.get("incrementStrategy");
-        ListenerConfig listener = mapping.getListener();
-
-        // 修改：过滤条件/转换配置/插件配置
-        modifyConfigModel(mapping, params);
-
-        // 增量配置
-        mapping.setUpdateTime(System.currentTimeMillis());
+        return new StringBuilder().append(Character.toLowerCase(s.charAt(0))).append(s.substring(1)).toString();
     }
 
 }

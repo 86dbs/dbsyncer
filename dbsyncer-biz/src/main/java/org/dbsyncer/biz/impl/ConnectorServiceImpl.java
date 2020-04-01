@@ -1,12 +1,12 @@
 package org.dbsyncer.biz.impl;
 
 import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.biz.CheckService;
 import org.dbsyncer.biz.ConnectorService;
+import org.dbsyncer.biz.checker.Checker;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +29,7 @@ public class ConnectorServiceImpl implements ConnectorService {
     private Manager manager;
 
     @Autowired
-    private CheckService checkService;
+    private Checker connectorChecker;
 
     @Override
     public boolean alive(String json) {
@@ -45,8 +45,8 @@ public class ConnectorServiceImpl implements ConnectorService {
 
     @Override
     public String edit(Map<String, String> params) {
-        Connector connector = checkService.check(params, Connector.class);
-        return manager.editConnector(null);
+        ConfigModel model = connectorChecker.checkConfigModel(params);
+        return manager.editConnector(JsonUtil.objToJson(model));
     }
 
     @Override

@@ -5,14 +5,18 @@ package org.dbsyncer.biz.checker.impl;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
-import org.dbsyncer.biz.CheckService;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.listener.config.ListenerConfig;
+import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.constant.ModelConstant;
+import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import java.util.Map;
 
@@ -24,16 +28,21 @@ import java.util.Map;
 @Component
 public class MappingChecker extends AbstractChecker {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     @Autowired
-    private CheckService checkService;
+    private Manager manager;
 
     @Override
-    public void modify(Mapping mapping, Map<String, String> params) {
-        // 名称
-        String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
-        if(StringUtils.isNotBlank(name)){
-            mapping.setName(name);
-        }
+    public ConfigModel checkConfigModel(Map<String, String> params) {
+        logger.info("check mapping params:{}", params);
+        Assert.notEmpty(params, "MappingChecker check params is null.");
+        String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
+        Mapping mapping = manager.getMapping(id);
+        Assert.notNull(mapping, "Can not find mapping.");
+
+        // 修改基本配置
+        this.modifyConfigModel(mapping, params);
 
         // 同步方式(仅支持全量或增量同步方式)
         String model = params.get("model");
@@ -52,11 +61,11 @@ public class MappingChecker extends AbstractChecker {
         String incrementStrategy = params.get("incrementStrategy");
         ListenerConfig listener = mapping.getListener();
 
-        // 修改：过滤条件/转换配置/插件配置
-        modifyConfigModel(mapping, params);
+        // 修改高级配置：过滤条件/转换配置/插件配置
+        this.modifySuperConfigModel(mapping, params);
 
         // 增量配置
-        mapping.setUpdateTime(System.currentTimeMillis());
+        return mapping;
     }
 
 }

@@ -1,13 +1,14 @@
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.biz.CheckService;
 import org.dbsyncer.biz.MappingService;
+import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.listener.config.TimingListenerConfig;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.constant.ModelConstant;
+import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -36,7 +37,7 @@ public class MappingServiceImpl implements MappingService {
     private Manager manager;
 
     @Autowired
-    private CheckService checkService;
+    private Checker mappingChecker;
 
     @Override
     public String add(Map<String, String> params) {
@@ -62,8 +63,8 @@ public class MappingServiceImpl implements MappingService {
     @Override
     public String edit(Map<String, String> params) {
         logger.info("检查驱动是否停止运行");
-        Mapping mapping = checkService.check(params, Mapping.class);
-        return manager.editMapping(null);
+        ConfigModel model = mappingChecker.checkConfigModel(params);
+        return manager.editMapping(JsonUtil.objToJson(model));
     }
 
     @Override
