@@ -67,4 +67,27 @@ public abstract class AbstractChecker implements Checker {
 
     }
 
+    /**
+     * 获取检查器类型
+     *
+     * @param type
+     * @return
+     */
+    protected String getCheckerType(String type) {
+        return toLowerCaseFirstOne(type).concat("ConfigChecker");
+    }
+
+    /**
+     * 首字母转小写
+     *
+     * @param s
+     * @return
+     */
+    private String toLowerCaseFirstOne(String s) {
+        if (StringUtils.isBlank(s) || Character.isLowerCase(s.charAt(0))) {
+            return s;
+        }
+        return new StringBuilder().append(Character.toLowerCase(s.charAt(0))).append(s.substring(1)).toString();
+    }
+
 }

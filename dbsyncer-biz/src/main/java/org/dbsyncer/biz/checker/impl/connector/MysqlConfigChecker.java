@@ -1,12 +1,11 @@
 /**
  * Alipay.com Inc. Copyright (c) 2004-2020 All Rights Reserved.
  */
-package org.dbsyncer.biz.checker.connector;
+package org.dbsyncer.biz.checker.impl.connector;
 
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.storage.constant.ConfigConstant;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
