@@ -1,7 +1,5 @@
 package org.dbsyncer.biz.checker;
 
-import org.dbsyncer.parser.model.ConfigModel;
-
 import java.util.Map;
 
 /**
@@ -17,6 +15,6 @@ public interface Checker {
      * @param params 修改参数
      * @return
      */
-    ConfigModel checkConfigModel(Map<String, String> params);
+    String checkConfigModel(Map<String, String> params);
 
 }

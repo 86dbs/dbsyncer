@@ -6,6 +6,7 @@ package org.dbsyncer.biz.checker.impl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.constant.ModelConstant;
@@ -35,7 +36,7 @@ public class TableGroupChecker extends AbstractChecker {
     private Manager manager;
 
     @Override
-    public ConfigModel checkConfigModel(Map<String, String> params) {
+    public String checkConfigModel(Map<String, String> params) {
         logger.info("check tableGroup params:{}", params);
         Assert.notEmpty(params, "TableGroupChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
@@ -47,6 +48,7 @@ public class TableGroupChecker extends AbstractChecker {
 
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(tableGroup, params);
-        return tableGroup;
+
+        return JsonUtil.objToJson(tableGroup);
     }
 }

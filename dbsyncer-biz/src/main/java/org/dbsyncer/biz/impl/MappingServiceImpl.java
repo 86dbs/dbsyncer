@@ -63,8 +63,8 @@ public class MappingServiceImpl implements MappingService {
     @Override
     public String edit(Map<String, String> params) {
         logger.info("检查驱动是否停止运行");
-        ConfigModel model = mappingChecker.checkConfigModel(params);
-        return manager.editMapping(JsonUtil.objToJson(model));
+        String json = mappingChecker.checkConfigModel(params);
+        return manager.editMapping(json);
     }
 
     @Override

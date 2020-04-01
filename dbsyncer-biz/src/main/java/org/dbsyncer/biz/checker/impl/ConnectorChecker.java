@@ -6,6 +6,7 @@ package org.dbsyncer.biz.checker.impl;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.manager.Manager;
@@ -44,7 +45,7 @@ public class ConnectorChecker extends AbstractChecker implements ApplicationCont
     }
 
     @Override
-    public ConfigModel checkConfigModel(Map<String, String> params) {
+    public String checkConfigModel(Map<String, String> params) {
         logger.info("check connector params:{}", params);
         Assert.notEmpty(params, "ConnectorChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
@@ -60,7 +61,8 @@ public class ConnectorChecker extends AbstractChecker implements ApplicationCont
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
         checker.modify(connector, params);
-        return connector;
+
+        return JsonUtil.objToJson(connector);
     }
 
     /**
@@ -70,7 +72,7 @@ public class ConnectorChecker extends AbstractChecker implements ApplicationCont
      * @return
      */
     private String toLowerCaseFirstOne(String s) {
-        if (StringUtils.isBlank(s) || Character.isLowerCase(s.charAt(0))){
+        if (StringUtils.isBlank(s) || Character.isLowerCase(s.charAt(0))) {
             return s;
         }
         return new StringBuilder().append(Character.toLowerCase(s.charAt(0))).append(s.substring(1)).toString();

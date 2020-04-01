@@ -45,8 +45,8 @@ public class ConnectorServiceImpl implements ConnectorService {
 
     @Override
     public String edit(Map<String, String> params) {
-        ConfigModel model = connectorChecker.checkConfigModel(params);
-        return manager.editConnector(JsonUtil.objToJson(model));
+        String json = connectorChecker.checkConfigModel(params);
+        return manager.editConnector(json);
     }
 
     @Override

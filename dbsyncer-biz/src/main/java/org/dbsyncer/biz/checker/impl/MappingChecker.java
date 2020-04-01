@@ -6,6 +6,7 @@ package org.dbsyncer.biz.checker.impl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.constant.ModelConstant;
@@ -34,7 +35,7 @@ public class MappingChecker extends AbstractChecker {
     private Manager manager;
 
     @Override
-    public ConfigModel checkConfigModel(Map<String, String> params) {
+    public String checkConfigModel(Map<String, String> params) {
         logger.info("check mapping params:{}", params);
         Assert.notEmpty(params, "MappingChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
@@ -46,8 +47,8 @@ public class MappingChecker extends AbstractChecker {
 
         // 同步方式(仅支持全量或增量同步方式)
         String model = params.get("model");
-        if(StringUtils.isNotBlank(model)){
-            if(StringUtils.equals(ModelConstant.FULL, model) || StringUtils.equals(ModelConstant.INCREMENT, model)){
+        if (StringUtils.isNotBlank(model)) {
+            if (StringUtils.equals(ModelConstant.FULL, model) || StringUtils.equals(ModelConstant.INCREMENT, model)) {
                 mapping.setModel(model);
             }
         }
@@ -65,7 +66,7 @@ public class MappingChecker extends AbstractChecker {
         this.modifySuperConfigModel(mapping, params);
 
         // 增量配置
-        return mapping;
+        return JsonUtil.objToJson(mapping);
     }
 
 }

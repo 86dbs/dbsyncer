@@ -56,8 +56,8 @@ public class TableGroupServiceImpl implements TableGroupService {
 
     @Override
     public String edit(Map<String, String> params) {
-        ConfigModel model = tableGroupChecker.checkConfigModel(params);
-        return manager.editTableGroup(JsonUtil.objToJson(model));
+        String json = tableGroupChecker.checkConfigModel(params);
+        return manager.editTableGroup(json);
     }
 
     @Override
