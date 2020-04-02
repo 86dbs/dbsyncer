@@ -1,8 +1,5 @@
 package org.dbsyncer.biz.checker;
 
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
-
 import java.util.Map;
 
 /**
@@ -13,19 +10,11 @@ import java.util.Map;
 public interface Checker {
 
     /**
-     * 修改连接器配置
+     * 修改配置
      *
-     * @param connector
-     * @param params
+     * @param params 修改参数
+     * @return
      */
-    void modify(Connector connector, Map<String, String> params);
-
-    /**
-     * 修改驱动配置
-     *
-     * @param connector
-     * @param params
-     */
-    void modify(Mapping connector, Map<String, String> params);
+    String checkConfigModel(Map<String, String> params);
 
 }

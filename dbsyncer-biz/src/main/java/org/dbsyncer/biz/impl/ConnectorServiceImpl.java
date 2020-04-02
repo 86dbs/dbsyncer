@@ -1,8 +1,8 @@
 package org.dbsyncer.biz.impl;
 
 import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.biz.CheckService;
 import org.dbsyncer.biz.ConnectorService;
+import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.model.Connector;
 import org.slf4j.Logger;
@@ -25,9 +25,9 @@ public class ConnectorServiceImpl implements ConnectorService {
 
     @Autowired
     private Manager manager;
-    
+
     @Autowired
-    private CheckService checkService;
+    private Checker connectorChecker;
 
     @Override
     public boolean alive(String json) {
@@ -43,7 +43,7 @@ public class ConnectorServiceImpl implements ConnectorService {
 
     @Override
     public String edit(Map<String, String> params) {
-        String json = checkService.checkConnector(params);
+        String json = connectorChecker.checkConfigModel(params);
         return manager.editConnector(json);
     }
 
