@@ -1,6 +1,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.MappingVo;
+import org.dbsyncer.parser.model.TableGroup;
 
 import java.util.List;
 import java.util.Map;
@@ -61,5 +62,12 @@ public interface MappingService {
      * @param id
      */
     boolean stop(String id);
+
+    /**
+     * 获取驱动数据源和目标源表公共字段
+     *
+     * @return
+     */
+    TableGroup getTableGroup();
 
 }

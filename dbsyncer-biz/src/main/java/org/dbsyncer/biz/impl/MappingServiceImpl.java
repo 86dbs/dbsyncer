@@ -5,12 +5,14 @@ import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.connector.config.Field;
+import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.listener.config.TimingListenerConfig;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.constant.ModelConstant;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,6 +101,21 @@ public class MappingServiceImpl implements MappingService {
     public boolean stop(String id) {
         manager.stop(id);
         return true;
+    }
+
+    @Override
+    public TableGroup getTableGroup() {
+        // TODO 模拟测试
+        TableGroup tableGroup = new TableGroup();
+        Table table = new Table();
+        List<Field> fields = new ArrayList<>();
+        fields.add(new Field("ID","VARCHAR",12));
+        fields.add(new Field("NAME","VARCHAR",12));
+        table.setColumn(fields);
+        tableGroup.setSourceTable(table);
+        tableGroup.setTargetTable(table);
+
+        return tableGroup;
     }
 
     private MappingVo convertMapping2Vo(Mapping mapping) {

@@ -5,12 +5,10 @@ package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
-import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.config.TimingListenerConfig;
 import org.dbsyncer.parser.model.Mapping;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.Map;
 
 /**
