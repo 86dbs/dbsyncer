@@ -30,20 +30,16 @@ public class LogConfigChecker implements MappingConfigChecker {
 
     @Override
     public void modify(Mapping mapping, Map<String, String> params) {
-        // String label = params.get("incrementStrategyTableLabel");
         // TODO 仅支持 DQL_Mysql/DQL_Oracle
         String connectorId = mapping.getSourceConnectorId();
         Connector connector = manager.getConnector(connectorId);
         ConnectorConfig config = connector.getConfig();
         String type = config.getConnectorType();
+        // String label = params.get("incrementStrategyLogTableLabel");
         if(StringUtils.equals(ConnectorEnum.DQL_MYSQL.getType(),type)){
 
             return;
         }
-//        if(StringUtils.equals(ConnectorEnum.DQL_ORACLE.getType(),type)){
-//
-//            return;
-//        }
     }
 
 }

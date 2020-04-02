@@ -1,6 +1,6 @@
 //*********************************** 驱动保存 开始位置***********************************//
 function submit(data) {
-    doPoster("/mapping/edit", {"json": JSON.stringify(data)}, function (data) {
+    doPoster("/mapping/edit", data, function (data) {
         if (data.success == true) {
             bootGrowl("修改驱动成功!", "success");
             backIndexPage();
@@ -126,7 +126,11 @@ $(function () {
 
     //保存
     $("#mappingSubmitBtn").click(function () {
-        //check();
+        var $form = $("#mappingModifyForm");
+        if ($form.formValidate() == true) {
+            var data = $form.serializeJson();
+            submit(data);
+        }
     });
 
     //返回

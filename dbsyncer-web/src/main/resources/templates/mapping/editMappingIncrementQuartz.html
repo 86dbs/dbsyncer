@@ -8,7 +8,7 @@
             <div class="col-md-4">
                 <label class="col-sm-3 control-label text-right">定时*</label>
                 <div class="col-sm-9">
-                    <input name="incrementStrategyTimingCronExpression" type="text" class="form-control" dbsyncer-valid="require" value="*/30 * * * * ?"/>
+                    <input name="incrementStrategyTimingCronExpression" type="text" class="form-control" dbsyncer-valid="require" th:value="${mapping?.listener?.cronExpression}"/>
                 </div>
             </div>
             <div class="col-md-4">
@@ -16,6 +16,7 @@
                 <div class="col-sm-9" title="区分增删改">
                     <select name="incrementStrategyTimingEventFieldName" class="form-control select-control">
                         <option>EVENT_TYPE</option>
+                        <option>EVENT_FLAG</option>
                     </select>
                 </div>
             </div>
@@ -28,19 +29,19 @@
             <div class="col-md-4">
                 <label class="col-sm-3 control-label text-right">Insert*</label>
                 <div class="col-sm-9">
-                    <input name="incrementStrategyTimingInsert" type="text" class="form-control" dbsyncer-valid="require" value="I" />
+                    <input name="incrementStrategyTimingInsert" type="text" class="form-control" dbsyncer-valid="require" value="I" th:value="${mapping?.listener?.insert}" />
                 </div>
             </div>
             <div class="col-md-4">
                 <label class="col-sm-3 control-label text-right">Update*</label>
                 <div class="col-sm-9">
-                    <input name="incrementStrategyTimingUpdate" type="text" class="form-control" dbsyncer-valid="require" value="U" />
+                    <input name="incrementStrategyTimingUpdate" type="text" class="form-control" dbsyncer-valid="require" value="U" th:value="${mapping?.listener?.update}"/>
                 </div>
             </div>
             <div class="col-md-4">
                 <label class="col-sm-3 control-label text-right">Delete*</label>
                 <div class="col-sm-9">
-                    <input name="incrementStrategyTimingDelete" type="text" class="form-control" dbsyncer-valid="require" value="D" />
+                    <input name="incrementStrategyTimingDelete" type="text" class="form-control" dbsyncer-valid="require" value="D" th:value="${mapping?.listener?.delete}"/>
                 </div>
             </div>
         </div>

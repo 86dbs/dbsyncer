@@ -72,6 +72,7 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         
         // 增量配置(日志/定时)
         String incrementStrategy = params.get("incrementStrategy");
+        Assert.hasText(incrementStrategy, "MappingChecker check params incrementStrategy is empty");
         String type = this.getCheckerType(incrementStrategy);
         MappingConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");

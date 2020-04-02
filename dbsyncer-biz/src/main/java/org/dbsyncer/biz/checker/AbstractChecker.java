@@ -1,16 +1,16 @@
 package org.dbsyncer.biz.checker;
 
 import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.biz.BizException;
+import org.dbsyncer.biz.PluginService;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.config.Filter;
 import org.dbsyncer.parser.convert.FieldConvert;
 import org.dbsyncer.parser.model.AbstractConfigModel;
 import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Map;
@@ -21,6 +21,9 @@ import java.util.Map;
  * @date 2020/1/8 15:17
  */
 public abstract class AbstractChecker implements Checker {
+
+    @Autowired
+    private PluginService pluginService;
 
     /**
      * 修改基本配置
@@ -59,11 +62,20 @@ public abstract class AbstractChecker implements Checker {
         }
 
         // 插件配置
-        String pluginJson = params.get("plugin");
-        if (StringUtils.isNotBlank(pluginJson)) {
-            Plugin plugin = JsonUtil.jsonToObj(pluginJson, Plugin.class);
-            model.setPlugin(plugin);
+        String pluginClassName = params.get("pluginClassName");
+        Plugin plugin = null;
+        if (StringUtils.isNotBlank(pluginClassName)) {
+            List<Plugin> plugins = pluginService.getPluginAll();
+            if(!CollectionUtils.isEmpty(plugins)){
+                for (Plugin p : plugins) {
+                    if (StringUtils.equals(p.getClassName(), pluginClassName)) {
+                        plugin = p;
+                        break;
+                    }
+                }
+            }
         }
+        model.setPlugin(plugin);
 
     }
 

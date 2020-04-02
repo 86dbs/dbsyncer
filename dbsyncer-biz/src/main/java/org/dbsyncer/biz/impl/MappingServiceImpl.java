@@ -53,7 +53,6 @@ public class MappingServiceImpl implements MappingService {
         mapping.setSourceConnectorId(sourceConnectorId);
         mapping.setTargetConnectorId(targetConnectorId);
 
-        // TODO 缺少默认值
         mapping.setModel(ModelConstant.FULL);
         mapping.setListener(new TimingListenerConfig());
         String json = JsonUtil.objToJson(mapping);
