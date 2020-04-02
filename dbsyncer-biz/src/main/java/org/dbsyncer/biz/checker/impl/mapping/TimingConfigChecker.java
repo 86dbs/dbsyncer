@@ -39,13 +39,13 @@ public class TimingConfigChecker implements MappingConfigChecker {
             config.setEventFieldName(eventFieldName);
         }
         if (StringUtils.isNotBlank(insert)) {
-            config.setInsert(Arrays.asList(insert.split(",")));
+            config.setInsert(insert);
         }
         if (StringUtils.isNotBlank(update)) {
-            config.setUpdate(Arrays.asList(update.split(",")));
+            config.setUpdate(update);
         }
         if (StringUtils.isNotBlank(delete)) {
-            config.setDelete(Arrays.asList(delete.split(",")));
+            config.setDelete(delete);
         }
 
         mapping.setListener(config);

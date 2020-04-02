@@ -23,13 +23,13 @@ public class TimingListenerConfig extends ListenerConfig {
     private String eventFieldName;
 
     // 修改事件, 例如当eventFieldName值等于U 或 update时，判定该条数据为修改操作
-    private List<String> update;
+    private String update;
 
     // 插入事件
-    private List<String> insert;
+    private String insert;
 
     // 删除事件
-    private List<String> delete;
+    private String delete;
 
     public String getCronExpression() {
         return cronExpression;
@@ -49,29 +49,29 @@ public class TimingListenerConfig extends ListenerConfig {
         return this;
     }
 
-    public List<String> getUpdate() {
+    public String getUpdate() {
         return update;
     }
 
-    public TimingListenerConfig setUpdate(List<String> update) {
+    public TimingListenerConfig setUpdate(String update) {
         this.update = update;
         return this;
     }
 
-    public List<String> getInsert() {
+    public String getInsert() {
         return insert;
     }
 
-    public TimingListenerConfig setInsert(List<String> insert) {
+    public TimingListenerConfig setInsert(String insert) {
         this.insert = insert;
         return this;
     }
 
-    public List<String> getDelete() {
+    public String getDelete() {
         return delete;
     }
 
-    public TimingListenerConfig setDelete(List<String> delete) {
+    public TimingListenerConfig setDelete(String delete) {
         this.delete = delete;
         return this;
     }
