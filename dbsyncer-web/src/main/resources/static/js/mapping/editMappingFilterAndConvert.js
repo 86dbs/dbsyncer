@@ -16,8 +16,8 @@ function initFilter(){
 }
 
 // 初始化转换配置点击事件
-function initFieldConvert(){
-    bindConfigListClick($(".convertDelete"), function(){ initFieldConvertParams(); });
+function initConvert(){
+    bindConfigListClick($(".convertDelete"), function(){ initConvertParams(); });
 }
 
 // 初始化映射关系参数
@@ -26,13 +26,13 @@ function initFilterParams(){
     var row = [];
     var $conditionList = $("#conditionList");
     $conditionList.find("tr").each(function(k,v){
-        var opr = $(this).find("td:eq(0)").text();
+        var opt = $(this).find("td:eq(0)").text();
         var sf = $(this).find("td:eq(1)").text();
         var filter = $(this).find("td:eq(2)").text();
         var arg = $(this).find("td:eq(3)").text();
         row.push({
            "name": sf,
-           "operator": opr,
+           "operation": opt,
            "filter": filter,
            "value": arg
          });
@@ -41,21 +41,24 @@ function initFilterParams(){
 }
 
 // 初始化映射关系参数
-function initFieldConvertParams(){
+function initConvertParams(){
     // 生成JSON参数
     var row = [];
     var $convertList = $("#convertList");
     $convertList.find("tr").each(function(k,v){
-        var convert = $(this).find("td:eq(0)").attr("value");
+        var convert = $(this).find("td:eq(0)");
+        var convertCode = convert.attr("value");
+        var convertName = convert.text().replace(/\n/g,'').trim();
         var tf = $(this).find("td:eq(1)").text();
         var args = $(this).find("td:eq(2)").text();
         row.push({
            "name": tf,
-           "convert": convert,
+           "convertName": convertName,
+           "convertCode": convertCode,
            "args": args
          });
     });
-    $("#fieldConvert").val(JSON.stringify(row));
+    $("#convert").val(JSON.stringify(row));
 }
 
 // 绑定新增条件点击事件
@@ -146,7 +149,7 @@ function bindConvertAddClick() {
         $convertList.append(trHtml);
         // 清空参数
         $(".convertArg").val("");
-        initFieldConvert();
+        initConvert();
     });
 }
 
@@ -155,6 +158,6 @@ $(function() {
     initFilter();
     bindConditionAddClick();
     // 转换配置
-    initFieldConvert();
+    initConvert();
     bindConvertAddClick();
 });

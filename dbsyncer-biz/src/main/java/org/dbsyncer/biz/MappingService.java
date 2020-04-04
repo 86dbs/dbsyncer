@@ -63,11 +63,4 @@ public interface MappingService {
      */
     boolean stop(String id);
 
-    /**
-     * 获取驱动数据源和目标源表公共字段
-     *
-     * @return
-     */
-    TableGroup getTableGroup();
-
 }

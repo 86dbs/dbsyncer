@@ -1,7 +1,7 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.connector.config.Filter;
-import org.dbsyncer.parser.convert.FieldConvert;
+import org.dbsyncer.parser.convert.Convert;
 import org.dbsyncer.plugin.config.Plugin;
 
 import java.util.List;
@@ -12,7 +12,7 @@ public abstract class AbstractConfigModel extends ConfigModel {
     private List<Filter> filter;
 
     // 转换配置
-    private List<FieldConvert> fieldConvert;
+    private List<Convert> convert;
 
     // 插件配置
     private Plugin plugin;
@@ -25,12 +25,12 @@ public abstract class AbstractConfigModel extends ConfigModel {
         this.filter = filter;
     }
 
-    public List<FieldConvert> getFieldConvert() {
-        return fieldConvert;
+    public List<Convert> getConvert() {
+        return convert;
     }
 
-    public void setFieldConvert(List<FieldConvert> fieldConvert) {
-        this.fieldConvert = fieldConvert;
+    public void setConvert(List<Convert> convert) {
+        this.convert = convert;
     }
 
     public Plugin getPlugin() {

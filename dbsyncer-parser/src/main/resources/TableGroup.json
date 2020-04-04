@@ -55,31 +55,26 @@
   "filter": [
     {
       "name": "AGE",
-      "operator": "and",
+      "operation": "and",
       "filter": ">",
       "value": "0"
     },
     {
       "name": "NAME",
-      "operator": "or",
+      "operation": "or",
       "filter": "=",
       "value": "hello"
     }
   ],
-  "fieldConvert": [
+  "convert": [
     {
       "name": "NAME",
-      "convert": [
-        {
-          "name": "append",
-          "args": [
-            "hello"
-          ]
-        }
-      ]
+      "convert": "REPLACE",
+      "args": "A,B"
     }
   ],
   "plugin": {
+    "name":"用户信息转换插件",
     "className": "com.xx.hr.convert.MyImpl"
   }
 }

@@ -5,7 +5,7 @@ import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.config.Filter;
-import org.dbsyncer.parser.convert.FieldConvert;
+import org.dbsyncer.parser.convert.Convert;
 import org.dbsyncer.parser.model.AbstractConfigModel;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.plugin.config.Plugin;
@@ -55,10 +55,10 @@ public abstract class AbstractChecker implements Checker {
         }
 
         // 转换配置
-        String fieldConvertJson = params.get("fieldConvert");
-        if (StringUtils.isNotBlank(fieldConvertJson)) {
-            List<FieldConvert> fieldConvert = JsonUtil.jsonToObj(fieldConvertJson, List.class);
-            model.setFieldConvert(fieldConvert);
+        String convertJson = params.get("convert");
+        if (StringUtils.isNotBlank(convertJson)) {
+            List<Convert> convert = JsonUtil.jsonToObj(convertJson, List.class);
+            model.setConvert(convert);
         }
 
         // 插件配置
