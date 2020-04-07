@@ -15,8 +15,8 @@
                 <label class="col-sm-3 control-label text-right">事件</label>
                 <div class="col-sm-9" title="区分增删改">
                     <select name="incrementStrategyTimingEventFieldName" class="form-control select-control">
-                        <option>EVENT_TYPE</option>
-                        <option>EVENT_FLAG</option>
+                        <!-- 数据源表公共字段 -->
+                        <option th:each="c,s:${mapping?.sourceColumn}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" th:selected="${c.name eq mapping?.listener?.eventFieldName}"/>
                     </select>
                 </div>
             </div>

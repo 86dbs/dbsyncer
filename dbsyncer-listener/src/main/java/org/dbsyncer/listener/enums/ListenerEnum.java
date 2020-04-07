@@ -2,6 +2,7 @@ package org.dbsyncer.listener.enums;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.listener.ListenerException;
+import org.dbsyncer.listener.config.LogListenerConfig;
 import org.dbsyncer.listener.config.MysqlListenerConfig;
 import org.dbsyncer.listener.config.TimingListenerConfig;
 
@@ -19,7 +20,11 @@ public enum ListenerEnum {
      */
     MYSQL("Mysql", MysqlListenerConfig.class),
     /**
-     * 轮询
+     * 日志
+     */
+    LOG("Log", LogListenerConfig.class),
+    /**
+     * 定时
      */
     POLLING("Polling", TimingListenerConfig.class);
 

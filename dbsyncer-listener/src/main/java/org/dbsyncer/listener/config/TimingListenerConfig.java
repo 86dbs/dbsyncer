@@ -2,10 +2,9 @@ package org.dbsyncer.listener.config;
 
 import org.dbsyncer.listener.enums.ListenerEnum;
 
-import java.util.List;
-
 /**
  * 定时配置
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2019/10/7 14:08
@@ -20,16 +19,16 @@ public class TimingListenerConfig extends ListenerConfig {
     private String cronExpression = "*/30 * * * * ?";
 
     // 事件字段
-    private String eventFieldName;
+    private String eventFieldName = "";
 
     // 修改事件, 例如当eventFieldName值等于U 或 update时，判定该条数据为修改操作
-    private String update;
+    private String update = "U";
 
     // 插入事件
-    private String insert;
+    private String insert = "I";
 
     // 删除事件
-    private String delete;
+    private String delete = "D";
 
     public String getCronExpression() {
         return cronExpression;

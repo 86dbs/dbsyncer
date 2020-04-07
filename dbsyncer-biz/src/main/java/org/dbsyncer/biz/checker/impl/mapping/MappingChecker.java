@@ -1,12 +1,10 @@
-/**
- * Alipay.com Inc. Copyright (c) 2004-2020 All Rights Reserved.
- */
 package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
+import org.dbsyncer.biz.util.CheckerTypeUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.constant.ModelConstant;
@@ -71,7 +69,7 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         // 增量配置(日志/定时)
         String incrementStrategy = params.get("incrementStrategy");
         Assert.hasText(incrementStrategy, "MappingChecker check params incrementStrategy is empty");
-        String type = this.getCheckerType(incrementStrategy);
+        String type = CheckerTypeUtil.getCheckerType(incrementStrategy);
         MappingConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
         checker.modify(mapping, params);
