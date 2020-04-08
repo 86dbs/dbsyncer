@@ -55,7 +55,7 @@ public class MappingServiceImpl implements MappingService {
         mapping.setTargetConnectorId(targetConnectorId);
 
         mapping.setModel(ModelConstant.FULL);
-        mapping.setListener(new ListenerConfig(ListenerEnum.POLLING.getCode()));
+        mapping.setListener(new ListenerConfig(ListenerEnum.TIMING.getCode()));
         String json = JsonUtil.objToJson(mapping);
         return manager.addMapping(json);
     }

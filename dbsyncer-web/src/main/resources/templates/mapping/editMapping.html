@@ -59,10 +59,10 @@
             <div class="form-group" id="mappingModelChange">
                 <div class="row">
                     <div class="col-sm-2">
-                        <input type="radio" name="model" value="full" checked="checked"> 全量同步
+                        <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}" /> 全量同步
                     </div>
                     <div class="col-sm-2">
-                        <input type="radio" name="model" value="increment"> 增量同步
+                        <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" /> 增量同步
                     </div>
                     <div class="col-sm-6"></div>
                     <div class="col-md-2 text-right">
