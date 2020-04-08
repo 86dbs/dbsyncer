@@ -6,7 +6,8 @@ import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.config.Field;
-import org.dbsyncer.listener.config.TimingListenerConfig;
+import org.dbsyncer.listener.config.ListenerConfig;
+import org.dbsyncer.listener.enums.ListenerEnum;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.constant.ModelConstant;
 import org.dbsyncer.parser.model.Connector;
@@ -54,7 +55,7 @@ public class MappingServiceImpl implements MappingService {
         mapping.setTargetConnectorId(targetConnectorId);
 
         mapping.setModel(ModelConstant.FULL);
-        mapping.setListener(new TimingListenerConfig());
+        mapping.setListener(new ListenerConfig(ListenerEnum.POLLING.getCode()));
         String json = JsonUtil.objToJson(mapping);
         return manager.addMapping(json);
     }

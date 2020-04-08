@@ -2,9 +2,10 @@ package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
-import org.dbsyncer.listener.config.TimingListenerConfig;
+import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.parser.model.Mapping;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import java.util.Map;
 
@@ -26,7 +27,9 @@ public class TimingConfigChecker implements MappingConfigChecker {
         String update = params.get("incrementStrategyTimingUpdate");
         String delete = params.get("incrementStrategyTimingDelete");
 
-        TimingListenerConfig config = new TimingListenerConfig();
+        ListenerConfig config = mapping.getListener();
+        Assert.notNull(config, "ListenerConfig can not be null.");
+
         if (StringUtils.isNotBlank(cron)) {
             config.setCronExpression(cron);
         }

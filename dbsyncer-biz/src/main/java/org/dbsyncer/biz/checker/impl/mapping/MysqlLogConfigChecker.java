@@ -1,7 +1,7 @@
 package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.dbsyncer.biz.checker.MappingLogConfigChecker;
-import org.dbsyncer.listener.config.LogListenerConfig;
+import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.parser.model.Mapping;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -20,11 +20,13 @@ public class MysqlLogConfigChecker implements MappingLogConfigChecker {
 
     @Override
     public void modify(Mapping mapping, Map<String, String> params) {
-        LogListenerConfig listenerConfig = new LogListenerConfig();
+        ListenerConfig config = mapping.getListener();
+        Assert.notNull(config, "ListenerConfig can not be null.");
+
         String label = params.get("incrementStrategyLogTableLabel");
         Assert.hasText(label, "MysqlLogConfigChecker check params incrementStrategyLogTableLabel is empty");
-        listenerConfig.setTableLabel(label);
-        mapping.setListener(listenerConfig);
+        config.setTableLabel(label);
+        mapping.setListener(config);
     }
 
 }
