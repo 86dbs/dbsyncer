@@ -89,8 +89,7 @@ $(function() {
         var $form = $("#tableGroupModifyForm");
         if ($form.formValidate() == true) {
             var data = $form.serializeJson();
-            console.log(data);
-//            submit(data);
+            submit(data);
         }
     });
 

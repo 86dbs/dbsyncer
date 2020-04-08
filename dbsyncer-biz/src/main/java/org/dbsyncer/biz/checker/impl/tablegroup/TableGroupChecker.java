@@ -3,6 +3,7 @@ package org.dbsyncer.biz.checker.impl.tablegroup;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -36,6 +38,12 @@ public class TableGroupChecker extends AbstractChecker {
 
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
+
+        // 字段映射关系
+        String fieldMappingJson = params.get("fieldMapping");
+        Assert.hasText(fieldMappingJson, "TableGroupChecker check params fieldMapping is empty");
+        List<FieldMapping> fieldMapping = JsonUtil.jsonToObj(fieldMappingJson, List.class);
+        tableGroup.setFieldMapping(fieldMapping);
 
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(tableGroup, params);

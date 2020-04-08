@@ -251,7 +251,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public ConfigModel parseConfigModel() {
-                return parser.parseConnector(json);
+                return parser.parseTableGroup(json);
             }
 
             @Override
