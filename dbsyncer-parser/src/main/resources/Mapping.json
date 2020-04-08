@@ -6,31 +6,41 @@
   "updateTime": "2019-10-08 21:35:00",
   "sourceConnectorId": "100",
   "targetConnectorId": "666",
+  "sourceColumn":[
+    {
+      "name": "ID",
+      "typeName": "VARCHAR",
+      "type": 12,
+      "pk":true
+    }
+  ],
+  "targetColumn":[
+    {
+      "name": "ID",
+      "typeName": "VARCHAR",
+      "type": 12,
+      "pk":true
+    }
+  ],
   "filter": [
     {
       "name": "AGE",
-      "operator": "and",
+      "operation": "and",
       "filter": ">",
       "value": "0"
     },
     {
       "name": "NAME",
-      "operator": "or",
+      "operation": "or",
       "filter": "=",
       "value": "hello"
     }
   ],
-  "fieldConvert": [
+  "convert": [
     {
       "name": "NAME",
-      "convert": [
-        {
-          "name": "append",
-          "args": [
-            "hello"
-          ]
-        }
-      ]
+      "convert": "REPLACE",
+      "args": "A,B"
     }
   ],
   "plugin": {

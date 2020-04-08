@@ -1,10 +1,8 @@
-/**
- * Alipay.com Inc. Copyright (c) 2004-2020 All Rights Reserved.
- */
 package org.dbsyncer.biz.checker.impl.connector;
 
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
+import org.dbsyncer.biz.util.CheckerTypeUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.manager.Manager;
@@ -54,7 +52,7 @@ public class ConnectorChecker extends AbstractChecker implements ApplicationCont
 
         // 配置连接器配置
         ConnectorConfig config = connector.getConfig();
-        String type = this.getCheckerType(config.getConnectorType());
+        String type = CheckerTypeUtil.getCheckerType(config.getConnectorType());
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
         checker.modify(connector, params);

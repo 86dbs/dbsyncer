@@ -19,6 +19,10 @@
                 <label class="col-sm-3 control-label text-right">目标源表字段</label>
                 <div class="col-sm-9">
                     <select id="convertTargetField" class="form-control select-control">
+                        <!-- 目标源表公共字段 -->
+                        <option th:if="${tableGroup} == null" th:each="c,s:${mapping?.targetColumn}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+
+                        <!-- 目标源表字段 -->
                         <option th:each="c,s:${tableGroup?.targetTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
                     </select>
                 </div>
@@ -52,20 +56,28 @@
             <div class="col-md-11">
                 <table class="table table-hover">
                     <thead>
-                    <tr>
-                        <th>转换</th>
-                        <th>目标源表字段</th>
-                        <th>参数</th>
-                        <th>操作</th>
-                    </tr>
+                        <tr>
+                            <th>转换</th>
+                            <th>目标源表字段</th>
+                            <th>参数</th>
+                            <th>操作</th>
+                        </tr>
                     </thead>
                     <tbody id="convertList">
-                    <tr th:each="f,s:${tableGroup?.filter}">
-                        <td th:value="${f?.convertValue}">[[${f?.convert}]]</td>
-                        <td>[[${f?.name}]]</td>
-                        <td>[[${f?.args}]]</td>
-                        <td><a class='fa fa-remove fa-2x convertDelete dbsyncer_pointer' title='删除' ></a></td>
-                    </tr>
+                        <!-- Mapping convert -->
+                        <tr th:if="${tableGroup} == null" th:each="f,s:${mapping?.convert}">
+                            <td th:value="${f?.convertCode}">[[${f?.convertName}]]</td>
+                            <td>[[${f?.name}]]</td>
+                            <td>[[${f?.args}]]</td>
+                            <td><a class='fa fa-remove fa-2x convertDelete dbsyncer_pointer' title='删除' ></a></td>
+                        </tr>
+                        <!-- TableGroup convert -->
+                        <tr th:each="f,s:${tableGroup?.convert}">
+                            <td th:value="${f?.convertCode}">[[${f?.convertName}]]</td>
+                            <td>[[${f?.name}]]</td>
+                            <td>[[${f?.args}]]</td>
+                            <td><a class='fa fa-remove fa-2x convertDelete dbsyncer_pointer' title='删除' ></a></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -74,7 +86,7 @@
 
     <!-- 隐藏表单值 -->
     <div class="form-group hidden">
-        <input id="fieldConvert" name="fieldConvert" class="form-control" type="text"/>
+        <input id="convert" name="convert" class="form-control" type="text"/>
     </div>
 
 </div>

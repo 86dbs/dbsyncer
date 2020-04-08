@@ -124,15 +124,8 @@ public class ParserFactory implements Parser {
         Mapping mapping = null;
         try {
             JSONObject map = new JSONObject(json);
-            JSONObject listener = (JSONObject) map.remove("listener");
             mapping = JsonUtil.jsonToObj(map.toString(), Mapping.class);
             Assert.notNull(mapping, "Mapping can not be null.");
-
-            // 解析监听器
-            String listenerType = listener.getString("listenerType");
-            Class<?> configClass = ListenerEnum.getConfigClass(listenerType);
-            ListenerConfig obj = (ListenerConfig) JsonUtil.jsonToObj(listener.toString(), configClass);
-            mapping.setListener(obj);
         } catch (JSONException e) {
             logger.error(e.getMessage());
             throw new ParserException(e.getMessage());

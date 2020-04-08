@@ -19,6 +19,10 @@
                 <label class="col-sm-3 control-label text-right">数据源表字段</label>
                 <div class="col-sm-9">
                     <select id="conditionSourceField" class="form-control select-control">
+                        <!-- 数据源表公共字段 -->
+                        <option th:if="${tableGroup} == null" th:each="c,s:${mapping?.sourceColumn}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+
+                        <!-- 数据源表字段 -->
                         <option th:each="c,s:${tableGroup?.sourceTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
                     </select>
                 </div>
@@ -57,17 +61,26 @@
             <div class="col-md-11">
                 <table class="table table-hover">
                     <thead>
-                    <tr>
-                        <th>组合</th>
-                        <th>数据源表字段</th>
-                        <th>条件</th>
-                        <th>参数</th>
-                        <th>操作</th>
-                    </tr>
+                        <tr>
+                            <th>组合</th>
+                            <th>数据源表字段</th>
+                            <th>条件</th>
+                            <th>参数</th>
+                            <th>操作</th>
+                        </tr>
                     </thead>
                     <tbody id="conditionList">
+                        <!-- Mapping convert -->
+                        <tr th:if="${tableGroup} == null" th:each="f,s:${mapping?.filter}">
+                            <td>[[${f?.operation}]]</td>
+                            <td>[[${f?.name}]]</td>
+                            <td>[[${f?.filter}]]</td>
+                            <td>[[${f?.value}]]</td>
+                            <td><a class='fa fa-remove fa-2x conditionDelete dbsyncer_pointer' title='删除' ></a></td>
+                        </tr>
+                        <!-- TableGroup convert -->
                         <tr th:each="f,s:${tableGroup?.filter}">
-                            <td>[[${f?.operator}]]</td>
+                            <td>[[${f?.operation}]]</td>
                             <td>[[${f?.name}]]</td>
                             <td>[[${f?.filter}]]</td>
                             <td>[[${f?.value}]]</td>

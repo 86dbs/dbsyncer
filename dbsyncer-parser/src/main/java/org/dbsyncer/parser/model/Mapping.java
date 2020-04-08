@@ -1,7 +1,10 @@
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.parser.constant.ModelConstant;
+
+import java.util.List;
 
 /**
  * 驱动映射关系
@@ -17,6 +20,12 @@ public class Mapping extends AbstractConfigModel {
 
     // 目标源连接器ID
     private String targetConnectorId;
+
+    // 数据源字段
+    private List<Field> sourceColumn;
+
+    // 目标源字段
+    private List<Field> targetColumn;
 
     /**
      * 同步方式
@@ -50,6 +59,22 @@ public class Mapping extends AbstractConfigModel {
     public Mapping setTargetConnectorId(String targetConnectorId) {
         this.targetConnectorId = targetConnectorId;
         return this;
+    }
+
+    public List<Field> getSourceColumn() {
+        return sourceColumn;
+    }
+
+    public void setSourceColumn(List<Field> sourceColumn) {
+        this.sourceColumn = sourceColumn;
+    }
+
+    public List<Field> getTargetColumn() {
+        return targetColumn;
+    }
+
+    public void setTargetColumn(List<Field> targetColumn) {
+        this.targetColumn = targetColumn;
     }
 
     public String getModel() {

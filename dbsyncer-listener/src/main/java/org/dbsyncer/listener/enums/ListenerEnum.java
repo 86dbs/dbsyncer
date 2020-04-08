@@ -1,10 +1,5 @@
 package org.dbsyncer.listener.enums;
 
-import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.listener.ListenerException;
-import org.dbsyncer.listener.config.MysqlListenerConfig;
-import org.dbsyncer.listener.config.TimingListenerConfig;
-
 /**
  * 支持监听器类型
  *
@@ -15,40 +10,23 @@ import org.dbsyncer.listener.config.TimingListenerConfig;
 public enum ListenerEnum {
 
     /**
-     * Mysql
+     * 日志
      */
-    MYSQL("Mysql", MysqlListenerConfig.class),
+    LOG("Log"),
     /**
-     * 轮询
+     * 定时
      */
-    POLLING("Polling", TimingListenerConfig.class);
+    POLLING("Polling");
 
-    // 策略名称
-    private String type;
+    // 策略编码
+    private String code;
 
-    // 配置
-    private Class<?> configClass;
-
-    ListenerEnum(String type, Class<?> configClass) {
-        this.type = type;
-        this.configClass = configClass;
+    ListenerEnum(String code) {
+        this.code = code;
     }
 
-    public static Class<?> getConfigClass(String type) throws ListenerException {
-        for (ListenerEnum e : ListenerEnum.values()) {
-            if (StringUtils.equals(type, e.getType())) {
-                return e.getConfigClass();
-            }
-        }
-        throw new ListenerException(String.format("Listener type \"%s\" does not exist.", type));
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public Class<?> getConfigClass() {
-        return configClass;
+    public String getCode() {
+        return code;
     }
 
 }
