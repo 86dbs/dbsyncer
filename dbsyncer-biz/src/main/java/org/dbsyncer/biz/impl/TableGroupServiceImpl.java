@@ -1,8 +1,13 @@
 package org.dbsyncer.biz.impl;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
+import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.Checker;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.manager.Manager;
@@ -14,6 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,11 +51,20 @@ public class TableGroupServiceImpl implements TableGroupService {
         Mapping mapping = manager.getMapping(mappingId);
         Assert.notNull(mapping, "mapping can not be null.");
 
+        // 检查是否存在重复映射关系
+        checkRepeatedTable(mappingId, sourceTable, targetTable);
+
+        // 读取表信息
         TableGroup tableGroup = new TableGroup();
         tableGroup.setMappingId(mappingId);
-        // 获取表字段
-        tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable));
-        tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable));
+        Table sTable = getTable(mapping.getSourceConnectorId(), sourceTable);
+        Table tTable = getTable(mapping.getTargetConnectorId(), targetTable);
+        tableGroup.setSourceTable(sTable);
+        tableGroup.setTargetTable(tTable);
+
+        // 合并驱动公共字段
+        mergeMappingColumn(mapping, sTable.getColumn(), tTable.getColumn());
+
         String json = JsonUtil.objToJson(tableGroup);
         return manager.addTableGroup(json);
     }
@@ -61,7 +77,11 @@ public class TableGroupServiceImpl implements TableGroupService {
 
     @Override
     public boolean remove(String id) {
+        TableGroup tableGroup = manager.getTableGroup(id);
+        Assert.notNull(tableGroup, "tableGroup can not be null.");
+
         manager.removeTableGroup(id);
+
         return true;
     }
 
@@ -82,4 +102,40 @@ public class TableGroupServiceImpl implements TableGroupService {
         Assert.notNull(metaInfo, "metaInfo can not be null.");
         return new Table().setName(tableName).setColumn(metaInfo.getColumn());
     }
+
+    private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {
+        List<TableGroup> list = manager.getTableGroupAll(mappingId);
+        if (!CollectionUtils.isEmpty(list)) {
+            for (TableGroup g : list) {
+                // 数据源表和目标表都存在
+                if(StringUtils.equals(sourceTable, g.getSourceTable().getName()) && StringUtils.equals(targetTable, g.getTargetTable().getName())){
+                    final String error = String.format("映射关系[%s]>>[%s]已存在.", sourceTable, targetTable);
+                    logger.error(error);
+                    throw new BizException(error);
+                }
+            }
+        }
+    }
+
+    private void mergeMappingColumn(Mapping mapping, List<Field> sColumn, List<Field> tColumn) {
+        mapping.setSourceColumn(pickCommonFields(mapping.getSourceColumn(), sColumn));
+        mapping.setTargetColumn(pickCommonFields(mapping.getTargetColumn(), tColumn));
+    }
+
+    private List<Field> pickCommonFields(List<Field> column, List<Field> target) {
+        if(CollectionUtils.isEmpty(column) || CollectionUtils.isEmpty(target)){
+            return target;
+        }
+        List<Field> list = new ArrayList<>();
+        Map<String, Boolean> map = new HashMap<>(column.size());
+        column.forEach(f -> map.putIfAbsent(f.getName(), true));
+        target.forEach(f -> {
+            Boolean exist = map.get(f.getName());
+            if(exist){
+                list.add(f);
+            }
+        });
+        return list;
+    }
+
 }

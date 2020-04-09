@@ -76,14 +76,6 @@ public class MappingServiceImpl implements MappingService {
     @Override
     public MappingVo getMapping(String id) {
         Mapping mapping = manager.getMapping(id);
-
-        // TODO 模拟测试数据源和目标源表公共字段
-        List<Field> fields = new ArrayList<>();
-        fields.add(new Field("ID","VARCHAR",12));
-        fields.add(new Field("NAME","VARCHAR",12));
-        mapping.setSourceColumn(fields);
-        mapping.setTargetColumn(fields);
-
         return convertMapping2Vo(mapping);
     }
 
