@@ -3,7 +3,7 @@ function submit(data) {
     doPoster("/tableGroup/edit", data, function (data) {
         if (data.success == true) {
             bootGrowl("保存驱动成功!", "success");
-            backIndexPage();
+            backMappingPage($("#tableGroupSubmitBtn"));
         } else {
             bootGrowl(data.resultValue, "danger");
         }
@@ -66,12 +66,27 @@ function bindFieldMappingAddClick(){
              }
         });
         if(repeated){ return; }
-        var trHtml = "<tr title='双击设为主键'><td>" + sField + "</td><td>" + tField + "</td><td><a class='fa fa-remove fa-2x fieldMappingDelete dbsyncer_pointer' title='删除' ></a></td></tr>";
+        var trHtml = "<tr><td>" + sField + "</td><td>" + tField + "</td><td><a class='fa fa-remove fa-2x fieldMappingDelete dbsyncer_pointer' title='删除' ></a></td></tr>";
         $fieldMappingList.append(trHtml);
 
         initFieldMappingParams();
         bindFieldMappingListClick();
     });
+}
+// 绑定下拉自动匹配字段
+function bindAutoSelect(){
+    var $sourceSelect = $("#sourceFieldMapping");
+    var $targetSelect = $("#targetFieldMapping");
+
+    // 绑定数据源下拉切换事件
+    $sourceSelect.change(function () {
+        var v = $(this).select2("val");
+        $targetSelect.val(v).trigger("change");
+    });
+}
+// 返回驱动配置页面
+function backMappingPage($this){
+    $initContainer.load('/mapping/page/editMapping?id=' + $this.attr("mappingId"));
 }
 
 $(function() {
@@ -79,6 +94,8 @@ $(function() {
     initFieldMappingParams();
     bindFieldMappingListClick();
     bindFieldMappingAddClick();
+    // 绑定下拉自动匹配字段
+    bindAutoSelect();
 
     // 初始化select2插件
     bindSelectEvent($("#tableGroupBaseConfig"));
@@ -95,7 +112,6 @@ $(function() {
 
     // 返回按钮，跳转至上个页面
     $("#tableGroupBackBtn").bind('click', function(){
-        var $mappingId = $(this).attr("mappingId");
-        $initContainer.load('/mapping/page/editMapping?id=' + $mappingId);
+        backMappingPage($(this));
     });
 });
