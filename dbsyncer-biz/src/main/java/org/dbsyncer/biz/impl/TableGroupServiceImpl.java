@@ -81,6 +81,13 @@ public class TableGroupServiceImpl implements TableGroupService {
         Assert.notNull(tableGroup, "tableGroup can not be null.");
 
         manager.removeTableGroup(id);
+        Mapping mapping = manager.getMapping(tableGroup.getMappingId());
+        Assert.notNull(mapping, "mapping not exist.");
+
+        // 合并驱动公共字段
+        Table sTable = tableGroup.getSourceTable();
+        Table tTable = tableGroup.getTargetTable();
+        mergeMappingColumn(mapping, sTable.getColumn(), tTable.getColumn());
 
         return true;
     }
@@ -99,7 +106,7 @@ public class TableGroupServiceImpl implements TableGroupService {
 
     private Table getTable(String connectorId, String tableName) {
         MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
-        Assert.notNull(metaInfo, "metaInfo can not be null.");
+        Assert.notNull(metaInfo, "无法获取连接信息.");
         return new Table().setName(tableName).setColumn(metaInfo.getColumn());
     }
 
@@ -120,6 +127,8 @@ public class TableGroupServiceImpl implements TableGroupService {
     private void mergeMappingColumn(Mapping mapping, List<Field> sColumn, List<Field> tColumn) {
         mapping.setSourceColumn(pickCommonFields(mapping.getSourceColumn(), sColumn));
         mapping.setTargetColumn(pickCommonFields(mapping.getTargetColumn(), tColumn));
+        String json = JsonUtil.objToJson(mapping);
+        manager.editMapping(json);
     }
 
     private List<Field> pickCommonFields(List<Field> column, List<Field> target) {
@@ -130,8 +139,7 @@ public class TableGroupServiceImpl implements TableGroupService {
         Map<String, Boolean> map = new HashMap<>(column.size());
         column.forEach(f -> map.putIfAbsent(f.getName(), true));
         target.forEach(f -> {
-            Boolean exist = map.get(f.getName());
-            if(exist){
+            if(map.get(f.getName())){
                 list.add(f);
             }
         });

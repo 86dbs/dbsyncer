@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -75,7 +76,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             String metaSql = getMetaSql(cfg, tableName);
             metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, metaSql);
         } catch (Exception e) {
-            logger.error("getMetaInfo failed", e.getMessage());
+            logger.error("getMetaInfo failed", e);
         } finally {
             // 释放连接
             this.close(jdbcTemplate);
@@ -217,6 +218,39 @@ public abstract class AbstractDatabaseConnector implements Database {
             val = row.get(f.getName());
             DatabaseUtil.preparedStatementSetter(ps, i + 1, type, val);
         }
+    }
+
+    /**
+     * 获取DQL表信息
+     *
+     * @param config
+     * @return
+     */
+    protected List<String> getDqlTable(ConnectorConfig config) {
+        DatabaseConfig cfg = (DatabaseConfig) config;
+        return Arrays.asList(cfg.getSql());
+    }
+
+    /**
+     * 获取DQl元信息
+     *
+     * @param config
+     * @return
+     */
+    protected MetaInfo getDqlMetaInfo(ConnectorConfig config) {
+        DatabaseConfig cfg = (DatabaseConfig) config;
+        JdbcTemplate jdbcTemplate = null;
+        MetaInfo metaInfo = null;
+        try {
+            jdbcTemplate = getJdbcTemplate(cfg);
+            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, cfg.getSql());
+        } catch (Exception e) {
+            logger.error("getMetaInfo failed", e);
+        } finally {
+            // 释放连接
+            this.close(jdbcTemplate);
+        }
+        return metaInfo;
     }
 
     /**

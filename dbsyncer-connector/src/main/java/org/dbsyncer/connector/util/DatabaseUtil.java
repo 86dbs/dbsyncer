@@ -59,7 +59,7 @@ public abstract class DatabaseUtil {
         String[] columnNames = handler.getColumnNames();
         int[] columnTypes = handler.getColumnTypes();
         if(null == columnNames || null == columnTypes || columnNames.length != columnTypes.length){
-            throw new ConnectorException("Get metaInfo column error");
+            throw new ConnectorException("无法查询表字段信息.");
         }
         int len = columnNames.length;
         List<Field> fields = new ArrayList<>(len);
