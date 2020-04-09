@@ -35,9 +35,8 @@ function changeConnectorType($this) {
     //从公共js/common.js配置文件中读取常量
     for (var key in ConnectorConstant) {
         if (connType == key) {
-            var val = ConnectorConstant[key];
             //加载页面
-            connectorConfig.load(val['url']);
+            connectorConfig.load(ConnectorConstant[key]);
             break;
         }
     }
