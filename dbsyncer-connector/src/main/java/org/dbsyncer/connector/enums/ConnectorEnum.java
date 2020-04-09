@@ -36,13 +36,13 @@ public enum ConnectorEnum {
      */
     SQL_SERVER("SqlServer", new SqlServerConnector(), DatabaseConfig.class),
     /**
-     * DQL_Mysql 连接器
+     * DqlMysql 连接器
      */
-    DQL_MYSQL("DQL_Mysql", new DQLMysqlConnector(), DatabaseConfig.class),
+    DQL_MYSQL("DqlMysql", new DQLMysqlConnector(), DatabaseConfig.class),
     /**
-     * DQL_Oracle 连接器
+     * DqlOracle 连接器
      */
-    DQL_ORACLE("DQL_Oracle", new DQLOracleConnector(), DatabaseConfig.class),
+    DQL_ORACLE("DqlOracle", new DQLOracleConnector(), DatabaseConfig.class),
     /**
      * Ldap 连接器
      */

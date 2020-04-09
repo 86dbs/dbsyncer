@@ -76,8 +76,8 @@ var ConnectorConstant = {
     "Mysql" : "/connector/page/addMysql",
     "Oracle" : "/connector/page/addOracle",
     "SqlServer" : "/connector/page/addSqlServer",
-    "DQL_Mysql" : "/connector/page/addDQL_Mysql",
-    "DQL_Oracle" : "/connector/page/addDQL_Oracle",
+    "DqlMysql" : "/connector/page/addDqlMysql",
+    "DqlOracle" : "/connector/page/addDqlOracle",
     "Ldap" : "/connector/page/addLdap",
     "Redis" : "/connector/page/addRedis"
 }
