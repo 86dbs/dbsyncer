@@ -47,10 +47,12 @@ $(function () {
     $('input[type="text"],input[type="password"],textarea').PlaceHolder();
 
     // 初始化select2插件
-    $(".select-control").select2({
+    var $connectorTypeSelect = $(".select-control").select2({
         width: "100%",
         theme: "classic"
     });
+    // 默认渲染连接器页面
+    changeConnectorType($connectorTypeSelect);
 
     //连接器类型切换事件
     $("select[name='connectorType']").change(function () {

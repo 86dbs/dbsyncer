@@ -56,4 +56,11 @@ public interface ConnectorService {
      */
     List<Connector> getConnectorAll();
 
+    /**
+     * 获取所有支持的连接器类型
+     *
+     * @return
+     */
+    List<String> getConnectorTypeAll();
+
 }

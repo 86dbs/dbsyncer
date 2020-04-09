@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -63,4 +64,12 @@ public class ConnectorServiceImpl implements ConnectorService {
     public List<Connector> getConnectorAll() {
         return manager.getConnectorAll();
     }
+
+    @Override
+    public List<String> getConnectorTypeAll() {
+        List<String> list = new ArrayList<>();
+        manager.getConnectorEnumAll().forEach(c -> list.add(c.getType()));
+        return list;
+    }
+
 }

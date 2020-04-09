@@ -36,14 +36,8 @@
                             <div class="form-group">
                                 <label class="col-sm-2 control-label">类型</label>
                                 <div class="col-sm-10">
-                                    <select name="connectorType" class="form-control select-control">
-                                        <option value="Mysql">Mysql</option>
-                                        <option value="Oracle">Oracle</option>
-                                        <option value="SqlServer">SqlServer</option>
-                                        <option value="DQL_Mysql">DQL_Mysql</option>
-                                        <option value="DQL_Oracle">DQL_Oracle</option>
-                                        <option value="Ldap" disabled>Ldap</option>
-                                        <option value="Redis">Redis</option>
+                                    <select id="connectorType" name="connectorType" class="form-control select-control">
+                                        <option th:each="t,s:${connectorTypes}" th:value="${t}" th:text="${t}" />
                                     </select>
                                 </div>
                             </div>
@@ -58,9 +52,7 @@
                             </div>
 
                             <!-- 连接器配置 -->
-                            <div class="connectorConfig">
-                                <div th:replace="connector/addMysql :: content"></div>
-                            </div>
+                            <div class="connectorConfig"></div>
 
                         </div>
                     </div>

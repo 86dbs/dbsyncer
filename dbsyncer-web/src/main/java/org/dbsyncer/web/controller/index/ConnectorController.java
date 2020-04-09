@@ -22,10 +22,21 @@ public class ConnectorController extends BaseController {
     @Autowired
     private ConnectorService connectorService;
 
-    @GetMapping("/page/{page}")
-    public String page(HttpServletRequest request, ModelMap model, @PathVariable("page") String page, String id) {
+    @GetMapping("/page/add")
+    public String pageAdd(HttpServletRequest request, ModelMap model) {
+        model.put("connectorTypes", connectorService.getConnectorTypeAll());
+        return "connector/add";
+    }
+
+    @GetMapping("/page/add{page}")
+    public String page(HttpServletRequest request, ModelMap model, @PathVariable("page") String page) {
+        return "connector/add" + page;
+    }
+
+    @GetMapping("/page/edit")
+    public String pageEdit(HttpServletRequest request, ModelMap model, String id) {
         model.put("connector", connectorService.getConnector(id));
-        return "connector/" + page;
+        return "connector/edit";
     }
 
     @PostMapping(value = "/alive")

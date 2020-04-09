@@ -1,6 +1,7 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
@@ -84,6 +85,13 @@ public interface Parser {
      * @return
      */
     TableGroup parseTableGroup(String json, boolean checkAlive);
+
+    /**
+     * 获取所有连接器类型
+     *
+     * @return
+     */
+    List<ConnectorEnum> getConnectorEnumAll();
 
     /**
      * 获取所有条件类型

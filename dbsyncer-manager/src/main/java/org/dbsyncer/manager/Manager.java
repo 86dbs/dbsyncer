@@ -1,6 +1,7 @@
 package org.dbsyncer.manager;
 
 import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
@@ -54,6 +55,9 @@ public interface Manager {
     TableGroup getTableGroup(String tableGroupId);
 
     List<TableGroup> getTableGroupAll(String mappingId);
+
+    // ConnectorEnum
+    List<ConnectorEnum> getConnectorEnumAll();
 
     // OperationEnum
     List<OperationEnum> getOperationEnumAll();

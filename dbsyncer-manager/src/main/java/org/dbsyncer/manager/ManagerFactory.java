@@ -1,6 +1,7 @@
 package org.dbsyncer.manager;
 
 import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.manager.template.*;
@@ -303,6 +304,11 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
                 return tableGroupStrategy;
             }
         });
+    }
+
+    @Override
+    public List<ConnectorEnum> getConnectorEnumAll() {
+        return parser.getConnectorEnumAll();
     }
 
     @Override

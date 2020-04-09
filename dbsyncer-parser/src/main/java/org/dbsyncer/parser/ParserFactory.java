@@ -180,6 +180,11 @@ public class ParserFactory implements Parser {
     }
 
     @Override
+    public List<ConnectorEnum> getConnectorEnumAll() {
+        return Arrays.asList(ConnectorEnum.values());
+    }
+
+    @Override
     public List<OperationEnum> getOperationEnumAll() {
         return Arrays.asList(OperationEnum.values());
     }
