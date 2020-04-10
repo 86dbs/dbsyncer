@@ -55,19 +55,15 @@ public class TableGroupChecker extends AbstractChecker {
         // 检查是否存在重复映射关系
         checkRepeatedTable(mappingId, sourceTable, targetTable);
 
-        // 读取表信息
-        Table sTable = getTable(mapping.getSourceConnectorId(), sourceTable);
-        Table tTable = getTable(mapping.getTargetConnectorId(), targetTable);
-
         TableGroup tableGroup = new TableGroup();
         tableGroup.setName(ConfigConstant.TABLE_GROUP);
         tableGroup.setType(ConfigConstant.TABLE_GROUP);
         tableGroup.setMappingId(mappingId);
-        tableGroup.setSourceTable(sTable);
-        tableGroup.setTargetTable(tTable);
+        tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable));
+        tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable));
 
         // 修改基本配置
-        this.modifyConfigModel(mapping, params);
+        this.modifyConfigModel(tableGroup, params);
         return tableGroup;
     }
 

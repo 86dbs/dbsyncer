@@ -3,7 +3,8 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <div class="form-group">
+    <!-- 针对DQL的连接器配置 -->
+    <div class="form-group" th:if="${#strings.startsWith(mapping?.sourceConnector?.config?.connectorType,'Dql')}">
         <div class="row">
             <div class="col-md-4">
                 <label class="col-sm-3 control-label text-right">表别名<strong class="driverVerifcateRequired">*</strong></label>

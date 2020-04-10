@@ -11,6 +11,7 @@ import org.dbsyncer.connector.util.JDBCUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.util.Assert;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -227,6 +228,8 @@ public abstract class AbstractDatabaseConnector implements Database {
      * @return
      */
     protected List<String> getDqlTable(ConnectorConfig config) {
+        MetaInfo metaInfo = getDqlMetaInfo(config);
+        Assert.notNull(metaInfo, "SQL解析异常.");
         DatabaseConfig cfg = (DatabaseConfig) config;
         return Arrays.asList(cfg.getSql());
     }
@@ -245,7 +248,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             jdbcTemplate = getJdbcTemplate(cfg);
             metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, cfg.getSql());
         } catch (Exception e) {
-            logger.error("getMetaInfo failed", e);
+            logger.error(e.getMessage());
         } finally {
             // 释放连接
             this.close(jdbcTemplate);

@@ -110,7 +110,7 @@ public class ConnectorChecker extends AbstractChecker implements ApplicationCont
     private void setTable(Connector connector) {
         // 获取表信息
         boolean alive = manager.alive(connector.getConfig());
-        Assert.isTrue(alive, "无法连接，请检查配置.");
+        Assert.isTrue(alive, "无法连接.");
         List<String> table = manager.getTable(connector.getConfig());
         connector.setTable(table);
     }
