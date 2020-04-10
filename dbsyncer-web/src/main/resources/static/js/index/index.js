@@ -25,7 +25,7 @@ function bindAddMapping() {
 function bindEditMapping() {
     $(".mappingList .dbsyncer_block").click(function () {
         var $id = $(this).attr("id");
-        $initContainer.load('/mapping/page/editMapping?id=' + $id);
+        $initContainer.load('/mapping/page/edit?id=' + $id);
     });
 }
 

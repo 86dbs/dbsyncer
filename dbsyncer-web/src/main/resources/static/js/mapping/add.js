@@ -2,7 +2,7 @@ function submit(data) {
     doPoster("/mapping/add", data, function (data) {
         if (data.success == true) {
             bootGrowl("新增驱动成功!", "success");
-            $initContainer.load('/mapping/page/editMapping?id=' + data.resultValue);
+            $initContainer.load('/mapping/page/edit?id=' + data.resultValue);
         } else {
             bootGrowl(data.resultValue, "danger");
         }

@@ -2,7 +2,7 @@ function submit(data) {
     //保存驱动配置
     doPoster("/tableGroup/edit", data, function (data) {
         if (data.success == true) {
-            bootGrowl("保存驱动成功!", "success");
+            bootGrowl("保存表映射关系成功!", "success");
             backMappingPage($("#tableGroupSubmitBtn"));
         } else {
             bootGrowl(data.resultValue, "danger");
@@ -86,7 +86,7 @@ function bindAutoSelect(){
 }
 // 返回驱动配置页面
 function backMappingPage($this){
-    $initContainer.load('/mapping/page/editMapping?id=' + $this.attr("mappingId"));
+    $initContainer.load('/mapping/page/edit?id=' + $this.attr("mappingId"));
 }
 
 $(function() {
