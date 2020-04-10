@@ -41,9 +41,10 @@ public class ConnectorController extends BaseController {
 
     @PostMapping(value = "/alive")
     @ResponseBody
-    public RestResult alive(HttpServletRequest request, @RequestParam(value = "json") String json) {
+    public RestResult alive(HttpServletRequest request) {
         try {
-            return RestResult.restSuccess(connectorService.alive(json));
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(connectorService.alive(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());
@@ -52,9 +53,10 @@ public class ConnectorController extends BaseController {
 
     @PostMapping("/add")
     @ResponseBody
-    public RestResult add(HttpServletRequest request, @RequestParam(value = "json") String json) {
+    public RestResult add(HttpServletRequest request) {
         try {
-            return RestResult.restSuccess(connectorService.add(json));
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(connectorService.add(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());

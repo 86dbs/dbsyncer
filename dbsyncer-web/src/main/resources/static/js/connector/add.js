@@ -1,5 +1,5 @@
-function submit(connector) {
-    doPoster("/connector/add", {"json": JSON.stringify(connector)}, function (data) {
+function submit(data) {
+    doPoster("/connector/add", data, function (data) {
         if (data.success == true) {
             bootGrowl("新增连接器成功!", "success");
             backIndexPage();
@@ -13,13 +13,7 @@ var check = function () {
     var $form = $("#connectorAddForm");
     if ($form.formValidate() == true) {
         var data = $form.serializeJson();
-        var connector = {
-            "type": "connector",
-            "name": data.name,
-            "config": data
-        }
-        delete connector.config.name;
-        submit(connector);
+        submit(data);
     }
 };
 

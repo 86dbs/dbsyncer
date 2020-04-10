@@ -4,12 +4,11 @@ import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerEnum;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.constant.ModelConstant;
+import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -42,29 +41,15 @@ public class MappingServiceImpl implements MappingService {
 
     @Override
     public String add(Map<String, String> params) {
-        String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
-        String sourceConnectorId = params.get("sourceConnectorId");
-        String targetConnectorId = params.get("targetConnectorId");
-        Assert.hasText(name, "mapping name is empty.");
-        Assert.hasText(sourceConnectorId, "mapping sourceConnectorId is empty.");
-        Assert.hasText(targetConnectorId, "mapping targetConnectorId is empty.");
-
-        Mapping mapping = new Mapping();
-        mapping.setName(name);
-        mapping.setSourceConnectorId(sourceConnectorId);
-        mapping.setTargetConnectorId(targetConnectorId);
-
-        mapping.setModel(ModelConstant.FULL);
-        mapping.setListener(new ListenerConfig(ListenerEnum.TIMING.getCode()));
-        String json = JsonUtil.objToJson(mapping);
-        return manager.addMapping(json);
+        ConfigModel model = mappingChecker.checkAddConfigModel(params);
+        return manager.addMapping(model);
     }
 
     @Override
     public String edit(Map<String, String> params) {
         logger.info("检查驱动是否停止运行");
-        String json = mappingChecker.checkConfigModel(params);
-        return manager.editMapping(json);
+        ConfigModel model = mappingChecker.checkEditConfigModel(params);
+        return manager.editMapping(model);
     }
 
     @Override

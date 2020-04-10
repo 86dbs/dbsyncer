@@ -15,17 +15,17 @@ public interface ConnectorService {
     /**
      * 检查连接器是否可用
      *
-     * @param json
+     * @param params
      * @return
      */
-    boolean alive(String json);
+    boolean alive(Map<String, String> params);
 
     /**
      * 新增连接器
      *
-     * @param json
+     * @param params
      */
-    String add(String json);
+    String add(Map<String, String> params);
 
     /**
      * 修改连接器

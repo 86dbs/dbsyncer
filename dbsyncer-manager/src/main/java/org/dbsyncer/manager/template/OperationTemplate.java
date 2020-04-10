@@ -12,8 +12,6 @@ import org.dbsyncer.parser.model.ConfigModel;
  */
 public interface OperationTemplate extends BaseTemplate {
 
-    ConfigModel parseConfigModel();
-
     void handleEvent(ConfigOperationTemplate.Call call);
 
 }

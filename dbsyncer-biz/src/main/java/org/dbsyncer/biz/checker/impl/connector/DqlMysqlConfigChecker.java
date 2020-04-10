@@ -22,15 +22,18 @@ public class DqlMysqlConfigChecker implements ConnectorConfigChecker {
         String password = params.get("password");
         String url = params.get("url");
         String sql = params.get("sql");
+        String driverClassName = params.get("driverClassName");
         Assert.hasText(username, "DqlMysqlConfigChecker modify username is empty.");
         Assert.hasText(password, "DqlMysqlConfigChecker modify password is empty.");
         Assert.hasText(url, "DqlMysqlConfigChecker modify url is empty.");
         Assert.hasText(sql, "DqlMysqlConfigChecker modify sql is empty.");
+        Assert.hasText(driverClassName, "DqlMysqlConfigChecker modify driverClassName is empty.");
 
         DatabaseConfig config = (DatabaseConfig) connector.getConfig();
         config.setUsername(username);
         config.setPassword(password);
         config.setUrl(url);
+        config.setDriverClassName(driverClassName);
         config.setSql(sql);
     }
 }

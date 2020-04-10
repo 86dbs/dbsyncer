@@ -9,15 +9,12 @@ import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
-import org.dbsyncer.listener.config.ListenerConfig;
-import org.dbsyncer.listener.enums.ListenerEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.SnowflakeIdWorker;
-import org.dbsyncer.storage.constant.ConfigConstant;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -49,22 +46,13 @@ public class ParserFactory implements Parser {
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Override
-    public boolean alive(String json) {
-        ConnectorConfig config;
-        try {
-            JSONObject configObj = new JSONObject(json);
-            String connectorType = configObj.getString("connectorType");
-            Class<?> configClass = ConnectorEnum.getConfigClass(connectorType);
-            Object obj = JsonUtil.jsonToObj(configObj.toString(), configClass);
-            Assert.notNull(obj, "ConnectorConfig is invalid.");
-            config = (ConnectorConfig) obj;
-            config.setConnectorType(connectorType);
-            Assert.notNull(config, "ConnectorConfig can not be null.");
-            return connectorFactory.isAlive(config);
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-            throw new ParserException(e.getMessage());
-        }
+    public boolean alive(ConnectorConfig config) {
+        return connectorFactory.isAlive(config);
+    }
+
+    @Override
+    public List<String> getTable(ConnectorConfig config) {
+        return connectorFactory.getTable(config);
     }
 
     @Override
@@ -75,108 +63,46 @@ public class ParserFactory implements Parser {
 
     @Override
     public Connector parseConnector(String json) {
-        return parseConnector(json, true);
-    }
-
-    @Override
-    public Connector parseConnector(String json, boolean checkAlive) {
-        // 1、Json串转Bean
-        Connector connector = null;
         try {
             JSONObject conn = new JSONObject(json);
             JSONObject config = (JSONObject) conn.remove("config");
-            connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
+            Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
             Assert.notNull(connector, "Connector can not be null.");
             String connectorType = config.getString("connectorType");
             Class<?> configClass = ConnectorEnum.getConfigClass(connectorType);
             ConnectorConfig obj = (ConnectorConfig) JsonUtil.jsonToObj(config.toString(), configClass);
             connector.setConfig(obj);
+            return connector;
         } catch (JSONException e) {
             logger.error(e.getMessage());
             throw new ParserException(e.getMessage());
         }
-
-        if (!checkAlive) {
-            return connector;
-        }
-
-        // 2、验证连接是否可用
-        ConnectorConfig config = connector.getConfig();
-        if (!connectorFactory.isAlive(config)) {
-            throw new ParserException("无法连接，请检查服务是否正常.");
-        }
-
-        // 3、config
-        List<String> table = connectorFactory.getTable(config);
-        connector.setTable(table);
-        setConfigModel(connector, ConfigConstant.CONNECTOR);
-        return connector;
     }
 
     @Override
     public Mapping parseMapping(String json) {
-        return parseMapping(json, true);
-    }
-
-    @Override
-    public Mapping parseMapping(String json, boolean checkAlive) {
-        // 1、Json串转Bean
-        Mapping mapping = null;
         try {
             JSONObject map = new JSONObject(json);
-            mapping = JsonUtil.jsonToObj(map.toString(), Mapping.class);
+            Mapping mapping = JsonUtil.jsonToObj(map.toString(), Mapping.class);
             Assert.notNull(mapping, "Mapping can not be null.");
+            return mapping;
         } catch (JSONException e) {
             logger.error(e.getMessage());
             throw new ParserException(e.getMessage());
         }
-
-        if (!checkAlive) {
-            return mapping;
-        }
-
-        // 2、验证连接是否可用
-        aliveConnector(mapping.getSourceConnectorId());
-        aliveConnector(mapping.getTargetConnectorId());
-
-        // 3、config
-        setConfigModel(mapping, ConfigConstant.MAPPING);
-        return mapping;
     }
 
     @Override
     public TableGroup parseTableGroup(String json) {
-        return parseTableGroup(json, true);
-    }
-
-    @Override
-    public TableGroup parseTableGroup(String json, boolean checkAlive) {
-        // 1、Json串转Bean
-        TableGroup tableGroup = null;
         try {
             JSONObject conn = new JSONObject(json);
-            tableGroup = JsonUtil.jsonToObj(conn.toString(), TableGroup.class);
+            TableGroup tableGroup = JsonUtil.jsonToObj(conn.toString(), TableGroup.class);
             Assert.notNull(tableGroup, "TableGroup can not be null.");
+            return tableGroup;
         } catch (JSONException e) {
             logger.error(e.getMessage());
             throw new ParserException(e.getMessage());
         }
-
-        if (!checkAlive) {
-            return tableGroup;
-        }
-
-        // 2、验证驱动配置是否存在
-        String mappingId = tableGroup.getMappingId();
-        Assert.hasText(mappingId, "MappingId can not be empty.");
-        Mapping mapping = cacheService.get(mappingId, Mapping.class);
-        Assert.notNull(mapping, "Mapping can not be null.");
-
-        // 3、config
-        String name = tableGroup.getName();
-        tableGroup.setName(StringUtils.isEmpty(name) ? ConfigConstant.TABLE_GROUP : name);
-        setConfigModel(tableGroup, ConfigConstant.TABLE_GROUP);
-        return tableGroup;
     }
 
     @Override
@@ -213,6 +139,7 @@ public class ParserFactory implements Parser {
 
     /**
      * 获取连接配置
+     *
      * @param connectorId
      * @return
      */

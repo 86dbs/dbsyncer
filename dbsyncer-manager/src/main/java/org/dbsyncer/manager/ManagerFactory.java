@@ -1,5 +1,6 @@
 package org.dbsyncer.manager;
 
+import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
@@ -54,8 +55,13 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
     private GroupStrategy tableGroupStrategy;
 
     @Override
-    public boolean alive(String json) {
-        return parser.alive(json);
+    public boolean alive(ConnectorConfig config) {
+        return parser.alive(config);
+    }
+
+    @Override
+    public List<String> getTable(ConnectorConfig config) {
+        return parser.getTable(config);
     }
 
     @Override
@@ -64,13 +70,8 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
     }
 
     @Override
-    public String addConnector(String json) {
-        return operationTemplate.execute(new OperationTemplate() {
-
-            @Override
-            public ConfigModel parseConfigModel() {
-                return parser.parseConnector(json);
-            }
+    public String addConnector(ConfigModel model) {
+        return operationTemplate.execute(model, new OperationTemplate() {
 
             @Override
             public void handleEvent(ConfigOperationTemplate.Call call) {
@@ -86,13 +87,8 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
     }
 
     @Override
-    public String editConnector(String json) {
-        return operationTemplate.execute(new OperationTemplate() {
-
-            @Override
-            public ConfigModel parseConfigModel() {
-                return parser.parseConnector(json);
-            }
+    public String editConnector(ConfigModel model) {
+        return operationTemplate.execute(model, new OperationTemplate() {
 
             @Override
             public void handleEvent(ConfigOperationTemplate.Call call) {
@@ -144,13 +140,8 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
     }
 
     @Override
-    public String addMapping(String json) {
-        return operationTemplate.execute(new OperationTemplate() {
-
-            @Override
-            public ConfigModel parseConfigModel() {
-                return parser.parseMapping(json);
-            }
+    public String addMapping(ConfigModel model) {
+        return operationTemplate.execute(model, new OperationTemplate() {
 
             @Override
             public void handleEvent(ConfigOperationTemplate.Call call) {
@@ -166,13 +157,8 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
     }
 
     @Override
-    public String editMapping(String json) {
-        return operationTemplate.execute(new OperationTemplate() {
-
-            @Override
-            public ConfigModel parseConfigModel() {
-                return parser.parseMapping(json);
-            }
+    public String editMapping(ConfigModel model) {
+        return operationTemplate.execute(model, new OperationTemplate() {
 
             @Override
             public void handleEvent(ConfigOperationTemplate.Call call) {
@@ -225,13 +211,8 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
     }
 
     @Override
-    public String addTableGroup(String json) {
-        return operationTemplate.execute(new OperationTemplate() {
-
-            @Override
-            public ConfigModel parseConfigModel() {
-                return parser.parseTableGroup(json);
-            }
+    public String addTableGroup(ConfigModel model) {
+        return operationTemplate.execute(model, new OperationTemplate() {
 
             @Override
             public void handleEvent(ConfigOperationTemplate.Call call) {
@@ -247,13 +228,8 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
     }
 
     @Override
-    public String editTableGroup(String json) {
-        return operationTemplate.execute(new OperationTemplate() {
-
-            @Override
-            public ConfigModel parseConfigModel() {
-                return parser.parseTableGroup(json);
-            }
+    public String editTableGroup(ConfigModel model) {
+        return operationTemplate.execute(model, new OperationTemplate() {
 
             @Override
             public void handleEvent(ConfigOperationTemplate.Call call) {
@@ -358,7 +334,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public ConfigModel parseModel(String json) {
-                return parser.parseConnector(json, false);
+                return parser.parseConnector(json);
             }
         });
 
@@ -377,7 +353,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public ConfigModel parseModel(String json) {
-                return parser.parseMapping(json, false);
+                return parser.parseMapping(json);
             }
         });
 
@@ -396,7 +372,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public ConfigModel parseModel(String json) {
-                return parser.parseTableGroup(json, false);
+                return parser.parseTableGroup(json);
             }
         });
     }

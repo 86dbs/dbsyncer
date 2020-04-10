@@ -9,7 +9,7 @@ import org.springframework.util.Assert;
 import java.util.Map;
 
 /**
- * 检查增量MYSQL配置
+ * 检查增量DqlMysql配置
  *
  * @author AE86
  * @version 1.0.0

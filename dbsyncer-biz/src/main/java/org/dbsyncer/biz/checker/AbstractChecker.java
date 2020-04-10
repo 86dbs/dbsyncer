@@ -9,8 +9,10 @@ import org.dbsyncer.parser.convert.Convert;
 import org.dbsyncer.parser.model.AbstractConfigModel;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.plugin.config.Plugin;
+import org.dbsyncer.storage.SnowflakeIdWorker;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
@@ -25,19 +27,29 @@ public abstract class AbstractChecker implements Checker {
     @Autowired
     private PluginService pluginService;
 
+    @Autowired
+    private SnowflakeIdWorker snowflakeIdWorker;
+
     /**
      * 修改基本配置
+     * <p>id,type,name,createTime,updateTime</p>
      *
-     * @param configModel
+     * @param model
      * @param params
      */
-    protected void modifyConfigModel(ConfigModel configModel, Map<String, String> params) {
+    protected void modifyConfigModel(ConfigModel model, Map<String, String> params) {
+        Assert.notNull(model, "ConfigModel can not be null.");
+        Assert.hasText(model.getType(), "ConfigModel type can not be empty.");
+        Assert.hasText(model.getName(), "ConfigModel name can not be empty.");
         // 名称
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         if (StringUtils.isNotBlank(name)) {
-            configModel.setName(name);
+            model.setName(name);
         }
-        configModel.setUpdateTime(System.currentTimeMillis());
+        model.setId(StringUtils.isEmpty(model.getId()) ? String.valueOf(snowflakeIdWorker.nextId()) : model.getId());
+        long now = System.currentTimeMillis();
+        model.setCreateTime(null == model.getCreateTime() ? now : model.getCreateTime());
+        model.setUpdateTime(now);
     }
 
     /**
@@ -66,7 +78,7 @@ public abstract class AbstractChecker implements Checker {
         Plugin plugin = null;
         if (StringUtils.isNotBlank(pluginClassName)) {
             List<Plugin> plugins = pluginService.getPluginAll();
-            if(!CollectionUtils.isEmpty(plugins)){
+            if (!CollectionUtils.isEmpty(plugins)) {
                 for (Plugin p : plugins) {
                     if (StringUtils.equals(p.getClassName(), pluginClassName)) {
                         plugin = p;
@@ -76,7 +88,6 @@ public abstract class AbstractChecker implements Checker {
             }
         }
         model.setPlugin(plugin);
-
     }
 
 }

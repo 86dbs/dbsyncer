@@ -60,9 +60,8 @@ public class ConfigOperationTemplate {
         return (T) cacheService.get(id);
     }
 
-    public String execute(OperationTemplate operationTemplate) {
+    public String execute(ConfigModel model, OperationTemplate operationTemplate) {
         // 1、解析配置
-        ConfigModel model = operationTemplate.parseConfigModel();
         Assert.notNull(model, "ConfigModel can not be null.");
         String id = model.getId();
         logger.info("Parse config model id:{}", id);
