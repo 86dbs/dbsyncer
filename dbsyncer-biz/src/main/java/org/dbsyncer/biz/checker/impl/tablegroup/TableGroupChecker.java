@@ -102,7 +102,7 @@ public class TableGroupChecker extends AbstractChecker {
                 // 数据源表和目标表都存在
                 if (StringUtils.equals(sourceTable, g.getSourceTable().getName()) && StringUtils.equals(targetTable,
                         g.getTargetTable().getName())) {
-                    final String error = String.format("映射关系[%s]>>[%s]已存在.", sourceTable, targetTable);
+                    final String error = String.format("映射关系已存在.", sourceTable, targetTable);
                     logger.error(error);
                     throw new BizException(error);
                 }

@@ -16,7 +16,7 @@
                     </div>
                 </div>
                 <!-- 显示连接器列表 -->
-                <div class="row">
+                <div class="row" th:if="${connectors?.size() gt 0}">
                     <div class="col-md-12">
                         <div class="panel panel-default">
                             <!-- 连接器 -->
@@ -51,7 +51,7 @@
                 <!-- 连接器开结束位置 -->
 
                 <!-- 驱动开始位置 -->
-                <div class="form-group">
+                <div class="form-group" th:if="${connectors?.size() gt 0}">
                     <div class="col-md-12">
                         <button type="button" class="btn btn-primary" id="indexAddMappingBtn">
                             <span class="fa fa-plus"></span>添加驱动([[${mappings?.size()} ?: 0]])
@@ -60,7 +60,7 @@
                 </div>
 
                 <!-- 显示驱动列表 -->
-                <div class="row">
+                <div class="row" th:if="${mappings?.size() gt 0}">
                     <div class="col-md-12">
                         <div class="panel panel-default">
                             <div class="panel-body">

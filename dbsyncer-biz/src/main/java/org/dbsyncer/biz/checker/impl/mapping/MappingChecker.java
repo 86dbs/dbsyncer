@@ -49,9 +49,9 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         String sourceConnectorId = params.get("sourceConnectorId");
         String targetConnectorId = params.get("targetConnectorId");
-        Assert.hasText(name, "mapping name is empty.");
-        Assert.hasText(sourceConnectorId, "mapping sourceConnectorId is empty.");
-        Assert.hasText(targetConnectorId, "mapping targetConnectorId is empty.");
+        Assert.hasText(name, "驱动名称不能为空");
+        Assert.hasText(sourceConnectorId, "数据源不能为空.");
+        Assert.hasText(targetConnectorId, "目标源不能为空.");
 
         Mapping mapping = new Mapping();
         mapping.setName(name);
