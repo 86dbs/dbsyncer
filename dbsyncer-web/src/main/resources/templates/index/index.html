@@ -108,6 +108,8 @@
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            <div class="row text-right text-muted" th:text="${#dates.format(m?.updateTime, 'yyyy-MM-dd HH:mm:ss')}"></div>
                                         </div>
 
                                         <!-- 右上角下拉菜单 -->
@@ -116,7 +118,6 @@
                                             <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
                                                 <li th:url="'/mapping/start?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-check-circle-o well-sign-green"></i>&nbsp;&nbsp;启动</a></li>
                                                 <li th:url="'/mapping/stop?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-times-circle-o well-sign-red"></i>&nbsp;&nbsp;停止</a></li>
-                                                <li th:url="'/mapping/pageEdit?id='+${m?.id}" loadPage="true"><a href="javascript:;"><i class="fa fa-edit well-sign-green"></i>&nbsp;编辑</a></li>
                                                 <li th:url="'/mapping/remove?id='+${m?.id}" confirm="true" confirmMessage="确认删除?"><a href="javascript:;"><i class="fa fa-trash well-sign-red"></i>&nbsp;&nbsp;删除</a></li>
                                             </ul>
                                         </div>

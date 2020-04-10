@@ -59,15 +59,9 @@ function bindConnectorDropdownMenu() {
 function bindMappingDropdownMenu() {
     $(".mappingList .dropdown-menu li").click(function () {
         var $url = $(this).attr("url");
-        var $loadPage = $(this).attr("loadPage");
         var $confirm = $(this).attr("confirm");
         var $confirmMessage = $(this).attr("confirmMessage");
 
-        if ("true" == $loadPage) {
-            // 加载页面
-            $initContainer.load($url);
-            return;
-        }
         if ("true" == $confirm) {
             // 如果当前为恢复状态
             BootstrapDialog.show({
