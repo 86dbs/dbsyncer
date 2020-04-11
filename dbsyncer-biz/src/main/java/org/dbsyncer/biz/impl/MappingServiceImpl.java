@@ -2,20 +2,18 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.checker.Checker;
+import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.listener.config.ListenerConfig;
-import org.dbsyncer.listener.enums.ListenerEnum;
 import org.dbsyncer.manager.Manager;
-import org.dbsyncer.parser.constant.ModelConstant;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -87,11 +85,25 @@ public class MappingServiceImpl implements MappingService {
         return true;
     }
 
+    boolean running = false;
+
+    /**
+     * 定时推送消息
+     */
+    @Scheduled(fixedRate = 5000)
+    public void callback() {
+        running = running ? false : true;
+    }
+
     private MappingVo convertMapping2Vo(Mapping mapping) {
         Assert.notNull(mapping, "Mapping can not be null.");
         Connector s = manager.getConnector(mapping.getSourceConnectorId());
         Connector t = manager.getConnector(mapping.getTargetConnectorId());
-        MappingVo vo = new MappingVo(false, s, t);
+        ConnectorVo sConn = new ConnectorVo(running);
+        BeanUtils.copyProperties(s, sConn);
+        ConnectorVo tConn = new ConnectorVo(running);
+        BeanUtils.copyProperties(t, tConn);
+        MappingVo vo = new MappingVo(running, sConn, tConn);
         BeanUtils.copyProperties(mapping, vo);
         return vo;
     }

@@ -103,6 +103,33 @@ function bindMappingConvertListClick() {
 //    bindMappingDeleteClick($(".convertDelete"));
 }
 
+// 绑定下拉自动匹配字段
+function bindAutoSelect(){
+    var $sourceSelect = $("#sourceTable");
+    var $targetSelect = $("#targetTable");
+
+    // 绑定数据源下拉切换事件
+    $sourceSelect.change(function () {
+        var v = $(this).select2("val");
+        $targetSelect.val(v).trigger("change");
+    });
+}
+
+// 修改驱动名称
+function mappingModifyName(){
+    var $name = $("#mappingModifyName");
+    var tmp = $name.text();
+    $name.text("");
+    $name.append("<input type='text'/>");
+    var $input = $name.find("input");
+    $input.focus().val(tmp);
+    $input.blur(function(){
+        $name.text($(this).val());
+        $("#mappingModifyForm input[name='name']").val($(this).val());
+        $input.unbind();
+    });
+}
+
 $(function () {
     // 绑定同步方式切换事件
     bindMappingModelChange();
@@ -117,6 +144,9 @@ $(function () {
 
     // 绑定转换配置点击事件
     bindMappingConvertListClick();
+
+    // 绑定下拉自动匹配字段
+    bindAutoSelect();
 
     // 初始化select2插件
     $(".select-control").select2({
