@@ -135,6 +135,7 @@ public class TableGroupChecker extends AbstractChecker {
                 row = mapping.getJSONObject(i);
                 s = sMap.get(row.getString("source"));
                 t = tMap.get(row.getString("target"));
+                t.setPk(row.getBoolean("pk"));
                 list.add(new FieldMapping(s, t));
             }
             tableGroup.setFieldMapping(list);

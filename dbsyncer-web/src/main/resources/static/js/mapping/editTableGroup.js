@@ -24,15 +24,29 @@ function initFieldMappingParams(){
     var row = [];
     var $fieldMappingList = $("#fieldMappingList");
     $fieldMappingList.find("tr").each(function(k,v){
+        var $pk = $(this).find("td:eq(2)").html();
         row.push({
             "source":$(this).find("td:eq(0)").text(),
-            "target":$(this).find("td:eq(1)").text()
+            "target":$(this).find("td:eq(1)").text(),
+            "pk":($pk != "" || $.trim($pk).length > 0)
         });
     });
     $("#fieldMapping").val(JSON.stringify(row));
 }
 // 绑定字段映射表格点击事件
 function bindFieldMappingListClick(){
+    // 行双击事件
+    var $tr = $("#fieldMappingList tr");
+    $tr.unbind("dblclick");
+    $tr.bind('dblclick', function () {
+        var $pk = $(this).find("td:eq(2)");
+        var $text = $pk.html();
+        var isPk = $text == "" || $.trim($text).length == 0;
+        $pk.html(isPk ? '<i title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i>' : '');
+        initFieldMappingParams();
+    });
+
+    // 删除事件
     var $del = $(".fieldMappingDelete");
     $del.unbind("click");
     $del.bind('click', function(){
@@ -66,7 +80,7 @@ function bindFieldMappingAddClick(){
              }
         });
         if(repeated){ return; }
-        var trHtml = "<tr><td>" + sField + "</td><td>" + tField + "</td><td><a class='fa fa-remove fa-2x fieldMappingDelete dbsyncer_pointer' title='删除' ></a></td></tr>";
+        var trHtml = "<tr title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td></td><td><a class='fa fa-remove fa-2x fieldMappingDelete dbsyncer_pointer' title='删除' ></a></td></tr>";
         $fieldMappingList.append(trHtml);
 
         initFieldMappingParams();

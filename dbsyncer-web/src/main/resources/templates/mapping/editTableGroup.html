@@ -124,13 +124,15 @@
                                     <tr>
                                         <th>数据源表字段</th>
                                         <th>目标源表字段</th>
+                                        <th>目标源主键</th>
                                         <th>操作</th>
                                     </tr>
                                     </thead>
                                     <tbody id="fieldMappingList">
-                                        <tr title='双击设为主键' th:each="f,s:${tableGroup?.fieldMapping}">
+                                        <tr title='双击设置/取消主键' th:each="f,s:${tableGroup?.fieldMapping}">
                                             <td>[[${f?.source?.name}]]</td>
                                             <td>[[${f?.target?.name}]]</td>
+                                            <td><i th:if="${f?.target?.pk}" title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i></td>
                                             <td><a class='fa fa-remove fa-2x fieldMappingDelete dbsyncer_pointer' title='删除' ></a></td>
                                         </tr>
                                     </tbody>
