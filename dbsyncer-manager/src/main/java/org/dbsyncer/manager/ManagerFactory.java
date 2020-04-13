@@ -25,6 +25,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author AE86
@@ -280,6 +281,11 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
                 return tableGroupStrategy;
             }
         });
+    }
+
+    @Override
+    public Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup) {
+        return parser.getCommand(sourceConnectorId, targetConnectorId, tableGroup);
     }
 
     @Override

@@ -2,6 +2,7 @@ package org.dbsyncer.connector.database;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.template.CommandTemplate;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.enums.OperationEnum;
@@ -83,6 +84,16 @@ public abstract class AbstractDatabaseConnector implements Database {
             this.close(jdbcTemplate);
         }
         return metaInfo;
+    }
+
+    @Override
+    public Map<String, String> getSourceCommand(CommandTemplate commandTemplate) {
+        return null;
+    }
+
+    @Override
+    public Map<String, String> getTargetCommand(CommandTemplate commandTemplate) {
+        return null;
     }
 
     @Override

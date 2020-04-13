@@ -1,6 +1,7 @@
 package org.dbsyncer.connector.redis;
 
 import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.connector.template.CommandTemplate;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.RedisConfig;
@@ -12,6 +13,7 @@ import redis.clients.jedis.JedisPool;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public final class RedisConnector implements Redis {
 
@@ -44,6 +46,16 @@ public final class RedisConnector implements Redis {
 
     @Override
     public MetaInfo getMetaInfo(ConnectorConfig config, String tableName) {
+        return null;
+    }
+
+    @Override
+    public Map<String, String> getSourceCommand(CommandTemplate commandTemplate) {
+        return null;
+    }
+
+    @Override
+    public Map<String, String> getTargetCommand(CommandTemplate commandTemplate) {
         return null;
     }
 

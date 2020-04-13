@@ -1,6 +1,7 @@
 package org.dbsyncer.connector.ldap;
 
 import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.connector.template.CommandTemplate;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.LdapConfig;
 import org.dbsyncer.connector.config.MetaInfo;
@@ -40,6 +41,16 @@ public final class LdapConnector implements Ldap {
 
 	@Override
 	public MetaInfo getMetaInfo(ConnectorConfig config, String tableName) {
+		return null;
+	}
+
+	@Override
+	public Map<String, String> getSourceCommand(CommandTemplate commandTemplate) {
+		return null;
+	}
+
+	@Override
+	public Map<String, String> getTargetCommand(CommandTemplate commandTemplate) {
 		return null;
 	}
 

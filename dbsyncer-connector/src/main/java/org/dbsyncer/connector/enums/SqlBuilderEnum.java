@@ -30,9 +30,9 @@ public enum SqlBuilderEnum {
      */
     QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery()),
     /**
-     * 查询定时SQL生成器
+     * 查询SQL最新记录点
      */
-    QUERY_QUARTZ(ConnectorConstant.OPERTION_QUERY_QUARTZ, new SqlBuilderQueryQuartz());
+    QUERY_MAX(ConnectorConstant.OPERTION_QUERY_MAX, new SqlBuilderQueryMax());
 
     // SQL构造器名称
     private String name;

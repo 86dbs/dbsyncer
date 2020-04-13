@@ -11,6 +11,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author AE86
@@ -43,6 +44,16 @@ public interface Parser {
      * @return
      */
     MetaInfo getMetaInfo(String connectorId, String tableName);
+
+    /**
+     * 获取映射关系执行命令
+     *
+     * @param sourceConnectorId
+     * @param targetConnectorId
+     * @param tableGroup
+     * @return
+     */
+    Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup);
 
     /**
      * 解析连接器配置为Connector
@@ -95,4 +106,5 @@ public interface Parser {
      * @return
      */
     List<ConvertEnum> getConvertEnumAll();
+
 }

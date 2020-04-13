@@ -14,7 +14,7 @@ import java.util.List;
  * @version 1.0.0
  * @date 2019/9/27 0:20
  */
-public class SqlBuilderQueryQuartz implements SqlBuilder {
+public class SqlBuilderQueryMax implements SqlBuilder {
 
     @Override
     public String buildSql(DatabaseConfig config, String tableName, String pk, List<String> filedNames, String queryFilter,

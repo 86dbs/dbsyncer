@@ -13,6 +13,7 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.plugin.config.Plugin;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author AE86
@@ -59,6 +60,8 @@ public interface Manager {
     TableGroup getTableGroup(String tableGroupId);
 
     List<TableGroup> getTableGroupAll(String mappingId);
+
+    Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup);
 
     // ConnectorEnum
     List<ConnectorEnum> getConnectorEnumAll();

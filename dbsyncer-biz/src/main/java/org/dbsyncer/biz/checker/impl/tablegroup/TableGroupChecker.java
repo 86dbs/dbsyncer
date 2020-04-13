@@ -62,6 +62,9 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable));
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable));
 
+        // 生成command
+        setCommand(mapping, tableGroup);
+
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
         return tableGroup;
@@ -149,5 +152,10 @@ public class TableGroupChecker extends AbstractChecker {
         final Map<String, Field> map = new HashMap<>();
         col.forEach(f -> map.put(f.getName(), f));
         return map;
+    }
+
+    private void setCommand(Mapping mapping, TableGroup tableGroup) {
+        Map<String, String> command = manager.getCommand(mapping.getSourceConnectorId(), mapping.getTargetConnectorId(), tableGroup);
+        tableGroup.setCommand(command);
     }
 }
