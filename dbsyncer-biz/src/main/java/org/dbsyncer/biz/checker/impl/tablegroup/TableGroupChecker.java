@@ -86,6 +86,11 @@ public class TableGroupChecker extends AbstractChecker {
         Assert.hasText(fieldMappingJson, "TableGroupChecker check params fieldMapping is empty");
         setFieldMapping(tableGroup, fieldMappingJson);
 
+        // 生成command
+        Mapping mapping = manager.getMapping(tableGroup.getMappingId());
+        Assert.notNull(mapping, "mapping can not be null.");
+        setCommand(mapping, tableGroup);
+
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(tableGroup, params);
 

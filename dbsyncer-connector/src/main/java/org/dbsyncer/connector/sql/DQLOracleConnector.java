@@ -17,7 +17,7 @@ public final class DQLOracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getPageSql(DatabaseConfig config, String tableName, String pk, String querySQL) {
+    public String getPageSql(String tableName, String pk, String querySQL) {
         // Oracle 分页查询
         return DatabaseConstant.ORACLE_PAGE_SQL_START + querySQL + DatabaseConstant.ORACLE_PAGE_SQL_END;
     }

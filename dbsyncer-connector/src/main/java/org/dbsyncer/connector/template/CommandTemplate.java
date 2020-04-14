@@ -6,7 +6,7 @@ import org.dbsyncer.connector.config.Table;
 import java.util.List;
 
 /**
- * 查询模板
+ * 查询同步参数模板
  *
  * @author AE86
  * @version 1.0.0

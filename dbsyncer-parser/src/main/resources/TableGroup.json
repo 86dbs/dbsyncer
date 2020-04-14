@@ -47,8 +47,7 @@
     "QUERY":"SELECT * FROM MY_USER where name = ?",
     "INSERT":"INSERT INTO MY_USER(id,name)values(?,?)",
     "UPDATE":"UPDATE MY_USER set name=? where MY_USER.id=?",
-    "DELETE":"DELETE MY_USER WHERE MY_USER.id=?",
-    "QUERY_MAX":"select xxx"
+    "DELETE":"DELETE MY_USER WHERE MY_USER.id=?"
   },
   "filter": [
     {

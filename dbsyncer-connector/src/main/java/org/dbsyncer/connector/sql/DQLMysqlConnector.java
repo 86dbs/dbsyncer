@@ -17,7 +17,7 @@ public final class DQLMysqlConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getPageSql(DatabaseConfig config, String tableName, String pk, String querySQL) {
+    public String getPageSql(String tableName, String pk, String querySQL) {
         // Mysql 分页查询
         return querySQL + DatabaseConstant.MYSQL_PAGE_SQL;
     }

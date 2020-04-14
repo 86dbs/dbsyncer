@@ -28,11 +28,7 @@ public enum SqlBuilderEnum {
     /**
      * 查询SQL生成器
      */
-    QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery()),
-    /**
-     * 查询SQL最新记录点
-     */
-    QUERY_MAX(ConnectorConstant.OPERTION_QUERY_MAX, new SqlBuilderQueryMax());
+    QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery());
 
     // SQL构造器名称
     private String name;

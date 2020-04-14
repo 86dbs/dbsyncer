@@ -15,8 +15,7 @@ import java.util.List;
 public class SqlBuilderQuery implements SqlBuilder {
 
     @Override
-    public String buildSql(DatabaseConfig config, String tableName, String pk, List<String> filedNames, String queryFilter,
-                           Database database) {
+    public String buildSql(String tableName, String pk, List<String> filedNames, String queryFilter, Database database) {
         StringBuilder sql = new StringBuilder();
         int size = filedNames.size();
         int end = size - 1;
@@ -35,7 +34,7 @@ public class SqlBuilderQuery implements SqlBuilder {
             sql.append(queryFilter);
         }
         // 分页语句
-        return database.getPageSql(config, tableName, pk, sql.toString());
+        return database.getPageSql(tableName, pk, sql.toString());
     }
 
 }
