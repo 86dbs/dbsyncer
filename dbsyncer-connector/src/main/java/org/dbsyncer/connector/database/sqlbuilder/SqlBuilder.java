@@ -1,7 +1,5 @@
 package org.dbsyncer.connector.database.sqlbuilder;
 
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.database.Database;
 
 import java.util.List;
@@ -17,7 +15,6 @@ public interface SqlBuilder {
 
     /**
      * 生成SQL
-     * @param config
      * @param tableName
      * @param pk
      * @param filedNames
@@ -25,6 +22,6 @@ public interface SqlBuilder {
      * @param database
      * @return
      */
-    String buildSql(DatabaseConfig config, String tableName, String pk, List<String> filedNames, String queryFilter, Database database);
+    String buildSql(String tableName, String pk, List<String> filedNames, String queryFilter, Database database);
 
 }

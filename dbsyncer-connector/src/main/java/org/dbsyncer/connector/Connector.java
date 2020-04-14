@@ -2,8 +2,10 @@ package org.dbsyncer.connector;
 
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.template.CommandTemplate;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 连接器基础功能
@@ -38,4 +40,21 @@ public interface Connector {
      * @return
      */
     MetaInfo getMetaInfo(ConnectorConfig config, String tableName);
+
+    /**
+     * 获取数据源同步参数
+     *
+     * @param commandTemplate
+     * @return
+     */
+    Map<String, String> getSourceCommand(CommandTemplate commandTemplate);
+
+    /**
+     * 获取目标源同步参数
+     *
+     * @param commandTemplate
+     * @return
+     */
+    Map<String, String> getTargetCommand(CommandTemplate commandTemplate);
+
 }

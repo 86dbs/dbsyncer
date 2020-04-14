@@ -6,35 +6,34 @@
     <div class="form-group">
         <label class="col-sm-2 control-label">帐号 <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-4">
-            <input class="form-control" name="username" type="text" maxlength="32" dbsyncer-valid="require"
-                   placeholder="root" />
+            <input class="form-control" name="username" type="text" maxlength="32" dbsyncer-valid="require" placeholder="root" th:value="${connector?.config?.username}"/>
         </div>
         <label class="col-sm-2 control-label">密码 <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-4 ">
-            <input class="form-control" name="password" type="password" maxlength="32" dbsyncer-valid="require" />
+            <input class="form-control" name="password" type="password" maxlength="32" dbsyncer-valid="require" th:value="${connector?.config?.password}"/>
         </div>
     </div>
     <div class="form-group">
         <label class="col-sm-2 control-label">SQL <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-10">
-            <textarea name="sql" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="10">SELECT T1.* FROM USER T1 </textarea>
+            <textarea id="sql" name="sql" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="10" th:text="${connector?.config?.sql}?:'SELECT T1.* FROM USER T1'"></textarea>
         </div>
     </div>
     <div class="form-group">
         <div class="col-sm-12 text-right">
-            <a id="beautifySql" href="javascript:;"><span class="fa fa-magic fa-1x fa-flip-horizontal dbsyncer_pointer" title="美化SQL"></span>美化SQL</a>
+            <a href="javascript:beautifySql();"><span class="fa fa-magic fa-1x fa-flip-horizontal dbsyncer_pointer" title="美化SQL"></span>美化SQL</a>
         </div>
     </div>
     <div class="form-group">
         <label class="col-sm-2 control-label">URL <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-10">
-            <textarea name="url" class="form-control" maxlength="128" dbsyncer-valid="require" rows="5">jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&amp;characterEncoding=UTF8&amp;useSSL=true</textarea>
+            <textarea name="url" class="form-control" maxlength="128" dbsyncer-valid="require" rows="5" th:text="${connector?.config?.url}?:'jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&amp;characterEncoding=UTF8&amp;useSSL=true'"></textarea>
         </div>
     </div>
     <div class="form-group">
         <label class="col-sm-2 control-label">驱动 </label>
         <div class="col-sm-10">
-            <input class="form-control" readonly="true" name="driver" type="text" value="com.mysql.jdbc.Driver" />
+            <input class="form-control" readonly="true" name="driverClassName" type="text" value="com.mysql.jdbc.Driver" />
         </div>
     </div>
 </div>

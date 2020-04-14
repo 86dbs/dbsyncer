@@ -22,17 +22,29 @@ public class ConnectorController extends BaseController {
     @Autowired
     private ConnectorService connectorService;
 
-    @GetMapping("/page/{page}")
-    public String page(HttpServletRequest request, ModelMap model, @PathVariable("page") String page, String id) {
+    @GetMapping("/page/add")
+    public String pageAdd(HttpServletRequest request, ModelMap model) {
+        model.put("connectorTypes", connectorService.getConnectorTypeAll());
+        return "connector/add";
+    }
+
+    @GetMapping("/page/add{page}")
+    public String page(HttpServletRequest request, ModelMap model, @PathVariable("page") String page) {
+        return "connector/add" + page;
+    }
+
+    @GetMapping("/page/edit")
+    public String pageEdit(HttpServletRequest request, ModelMap model, String id) {
         model.put("connector", connectorService.getConnector(id));
-        return "connector/" + page;
+        return "connector/edit";
     }
 
     @PostMapping(value = "/alive")
     @ResponseBody
-    public RestResult alive(HttpServletRequest request, @RequestParam(value = "json") String json) {
+    public RestResult alive(HttpServletRequest request) {
         try {
-            return RestResult.restSuccess(connectorService.alive(json));
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(connectorService.alive(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());
@@ -41,9 +53,10 @@ public class ConnectorController extends BaseController {
 
     @PostMapping("/add")
     @ResponseBody
-    public RestResult add(HttpServletRequest request, @RequestParam(value = "json") String json) {
+    public RestResult add(HttpServletRequest request) {
         try {
-            return RestResult.restSuccess(connectorService.add(json));
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(connectorService.add(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());

@@ -2,8 +2,8 @@ function submit(data) {
     //保存驱动配置
     doPoster("/tableGroup/edit", data, function (data) {
         if (data.success == true) {
-            bootGrowl("保存驱动成功!", "success");
-            backIndexPage();
+            bootGrowl("保存表映射关系成功!", "success");
+            backMappingPage($("#tableGroupSubmitBtn"));
         } else {
             bootGrowl(data.resultValue, "danger");
         }
@@ -24,15 +24,29 @@ function initFieldMappingParams(){
     var row = [];
     var $fieldMappingList = $("#fieldMappingList");
     $fieldMappingList.find("tr").each(function(k,v){
+        var $pk = $(this).find("td:eq(2)").html();
         row.push({
             "source":$(this).find("td:eq(0)").text(),
-            "target":$(this).find("td:eq(1)").text()
+            "target":$(this).find("td:eq(1)").text(),
+            "pk":($pk != "" || $.trim($pk).length > 0)
         });
     });
     $("#fieldMapping").val(JSON.stringify(row));
 }
 // 绑定字段映射表格点击事件
 function bindFieldMappingListClick(){
+    // 行双击事件
+    var $tr = $("#fieldMappingList tr");
+    $tr.unbind("dblclick");
+    $tr.bind('dblclick', function () {
+        var $pk = $(this).find("td:eq(2)");
+        var $text = $pk.html();
+        var isPk = $text == "" || $.trim($text).length == 0;
+        $pk.html(isPk ? '<i title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i>' : '');
+        initFieldMappingParams();
+    });
+
+    // 删除事件
     var $del = $(".fieldMappingDelete");
     $del.unbind("click");
     $del.bind('click', function(){
@@ -66,12 +80,27 @@ function bindFieldMappingAddClick(){
              }
         });
         if(repeated){ return; }
-        var trHtml = "<tr title='双击设为主键'><td>" + sField + "</td><td>" + tField + "</td><td><a class='fa fa-remove fa-2x fieldMappingDelete dbsyncer_pointer' title='删除' ></a></td></tr>";
+        var trHtml = "<tr title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td></td><td><a class='fa fa-remove fa-2x fieldMappingDelete dbsyncer_pointer' title='删除' ></a></td></tr>";
         $fieldMappingList.append(trHtml);
 
         initFieldMappingParams();
         bindFieldMappingListClick();
     });
+}
+// 绑定下拉自动匹配字段
+function bindAutoSelect(){
+    var $sourceSelect = $("#sourceFieldMapping");
+    var $targetSelect = $("#targetFieldMapping");
+
+    // 绑定数据源下拉切换事件
+    $sourceSelect.change(function () {
+        var v = $(this).select2("val");
+        $targetSelect.val(v).trigger("change");
+    });
+}
+// 返回驱动配置页面
+function backMappingPage($this){
+    $initContainer.load('/mapping/page/edit?id=' + $this.attr("mappingId"));
 }
 
 $(function() {
@@ -79,6 +108,8 @@ $(function() {
     initFieldMappingParams();
     bindFieldMappingListClick();
     bindFieldMappingAddClick();
+    // 绑定下拉自动匹配字段
+    bindAutoSelect();
 
     // 初始化select2插件
     bindSelectEvent($("#tableGroupBaseConfig"));
@@ -89,14 +120,12 @@ $(function() {
         var $form = $("#tableGroupModifyForm");
         if ($form.formValidate() == true) {
             var data = $form.serializeJson();
-            console.log(data);
-//            submit(data);
+            submit(data);
         }
     });
 
     // 返回按钮，跳转至上个页面
     $("#tableGroupBackBtn").bind('click', function(){
-        var $mappingId = $(this).attr("mappingId");
-        $initContainer.load('/mapping/page/editMapping?id=' + $mappingId);
+        backMappingPage($(this));
     });
 });

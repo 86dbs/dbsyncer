@@ -5,9 +5,11 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.util.CheckerTypeUtil;
-import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.listener.config.ListenerConfig;
+import org.dbsyncer.listener.enums.ListenerEnum;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.constant.ModelConstant;
+import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
@@ -42,8 +44,31 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
     }
 
     @Override
-    public String checkConfigModel(Map<String, String> params) {
-        logger.info("check mapping params:{}", params);
+    public ConfigModel checkAddConfigModel(Map<String, String> params) {
+        logger.info("checkAddConfigModel mapping params:{}", params);
+        String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
+        String sourceConnectorId = params.get("sourceConnectorId");
+        String targetConnectorId = params.get("targetConnectorId");
+        Assert.hasText(name, "驱动名称不能为空");
+        Assert.hasText(sourceConnectorId, "数据源不能为空.");
+        Assert.hasText(targetConnectorId, "目标源不能为空.");
+
+        Mapping mapping = new Mapping();
+        mapping.setName(name);
+        mapping.setType(ConfigConstant.MAPPING);
+        mapping.setSourceConnectorId(sourceConnectorId);
+        mapping.setTargetConnectorId(targetConnectorId);
+        mapping.setModel(ModelConstant.FULL);
+        mapping.setListener(new ListenerConfig(ListenerEnum.TIMING.getCode()));
+
+        // 修改基本配置
+        this.modifyConfigModel(mapping, params);
+        return mapping;
+    }
+
+    @Override
+    public ConfigModel checkEditConfigModel(Map<String, String> params) {
+        logger.info("checkEditConfigModel mapping params:{}", params);
         Assert.notEmpty(params, "MappingChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Mapping mapping = manager.getMapping(id);
@@ -78,7 +103,7 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         this.modifySuperConfigModel(mapping, params);
 
         // 增量配置
-        return JsonUtil.objToJson(mapping);
+        return mapping;
     }
 
 }

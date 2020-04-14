@@ -1,6 +1,8 @@
 package org.dbsyncer.parser;
 
+import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
@@ -9,6 +11,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author AE86
@@ -20,10 +23,18 @@ public interface Parser {
     /**
      * 解析连接器配置是否可用
      *
-     * @param json
+     * @param config
      * @return
      */
-    boolean alive(String json);
+    boolean alive(ConnectorConfig config);
+
+    /**
+     * 获取连接器表
+     *
+     * @param config
+     * @return
+     */
+    List<String> getTable(ConnectorConfig config);
 
     /**
      * 获取表元信息
@@ -35,21 +46,22 @@ public interface Parser {
     MetaInfo getMetaInfo(String connectorId, String tableName);
 
     /**
+     * 获取映射关系执行命令
+     *
+     * @param sourceConnectorId
+     * @param targetConnectorId
+     * @param tableGroup
+     * @return
+     */
+    Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup);
+
+    /**
      * 解析连接器配置为Connector
      *
      * @param json
      * @return
      */
     Connector parseConnector(String json);
-
-    /**
-     * 解析连接器配置为Connector
-     *
-     * @param json
-     * @param checkAlive
-     * @return
-     */
-    Connector parseConnector(String json, boolean checkAlive);
 
     /**
      * 解析驱动映射关系配置为Mapping
@@ -60,15 +72,6 @@ public interface Parser {
     Mapping parseMapping(String json);
 
     /**
-     * 解析驱动映射关系配置为Mapping
-     *
-     * @param json
-     * @param checkAlive
-     * @return
-     */
-    Mapping parseMapping(String json, boolean checkAlive);
-
-    /**
      * 解析表映射关系
      *
      * @param json
@@ -77,13 +80,11 @@ public interface Parser {
     TableGroup parseTableGroup(String json);
 
     /**
-     * 解析表映射关系
+     * 获取所有连接器类型
      *
-     * @param json
-     * @param checkAlive
      * @return
      */
-    TableGroup parseTableGroup(String json, boolean checkAlive);
+    List<ConnectorEnum> getConnectorEnumAll();
 
     /**
      * 获取所有条件类型
@@ -105,4 +106,5 @@ public interface Parser {
      * @return
      */
     List<ConvertEnum> getConvertEnumAll();
+
 }

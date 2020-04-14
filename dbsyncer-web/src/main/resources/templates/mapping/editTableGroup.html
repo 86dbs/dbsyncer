@@ -55,7 +55,7 @@
                 <div class="row">
                     <div class="col-sm-10"></div>
                     <div class="col-md-2 text-right">
-                        <button id="tableGroupSubmitBtn" type="button" class="btn btn-primary">
+                        <button id="tableGroupSubmitBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-primary">
                             <span class="fa fa-save"></span>保存
                         </button>
                         <button id="tableGroupBackBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-default">
@@ -124,13 +124,15 @@
                                     <tr>
                                         <th>数据源表字段</th>
                                         <th>目标源表字段</th>
+                                        <th>目标源主键</th>
                                         <th>操作</th>
                                     </tr>
                                     </thead>
                                     <tbody id="fieldMappingList">
-                                        <tr title='双击设为主键' th:each="f,s:${tableGroup?.fieldMapping}">
+                                        <tr title='双击设置/取消主键' th:each="f,s:${tableGroup?.fieldMapping}">
                                             <td>[[${f?.source?.name}]]</td>
                                             <td>[[${f?.target?.name}]]</td>
+                                            <td><i th:if="${f?.target?.pk}" title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i></td>
                                             <td><a class='fa fa-remove fa-2x fieldMappingDelete dbsyncer_pointer' title='删除' ></a></td>
                                         </tr>
                                     </tbody>
@@ -159,13 +161,13 @@
                         </div>
                         <div id="tableGroupSuperConfig" class="panel-body panel-collapse collapse">
                             <!-- 过滤条件 -->
-                            <div th:replace="mapping/editMappingFilter :: content"></div>
+                            <div th:replace="mapping/editFilter :: content"></div>
 
                             <!-- 转换配置 -->
-                            <div th:replace="mapping/editMappingConvert :: content"></div>
+                            <div th:replace="mapping/editConvert :: content"></div>
 
                             <!-- 插件配置 -->
-                            <div th:replace="mapping/editMappingPlugin :: content"></div>
+                            <div th:replace="mapping/editPlugin :: content"></div>
                         </div>
                     </div>
                 </div>
@@ -175,6 +177,6 @@
     </div>
 </div>
 
-<script th:src="@{/js/mapping/editMappingTableGroup.js}"></script>
-<script th:src="@{/js/mapping/editMappingFilterAndConvert.js}"></script>
+<script th:src="@{/js/mapping/editTableGroup.js}"></script>
+<script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
 </html>

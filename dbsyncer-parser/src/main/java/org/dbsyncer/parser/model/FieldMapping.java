@@ -15,6 +15,14 @@ public class FieldMapping {
 
     private Field target;
 
+    public FieldMapping() {
+    }
+
+    public FieldMapping(Field source, Field target) {
+        this.source = source;
+        this.target = target;
+    }
+
     public Field getSource() {
         return source;
     }

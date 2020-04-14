@@ -4,12 +4,14 @@ import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -30,21 +32,20 @@ public class ConnectorServiceImpl implements ConnectorService {
     private Checker connectorChecker;
 
     @Override
-    public boolean alive(String json) {
-        logger.info("alive:{}", json);
-        return manager.alive(json);
+    public boolean alive(Map<String, String> params) {
+        return manager.alive(null);
     }
 
     @Override
-    public String add(String json) {
-        logger.info("add:{}", json);
-        return manager.addConnector(json);
+    public String add(Map<String, String> params) {
+        ConfigModel model = connectorChecker.checkAddConfigModel(params);
+        return manager.addConnector(model);
     }
 
     @Override
     public String edit(Map<String, String> params) {
-        String json = connectorChecker.checkConfigModel(params);
-        return manager.editConnector(json);
+        ConfigModel model = connectorChecker.checkEditConfigModel(params);
+        return manager.editConnector(model);
     }
 
     @Override
@@ -63,4 +64,12 @@ public class ConnectorServiceImpl implements ConnectorService {
     public List<Connector> getConnectorAll() {
         return manager.getConnectorAll();
     }
+
+    @Override
+    public List<String> getConnectorTypeAll() {
+        List<String> list = new ArrayList<>();
+        manager.getConnectorEnumAll().forEach(c -> list.add(c.getType()));
+        return list;
+    }
+
 }

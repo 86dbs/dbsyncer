@@ -3,9 +3,12 @@ package org.dbsyncer.connector;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
+import org.dbsyncer.connector.template.CommandTemplate;
 import org.springframework.util.Assert;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 连接器工厂
@@ -52,6 +55,24 @@ public class ConnectorFactory {
     }
 
     /**
+     * 获取连接器同步参数
+     *
+     * @param sourceCommandTemplate
+     * @param targetCommandTemplate
+     * @return
+     */
+    public Map<String, String> getCommand(CommandTemplate sourceCommandTemplate, CommandTemplate targetCommandTemplate) {
+        String sType = sourceCommandTemplate.getType();
+        String tType = targetCommandTemplate.getType();
+        Map<String, String> map = new HashMap<>();
+        Map<String, String> sCmd = getConnector(sType).getSourceCommand(sourceCommandTemplate);
+        Map<String, String> tCmd = getConnector(tType).getTargetCommand(targetCommandTemplate);
+        map.putAll(sCmd);
+        map.putAll(tCmd);
+        return map;
+    }
+
+    /**
      * 获取连接器
      *
      * @param connectorType
@@ -62,4 +83,5 @@ public class ConnectorFactory {
         Assert.hasText(connectorType, "ConnectorType can not be empty.");
         return ConnectorEnum.getConnector(connectorType);
     }
+
 }

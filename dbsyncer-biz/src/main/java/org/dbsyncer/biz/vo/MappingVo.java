@@ -1,6 +1,5 @@
 package org.dbsyncer.biz.vo;
 
-import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 
 /**
@@ -14,10 +13,10 @@ public class MappingVo extends Mapping {
     private boolean running;
 
     // 连接器
-    private Connector sourceConnector;
-    private Connector targetConnector;
+    private ConnectorVo sourceConnector;
+    private ConnectorVo targetConnector;
 
-    public MappingVo(boolean running, Connector sourceConnector, Connector targetConnector) {
+    public MappingVo(boolean running, ConnectorVo sourceConnector, ConnectorVo targetConnector) {
         this.running = running;
         this.sourceConnector = sourceConnector;
         this.targetConnector = targetConnector;
@@ -31,19 +30,19 @@ public class MappingVo extends Mapping {
         this.running = running;
     }
 
-    public Connector getSourceConnector() {
+    public ConnectorVo getSourceConnector() {
         return sourceConnector;
     }
 
-    public void setSourceConnector(Connector sourceConnector) {
+    public void setSourceConnector(ConnectorVo sourceConnector) {
         this.sourceConnector = sourceConnector;
     }
 
-    public Connector getTargetConnector() {
+    public ConnectorVo getTargetConnector() {
         return targetConnector;
     }
 
-    public void setTargetConnector(Connector targetConnector) {
+    public void setTargetConnector(ConnectorVo targetConnector) {
         this.targetConnector = targetConnector;
     }
 }

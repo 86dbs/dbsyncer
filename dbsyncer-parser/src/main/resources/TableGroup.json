@@ -1,9 +1,9 @@
 {
   "id":"tableGroupId_0",
   "type":"tableGroup",
-  "name": "",
-  "createDateTime": "2019-10-08 21:32:00",
-  "updateDateTime": "2019-10-08 21:35:00",
+  "name": "tableGroup",
+  "createTime": "2019-10-08 21:32:00",
+  "updateTime": "2019-10-08 21:35:00",
   "mappingId": "11111",
   "sourceTable":{
     "name":"MY_USER",
@@ -47,10 +47,7 @@
     "QUERY":"SELECT * FROM MY_USER where name = ?",
     "INSERT":"INSERT INTO MY_USER(id,name)values(?,?)",
     "UPDATE":"UPDATE MY_USER set name=? where MY_USER.id=?",
-    "DELETE":"DELETE MY_USER WHERE MY_USER.id=?",
-    "QUARTZ_RANGE":"select xxx",
-    "QUARTZ_ALL":"select xxx",
-    "QUARTZ_MAX":"select xxx"
+    "DELETE":"DELETE MY_USER WHERE MY_USER.id=?"
   },
   "filter": [
     {

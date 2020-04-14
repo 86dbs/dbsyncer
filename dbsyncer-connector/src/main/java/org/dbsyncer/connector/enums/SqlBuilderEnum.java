@@ -28,11 +28,7 @@ public enum SqlBuilderEnum {
     /**
      * 查询SQL生成器
      */
-    QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery()),
-    /**
-     * 查询定时SQL生成器
-     */
-    QUERY_QUARTZ(ConnectorConstant.OPERTION_QUERY_QUARTZ, new SqlBuilderQueryQuartz());
+    QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery());
 
     // SQL构造器名称
     private String name;

@@ -12,11 +12,11 @@ public enum ListenerEnum {
     /**
      * 日志
      */
-    LOG("Log"),
+    LOG("log"),
     /**
      * 定时
      */
-    POLLING("Polling");
+    TIMING("timing");
 
     // 策略编码
     private String code;

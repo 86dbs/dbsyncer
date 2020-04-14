@@ -38,6 +38,13 @@ public class Field {
         this.type = type;
     }
 
+    public Field(String name, String typeName, int type, boolean pk) {
+        this.name = name;
+        this.typeName = typeName;
+        this.type = type;
+        this.pk = pk;
+    }
+
     public String getName() {
         return name;
     }

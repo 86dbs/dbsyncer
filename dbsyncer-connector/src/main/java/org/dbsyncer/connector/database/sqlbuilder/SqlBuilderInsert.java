@@ -1,7 +1,5 @@
 package org.dbsyncer.connector.database.sqlbuilder;
 
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.database.Database;
 
 import java.util.List;
@@ -14,8 +12,7 @@ import java.util.List;
 public class SqlBuilderInsert implements SqlBuilder {
 
     @Override
-    public String buildSql(DatabaseConfig config, String tableName, String pk, List<String> filedNames, String queryFilter,
-                           Database database) {
+    public String buildSql(String tableName, String pk, List<String> filedNames, String queryFilter, Database database) {
         StringBuilder sql = new StringBuilder();
         StringBuilder fs = new StringBuilder();
         StringBuilder vs = new StringBuilder();

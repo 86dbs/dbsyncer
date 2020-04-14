@@ -1,23 +1,24 @@
 package org.dbsyncer.connector.util;
 
+import com.sun.rowset.CachedRowSetImpl;
 import org.apache.commons.dbcp.BasicDataSource;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowCountCallbackHandler;
+import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
 
 import javax.sql.DataSource;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.sql.Types;
+import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class DatabaseUtil {
 
@@ -52,25 +53,57 @@ public abstract class DatabaseUtil {
      * @param metaSql      查询元数据
      * @return
      */
-    public static MetaInfo getMetaInfo(JdbcTemplate jdbcTemplate, String metaSql) {
-        // 查询表字段信息和总行数
-        RowCountCallbackHandler handler = new RowCountCallbackHandler();
-        jdbcTemplate.query(metaSql, handler);
-        String[] columnNames = handler.getColumnNames();
-        int[] columnTypes = handler.getColumnTypes();
-        if(null == columnNames || null == columnTypes || columnNames.length != columnTypes.length){
-            throw new ConnectorException("Get metaInfo column error");
+    public static MetaInfo getMetaInfo(JdbcTemplate jdbcTemplate, String metaSql) throws SQLException {
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(metaSql);
+        ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
+        CachedRowSetImpl resultSet = (CachedRowSetImpl) rowSet.getResultSet();
+        SqlRowSetMetaData metaData = rowSet.getMetaData();
+
+        // 查询表字段信息
+        int columnCount = metaData.getColumnCount();
+        if (1 > columnCount) {
+            throw new ConnectorException("查询表字段不能为空.");
         }
-        int len = columnNames.length;
-        List<Field> fields = new ArrayList<>(len);
+        Connection connection = jdbcTemplate.getDataSource().getConnection();
+        DatabaseMetaData md = connection.getMetaData();
+
+        List<Field> fields = new ArrayList<>(columnCount);
+        // <表名,[主键, ...]>
+        Map<String, List<String>> tables = new HashMap<>();
         String name = null;
+        String label = null;
         String typeName = null;
-        for (int i = 0; i < len; i++) {
-            name = columnNames[i];
-            typeName = getTypeName(columnTypes[i]);
-            fields.add(new Field(name, typeName, columnTypes[i]));
+        String tableName = null;
+        int columnType;
+        boolean pk;
+        for (int i = 1; i <= columnCount; i++) {
+            tableName = metaData.getTableName(i);
+            if (null == tables.get(tableName)) {
+                tables.putIfAbsent(tableName, findTablePrimaryKeys(md, tableName));
+            }
+            name = metaData.getColumnName(i);
+            label = metaData.getColumnLabel(i);
+            typeName = metaData.getColumnTypeName(i);
+            columnType = metaData.getColumnType(i);
+            pk = isPk(tables, tableName, name);
+            fields.add(new Field(label, typeName, columnType, pk));
         }
-        return new MetaInfo(fields, handler.getRowCount());
+        return new MetaInfo(fields, resultSet.size());
+    }
+
+    private static boolean isPk(Map<String, List<String>> tables, String tableName, String name) {
+        List<String> pk = tables.get(tableName);
+        return !CollectionUtils.isEmpty(pk) && pk.contains(name);
+    }
+
+    private static List<String> findTablePrimaryKeys(DatabaseMetaData md, String tableName) throws SQLException {
+        //根据表名获得主键结果集
+        ResultSet rs = md.getPrimaryKeys(null, null, tableName);
+        List<String> primaryKeys = new ArrayList<>();
+        while (rs.next()) {
+            primaryKeys.add(rs.getString("COLUMN_NAME"));
+        }
+        return primaryKeys;
     }
 
     /**
@@ -253,107 +286,6 @@ public abstract class DatabaseUtil {
                 //            }
                 break;
         }
-    }
-
-    /**
-     * 获取数据库表元数据信息
-     *
-     * @param columnTypes
-     * @return
-     */
-    public static List<String> getColumnTypeNames(int[] columnTypes) {
-        if (columnTypes != null && columnTypes.length > 0) {
-            List<String> columnTypeNames = new ArrayList<String>(columnTypes.length);
-            for (int t : columnTypes) {
-                columnTypeNames.add(getTypeName(t));
-            }
-            return columnTypeNames;
-        }
-        return null;
-    }
-
-    private static String getTypeName(int type) {
-        switch (type) {
-            case Types.BIT:
-                return "BIT";
-            case Types.TINYINT:
-                return "TINYINT";
-            case Types.SMALLINT:
-                return "SMALLINT";
-            case Types.INTEGER:
-                return "INTEGER";
-            case Types.BIGINT:
-                return "BIGINT";
-            case Types.FLOAT:
-                return "FLOAT";
-            case Types.REAL:
-                return "REAL";
-            case Types.DOUBLE:
-                return "DOUBLE";
-            case Types.NUMERIC:
-                return "NUMERIC";
-            case Types.DECIMAL:
-                return "DECIMAL";
-            case Types.CHAR:
-                return "CHAR";
-            case Types.VARCHAR:
-                return "VARCHAR";
-            case Types.LONGVARCHAR:
-                return "LONGVARCHAR";
-            case Types.DATE:
-                return "DATE";
-            case Types.TIME:
-                return "TIME";
-            case Types.TIMESTAMP:
-                return "TIMESTAMP";
-            case Types.BINARY:
-                return "BINARY";
-            case Types.VARBINARY:
-                return "VARBINARY";
-            case Types.LONGVARBINARY:
-                return "LONGVARBINARY";
-            case Types.NULL:
-                return "NULL";
-            case Types.OTHER:
-                return "OTHER";
-            case Types.JAVA_OBJECT:
-                return "JAVA_OBJECT";
-            case Types.DISTINCT:
-                return "DISTINCT";
-            case Types.STRUCT:
-                return "STRUCT";
-            case Types.ARRAY:
-                return "ARRAY";
-            case Types.BLOB:
-                return "BLOB";
-            case Types.CLOB:
-                return "CLOB";
-            case Types.REF:
-                return "REF";
-            case Types.DATALINK:
-                return "DATALINK";
-            case Types.BOOLEAN:
-                return "BOOLEAN";
-            case Types.ROWID:
-                return "ROWID";
-            case Types.NCHAR:
-                return "NCHAR";
-            case Types.NVARCHAR:
-                return "NVARCHAR";
-            case Types.LONGNVARCHAR:
-                return "LONGNVARCHAR";
-            case Types.NCLOB:
-                return "NCLOB";
-            case Types.SQLXML:
-                return "SQLXML";
-            case Types.REF_CURSOR:
-                return "REF_CURSOR";
-            case Types.TIME_WITH_TIMEZONE:
-                return "TIME_WITH_TIMEZONE";
-            case Types.TIMESTAMP_WITH_TIMEZONE:
-                return "TIMESTAMP_WITH_TIMEZONE";
-        }
-        return null;
     }
 
 }
