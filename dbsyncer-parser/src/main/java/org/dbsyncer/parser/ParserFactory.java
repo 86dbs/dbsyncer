@@ -3,12 +3,14 @@ package org.dbsyncer.parser;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.connector.config.*;
-import org.dbsyncer.connector.template.CommandTemplate;
 import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.connector.template.CommandTemplate;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
@@ -19,6 +21,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -160,7 +163,9 @@ public class ParserFactory implements Parser {
         Assert.hasText(connectorId, "Connector id can not be empty.");
         Connector conn = cacheService.get(connectorId, Connector.class);
         Assert.notNull(conn, "Connector can not be null.");
-        return conn.getConfig();
+        Connector connector = new Connector();
+        BeanUtils.copyProperties(conn, connector);
+        return connector.getConfig();
     }
 
 }

@@ -1,5 +1,6 @@
 package org.dbsyncer.manager.template.impl;
 
+import org.dbsyncer.cache.CacheException;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.template.*;
@@ -9,6 +10,7 @@ import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.StorageConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -50,14 +52,26 @@ public class ConfigOperationTemplate {
                         list.add((T) v);
                     }
                 });
-                return list;
+                return Collections.unmodifiableList(list);
             }
         }
         return Collections.EMPTY_LIST;
     }
 
     public <T> T queryObject(Class<T> filterClass, String id) {
-        return (T) cacheService.get(id);
+        Object o = cacheService.get(id, filterClass);
+        T t;
+        try {
+            t = filterClass.newInstance();
+            if(null != o && null != t){
+                BeanUtils.copyProperties(o, t);
+            }
+        } catch (InstantiationException e) {
+            throw new CacheException(e.getMessage());
+        } catch (IllegalAccessException e) {
+            throw new CacheException(e.getMessage());
+        }
+        return (T) t;
     }
 
     public String execute(ConfigModel model, OperationTemplate operationTemplate) {

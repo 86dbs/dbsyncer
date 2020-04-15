@@ -43,13 +43,6 @@ public interface CacheService {
     Object get(String key);
 
     /**
-     * 获取所有值
-     *
-     * @return
-     */
-    Map<String, Object> getAll();
-
-    /**
      * 根据Key获取值
      *
      * @param key
@@ -58,10 +51,5 @@ public interface CacheService {
      * @return
      */
     <T> T get(String key, Class<T> valueType);
-
-    /**
-     * 清空缓存
-     */
-    void clear();
 
 }
