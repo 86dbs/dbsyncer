@@ -68,7 +68,6 @@ public class MappingServiceImpl implements MappingService {
         List<Mapping> list = manager.getMappingAll();
         if (!CollectionUtils.isEmpty(list)) {
             list.forEach(m -> temp.add(convertMapping2Vo(m)));
-            list.clear();
         }
         return temp;
     }
