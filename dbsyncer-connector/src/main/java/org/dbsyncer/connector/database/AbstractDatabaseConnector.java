@@ -5,6 +5,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
 import org.dbsyncer.connector.template.CommandTemplate;
 import org.dbsyncer.connector.util.DatabaseUtil;
@@ -230,12 +231,9 @@ public abstract class AbstractDatabaseConnector implements Database {
 
         // 拼接或者SQL
         String orSql = getFilterSql(OperationEnum.OR.getName(), filter);
-        if (StringUtils.isNotBlank(orSql)) {
-            condition.append(orSql);
-            // 如果Or条件和Add条件都存在
-            if (StringUtils.isNotBlank(addSql)) {
-                condition.append(" OR ").append(orSql);
-            }
+        // 如果Or条件和Add条件都存在
+        if (StringUtils.isNotBlank(orSql) && StringUtils.isNotBlank(addSql)) {
+            condition.append(" OR ").append(orSql);
         }
 
         // 如果有条件加上 WHERE
@@ -296,7 +294,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             f = fields.get(i);
             type = f.getType();
             val = row.get(f.getName());
-            DatabaseUtil.preparedStatementSetter(ps, i + 1, type, val);
+            SetterEnum.getSetter(type).preparedStatementSetter(ps, i + 1, type, val);
         }
     }
 
