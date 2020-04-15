@@ -22,10 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author AE86
@@ -55,6 +52,7 @@ public class TableGroupChecker extends AbstractChecker {
         // 检查是否存在重复映射关系
         checkRepeatedTable(mappingId, sourceTable, targetTable);
 
+        // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
         tableGroup.setName(ConfigConstant.TABLE_GROUP);
         tableGroup.setType(ConfigConstant.TABLE_GROUP);
@@ -62,11 +60,15 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable));
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable));
 
+        // 修改基本配置
+        this.modifyConfigModel(tableGroup, params);
+
+        // 匹配相似字段
+        mergeFieldMapping(tableGroup);
+
         // 生成command
         setCommand(mapping, tableGroup);
 
-        // 修改基本配置
-        this.modifyConfigModel(tableGroup, params);
         return tableGroup;
     }
 
@@ -77,22 +79,22 @@ public class TableGroupChecker extends AbstractChecker {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = manager.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
+        Mapping mapping = manager.getMapping(tableGroup.getMappingId());
+        Assert.notNull(mapping, "mapping can not be null.");
+        String fieldMappingJson = params.get("fieldMapping");
+        Assert.hasText(fieldMappingJson, "TableGroupChecker check params fieldMapping is empty");
 
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
 
         // 字段映射关系
-        String fieldMappingJson = params.get("fieldMapping");
-        Assert.hasText(fieldMappingJson, "TableGroupChecker check params fieldMapping is empty");
         setFieldMapping(tableGroup, fieldMappingJson);
-
-        // 生成command
-        Mapping mapping = manager.getMapping(tableGroup.getMappingId());
-        Assert.notNull(mapping, "mapping can not be null.");
-        setCommand(mapping, tableGroup);
 
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(tableGroup, params);
+
+        // 生成command
+        setCommand(mapping, tableGroup);
 
         return tableGroup;
     }
@@ -118,6 +120,39 @@ public class TableGroupChecker extends AbstractChecker {
         }
     }
 
+    private void mergeFieldMapping(TableGroup tableGroup) {
+        List<Field> sCol = tableGroup.getSourceTable().getColumn();
+        List<Field> tCol = tableGroup.getTargetTable().getColumn();
+        if (CollectionUtils.isEmpty(sCol) || CollectionUtils.isEmpty(tCol)) {
+            return;
+        }
+
+        // Set集合去重
+        Map<String, Field> m1 = new HashMap<>();
+        Map<String, Field> m2 = new HashMap<>();
+        List<String> k1 = new LinkedList<>();
+        List<String> k2 = new LinkedList<>();
+        shuffleColumn(sCol, k1, m1);
+        shuffleColumn(tCol, k2, m2);
+        k1.retainAll(k2);
+
+        // 有相似字段
+        if (!CollectionUtils.isEmpty(k1)) {
+            List<FieldMapping> fields = new ArrayList<>();
+            k1.forEach(k -> fields.add(new FieldMapping(m1.get(k), m2.get(k))));
+            tableGroup.setFieldMapping(fields);
+        }
+    }
+
+    private void shuffleColumn(List<Field> col, List<String> key, Map<String, Field> map) {
+        col.forEach(f -> {
+            if (!key.contains(f.getName())) {
+                key.add(f.getName());
+                map.put(f.getName(), f);
+            }
+        });
+    }
+
     /**
      * 解析映射关系
      *
@@ -128,7 +163,7 @@ public class TableGroupChecker extends AbstractChecker {
     private void setFieldMapping(TableGroup tableGroup, String json) {
         try {
             JSONArray mapping = new JSONArray(json);
-            if(null == mapping){
+            if (null == mapping) {
                 throw new BizException("映射关系不能为空");
             }
 
@@ -160,7 +195,15 @@ public class TableGroupChecker extends AbstractChecker {
     }
 
     private void setCommand(Mapping mapping, TableGroup tableGroup) {
-        Map<String, String> command = manager.getCommand(mapping.getSourceConnectorId(), mapping.getTargetConnectorId(), tableGroup);
+        TableGroup group = new TableGroup();
+        group.setFieldMapping(tableGroup.getFieldMapping());
+        group.setSourceTable(tableGroup.getSourceTable());
+        group.setTargetTable(tableGroup.getTargetTable());
+        // 默认使用全局的过滤条件
+        if (CollectionUtils.isEmpty(tableGroup.getFilter())) {
+            group.setFilter(mapping.getFilter());
+        }
+        Map<String, String> command = manager.getCommand(mapping.getSourceConnectorId(), mapping.getTargetConnectorId(), group);
         tableGroup.setCommand(command);
     }
 }

@@ -1,18 +1,17 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.cache.CacheService;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.template.CommandTemplate;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.config.Filter;
-import org.dbsyncer.connector.config.MetaInfo;
-import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.SnowflakeIdWorker;
@@ -24,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -65,13 +65,22 @@ public class ParserFactory implements Parser {
 
     @Override
     public Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup) {
+        List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
+        if(CollectionUtils.isEmpty(fieldMapping)){
+            return null;
+        }
         String sType = getConnectorConfig(sourceConnectorId).getConnectorType();
         String tType = getConnectorConfig(targetConnectorId).getConnectorType();
-        Table sourceTable = tableGroup.getSourceTable();
-        Table targetTable = tableGroup.getTargetTable();
-        List<Filter> filter = tableGroup.getFilter();
-        final CommandTemplate sourceCmdTemplate = new CommandTemplate(sType, sourceTable, filter);
-        final CommandTemplate targetCmdTemplate = new CommandTemplate(tType, targetTable);
+        String sTableName = tableGroup.getSourceTable().getName();
+        String tTableName = tableGroup.getTargetTable().getName();
+        Table sTable = new Table().setName(sTableName).setColumn(new ArrayList<>());
+        Table tTable = new Table().setName(tTableName).setColumn(new ArrayList<>());
+        fieldMapping.forEach(m ->{
+            sTable.getColumn().add(m.getSource());
+            tTable.getColumn().add(m.getTarget());
+        });
+        final CommandTemplate sourceCmdTemplate = new CommandTemplate(sType, sTable, tableGroup.getFilter());
+        final CommandTemplate targetCmdTemplate = new CommandTemplate(tType, tTable);
         // 获取连接器同步参数
         Map<String, String> command = connectorFactory.getCommand(sourceCmdTemplate, targetCmdTemplate);
         return command;

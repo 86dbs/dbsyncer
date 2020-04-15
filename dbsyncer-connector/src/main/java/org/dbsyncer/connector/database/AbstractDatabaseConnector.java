@@ -230,9 +230,12 @@ public abstract class AbstractDatabaseConnector implements Database {
 
         // 拼接或者SQL
         String orSql = getFilterSql(OperationEnum.OR.getName(), filter);
-        // 如果Or条件和Add条件都存在
-        if (StringUtils.isNotBlank(orSql) && StringUtils.isNotBlank(addSql)) {
-            condition.append(" OR ").append(orSql);
+        if (StringUtils.isNotBlank(orSql)) {
+            condition.append(orSql);
+            // 如果Or条件和Add条件都存在
+            if (StringUtils.isNotBlank(addSql)) {
+                condition.append(" OR ").append(orSql);
+            }
         }
 
         // 如果有条件加上 WHERE

@@ -36,9 +36,6 @@ public class TableGroupServiceImpl implements TableGroupService {
     @Override
     public String add(Map<String, String> params) {
         TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
-        // 匹配相似字段
-        mergeTableGroupColumn(model);
-
         String id = manager.addTableGroup(model);
 
         // 合并驱动公共字段
@@ -105,39 +102,6 @@ public class TableGroupServiceImpl implements TableGroupService {
             }
         });
         return list;
-    }
-
-    private void mergeTableGroupColumn(TableGroup tableGroup) {
-        List<Field> sCol = tableGroup.getSourceTable().getColumn();
-        List<Field> tCol = tableGroup.getTargetTable().getColumn();
-        if (CollectionUtils.isEmpty(sCol) || CollectionUtils.isEmpty(tCol)) {
-            return;
-        }
-
-        // Set集合去重
-        Map<String, Field> m1 = new HashMap<>();
-        Map<String, Field> m2 = new HashMap<>();
-        List<String> k1 = new LinkedList<>();
-        List<String> k2 = new LinkedList<>();
-        shuffleColumn(sCol, k1, m1);
-        shuffleColumn(tCol, k2, m2);
-        k1.retainAll(k2);
-
-        // 有相似字段
-        if (!CollectionUtils.isEmpty(k1)) {
-            List<FieldMapping> fields = new ArrayList<>();
-            k1.forEach(k -> fields.add(new FieldMapping(m1.get(k), m2.get(k))));
-            tableGroup.setFieldMapping(fields);
-        }
-    }
-
-    private void shuffleColumn(List<Field> col, List<String> key, Map<String, Field> map) {
-        col.forEach(f -> {
-            if (!key.contains(f.getName())) {
-                key.add(f.getName());
-                map.put(f.getName(), f);
-            }
-        });
     }
 
 }
