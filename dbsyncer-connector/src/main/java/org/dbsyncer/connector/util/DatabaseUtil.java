@@ -13,8 +13,10 @@ import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
 
 import javax.sql.DataSource;
-import java.sql.*;
-import java.time.LocalDate;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +48,18 @@ public abstract class DatabaseUtil {
         }
     }
 
+    public static void close(Connection connection) throws SQLException {
+        if (null != connection) {
+            connection.close();
+        }
+    }
+
+    public static void close(ResultSet rs) throws SQLException {
+        if (null != rs) {
+            rs.close();
+        }
+    }
+
     /**
      * 获取数据库表元数据信息
      *
@@ -64,29 +78,34 @@ public abstract class DatabaseUtil {
         if (1 > columnCount) {
             throw new ConnectorException("查询表字段不能为空.");
         }
-        Connection connection = jdbcTemplate.getDataSource().getConnection();
-        DatabaseMetaData md = connection.getMetaData();
-
+        Connection connection = null;
         List<Field> fields = new ArrayList<>(columnCount);
         // <表名,[主键, ...]>
         Map<String, List<String>> tables = new HashMap<>();
-        String name = null;
-        String label = null;
-        String typeName = null;
-        String tableName = null;
-        int columnType;
-        boolean pk;
-        for (int i = 1; i <= columnCount; i++) {
-            tableName = metaData.getTableName(i);
-            if (null == tables.get(tableName)) {
-                tables.putIfAbsent(tableName, findTablePrimaryKeys(md, tableName));
+        try {
+            connection = jdbcTemplate.getDataSource().getConnection();
+            DatabaseMetaData md = connection.getMetaData();
+            String name = null;
+            String label = null;
+            String typeName = null;
+            String tableName = null;
+            int columnType;
+            boolean pk;
+            for (int i = 1; i <= columnCount; i++) {
+                tableName = metaData.getTableName(i);
+                if (null == tables.get(tableName)) {
+                    tables.putIfAbsent(tableName, findTablePrimaryKeys(md, tableName));
+                }
+                name = metaData.getColumnName(i);
+                label = metaData.getColumnLabel(i);
+                typeName = metaData.getColumnTypeName(i);
+                columnType = metaData.getColumnType(i);
+                pk = isPk(tables, tableName, name);
+                fields.add(new Field(label, typeName, columnType, pk));
             }
-            name = metaData.getColumnName(i);
-            label = metaData.getColumnLabel(i);
-            typeName = metaData.getColumnTypeName(i);
-            columnType = metaData.getColumnType(i);
-            pk = isPk(tables, tableName, name);
-            fields.add(new Field(label, typeName, columnType, pk));
+        } finally {
+            tables.clear();
+            close(connection);
         }
         return new MetaInfo(fields, resultSet.size());
     }
@@ -98,10 +117,15 @@ public abstract class DatabaseUtil {
 
     private static List<String> findTablePrimaryKeys(DatabaseMetaData md, String tableName) throws SQLException {
         //根据表名获得主键结果集
-        ResultSet rs = md.getPrimaryKeys(null, null, tableName);
+        ResultSet rs = null;
         List<String> primaryKeys = new ArrayList<>();
-        while (rs.next()) {
-            primaryKeys.add(rs.getString("COLUMN_NAME"));
+        try {
+            rs = md.getPrimaryKeys(null, null, tableName);
+            while (rs.next()) {
+                primaryKeys.add(rs.getString("COLUMN_NAME"));
+            }
+        } finally {
+            close(rs);
         }
         return primaryKeys;
     }

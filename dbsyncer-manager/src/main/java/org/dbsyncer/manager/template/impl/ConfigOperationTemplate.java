@@ -44,34 +44,24 @@ public class ConfigOperationTemplate {
         Group group = cacheService.get(groupId, Group.class);
         if (null != group) {
             List<String> index = group.getAll();
-            if(!CollectionUtils.isEmpty(index)){
+            if (!CollectionUtils.isEmpty(index)) {
                 List<T> list = new ArrayList<>();
+                Class<? extends ConfigModel> clazz = model.getClass();
                 index.forEach(e -> {
                     Object v = cacheService.get(e);
                     if (null != v) {
-                        list.add((T) v);
+                        list.add((T) beanCopy(clazz, v));
                     }
                 });
-                return Collections.unmodifiableList(list);
+                return list;
             }
         }
         return Collections.EMPTY_LIST;
     }
 
-    public <T> T queryObject(Class<T> filterClass, String id) {
-        Object o = cacheService.get(id, filterClass);
-        T t;
-        try {
-            t = filterClass.newInstance();
-            if(null != o && null != t){
-                BeanUtils.copyProperties(o, t);
-            }
-        } catch (InstantiationException e) {
-            throw new CacheException(e.getMessage());
-        } catch (IllegalAccessException e) {
-            throw new CacheException(e.getMessage());
-        }
-        return (T) t;
+    public <T> T queryObject(Class<T> clazz, String id) {
+        Object o = cacheService.get(id, clazz);
+        return beanCopy(clazz, o);
     }
 
     public String execute(ConfigModel model, OperationTemplate operationTemplate) {
@@ -108,23 +98,21 @@ public class ConfigOperationTemplate {
     public void remove(RemoveTemplate removeTemplate) {
         String id = removeTemplate.getId();
         Assert.hasText(id, "ID can not be empty.");
-        ConfigModel model = cacheService.get(id, ConfigModel.class);
-        cacheService.remove(id);
-        storageService.remove(StorageConstant.CONFIG, id);
         // 删除分组
+        ConfigModel model = cacheService.get(id, ConfigModel.class);
         String groupId = getGroupId(model, removeTemplate);
-        synchronized (this) {
-            Group group = cacheService.get(groupId, Group.class);
-            if (null != group) {
-                group.remove(id);
-                if (0 >= group.size()) {
-                    cacheService.remove(groupId);
-                }
+        Group group = cacheService.get(groupId, Group.class);
+        if (null != group) {
+            group.remove(id);
+            if (0 >= group.size()) {
+                cacheService.remove(groupId);
             }
         }
+        cacheService.remove(id);
+        storageService.remove(StorageConstant.CONFIG, id);
     }
 
-    private String getGroupId(ConfigModel model, BaseTemplate template){
+    private String getGroupId(ConfigModel model, BaseTemplate template) {
         Assert.notNull(model, "ConfigModel can not be null.");
         Assert.notNull(template, "BaseTemplate can not be null.");
         GroupStrategy strategy = template.getGroupStrategy();
@@ -132,6 +120,21 @@ public class ConfigOperationTemplate {
         String groupId = strategy.getGroupId(model);
         Assert.hasText(groupId, "GroupId can not be empty.");
         return groupId;
+    }
+
+    private <T> T beanCopy(Class<T> clazz, Object o) {
+        if (null == o || null == clazz) {
+            return null;
+        }
+        try {
+            T t = clazz.newInstance();
+            BeanUtils.copyProperties(o, t);
+            return t;
+        } catch (InstantiationException e) {
+            throw new CacheException(e.getMessage());
+        } catch (IllegalAccessException e) {
+            throw new CacheException(e.getMessage());
+        }
     }
 
     public final class Call {

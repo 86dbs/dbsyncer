@@ -4,13 +4,16 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
+import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.biz.util.CheckerTypeUtil;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerEnum;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.constant.ModelConstant;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +24,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,6 +39,9 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
 
     @Autowired
     private Manager manager;
+
+    @Autowired
+    private TableGroupChecker tableGroupChecker;
 
     private Map<String, MappingConfigChecker> map;
 
@@ -90,7 +97,7 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         mapping.setThreadNum(NumberUtils.toInt(threadNum, mapping.getThreadNum()));
         String batchNum = params.get("batchNum");
         mapping.setBatchNum(NumberUtils.toInt(batchNum, mapping.getBatchNum()));
-        
+
         // 增量配置(日志/定时)
         String incrementStrategy = params.get("incrementStrategy");
         Assert.hasText(incrementStrategy, "MappingChecker check params incrementStrategy is empty");
@@ -102,8 +109,27 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(mapping, params);
 
+        // 更新映射关系过滤条件
+        setFilterCommand(mapping);
+
         // 增量配置
         return mapping;
+    }
+
+    /**
+     * <b>更新映射关系过滤条件</b>
+     * <p>如果映射关系没有过滤条件，使用全局的过滤条件</p>
+     *
+     * @param mapping
+     */
+    private void setFilterCommand(Mapping mapping) {
+        List<TableGroup> groupAll = manager.getTableGroupAll(mapping.getId());
+        if (!CollectionUtils.isEmpty(groupAll)) {
+            for (TableGroup g : groupAll) {
+                tableGroupChecker.setCommand(mapping, g);
+                manager.editTableGroup(g);
+            }
+        }
     }
 
 }

@@ -99,6 +99,18 @@ public class TableGroupChecker extends AbstractChecker {
         return tableGroup;
     }
 
+    public void setCommand(Mapping mapping, TableGroup tableGroup) {
+        TableGroup group = new TableGroup();
+        group.setFieldMapping(tableGroup.getFieldMapping());
+        group.setSourceTable(tableGroup.getSourceTable());
+        group.setTargetTable(tableGroup.getTargetTable());
+        // 默认使用全局的过滤条件
+        group.setFilter(CollectionUtils.isEmpty(tableGroup.getFilter()) ? mapping.getFilter() : tableGroup.getFilter());
+
+        Map<String, String> command = manager.getCommand(mapping.getSourceConnectorId(), mapping.getTargetConnectorId(), group);
+        tableGroup.setCommand(command);
+    }
+
     private Table getTable(String connectorId, String tableName) {
         MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接信息.");
@@ -194,16 +206,4 @@ public class TableGroupChecker extends AbstractChecker {
         return map;
     }
 
-    private void setCommand(Mapping mapping, TableGroup tableGroup) {
-        TableGroup group = new TableGroup();
-        group.setFieldMapping(tableGroup.getFieldMapping());
-        group.setSourceTable(tableGroup.getSourceTable());
-        group.setTargetTable(tableGroup.getTargetTable());
-        // 默认使用全局的过滤条件
-        if (CollectionUtils.isEmpty(tableGroup.getFilter())) {
-            group.setFilter(mapping.getFilter());
-        }
-        Map<String, String> command = manager.getCommand(mapping.getSourceConnectorId(), mapping.getTargetConnectorId(), group);
-        tableGroup.setCommand(command);
-    }
 }

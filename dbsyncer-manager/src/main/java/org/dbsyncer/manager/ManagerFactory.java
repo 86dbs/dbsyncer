@@ -130,7 +130,9 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public ConfigModel getConfigModel() {
-                return new ConfigModel().setType(ConfigConstant.CONNECTOR);
+                Connector connector = new Connector();
+                connector.setType(ConfigConstant.CONNECTOR);
+                return connector;
             }
 
             @Override
@@ -201,7 +203,9 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public ConfigModel getConfigModel() {
-                return new ConfigModel().setType(ConfigConstant.MAPPING);
+                Mapping mapping = new Mapping();
+                mapping.setType(ConfigConstant.MAPPING);
+                return mapping;
             }
 
             @Override
