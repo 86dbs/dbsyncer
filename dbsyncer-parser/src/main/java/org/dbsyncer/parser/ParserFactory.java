@@ -10,7 +10,7 @@ import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
-import org.dbsyncer.connector.template.CommandTemplate;
+import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
@@ -82,10 +82,10 @@ public class ParserFactory implements Parser {
             sTable.getColumn().add(m.getSource());
             tTable.getColumn().add(m.getTarget());
         });
-        final CommandTemplate sourceCmdTemplate = new CommandTemplate(sType, sTable, tableGroup.getFilter());
-        final CommandTemplate targetCmdTemplate = new CommandTemplate(tType, tTable);
+        final CommandConfig sourceConfig = new CommandConfig(sType, sTable, tableGroup.getFilter());
+        final CommandConfig targetConfig = new CommandConfig(tType, tTable);
         // 获取连接器同步参数
-        Map<String, String> command = connectorFactory.getCommand(sourceCmdTemplate, targetCmdTemplate);
+        Map<String, String> command = connectorFactory.getCommand(sourceConfig, targetConfig);
         return command;
     }
 

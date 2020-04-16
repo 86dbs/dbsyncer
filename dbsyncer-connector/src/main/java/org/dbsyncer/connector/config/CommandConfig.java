@@ -1,7 +1,4 @@
-package org.dbsyncer.connector.template;
-
-import org.dbsyncer.connector.config.Filter;
-import org.dbsyncer.connector.config.Table;
+package org.dbsyncer.connector.config;
 
 import java.util.List;
 
@@ -12,7 +9,7 @@ import java.util.List;
  * @version 1.0.0
  * @date 2019/9/16 23:59
  */
-public class CommandTemplate {
+public class CommandConfig {
 
     private String type;
 
@@ -20,12 +17,12 @@ public class CommandTemplate {
 
     private List<Filter> filter;
 
-    public CommandTemplate(String type, Table table) {
+    public CommandConfig(String type, Table table) {
         this.type = type;
         this.table = table;
     }
 
-    public CommandTemplate(String type, Table table, List<Filter> filter) {
+    public CommandConfig(String type, Table table, List<Filter> filter) {
         this.type = type;
         this.table = table;
         this.filter = filter;
