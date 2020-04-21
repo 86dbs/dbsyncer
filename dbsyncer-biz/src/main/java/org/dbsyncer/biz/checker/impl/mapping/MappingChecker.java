@@ -87,7 +87,7 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         // 同步方式(仅支持全量或增量同步方式)
         String model = params.get("model");
         if (StringUtils.isNotBlank(model)) {
-            if (StringUtils.equals(ModelEnum.FULL.getCode(), model) || StringUtils.equals(ModelEnum.INCREMENT.getCode(), model)) {
+            if (null != ModelEnum.getModelEnum(model)) {
                 mapping.setModel(model);
             }
         }
