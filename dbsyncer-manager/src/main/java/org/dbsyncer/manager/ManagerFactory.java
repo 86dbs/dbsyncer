@@ -356,7 +356,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
+                return metaGroupStrategy;
             }
         });
     }
