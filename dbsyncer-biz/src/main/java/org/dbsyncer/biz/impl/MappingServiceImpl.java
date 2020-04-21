@@ -1,14 +1,19 @@
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
+import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -18,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +42,9 @@ public class MappingServiceImpl implements MappingService {
 
     @Autowired
     private Checker mappingChecker;
+
+    @Autowired
+    private Checker metaChecker;
 
     @Override
     public String add(Map<String, String> params) {
@@ -74,14 +83,36 @@ public class MappingServiceImpl implements MappingService {
 
     @Override
     public boolean start(String id) {
-        manager.start(id);
+        Map<String, String> params = new HashMap<>();
+        params.put(ConfigConstant.CONFIG_MODEL_ID, id);
+        synchronized (metaChecker){
+            ConfigModel model = metaChecker.checkAddConfigModel(params);
+            manager.addMeta(model);
+        }
         return true;
     }
 
     @Override
     public boolean stop(String id) {
-        manager.stop(id);
+        synchronized (metaChecker){
+            List<Meta> metaAll = manager.getMetaAll(id);
+            if(!CollectionUtils.isEmpty(metaAll)){
+                metaAll.forEach(m -> manager.removeMeta(m.getId()));
+            }else{
+                throw new BizException("驱动已停止.");
+            }
+        }
         return true;
+    }
+
+    @Override
+    public List<MetaVo> getMetaAll() {
+        List<MetaVo> temp = new ArrayList<>();
+        List<Meta> list = manager.getMetaAll();
+        if (!CollectionUtils.isEmpty(list)) {
+            list.forEach(m -> temp.add(convertMeta2Vo(m)));
+        }
+        return temp;
     }
 
     boolean running = false;
@@ -105,6 +136,15 @@ public class MappingServiceImpl implements MappingService {
         MappingVo vo = new MappingVo(running, sConn, tConn);
         BeanUtils.copyProperties(mapping, vo);
         return vo;
+    }
+
+    private MetaVo convertMeta2Vo(Meta meta) {
+        Mapping mapping = manager.getMapping(meta.getMappingId());
+        Assert.notNull(mapping, "驱动不存在.");
+        ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
+        MetaVo metaVo = new MetaVo(mapping.getName(), modelEnum.getCode());
+        BeanUtils.copyProperties(meta, metaVo);
+        return metaVo;
     }
 
 }

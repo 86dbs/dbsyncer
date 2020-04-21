@@ -10,7 +10,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerEnum;
 import org.dbsyncer.manager.Manager;
-import org.dbsyncer.parser.constant.ModelConstant;
+import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
@@ -65,7 +65,7 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         mapping.setType(ConfigConstant.MAPPING);
         mapping.setSourceConnectorId(sourceConnectorId);
         mapping.setTargetConnectorId(targetConnectorId);
-        mapping.setModel(ModelConstant.FULL);
+        mapping.setModel(ModelEnum.FULL.getCode());
         mapping.setListener(new ListenerConfig(ListenerEnum.TIMING.getCode()));
 
         // 修改基本配置
@@ -87,7 +87,7 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         // 同步方式(仅支持全量或增量同步方式)
         String model = params.get("model");
         if (StringUtils.isNotBlank(model)) {
-            if (StringUtils.equals(ModelConstant.FULL, model) || StringUtils.equals(ModelConstant.INCREMENT, model)) {
+            if (StringUtils.equals(ModelEnum.FULL.getCode(), model) || StringUtils.equals(ModelEnum.INCREMENT.getCode(), model)) {
                 mapping.setModel(model);
             }
         }

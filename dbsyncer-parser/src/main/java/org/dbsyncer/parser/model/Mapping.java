@@ -2,7 +2,7 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.listener.config.ListenerConfig;
-import org.dbsyncer.parser.constant.ModelConstant;
+import org.dbsyncer.parser.enums.ModelEnum;
 
 import java.util.List;
 
@@ -30,7 +30,7 @@ public class Mapping extends AbstractConfigModel {
     /**
      * 同步方式
      *
-     * @see ModelConstant
+     * @see ModelEnum
      */
     private String model;
 

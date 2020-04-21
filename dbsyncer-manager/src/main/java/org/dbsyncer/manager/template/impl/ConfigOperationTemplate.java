@@ -1,8 +1,8 @@
 package org.dbsyncer.manager.template.impl;
 
-import org.dbsyncer.cache.CacheException;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.manager.template.*;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.util.ConfigModelUtil;
@@ -131,9 +131,9 @@ public class ConfigOperationTemplate {
             BeanUtils.copyProperties(o, t);
             return t;
         } catch (InstantiationException e) {
-            throw new CacheException(e.getMessage());
+            throw new ManagerException(e.getMessage());
         } catch (IllegalAccessException e) {
-            throw new CacheException(e.getMessage());
+            throw new ManagerException(e.getMessage());
         }
     }
 

@@ -1,5 +1,7 @@
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.parser.enums.MetaEnum;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -16,6 +18,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Meta extends ConfigModel {
 
+    private String mappingId;
+    /**
+     * {@link MetaEnum}
+     */
+    private int state;
     private AtomicInteger total;
     private AtomicInteger success;
     private AtomicInteger fail;
@@ -24,11 +31,29 @@ public class Meta extends ConfigModel {
     public Meta() {
     }
 
-    public Meta(AtomicInteger total, AtomicInteger success, AtomicInteger fail, Map<String, String> map) {
+    public Meta(String mappingId, int state, AtomicInteger total, AtomicInteger success, AtomicInteger fail, Map<String, String> map) {
+        this.mappingId = mappingId;
+        this.state = state;
         this.total = total;
         this.success = success;
         this.fail = fail;
         this.map = map;
+    }
+
+    public String getMappingId() {
+        return mappingId;
+    }
+
+    public void setMappingId(String mappingId) {
+        this.mappingId = mappingId;
+    }
+
+    public int getState() {
+        return state;
+    }
+
+    public void setState(int state) {
+        this.state = state;
     }
 
     public AtomicInteger getTotal() {

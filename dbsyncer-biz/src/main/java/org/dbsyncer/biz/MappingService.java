@@ -1,7 +1,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.MappingVo;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.biz.vo.MetaVo;
 
 import java.util.List;
 import java.util.Map;
@@ -62,5 +62,12 @@ public interface MappingService {
      * @param id
      */
     boolean stop(String id);
+
+    /**
+     * 获取运行的驱动列表
+     *
+     * @return
+     */
+    List<MetaVo> getMetaAll();
 
 }

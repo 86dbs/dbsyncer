@@ -10,10 +10,7 @@ import org.dbsyncer.manager.template.impl.ConfigOperationTemplate;
 import org.dbsyncer.manager.template.impl.ConfigPreLoadTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;
-import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -54,6 +51,9 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
     @Autowired
     private GroupStrategy tableGroupStrategy;
+
+    @Autowired
+    private GroupStrategy metaGroupStrategy;
 
     @Override
     public boolean alive(ConnectorConfig config) {
@@ -293,6 +293,75 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
     }
 
     @Override
+    public String addMeta(ConfigModel model) {
+        return operationTemplate.execute(model, new OperationTemplate() {
+
+            @Override
+            public void handleEvent(ConfigOperationTemplate.Call call) {
+                call.add();
+            }
+
+            @Override
+            public GroupStrategy getGroupStrategy() {
+                return metaGroupStrategy;
+            }
+
+        });
+    }
+
+    @Override
+    public void removeMeta(String metaId) {
+        operationTemplate.remove(new RemoveTemplate() {
+
+            @Override
+            public GroupStrategy getGroupStrategy() {
+                return metaGroupStrategy;
+            }
+
+            @Override
+            public String getId() {
+                return metaId;
+            }
+        });
+    }
+
+    @Override
+    public List<Meta> getMetaAll(String mappingId) {
+        return operationTemplate.queryAll(new QueryTemplate<Meta>() {
+            @Override
+            public ConfigModel getConfigModel() {
+                Meta model = new Meta();
+                model.setType(ConfigConstant.META);
+                model.setMappingId(mappingId);
+                return model;
+            }
+
+            @Override
+            public GroupStrategy getGroupStrategy() {
+                return metaGroupStrategy;
+            }
+        });
+    }
+
+    @Override
+    public List<Meta> getMetaAll() {
+        return operationTemplate.queryAll(new QueryTemplate<Meta>() {
+
+            @Override
+            public ConfigModel getConfigModel() {
+                Meta model = new Meta();
+                model.setType(ConfigConstant.META);
+                return model;
+            }
+
+            @Override
+            public GroupStrategy getGroupStrategy() {
+                return defaultGroupStrategy;
+            }
+        });
+    }
+
+    @Override
     public List<ConnectorEnum> getConnectorEnumAll() {
         return parser.getConnectorEnumAll();
     }
@@ -315,16 +384,6 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
     @Override
     public List<Plugin> getPluginAll() {
         return pluginFactory.getPluginAll();
-    }
-
-    @Override
-    public void start(String mappingId) {
-
-    }
-
-    @Override
-    public void stop(String mappingId) {
-
     }
 
     @Override
