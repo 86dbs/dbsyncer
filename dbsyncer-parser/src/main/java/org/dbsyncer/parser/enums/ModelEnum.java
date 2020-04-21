@@ -19,7 +19,7 @@ public enum ModelEnum {
     /**
      * 增量
      */
-    INCREMENT("INCREMENT", "增量");
+    INCREMENT("increment", "增量");
 
     private String code;
     private String message;

@@ -8,6 +8,7 @@ import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
@@ -142,7 +143,8 @@ public class MappingServiceImpl implements MappingService {
         Mapping mapping = manager.getMapping(meta.getMappingId());
         Assert.notNull(mapping, "驱动不存在.");
         ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
-        MetaVo metaVo = new MetaVo(mapping.getName(), modelEnum.getCode());
+        MetaEnum metaEnum = MetaEnum.getMetaEnum(meta.getState());
+        MetaVo metaVo = new MetaVo(mapping.getName(), modelEnum.getMessage(), metaEnum.getMessage());
         BeanUtils.copyProperties(meta, metaVo);
         return metaVo;
     }
