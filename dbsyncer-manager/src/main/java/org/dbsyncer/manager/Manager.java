@@ -63,9 +63,9 @@ public interface Manager {
     // Meta
     String addMeta(ConfigModel model);
 
-    void removeMeta(String metaId);
+    Meta getMeta(String metaId);
 
-    List<Meta> getMetaAll(String mappingId);
+    void removeMeta(String metaId);
 
     List<Meta> getMetaAll();
 

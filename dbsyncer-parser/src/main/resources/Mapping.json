@@ -47,6 +47,7 @@
     "name":"用户信息转换插件",
     "className": "com.xx.hr.convert.MyImpl"
   },
+  "model":"full",
   "listener": {
     "listenerType": "Polling",
     "cronExpression": "*/30 * * * * ?",
@@ -62,6 +63,7 @@
       "D"
     ]
   },
+  "metaId":"1",
   "batchNum": 200,
   "threadNum": 5
 }

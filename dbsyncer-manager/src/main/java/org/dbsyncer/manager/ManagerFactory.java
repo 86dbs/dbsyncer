@@ -52,9 +52,6 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
     @Autowired
     private GroupStrategy tableGroupStrategy;
 
-    @Autowired
-    private GroupStrategy metaGroupStrategy;
-
     @Override
     public boolean alive(ConnectorConfig config) {
         return parser.alive(config);
@@ -303,10 +300,15 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public GroupStrategy getGroupStrategy() {
-                return metaGroupStrategy;
+                return defaultGroupStrategy;
             }
 
         });
+    }
+
+    @Override
+    public Meta getMeta(String metaId) {
+        return operationTemplate.queryObject(Meta.class, metaId);
     }
 
     @Override
@@ -315,30 +317,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public GroupStrategy getGroupStrategy() {
-                return metaGroupStrategy;
+                return defaultGroupStrategy;
             }
 
             @Override
             public String getId() {
                 return metaId;
-            }
-        });
-    }
-
-    @Override
-    public List<Meta> getMetaAll(String mappingId) {
-        return operationTemplate.queryAll(new QueryTemplate<Meta>() {
-            @Override
-            public ConfigModel getConfigModel() {
-                Meta model = new Meta();
-                model.setType(ConfigConstant.META);
-                model.setMappingId(mappingId);
-                return model;
-            }
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return metaGroupStrategy;
             }
         });
     }
@@ -356,7 +340,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public GroupStrategy getGroupStrategy() {
-                return metaGroupStrategy;
+                return defaultGroupStrategy;
             }
         });
     }
@@ -450,7 +434,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public GroupStrategy getGroupStrategy() {
-                return metaGroupStrategy;
+                return defaultGroupStrategy;
             }
 
             @Override

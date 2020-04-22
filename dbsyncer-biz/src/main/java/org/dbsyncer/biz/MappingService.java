@@ -54,14 +54,14 @@ public interface MappingService {
      *
      * @param id
      */
-    boolean start(String id);
+    String start(String id);
 
     /**
      * 停止驱动
      *
      * @param id
      */
-    boolean stop(String id);
+    String stop(String id);
 
     /**
      * 获取运行的驱动列表

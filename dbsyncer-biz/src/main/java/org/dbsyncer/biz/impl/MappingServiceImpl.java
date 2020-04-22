@@ -60,11 +60,10 @@ public class MappingServiceImpl implements MappingService {
     @Override
     public boolean remove(String mappingId) {
         logger.info("检查驱动是否停止运行");
+        Mapping mapping = manager.getMapping(mappingId);
+        Assert.notNull(mapping, "驱动不存在.");
         // 删除meta
-        List<Meta> metaList = manager.getMetaAll(mappingId);
-        if (!CollectionUtils.isEmpty(metaList)) {
-            metaList.forEach(m -> manager.removeMeta(m.getId()));
-        }
+        manager.removeMeta(mapping.getMetaId());
 
         // 删除tableGroup
         List<TableGroup> groupList = manager.getTableGroupAll(mappingId);
@@ -92,23 +91,27 @@ public class MappingServiceImpl implements MappingService {
     }
 
     @Override
-    public boolean start(String id) {
+    public String start(String id) {
         Map<String, String> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, id);
         ConfigModel model = metaChecker.checkAddConfigModel(params);
         manager.addMeta(model);
-        return true;
+        return "驱动启动成功";
     }
 
     @Override
-    public boolean stop(String id) {
-        List<Meta> metaAll = manager.getMetaAll(id);
-        if (!CollectionUtils.isEmpty(metaAll)) {
-            metaAll.forEach(m -> manager.removeMeta(m.getId()));
+    public String stop(String id) {
+        Mapping mapping = manager.getMapping(id);
+        Assert.notNull(mapping, "驱动不存在.");
+
+        String metaId = mapping.getMetaId();
+        Meta meta = manager.getMeta(metaId);
+        if (null != meta) {
+            manager.removeMeta(metaId);
         } else {
             throw new BizException("驱动已停止.");
         }
-        return true;
+        return "驱动停止成功";
     }
 
     @Override
@@ -139,7 +142,9 @@ public class MappingServiceImpl implements MappingService {
         BeanUtils.copyProperties(s, sConn);
         ConnectorVo tConn = new ConnectorVo(running);
         BeanUtils.copyProperties(t, tConn);
-        MappingVo vo = new MappingVo(running, sConn, tConn);
+
+        boolean isRunning = null != manager.getMeta(mapping.getMetaId());
+        MappingVo vo = new MappingVo(isRunning, sConn, tConn);
         BeanUtils.copyProperties(mapping, vo);
         return vo;
     }

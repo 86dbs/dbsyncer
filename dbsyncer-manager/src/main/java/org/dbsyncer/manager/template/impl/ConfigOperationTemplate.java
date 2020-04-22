@@ -1,5 +1,6 @@
 package org.dbsyncer.manager.template.impl;
 
+import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.ManagerException;
@@ -60,6 +61,9 @@ public class ConfigOperationTemplate {
     }
 
     public <T> T queryObject(Class<T> clazz, String id) {
+        if(StringUtils.isBlank(id)){
+            return null;
+        }
         Object o = cacheService.get(id, clazz);
         return beanCopy(clazz, o);
     }

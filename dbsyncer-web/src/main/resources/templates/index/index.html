@@ -140,7 +140,7 @@
 
         <!-- 实时数据 -->
         <div class="col-md-8">
-            <table class="table table-condensed table-hover">
+            <table th:if="${metas?.size() gt 0}" class="table table-hover">
                 <caption>驱动运行监控</caption>
                 <thead>
                 <tr>
@@ -153,53 +153,20 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td>1</td>
-                    <td>增量同步1</td>
-                    <td>增量</td>
-                    <td>成功:0</td>
-                    <td><span class="label label-info">启动中</span></td>
-                    <td>2020-04-20 22:15:30</td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>增量同步2</td>
-                    <td>增量</td>
-                    <td>成功:99999</td>
-                    <td><span class="label label-warning">停止中</span></td>
-                    <td>2020-04-20 22:15:30</td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td>增量同步3</td>
-                    <td>增量</td>
-                    <td>成功:18686,失败:1 <a href="javascript:;" class="label label-danger">日志</a></td>
-                    <td><span class="label label-success">运行中</span></td>
-                    <td>2020-04-20 22:15:30</td>
-                </tr>
-                <tr>
-                    <td>4</td>
-                    <td>全量同步1</td>
-                    <td>全量</td>
-                    <td>进度:0%, 成功:0</td>
-                    <td><span class="label label-info">启动中</span></td>
-                    <td>2020-04-20 22:15:30</td>
-                </tr>
-                <tr>
-                    <td>5</td>
-                    <td>全量同步2</td>
-                    <td>全量</td>
-                    <td>进度:35%, 成功:18686</td>
-                    <td><span class="label label-success">运行中</span></td>
-                    <td>2020-04-20 22:15:30</td>
-                </tr>
-                <tr>
-                    <td>6</td>
-                    <td>全量同步3</td>
-                    <td>全量</td>
-                    <td>进度:35%, 成功:18686, 失败:1 <a href="javascript:;" class="label label-danger">日志</a></td>
-                    <td><span class="label label-success">运行中</span></td>
-                    <td>2020-04-20 22:15:30</td>
+                <tr th:each="m,state : ${metas}">
+                    <td th:text="${state?.index + 1}"></td>
+                    <td th:text="${m?.mappingName}"></td>
+                    <td th:text="${m?.model}"></td>
+                    <td>
+                        <span th:if="${m?.model eq '全量' and m?.total gt 0}">
+                            进度:[[${#numbers.formatDecimal(((m?.success + m?.fail) / m?.total * 10000 / 100.00),2 ,2)}]]%,
+                            总数:[[${m?.total}]],
+                        </span>
+                        成功:[[${m?.success}]]
+                        <span th:if="${m?.fail gt 0}">,失败:[[${m?.fail}]] <a href="javascript:;" class="label label-danger">日志</a></span>
+                    </td>
+                    <td><span class="label label-success">[[${m?.mappingState}]]</span></td>
+                    <td th:text="${#dates.format(m?.updateTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
                 </tr>
                 </tbody>
             </table>

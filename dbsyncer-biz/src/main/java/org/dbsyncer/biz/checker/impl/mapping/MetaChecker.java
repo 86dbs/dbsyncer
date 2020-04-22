@@ -39,23 +39,26 @@ public class MetaChecker extends AbstractChecker {
         Mapping mapping = manager.getMapping(mappingId);
         Assert.notNull(mapping, "驱动不存在.");
 
-        // 驱动和元信息1对1关系
-        List<Meta> metaAll = manager.getMetaAll(mappingId);
-        if (!CollectionUtils.isEmpty(metaAll)) {
+        Meta meta = manager.getMeta(mapping.getMetaId());
+        if (null != meta) {
             throw new BizException("驱动正在运行中.");
         }
 
         // TODO 获取驱动数据源总条数
-        AtomicInteger total = new AtomicInteger();
-        AtomicInteger success = new AtomicInteger();
-        AtomicInteger fail = new AtomicInteger();
+        AtomicInteger total = new AtomicInteger(1000);
+        AtomicInteger success = new AtomicInteger(500);
+        AtomicInteger fail = new AtomicInteger(0);
         Map<String, String> map = new ConcurrentHashMap<>();
-        Meta meta = new Meta(mappingId, MetaEnum.RUNNING.getCode(), total, success, fail, map);
+        meta = new Meta(mappingId, MetaEnum.RUNNING.getCode(), total, success, fail, map);
         meta.setType(ConfigConstant.META);
         meta.setName(ConfigConstant.META);
 
         // 修改基本配置
         this.modifyConfigModel(meta, params);
+
+        // 修改驱动元信息ID
+        mapping.setMetaId(meta.getId());
+        manager.editMapping(mapping);
         return meta;
     }
 
