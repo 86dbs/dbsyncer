@@ -1,6 +1,7 @@
 package org.dbsyncer.biz.checker;
 
 import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -11,9 +12,14 @@ import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.SnowflakeIdWorker;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -62,14 +68,14 @@ public abstract class AbstractChecker implements Checker {
         // 过滤条件
         String filterJson = params.get("filter");
         if (StringUtils.isNotBlank(filterJson)) {
-            List<Filter> filter = JsonUtil.jsonToObj(filterJson, List.class);
-            model.setFilter(filter);
+            List<Filter> list = jsonToList(filterJson, Filter.class);
+            model.setFilter(list);
         }
 
         // 转换配置
         String convertJson = params.get("convert");
         if (StringUtils.isNotBlank(convertJson)) {
-            List<Convert> convert = JsonUtil.jsonToObj(convertJson, List.class);
+            List<Convert> convert = jsonToList(convertJson, Convert.class);
             model.setConvert(convert);
         }
 
@@ -88,6 +94,25 @@ public abstract class AbstractChecker implements Checker {
             }
         }
         model.setPlugin(plugin);
+    }
+
+    private <T> List<T> jsonToList(String json, Class<T> valueType){
+        try {
+            JSONArray array = new JSONArray(json);
+            if(null != array){
+                List<T> list = new ArrayList<>();
+                int length = array.length();
+                for (int i = 0; i < length; i++) {
+                    JSONObject obj = array.getJSONObject(i);
+                    T t = JsonUtil.jsonToObj(obj.toString(), valueType);
+                    list.add(t);
+                }
+                return list;
+            }
+        } catch (JSONException e) {
+            throw new BizException(String.format("解析高级配置参数异常:%s", json));
+        }
+        return Collections.EMPTY_LIST;
     }
 
 }

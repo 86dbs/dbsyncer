@@ -23,7 +23,7 @@ public class Group {
         }
     }
 
-    public void remove(String e) {
+    public synchronized void remove(String e) {
         index.remove(e);
     }
 

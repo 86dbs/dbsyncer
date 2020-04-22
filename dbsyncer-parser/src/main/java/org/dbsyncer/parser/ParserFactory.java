@@ -1,29 +1,29 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.cache.CacheService;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.connector.template.CommandTemplate;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.config.Filter;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.parser.enums.ConvertEnum;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.storage.SnowflakeIdWorker;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -65,15 +65,24 @@ public class ParserFactory implements Parser {
 
     @Override
     public Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup) {
+        List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
+        if(CollectionUtils.isEmpty(fieldMapping)){
+            return null;
+        }
         String sType = getConnectorConfig(sourceConnectorId).getConnectorType();
         String tType = getConnectorConfig(targetConnectorId).getConnectorType();
-        Table sourceTable = tableGroup.getSourceTable();
-        Table targetTable = tableGroup.getTargetTable();
-        List<Filter> filter = tableGroup.getFilter();
-        final CommandTemplate sourceCmdTemplate = new CommandTemplate(sType, sourceTable, filter);
-        final CommandTemplate targetCmdTemplate = new CommandTemplate(tType, targetTable);
+        String sTableName = tableGroup.getSourceTable().getName();
+        String tTableName = tableGroup.getTargetTable().getName();
+        Table sTable = new Table().setName(sTableName).setColumn(new ArrayList<>());
+        Table tTable = new Table().setName(tTableName).setColumn(new ArrayList<>());
+        fieldMapping.forEach(m ->{
+            sTable.getColumn().add(m.getSource());
+            tTable.getColumn().add(m.getTarget());
+        });
+        final CommandConfig sourceConfig = new CommandConfig(sType, sTable, tableGroup.getFilter());
+        final CommandConfig targetConfig = new CommandConfig(tType, tTable);
         // 获取连接器同步参数
-        Map<String, String> command = connectorFactory.getCommand(sourceCmdTemplate, targetCmdTemplate);
+        Map<String, String> command = connectorFactory.getCommand(sourceConfig, targetConfig);
         return command;
     }
 
@@ -96,25 +105,13 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public Mapping parseMapping(String json) {
+    public <T> T parseObject(String json, Class<T> clazz) {
         try {
-            JSONObject map = new JSONObject(json);
-            Mapping mapping = JsonUtil.jsonToObj(map.toString(), Mapping.class);
-            Assert.notNull(mapping, "Mapping can not be null.");
-            return mapping;
-        } catch (JSONException e) {
-            logger.error(e.getMessage());
-            throw new ParserException(e.getMessage());
-        }
-    }
-
-    @Override
-    public TableGroup parseTableGroup(String json) {
-        try {
-            JSONObject conn = new JSONObject(json);
-            TableGroup tableGroup = JsonUtil.jsonToObj(conn.toString(), TableGroup.class);
-            Assert.notNull(tableGroup, "TableGroup can not be null.");
-            return tableGroup;
+            JSONObject obj = new JSONObject(json);
+            T t = JsonUtil.jsonToObj(obj.toString(), clazz);
+            String format = String.format("%s can not be null.", clazz.getSimpleName());
+            Assert.notNull(t, format);
+            return t;
         } catch (JSONException e) {
             logger.error(e.getMessage());
             throw new ParserException(e.getMessage());
@@ -151,7 +148,9 @@ public class ParserFactory implements Parser {
         Assert.hasText(connectorId, "Connector id can not be empty.");
         Connector conn = cacheService.get(connectorId, Connector.class);
         Assert.notNull(conn, "Connector can not be null.");
-        return conn.getConfig();
+        Connector connector = new Connector();
+        BeanUtils.copyProperties(conn, connector);
+        return connector.getConfig();
     }
 
 }

@@ -1,7 +1,7 @@
 package org.dbsyncer.parser.enums;
 
 import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.listener.ListenerException;
+import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.convert.Handler;
 import org.dbsyncer.parser.convert.handler.*;
 
@@ -87,13 +87,13 @@ public enum ConvertEnum {
         this.handler = handler;
     }
 
-    public static Handler getHandler(String code) throws ListenerException {
+    public static Handler getHandler(String code) throws ParserException {
         for (ConvertEnum e : ConvertEnum.values()) {
             if (StringUtils.equals(code, e.getCode())) {
                 return e.getHandler();
             }
         }
-        throw new ListenerException(String.format("Handler code \"%s\" does not exist.", code));
+        throw new ParserException(String.format("Handler code \"%s\" does not exist.", code));
     }
 
     public String getCode() {

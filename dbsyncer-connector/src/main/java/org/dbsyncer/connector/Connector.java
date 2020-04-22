@@ -2,7 +2,7 @@ package org.dbsyncer.connector;
 
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
-import org.dbsyncer.connector.template.CommandTemplate;
+import org.dbsyncer.connector.config.CommandConfig;
 
 import java.util.List;
 import java.util.Map;
@@ -44,17 +44,17 @@ public interface Connector {
     /**
      * 获取数据源同步参数
      *
-     * @param commandTemplate
+     * @param commandConfig
      * @return
      */
-    Map<String, String> getSourceCommand(CommandTemplate commandTemplate);
+    Map<String, String> getSourceCommand(CommandConfig commandConfig);
 
     /**
      * 获取目标源同步参数
      *
-     * @param commandTemplate
+     * @param commandConfig
      * @return
      */
-    Map<String, String> getTargetCommand(CommandTemplate commandTemplate);
+    Map<String, String> getTargetCommand(CommandConfig commandConfig);
 
 }

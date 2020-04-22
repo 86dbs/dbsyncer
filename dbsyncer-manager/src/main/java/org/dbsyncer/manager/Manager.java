@@ -6,10 +6,7 @@ import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
-import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.config.Plugin;
 
 import java.util.List;
@@ -63,6 +60,15 @@ public interface Manager {
 
     Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup);
 
+    // Meta
+    String addMeta(ConfigModel model);
+
+    Meta getMeta(String metaId);
+
+    void removeMeta(String metaId);
+
+    List<Meta> getMetaAll();
+
     // ConnectorEnum
     List<ConnectorEnum> getConnectorEnumAll();
 
@@ -77,19 +83,5 @@ public interface Manager {
 
     // Plugin
     List<Plugin> getPluginAll();
-
-    /**
-     * 启动驱动
-     *
-     * @param mappingId
-     */
-    void start(String mappingId);
-
-    /**
-     * 停止驱动
-     *
-     * @param mappingId
-     */
-    void stop(String mappingId);
 
 }

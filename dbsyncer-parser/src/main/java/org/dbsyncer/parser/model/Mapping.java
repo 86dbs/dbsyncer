@@ -2,7 +2,7 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.listener.config.ListenerConfig;
-import org.dbsyncer.parser.constant.ModelConstant;
+import org.dbsyncer.parser.enums.ModelEnum;
 
 import java.util.List;
 
@@ -30,12 +30,15 @@ public class Mapping extends AbstractConfigModel {
     /**
      * 同步方式
      *
-     * @see ModelConstant
+     * @see ModelEnum
      */
     private String model;
 
     // 监听配置
     private ListenerConfig listener;
+
+    // 元信息ID
+    private String metaId;
 
     // 批量数
     private int batchNum = 200;
@@ -93,6 +96,14 @@ public class Mapping extends AbstractConfigModel {
     public Mapping setListener(ListenerConfig listener) {
         this.listener = listener;
         return this;
+    }
+
+    public String getMetaId() {
+        return metaId;
+    }
+
+    public void setMetaId(String metaId) {
+        this.metaId = metaId;
     }
 
     public int getBatchNum() {

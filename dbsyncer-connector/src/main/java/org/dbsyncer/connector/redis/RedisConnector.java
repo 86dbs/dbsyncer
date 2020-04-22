@@ -1,7 +1,7 @@
 package org.dbsyncer.connector.redis;
 
 import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.connector.template.CommandTemplate;
+import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.RedisConfig;
@@ -50,12 +50,12 @@ public final class RedisConnector implements Redis {
     }
 
     @Override
-    public Map<String, String> getSourceCommand(CommandTemplate commandTemplate) {
+    public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
         return null;
     }
 
     @Override
-    public Map<String, String> getTargetCommand(CommandTemplate commandTemplate) {
+    public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         return null;
     }
 

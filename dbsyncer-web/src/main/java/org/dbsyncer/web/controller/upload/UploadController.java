@@ -3,7 +3,6 @@ package org.dbsyncer.web.controller.upload;
 import org.dbsyncer.biz.vo.RestResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,7 +23,7 @@ public class UploadController {
         return "upload/upload";
     }
 
-    @PreAuthorize("hasAuthority('ROLE_')")
+    //@PreAuthorize("hasAuthority('ROLE_')")
     @RequestMapping(value = "/upload")
     @ResponseBody
     public RestResult upload(HttpServletRequest request, @RequestParam("file") MultipartFile[] files) {

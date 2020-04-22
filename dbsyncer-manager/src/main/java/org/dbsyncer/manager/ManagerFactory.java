@@ -10,10 +10,7 @@ import org.dbsyncer.manager.template.impl.ConfigOperationTemplate;
 import org.dbsyncer.manager.template.impl.ConfigPreLoadTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;
-import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -130,7 +127,9 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public ConfigModel getConfigModel() {
-                return new ConfigModel().setType(ConfigConstant.CONNECTOR);
+                Connector connector = new Connector();
+                connector.setType(ConfigConstant.CONNECTOR);
+                return connector;
             }
 
             @Override
@@ -201,7 +200,9 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public ConfigModel getConfigModel() {
-                return new ConfigModel().setType(ConfigConstant.MAPPING);
+                Mapping mapping = new Mapping();
+                mapping.setType(ConfigConstant.MAPPING);
+                return mapping;
             }
 
             @Override
@@ -289,6 +290,62 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
     }
 
     @Override
+    public String addMeta(ConfigModel model) {
+        return operationTemplate.execute(model, new OperationTemplate() {
+
+            @Override
+            public void handleEvent(ConfigOperationTemplate.Call call) {
+                call.add();
+            }
+
+            @Override
+            public GroupStrategy getGroupStrategy() {
+                return defaultGroupStrategy;
+            }
+
+        });
+    }
+
+    @Override
+    public Meta getMeta(String metaId) {
+        return operationTemplate.queryObject(Meta.class, metaId);
+    }
+
+    @Override
+    public void removeMeta(String metaId) {
+        operationTemplate.remove(new RemoveTemplate() {
+
+            @Override
+            public GroupStrategy getGroupStrategy() {
+                return defaultGroupStrategy;
+            }
+
+            @Override
+            public String getId() {
+                return metaId;
+            }
+        });
+    }
+
+    @Override
+    public List<Meta> getMetaAll() {
+        return operationTemplate.queryAll(new QueryTemplate<Meta>() {
+
+            @Override
+            public ConfigModel getConfigModel() {
+                Meta model = new Meta();
+                model.setType(ConfigConstant.META);
+                return model;
+            }
+
+            @Override
+            public GroupStrategy getGroupStrategy() {
+                return defaultGroupStrategy;
+            }
+        });
+    }
+
+    @Override
     public List<ConnectorEnum> getConnectorEnumAll() {
         return parser.getConnectorEnumAll();
     }
@@ -311,16 +368,6 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
     @Override
     public List<Plugin> getPluginAll() {
         return pluginFactory.getPluginAll();
-    }
-
-    @Override
-    public void start(String mappingId) {
-
-    }
-
-    @Override
-    public void stop(String mappingId) {
-
     }
 
     @Override
@@ -359,7 +406,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public ConfigModel parseModel(String json) {
-                return parser.parseMapping(json);
+                return parser.parseObject(json, Mapping.class);
             }
         });
 
@@ -378,7 +425,26 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public ConfigModel parseModel(String json) {
-                return parser.parseTableGroup(json);
+                return parser.parseObject(json, TableGroup.class);
+            }
+        });
+
+        // Load metas
+        preLoadTemplate.execute(new PreLoadTemplate() {
+
+            @Override
+            public GroupStrategy getGroupStrategy() {
+                return defaultGroupStrategy;
+            }
+
+            @Override
+            public String filterType() {
+                return ConfigConstant.META;
+            }
+
+            @Override
+            public ConfigModel parseModel(String json) {
+                return parser.parseObject(json, Meta.class);
             }
         });
     }

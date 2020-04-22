@@ -5,8 +5,9 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
-import org.dbsyncer.connector.template.CommandTemplate;
+import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.connector.util.JDBCUtil;
 import org.slf4j.Logger;
@@ -84,13 +85,13 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
-    public Map<String, String> getSourceCommand(CommandTemplate commandTemplate) {
+    public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
         // 获取过滤SQL
-        List<Filter> filter = commandTemplate.getFilter();
+        List<Filter> filter = commandConfig.getFilter();
         String queryFilterSql = getQueryFilterSql(filter);
 
         // 获取查询SQL
-        Table table = commandTemplate.getTable();
+        Table table = commandConfig.getTable();
         String type = SqlBuilderEnum.QUERY.getName();
         String querySql = getQuerySql(type, table, queryFilterSql);
         Map<String, String> map = new HashMap<>();
@@ -99,10 +100,10 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
-    public Map<String, String> getTargetCommand(CommandTemplate commandTemplate) {
+    public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         // 获取增删改SQL
         Map<String, String> map = new HashMap<>();
-        Table table = commandTemplate.getTable();
+        Table table = commandConfig.getTable();
 
         String insert = SqlBuilderEnum.INSERT.getName();
         map.put(insert, getQuerySql(insert, table, null));
@@ -293,7 +294,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             f = fields.get(i);
             type = f.getType();
             val = row.get(f.getName());
-            DatabaseUtil.preparedStatementSetter(ps, i + 1, type, val);
+            SetterEnum.getSetter(type).preparedStatementSetter(ps, i + 1, type, val);
         }
     }
 
