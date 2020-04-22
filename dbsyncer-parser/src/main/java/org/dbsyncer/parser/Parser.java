@@ -7,7 +7,6 @@ import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 
 import java.util.List;
@@ -64,20 +63,14 @@ public interface Parser {
     Connector parseConnector(String json);
 
     /**
-     * 解析驱动映射关系配置为Mapping
+     * 解析配置
      *
      * @param json
+     * @param clazz
+     * @param <T>
      * @return
      */
-    Mapping parseMapping(String json);
-
-    /**
-     * 解析表映射关系
-     *
-     * @param json
-     * @return
-     */
-    TableGroup parseTableGroup(String json);
+    <T> T parseObject(String json, Class<T> clazz);
 
     /**
      * 获取所有连接器类型

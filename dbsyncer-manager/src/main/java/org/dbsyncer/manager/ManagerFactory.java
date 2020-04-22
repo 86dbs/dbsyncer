@@ -422,7 +422,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public ConfigModel parseModel(String json) {
-                return parser.parseMapping(json);
+                return parser.parseObject(json, Mapping.class);
             }
         });
 
@@ -441,7 +441,26 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
             @Override
             public ConfigModel parseModel(String json) {
-                return parser.parseTableGroup(json);
+                return parser.parseObject(json, TableGroup.class);
+            }
+        });
+
+        // Load metas
+        preLoadTemplate.execute(new PreLoadTemplate() {
+
+            @Override
+            public GroupStrategy getGroupStrategy() {
+                return metaGroupStrategy;
+            }
+
+            @Override
+            public String filterType() {
+                return ConfigConstant.META;
+            }
+
+            @Override
+            public ConfigModel parseModel(String json) {
+                return parser.parseObject(json, Meta.class);
             }
         });
     }

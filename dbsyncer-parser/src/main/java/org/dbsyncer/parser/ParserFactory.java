@@ -12,10 +12,7 @@ import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.parser.enums.ConvertEnum;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.FieldMapping;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.storage.SnowflakeIdWorker;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -108,25 +105,13 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public Mapping parseMapping(String json) {
+    public <T> T parseObject(String json, Class<T> clazz) {
         try {
-            JSONObject map = new JSONObject(json);
-            Mapping mapping = JsonUtil.jsonToObj(map.toString(), Mapping.class);
-            Assert.notNull(mapping, "Mapping can not be null.");
-            return mapping;
-        } catch (JSONException e) {
-            logger.error(e.getMessage());
-            throw new ParserException(e.getMessage());
-        }
-    }
-
-    @Override
-    public TableGroup parseTableGroup(String json) {
-        try {
-            JSONObject conn = new JSONObject(json);
-            TableGroup tableGroup = JsonUtil.jsonToObj(conn.toString(), TableGroup.class);
-            Assert.notNull(tableGroup, "TableGroup can not be null.");
-            return tableGroup;
+            JSONObject obj = new JSONObject(json);
+            T t = JsonUtil.jsonToObj(obj.toString(), clazz);
+            String format = String.format("%s can not be null.", clazz.getSimpleName());
+            Assert.notNull(t, format);
+            return t;
         } catch (JSONException e) {
             logger.error(e.getMessage());
             throw new ParserException(e.getMessage());

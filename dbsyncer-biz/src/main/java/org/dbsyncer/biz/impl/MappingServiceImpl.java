@@ -10,10 +10,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.enums.ModelEnum;
-import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +59,18 @@ public class MappingServiceImpl implements MappingService {
 
     @Override
     public boolean remove(String mappingId) {
+        logger.info("检查驱动是否停止运行");
+        // 删除meta
+        List<Meta> metaList = manager.getMetaAll(mappingId);
+        if (!CollectionUtils.isEmpty(metaList)) {
+            metaList.forEach(m -> manager.removeMeta(m.getId()));
+        }
+
+        // 删除tableGroup
+        List<TableGroup> groupList = manager.getTableGroupAll(mappingId);
+        if (!CollectionUtils.isEmpty(groupList)) {
+            groupList.forEach(t -> manager.removeTableGroup(t.getId()));
+        }
         manager.removeMapping(mappingId);
         return true;
     }
@@ -86,22 +95,18 @@ public class MappingServiceImpl implements MappingService {
     public boolean start(String id) {
         Map<String, String> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, id);
-        synchronized (metaChecker){
-            ConfigModel model = metaChecker.checkAddConfigModel(params);
-            manager.addMeta(model);
-        }
+        ConfigModel model = metaChecker.checkAddConfigModel(params);
+        manager.addMeta(model);
         return true;
     }
 
     @Override
     public boolean stop(String id) {
-        synchronized (metaChecker){
-            List<Meta> metaAll = manager.getMetaAll(id);
-            if(!CollectionUtils.isEmpty(metaAll)){
-                metaAll.forEach(m -> manager.removeMeta(m.getId()));
-            }else{
-                throw new BizException("驱动已停止.");
-            }
+        List<Meta> metaAll = manager.getMetaAll(id);
+        if (!CollectionUtils.isEmpty(metaAll)) {
+            metaAll.forEach(m -> manager.removeMeta(m.getId()));
+        } else {
+            throw new BizException("驱动已停止.");
         }
         return true;
     }

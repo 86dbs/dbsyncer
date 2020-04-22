@@ -42,10 +42,7 @@ public class MetaChecker extends AbstractChecker {
         // 驱动和元信息1对1关系
         List<Meta> metaAll = manager.getMetaAll(mappingId);
         if (!CollectionUtils.isEmpty(metaAll)) {
-            Meta meta = metaAll.get(0);
-            if (MetaEnum.READY.getCode() != meta.getState()) {
-                throw new BizException("驱动正在运行中.");
-            }
+            throw new BizException("驱动正在运行中.");
         }
 
         // TODO 获取驱动数据源总条数
@@ -53,7 +50,7 @@ public class MetaChecker extends AbstractChecker {
         AtomicInteger success = new AtomicInteger();
         AtomicInteger fail = new AtomicInteger();
         Map<String, String> map = new ConcurrentHashMap<>();
-        Meta meta = new Meta(mappingId, MetaEnum.READY.getCode(), total, success, fail, map);
+        Meta meta = new Meta(mappingId, MetaEnum.RUNNING.getCode(), total, success, fail, map);
         meta.setType(ConfigConstant.META);
         meta.setName(ConfigConstant.META);
 
