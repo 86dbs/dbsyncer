@@ -8,6 +8,7 @@ import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.monitor.Monitor;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.*;
@@ -16,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -39,10 +39,16 @@ public class MappingServiceImpl implements MappingService {
     private Manager manager;
 
     @Autowired
+    private Monitor monitor;
+
+    @Autowired
     private Checker mappingChecker;
 
     @Autowired
     private Checker metaChecker;
+
+    // 驱动启停锁
+    private final static Object LOCK = new Object();
 
     @Override
     public String add(Map<String, String> params) {
@@ -94,8 +100,11 @@ public class MappingServiceImpl implements MappingService {
     public String start(String id) {
         Map<String, String> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, id);
-        ConfigModel model = metaChecker.checkAddConfigModel(params);
-        manager.addMeta(model);
+
+        synchronized (LOCK){
+            ConfigModel model = metaChecker.checkAddConfigModel(params);
+            manager.addMeta(model);
+        }
         return "驱动启动成功";
     }
 
@@ -104,12 +113,13 @@ public class MappingServiceImpl implements MappingService {
         Mapping mapping = manager.getMapping(id);
         Assert.notNull(mapping, "驱动不存在.");
 
-        String metaId = mapping.getMetaId();
-        Meta meta = manager.getMeta(metaId);
-        if (null != meta) {
-            manager.removeMeta(metaId);
-        } else {
-            throw new BizException("驱动已停止.");
+        synchronized (LOCK){
+            String metaId = mapping.getMetaId();
+            if (null != manager.getMeta(metaId)) {
+                manager.removeMeta(metaId);
+            } else {
+                throw new BizException("驱动已停止.");
+            }
         }
         return "驱动停止成功";
     }
@@ -124,23 +134,13 @@ public class MappingServiceImpl implements MappingService {
         return temp;
     }
 
-    boolean running = false;
-
-    /**
-     * 定时推送消息
-     */
-    @Scheduled(fixedRate = 5000)
-    public void callback() {
-        running = running ? false : true;
-    }
-
     private MappingVo convertMapping2Vo(Mapping mapping) {
         Assert.notNull(mapping, "Mapping can not be null.");
         Connector s = manager.getConnector(mapping.getSourceConnectorId());
         Connector t = manager.getConnector(mapping.getTargetConnectorId());
-        ConnectorVo sConn = new ConnectorVo(running);
+        ConnectorVo sConn = new ConnectorVo(monitor.alive(s.getId()));
         BeanUtils.copyProperties(s, sConn);
-        ConnectorVo tConn = new ConnectorVo(running);
+        ConnectorVo tConn = new ConnectorVo(monitor.alive(t.getId()));
         BeanUtils.copyProperties(t, tConn);
 
         boolean isRunning = null != manager.getMeta(mapping.getMetaId());

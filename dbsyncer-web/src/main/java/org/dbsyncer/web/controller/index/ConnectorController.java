@@ -39,18 +39,6 @@ public class ConnectorController extends BaseController {
         return "connector/edit";
     }
 
-    @PostMapping(value = "/alive")
-    @ResponseBody
-    public RestResult alive(HttpServletRequest request) {
-        try {
-            Map<String, String> params = getParams(request);
-            return RestResult.restSuccess(connectorService.alive(params));
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
     @PostMapping("/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
