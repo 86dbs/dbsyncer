@@ -2,8 +2,8 @@ package org.dbsyncer.web.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Ticker;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCache;
@@ -25,30 +25,24 @@ import java.util.stream.Collectors;
  * @version 1.0.0
  * @date 2020/04/23 11:30
  */
-@Data
-@Slf4j
 @Configuration
 @ConfigurationProperties(prefix = "dbsyncer.caching")
 public class CacheConfiguration {
 
-    private Map<String, CacheConfig> cache;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Data
-    static class CacheConfig {
-        private Integer timeout;
-        private Integer max = 200;
-    }
+    private Map<String, CacheConfig> cache;
 
     @Bean
     public KeyGenerator cacheKeyGenerator() {
-        return new KeyGenerator(){
+        return new KeyGenerator() {
             @Override
             public Object generate(Object target, Method method, Object... params) {
                 String className = method.getDeclaringClass().getSimpleName();
                 String methodName = method.getName();
                 String paramHash = String.valueOf(Arrays.toString(params).hashCode());
                 String cacheKey = new StringJoiner("_").add(className).add(methodName).add(paramHash).toString();
-                log.debug("generate cache key : {}", cacheKey);
+                logger.debug("generate cache key : {}", cacheKey);
                 return cacheKey;
             }
         };
@@ -73,12 +67,37 @@ public class CacheConfiguration {
     }
 
     private CaffeineCache buildCache(String key, CacheConfig config, Ticker ticker) {
-        log.info("Cache key {} specified timeout of {} min, max of {}", key, config.getTimeout(), config.getMax());
+        logger.info("Cache key {} specified timeout of {} min, max of {}", key, config.getTimeout(), config.getMax());
         final Caffeine<Object, Object> caffeineBuilder = Caffeine.newBuilder()
                 .expireAfterWrite(config.getTimeout(), TimeUnit.SECONDS)
                 .maximumSize(config.getMax())
                 .ticker(ticker);
         return new CaffeineCache(key, caffeineBuilder.build());
+    }
+
+    static class CacheConfig {
+        private Integer timeout;
+        private Integer max = 200;
+
+        public Integer getTimeout() {
+            return timeout;
+        }
+
+        public void setTimeout(Integer timeout) {
+            this.timeout = timeout;
+        }
+
+        public Integer getMax() {
+            return max;
+        }
+
+        public void setMax(Integer max) {
+            this.max = max;
+        }
+    }
+
+    public void setCache(Map<String, CacheConfig> cache) {
+        this.cache = cache;
     }
 
 }
