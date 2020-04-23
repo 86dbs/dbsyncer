@@ -18,7 +18,11 @@ public enum MetaEnum {
     /**
      * 运行中
      */
-    RUNNING(1, "运行中");
+    RUNNING(1, "运行中"),
+    /**
+     * 停止中
+     */
+    STOPPING(2, "停止中");
 
     private int code;
     private String message;

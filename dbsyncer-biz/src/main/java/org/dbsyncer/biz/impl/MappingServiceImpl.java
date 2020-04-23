@@ -20,10 +20,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author AE86
@@ -88,12 +89,12 @@ public class MappingServiceImpl implements MappingService {
 
     @Override
     public List<MappingVo> getMappingAll() {
-        List<MappingVo> temp = new ArrayList<>();
-        List<Mapping> list = manager.getMappingAll();
-        if (!CollectionUtils.isEmpty(list)) {
-            list.forEach(m -> temp.add(convertMapping2Vo(m)));
-        }
-        return temp;
+        List<MappingVo> list = manager.getMappingAll()
+                .stream()
+                .map(m -> convertMapping2Vo(m))
+                .sorted(Comparator.comparing(MappingVo::getUpdateTime).reversed())
+                .collect(Collectors.toList());
+        return list;
     }
 
     @Override
@@ -126,12 +127,12 @@ public class MappingServiceImpl implements MappingService {
 
     @Override
     public List<MetaVo> getMetaAll() {
-        List<MetaVo> temp = new ArrayList<>();
-        List<Meta> list = manager.getMetaAll();
-        if (!CollectionUtils.isEmpty(list)) {
-            list.forEach(m -> temp.add(convertMeta2Vo(m)));
-        }
-        return temp;
+        List<MetaVo> list = manager.getMetaAll()
+                .stream()
+                .map(m -> convertMeta2Vo(m))
+                .sorted(Comparator.comparing(MetaVo::getUpdateTime).reversed())
+                .collect(Collectors.toList());
+        return list;
     }
 
     private MappingVo convertMapping2Vo(Mapping mapping) {
