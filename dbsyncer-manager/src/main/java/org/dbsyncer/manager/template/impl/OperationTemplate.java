@@ -62,7 +62,7 @@ public final class OperationTemplate extends AbstractTemplate {
     }
 
     public <T> T queryObject(Class<T> clazz, String id) {
-        if(StringUtils.isBlank(id)){
+        if (StringUtils.isBlank(id)) {
             return null;
         }
         Object o = cacheService.get(id, clazz);
@@ -166,7 +166,7 @@ public final class OperationTemplate extends AbstractTemplate {
             return index.subList(fromIndex, toIndex);
         }
 
-        public int size(){
+        public int size() {
             return index.size();
         }
 

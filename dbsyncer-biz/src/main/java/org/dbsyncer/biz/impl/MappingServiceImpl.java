@@ -19,6 +19,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -59,26 +60,37 @@ public class MappingServiceImpl implements MappingService {
 
     @Override
     public String edit(Map<String, String> params) {
-        logger.info("检查驱动是否停止运行");
-        ConfigModel model = mappingChecker.checkEditConfigModel(params);
-        return manager.editMapping(model);
+        String mappingId = params.get(ConfigConstant.CONFIG_MODEL_ID);
+        synchronized (LOCK){
+            checkRunning(mappingId);
+
+            ConfigModel model = mappingChecker.checkEditConfigModel(params);
+            return manager.editMapping(model);
+        }
     }
 
     @Override
-    public boolean remove(String mappingId) {
-        logger.info("检查驱动是否停止运行");
-        Mapping mapping = manager.getMapping(mappingId);
-        Assert.notNull(mapping, "驱动不存在.");
-        // 删除meta
-        manager.removeMeta(mapping.getMetaId());
+    public String remove(String id) {
+        Assert.hasText(id, "驱动ID不能为空");
 
-        // 删除tableGroup
-        List<TableGroup> groupList = manager.getTableGroupAll(mappingId);
-        if (!CollectionUtils.isEmpty(groupList)) {
-            groupList.forEach(t -> manager.removeTableGroup(t.getId()));
+        synchronized (LOCK){
+            checkRunning(id);
+
+            // 删除meta
+            Mapping mapping = manager.getMapping(id);
+            String metaId = mapping.getMetaId();
+            if(!StringUtils.isEmpty(metaId)){
+                manager.removeMeta(metaId);
+            }
+
+            // 删除tableGroup
+            List<TableGroup> groupList = manager.getTableGroupAll(id);
+            if (!CollectionUtils.isEmpty(groupList)) {
+                groupList.forEach(t -> manager.removeTableGroup(t.getId()));
+            }
+            manager.removeMapping(id);
         }
-        manager.removeMapping(mappingId);
-        return true;
+        return "驱动删除成功";
     }
 
     @Override
@@ -99,10 +111,13 @@ public class MappingServiceImpl implements MappingService {
 
     @Override
     public String start(String id) {
+        Assert.hasText(id, "驱动ID不能为空");
         Map<String, String> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, id);
 
         synchronized (LOCK){
+            checkRunning(id);
+
             ConfigModel model = metaChecker.checkAddConfigModel(params);
             manager.addMeta(model);
         }
@@ -111,16 +126,16 @@ public class MappingServiceImpl implements MappingService {
 
     @Override
     public String stop(String id) {
+        Assert.hasText(id, "驱动ID不能为空");
         Mapping mapping = manager.getMapping(id);
         Assert.notNull(mapping, "驱动不存在.");
 
         synchronized (LOCK){
             String metaId = mapping.getMetaId();
-            if (null != manager.getMeta(metaId)) {
-                manager.removeMeta(metaId);
-            } else {
+            if (null == manager.getMeta(metaId)) {
                 throw new BizException("驱动已停止.");
             }
+            manager.removeMeta(metaId);
         }
         return "驱动停止成功";
     }
@@ -160,4 +175,16 @@ public class MappingServiceImpl implements MappingService {
         return metaVo;
     }
 
+    /**
+     * 检查是否运行中
+     *
+     * @param mappingId
+     */
+    private void checkRunning(String mappingId) {
+        Mapping mapping = manager.getMapping(mappingId);
+        Assert.notNull(mapping, "驱动不存在.");
+
+        Meta meta = manager.getMeta(mapping.getMetaId());
+        Assert.isNull(meta, "驱动正在运行, 请先停止.");
+    }
 }

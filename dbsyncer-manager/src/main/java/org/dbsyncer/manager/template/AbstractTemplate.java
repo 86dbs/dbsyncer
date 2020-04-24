@@ -19,7 +19,7 @@ public abstract class AbstractTemplate {
         return getDefaultStrategy(query.getGroupStrategyEnum());
     }
 
-    protected GroupStrategyEnum getDefaultStrategy(GroupStrategyEnum strategy){
+    private GroupStrategyEnum getDefaultStrategy(GroupStrategyEnum strategy){
         return null != strategy ? strategy : GroupStrategyEnum.DEFAULT;
     }
 

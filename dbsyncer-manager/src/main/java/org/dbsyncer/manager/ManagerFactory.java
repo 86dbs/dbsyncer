@@ -99,7 +99,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
     @Override
     public String editMapping(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD.getHandler()));
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT.getHandler()));
     }
 
     @Override
@@ -146,7 +146,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
         TableGroup tableGroup = new TableGroup();
         tableGroup.setType(ConfigConstant.TABLE_GROUP);
         tableGroup.setMappingId(mappingId);
-        QueryConfig<TableGroup> queryConfig = new QueryConfig<>(tableGroup);
+        QueryConfig<TableGroup> queryConfig = new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE);
         List<TableGroup> tableGroups = operationTemplate.queryAll(queryConfig);
         return tableGroups;
     }
