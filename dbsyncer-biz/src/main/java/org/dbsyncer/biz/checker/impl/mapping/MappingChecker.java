@@ -52,7 +52,7 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
-        logger.info("checkAddConfigModel mapping params:{}", params);
+        logger.info("params:{}", params);
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         String sourceConnectorId = params.get("sourceConnectorId");
         String targetConnectorId = params.get("targetConnectorId");

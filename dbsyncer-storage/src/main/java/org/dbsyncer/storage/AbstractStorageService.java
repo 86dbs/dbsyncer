@@ -51,6 +51,7 @@ public abstract class AbstractStorageService implements StorageService, Applicat
             insert(getCollectionId(type, collectionId), params);
         } catch (IOException e) {
             logger.error("add collectionId:{}, params:{}, failed:{}", collectionId, params, e.getMessage());
+            throw new StorageException(e);
         }
     }
 
@@ -67,6 +68,7 @@ public abstract class AbstractStorageService implements StorageService, Applicat
             update(getCollectionId(type, collectionId), params);
         } catch (IOException e) {
             logger.error("edit collectionId:{}, params:{}, failed:{}", collectionId, params, e.getMessage());
+            throw new StorageException(e);
         }
     }
 
@@ -83,6 +85,7 @@ public abstract class AbstractStorageService implements StorageService, Applicat
             delete(getCollectionId(type, collectionId), id);
         } catch (IOException e) {
             logger.error("remove collectionId:{}, id:{}, failed:{}", collectionId, id, e.getMessage());
+            throw new StorageException(e);
         }
     }
 

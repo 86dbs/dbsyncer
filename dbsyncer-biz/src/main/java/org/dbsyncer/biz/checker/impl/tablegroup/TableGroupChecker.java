@@ -39,7 +39,7 @@ public class TableGroupChecker extends AbstractChecker {
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
-        logger.info("checkAddConfigModel tableGroup params:{}", params);
+        logger.info("params:{}", params);
         String mappingId = params.get("mappingId");
         String sourceTable = params.get("sourceTable");
         String targetTable = params.get("targetTable");

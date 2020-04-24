@@ -33,6 +33,7 @@ public class MetaChecker extends AbstractChecker {
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
+        logger.info("params:{}", params);
         String mappingId = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Mapping mapping = manager.getMapping(mappingId);
         Assert.notNull(mapping, "驱动不存在.");
