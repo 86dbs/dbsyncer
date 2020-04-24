@@ -4,6 +4,10 @@ import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.ManagerException;
+import org.dbsyncer.manager.config.OperationCallBack;
+import org.dbsyncer.manager.config.OperationConfig;
+import org.dbsyncer.manager.config.QueryConfig;
+import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.manager.template.*;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.util.ConfigModelUtil;
@@ -16,10 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 操作配置模板
@@ -29,7 +30,7 @@ import java.util.Map;
  * @date 2019/9/16 23:59
  */
 @Component
-public class ConfigOperationTemplate {
+public final class OperationTemplate extends AbstractTemplate {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -39,9 +40,9 @@ public class ConfigOperationTemplate {
     @Autowired
     private CacheService cacheService;
 
-    public <T> List<T> queryAll(QueryTemplate<T> queryTemplate) {
-        ConfigModel model = queryTemplate.getConfigModel();
-        String groupId = getGroupId(model, queryTemplate);
+    public <T> List<T> queryAll(QueryConfig<T> query) {
+        ConfigModel model = query.getConfigModel();
+        String groupId = getGroupId(model, getDefaultStrategy(query));
         Group group = cacheService.get(groupId, Group.class);
         if (null != group) {
             List<String> index = group.getAll();
@@ -68,43 +69,44 @@ public class ConfigOperationTemplate {
         return beanCopy(clazz, o);
     }
 
-    public String execute(ConfigModel model, OperationTemplate operationTemplate) {
+    public String execute(OperationConfig config) {
         // 1、解析配置
+        ConfigModel model = config.getModel();
         Assert.notNull(model, "ConfigModel can not be null.");
-        String id = model.getId();
-        logger.info("Parse config model id:{}", id);
 
         // 2、持久化
         Map<String, Object> params = ConfigModelUtil.convertModelToMap(model);
-        operationTemplate.handleEvent(new Call(StorageConstant.CONFIG, params));
-        logger.info("Stored config model:{}", id);
+        logger.info("params:{}", params);
+        Handler handler = config.getHandler();
+        Assert.notNull(handler, "Handler can not be null.");
+        handler.execute(new OperationCallBack(storageService, StorageConstant.CONFIG, params));
 
         // 3、缓存
-        save(model, operationTemplate);
-        return id;
+        GroupStrategyEnum strategy = getDefaultStrategy(config);
+        cache(model, strategy);
+        return model.getId();
     }
 
-    public void save(ConfigModel model, BaseTemplate baseTemplate) {
+    public void cache(ConfigModel model, GroupStrategyEnum strategy) {
         // 1、缓存
         Assert.notNull(model, "ConfigModel can not be null.");
         String id = model.getId();
         cacheService.put(id, model);
-        logger.info("Save config into cache:[{}]", id);
 
         // 2、分组
-        String groupId = getGroupId(model, baseTemplate);
+        String groupId = getGroupId(model, strategy);
         cacheService.putIfAbsent(groupId, new Group());
         Group group = cacheService.get(groupId, Group.class);
         group.addIfAbsent(id);
-        logger.info("Save group into cache:[{}]", groupId);
+        logger.info("Put the model [{}] for {} group into cache.", id, groupId);
     }
 
-    public void remove(RemoveTemplate removeTemplate) {
-        String id = removeTemplate.getId();
+    public void remove(OperationConfig config) {
+        String id = config.getId();
         Assert.hasText(id, "ID can not be empty.");
         // 删除分组
         ConfigModel model = cacheService.get(id, ConfigModel.class);
-        String groupId = getGroupId(model, removeTemplate);
+        String groupId = getGroupId(model, getDefaultStrategy(config));
         Group group = cacheService.get(groupId, Group.class);
         if (null != group) {
             group.remove(id);
@@ -116,12 +118,13 @@ public class ConfigOperationTemplate {
         storageService.remove(StorageConstant.CONFIG, id);
     }
 
-    private String getGroupId(ConfigModel model, BaseTemplate template) {
+    private String getGroupId(ConfigModel model, GroupStrategyEnum strategy) {
         Assert.notNull(model, "ConfigModel can not be null.");
-        Assert.notNull(template, "BaseTemplate can not be null.");
-        GroupStrategy strategy = template.getGroupStrategy();
-        Assert.notNull(strategy, "GroupStrategy can not be null.");
-        String groupId = strategy.getGroupId(model);
+        Assert.notNull(strategy, "GroupStrategyEnum can not be null.");
+        GroupStrategy groupStrategy = strategy.getGroupStrategy();
+        Assert.notNull(groupStrategy, "GroupStrategy can not be null.");
+
+        String groupId = groupStrategy.getGroupId(model);
         Assert.hasText(groupId, "GroupId can not be empty.");
         return groupId;
     }
@@ -141,23 +144,34 @@ public class ConfigOperationTemplate {
         }
     }
 
-    public final class Call {
+    class Group {
 
-        private String type;
+        private List<String> index;
 
-        private Map params;
-
-        public Call(String type, Map params) {
-            this.type = type;
-            this.params = params;
+        public Group() {
+            this.index = new LinkedList<>();
         }
 
-        public void add() {
-            storageService.add(type, params);
+        public synchronized void addIfAbsent(String e) {
+            if (!index.contains(e)) {
+                index.add(e);
+            }
         }
 
-        public void edit() {
-            storageService.edit(type, params);
+        public synchronized void remove(String e) {
+            index.remove(e);
+        }
+
+        public List<String> subList(int fromIndex, int toIndex) {
+            return index.subList(fromIndex, toIndex);
+        }
+
+        public int size(){
+            return index.size();
+        }
+
+        public List<String> getAll() {
+            return Collections.unmodifiableList(index);
         }
 
     }

@@ -1,7 +1,12 @@
 package org.dbsyncer.manager.template.impl;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.manager.template.PreLoadTemplate;
+import org.dbsyncer.manager.config.PreloadCallBack;
+import org.dbsyncer.manager.config.PreloadConfig;
+import org.dbsyncer.manager.enums.GroupStrategyEnum;
+import org.dbsyncer.manager.template.AbstractTemplate;
+import org.dbsyncer.manager.template.Handler;
+import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -22,32 +27,36 @@ import java.util.Map;
  * @date 2019/9/16 23:59
  */
 @Component
-public class ConfigPreLoadTemplate {
+public final class PreloadTemplate extends AbstractTemplate {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Autowired
+    private Parser parser;
 
     @Autowired
     private StorageService storageService;
 
     @Autowired
-    private ConfigOperationTemplate operationTemplate;
+    private OperationTemplate operationTemplate;
 
-    public void execute(PreLoadTemplate template) {
+    public void execute(PreloadConfig config) {
         Query query = new Query();
-        String filterType = template.filterType();
+        String filterType = config.getFilterType();
         query.put(ConfigConstant.CONFIG_MODEL_TYPE, filterType);
         List<Map> list = storageService.queryConfig(query);
         boolean empty = CollectionUtils.isEmpty(list);
         logger.info("PreLoad {}:{}", filterType, empty ? 0 : list.size());
         if (!empty) {
-            list.forEach(map -> preload(template, map));
-        }
-    }
-
-    private void preload(PreLoadTemplate template, Map map) {
-        ConfigModel model = template.parseModel((String) map.get(ConfigConstant.CONFIG_MODEL_JSON));
-        if (null != model) {
-            operationTemplate.save(model, template);
+            Handler handler = config.getHandler();
+            GroupStrategyEnum strategy = getDefaultStrategy(config);
+            list.forEach(map -> {
+                String json = (String) map.get(ConfigConstant.CONFIG_MODEL_JSON);
+                ConfigModel model = (ConfigModel) handler.execute(new PreloadCallBack(parser, json));
+                if (null != model) {
+                    operationTemplate.cache(model, strategy);
+                }
+            });
         }
     }
 

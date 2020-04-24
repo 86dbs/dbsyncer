@@ -75,7 +75,7 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
 
     @Override
     public ConfigModel checkEditConfigModel(Map<String, String> params) {
-        logger.info("checkEditConfigModel mapping params:{}", params);
+        logger.info("params:{}", params);
         Assert.notEmpty(params, "MappingChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Mapping mapping = manager.getMapping(id);
