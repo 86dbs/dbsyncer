@@ -13,11 +13,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 驱动配置
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2019/9/30 20:31
  */
-public interface Manager {
+public interface Manager extends Executor {
 
     boolean alive(ConnectorConfig config);
 

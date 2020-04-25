@@ -1,6 +1,5 @@
 package org.dbsyncer.biz.checker.impl.mapping;
 
-import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.enums.MetaEnum;
@@ -38,17 +37,12 @@ public class MetaChecker extends AbstractChecker {
         Mapping mapping = manager.getMapping(mappingId);
         Assert.notNull(mapping, "驱动不存在.");
 
-        Meta meta = manager.getMeta(mapping.getMetaId());
-        if (null != meta) {
-            throw new BizException("驱动正在运行中.");
-        }
-
         // TODO 获取驱动数据源总条数
         AtomicInteger total = new AtomicInteger(1000);
         AtomicInteger success = new AtomicInteger(500);
         AtomicInteger fail = new AtomicInteger(0);
         Map<String, String> map = new ConcurrentHashMap<>();
-        meta = new Meta(mappingId, MetaEnum.RUNNING.getCode(), total, success, fail, map);
+        Meta meta = new Meta(mappingId, MetaEnum.RUNNING.getCode(), total, success, fail, map);
         meta.setType(ConfigConstant.META);
         meta.setName(ConfigConstant.META);
 

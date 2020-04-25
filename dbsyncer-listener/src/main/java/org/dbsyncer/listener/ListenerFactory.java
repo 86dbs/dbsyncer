@@ -1,7 +1,10 @@
 package org.dbsyncer.listener;
 
 
-public class ListenerFactory {
+import org.springframework.stereotype.Component;
+
+@Component
+public class ListenerFactory implements Listener {
 
 
 }

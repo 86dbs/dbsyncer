@@ -5,6 +5,7 @@ import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.manager.config.*;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.manager.enums.HandlerEnum;
@@ -218,4 +219,18 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
     }
 
+    @Override
+    public boolean launch(String metaId, ListenerConfig listenerConfig, ConnectorConfig connectorConfig) {
+        return false;
+    }
+
+    @Override
+    public boolean close(String metaId) {
+        return false;
+    }
+
+    @Override
+    public boolean isRunning(String metaId) {
+        return false;
+    }
 }
