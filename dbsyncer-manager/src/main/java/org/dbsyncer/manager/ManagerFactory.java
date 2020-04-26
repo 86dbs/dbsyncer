@@ -15,6 +15,7 @@ import org.dbsyncer.manager.template.impl.OperationTemplate;
 import org.dbsyncer.manager.template.impl.PreloadTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
@@ -39,7 +40,7 @@ import java.util.Map;
  * @date 2019/9/16 23:59
  */
 @Component
-public class ManagerFactory implements Manager, ApplicationContextAware, ApplicationListener<ContextRefreshedEvent> {
+public class ManagerFactory implements Manager, ApplicationContextAware {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -179,6 +180,11 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     }
 
     @Override
+    public String editMeta(ConfigModel model) {
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT.getHandler()));
+    }
+
+    @Override
     public Meta getMeta(String metaId) {
         return operationTemplate.queryObject(Meta.class, metaId);
     }
@@ -228,31 +234,31 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
         Connector connector = getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "数据源配置不能为空");
 
+        // 标记运行中
+        String metaId = mapping.getMetaId();
+        changeMetaState(metaId, MetaEnum.RUNNING);
+
         // 启动任务
         Executor executor = getExecutor(mapping);
-        boolean start = executor.start(mapping.getMetaId(), mapping.getListener(), connector.getConfig());
+        boolean start = executor.start(metaId, mapping.getListener(), connector.getConfig());
+
+        // rollback
+        if(!start){
+            logger.warn("启动失败:{}", metaId);
+            changeMetaState(metaId, MetaEnum.READY);
+        }
         return start;
     }
 
     @Override
     public boolean close(Mapping mapping) {
+        String metaId = mapping.getMetaId();
+        changeMetaState(metaId, MetaEnum.STOPPING);
+
         // 关闭任务
         Executor executor = getExecutor(mapping);
-        boolean shutdown = executor.shutdown(mapping.getMetaId());
+        boolean shutdown = executor.shutdown(metaId);
         return shutdown;
-    }
-
-    @Override
-    public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
-        // Load connectors
-        preloadTemplate.execute(new PreloadConfig(ConfigConstant.CONNECTOR, HandlerEnum.PRELOAD_CONNECTOR.getHandler()));
-        // Load mappings
-        preloadTemplate.execute(new PreloadConfig(ConfigConstant.MAPPING, HandlerEnum.PRELOAD_MAPPING.getHandler()));
-        // Load tableGroups
-        preloadTemplate.execute(new PreloadConfig(ConfigConstant.TABLE_GROUP, GroupStrategyEnum.TABLE, HandlerEnum.PRELOAD_TABLE_GROUP.getHandler()));
-        // Load metas
-        preloadTemplate.execute(new PreloadConfig(ConfigConstant.META, HandlerEnum.PRELOAD_META.getHandler()));
-
     }
 
     private Executor getExecutor(Mapping mapping) {
@@ -265,6 +271,12 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
         Executor executor = map.get(model.concat("Executor"));
         Assert.notNull(executor, String.format("未知的同步方式: %s", model));
         return executor;
+    }
+
+    private void changeMetaState(String metaId, MetaEnum metaEnum){
+        Meta meta = getMeta(metaId);
+        meta.setState(metaEnum.getCode());
+        editMeta(meta);
     }
 
 }

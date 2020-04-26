@@ -65,6 +65,8 @@ public interface Manager {
     // Meta
     String addMeta(ConfigModel model);
 
+    String editMeta(ConfigModel model);
+
     Meta getMeta(String metaId);
 
     void removeMeta(String metaId);

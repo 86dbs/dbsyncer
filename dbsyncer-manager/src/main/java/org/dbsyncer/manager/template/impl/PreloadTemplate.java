@@ -4,6 +4,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.config.PreloadCallBack;
 import org.dbsyncer.manager.config.PreloadConfig;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
+import org.dbsyncer.manager.enums.HandlerEnum;
 import org.dbsyncer.manager.template.AbstractTemplate;
 import org.dbsyncer.manager.template.Handler;
 import org.dbsyncer.parser.Parser;
@@ -14,6 +15,8 @@ import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -27,7 +30,7 @@ import java.util.Map;
  * @date 2019/9/16 23:59
  */
 @Component
-public final class PreloadTemplate extends AbstractTemplate {
+public final class PreloadTemplate extends AbstractTemplate implements ApplicationListener<ContextRefreshedEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -58,6 +61,19 @@ public final class PreloadTemplate extends AbstractTemplate {
                 }
             });
         }
+    }
+
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
+        // Load connectors
+        execute(new PreloadConfig(ConfigConstant.CONNECTOR, HandlerEnum.PRELOAD_CONNECTOR.getHandler()));
+        // Load mappings
+        execute(new PreloadConfig(ConfigConstant.MAPPING, HandlerEnum.PRELOAD_MAPPING.getHandler()));
+        // Load tableGroups
+        execute(new PreloadConfig(ConfigConstant.TABLE_GROUP, GroupStrategyEnum.TABLE, HandlerEnum.PRELOAD_TABLE_GROUP.getHandler()));
+        // Load metas
+        execute(new PreloadConfig(ConfigConstant.META, HandlerEnum.PRELOAD_META.getHandler()));
+
     }
 
 }
