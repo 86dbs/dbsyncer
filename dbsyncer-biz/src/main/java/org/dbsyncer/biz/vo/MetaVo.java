@@ -13,13 +13,10 @@ public class MetaVo extends Meta {
     private String mappingName;
     // 同步方式
     private String model;
-    // 状态
-    private String mappingState;
 
-    public MetaVo(String mappingName, String model, String mappingState) {
+    public MetaVo(String mappingName, String model) {
         this.mappingName = mappingName;
         this.model = model;
-        this.mappingState = mappingState;
     }
 
     public String getMappingName() {
@@ -36,13 +33,5 @@ public class MetaVo extends Meta {
 
     public void setModel(String model) {
         this.model = model;
-    }
-
-    public String getMappingState() {
-        return mappingState;
-    }
-
-    public void setMappingState(String mappingState) {
-        this.mappingState = mappingState;
     }
 }

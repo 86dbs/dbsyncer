@@ -150,8 +150,7 @@ public class MappingServiceImpl implements MappingService {
         Mapping mapping = manager.getMapping(meta.getMappingId());
         Assert.notNull(mapping, "驱动不存在.");
         ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
-        MetaEnum metaEnum = MetaEnum.getMetaEnum(meta.getState());
-        MetaVo metaVo = new MetaVo(mapping.getName(), modelEnum.getMessage(), metaEnum.getMessage());
+        MetaVo metaVo = new MetaVo(mapping.getName(), modelEnum.getMessage());
         BeanUtils.copyProperties(meta, metaVo);
         return metaVo;
     }

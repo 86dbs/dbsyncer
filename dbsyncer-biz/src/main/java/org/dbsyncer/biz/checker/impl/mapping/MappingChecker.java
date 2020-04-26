@@ -149,7 +149,7 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         AtomicInteger success = new AtomicInteger(0);
         AtomicInteger fail = new AtomicInteger(0);
         Map<String, String> map = new ConcurrentHashMap<>();
-        Meta meta = new Meta(mappingId, MetaEnum.RUNNING.getCode(), total, success, fail, map);
+        Meta meta = new Meta(mappingId, MetaEnum.READY.getCode(), total, success, fail, map);
         meta.setType(ConfigConstant.META);
         meta.setName(ConfigConstant.META);
 
