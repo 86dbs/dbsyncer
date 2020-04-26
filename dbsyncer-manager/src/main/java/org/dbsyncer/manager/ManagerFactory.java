@@ -7,7 +7,6 @@ import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.manager.config.OperationConfig;
-import org.dbsyncer.manager.config.PreloadConfig;
 import org.dbsyncer.manager.config.QueryConfig;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.manager.enums.HandlerEnum;
@@ -15,21 +14,14 @@ import org.dbsyncer.manager.template.impl.OperationTemplate;
 import org.dbsyncer.manager.template.impl.PreloadTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;
-import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
@@ -40,7 +32,7 @@ import java.util.Map;
  * @date 2019/9/16 23:59
  */
 @Component
-public class ManagerFactory implements Manager, ApplicationContextAware {
+public class ManagerFactory implements Manager {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -54,17 +46,13 @@ public class ManagerFactory implements Manager, ApplicationContextAware {
     private Listener listener;
 
     @Autowired
+    private Executor executor;
+
+    @Autowired
     private PreloadTemplate preloadTemplate;
 
     @Autowired
     private OperationTemplate operationTemplate;
-
-    private Map<String, Executor> map;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        map = applicationContext.getBeansOfType(Executor.class);
-    }
 
     @Override
     public boolean alive(ConnectorConfig config) {
@@ -229,54 +217,15 @@ public class ManagerFactory implements Manager, ApplicationContextAware {
     }
 
     @Override
-    public boolean start(Mapping mapping) {
-        // 获取数据源连接器
-        Connector connector = getConnector(mapping.getSourceConnectorId());
-        Assert.notNull(connector, "数据源配置不能为空");
-
-        // 标记运行中
-        String metaId = mapping.getMetaId();
-        changeMetaState(metaId, MetaEnum.RUNNING);
-
+    public void start(Mapping mapping) {
         // 启动任务
-        Executor executor = getExecutor(mapping);
-        boolean start = executor.start(metaId, mapping.getListener(), connector.getConfig());
-
-        // rollback
-        if(!start){
-            logger.warn("启动失败:{}", metaId);
-            changeMetaState(metaId, MetaEnum.READY);
-        }
-        return start;
+        executor.start(mapping);
     }
 
     @Override
-    public boolean close(Mapping mapping) {
-        String metaId = mapping.getMetaId();
-        changeMetaState(metaId, MetaEnum.STOPPING);
-
+    public void close(Mapping mapping) {
         // 关闭任务
-        Executor executor = getExecutor(mapping);
-        boolean shutdown = executor.shutdown(metaId);
-        return shutdown;
-    }
-
-    private Executor getExecutor(Mapping mapping) {
-        Assert.notNull(mapping, "驱动不能为空");
-        String model = mapping.getModel();
-        String metaId = mapping.getMetaId();
-        Assert.hasText(model, "同步方式不能为空");
-        Assert.hasText(metaId, "任务ID不能为空");
-
-        Executor executor = map.get(model.concat("Executor"));
-        Assert.notNull(executor, String.format("未知的同步方式: %s", model));
-        return executor;
-    }
-
-    private void changeMetaState(String metaId, MetaEnum metaEnum){
-        Meta meta = getMeta(metaId);
-        meta.setState(metaEnum.getCode());
-        editMeta(meta);
+        executor.close(mapping);
     }
 
 }

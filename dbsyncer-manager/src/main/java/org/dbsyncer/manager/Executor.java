@@ -1,7 +1,6 @@
 package org.dbsyncer.manager;
 
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.listener.config.ListenerConfig;
+import org.dbsyncer.parser.model.Mapping;
 
 /**
  * 同步任务执行器
@@ -15,17 +14,15 @@ public interface Executor {
     /**
      * 启动同步任务
      *
-     * @param metaId
-     * @param listenerConfig
-     * @param connectorConfig
+     * @param mapping
      */
-    boolean start(String metaId, ListenerConfig listenerConfig, ConnectorConfig connectorConfig);
+    void start(Mapping mapping);
 
     /**
      * 关闭同步任务
      *
-     * @param metaId
+     * @param mapping
      */
-    boolean shutdown(String metaId);
+    void close(Mapping mapping);
 
 }

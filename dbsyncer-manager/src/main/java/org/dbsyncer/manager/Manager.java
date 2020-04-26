@@ -93,13 +93,13 @@ public interface Manager {
      *
      * @param mapping
      */
-    boolean start(Mapping mapping);
+    void start(Mapping mapping);
 
     /**
      * 关闭同步任务
      *
      * @param mapping
      */
-    boolean close(Mapping mapping);
+    void close(Mapping mapping);
 
 }
