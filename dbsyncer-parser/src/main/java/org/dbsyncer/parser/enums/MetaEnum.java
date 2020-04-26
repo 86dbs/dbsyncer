@@ -41,6 +41,10 @@ public enum MetaEnum {
         throw new ParserException(String.format("Meta code \"%s\" does not exist.", code));
     }
 
+    public static boolean isRunning(int state) {
+        return RUNNING.getCode() == state || STOPPING.getCode() == state;
+    }
+
     public int getCode() {
         return code;
     }

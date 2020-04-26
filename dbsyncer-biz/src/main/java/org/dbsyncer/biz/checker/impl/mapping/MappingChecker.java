@@ -10,9 +10,11 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerEnum;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
@@ -24,8 +26,11 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author AE86
@@ -70,6 +75,10 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
 
         // 修改基本配置
         this.modifyConfigModel(mapping, params);
+
+        // 创建meta
+        String metaId = addMeta(mapping.getId());
+        mapping.setMetaId(metaId);
         return mapping;
     }
 
@@ -112,6 +121,9 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         // 更新映射关系过滤条件
         setFilterCommand(mapping);
 
+        // 更新meta
+        updateMeta(mapping);
+
         // 增量配置
         return mapping;
     }
@@ -129,6 +141,31 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
                 tableGroupChecker.setCommand(mapping, g);
                 manager.editTableGroup(g);
             }
+        }
+    }
+
+    private String addMeta(String mappingId) {
+        AtomicInteger total = new AtomicInteger(0);
+        AtomicInteger success = new AtomicInteger(0);
+        AtomicInteger fail = new AtomicInteger(0);
+        Map<String, String> map = new ConcurrentHashMap<>();
+        Meta meta = new Meta(mappingId, MetaEnum.RUNNING.getCode(), total, success, fail, map);
+        meta.setType(ConfigConstant.META);
+        meta.setName(ConfigConstant.META);
+
+        // 修改基本配置
+        this.modifyConfigModel(meta, new HashMap<>());
+
+        return manager.addMeta(meta);
+    }
+
+    private void updateMeta(Mapping mapping) {
+        if(StringUtils.equals(ModelEnum.FULL.getCode(), mapping.getModel())){
+            String metaId = mapping.getMetaId();
+            Meta meta = manager.getMeta(metaId);
+            Assert.notNull(meta, "驱动meta不存在.");
+            // TODO 获取驱动数据源总条数
+
         }
     }
 

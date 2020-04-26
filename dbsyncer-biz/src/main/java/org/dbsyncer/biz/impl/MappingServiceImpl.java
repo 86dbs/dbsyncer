@@ -19,10 +19,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -46,9 +44,6 @@ public class MappingServiceImpl implements MappingService {
     @Autowired
     private Checker mappingChecker;
 
-    @Autowired
-    private Checker metaChecker;
-
     // 驱动启停锁
     private final static Object LOCK = new Object();
 
@@ -60,13 +55,10 @@ public class MappingServiceImpl implements MappingService {
 
     @Override
     public String edit(Map<String, String> params) {
-        String mappingId = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        Mapping mapping = manager.getMapping(mappingId);
-        Assert.notNull(mapping, "驱动不存在.");
-
-        synchronized (LOCK){
-            isRunning(mapping.getMetaId());
-
+        String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
+        Mapping mapping = assertMappingExist(id);
+        synchronized (LOCK) {
+            assertRunning(mapping.getMetaId());
             ConfigModel model = mappingChecker.checkEditConfigModel(params);
             return manager.editMapping(model);
         }
@@ -74,17 +66,12 @@ public class MappingServiceImpl implements MappingService {
 
     @Override
     public String remove(String id) {
-        Mapping mapping = manager.getMapping(id);
-        Assert.notNull(mapping, "驱动不存在.");
-        String metaId = mapping.getMetaId();
-
-        synchronized (LOCK){
-            isRunning(metaId);
+        Mapping mapping = assertMappingExist(id);
+        synchronized (LOCK) {
+            assertRunning(mapping.getMetaId());
 
             // 删除meta
-            if(!StringUtils.isEmpty(metaId)){
-                manager.removeMeta(metaId);
-            }
+            manager.removeMeta(mapping.getMetaId());
 
             // 删除tableGroup
             List<TableGroup> groupList = manager.getTableGroupAll(id);
@@ -114,46 +101,22 @@ public class MappingServiceImpl implements MappingService {
 
     @Override
     public String start(String id) {
-        Assert.hasText(id, "驱动ID不能为空");
-        Map<String, String> params = new HashMap<>();
-        params.put(ConfigConstant.CONFIG_MODEL_ID, id);
-        Mapping mapping = manager.getMapping(id);
-        Assert.notNull(mapping, "驱动不存在.");
-
-        synchronized (LOCK){
-            isRunning(mapping.getMetaId());
-
-            // 创建增量meta文件
-            ConfigModel model = metaChecker.checkAddConfigModel(params);
-            String metaId = manager.addMeta(model);
-
-            // 获取连接器
-            Connector connector = manager.getConnector(mapping.getSourceConnectorId());
-
-            boolean success = manager.launch(metaId, mapping.getListener(), connector.getConfig());
-            if(!success){
-                // rollback
-                manager.removeMeta(metaId);
-            }
+        Mapping mapping = assertMappingExist(id);
+        synchronized (LOCK) {
+            assertRunning(mapping.getMetaId());
+            manager.start(mapping);
         }
         return "驱动启动成功";
     }
 
     @Override
     public String stop(String id) {
-        Assert.hasText(id, "驱动ID不能为空");
-        Mapping mapping = manager.getMapping(id);
-        Assert.notNull(mapping, "驱动不存在.");
-        String metaId = mapping.getMetaId();
-
-        synchronized (LOCK){
-            if (!manager.isRunning(metaId)) {
+        Mapping mapping = assertMappingExist(id);
+        synchronized (LOCK) {
+            if (!isRunning(mapping.getMetaId())) {
                 throw new BizException("驱动已停止.");
             }
-            boolean success = manager.close(metaId);
-            if(success){
-                manager.removeMeta(metaId);
-            }
+            manager.close(mapping);
         }
         return "驱动停止成功";
     }
@@ -176,8 +139,8 @@ public class MappingServiceImpl implements MappingService {
         BeanUtils.copyProperties(s, sConn);
         ConnectorVo tConn = new ConnectorVo(monitor.alive(t.getId()));
         BeanUtils.copyProperties(t, tConn);
+        boolean isRunning = isRunning(mapping.getMetaId());
 
-        boolean isRunning = manager.isRunning(mapping.getMetaId());
         MappingVo vo = new MappingVo(isRunning, sConn, tConn);
         BeanUtils.copyProperties(mapping, vo);
         return vo;
@@ -193,9 +156,35 @@ public class MappingServiceImpl implements MappingService {
         return metaVo;
     }
 
+    /**
+     * 检查是否存在驱动
+     *
+     * @param mappingId
+     * @return
+     */
+    private Mapping assertMappingExist(String mappingId) {
+        Mapping mapping = manager.getMapping(mappingId);
+        Assert.notNull(mapping, "驱动不存在.");
+        return mapping;
+    }
+
+    /**
+     * 检查是否运行中，运行中抛出异常提示
+     *
+     * @param metaId
+     * @return
+     */
+    private void assertRunning(String metaId) {
+        Assert.isTrue(!isRunning(metaId), "驱动正在运行中, 请先停止.");
+    }
+
     private boolean isRunning(String metaId) {
-        boolean running = manager.isRunning(metaId);
-        Assert.isTrue(!running, "驱动正在运行中, 请先停止.");
+        Meta meta = manager.getMeta(metaId);
+        if (null != meta) {
+            int state = meta.getState();
+            return MetaEnum.isRunning(state);
+        }
         return false;
     }
+
 }

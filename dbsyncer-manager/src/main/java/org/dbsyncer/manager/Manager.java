@@ -19,7 +19,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2019/9/30 20:31
  */
-public interface Manager extends Executor {
+public interface Manager {
 
     boolean alive(ConnectorConfig config);
 
@@ -85,5 +85,19 @@ public interface Manager extends Executor {
 
     // Plugin
     List<Plugin> getPluginAll();
+
+    /**
+     * 启动同步任务
+     *
+     * @param mapping
+     */
+    boolean start(Mapping mapping);
+
+    /**
+     * 关闭同步任务
+     *
+     * @param mapping
+     */
+    boolean close(Mapping mapping);
 
 }
