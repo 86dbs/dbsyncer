@@ -39,7 +39,7 @@ public class TableGroupChecker extends AbstractChecker {
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
-        logger.info("checkAddConfigModel tableGroup params:{}", params);
+        logger.info("params:{}", params);
         String mappingId = params.get("mappingId");
         String sourceTable = params.get("sourceTable");
         String targetTable = params.get("targetTable");
@@ -113,7 +113,7 @@ public class TableGroupChecker extends AbstractChecker {
 
     private Table getTable(String connectorId, String tableName) {
         MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
-        Assert.notNull(metaInfo, "无法获取连接信息.");
+        Assert.notNull(metaInfo, "无法获取连接器表信息.");
         return new Table().setName(tableName).setColumn(metaInfo.getColumn());
     }
 

@@ -44,7 +44,7 @@ public class ConnectorChecker extends AbstractChecker implements ApplicationCont
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
-        logger.info("checkAddConfigModel connector params:{}", params);
+        logger.info("params:{}", params);
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         String connectorType = params.get("connectorType");
         Assert.hasText(name, "connector name is empty.");

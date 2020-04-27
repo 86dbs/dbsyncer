@@ -145,7 +145,7 @@
                 <thead>
                 <tr>
                     <th>序号</th>
-                    <th>驱动名称</th>
+                    <th>任务名称</th>
                     <th>同步方式</th>
                     <th>结果</th>
                     <th>状态</th>
@@ -165,7 +165,11 @@
                         成功:[[${m?.success}]]
                         <span th:if="${m?.fail gt 0}">,失败:[[${m?.fail}]] <a href="javascript:;" class="label label-danger">日志</a></span>
                     </td>
-                    <td><span class="label label-success">[[${m?.mappingState}]]</span></td>
+                    <td>
+                        <span th:if="${m?.state eq 0}" class="label label-info">未运行</span>
+                        <span th:if="${m?.state eq 1}" class="label label-success">运行中</span>
+                        <span th:if="${m?.state eq 2}" class="label label-warning">停止中</span>
+                    </td>
                     <td th:text="${#dates.format(m?.updateTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
                 </tr>
                 </tbody>

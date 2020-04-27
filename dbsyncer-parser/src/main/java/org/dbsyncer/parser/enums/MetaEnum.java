@@ -18,7 +18,11 @@ public enum MetaEnum {
     /**
      * 运行中
      */
-    RUNNING(1, "运行中");
+    RUNNING(1, "运行中"),
+    /**
+     * 停止中
+     */
+    STOPPING(2, "停止中");
 
     private int code;
     private String message;
@@ -35,6 +39,10 @@ public enum MetaEnum {
             }
         }
         throw new ParserException(String.format("Meta code \"%s\" does not exist.", code));
+    }
+
+    public static boolean isRunning(int state) {
+        return RUNNING.getCode() == state || STOPPING.getCode() == state;
     }
 
     public int getCode() {

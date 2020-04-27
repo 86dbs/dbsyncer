@@ -1,25 +1,36 @@
 package org.dbsyncer.manager;
 
+import org.dbsyncer.common.event.ClosedEvent;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
-import org.dbsyncer.manager.template.*;
-import org.dbsyncer.manager.template.impl.ConfigOperationTemplate;
-import org.dbsyncer.manager.template.impl.ConfigPreLoadTemplate;
+import org.dbsyncer.listener.Listener;
+import org.dbsyncer.manager.config.OperationConfig;
+import org.dbsyncer.manager.config.QueryConfig;
+import org.dbsyncer.manager.enums.GroupStrategyEnum;
+import org.dbsyncer.manager.enums.HandlerEnum;
+import org.dbsyncer.manager.extractor.Extractor;
+import org.dbsyncer.manager.template.impl.OperationTemplate;
+import org.dbsyncer.manager.template.impl.PreloadTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
@@ -30,7 +41,7 @@ import java.util.Map;
  * @date 2019/9/16 23:59
  */
 @Component
-public class ManagerFactory implements Manager, ApplicationListener<ContextRefreshedEvent> {
+public class ManagerFactory implements Manager, ApplicationContextAware, ApplicationListener<ClosedEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -41,16 +52,16 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
     private PluginFactory pluginFactory;
 
     @Autowired
-    private ConfigPreLoadTemplate preLoadTemplate;
+    private Listener listener;
 
     @Autowired
-    private ConfigOperationTemplate operationTemplate;
+    private TaskExecutor executor;
 
     @Autowired
-    private GroupStrategy defaultGroupStrategy;
+    private PreloadTemplate preloadTemplate;
 
     @Autowired
-    private GroupStrategy tableGroupStrategy;
+    private OperationTemplate operationTemplate;
 
     @Override
     public boolean alive(ConnectorConfig config) {
@@ -69,51 +80,17 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
     @Override
     public String addConnector(ConfigModel model) {
-        return operationTemplate.execute(model, new OperationTemplate() {
-
-            @Override
-            public void handleEvent(ConfigOperationTemplate.Call call) {
-                call.add();
-            }
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
-
-        });
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD.getHandler()));
     }
 
     @Override
     public String editConnector(ConfigModel model) {
-        return operationTemplate.execute(model, new OperationTemplate() {
-
-            @Override
-            public void handleEvent(ConfigOperationTemplate.Call call) {
-                call.edit();
-            }
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
-        });
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT.getHandler()));
     }
 
     @Override
     public void removeConnector(String connectorId) {
-        operationTemplate.remove(new RemoveTemplate() {
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
-
-            @Override
-            public String getId() {
-                return connectorId;
-            }
-        });
+        operationTemplate.remove(new OperationConfig(connectorId));
     }
 
     @Override
@@ -123,70 +100,26 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
     @Override
     public List<Connector> getConnectorAll() {
-        return operationTemplate.queryAll(new QueryTemplate<Connector>() {
-
-            @Override
-            public ConfigModel getConfigModel() {
-                Connector connector = new Connector();
-                connector.setType(ConfigConstant.CONNECTOR);
-                return connector;
-            }
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
-        });
+        Connector connector = new Connector();
+        connector.setType(ConfigConstant.CONNECTOR);
+        QueryConfig<Connector> queryConfig = new QueryConfig<>(connector);
+        List<Connector> connectors = operationTemplate.queryAll(queryConfig);
+        return connectors;
     }
 
     @Override
     public String addMapping(ConfigModel model) {
-        return operationTemplate.execute(model, new OperationTemplate() {
-
-            @Override
-            public void handleEvent(ConfigOperationTemplate.Call call) {
-                call.add();
-            }
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
-
-        });
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD.getHandler()));
     }
 
     @Override
     public String editMapping(ConfigModel model) {
-        return operationTemplate.execute(model, new OperationTemplate() {
-
-            @Override
-            public void handleEvent(ConfigOperationTemplate.Call call) {
-                call.edit();
-            }
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
-
-        });
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT.getHandler()));
     }
 
     @Override
     public void removeMapping(String mappingId) {
-        operationTemplate.remove(new RemoveTemplate() {
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
-
-            @Override
-            public String getId() {
-                return mappingId;
-            }
-        });
+        operationTemplate.remove(new OperationConfig(mappingId));
     }
 
     @Override
@@ -196,69 +129,26 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
     @Override
     public List<Mapping> getMappingAll() {
-        return operationTemplate.queryAll(new QueryTemplate<Mapping>() {
-
-            @Override
-            public ConfigModel getConfigModel() {
-                Mapping mapping = new Mapping();
-                mapping.setType(ConfigConstant.MAPPING);
-                return mapping;
-            }
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
-        });
+        Mapping mapping = new Mapping();
+        mapping.setType(ConfigConstant.MAPPING);
+        QueryConfig<Mapping> queryConfig = new QueryConfig<>(mapping);
+        List<Mapping> mappings = operationTemplate.queryAll(queryConfig);
+        return mappings;
     }
 
     @Override
     public String addTableGroup(ConfigModel model) {
-        return operationTemplate.execute(model, new OperationTemplate() {
-
-            @Override
-            public void handleEvent(ConfigOperationTemplate.Call call) {
-                call.add();
-            }
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return tableGroupStrategy;
-            }
-
-        });
+        return operationTemplate.execute(new OperationConfig(model, GroupStrategyEnum.TABLE, HandlerEnum.OPR_ADD.getHandler()));
     }
 
     @Override
     public String editTableGroup(ConfigModel model) {
-        return operationTemplate.execute(model, new OperationTemplate() {
-
-            @Override
-            public void handleEvent(ConfigOperationTemplate.Call call) {
-                call.edit();
-            }
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return tableGroupStrategy;
-            }
-        });
+        return operationTemplate.execute(new OperationConfig(model, GroupStrategyEnum.TABLE, HandlerEnum.OPR_EDIT.getHandler()));
     }
 
     @Override
     public void removeTableGroup(String tableGroupId) {
-        operationTemplate.remove(new RemoveTemplate() {
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return tableGroupStrategy;
-            }
-
-            @Override
-            public String getId() {
-                return tableGroupId;
-            }
-        });
+        operationTemplate.remove(new OperationConfig(tableGroupId, GroupStrategyEnum.TABLE));
     }
 
     @Override
@@ -268,20 +158,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
-        return operationTemplate.queryAll(new QueryTemplate<TableGroup>() {
-            @Override
-            public ConfigModel getConfigModel() {
-                TableGroup model = new TableGroup();
-                model.setType(ConfigConstant.TABLE_GROUP);
-                model.setMappingId(mappingId);
-                return model;
-            }
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return tableGroupStrategy;
-            }
-        });
+        TableGroup tableGroup = new TableGroup();
+        tableGroup.setType(ConfigConstant.TABLE_GROUP);
+        tableGroup.setMappingId(mappingId);
+        QueryConfig<TableGroup> queryConfig = new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE);
+        List<TableGroup> tableGroups = operationTemplate.queryAll(queryConfig);
+        return tableGroups;
     }
 
     @Override
@@ -291,19 +173,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
     @Override
     public String addMeta(ConfigModel model) {
-        return operationTemplate.execute(model, new OperationTemplate() {
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD.getHandler()));
+    }
 
-            @Override
-            public void handleEvent(ConfigOperationTemplate.Call call) {
-                call.add();
-            }
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
-
-        });
+    @Override
+    public String editMeta(ConfigModel model) {
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT.getHandler()));
     }
 
     @Override
@@ -313,36 +188,16 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
 
     @Override
     public void removeMeta(String metaId) {
-        operationTemplate.remove(new RemoveTemplate() {
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
-
-            @Override
-            public String getId() {
-                return metaId;
-            }
-        });
+        operationTemplate.remove(new OperationConfig(metaId));
     }
 
     @Override
     public List<Meta> getMetaAll() {
-        return operationTemplate.queryAll(new QueryTemplate<Meta>() {
-
-            @Override
-            public ConfigModel getConfigModel() {
-                Meta model = new Meta();
-                model.setType(ConfigConstant.META);
-                return model;
-            }
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
-        });
+        Meta meta = new Meta();
+        meta.setType(ConfigConstant.META);
+        QueryConfig<Meta> queryConfig = new QueryConfig<>(meta);
+        List<Meta> metas = operationTemplate.queryAll(queryConfig);
+        return metas;
     }
 
     @Override
@@ -370,83 +225,60 @@ public class ManagerFactory implements Manager, ApplicationListener<ContextRefre
         return pluginFactory.getPluginAll();
     }
 
+    private Map<String, Extractor> map;
+
     @Override
-    public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
-        // Load connectors
-        preLoadTemplate.execute(new PreLoadTemplate() {
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        map = applicationContext.getBeansOfType(Extractor.class);
+    }
 
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
+    @Override
+    public void start(Mapping mapping) {
+        // 获取数据源连接器
+        Connector connector = getConnector(mapping.getSourceConnectorId());
+        Assert.notNull(connector, "数据源配置不能为空.");
 
-            @Override
-            public String filterType() {
-                return ConfigConstant.CONNECTOR;
-            }
+        Extractor extractor = getExtractor(mapping);
 
-            @Override
-            public ConfigModel parseModel(String json) {
-                return parser.parseConnector(json);
-            }
-        });
+        // 标记运行中
+        changeMetaState(mapping.getMetaId(), MetaEnum.RUNNING);
 
-        // Load mappings
-        preLoadTemplate.execute(new PreLoadTemplate() {
+        extractor.asyncStart(mapping);
+    }
 
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
+    @Override
+    public void close(Mapping mapping) {
+        Extractor extractor = getExtractor(mapping);
 
-            @Override
-            public String filterType() {
-                return ConfigConstant.MAPPING;
-            }
+        // 标记停止中
+        String metaId = mapping.getMetaId();
+        changeMetaState(metaId, MetaEnum.STOPPING);
 
-            @Override
-            public ConfigModel parseModel(String json) {
-                return parser.parseObject(json, Mapping.class);
-            }
-        });
+        extractor.asyncClose(metaId);
+    }
 
-        // Load tableGroups
-        preLoadTemplate.execute(new PreLoadTemplate() {
+    @Override
+    public void onApplicationEvent(ClosedEvent event) {
+        // 异步监听任务关闭事件
+        changeMetaState(event.getId(), MetaEnum.READY);
+    }
 
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return tableGroupStrategy;
-            }
+    private Extractor getExtractor(Mapping mapping) {
+        Assert.notNull(mapping, "驱动不能为空");
+        String model = mapping.getModel();
+        String metaId = mapping.getMetaId();
+        Assert.hasText(model, "同步方式不能为空");
+        Assert.hasText(metaId, "任务ID不能为空");
 
-            @Override
-            public String filterType() {
-                return ConfigConstant.TABLE_GROUP;
-            }
+        Extractor extractor = map.get(model.concat("Extractor"));
+        Assert.notNull(extractor, String.format("未知的同步方式: %s", model));
+        return extractor;
+    }
 
-            @Override
-            public ConfigModel parseModel(String json) {
-                return parser.parseObject(json, TableGroup.class);
-            }
-        });
-
-        // Load metas
-        preLoadTemplate.execute(new PreLoadTemplate() {
-
-            @Override
-            public GroupStrategy getGroupStrategy() {
-                return defaultGroupStrategy;
-            }
-
-            @Override
-            public String filterType() {
-                return ConfigConstant.META;
-            }
-
-            @Override
-            public ConfigModel parseModel(String json) {
-                return parser.parseObject(json, Meta.class);
-            }
-        });
+    private void changeMetaState(String metaId, MetaEnum metaEnum){
+        Meta meta = getMeta(metaId);
+        meta.setState(metaEnum.getCode());
+        editMeta(meta);
     }
 
 }

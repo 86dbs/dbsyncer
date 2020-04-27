@@ -32,11 +32,6 @@ public class ConnectorServiceImpl implements ConnectorService {
     private Checker connectorChecker;
 
     @Override
-    public boolean alive(Map<String, String> params) {
-        return manager.alive(null);
-    }
-
-    @Override
     public String add(Map<String, String> params) {
         ConfigModel model = connectorChecker.checkAddConfigModel(params);
         return manager.addConnector(model);

@@ -46,11 +46,12 @@ public abstract class AbstractStorageService implements StorageService, Applicat
     public void add(String type, Map params, String collectionId) {
         Assert.hasText(type, "Type can not be empty.");
         Assert.notNull(params, "Params can not be null.");
-        logger.info("collectionId:{}, params:{}", collectionId, params);
+        logger.debug("collectionId:{}, params:{}", collectionId, params);
         try {
             insert(getCollectionId(type, collectionId), params);
         } catch (IOException e) {
             logger.error("add collectionId:{}, params:{}, failed:{}", collectionId, params, e.getMessage());
+            throw new StorageException(e);
         }
     }
 
@@ -62,11 +63,12 @@ public abstract class AbstractStorageService implements StorageService, Applicat
     @Override
     public void edit(String type, Map params, String collectionId) {
         Assert.notNull(params, "Params can not be null.");
-        logger.info("collectionId:{}, params:{}", collectionId, params);
+        logger.debug("collectionId:{}, params:{}", collectionId, params);
         try {
             update(getCollectionId(type, collectionId), params);
         } catch (IOException e) {
             logger.error("edit collectionId:{}, params:{}, failed:{}", collectionId, params, e.getMessage());
+            throw new StorageException(e);
         }
     }
 
@@ -78,11 +80,12 @@ public abstract class AbstractStorageService implements StorageService, Applicat
     @Override
     public void remove(String type, String id, String collectionId) {
         Assert.hasText(id, "ID can not be null.");
-        logger.info("collectionId:{}, id:{}", collectionId, id);
+        logger.debug("collectionId:{}, id:{}", collectionId, id);
         try {
             delete(getCollectionId(type, collectionId), id);
         } catch (IOException e) {
             logger.error("remove collectionId:{}, id:{}, failed:{}", collectionId, id, e.getMessage());
+            throw new StorageException(e);
         }
     }
 

@@ -86,7 +86,6 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         createShardIfNotExist(collectionId);
         Document doc = ParamsUtil.convertParamsToDocument(params);
         map.get(collectionId).insert(doc);
-        logger.info("insert success.");
     }
 
     @Override

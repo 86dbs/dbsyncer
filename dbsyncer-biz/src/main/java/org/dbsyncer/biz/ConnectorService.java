@@ -13,14 +13,6 @@ import java.util.Map;
 public interface ConnectorService {
 
     /**
-     * 检查连接器是否可用
-     *
-     * @param params
-     * @return
-     */
-    boolean alive(Map<String, String> params);
-
-    /**
      * 新增连接器
      *
      * @param params

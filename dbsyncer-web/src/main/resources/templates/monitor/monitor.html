@@ -1,12 +1,27 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
-      lang="zh-CN">
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <!-- Monitor -->
 <div class="container-fluid">
 
     图表信息
     <p>CPU 内存 硬盘 堆内存 线程数</p>
+    <table class="table table-hover">
+        <caption>任务线程</caption>
+        <thead>
+        <tr>
+            <th>序号</th>
+            <th>指标</th>
+        </tr>
+        </thead>
+        <tr th:each="item,userStat:${threadInfo}">
+            <td th:text="${userStat.index}+1"></td>
+            <td th:text="${userStat.current.key}"></td><!-- key-->
+            <td th:text="${userStat.current.value}"></td><!-- value-->
+        </tr>
+    </table>
+
     <p>驱动增量/全量同步数据</p>
     <p>操作日志</p>
 
