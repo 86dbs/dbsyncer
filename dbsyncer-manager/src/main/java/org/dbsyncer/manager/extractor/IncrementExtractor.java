@@ -19,8 +19,12 @@ public class IncrementExtractor extends AbstractExtractor {
     private Listener listener;
 
     @Override
-    protected void doTask(Mapping mapping) {
-        // 获取数据源连接配置
+    public void asyncStart(Mapping mapping) {
+
     }
 
+    @Override
+    public void asyncClose(String metaId) {
+
+    }
 }

@@ -28,7 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -62,6 +61,13 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
 
     @Autowired
     private OperationTemplate operationTemplate;
+
+    private Map<String, Extractor> map;
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        map = applicationContext.getBeansOfType(Extractor.class);
+    }
 
     @Override
     public boolean alive(ConnectorConfig config) {
@@ -225,19 +231,8 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
         return pluginFactory.getPluginAll();
     }
 
-    private Map<String, Extractor> map;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        map = applicationContext.getBeansOfType(Extractor.class);
-    }
-
     @Override
     public void start(Mapping mapping) {
-        // 获取数据源连接器
-        Connector connector = getConnector(mapping.getSourceConnectorId());
-        Assert.notNull(connector, "数据源配置不能为空.");
-
         Extractor extractor = getExtractor(mapping);
 
         // 标记运行中
@@ -277,8 +272,11 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
 
     private void changeMetaState(String metaId, MetaEnum metaEnum){
         Meta meta = getMeta(metaId);
-        meta.setState(metaEnum.getCode());
-        editMeta(meta);
+        int code = metaEnum.getCode();
+        if(meta.getState() != code){
+            meta.setState(code);
+            editMeta(meta);
+        }
     }
 
 }
