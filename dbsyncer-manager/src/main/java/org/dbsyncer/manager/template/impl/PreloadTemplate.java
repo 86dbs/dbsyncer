@@ -89,9 +89,12 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
         List<Meta> metas = operationTemplate.queryAll(queryConfig);
         if (!CollectionUtils.isEmpty(metas)) {
             metas.forEach(m -> {
-                if (MetaEnum.isRunning(m.getState())) {
+                // 恢复驱动状态
+                if (MetaEnum.RUNNING.getCode() == m.getState()) {
                     Mapping mapping = manager.getMapping(m.getMappingId());
                     manager.start(mapping);
+                }else if(MetaEnum.STOPPING.getCode() == m.getState()){
+                    manager.changeMetaState(m.getId(), MetaEnum.READY);
                 }
             });
         }

@@ -249,7 +249,17 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
         String metaId = mapping.getMetaId();
         changeMetaState(metaId, MetaEnum.STOPPING);
 
-        extractor.asyncClose(metaId);
+        extractor.close(metaId);
+    }
+
+    @Override
+    public void changeMetaState(String metaId, MetaEnum metaEnum){
+        Meta meta = getMeta(metaId);
+        int code = metaEnum.getCode();
+        if(meta.getState() != code){
+            meta.setState(code);
+            editMeta(meta);
+        }
     }
 
     @Override
@@ -268,15 +278,6 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
         Extractor extractor = map.get(model.concat("Extractor"));
         Assert.notNull(extractor, String.format("未知的同步方式: %s", model));
         return extractor;
-    }
-
-    private void changeMetaState(String metaId, MetaEnum metaEnum){
-        Meta meta = getMeta(metaId);
-        int code = metaEnum.getCode();
-        if(meta.getState() != code){
-            meta.setState(code);
-            editMeta(meta);
-        }
     }
 
 }

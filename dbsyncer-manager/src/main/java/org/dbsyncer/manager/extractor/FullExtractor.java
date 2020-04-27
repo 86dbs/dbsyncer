@@ -36,55 +36,45 @@ public class FullExtractor extends AbstractExtractor {
     @Autowired
     private Manager manager;
 
-    @Autowired
-    private ApplicationContext applicationContext;
-
     protected Map<String, Task> map = new ConcurrentHashMap<>();
 
     @Override
     public void asyncStart(Mapping mapping) {
         String metaId = mapping.getMetaId();
-        logger.info("启动任务:{}", metaId);
+        map.putIfAbsent(metaId, new Task());
+        Task task = map.get(metaId);
+
         // TODO 获取数据源连接器
         Connector connector = manager.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "数据源配置不能为空.");
 
-        Task task = new Task();
-        task.setState(Task.RUNNING);
-        task.setTaskCallBack(() -> publishClosedEvent(metaId));
-        map.putIfAbsent(metaId, task);
-
-        run(task);
+        try {
+            logger.info("启动任务:{}", metaId);
+            run(task);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        } finally {
+            map.remove(metaId);
+            publishClosedEvent(metaId);
+        }
     }
 
     @Override
-    public void asyncClose(String metaId) {
+    public void close(String metaId) {
         Task task = map.get(metaId);
         if (null != task) {
-            task.setState(Task.STOP);
-            logger.info("关闭中...");
+            task.stop();
         }
     }
 
-    protected void run(Task task) {
-        for(;;){
-            if(task.isRunning()){
-                try {
-                    logger.info("模拟同步休眠5s");
-                    TimeUnit.SECONDS.sleep(5);
-                } catch (InterruptedException e) {
-                    logger.error(e.getMessage());
-                }
-                continue;
+    protected void run(Task task) throws InterruptedException {
+        for (; ; ) {
+            if (!task.isRunning()) {
+                break;
             }
-            task.close();
-            break;
+            logger.info("模拟同步休眠5s");
+            TimeUnit.SECONDS.sleep(5);
         }
-    }
-
-    protected void publishClosedEvent(String metaId) {
-        applicationContext.publishEvent(new ClosedEvent(applicationContext, metaId));
-        logger.info("结束任务:{}", metaId);
     }
 
 }

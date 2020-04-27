@@ -1,5 +1,6 @@
 package org.dbsyncer.manager;
 
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
 
 /**
@@ -24,5 +25,13 @@ public interface TaskExecutor {
      * @param mapping
      */
     void close(Mapping mapping);
+
+    /**
+     * 切换meta状态
+     *
+     * @param metaId
+     * @param metaEnum
+     */
+    void changeMetaState(String metaId, MetaEnum metaEnum);
 
 }

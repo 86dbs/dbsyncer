@@ -24,7 +24,7 @@ public class IncrementExtractor extends AbstractExtractor {
     }
 
     @Override
-    public void asyncClose(String metaId) {
+    public void close(String metaId) {
 
     }
 }
