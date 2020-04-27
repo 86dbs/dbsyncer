@@ -1,6 +1,7 @@
-package org.dbsyncer.manager.extractor;
+package org.dbsyncer.manager.extractor.impl;
 
 import org.dbsyncer.listener.Listener;
+import org.dbsyncer.manager.extractor.AbstractExtractor;
 import org.dbsyncer.parser.model.Mapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

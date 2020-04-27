@@ -1,8 +1,9 @@
-package org.dbsyncer.manager.extractor;
+package org.dbsyncer.manager.extractor.impl;
 
 import org.dbsyncer.common.event.ClosedEvent;
 import org.dbsyncer.common.task.Task;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.manager.extractor.AbstractExtractor;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
