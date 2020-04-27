@@ -19,7 +19,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2019/9/30 20:31
  */
-public interface Manager {
+public interface Manager extends TaskExecutor{
 
     boolean alive(ConnectorConfig config);
 
@@ -87,19 +87,5 @@ public interface Manager {
 
     // Plugin
     List<Plugin> getPluginAll();
-
-    /**
-     * 启动同步任务
-     *
-     * @param mapping
-     */
-    void start(Mapping mapping);
-
-    /**
-     * 关闭同步任务
-     *
-     * @param mapping
-     */
-    void close(Mapping mapping);
 
 }

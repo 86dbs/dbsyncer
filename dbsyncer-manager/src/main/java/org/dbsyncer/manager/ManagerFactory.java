@@ -1,5 +1,6 @@
 package org.dbsyncer.manager;
 
+import org.dbsyncer.common.event.ClosedEvent;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -10,18 +11,26 @@ import org.dbsyncer.manager.config.OperationConfig;
 import org.dbsyncer.manager.config.QueryConfig;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.manager.enums.HandlerEnum;
+import org.dbsyncer.manager.extractor.Extractor;
 import org.dbsyncer.manager.template.impl.OperationTemplate;
 import org.dbsyncer.manager.template.impl.PreloadTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
@@ -32,7 +41,7 @@ import java.util.Map;
  * @date 2019/9/16 23:59
  */
 @Component
-public class ManagerFactory implements Manager {
+public class ManagerFactory implements Manager, ApplicationContextAware, ApplicationListener<ClosedEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -46,7 +55,7 @@ public class ManagerFactory implements Manager {
     private Listener listener;
 
     @Autowired
-    private Executor executor;
+    private TaskExecutor executor;
 
     @Autowired
     private PreloadTemplate preloadTemplate;
@@ -216,16 +225,60 @@ public class ManagerFactory implements Manager {
         return pluginFactory.getPluginAll();
     }
 
+    private Map<String, Extractor> map;
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        map = applicationContext.getBeansOfType(Extractor.class);
+    }
+
     @Override
     public void start(Mapping mapping) {
-        // 启动任务
-        executor.start(mapping);
+        // 获取数据源连接器
+        Connector connector = getConnector(mapping.getSourceConnectorId());
+        Assert.notNull(connector, "数据源配置不能为空.");
+
+        Extractor extractor = getExtractor(mapping);
+
+        // 标记运行中
+        changeMetaState(mapping.getMetaId(), MetaEnum.RUNNING);
+
+        extractor.asyncStart(mapping);
     }
 
     @Override
     public void close(Mapping mapping) {
-        // 关闭任务
-        executor.close(mapping);
+        Extractor extractor = getExtractor(mapping);
+
+        // 标记停止中
+        String metaId = mapping.getMetaId();
+        changeMetaState(metaId, MetaEnum.STOPPING);
+
+        extractor.asyncClose(metaId);
+    }
+
+    @Override
+    public void onApplicationEvent(ClosedEvent event) {
+        // 异步监听任务关闭事件
+        changeMetaState(event.getId(), MetaEnum.READY);
+    }
+
+    private Extractor getExtractor(Mapping mapping) {
+        Assert.notNull(mapping, "驱动不能为空");
+        String model = mapping.getModel();
+        String metaId = mapping.getMetaId();
+        Assert.hasText(model, "同步方式不能为空");
+        Assert.hasText(metaId, "任务ID不能为空");
+
+        Extractor extractor = map.get(model.concat("Extractor"));
+        Assert.notNull(extractor, String.format("未知的同步方式: %s", model));
+        return extractor;
+    }
+
+    private void changeMetaState(String metaId, MetaEnum metaEnum){
+        Meta meta = getMeta(metaId);
+        meta.setState(metaEnum.getCode());
+        editMeta(meta);
     }
 
 }

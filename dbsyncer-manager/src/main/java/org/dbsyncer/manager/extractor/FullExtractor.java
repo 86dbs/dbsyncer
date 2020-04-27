@@ -1,17 +1,9 @@
 package org.dbsyncer.manager.extractor;
 
-import org.dbsyncer.common.event.ClosedEvent;
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.model.Mapping;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * 全量同步
@@ -21,34 +13,16 @@ import java.util.concurrent.TimeUnit;
  * @date 2020/04/26 15:28
  */
 @Component
-public class FullExtractor implements Extractor {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+public class FullExtractor extends AbstractExtractor {
 
     @Autowired
     private Parser parser;
 
-    @Autowired
-    private ApplicationContext applicationContext;
-
     @Override
-    public void start(Mapping mapping) {
-        new Thread(()->{
-            String metaId = mapping.getMetaId();
-            logger.info("模拟同步...等待5s");
-            try {
-                TimeUnit.SECONDS.sleep(5);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            logger.info("同步结束");
-            applicationContext.publishEvent(new ClosedEvent(applicationContext, metaId));
-        }).start();
-    }
+    protected void doTask(Mapping mapping) {
+        // 获取数据源连接配置
 
-    @Override
-    public void close(String metaId) {
-
+        // 获取执行命令
     }
 
 }
