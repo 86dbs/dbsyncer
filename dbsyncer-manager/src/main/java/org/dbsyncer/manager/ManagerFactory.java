@@ -258,6 +258,7 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
         int code = metaEnum.getCode();
         if(meta.getState() != code){
             meta.setState(code);
+            meta.setUpdateTime(System.currentTimeMillis());
             editMeta(meta);
         }
     }

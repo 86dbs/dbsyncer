@@ -7,6 +7,7 @@ import org.dbsyncer.manager.extractor.AbstractExtractor;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,19 +56,10 @@ public class FullExtractor extends AbstractExtractor {
             List<TableGroup> list = manager.getTableGroupAll(mappingId);
             Assert.notEmpty(list, "映射关系为空");
 
+            // 执行任务
             logger.info("启动任务:{}", metaId);
             Task task = map.get(metaId);
-            task.setBeginTime(System.currentTimeMillis());
-            for (TableGroup t : list) {
-                if (!task.isRunning()) {
-                    break;
-                }
-                parser.execute(task, config, t);
-            }
-            task.setEndTime(System.currentTimeMillis());
-
-            // TODO 同步运行结果
-
+            doTask(task, config, list);
 
         } catch (Exception e) {
             logger.error(e.getMessage());
@@ -86,4 +78,30 @@ public class FullExtractor extends AbstractExtractor {
         }
     }
 
+    private void doTask(Task task, ConnectorConfig config, List<TableGroup> list) {
+        // 记录开始时间
+        task.setBeginTime(System.currentTimeMillis());
+        flush(task);
+
+        for (TableGroup t : list) {
+            if (!task.isRunning()) {
+                break;
+            }
+            parser.execute(task, config, t);
+        }
+
+        // 记录结束时间
+        task.setEndTime(System.currentTimeMillis());
+        flush(task);
+    }
+
+    private void flush(Task task) {
+        String id = task.getId();
+        Meta meta = manager.getMeta(id);
+        Assert.notNull(meta, "检查meta为空.");
+
+        meta.setBeginTime(task.getBeginTime());
+        meta.setEndTime(task.getEndTime());
+        manager.editMeta(meta);
+    }
 }

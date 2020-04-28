@@ -170,7 +170,7 @@
                         <span th:if="${m?.state eq 1}" class="label label-success">运行中</span>
                         <span th:if="${m?.state eq 2}" class="label label-warning">停止中</span>
                     </td>
-                    <td th:text="${#dates.format(m?.updateTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                    <td><span th:if="${m?.state != 0 and m?.beginTime gt 0}">[[${#dates.format(m?.beginTime, 'yyyy-MM-dd HH:mm:ss')}]]</span></td>
                 </tr>
                 </tbody>
             </table>
