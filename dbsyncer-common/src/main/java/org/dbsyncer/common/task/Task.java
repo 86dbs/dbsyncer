@@ -2,9 +2,22 @@ package org.dbsyncer.common.task;
 
 public class Task {
 
+    private String id;
+
+    private int batchNum;
+
+    private int threadNum;
+
     private StateEnum state;
 
-    public Task() {
+    private long beginTime;
+
+    private long endTime;
+
+    public Task(String id, int batchNum, int threadNum) {
+        this.id = id;
+        this.batchNum = batchNum;
+        this.threadNum = threadNum;
         this.state = StateEnum.RUNNING;
     }
 
@@ -14,6 +27,38 @@ public class Task {
 
     public boolean isRunning() {
         return StateEnum.RUNNING == state;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public int getBatchNum() {
+        return batchNum;
+    }
+
+    public int getThreadNum() {
+        return threadNum;
+    }
+
+    public long getBeginTime() {
+        return beginTime;
+    }
+
+    public void setBeginTime(long beginTime) {
+        this.beginTime = beginTime;
+    }
+
+    public long getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(long endTime) {
+        this.endTime = endTime;
     }
 
     public enum StateEnum{

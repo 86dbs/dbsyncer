@@ -15,7 +15,6 @@ public abstract class AbstractExtractor implements Extractor {
 
     protected void publishClosedEvent(String metaId) {
         applicationContext.publishEvent(new ClosedEvent(applicationContext, metaId));
-        logger.info("结束任务:{}", metaId);
     }
 
 }

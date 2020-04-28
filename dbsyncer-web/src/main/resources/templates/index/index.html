@@ -159,7 +159,7 @@
                     <td th:text="${m?.model}"></td>
                     <td>
                         <span th:if="${m?.model eq '全量' and m?.total gt 0}">
-                            进度:[[${#numbers.formatDecimal(((m?.success + m?.fail) / m?.total * 10000 / 100.00),2 ,2)}]]%,
+                            进度:[[${#numbers.formatDecimal(((m?.success + m?.fail) / m?.total * 100.00),0 ,2)}]]%,
                             总数:[[${m?.total}]],
                         </span>
                         成功:[[${m?.success}]]

@@ -1,18 +1,21 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.cache.CacheService;
+import org.dbsyncer.common.task.Task;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
-import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.parser.enums.ConvertEnum;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.SnowflakeIdWorker;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author AE86
@@ -66,7 +70,7 @@ public class ParserFactory implements Parser {
     @Override
     public Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup) {
         List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
-        if(CollectionUtils.isEmpty(fieldMapping)){
+        if (CollectionUtils.isEmpty(fieldMapping)) {
             return null;
         }
         String sType = getConnectorConfig(sourceConnectorId).getConnectorType();
@@ -75,7 +79,7 @@ public class ParserFactory implements Parser {
         String tTableName = tableGroup.getTargetTable().getName();
         Table sTable = new Table().setName(sTableName).setColumn(new ArrayList<>());
         Table tTable = new Table().setName(tTableName).setColumn(new ArrayList<>());
-        fieldMapping.forEach(m ->{
+        fieldMapping.forEach(m -> {
             sTable.getColumn().add(m.getSource());
             tTable.getColumn().add(m.getTarget());
         });
@@ -136,6 +140,21 @@ public class ParserFactory implements Parser {
     @Override
     public List<ConvertEnum> getConvertEnumAll() {
         return Arrays.asList(ConvertEnum.values());
+    }
+
+    @Override
+    public void execute(Task task, ConnectorConfig config, TableGroup tableGroup) {
+        try {
+            for (int i = 0; i < 10; i++) {
+                if (!task.isRunning()) {
+                    break;
+                }
+                logger.info("模拟迁移5s");
+                TimeUnit.SECONDS.sleep(5);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

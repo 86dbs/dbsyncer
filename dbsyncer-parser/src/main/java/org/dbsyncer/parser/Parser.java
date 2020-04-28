@@ -1,5 +1,6 @@
 package org.dbsyncer.parser;
 
+import org.dbsyncer.common.task.Task;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -100,4 +101,12 @@ public interface Parser {
      */
     List<ConvertEnum> getConvertEnumAll();
 
+    /**
+     * 全量同步
+     *
+     * @param task
+     * @param config
+     * @param tableGroup
+     */
+    void execute(Task task, ConnectorConfig config, TableGroup tableGroup);
 }

@@ -2,8 +2,9 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.parser.enums.MetaEnum;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * <p>驱动同步元信息</p>
@@ -23,21 +24,32 @@ public class Meta extends ConfigModel {
      * {@link MetaEnum}
      */
     private int state;
-    private AtomicInteger total;
-    private AtomicInteger success;
-    private AtomicInteger fail;
+    private AtomicLong total;
+    private AtomicLong success;
+    private AtomicLong fail;
     private Map<String, String> map;
+    private long beginTime;
+    private long endTime;
 
     public Meta() {
+        init();
     }
 
-    public Meta(String mappingId, int state, AtomicInteger total, AtomicInteger success, AtomicInteger fail, Map<String, String> map) {
-        this.mappingId = mappingId;
-        this.state = state;
-        this.total = total;
-        this.success = success;
-        this.fail = fail;
-        this.map = map;
+    /**
+     * 还原状态
+     */
+    public void clear() {
+        init();
+    }
+
+    private void init(){
+        this.state = MetaEnum.READY.getCode();
+        this.total = new AtomicLong(0);
+        this.success = new AtomicLong(0);
+        this.fail = new AtomicLong(0);
+        this.map = new LinkedHashMap<>();
+        this.beginTime = 0L;
+        this.endTime = 0L;
     }
 
     public String getMappingId() {
@@ -56,27 +68,27 @@ public class Meta extends ConfigModel {
         this.state = state;
     }
 
-    public AtomicInteger getTotal() {
+    public AtomicLong getTotal() {
         return total;
     }
 
-    public void setTotal(AtomicInteger total) {
+    public void setTotal(AtomicLong total) {
         this.total = total;
     }
 
-    public AtomicInteger getSuccess() {
+    public AtomicLong getSuccess() {
         return success;
     }
 
-    public void setSuccess(AtomicInteger success) {
+    public void setSuccess(AtomicLong success) {
         this.success = success;
     }
 
-    public AtomicInteger getFail() {
+    public AtomicLong getFail() {
         return fail;
     }
 
-    public void setFail(AtomicInteger fail) {
+    public void setFail(AtomicLong fail) {
         this.fail = fail;
     }
 
@@ -86,5 +98,21 @@ public class Meta extends ConfigModel {
 
     public void setMap(Map<String, String> map) {
         this.map = map;
+    }
+
+    public long getBeginTime() {
+        return beginTime;
+    }
+
+    public void setBeginTime(long beginTime) {
+        this.beginTime = beginTime;
+    }
+
+    public long getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(long endTime) {
+        this.endTime = endTime;
     }
 }
