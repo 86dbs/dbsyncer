@@ -8,6 +8,7 @@ import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 
 import java.util.List;
@@ -105,8 +106,8 @@ public interface Parser {
      * 全量同步
      *
      * @param task
-     * @param config
+     * @param mapping
      * @param tableGroup
      */
-    void execute(Task task, ConnectorConfig config, TableGroup tableGroup);
+    void execute(Task task, Mapping mapping, TableGroup tableGroup);
 }

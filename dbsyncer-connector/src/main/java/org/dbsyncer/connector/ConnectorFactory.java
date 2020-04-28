@@ -78,7 +78,7 @@ public class ConnectorFactory {
      * @param connectorType
      * @return
      */
-    private Connector getConnector(String connectorType) {
+    public Connector getConnector(String connectorType) {
         // 获取连接器类型
         Assert.hasText(connectorType, "ConnectorType can not be empty.");
         return ConnectorEnum.getConnector(connectorType);

@@ -42,24 +42,19 @@ public class FullExtractor extends AbstractExtractor {
     @Override
     public void asyncStart(Mapping mapping) {
         final String mappingId = mapping.getId();
-        final String sourceConnectorId = mapping.getSourceConnectorId();
         final String metaId = mapping.getMetaId();
         int batchNum = mapping.getBatchNum();
         int threadNum = mapping.getThreadNum();
         map.putIfAbsent(metaId, new Task(metaId, batchNum, threadNum));
 
         try {
-            Connector connector = manager.getConnector(sourceConnectorId);
-            Assert.notNull(connector, "数据源连接器不能为空.");
-            ConnectorConfig config = connector.getConfig();
-            Assert.notNull(config, "连接器配置不能为空.");
             List<TableGroup> list = manager.getTableGroupAll(mappingId);
             Assert.notEmpty(list, "映射关系为空");
 
             // 执行任务
             logger.info("启动任务:{}", metaId);
             Task task = map.get(metaId);
-            doTask(task, config, list);
+            doTask(task, mapping, list);
 
         } catch (Exception e) {
             logger.error(e.getMessage());
@@ -78,7 +73,7 @@ public class FullExtractor extends AbstractExtractor {
         }
     }
 
-    private void doTask(Task task, ConnectorConfig config, List<TableGroup> list) {
+    private void doTask(Task task, Mapping mapping, List<TableGroup> list) {
         // 记录开始时间
         task.setBeginTime(System.currentTimeMillis());
         flush(task);
@@ -87,7 +82,7 @@ public class FullExtractor extends AbstractExtractor {
             if (!task.isRunning()) {
                 break;
             }
-            parser.execute(task, config, t);
+            parser.execute(task, mapping, t);
         }
 
         // 记录结束时间

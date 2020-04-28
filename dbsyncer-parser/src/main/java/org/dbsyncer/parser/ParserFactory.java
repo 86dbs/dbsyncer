@@ -15,8 +15,8 @@ import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.storage.SnowflakeIdWorker;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -47,9 +47,6 @@ public class ParserFactory implements Parser {
 
     @Autowired
     private CacheService cacheService;
-
-    @Autowired
-    private SnowflakeIdWorker snowflakeIdWorker;
 
     @Override
     public boolean alive(ConnectorConfig config) {
@@ -143,12 +140,27 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(Task task, ConnectorConfig config, TableGroup tableGroup) {
+    public void execute(Task task, Mapping mapping, TableGroup tableGroup) {
+        final String sourceConnectorId = mapping.getSourceConnectorId();
+        final String targetConnectorId = mapping.getTargetConnectorId();
+        ConnectorConfig sConfig = getConnectorConfig(sourceConnectorId);
+        ConnectorConfig tConfig = getConnectorConfig(targetConnectorId);
+        Assert.notNull(sConfig, "数据源配置不能为空.");
+        Assert.notNull(tConfig, "目标源配置不能为空.");
+
         try {
             for (int i = 0; i < 10; i++) {
                 if (!task.isRunning()) {
                     break;
                 }
+
+                // TODO 全量同步任务
+                // 1、获取数据源数据
+                // 2、值映射
+                // 3、参数转换
+                // 4、插件转换
+                // 5、写入目标源
+
                 logger.info("模拟迁移5s");
                 TimeUnit.SECONDS.sleep(5);
             }
