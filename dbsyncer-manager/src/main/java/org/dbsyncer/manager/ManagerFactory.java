@@ -173,8 +173,8 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     }
 
     @Override
-    public Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup) {
-        return parser.getCommand(sourceConnectorId, targetConnectorId, tableGroup);
+    public Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup) {
+        return parser.getCommand(mapping, tableGroup);
     }
 
     @Override

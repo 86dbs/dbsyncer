@@ -60,7 +60,7 @@ public interface Manager extends TaskExecutor{
 
     List<TableGroup> getTableGroupAll(String mappingId);
 
-    Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup);
+    Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup);
 
     // Meta
     String addMeta(ConfigModel model);

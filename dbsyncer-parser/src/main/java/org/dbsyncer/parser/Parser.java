@@ -49,12 +49,11 @@ public interface Parser {
     /**
      * 获取映射关系执行命令
      *
-     * @param sourceConnectorId
-     * @param targetConnectorId
+     * @param mapping
      * @param tableGroup
      * @return
      */
-    Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup);
+    Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup);
 
     /**
      * 解析连接器配置为Connector

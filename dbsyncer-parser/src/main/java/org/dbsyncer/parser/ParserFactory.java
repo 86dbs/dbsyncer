@@ -65,7 +65,9 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup) {
+    public Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup) {
+        final String sourceConnectorId = mapping.getSourceConnectorId();
+        final String targetConnectorId = mapping.getTargetConnectorId();
         List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
         if (CollectionUtils.isEmpty(fieldMapping)) {
             return null;

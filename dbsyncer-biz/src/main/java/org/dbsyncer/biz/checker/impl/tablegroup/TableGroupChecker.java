@@ -107,7 +107,7 @@ public class TableGroupChecker extends AbstractChecker {
         // 默认使用全局的过滤条件
         group.setFilter(CollectionUtils.isEmpty(tableGroup.getFilter()) ? mapping.getFilter() : tableGroup.getFilter());
 
-        Map<String, String> command = manager.getCommand(mapping.getSourceConnectorId(), mapping.getTargetConnectorId(), group);
+        Map<String, String> command = manager.getCommand(mapping, group);
         tableGroup.setCommand(command);
     }
 
