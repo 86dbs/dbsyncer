@@ -6,10 +6,26 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 public interface Database extends Connector {
 
-    String getPageSql(String tableName, String pk, String querySQL);
-
     JdbcTemplate getJdbcTemplate(DatabaseConfig config);
 
     void close(JdbcTemplate jdbcTemplate);
 
+    /**
+     * 获取分页SQL
+     *
+     * @param tableName
+     * @param pk
+     * @param querySQL
+     * @return
+     */
+    String getPageSql(String tableName, String pk, String querySQL);
+
+    /**
+     * 获取分页参数
+     *
+     * @param pageIndex
+     * @param pageSize
+     * @return
+     */
+    Object[] getPageArgs(int pageIndex, int pageSize);
 }

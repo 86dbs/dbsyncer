@@ -17,4 +17,9 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         return DatabaseConstant.ORACLE_PAGE_SQL_START + querySQL + DatabaseConstant.ORACLE_PAGE_SQL_END;
     }
 
+    @Override
+    public Object[] getPageArgs(int pageIndex, int pageSize) {
+        return new Object[]{pageIndex * pageSize, (pageIndex - 1) * pageSize};
+    }
+
 }

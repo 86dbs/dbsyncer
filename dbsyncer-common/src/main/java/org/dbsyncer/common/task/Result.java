@@ -12,6 +12,10 @@ public class Result {
 
     private String error;
 
+    public Result(List<Map<String, Object>> data) {
+        this.data = data;
+    }
+
     public List<Map<String, Object>> getData() {
         return data;
     }

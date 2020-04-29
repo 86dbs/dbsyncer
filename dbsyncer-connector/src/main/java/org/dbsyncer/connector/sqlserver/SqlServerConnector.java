@@ -23,9 +23,13 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
             throw new ConnectorException("Table primary key can not be empty.");
         }
         // SqlServer 分页查询
-        // sql> SELECT * FROM SD_USER
         // sql> SELECT * FROM SD_USER ORDER BY USER.ID OFFSET(3-1) * 1000 ROWS FETCH NEXT 1000 ROWS ONLY
         return new StringBuilder(querySQL).append(" ORDER BY ").append(tableName).append(".").append(pk).append(" OFFSET(?-1) * ? ROWS FETCH NEXT ? ROWS ONLY").toString();
+    }
+
+    @Override
+    public Object[] getPageArgs(int pageIndex, int pageSize) {
+        return new Object[]{(pageIndex - 1) * pageSize, pageSize};
     }
 
 }

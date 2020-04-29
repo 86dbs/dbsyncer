@@ -17,4 +17,9 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
         return querySQL + DatabaseConstant.MYSQL_PAGE_SQL;
     }
 
+    @Override
+    public Object[] getPageArgs(int pageIndex, int pageSize) {
+        return new Object[]{(pageIndex - 1) * pageSize, pageSize};
+    }
+
 }
