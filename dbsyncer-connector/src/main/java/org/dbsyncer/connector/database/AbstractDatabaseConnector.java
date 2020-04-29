@@ -13,6 +13,7 @@ import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.connector.util.JDBCUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.Assert;
 
@@ -147,13 +148,58 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
-    public Result writer(ConnectorConfig config, Map<String, String> command, int threadSize, List<Field> fields, List<Map<String, Object>> data) {
-        // TODO 实现批量写入
-        // 1、获取连接
-        // 2、获取insert SQL
-        // 3、设置参数
-        // 4、记录失败数量和异常信息
-        return null;
+    public Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> data) {
+        // 1、获取select SQL
+        String insertSql = command.get(SqlBuilderEnum.INSERT.getName());
+        Assert.hasText(insertSql, "插入语句不能为空.");
+        if (CollectionUtils.isEmpty(fields)) {
+            logger.error("writer fields can not be empty.");
+            throw new ConnectorException(String.format("writer fields can not be empty."));
+        }
+        if (CollectionUtils.isEmpty(data)) {
+            logger.error("writer data can not be empty.");
+            return new Result("writer data can not be empty.");
+        }
+        final int size = data.size();
+        final int fSize = fields.size();
+
+        DatabaseConfig cfg = (DatabaseConfig) config;
+        JdbcTemplate jdbcTemplate = null;
+        Result result = new Result();
+        try {
+            // 2、获取连接
+            jdbcTemplate = getJdbcTemplate(cfg);
+
+            // 3、设置参数
+            int[] batchUpdate = jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+                @Override
+                public void setValues(PreparedStatement preparedStatement, int i) throws SQLException {
+                    batchRowsSetter(preparedStatement, fields, fSize, data.get(i));
+                }
+
+                @Override
+                public int getBatchSize() {
+                    return size;
+                }
+            });
+
+            // 4、返回结果集
+            int length = batchUpdate.length;
+            for (int i = 0; i < length; i++) {
+                // TODO oracle返回值可能不一样
+                if (0 == batchUpdate[i]) {
+                    result.getFail().getAndIncrement();
+                }
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            result.setError(e.getMessage());
+            result.getFail().set(size);
+        } finally {
+            // 释放连接
+            this.close(jdbcTemplate);
+        }
+        return result;
     }
 
     @Override
@@ -318,18 +364,14 @@ public abstract class AbstractDatabaseConnector implements Database {
     /**
      * @param ps     参数构造器
      * @param fields 同步字段，例如[{name=ID, type=4}, {name=NAME, type=12}]
+     * @param fSize  同步字段个数
      * @param row    同步字段对应的值，例如{ID=123, NAME=张三11}
      */
-    private void batchRowsSetter(PreparedStatement ps, List<Field> fields, Map<String, Object> row) {
-        if (CollectionUtils.isEmpty(fields)) {
-            logger.error("Rows fields can not be empty.");
-            throw new ConnectorException(String.format("Rows fields can not be empty."));
-        }
-        int fieldSize = fields.size();
+    private void batchRowsSetter(PreparedStatement ps, List<Field> fields, int fSize, Map<String, Object> row) {
         Field f = null;
         int type;
         Object val = null;
-        for (int i = 0; i < fieldSize; i++) {
+        for (int i = 0; i < fSize; i++) {
             // 取出字段和对应值
             f = fields.get(i);
             type = f.getType();

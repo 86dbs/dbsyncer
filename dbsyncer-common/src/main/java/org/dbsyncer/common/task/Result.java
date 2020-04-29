@@ -12,8 +12,22 @@ public class Result {
 
     private String error;
 
+    public Result() {
+        init();
+    }
+
     public Result(List<Map<String, Object>> data) {
         this.data = data;
+        init();
+    }
+
+    public Result(String error) {
+        this.error = error;
+        init();
+    }
+
+    private void init(){
+        this.fail = new AtomicLong(0);
     }
 
     public List<Map<String, Object>> getData() {

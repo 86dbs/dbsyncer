@@ -8,10 +8,7 @@ import org.dbsyncer.common.task.Task;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.config.MetaInfo;
-import org.dbsyncer.connector.config.Table;
+import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
@@ -186,15 +183,8 @@ public class ParserFactory implements Parser {
         int threadSize = mapping.getThreadNum();
 
         for (; ; ) {
-            // TODO 模拟测试
-            logger.info("模拟迁移5s");
-            try {
-                TimeUnit.SECONDS.sleep(5);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
             if (!task.isRunning()) {
+                logger.warn("任务被终止:{}", metaId);
                 break;
             }
 
@@ -203,6 +193,8 @@ public class ParserFactory implements Parser {
             Result reader = connectorFactory.reader(sConfig, command, pageIndex, pageSize);
             List<Map<String, Object>> data = reader.getData();
             if (CollectionUtils.isEmpty(data)) {
+                params.clear();
+                logger.info("完成任务:{}, 全量同步表{}>>表{}", metaId, sTableName, tTableName);
                 break;
             }
 
@@ -217,15 +209,14 @@ public class ParserFactory implements Parser {
             pluginFactory.convert(plugin, data, target);
 
             // 5、写入目标源
-            Result writer = connectorFactory.writer(tConfig, command, threadSize, picker.getTargetFields(), target);
+            Result writer = executeBatch(tConfig, command, picker.getTargetFields(), target, threadSize);
 
             // 6、更新结果
             flush(task, writer, target.size());
 
             // 7、更新分页数
-            params.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(pageIndex++));
+            params.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(++pageIndex));
         }
-        logger.info("完成任务:{}, 表[%s]写入到表[%s]", metaId, sTableName, tTableName);
     }
 
     /**
@@ -275,6 +266,23 @@ public class ParserFactory implements Parser {
         Connector connector = new Connector();
         BeanUtils.copyProperties(conn, connector);
         return connector.getConfig();
+    }
+
+    /**
+     * 批量写入
+     *
+     * @param tConfig
+     * @param command
+     * @param targetFields
+     * @param target
+     * @param threadSize
+     * @return
+     */
+    private Result executeBatch(ConnectorConfig tConfig, Map<String, String> command, List<Field> targetFields, List<Map<String, Object>> target, int threadSize) {
+
+        // TODO 多线程run
+
+        return connectorFactory.writer(tConfig, command, targetFields, target);
     }
 
 }

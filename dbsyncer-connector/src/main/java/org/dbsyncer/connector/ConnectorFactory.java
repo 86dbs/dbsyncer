@@ -81,9 +81,9 @@ public class ConnectorFactory {
         return result;
     }
 
-    public Result writer(ConnectorConfig config, Map<String, String> command, int threadSize, List<Field> fields, List<Map<String, Object>> data) {
+    public Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> data) {
         Connector connector = getConnector(config.getConnectorType());
-        Result result = connector.writer(config, command, threadSize, fields, data);
+        Result result = connector.writer(config, command, fields, data);
         Assert.notNull(result, "Connector writer result can not null");
         return result;
     }

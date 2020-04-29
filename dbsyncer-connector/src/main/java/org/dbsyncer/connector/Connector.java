@@ -75,10 +75,9 @@ public interface Connector {
      *
      * @param config 数据源配置
      * @param command 执行命令
-     * @param threadSize 线程数
      * @param data 数据
      * @return
      */
-    Result writer(ConnectorConfig config, Map<String, String> command, int threadSize, List<Field> fields, List<Map<String, Object>> data);
+    Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> data);
 
 }

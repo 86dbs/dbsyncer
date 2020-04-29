@@ -63,7 +63,7 @@ public final class RedisConnector implements Redis {
     }
 
     @Override
-    public Result writer(ConnectorConfig config, Map<String, String> command, int threadSize, List<Field> fields, List<Map<String, Object>> data) {
+    public Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> data) {
         return null;
     }
 
