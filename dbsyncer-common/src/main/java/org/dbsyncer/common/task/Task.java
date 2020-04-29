@@ -4,20 +4,14 @@ public class Task {
 
     private String id;
 
-    private int batchNum;
-
-    private int threadNum;
-
     private StateEnum state;
 
     private long beginTime;
 
     private long endTime;
 
-    public Task(String id, int batchNum, int threadNum) {
+    public Task(String id) {
         this.id = id;
-        this.batchNum = batchNum;
-        this.threadNum = threadNum;
         this.state = StateEnum.RUNNING;
     }
 
@@ -35,14 +29,6 @@ public class Task {
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    public int getBatchNum() {
-        return batchNum;
-    }
-
-    public int getThreadNum() {
-        return threadNum;
     }
 
     public long getBeginTime() {

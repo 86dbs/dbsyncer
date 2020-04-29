@@ -1,17 +1,17 @@
 package org.dbsyncer.manager.extractor.impl;
 
+import org.dbsyncer.common.event.RefreshEvent;
 import org.dbsyncer.common.task.Task;
-import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.extractor.AbstractExtractor;
 import org.dbsyncer.parser.Parser;
-import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2020/04/26 15:28
  */
 @Component
-public class FullExtractor extends AbstractExtractor {
+public class FullExtractor extends AbstractExtractor implements ApplicationListener<RefreshEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -43,9 +43,7 @@ public class FullExtractor extends AbstractExtractor {
     public void asyncStart(Mapping mapping) {
         final String mappingId = mapping.getId();
         final String metaId = mapping.getMetaId();
-        int batchNum = mapping.getBatchNum();
-        int threadNum = mapping.getThreadNum();
-        map.putIfAbsent(metaId, new Task(metaId, batchNum, threadNum));
+        map.putIfAbsent(metaId, new Task(metaId));
 
         try {
             List<TableGroup> list = manager.getTableGroupAll(mappingId);
@@ -57,6 +55,7 @@ public class FullExtractor extends AbstractExtractor {
             doTask(task, mapping, list);
 
         } catch (Exception e) {
+            // TODO 记录错误日志
             logger.error(e.getMessage());
         } finally {
             map.remove(metaId);
@@ -71,6 +70,12 @@ public class FullExtractor extends AbstractExtractor {
         if (null != task) {
             task.stop();
         }
+    }
+
+    @Override
+    public void onApplicationEvent(RefreshEvent refreshEvent) {
+        // 异步监听任务刷新事件
+        flush(refreshEvent.getTask());
     }
 
     private void doTask(Task task, Mapping mapping, List<TableGroup> list) {
@@ -91,12 +96,12 @@ public class FullExtractor extends AbstractExtractor {
     }
 
     private void flush(Task task) {
-        String id = task.getId();
-        Meta meta = manager.getMeta(id);
+        Meta meta = manager.getMeta(task.getId());
         Assert.notNull(meta, "检查meta为空.");
 
         meta.setBeginTime(task.getBeginTime());
         meta.setEndTime(task.getEndTime());
         manager.editMeta(meta);
     }
+
 }

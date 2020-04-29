@@ -1,6 +1,9 @@
 package org.dbsyncer.parser;
 
+import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.cache.CacheService;
+import org.dbsyncer.common.event.RefreshEvent;
+import org.dbsyncer.common.task.Result;
 import org.dbsyncer.common.task.Task;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -12,17 +15,21 @@ import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.parser.convert.Convert;
 import org.dbsyncer.parser.enums.ConvertEnum;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.FieldMapping;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.enums.ParserEnum;
+import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.util.ConvertUtil;
+import org.dbsyncer.parser.util.PickerUtil;
+import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.plugin.config.Plugin;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -46,7 +53,13 @@ public class ParserFactory implements Parser {
     private ConnectorFactory connectorFactory;
 
     @Autowired
+    private PluginFactory pluginFactory;
+
+    @Autowired
     private CacheService cacheService;
+
+    @Autowired
+    private ApplicationContext applicationContext;
 
     @Override
     public boolean alive(ConnectorConfig config) {
@@ -143,32 +156,110 @@ public class ParserFactory implements Parser {
 
     @Override
     public void execute(Task task, Mapping mapping, TableGroup tableGroup) {
+        final String metaId = task.getId();
         final String sourceConnectorId = mapping.getSourceConnectorId();
         final String targetConnectorId = mapping.getTargetConnectorId();
+
         ConnectorConfig sConfig = getConnectorConfig(sourceConnectorId);
-        ConnectorConfig tConfig = getConnectorConfig(targetConnectorId);
         Assert.notNull(sConfig, "数据源配置不能为空.");
+        ConnectorConfig tConfig = getConnectorConfig(targetConnectorId);
         Assert.notNull(tConfig, "目标源配置不能为空.");
+        Map<String, String> command = tableGroup.getCommand();
+        Assert.notEmpty(command, "执行命令不能为空.");
+        List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
+        String sTableName = tableGroup.getSourceTable().getName();
+        String tTableName = tableGroup.getTargetTable().getName();
+        Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
+        // 获取同步字段
+        Picker picker = new Picker();
+        PickerUtil.pickFields(picker, fieldMapping);
 
-        try {
-            for (int i = 0; i < 10; i++) {
-                if (!task.isRunning()) {
-                    break;
-                }
+        // 转换配置(默认使用全局)
+        List<Convert> convert = CollectionUtils.isEmpty(tableGroup.getConvert()) ? mapping.getConvert() : tableGroup.getConvert();
+        // 插件配置(默认使用全局)
+        Plugin plugin = null == tableGroup.getPlugin() ? mapping.getPlugin() : tableGroup.getPlugin();
 
-                // TODO 全量同步任务
-                // 1、获取数据源数据
-                // 2、值映射
-                // 3、参数转换
-                // 4、插件转换
-                // 5、写入目标源
+        // 检查分页参数
+        Map<String, String> params = getMeta(metaId).getMap();
+        params.putIfAbsent(ParserEnum.PAGE_INDEX.getCode(), ParserEnum.PAGE_INDEX.getDefaultValue());
+        int pageSize = mapping.getBatchNum();
+        int threadSize = mapping.getThreadNum();
 
-                logger.info("模拟迁移5s");
+        for (; ; ) {
+            // TODO 模拟测试
+            logger.info("模拟迁移5s");
+            try {
                 TimeUnit.SECONDS.sleep(5);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+
+            if (!task.isRunning()) {
+                break;
+            }
+
+            // 1、获取数据源数据
+            int pageIndex = NumberUtils.toInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
+            Result reader = connectorFactory.reader(sConfig, command, pageIndex, pageSize);
+            List<Map<String, Object>> data = reader.getData();
+            if (CollectionUtils.isEmpty(data)) {
+                break;
+            }
+
+            // 2、映射字段
+            PickerUtil.pickData(picker, data);
+
+            // 3、参数转换
+            List<Map<String, Object>> target = picker.getTarget();
+            ConvertUtil.convert(convert, target);
+
+            // 4、插件转换
+            pluginFactory.convert(plugin, data, target);
+
+            // 5、写入目标源
+            Result writer = connectorFactory.writer(tConfig, command, threadSize, picker.getTargetFields(), target);
+
+            // 6、更新结果
+            flush(task, writer, target.size());
+
+            // 7、更新分页数
+            params.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(pageIndex++));
         }
+        logger.info("完成任务:{}, 表[%s]写入到表[%s]", metaId, sTableName, tTableName);
+    }
+
+    /**
+     * 更新缓存
+     *
+     * @param task
+     * @param writer
+     * @param total
+     */
+    private void flush(Task task, Result writer, int total) {
+        // 引用传递
+        long fail = writer.getFail().get();
+        long success = total - fail;
+        Meta meta = getMeta(task.getId());
+        meta.getFail().getAndAdd(fail);
+        meta.getSuccess().getAndAdd(success);
+
+        // TODO 记录错误日志
+
+        // 发布刷新事件给FullExtractor
+        applicationContext.publishEvent(new RefreshEvent(applicationContext, task));
+    }
+
+    /**
+     * 获取Meta(注: 没有bean拷贝, 便于直接更新缓存)
+     *
+     * @param metaId
+     * @return
+     */
+    private Meta getMeta(String metaId) {
+        Assert.hasText(metaId, "Meta id can not be empty.");
+        Meta meta = cacheService.get(metaId, Meta.class);
+        Assert.notNull(meta, "Meta can not be null.");
+        return meta;
     }
 
     /**

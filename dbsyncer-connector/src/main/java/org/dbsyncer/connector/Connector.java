@@ -1,8 +1,8 @@
 package org.dbsyncer.connector;
 
+import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
-import org.dbsyncer.connector.config.CommandConfig;
 
 import java.util.List;
 import java.util.Map;
@@ -56,5 +56,27 @@ public interface Connector {
      * @return
      */
     Map<String, String> getTargetCommand(CommandConfig commandConfig);
+
+    /**
+     * 分页获取数据源数据
+     *
+     * @param config 数据源配置
+     * @param command 执行命令
+     * @param pageIndex 页数
+     * @param pageSize 页大小
+     * @return
+     */
+    //Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize);
+
+    /**
+     * 批量写入目标源数据
+     *
+     * @param config 数据源配置
+     * @param command 执行命令
+     * @param threadSize 线程数
+     * @param data 数据
+     * @return
+     */
+    //Result writer(ConnectorConfig config, Map<String, String> command, int threadSize, List<Map<String, Object>> data);
 
 }

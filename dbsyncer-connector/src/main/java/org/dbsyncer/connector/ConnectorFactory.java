@@ -1,6 +1,8 @@
 package org.dbsyncer.connector;
 
+import org.dbsyncer.common.task.Result;
 import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.config.CommandConfig;
@@ -72,13 +74,21 @@ public class ConnectorFactory {
         return map;
     }
 
+    public Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize){
+        return new Result();
+    }
+
+    public Result writer(ConnectorConfig config, Map<String,String> command, int threadSize, List<Field> fields, List<Map<String,Object>> data) {
+        return new Result();
+    }
+
     /**
      * 获取连接器
      *
      * @param connectorType
      * @return
      */
-    public Connector getConnector(String connectorType) {
+    private Connector getConnector(String connectorType) {
         // 获取连接器类型
         Assert.hasText(connectorType, "ConnectorType can not be empty.");
         return ConnectorEnum.getConnector(connectorType);
