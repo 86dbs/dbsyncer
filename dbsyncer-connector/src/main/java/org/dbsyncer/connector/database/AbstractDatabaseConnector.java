@@ -1,6 +1,7 @@
 package org.dbsyncer.connector.database;
 
 import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.task.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.*;
@@ -114,6 +115,25 @@ public abstract class AbstractDatabaseConnector implements Database {
         String delete = SqlBuilderEnum.DELETE.getName();
         map.put(delete, getQuerySql(delete, table, null));
         return map;
+    }
+
+    @Override
+    public Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize) {
+        // TODO 实现读取
+        // 1、获取连接
+        // 2、获取select SQL
+        // 3、设置参数
+        return null;
+    }
+
+    @Override
+    public Result writer(ConnectorConfig config, Map<String, String> command, int threadSize, List<Field> fields, List<Map<String, Object>> data) {
+        // TODO 实现批量写入
+        // 1、获取连接
+        // 2、获取insert SQL
+        // 3、设置参数
+        // 4、记录失败数量和异常信息
+        return null;
     }
 
     @Override

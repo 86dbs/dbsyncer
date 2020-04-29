@@ -1,10 +1,8 @@
 package org.dbsyncer.connector.redis;
 
 import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.config.MetaInfo;
-import org.dbsyncer.connector.config.RedisConfig;
+import org.dbsyncer.common.task.Result;
+import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.util.RedisUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +54,16 @@ public final class RedisConnector implements Redis {
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
+        return null;
+    }
+
+    @Override
+    public Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize) {
+        return null;
+    }
+
+    @Override
+    public Result writer(ConnectorConfig config, Map<String, String> command, int threadSize, List<Field> fields, List<Map<String, Object>> data) {
         return null;
     }
 

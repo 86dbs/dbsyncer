@@ -1,11 +1,11 @@
 package org.dbsyncer.connector;
 
 import org.dbsyncer.common.task.Result;
+import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
-import org.dbsyncer.connector.config.CommandConfig;
 import org.springframework.util.Assert;
 
 import java.util.HashMap;
@@ -74,12 +74,18 @@ public class ConnectorFactory {
         return map;
     }
 
-    public Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize){
-        return new Result();
+    public Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize) {
+        Connector connector = getConnector(config.getConnectorType());
+        Result result = connector.reader(config, command, pageIndex, pageSize);
+        Assert.notNull(result, "Connector reader result can not null");
+        return result;
     }
 
-    public Result writer(ConnectorConfig config, Map<String,String> command, int threadSize, List<Field> fields, List<Map<String,Object>> data) {
-        return new Result();
+    public Result writer(ConnectorConfig config, Map<String, String> command, int threadSize, List<Field> fields, List<Map<String, Object>> data) {
+        Connector connector = getConnector(config.getConnectorType());
+        Result result = connector.writer(config, command, threadSize, fields, data);
+        Assert.notNull(result, "Connector writer result can not null");
+        return result;
     }
 
     /**

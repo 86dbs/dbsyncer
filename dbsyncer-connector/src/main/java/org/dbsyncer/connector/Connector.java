@@ -1,7 +1,9 @@
 package org.dbsyncer.connector;
 
+import org.dbsyncer.common.task.Result;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
 
 import java.util.List;
@@ -66,7 +68,7 @@ public interface Connector {
      * @param pageSize 页大小
      * @return
      */
-    //Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize);
+    Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize);
 
     /**
      * 批量写入目标源数据
@@ -77,6 +79,6 @@ public interface Connector {
      * @param data 数据
      * @return
      */
-    //Result writer(ConnectorConfig config, Map<String, String> command, int threadSize, List<Map<String, Object>> data);
+    Result writer(ConnectorConfig config, Map<String, String> command, int threadSize, List<Field> fields, List<Map<String, Object>> data);
 
 }
