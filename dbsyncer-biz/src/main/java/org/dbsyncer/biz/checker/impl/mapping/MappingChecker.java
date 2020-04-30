@@ -101,6 +101,8 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         }
 
         // 全量配置
+        String readNum = params.get("readNum");
+        mapping.setReadNum(NumberUtils.toInt(readNum, mapping.getReadNum()));
         String threadNum = params.get("threadNum");
         mapping.setThreadNum(NumberUtils.toInt(threadNum, mapping.getThreadNum()));
         String batchNum = params.get("batchNum");
