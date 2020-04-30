@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author AE86
@@ -184,7 +183,7 @@ public class ParserFactory implements Parser {
 
         for (; ; ) {
             if (!task.isRunning()) {
-                logger.warn("任务被终止:{}", metaId);
+                logger.warn("任务被中止:{}", metaId);
                 break;
             }
 
@@ -226,7 +225,7 @@ public class ParserFactory implements Parser {
      * @param writer
      * @param total
      */
-    private void flush(Task task, Result writer, int total) {
+    private void flush(Task task, Result writer, long total) {
         // 引用传递
         long fail = writer.getFail().get();
         long success = total - fail;

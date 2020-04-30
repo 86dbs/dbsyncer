@@ -38,9 +38,10 @@
   ],
   "convert": [
     {
-      "name": "NAME",
-      "convert": "REPLACE",
-      "args": "A,B"
+      "name":"NAME",
+      "convertName":"替换",
+      "convertCode":"REPLACE",
+      "args":"A,B"
     }
   ],
   "plugin": {

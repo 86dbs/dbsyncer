@@ -8,4 +8,9 @@ import org.dbsyncer.parser.convert.Handler;
  * @date 2019/10/8 23:05
  */
 public class ClearHandler implements Handler {
+
+    @Override
+    public Object handle(String args, Object value) {
+        return null;
+    }
 }
