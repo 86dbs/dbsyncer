@@ -58,6 +58,11 @@ public final class RedisConnector implements Redis {
     }
 
     @Override
+    public long getCount(ConnectorConfig config, Map<String, String> command) {
+        return 0;
+    }
+
+    @Override
     public Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize) {
         return null;
     }

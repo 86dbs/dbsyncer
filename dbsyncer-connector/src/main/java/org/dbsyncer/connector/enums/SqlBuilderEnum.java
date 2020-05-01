@@ -28,7 +28,11 @@ public enum SqlBuilderEnum {
     /**
      * 查询SQL生成器
      */
-    QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery());
+    QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery()),
+    /**
+     * 查询总数SQL生成器
+     */
+    QUERY_COUNT(ConnectorConstant.OPERTION_QUERY_COUNT, new SqlBuilderQueryCount());
 
     // SQL构造器名称
     private String name;

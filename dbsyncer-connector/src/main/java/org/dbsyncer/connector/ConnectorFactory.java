@@ -74,6 +74,18 @@ public class ConnectorFactory {
         return map;
     }
 
+    /**
+     * 获取总数
+     *
+     * @param config
+     * @param command
+     * @return
+     */
+    public long getCount(ConnectorConfig config, Map<String, String> command){
+        Connector connector = getConnector(config.getConnectorType());
+        return connector.getCount(config, command);
+    }
+
     public Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize) {
         Connector connector = getConnector(config.getConnectorType());
         Result result = connector.reader(config, command, pageIndex, pageSize);

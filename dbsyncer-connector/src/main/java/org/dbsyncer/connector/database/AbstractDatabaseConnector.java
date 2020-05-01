@@ -14,10 +14,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowCountCallbackHandler;
 import org.springframework.util.Assert;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -93,10 +95,13 @@ public abstract class AbstractDatabaseConnector implements Database {
 
         // 获取查询SQL
         Table table = commandConfig.getTable();
-        String type = SqlBuilderEnum.QUERY.getName();
-        String querySql = buildSql(type, table, queryFilterSql);
         Map<String, String> map = new HashMap<>();
-        map.put(type, querySql);
+
+        String query = SqlBuilderEnum.QUERY.getName();
+        map.put(query, buildSql(query, table, queryFilterSql));
+
+        String queryCount = SqlBuilderEnum.QUERY_COUNT.getName();
+        map.put(queryCount, buildSql(queryCount, table, queryFilterSql));
         return map;
     }
 
@@ -115,6 +120,29 @@ public abstract class AbstractDatabaseConnector implements Database {
         String delete = SqlBuilderEnum.DELETE.getName();
         map.put(delete, buildSql(delete, table, null));
         return map;
+    }
+
+    @Override
+    public long getCount(ConnectorConfig config, Map<String, String> command) {
+        // 1、获取select SQL
+        String queryCountSql = command.get(SqlBuilderEnum.QUERY_COUNT.getName());
+        Assert.hasText(queryCountSql, "查询总数语句不能为空.");
+
+        DatabaseConfig cfg = (DatabaseConfig) config;
+        JdbcTemplate jdbcTemplate = null;
+        try {
+            // 2、获取连接
+            jdbcTemplate = getJdbcTemplate(cfg);
+
+            // 3、返回结果集
+            return jdbcTemplate.queryForObject(queryCountSql, Long.class);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            throw new ConnectorException(e.getMessage());
+        } finally {
+            // 释放连接
+            this.close(jdbcTemplate);
+        }
     }
 
     @Override

@@ -62,6 +62,8 @@ public interface Manager extends TaskExecutor{
 
     Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup);
 
+    long getCount(String connectorId, Map<String, String> command);
+
     // Meta
     String addMeta(ConfigModel model);
 

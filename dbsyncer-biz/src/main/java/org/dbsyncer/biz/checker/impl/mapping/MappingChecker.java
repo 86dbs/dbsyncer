@@ -170,12 +170,18 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
     }
 
     private void getMetaTotal(Meta meta, String model) {
+        // 全量同步
         if (ModelEnum.isFull(model)) {
-            // TODO 统计tableGroup总条数
-            meta.setTotal(new AtomicLong(1000));
+            // 统计tableGroup总条数
+            AtomicLong count = new AtomicLong(0);
+            List<TableGroup> groupAll = manager.getTableGroupAll(meta.getMappingId());
+            if (!CollectionUtils.isEmpty(groupAll)) {
+                for (TableGroup g : groupAll) {
+                    count.getAndAdd(g.getSourceTable().getCount());
+                }
+            }
+            meta.setTotal(count);
         }
-        meta.setSuccess(new AtomicLong(200));
-        meta.setFail(new AtomicLong(1));
     }
 
 }

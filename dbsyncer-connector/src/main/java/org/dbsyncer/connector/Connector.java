@@ -60,12 +60,21 @@ public interface Connector {
     Map<String, String> getTargetCommand(CommandConfig commandConfig);
 
     /**
+     * 获取总数
+     *
+     * @param config
+     * @param command
+     * @return
+     */
+    long getCount(ConnectorConfig config, Map<String, String> command);
+
+    /**
      * 分页获取数据源数据
      *
-     * @param config 数据源配置
-     * @param command 执行命令
+     * @param config    数据源配置
+     * @param command   执行命令
      * @param pageIndex 页数
-     * @param pageSize 页大小
+     * @param pageSize  页大小
      * @return
      */
     Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize);
@@ -73,9 +82,9 @@ public interface Connector {
     /**
      * 批量写入目标源数据
      *
-     * @param config 数据源配置
+     * @param config  数据源配置
      * @param command 执行命令
-     * @param data 数据
+     * @param data    数据
      * @return
      */
     Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> data);

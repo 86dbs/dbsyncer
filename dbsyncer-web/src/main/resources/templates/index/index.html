@@ -158,10 +158,12 @@
                     <td th:text="${m?.mappingName}"></td>
                     <td th:text="${m?.model}"></td>
                     <td>
+                        <span th:if="${m?.model eq '全量'}">
+                            总数:[[${m?.total}]],
+                        </span>
                         <span th:if="${m?.model eq '全量' and m?.total gt 0 and (m?.success + m?.fail) gt 0}">
                             进度:[[${#numbers.formatDecimal(((m?.success + m?.fail) / m?.total * 100.00),0 ,2)}]]%,
                             耗时:[[${(m?.endTime - m?.beginTime) / 1000}]]秒,
-                            总数:[[${m?.total}]],
                         </span>
                         成功:[[${m?.success}]]
                         <span th:if="${m?.fail gt 0}">,失败:[[${m?.fail}]] <a href="javascript:;" class="label label-danger">日志</a></span>

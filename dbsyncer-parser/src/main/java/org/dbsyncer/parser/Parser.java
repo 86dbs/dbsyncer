@@ -56,6 +56,15 @@ public interface Parser {
     Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup);
 
     /**
+     * 获取总数
+     *
+     * @param connectorId
+     * @param command
+     * @return
+     */
+    long getCount(String connectorId, Map<String, String> command);
+
+    /**
      * 解析连接器配置为Connector
      *
      * @param json

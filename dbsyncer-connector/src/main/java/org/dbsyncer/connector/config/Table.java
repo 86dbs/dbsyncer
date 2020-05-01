@@ -1,6 +1,7 @@
 package org.dbsyncer.connector.config;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author AE86
@@ -18,6 +19,9 @@ public class Table {
      */
     private List<Field> column;
 
+    // 总数
+    private long count;
+
     public String getName() {
         return name;
     }
@@ -34,5 +38,13 @@ public class Table {
     public Table setColumn(List<Field> column) {
         this.column = column;
         return this;
+    }
+
+    public long getCount() {
+        return count;
+    }
+
+    public void setCount(long count) {
+        this.count = count;
     }
 }

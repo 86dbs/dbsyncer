@@ -109,6 +109,10 @@ public class TableGroupChecker extends AbstractChecker {
 
         Map<String, String> command = manager.getCommand(mapping, group);
         tableGroup.setCommand(command);
+
+        // 获取数据源总数
+        long count = manager.getCount(mapping.getSourceConnectorId(), command);
+        tableGroup.getSourceTable().setCount(count);
     }
 
     private Table getTable(String connectorId, String tableName) {
@@ -122,8 +126,8 @@ public class TableGroupChecker extends AbstractChecker {
         if (!CollectionUtils.isEmpty(list)) {
             for (TableGroup g : list) {
                 // 数据源表和目标表都存在
-                if (StringUtils.equals(sourceTable, g.getSourceTable().getName()) && StringUtils.equals(targetTable,
-                        g.getTargetTable().getName())) {
+                if (StringUtils.equals(sourceTable, g.getSourceTable().getName())
+                        && StringUtils.equals(targetTable, g.getTargetTable().getName())) {
                     final String error = String.format("映射关系已存在.", sourceTable, targetTable);
                     logger.error(error);
                     throw new BizException(error);

@@ -178,6 +178,11 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     }
 
     @Override
+    public long getCount(String connectorId, Map<String, String> command) {
+        return parser.getCount(connectorId, command);
+    }
+
+    @Override
     public String addMeta(ConfigModel model) {
         return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD.getHandler()));
     }

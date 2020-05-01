@@ -98,6 +98,12 @@ public class ParserFactory implements Parser {
     }
 
     @Override
+    public long getCount(String connectorId, Map<String, String> command) {
+        ConnectorConfig config = getConnectorConfig(connectorId);
+        return connectorFactory.getCount(config, command);
+    }
+
+    @Override
     public Connector parseConnector(String json) {
         try {
             JSONObject conn = new JSONObject(json);
