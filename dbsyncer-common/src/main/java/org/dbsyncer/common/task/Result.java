@@ -10,7 +10,7 @@ public class Result {
 
     private AtomicLong fail;
 
-    private String error;
+    private StringBuffer error;
 
     public Result() {
         init();
@@ -21,13 +21,14 @@ public class Result {
         init();
     }
 
-    public Result(String error) {
+    public Result(StringBuffer error) {
+        this.fail = new AtomicLong(0);
         this.error = error;
-        init();
     }
 
     private void init(){
         this.fail = new AtomicLong(0);
+        this.error = new StringBuffer();
     }
 
     public List<Map<String, Object>> getData() {
@@ -46,11 +47,11 @@ public class Result {
         this.fail = fail;
     }
 
-    public String getError() {
+    public StringBuffer getError() {
         return error;
     }
 
-    public void setError(String error) {
+    public void setError(StringBuffer error) {
         this.error = error;
     }
 }

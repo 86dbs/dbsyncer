@@ -158,7 +158,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         }
         if (CollectionUtils.isEmpty(data)) {
             logger.error("writer data can not be empty.");
-            return new Result("writer data can not be empty.");
+            return new Result(new StringBuffer("writer data can not be empty."));
         }
         final int size = data.size();
         final int fSize = fields.size();
@@ -193,7 +193,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             }
         } catch (Exception e) {
             logger.error(e.getMessage());
-            result.setError(e.getMessage());
+            result.getError().append(e.getMessage());
             result.getFail().set(size);
         } finally {
             // 释放连接
