@@ -8,7 +8,6 @@ import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
-import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.connector.util.JDBCUtil;
 import org.slf4j.Logger;
@@ -154,11 +153,11 @@ public abstract class AbstractDatabaseConnector implements Database {
         Assert.hasText(insertSql, "插入语句不能为空.");
         if (CollectionUtils.isEmpty(fields)) {
             logger.error("writer fields can not be empty.");
-            throw new ConnectorException(String.format("writer fields can not be empty."));
+            throw new ConnectorException("writer fields can not be empty.");
         }
         if (CollectionUtils.isEmpty(data)) {
             logger.error("writer data can not be empty.");
-            return new Result(new StringBuffer("writer data can not be empty."));
+            throw new ConnectorException("writer data can not be empty.");
         }
         final int size = data.size();
         final int fSize = fields.size();
@@ -171,7 +170,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             jdbcTemplate = getJdbcTemplate(cfg);
 
             // 3、设置参数
-            int[] batchUpdate = jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+            jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
                 @Override
                 public void setValues(PreparedStatement preparedStatement, int i) throws SQLException {
                     batchRowsSetter(preparedStatement, fields, fSize, data.get(i));
@@ -183,18 +182,12 @@ public abstract class AbstractDatabaseConnector implements Database {
                 }
             });
 
-            // 4、返回结果集
-            int length = batchUpdate.length;
-            for (int i = 0; i < length; i++) {
-                // TODO oracle返回值可能不一样
-                if (0 == batchUpdate[i]) {
-                    result.getFail().getAndIncrement();
-                }
-            }
         } catch (Exception e) {
-            logger.error(e.getMessage());
-            result.getError().append(e.getMessage());
+            // 记录错误数据
+            result.getFailData().addAll(data);
             result.getFail().set(size);
+            result.getError().append(e.getMessage()).append("\r\n");
+            logger.error(e.getMessage());
         } finally {
             // 释放连接
             this.close(jdbcTemplate);

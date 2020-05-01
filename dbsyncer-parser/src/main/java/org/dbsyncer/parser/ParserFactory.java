@@ -1,7 +1,5 @@
 package org.dbsyncer.parser;
 
-import org.apache.commons.lang.math.NumberUtils;
-import org.apache.commons.lang.math.RandomUtils;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.RefreshEvent;
 import org.dbsyncer.common.task.Result;
@@ -31,12 +29,10 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author AE86
@@ -192,12 +188,12 @@ public class ParserFactory implements Parser {
             }
 
             // 1、获取数据源数据
-            int pageIndex = NumberUtils.toInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
+            int pageIndex = Integer.parseInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
             Result reader = connectorFactory.reader(sConfig, command, pageIndex, pageSize);
             List<Map<String, Object>> data = reader.getData();
             if (CollectionUtils.isEmpty(data)) {
                 params.clear();
-                logger.info("完成任务:{}, 全量同步表{}>>表{}", metaId, sTableName, tTableName);
+                logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
                 break;
             }
 
@@ -310,11 +306,11 @@ public class ParserFactory implements Parser {
                     try {
                         Result w = parallelTask(batchSize, queue, config, command, fields);
                         // CAS
+                        result.getFailData().addAll(w.getFailData());
                         result.getFail().getAndAdd(w.getFail().get());
-                        result.getError().append(w.getError()).append("\r\n");
+                        result.getError().append(w.getError());
                     } catch (Exception e) {
                         result.getError().append(e.getMessage()).append("\r\n");
-                        logger.error(e.getMessage());
                     } finally {
                         latch.countDown();
                     }
@@ -356,35 +352,6 @@ public class ParserFactory implements Parser {
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
         executor.initialize();
         return executor;
-    }
-
-    public static void main(String[] args) {
-        int threadSize = 10;
-
-        ParserFactory factory = new ParserFactory();
-
-        final ThreadPoolTaskExecutor executor = factory.getThreadPoolTaskExecutor(threadSize);
-        CountDownLatch latch = new CountDownLatch(threadSize);
-        for (int i = 0; i < threadSize; i++) {
-            executor.execute(() -> {
-                try {
-                    TimeUnit.SECONDS.sleep(RandomUtils.nextInt(5));
-                    System.out.println(String.format("%s: %s完成", LocalDateTime.now(), Thread.currentThread().getName()));
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
-        try {
-            latch.await();
-            executor.shutdown();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        System.out.println("ok");
-
     }
 
 }
