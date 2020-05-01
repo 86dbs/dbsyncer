@@ -42,7 +42,7 @@
     <ol>
         <li>JDK - 1.8.0_40 (推荐版本及以上)</li>
         <li>Maven - 3.3.9</li>
-        <li><a target="_blank" href="https://docs.spring.io/spring-boot/docs/2.1.8.RELEASE/reference/html/">Spring Boot - 2.1.7.RELEASE</a></li>
+        <li><a target="_blank" href="https://docs.spring.io/spring-boot/docs/2.1.8.RELEASE/reference/html/">Spring Boot - 2.1.8.RELEASE</a></li>
         <li><a target="_blank" href="http://getbootstrap.com">Bootstrap - 3.3.4</a></li>
     </ol>
 </div>
