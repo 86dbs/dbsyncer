@@ -232,10 +232,13 @@ public class ParserFactory implements Parser {
         Meta meta = getMeta(task.getId());
         meta.getFail().getAndAdd(fail);
         meta.getSuccess().getAndAdd(success);
+        // print process
+        logger.info("任务:{}, 成功:{}, 失败:{}", task.getId(), meta.getSuccess(), meta.getFail());
 
         // TODO 记录错误日志
 
         // 发布刷新事件给FullExtractor
+        task.setEndTime(System.currentTimeMillis());
         applicationContext.publishEvent(new RefreshEvent(applicationContext, task));
     }
 

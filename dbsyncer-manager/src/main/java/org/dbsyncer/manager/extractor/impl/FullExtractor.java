@@ -80,7 +80,9 @@ public class FullExtractor extends AbstractExtractor implements ApplicationListe
 
     private void doTask(Task task, Mapping mapping, List<TableGroup> list) {
         // 记录开始时间
-        task.setBeginTime(System.currentTimeMillis());
+        long now = System.currentTimeMillis();
+        task.setBeginTime(now);
+        task.setEndTime(now);
         flush(task);
 
         for (TableGroup t : list) {
