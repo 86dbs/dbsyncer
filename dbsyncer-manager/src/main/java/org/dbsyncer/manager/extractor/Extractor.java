@@ -8,7 +8,6 @@ public interface Extractor {
     @Async("taskExecutor")
     void asyncStart(Mapping mapping);
 
-    @Async("taskExecutor")
-    void asyncClose(String metaId);
+    void close(String metaId);
 
 }

@@ -30,7 +30,8 @@ public enum SetterEnum {
     // 很少使用
     TINYINT(Types.TINYINT, new TinyintSetter()),
     DOUBLE(Types.DOUBLE, new DoubleSetter()),
-    FLOAT(Types.FLOAT, new FloatSetter());
+    FLOAT(Types.FLOAT, new FloatSetter()),
+    REAL(Types.REAL, new RealSetter());
 
     private int type;
 

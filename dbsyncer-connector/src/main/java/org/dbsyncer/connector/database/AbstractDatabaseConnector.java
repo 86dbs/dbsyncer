@@ -1,22 +1,25 @@
 package org.dbsyncer.connector.database;
 
 import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.task.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
-import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.connector.util.JDBCUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowCountCallbackHandler;
 import org.springframework.util.Assert;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -92,10 +95,13 @@ public abstract class AbstractDatabaseConnector implements Database {
 
         // 获取查询SQL
         Table table = commandConfig.getTable();
-        String type = SqlBuilderEnum.QUERY.getName();
-        String querySql = getQuerySql(type, table, queryFilterSql);
         Map<String, String> map = new HashMap<>();
-        map.put(type, querySql);
+
+        String query = SqlBuilderEnum.QUERY.getName();
+        map.put(query, buildSql(query, table, queryFilterSql));
+
+        String queryCount = SqlBuilderEnum.QUERY_COUNT.getName();
+        map.put(queryCount, buildSql(queryCount, table, queryFilterSql));
         return map;
     }
 
@@ -106,14 +112,115 @@ public abstract class AbstractDatabaseConnector implements Database {
         Table table = commandConfig.getTable();
 
         String insert = SqlBuilderEnum.INSERT.getName();
-        map.put(insert, getQuerySql(insert, table, null));
+        map.put(insert, buildSql(insert, table, null));
 
         String update = SqlBuilderEnum.UPDATE.getName();
-        map.put(update, getQuerySql(update, table, null));
+        map.put(update, buildSql(update, table, null));
 
         String delete = SqlBuilderEnum.DELETE.getName();
-        map.put(delete, getQuerySql(delete, table, null));
+        map.put(delete, buildSql(delete, table, null));
         return map;
+    }
+
+    @Override
+    public long getCount(ConnectorConfig config, Map<String, String> command) {
+        // 1、获取select SQL
+        String queryCountSql = command.get(SqlBuilderEnum.QUERY_COUNT.getName());
+        Assert.hasText(queryCountSql, "查询总数语句不能为空.");
+
+        DatabaseConfig cfg = (DatabaseConfig) config;
+        JdbcTemplate jdbcTemplate = null;
+        try {
+            // 2、获取连接
+            jdbcTemplate = getJdbcTemplate(cfg);
+
+            // 3、返回结果集
+            return jdbcTemplate.queryForObject(queryCountSql, Long.class);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            throw new ConnectorException(e.getMessage());
+        } finally {
+            // 释放连接
+            this.close(jdbcTemplate);
+        }
+    }
+
+    @Override
+    public Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize) {
+        // 1、获取select SQL
+        String querySql = command.get(SqlBuilderEnum.QUERY.getName());
+        Assert.hasText(querySql, "查询语句不能为空.");
+
+        DatabaseConfig cfg = (DatabaseConfig) config;
+        JdbcTemplate jdbcTemplate = null;
+        try {
+            // 2、获取连接
+            jdbcTemplate = getJdbcTemplate(cfg);
+
+            // 3、设置参数
+            Object[] args = getPageArgs(pageIndex, pageSize);
+
+            // 4、执行SQL
+            List<Map<String, Object>> list = jdbcTemplate.queryForList(querySql, args);
+
+            // 5、返回结果集
+            return new Result(list);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            throw new ConnectorException(e.getMessage());
+        } finally {
+            // 释放连接
+            this.close(jdbcTemplate);
+        }
+    }
+
+    @Override
+    public Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> data) {
+        // 1、获取select SQL
+        String insertSql = command.get(SqlBuilderEnum.INSERT.getName());
+        Assert.hasText(insertSql, "插入语句不能为空.");
+        if (CollectionUtils.isEmpty(fields)) {
+            logger.error("writer fields can not be empty.");
+            throw new ConnectorException("writer fields can not be empty.");
+        }
+        if (CollectionUtils.isEmpty(data)) {
+            logger.error("writer data can not be empty.");
+            throw new ConnectorException("writer data can not be empty.");
+        }
+        final int size = data.size();
+        final int fSize = fields.size();
+
+        DatabaseConfig cfg = (DatabaseConfig) config;
+        JdbcTemplate jdbcTemplate = null;
+        Result result = new Result();
+        try {
+            // 2、获取连接
+            jdbcTemplate = getJdbcTemplate(cfg);
+
+            // 3、设置参数
+            jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+                @Override
+                public void setValues(PreparedStatement preparedStatement, int i) throws SQLException {
+                    batchRowsSetter(preparedStatement, fields, fSize, data.get(i));
+                }
+
+                @Override
+                public int getBatchSize() {
+                    return size;
+                }
+            });
+
+        } catch (Exception e) {
+            // 记录错误数据
+            result.getFailData().addAll(data);
+            result.getFail().set(size);
+            result.getError().append(e.getMessage()).append("\r\n");
+            logger.error(e.getMessage());
+        } finally {
+            // 释放连接
+            this.close(jdbcTemplate);
+        }
+        return result;
     }
 
     @Override
@@ -173,7 +280,7 @@ public abstract class AbstractDatabaseConnector implements Database {
      * @param queryFilterSQL
      * @return
      */
-    private String getQuerySql(String type, Table table, String queryFilterSQL) {
+    private String buildSql(String type, Table table, String queryFilterSQL) {
         if (null == table) {
             logger.error("Table can not be null.");
             throw new ConnectorException("Table can not be null.");
@@ -278,18 +385,14 @@ public abstract class AbstractDatabaseConnector implements Database {
     /**
      * @param ps     参数构造器
      * @param fields 同步字段，例如[{name=ID, type=4}, {name=NAME, type=12}]
+     * @param fSize  同步字段个数
      * @param row    同步字段对应的值，例如{ID=123, NAME=张三11}
      */
-    private void batchRowsSetter(PreparedStatement ps, List<Field> fields, Map<String, Object> row) {
-        if (CollectionUtils.isEmpty(fields)) {
-            logger.error("Rows fields can not be empty.");
-            throw new ConnectorException(String.format("Rows fields can not be empty."));
-        }
-        int fieldSize = fields.size();
+    private void batchRowsSetter(PreparedStatement ps, List<Field> fields, int fSize, Map<String, Object> row) {
         Field f = null;
         int type;
         Object val = null;
-        for (int i = 0; i < fieldSize; i++) {
+        for (int i = 0; i < fSize; i++) {
             // 取出字段和对应值
             f = fields.get(i);
             type = f.getType();

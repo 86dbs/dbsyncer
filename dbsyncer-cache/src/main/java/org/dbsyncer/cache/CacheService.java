@@ -1,7 +1,5 @@
 package org.dbsyncer.cache;
 
-import java.util.Map;
-
 /**
  * @author AE86
  * @version 1.0.0

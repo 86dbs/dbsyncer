@@ -1,5 +1,6 @@
 package org.dbsyncer.parser;
 
+import org.dbsyncer.common.task.Task;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -7,6 +8,7 @@ import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 
 import java.util.List;
@@ -47,12 +49,20 @@ public interface Parser {
     /**
      * 获取映射关系执行命令
      *
-     * @param sourceConnectorId
-     * @param targetConnectorId
+     * @param mapping
      * @param tableGroup
      * @return
      */
-    Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup);
+    Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup);
+
+    /**
+     * 获取总数
+     *
+     * @param connectorId
+     * @param command
+     * @return
+     */
+    long getCount(String connectorId, Map<String, String> command);
 
     /**
      * 解析连接器配置为Connector
@@ -100,4 +110,12 @@ public interface Parser {
      */
     List<ConvertEnum> getConvertEnumAll();
 
+    /**
+     * 全量同步
+     *
+     * @param task
+     * @param mapping
+     * @param tableGroup
+     */
+    void execute(Task task, Mapping mapping, TableGroup tableGroup);
 }

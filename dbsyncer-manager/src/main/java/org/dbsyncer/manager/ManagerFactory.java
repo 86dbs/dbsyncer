@@ -28,7 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -62,6 +61,13 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
 
     @Autowired
     private OperationTemplate operationTemplate;
+
+    private Map<String, Extractor> map;
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        map = applicationContext.getBeansOfType(Extractor.class);
+    }
 
     @Override
     public boolean alive(ConnectorConfig config) {
@@ -167,8 +173,13 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     }
 
     @Override
-    public Map<String, String> getCommand(String sourceConnectorId, String targetConnectorId, TableGroup tableGroup) {
-        return parser.getCommand(sourceConnectorId, targetConnectorId, tableGroup);
+    public Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup) {
+        return parser.getCommand(mapping, tableGroup);
+    }
+
+    @Override
+    public long getCount(String connectorId, Map<String, String> command) {
+        return parser.getCount(connectorId, command);
     }
 
     @Override
@@ -225,19 +236,8 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
         return pluginFactory.getPluginAll();
     }
 
-    private Map<String, Extractor> map;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        map = applicationContext.getBeansOfType(Extractor.class);
-    }
-
     @Override
     public void start(Mapping mapping) {
-        // 获取数据源连接器
-        Connector connector = getConnector(mapping.getSourceConnectorId());
-        Assert.notNull(connector, "数据源配置不能为空.");
-
         Extractor extractor = getExtractor(mapping);
 
         // 标记运行中
@@ -254,7 +254,18 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
         String metaId = mapping.getMetaId();
         changeMetaState(metaId, MetaEnum.STOPPING);
 
-        extractor.asyncClose(metaId);
+        extractor.close(metaId);
+    }
+
+    @Override
+    public void changeMetaState(String metaId, MetaEnum metaEnum){
+        Meta meta = getMeta(metaId);
+        int code = metaEnum.getCode();
+        if(meta.getState() != code){
+            meta.setState(code);
+            meta.setUpdateTime(System.currentTimeMillis());
+            editMeta(meta);
+        }
     }
 
     @Override
@@ -273,12 +284,6 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
         Extractor extractor = map.get(model.concat("Extractor"));
         Assert.notNull(extractor, String.format("未知的同步方式: %s", model));
         return extractor;
-    }
-
-    private void changeMetaState(String metaId, MetaEnum metaEnum){
-        Meta meta = getMeta(metaId);
-        meta.setState(metaEnum.getCode());
-        editMeta(meta);
     }
 
 }

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author AE86
@@ -23,4 +24,9 @@ public class PluginFactory {
         return list;
     }
 
+    public void convert(Plugin plugin, List<Map<String, Object>> source, List<Map<String, Object>> target) {
+        if (null != plugin) {
+            // TODO 插件转换
+        }
+    }
 }

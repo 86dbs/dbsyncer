@@ -21,27 +21,27 @@ public class MetaInfo {
     /**
      * 总条数
      */
-    private int rowCount;
+    private long count;
 
     public MetaInfo() {
     }
 
-    public MetaInfo(List<Field> column, int rowCount) {
+    public MetaInfo(List<Field> column, long count) {
         super();
         this.column = column;
-        this.rowCount = rowCount;
+        this.count = count;
     }
 
     public List<Field> getColumn() {
         return column;
     }
 
-    public int getRowCount() {
-        return rowCount;
+    public long getCount() {
+        return count;
     }
 
     @Override
     public String toString() {
-        return new StringBuilder().append("MetaInfo{").append("column=").append(column).append(", rowCount=").append(rowCount).append('}').toString();
+        return new StringBuilder().append("MetaInfo{").append("column=").append(column).append(", count=").append(count).append('}').toString();
     }
 }

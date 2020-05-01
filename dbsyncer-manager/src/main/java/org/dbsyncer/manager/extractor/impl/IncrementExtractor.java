@@ -1,6 +1,7 @@
-package org.dbsyncer.manager.extractor;
+package org.dbsyncer.manager.extractor.impl;
 
 import org.dbsyncer.listener.Listener;
+import org.dbsyncer.manager.extractor.AbstractExtractor;
 import org.dbsyncer.parser.model.Mapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -19,8 +20,12 @@ public class IncrementExtractor extends AbstractExtractor {
     private Listener listener;
 
     @Override
-    protected void doTask(Mapping mapping) {
-        // 获取数据源连接配置
+    public void asyncStart(Mapping mapping) {
+
     }
 
+    @Override
+    public void close(String metaId) {
+
+    }
 }

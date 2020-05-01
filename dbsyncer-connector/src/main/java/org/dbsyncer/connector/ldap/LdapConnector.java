@@ -1,10 +1,8 @@
 package org.dbsyncer.connector.ldap;
 
 import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.config.LdapConfig;
-import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.common.task.Result;
+import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.util.LdapUtil;
 import org.slf4j.Logger;
@@ -14,6 +12,7 @@ import org.springframework.ldap.CommunicationException;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.filter.*;
+import org.springframework.ldap.filter.Filter;
 
 import java.util.List;
 import java.util.Map;
@@ -55,8 +54,22 @@ public final class LdapConnector implements Ldap {
 	}
 
 	@Override
-	public LdapTemplate getLdapTemplate(LdapConfig config)
-			throws AuthenticationException, CommunicationException, javax.naming.NamingException {
+	public long getCount(ConnectorConfig config, Map<String, String> command) {
+		return 0;
+	}
+
+	@Override
+	public Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize) {
+		return null;
+	}
+
+	@Override
+	public Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> data) {
+		return null;
+	}
+
+	@Override
+	public LdapTemplate getLdapTemplate(LdapConfig config) throws AuthenticationException, CommunicationException, javax.naming.NamingException {
 		return LdapUtil.getLdapTemplate(config);
 	}
 

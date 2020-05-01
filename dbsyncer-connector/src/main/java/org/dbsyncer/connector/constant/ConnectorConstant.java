@@ -28,6 +28,11 @@ public class ConnectorConstant {
     public static final String OPERTION_QUERY = "QUERY";
 
     /**
+     * 查询总数
+     */
+    public static final String OPERTION_QUERY_COUNT = "QUERY_COUNT";
+
+    /**
      * 查询最近记录点
      * <p>例如：SELECT MAX(MY_TEST.LAST_TIME) FROM MY_TEST</p>
      */

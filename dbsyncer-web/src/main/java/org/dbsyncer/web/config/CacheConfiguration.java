@@ -67,7 +67,7 @@ public class CacheConfiguration {
     }
 
     private CaffeineCache buildCache(String key, CacheConfig config, Ticker ticker) {
-        logger.info("Cache key {} specified timeout of {} min, max of {}", key, config.getTimeout(), config.getMax());
+        logger.info("Cache key {} specified timeout of {} seconds, max of {}", key, config.getTimeout(), config.getMax());
         final Caffeine<Object, Object> caffeineBuilder = Caffeine.newBuilder()
                 .expireAfterWrite(config.getTimeout(), TimeUnit.SECONDS)
                 .maximumSize(config.getMax())

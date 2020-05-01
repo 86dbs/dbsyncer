@@ -6,7 +6,7 @@ import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.config.Filter;
-import org.dbsyncer.parser.convert.Convert;
+import org.dbsyncer.parser.model.Convert;
 import org.dbsyncer.parser.model.AbstractConfigModel;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.plugin.config.Plugin;

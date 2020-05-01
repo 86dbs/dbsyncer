@@ -40,7 +40,10 @@ public class Mapping extends AbstractConfigModel {
     // 元信息ID
     private String metaId;
 
-    // 批量数
+    // 每次读取数
+    private int readNum = 10000;
+
+    // 每次写入数
     private int batchNum = 200;
 
     // 线程数
@@ -104,6 +107,14 @@ public class Mapping extends AbstractConfigModel {
 
     public void setMetaId(String metaId) {
         this.metaId = metaId;
+    }
+
+    public int getReadNum() {
+        return readNum;
+    }
+
+    public void setReadNum(int readNum) {
+        this.readNum = readNum;
     }
 
     public int getBatchNum() {

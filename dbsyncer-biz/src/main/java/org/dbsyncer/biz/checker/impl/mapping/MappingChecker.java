@@ -29,8 +29,7 @@ import org.springframework.util.Assert;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author AE86
@@ -77,8 +76,8 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         this.modifyConfigModel(mapping, params);
 
         // 创建meta
-        String metaId = addMeta(mapping.getId());
-        mapping.setMetaId(metaId);
+        addMeta(mapping);
+
         return mapping;
     }
 
@@ -102,6 +101,8 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         }
 
         // 全量配置
+        String readNum = params.get("readNum");
+        mapping.setReadNum(NumberUtils.toInt(readNum, mapping.getReadNum()));
         String threadNum = params.get("threadNum");
         mapping.setThreadNum(NumberUtils.toInt(threadNum, mapping.getThreadNum()));
         String batchNum = params.get("batchNum");
@@ -124,7 +125,6 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         // 更新meta
         updateMeta(mapping);
 
-        // 增量配置
         return mapping;
     }
 
@@ -144,28 +144,43 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         }
     }
 
-    private String addMeta(String mappingId) {
-        AtomicInteger total = new AtomicInteger(0);
-        AtomicInteger success = new AtomicInteger(0);
-        AtomicInteger fail = new AtomicInteger(0);
-        Map<String, String> map = new ConcurrentHashMap<>();
-        Meta meta = new Meta(mappingId, MetaEnum.READY.getCode(), total, success, fail, map);
+    private void addMeta(Mapping mapping) {
+        Meta meta = new Meta();
+        meta.setMappingId(mapping.getId());
         meta.setType(ConfigConstant.META);
         meta.setName(ConfigConstant.META);
 
         // 修改基本配置
         this.modifyConfigModel(meta, new HashMap<>());
 
-        return manager.addMeta(meta);
+        String id = manager.addMeta(meta);
+        mapping.setMetaId(id);
     }
 
     private void updateMeta(Mapping mapping) {
-        if(StringUtils.equals(ModelEnum.FULL.getCode(), mapping.getModel())){
-            String metaId = mapping.getMetaId();
-            Meta meta = manager.getMeta(metaId);
-            Assert.notNull(meta, "驱动meta不存在.");
-            // TODO 获取驱动数据源总条数
+        Meta meta = manager.getMeta(mapping.getMetaId());
+        Assert.notNull(meta, "驱动meta不存在.");
 
+        // 清空状态
+        meta.clear();
+
+        getMetaTotal(meta, mapping.getModel());
+
+        manager.editMeta(meta);
+    }
+
+    private void getMetaTotal(Meta meta, String model) {
+        // 全量同步
+        if (ModelEnum.isFull(model)) {
+            // 统计tableGroup总条数
+            AtomicLong count = new AtomicLong(0);
+            List<TableGroup> groupAll = manager.getTableGroupAll(meta.getMappingId());
+            if (!CollectionUtils.isEmpty(groupAll)) {
+                for (TableGroup g : groupAll) {
+                    count.getAndAdd(g.getSourceTable().getCount());
+                }
+            }
+            meta.setTotal(count);
         }
     }
 

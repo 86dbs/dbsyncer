@@ -38,6 +38,10 @@ public enum ModelEnum {
         throw new ParserException(String.format("Model code \"%s\" does not exist.", code));
     }
 
+    public static boolean isFull(String model) {
+        return StringUtils.equals(FULL.getCode(), model);
+    }
+
     public String getCode() {
         return code;
     }

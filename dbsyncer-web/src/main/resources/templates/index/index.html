@@ -158,9 +158,12 @@
                     <td th:text="${m?.mappingName}"></td>
                     <td th:text="${m?.model}"></td>
                     <td>
-                        <span th:if="${m?.model eq '全量' and m?.total gt 0}">
-                            进度:[[${#numbers.formatDecimal(((m?.success + m?.fail) / m?.total * 10000 / 100.00),2 ,2)}]]%,
+                        <span th:if="${m?.model eq '全量'}">
                             总数:[[${m?.total}]],
+                        </span>
+                        <span th:if="${m?.model eq '全量' and m?.total gt 0 and (m?.success + m?.fail) gt 0}">
+                            进度:[[${#numbers.formatDecimal(((m?.success + m?.fail) / m?.total * 100.00),0 ,2)}]]%,
+                            耗时:[[${(m?.endTime - m?.beginTime) / 1000}]]秒,
                         </span>
                         成功:[[${m?.success}]]
                         <span th:if="${m?.fail gt 0}">,失败:[[${m?.fail}]] <a href="javascript:;" class="label label-danger">日志</a></span>
@@ -170,7 +173,7 @@
                         <span th:if="${m?.state eq 1}" class="label label-success">运行中</span>
                         <span th:if="${m?.state eq 2}" class="label label-warning">停止中</span>
                     </td>
-                    <td th:text="${#dates.format(m?.updateTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                    <td><span th:if="${m?.state != 0 and m?.beginTime gt 0}">[[${#dates.format(m?.beginTime, 'yyyy-MM-dd HH:mm:ss')}]]</span></td>
                 </tr>
                 </tbody>
             </table>

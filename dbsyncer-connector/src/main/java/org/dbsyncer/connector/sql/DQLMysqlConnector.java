@@ -6,7 +6,6 @@ import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 
-import java.util.Arrays;
 import java.util.List;
 
 public final class DQLMysqlConnector extends AbstractDatabaseConnector {
@@ -20,6 +19,11 @@ public final class DQLMysqlConnector extends AbstractDatabaseConnector {
     public String getPageSql(String tableName, String pk, String querySQL) {
         // Mysql 分页查询
         return querySQL + DatabaseConstant.MYSQL_PAGE_SQL;
+    }
+
+    @Override
+    public Object[] getPageArgs(int pageIndex, int pageSize) {
+        return new Object[]{(pageIndex - 1) * pageSize, pageSize};
     }
 
     @Override

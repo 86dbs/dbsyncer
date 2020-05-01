@@ -1,14 +1,19 @@
 package org.dbsyncer.manager.template.impl;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.config.PreloadCallBack;
 import org.dbsyncer.manager.config.PreloadConfig;
+import org.dbsyncer.manager.config.QueryConfig;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.manager.enums.HandlerEnum;
 import org.dbsyncer.manager.template.AbstractTemplate;
 import org.dbsyncer.manager.template.Handler;
 import org.dbsyncer.parser.Parser;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.query.Query;
@@ -36,6 +41,9 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
 
     @Autowired
     private Parser parser;
+
+    @Autowired
+    private Manager manager;
 
     @Autowired
     private StorageService storageService;
@@ -74,6 +82,22 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
         // Load metas
         execute(new PreloadConfig(ConfigConstant.META, HandlerEnum.PRELOAD_META.getHandler()));
 
+        // 启动驱动
+        Meta meta = new Meta();
+        meta.setType(ConfigConstant.META);
+        QueryConfig<Meta> queryConfig = new QueryConfig<>(meta);
+        List<Meta> metas = operationTemplate.queryAll(queryConfig);
+        if (!CollectionUtils.isEmpty(metas)) {
+            metas.forEach(m -> {
+                // 恢复驱动状态
+                if (MetaEnum.RUNNING.getCode() == m.getState()) {
+                    Mapping mapping = manager.getMapping(m.getMappingId());
+                    manager.start(mapping);
+                }else if(MetaEnum.STOPPING.getCode() == m.getState()){
+                    manager.changeMetaState(m.getId(), MetaEnum.READY);
+                }
+            });
+        }
     }
 
 }
