@@ -40,10 +40,10 @@ public class Mapping extends AbstractConfigModel {
     // 元信息ID
     private String metaId;
 
-    // 一次最多读取数
+    // 每次读取数
     private int readNum = 10000;
 
-    // 批量数
+    // 每次写入数
     private int batchNum = 200;
 
     // 线程数

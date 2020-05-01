@@ -2,7 +2,6 @@ package org.dbsyncer.parser.util;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.Field;
-import org.dbsyncer.parser.convert.Convert;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Picker;
 

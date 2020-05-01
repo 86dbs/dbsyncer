@@ -1,7 +1,7 @@
 package org.dbsyncer.parser.util;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.parser.convert.Convert;
+import org.dbsyncer.parser.model.Convert;
 import org.dbsyncer.parser.enums.ConvertEnum;
 
 import java.util.List;

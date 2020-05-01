@@ -76,7 +76,7 @@ public final class OperationTemplate extends AbstractTemplate {
 
         // 2、持久化
         Map<String, Object> params = ConfigModelUtil.convertModelToMap(model);
-        logger.info("params:{}", params);
+        logger.debug("params:{}", params);
         Handler handler = config.getHandler();
         Assert.notNull(handler, "Handler can not be null.");
         handler.execute(new OperationCallBack(storageService, StorageConstant.CONFIG, params));
@@ -98,7 +98,7 @@ public final class OperationTemplate extends AbstractTemplate {
         cacheService.putIfAbsent(groupId, new Group());
         Group group = cacheService.get(groupId, Group.class);
         group.addIfAbsent(id);
-        logger.info("Put the model [{}] for {} group into cache.", id, groupId);
+        logger.debug("Put the model [{}] for {} group into cache.", id, groupId);
     }
 
     public void remove(OperationConfig config) {

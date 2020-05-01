@@ -1,4 +1,4 @@
-package org.dbsyncer.parser.convert;
+package org.dbsyncer.parser.model;
 
 import org.dbsyncer.parser.enums.ConvertEnum;
 
