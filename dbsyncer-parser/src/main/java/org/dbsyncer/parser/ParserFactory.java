@@ -343,8 +343,8 @@ public class ParserFactory implements Parser {
     private ThreadPoolTaskExecutor getThreadPoolTaskExecutor(int threadSize) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(threadSize);
-        executor.setMaxPoolSize(threadSize * 2);
-        executor.setQueueCapacity(50);
+        executor.setMaxPoolSize(threadSize);
+        executor.setQueueCapacity(threadSize * 2);
         executor.setKeepAliveSeconds(30);
         executor.setAwaitTerminationSeconds(30);
         executor.setThreadNamePrefix("ParserExecutor");

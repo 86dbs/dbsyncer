@@ -24,9 +24,9 @@ public class TaskPoolConfig {
         executor.setCorePoolSize(10);
         //最大线程数20：线程池最大的线程数，只有在缓冲队列满了之后才会申请超过核心线程数的线程
         //maxPoolSize 当系统负载大道最大值时,核心线程数已无法按时处理完所有任务,这是就需要增加线程.每秒200个任务需要20个线程,那么当每秒1000个任务时,则需要(1000-queueCapacity)*(20/200),即60个线程,可将maxPoolSize设置为60;
-        executor.setMaxPoolSize(30);
-        //缓冲队列200：用来缓冲执行任务的队列
-        executor.setQueueCapacity(400);
+        executor.setMaxPoolSize(20);
+        //缓冲队列100：用来缓冲执行任务的队列
+        executor.setQueueCapacity(100);
         //允许线程的空闲时间60秒：当超过了核心线程出之外的线程在空闲时间到达之后会被销毁
         executor.setKeepAliveSeconds(60);
         //线程池名的前缀：设置好了之后可以方便我们定位处理任务所在的线程池
@@ -43,6 +43,7 @@ public class TaskPoolConfig {
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(60);
+        executor.initialize();
         return executor;
     }
 
