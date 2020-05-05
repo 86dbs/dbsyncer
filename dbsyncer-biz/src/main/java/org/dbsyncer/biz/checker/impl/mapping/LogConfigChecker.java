@@ -2,7 +2,7 @@ package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.MappingLogConfigChecker;
-import org.dbsyncer.biz.util.CheckerTypeUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerEnum;
@@ -43,9 +43,9 @@ public class LogConfigChecker implements MappingConfigChecker, ApplicationContex
         String connectorId = mapping.getSourceConnectorId();
         Connector connector = manager.getConnector(connectorId);
         ConnectorConfig config = connector.getConfig();
-        String type = CheckerTypeUtil.getCheckerType(config.getConnectorType() + "Log");
+        String type = StringUtil.toLowerCaseFirstOne(config.getConnectorType()).concat("LogConfigChecker");
         MappingLogConfigChecker checker = map.get(type);
-        if(null != checker){
+        if (null != checker) {
             checker.modify(mapping, params);
         }
         ListenerConfig listener = mapping.getListener();

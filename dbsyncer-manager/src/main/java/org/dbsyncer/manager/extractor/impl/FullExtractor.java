@@ -37,7 +37,7 @@ public class FullExtractor extends AbstractExtractor implements ApplicationListe
     @Autowired
     private Manager manager;
 
-    protected Map<String, Task> map = new ConcurrentHashMap<>();
+    private Map<String, Task> map = new ConcurrentHashMap<>();
 
     @Override
     public void asyncStart(Mapping mapping) {
@@ -47,7 +47,7 @@ public class FullExtractor extends AbstractExtractor implements ApplicationListe
 
         try {
             List<TableGroup> list = manager.getTableGroupAll(mappingId);
-            Assert.notEmpty(list, "映射关系为空");
+            Assert.notEmpty(list, "映射关系不能为空");
 
             // 执行任务
             logger.info("启动任务:{}", metaId);

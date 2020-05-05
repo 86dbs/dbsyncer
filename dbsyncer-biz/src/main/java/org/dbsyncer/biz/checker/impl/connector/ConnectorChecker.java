@@ -3,7 +3,7 @@ package org.dbsyncer.biz.checker.impl.connector;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
-import org.dbsyncer.biz.util.CheckerTypeUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.manager.Manager;
@@ -56,7 +56,7 @@ public class ConnectorChecker extends AbstractChecker implements ApplicationCont
         setConfig(connector, connectorType);
 
         // 配置连接器配置
-        String type = CheckerTypeUtil.getCheckerType(connectorType);
+        String type = StringUtil.toLowerCaseFirstOne(connectorType).concat("ConfigChecker");
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
         checker.modify(connector, params);
@@ -83,7 +83,7 @@ public class ConnectorChecker extends AbstractChecker implements ApplicationCont
 
         // 配置连接器配置
         ConnectorConfig config = connector.getConfig();
-        String type = CheckerTypeUtil.getCheckerType(config.getConnectorType());
+        String type = StringUtil.toLowerCaseFirstOne(config.getConnectorType()).concat("ConfigChecker");
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
         checker.modify(connector, params);
