@@ -7,7 +7,7 @@ import org.dbsyncer.listener.config.ListenerConfig;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ListenerFactory {
+public class ListenerFactory implements Listener{
 
     public void execute(Task task, ListenerConfig listenerConfig, ConnectorConfig connectorConfig) {
         // extract

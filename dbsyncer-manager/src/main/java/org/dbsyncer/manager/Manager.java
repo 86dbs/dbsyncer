@@ -19,7 +19,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2019/9/30 20:31
  */
-public interface Manager extends Task {
+public interface Manager extends Executor {
 
     boolean alive(ConnectorConfig config);
 

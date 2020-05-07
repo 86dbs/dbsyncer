@@ -1,11 +1,11 @@
 package org.dbsyncer.manager.extractor.impl;
 
-import org.dbsyncer.common.event.FullRefreshEvent;
 import org.dbsyncer.common.event.IncrementRefreshEvent;
 import org.dbsyncer.common.model.Task;
-import org.dbsyncer.listener.ListenerFactory;
+import org.dbsyncer.listener.Listener;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.manager.enums.TaskEnum;
 import org.dbsyncer.manager.extractor.AbstractExtractor;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -33,7 +33,7 @@ public class IncrementExtractor extends AbstractExtractor implements Application
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private ListenerFactory listenerFactory;
+    private Listener listener;
 
     @Autowired
     private Manager manager;
@@ -42,18 +42,23 @@ public class IncrementExtractor extends AbstractExtractor implements Application
 
     @Override
     public void asyncStart(Mapping mapping) {
+        ListenerConfig listenerConfig = mapping.getListener();
+        Connector connector = manager.getConnector(mapping.getSourceConnectorId());
+        Assert.notNull(connector, "连接器不能为空.");
+        // log/timing
+        String type = listenerConfig.getListenerType();
+        Task task = TaskEnum.getIncrementTask(type);
+        Assert.notNull(task, "未知的增量同步方式.");
+
         final String metaId = mapping.getMetaId();
-        map.putIfAbsent(metaId, new Task(metaId));
+        task.setId(metaId);
+        map.putIfAbsent(metaId, task);
 
         try {
-            ListenerConfig listenerConfig = mapping.getListener();
-            Connector connector = manager.getConnector(mapping.getSourceConnectorId());
-            Assert.notNull(connector, "连接器不能为空.");
-
             // 执行任务
             logger.info("启动任务:{}", metaId);
-            Task task = map.get(metaId);
-            listenerFactory.execute(task, listenerConfig, connector.getConfig());
+            Task t = map.get(metaId);
+            listener.execute(t, listenerConfig, connector.getConfig());
 
         } catch (Exception e) {
             // TODO 记录错误日志
@@ -82,7 +87,7 @@ public class IncrementExtractor extends AbstractExtractor implements Application
     private void flush(Task task) {
         Meta meta = manager.getMeta(task.getId());
         Assert.notNull(meta, "检查meta为空.");
-
         manager.editMeta(meta);
     }
+
 }

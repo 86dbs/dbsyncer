@@ -10,7 +10,7 @@ import org.dbsyncer.parser.model.Mapping;
  * @version 1.0.0
  * @date 2020/04/26 16:32
  */
-public interface Task {
+public interface Executor {
 
     /**
      * 启动同步任务
