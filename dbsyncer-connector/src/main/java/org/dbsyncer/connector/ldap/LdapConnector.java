@@ -1,7 +1,7 @@
 package org.dbsyncer.connector.ldap;
 
 import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.common.task.Result;
+import org.dbsyncer.common.model.Result;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.util.LdapUtil;

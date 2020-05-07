@@ -1,7 +1,7 @@
 package org.dbsyncer.manager.extractor.impl;
 
 import org.dbsyncer.common.event.RefreshEvent;
-import org.dbsyncer.common.task.Task;
+import org.dbsyncer.common.model.Task;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.extractor.AbstractExtractor;
 import org.dbsyncer.parser.Parser;

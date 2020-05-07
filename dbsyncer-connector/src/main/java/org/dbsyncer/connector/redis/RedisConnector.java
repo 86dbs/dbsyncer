@@ -1,7 +1,7 @@
 package org.dbsyncer.connector.redis;
 
 import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.common.task.Result;
+import org.dbsyncer.common.model.Result;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.util.RedisUtil;
 import org.slf4j.Logger;

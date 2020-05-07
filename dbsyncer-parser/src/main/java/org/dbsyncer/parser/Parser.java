@@ -1,6 +1,6 @@
 package org.dbsyncer.parser;
 
-import org.dbsyncer.common.task.Task;
+import org.dbsyncer.common.model.Task;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;

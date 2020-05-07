@@ -6,14 +6,12 @@ import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
-import org.dbsyncer.listener.Listener;
 import org.dbsyncer.manager.config.OperationConfig;
 import org.dbsyncer.manager.config.QueryConfig;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.manager.enums.HandlerEnum;
 import org.dbsyncer.manager.extractor.Extractor;
 import org.dbsyncer.manager.template.impl.OperationTemplate;
-import org.dbsyncer.manager.template.impl.PreloadTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.MetaEnum;
@@ -49,15 +47,6 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
 
     @Autowired
     private PluginFactory pluginFactory;
-
-    @Autowired
-    private Listener listener;
-
-    @Autowired
-    private TaskExecutor executor;
-
-    @Autowired
-    private PreloadTemplate preloadTemplate;
 
     @Autowired
     private OperationTemplate operationTemplate;
@@ -258,10 +247,10 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     }
 
     @Override
-    public void changeMetaState(String metaId, MetaEnum metaEnum){
+    public void changeMetaState(String metaId, MetaEnum metaEnum) {
         Meta meta = getMeta(metaId);
         int code = metaEnum.getCode();
-        if(meta.getState() != code){
+        if (meta.getState() != code) {
             meta.setState(code);
             meta.setUpdateTime(System.currentTimeMillis());
             editMeta(meta);

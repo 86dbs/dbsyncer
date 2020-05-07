@@ -1,7 +1,6 @@
 package org.dbsyncer.manager.extractor.impl;
 
-import org.dbsyncer.common.task.Task;
-import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.common.model.Task;
 import org.dbsyncer.listener.ListenerFactory;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.manager.Manager;
@@ -10,10 +9,7 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 

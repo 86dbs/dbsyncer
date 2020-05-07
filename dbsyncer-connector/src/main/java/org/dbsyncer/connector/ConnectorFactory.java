@@ -1,6 +1,6 @@
 package org.dbsyncer.connector;
 
-import org.dbsyncer.common.task.Result;
+import org.dbsyncer.common.model.Result;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.Field;

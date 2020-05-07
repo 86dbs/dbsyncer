@@ -2,8 +2,8 @@ package org.dbsyncer.parser;
 
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.RefreshEvent;
-import org.dbsyncer.common.task.Result;
-import org.dbsyncer.common.task.Task;
+import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.model.Task;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.ConnectorFactory;
