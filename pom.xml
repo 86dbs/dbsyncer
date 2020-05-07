@@ -11,7 +11,7 @@
     <name>dbsyncer</name>
     <url>https://gitee.com/ghi/dbsyncer</url>
 
-    <!-- 管理的子模块(14个) -->
+    <!-- 管理的子模块(13个) -->
     <modules>
         <module>dbsyncer-biz</module>
         <module>dbsyncer-cache</module>
@@ -24,7 +24,6 @@
         <module>dbsyncer-monitor</module>
         <module>dbsyncer-parser</module>
         <module>dbsyncer-plugin</module>
-        <module>dbsyncer-schedule</module>
         <module>dbsyncer-storage</module>
         <module>dbsyncer-web</module>
     </modules>

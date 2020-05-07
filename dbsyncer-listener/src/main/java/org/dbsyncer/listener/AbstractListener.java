@@ -1,6 +1,6 @@
 package org.dbsyncer.listener;
 
 
-public abstract class AbstractListener implements LifecycleListener {
+public abstract class AbstractListener implements Listener {
 
 }

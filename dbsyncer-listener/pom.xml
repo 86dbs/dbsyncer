@@ -19,17 +19,17 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <!-- Cache 缓存服务 -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-cache</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
         <!-- Message 消息服务 -->
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-message</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <!-- Schedule 定时服务 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-schedule</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

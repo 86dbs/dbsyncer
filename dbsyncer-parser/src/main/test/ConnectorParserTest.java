@@ -4,8 +4,6 @@ import org.apache.commons.io.FileUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.enums.ConnectorEnum;
-import org.dbsyncer.listener.config.ListenerConfig;
-import org.dbsyncer.listener.enums.ListenerEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
@@ -49,15 +47,7 @@ public class ConnectorParserTest {
 
         // 解析基本信息
         JSONObject map = new JSONObject(json);
-        JSONObject listener = (JSONObject) map.remove("listener");
         Mapping mapping = JsonUtil.jsonToObj(map.toString(), Mapping.class);
-
-        // 解析监听器
-        String listenerType = listener.getString("listenerType");
-        Class<?> configClass = ListenerEnum.getConfigClass(listenerType);
-        Object obj = JsonUtil.jsonToObj(listener.toString(), configClass);
-        mapping.setListener((ListenerConfig) obj);
-
         System.out.println(mapping);
     }
 
