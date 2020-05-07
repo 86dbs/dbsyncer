@@ -1,5 +1,7 @@
 package org.dbsyncer.manager.extractor.impl;
 
+import org.dbsyncer.common.event.FullRefreshEvent;
+import org.dbsyncer.common.event.IncrementRefreshEvent;
 import org.dbsyncer.common.model.Task;
 import org.dbsyncer.listener.ListenerFactory;
 import org.dbsyncer.listener.config.ListenerConfig;
@@ -7,9 +9,11 @@ import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.extractor.AbstractExtractor;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -24,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2020/04/26 15:28
  */
 @Component
-public class IncrementExtractor extends AbstractExtractor {
+public class IncrementExtractor extends AbstractExtractor implements ApplicationListener<IncrementRefreshEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -69,4 +73,16 @@ public class IncrementExtractor extends AbstractExtractor {
         }
     }
 
+    @Override
+    public void onApplicationEvent(IncrementRefreshEvent event) {
+        // 异步监听任务刷新事件
+        flush(event.getTask());
+    }
+
+    private void flush(Task task) {
+        Meta meta = manager.getMeta(task.getId());
+        Assert.notNull(meta, "检查meta为空.");
+
+        manager.editMeta(meta);
+    }
 }

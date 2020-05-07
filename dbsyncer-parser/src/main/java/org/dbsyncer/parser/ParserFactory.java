@@ -1,7 +1,7 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.cache.CacheService;
-import org.dbsyncer.common.event.RefreshEvent;
+import org.dbsyncer.common.event.FullRefreshEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.model.Task;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -245,7 +245,7 @@ public class ParserFactory implements Parser {
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(System.currentTimeMillis());
-        applicationContext.publishEvent(new RefreshEvent(applicationContext, task));
+        applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
     }
 
     /**

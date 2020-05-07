@@ -1,6 +1,6 @@
 package org.dbsyncer.manager.extractor.impl;
 
-import org.dbsyncer.common.event.RefreshEvent;
+import org.dbsyncer.common.event.FullRefreshEvent;
 import org.dbsyncer.common.model.Task;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.extractor.AbstractExtractor;
@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2020/04/26 15:28
  */
 @Component
-public class FullExtractor extends AbstractExtractor implements ApplicationListener<RefreshEvent> {
+public class FullExtractor extends AbstractExtractor implements ApplicationListener<FullRefreshEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -73,9 +73,9 @@ public class FullExtractor extends AbstractExtractor implements ApplicationListe
     }
 
     @Override
-    public void onApplicationEvent(RefreshEvent refreshEvent) {
+    public void onApplicationEvent(FullRefreshEvent event) {
         // 异步监听任务刷新事件
-        flush(refreshEvent.getTask());
+        flush(event.getTask());
     }
 
     private void doTask(Task task, Mapping mapping, List<TableGroup> list) {

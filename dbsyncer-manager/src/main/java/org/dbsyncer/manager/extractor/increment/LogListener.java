@@ -10,6 +10,6 @@ import org.springframework.stereotype.Component;
  * @date 2020/05/05 15:28
  */
 @Component
-public class LogListener extends AbstractListener {
+public class LogListener implements Listener{
 
 }
