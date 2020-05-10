@@ -3,8 +3,8 @@ package org.dbsyncer.manager.enums;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.model.Task;
 import org.dbsyncer.manager.ManagerException;
-import org.dbsyncer.manager.extractor.task.LogTask;
-import org.dbsyncer.manager.extractor.task.TimingTask;
+import org.dbsyncer.manager.extractor.increment.LogIncrement;
+import org.dbsyncer.manager.extractor.increment.TimingIncrement;
 
 /**
  * @author AE86
@@ -16,11 +16,11 @@ public enum TaskEnum {
     /**
      * 定时
      */
-    TIMING("timing", new TimingTask()),
+    TIMING("timing", new TimingIncrement()),
     /**
      * 监听日志
      */
-    LOG("log", new LogTask());
+    LOG("log", new LogIncrement());
 
     private String type;
     private Task task;

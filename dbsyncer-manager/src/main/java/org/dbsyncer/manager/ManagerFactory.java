@@ -250,7 +250,7 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     public void changeMetaState(String metaId, MetaEnum metaEnum) {
         Meta meta = getMeta(metaId);
         int code = metaEnum.getCode();
-        if (meta.getState() != code) {
+        if (null != meta && meta.getState() != code) {
             meta.setState(code);
             meta.setUpdateTime(System.currentTimeMillis());
             editMeta(meta);
