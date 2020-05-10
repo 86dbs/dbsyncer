@@ -33,6 +33,13 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <!-- Message 消息服务 -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-message</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
         <!-- Storage 存储服务 -->
         <dependency>
             <groupId>org.ghi</groupId>
@@ -44,13 +51,6 @@
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-plugin</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <!-- Message 消息服务 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-message</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
