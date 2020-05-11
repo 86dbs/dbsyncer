@@ -1,4 +1,4 @@
-package org.dbsyncer.listener.enums;
+package org.dbsyncer.parser.enums;
 
 /**
  * 支持监听器类型

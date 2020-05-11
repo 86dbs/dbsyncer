@@ -1,6 +1,5 @@
-package org.dbsyncer.listener.config;
+package org.dbsyncer.parser.model;
 
-import org.dbsyncer.listener.enums.ListenerEnum;
 
 /**
  * @author AE86

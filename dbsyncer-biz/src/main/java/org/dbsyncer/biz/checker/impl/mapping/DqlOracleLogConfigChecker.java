@@ -1,7 +1,7 @@
 package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.dbsyncer.biz.checker.MappingLogConfigChecker;
-import org.dbsyncer.listener.config.ListenerConfig;
+import org.dbsyncer.parser.model.ListenerConfig;
 import org.dbsyncer.parser.model.Mapping;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
