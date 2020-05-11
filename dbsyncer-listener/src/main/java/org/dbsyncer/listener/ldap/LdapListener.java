@@ -4,7 +4,6 @@ import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.connector.config.LdapConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.constant.LdapConstant;
-import org.dbsyncer.listener.AbstractListener;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -29,7 +28,7 @@ import java.util.Hashtable;
  * @Description: 监听ldap新增、修改、刪除操作
  * @date: 2017年8月22日 下午6:39:05
  */
-public final class LdapListener extends AbstractListener {
+public final class LdapListener {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -41,7 +40,6 @@ public final class LdapListener extends AbstractListener {
     // 修改事件监听
     private ObjectChangeListener objectChangeListener;
 
-    @Override
     public void onClose() {
         synchronized (context) {
             try {
@@ -57,7 +55,6 @@ public final class LdapListener extends AbstractListener {
         }
     }
 
-    @Override
     public void run() {
 //        // 启动监听线程
 //        // 1、获取驱动

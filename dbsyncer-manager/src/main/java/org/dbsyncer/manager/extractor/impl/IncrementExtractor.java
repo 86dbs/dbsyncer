@@ -67,14 +67,15 @@ public class IncrementExtractor extends AbstractExtractor implements Application
         try {
             // 执行任务
             logger.info("启动任务:{}", metaId);
-            // TODO increment
+            Task task = map.get(metaId);
+            increment.execute(task, listenerConfig, connector);
         } catch (Exception e) {
             // TODO 记录错误日志
             logger.error(e.getMessage());
         } finally {
             map.remove(metaId);
             publishClosedEvent(metaId);
-            logger.info("结束任务:{}", metaId);
+            logger.info("启动成功:{}", metaId);
         }
     }
 
@@ -82,7 +83,7 @@ public class IncrementExtractor extends AbstractExtractor implements Application
     public void close(String metaId) {
         Task task = map.get(metaId);
         if (null != task) {
-            task.stop();
+            task.notifyClosedEvent();
         }
     }
 

@@ -1,11 +1,25 @@
 package org.dbsyncer.manager.extractor.increment;
 
-import org.dbsyncer.manager.extractor.Increment;
+import org.dbsyncer.manager.extractor.AbstractIncrement;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.ListenerConfig;
+import org.springframework.stereotype.Component;
 
 /**
  * @version 1.0.0
  * @Author AE86
  * @Date 2020-05-08 00:32
  */
-public class TimingIncrement implements Increment {
+@Component
+public class TimingIncrement extends AbstractIncrement {
+
+    @Override
+    protected void run(ListenerConfig listenerConfig, Connector connector) {
+
+    }
+
+    @Override
+    protected void close() {
+
+    }
 }

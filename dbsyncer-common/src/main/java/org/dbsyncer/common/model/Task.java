@@ -1,5 +1,10 @@
 package org.dbsyncer.common.model;
 
+import org.dbsyncer.common.event.Event;
+
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 public class Task {
 
     private String id;
@@ -10,16 +15,33 @@ public class Task {
 
     private long endTime;
 
+    private List<Event> watcher;
+
     public Task() {
     }
 
     public Task(String id) {
         this.id = id;
         this.state = StateEnum.RUNNING;
+        watcher = new CopyOnWriteArrayList<>();
     }
 
     public void stop() {
         this.state = StateEnum.STOP;
+    }
+
+    /**
+     * 订阅事件
+     */
+    public void attachClosedEvent(Event event) {
+        watcher.add(event);
+    }
+
+    /**
+     * 通知关闭事件
+     */
+    public void notifyClosedEvent() {
+        watcher.forEach(w -> w.closedEvent());
     }
 
     public boolean isRunning() {
@@ -50,7 +72,7 @@ public class Task {
         this.endTime = endTime;
     }
 
-    public enum StateEnum{
+    public enum StateEnum {
         /**
          * 运行
          */
