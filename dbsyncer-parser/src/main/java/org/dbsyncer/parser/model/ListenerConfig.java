@@ -1,6 +1,8 @@
 package org.dbsyncer.parser.model;
 
 
+import org.dbsyncer.parser.enums.ListenerEnum;
+
 /**
  * @author AE86
  * @version 1.0.0

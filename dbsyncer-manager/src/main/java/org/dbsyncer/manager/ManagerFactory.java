@@ -10,7 +10,7 @@ import org.dbsyncer.manager.config.OperationConfig;
 import org.dbsyncer.manager.config.QueryConfig;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.manager.enums.HandlerEnum;
-import org.dbsyncer.manager.extractor.Extractor;
+import org.dbsyncer.manager.extractor.Puller;
 import org.dbsyncer.manager.template.impl.OperationTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;
@@ -51,11 +51,11 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     @Autowired
     private OperationTemplate operationTemplate;
 
-    private Map<String, Extractor> map;
+    private Map<String, Puller> map;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        map = applicationContext.getBeansOfType(Extractor.class);
+        map = applicationContext.getBeansOfType(Puller.class);
     }
 
     @Override
@@ -227,23 +227,23 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
 
     @Override
     public void start(Mapping mapping) {
-        Extractor extractor = getExtractor(mapping);
+        Puller puller = getPuller(mapping);
 
         // 标记运行中
         changeMetaState(mapping.getMetaId(), MetaEnum.RUNNING);
 
-        extractor.asyncStart(mapping);
+        puller.asyncStart(mapping);
     }
 
     @Override
     public void close(Mapping mapping) {
-        Extractor extractor = getExtractor(mapping);
+        Puller puller = getPuller(mapping);
 
         // 标记停止中
         String metaId = mapping.getMetaId();
         changeMetaState(metaId, MetaEnum.STOPPING);
 
-        extractor.close(metaId);
+        puller.close(metaId);
     }
 
     @Override
@@ -263,16 +263,16 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
         changeMetaState(event.getId(), MetaEnum.READY);
     }
 
-    private Extractor getExtractor(Mapping mapping) {
+    private Puller getPuller(Mapping mapping) {
         Assert.notNull(mapping, "驱动不能为空");
         String model = mapping.getModel();
         String metaId = mapping.getMetaId();
         Assert.hasText(model, "同步方式不能为空");
         Assert.hasText(metaId, "任务ID不能为空");
 
-        Extractor extractor = map.get(model.concat("Extractor"));
-        Assert.notNull(extractor, String.format("未知的同步方式: %s", model));
-        return extractor;
+        Puller puller = map.get(model.concat("Puller"));
+        Assert.notNull(puller, String.format("未知的同步方式: %s", model));
+        return puller;
     }
 
 }

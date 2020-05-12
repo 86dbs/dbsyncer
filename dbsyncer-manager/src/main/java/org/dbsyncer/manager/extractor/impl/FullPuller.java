@@ -3,7 +3,7 @@ package org.dbsyncer.manager.extractor.impl;
 import org.dbsyncer.common.event.FullRefreshEvent;
 import org.dbsyncer.common.model.Task;
 import org.dbsyncer.manager.Manager;
-import org.dbsyncer.manager.extractor.AbstractExtractor;
+import org.dbsyncer.manager.extractor.AbstractPuller;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2020/04/26 15:28
  */
 @Component
-public class FullExtractor extends AbstractExtractor implements ApplicationListener<FullRefreshEvent> {
+public class FullPuller extends AbstractPuller implements ApplicationListener<FullRefreshEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

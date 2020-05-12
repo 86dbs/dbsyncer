@@ -4,9 +4,9 @@ import org.dbsyncer.common.event.IncrementRefreshEvent;
 import org.dbsyncer.common.model.Task;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.listener.Listener;
+import org.dbsyncer.manager.extractor.AbstractPuller;
 import org.dbsyncer.parser.model.ListenerConfig;
 import org.dbsyncer.manager.Manager;
-import org.dbsyncer.manager.extractor.AbstractExtractor;
 import org.dbsyncer.manager.extractor.Increment;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2020/04/26 15:28
  */
 @Component
-public class IncrementExtractor extends AbstractExtractor implements ApplicationContextAware, ApplicationListener<IncrementRefreshEvent> {
+public class IncrementPuller extends AbstractPuller implements ApplicationContextAware, ApplicationListener<IncrementRefreshEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
