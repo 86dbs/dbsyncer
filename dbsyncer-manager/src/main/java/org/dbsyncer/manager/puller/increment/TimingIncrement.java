@@ -1,8 +1,7 @@
 package org.dbsyncer.manager.puller.increment;
 
+import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.manager.puller.AbstractIncrement;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.ListenerConfig;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,12 +13,7 @@ import org.springframework.stereotype.Component;
 public class TimingIncrement extends AbstractIncrement {
 
     @Override
-    protected void run(ListenerConfig listenerConfig, Connector connector) {
-
-    }
-
-    @Override
-    protected void close() {
-
+    public void execute(String mappingId, String metaId, Extractor extractor) {
+        extractor.extractTiming();
     }
 }

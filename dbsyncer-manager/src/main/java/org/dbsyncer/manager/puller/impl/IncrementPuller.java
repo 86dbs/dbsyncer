@@ -3,8 +3,10 @@ package org.dbsyncer.manager.puller.impl;
 import org.dbsyncer.common.event.IncrementRefreshEvent;
 import org.dbsyncer.common.model.Task;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.manager.puller.AbstractPuller;
+import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.parser.model.ListenerConfig;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.puller.Increment;
@@ -42,7 +44,7 @@ public class IncrementPuller extends AbstractPuller implements ApplicationContex
     @Autowired
     private Manager manager;
 
-    private Map<String, Task> map = new ConcurrentHashMap<>();
+    private Map<String, Extractor> map = new ConcurrentHashMap<>();
 
     private Map<String, Increment> handle;
 
@@ -53,37 +55,39 @@ public class IncrementPuller extends AbstractPuller implements ApplicationContex
 
     @Override
     public void asyncStart(Mapping mapping) {
-        ListenerConfig listenerConfig = mapping.getListener();
-        Connector connector = manager.getConnector(mapping.getSourceConnectorId());
-        Assert.notNull(connector, "连接器不能为空.");
-        // log/timing
-        String type = StringUtil.toLowerCaseFirstOne(listenerConfig.getListenerType()).concat("Increment");
-        Increment increment = handle.get(type);
-        Assert.notNull(increment, "未知的增量同步方式.");
-
+        final String mappingId = mapping.getId();
         final String metaId = mapping.getMetaId();
-        map.putIfAbsent(metaId, new Task(metaId));
-
         try {
+            // log/timing
+            ListenerConfig listenerConfig = mapping.getListener();
+            String listenerType = listenerConfig.getListenerType();
+            String type = StringUtil.toLowerCaseFirstOne(listenerType).concat("Increment");
+            Increment increment = handle.get(type);
+            Assert.notNull(increment, "未知的增量同步方式.");
+            Connector connector = manager.getConnector(mapping.getSourceConnectorId());
+            Assert.notNull(connector, "连接器不能为空.");
+            Extractor extractor = listener.createExtractor(connector.getConfig());
+            Assert.notNull(extractor, "未知的连接器配置.");
+            map.putIfAbsent(metaId, extractor);
+
             // 执行任务
             logger.info("启动任务:{}", metaId);
-            Task task = map.get(metaId);
-            increment.execute(task, listenerConfig, connector);
+            extractor = map.get(metaId);
+            increment.execute(mappingId, metaId, extractor);
         } catch (Exception e) {
-            // TODO 记录错误日志
             logger.error(e.getMessage());
-        } finally {
             map.remove(metaId);
             publishClosedEvent(metaId);
+        } finally {
             logger.info("启动成功:{}", metaId);
         }
     }
 
     @Override
     public void close(String metaId) {
-        Task task = map.get(metaId);
-        if (null != task) {
-            task.notifyClosedEvent();
+        Extractor extractor = map.get(metaId);
+        if (null != extractor) {
+            extractor.close();
         }
     }
 

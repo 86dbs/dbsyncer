@@ -1,11 +1,9 @@
 package org.dbsyncer.manager.puller;
 
-import org.dbsyncer.common.model.Task;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.ListenerConfig;
+import org.dbsyncer.listener.Extractor;
 
 public interface Increment {
 
-    void execute(Task task, ListenerConfig listenerConfig, Connector connector);
+    void execute(String mappingId, String metaId, Extractor extractor);
 
 }

@@ -7,6 +7,9 @@ package org.dbsyncer.common.event;
  */
 public interface Event {
 
-    void closedEvent();
+    /**
+     * 触发事件
+     */
+    void changedEvent();
 
 }

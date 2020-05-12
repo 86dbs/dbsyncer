@@ -55,7 +55,6 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
             doTask(task, mapping, list);
 
         } catch (Exception e) {
-            // TODO 记录错误日志
             logger.error(e.getMessage());
         } finally {
             map.remove(metaId);
