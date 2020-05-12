@@ -1,4 +1,4 @@
-package org.dbsyncer.manager.extractor;
+package org.dbsyncer.manager.puller;
 
 import org.dbsyncer.common.model.Task;
 import org.dbsyncer.parser.model.Connector;

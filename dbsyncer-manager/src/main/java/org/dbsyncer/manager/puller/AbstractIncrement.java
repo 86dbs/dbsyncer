@@ -1,10 +1,8 @@
-package org.dbsyncer.manager.extractor;
+package org.dbsyncer.manager.puller;
 
-import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.model.Task;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.ListenerConfig;
-import org.springframework.scheduling.annotation.Async;
 
 /**
  * @version 1.0.0

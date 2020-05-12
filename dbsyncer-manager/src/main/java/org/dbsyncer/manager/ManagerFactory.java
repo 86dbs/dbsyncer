@@ -10,7 +10,7 @@ import org.dbsyncer.manager.config.OperationConfig;
 import org.dbsyncer.manager.config.QueryConfig;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.manager.enums.HandlerEnum;
-import org.dbsyncer.manager.extractor.Puller;
+import org.dbsyncer.manager.puller.Puller;
 import org.dbsyncer.manager.template.impl.OperationTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;

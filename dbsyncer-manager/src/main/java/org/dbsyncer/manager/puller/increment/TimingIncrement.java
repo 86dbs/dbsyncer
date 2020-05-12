@@ -1,6 +1,6 @@
-package org.dbsyncer.manager.extractor.increment;
+package org.dbsyncer.manager.puller.increment;
 
-import org.dbsyncer.manager.extractor.AbstractIncrement;
+import org.dbsyncer.manager.puller.AbstractIncrement;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.ListenerConfig;
 import org.springframework.stereotype.Component;

@@ -1,4 +1,4 @@
-package org.dbsyncer.manager.extractor;
+package org.dbsyncer.manager.puller;
 
 import org.dbsyncer.parser.model.Mapping;
 import org.springframework.scheduling.annotation.Async;

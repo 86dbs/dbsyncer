@@ -1,81 +1,66 @@
-package org.dbsyncer.manager.extractor.impl;
+package org.dbsyncer.manager.puller.impl;
 
-import org.dbsyncer.common.event.IncrementRefreshEvent;
+import org.dbsyncer.common.event.FullRefreshEvent;
 import org.dbsyncer.common.model.Task;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.listener.Listener;
-import org.dbsyncer.manager.extractor.AbstractPuller;
-import org.dbsyncer.parser.model.ListenerConfig;
 import org.dbsyncer.manager.Manager;
-import org.dbsyncer.manager.extractor.Increment;
-import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.manager.puller.AbstractPuller;
+import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 增量同步
+ * 全量同步
  *
  * @author AE86
  * @version 1.0.0
  * @date 2020/04/26 15:28
  */
 @Component
-public class IncrementPuller extends AbstractPuller implements ApplicationContextAware, ApplicationListener<IncrementRefreshEvent> {
+public class FullPuller extends AbstractPuller implements ApplicationListener<FullRefreshEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private Listener listener;
+    private Parser parser;
 
     @Autowired
     private Manager manager;
 
     private Map<String, Task> map = new ConcurrentHashMap<>();
 
-    private Map<String, Increment> handle;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        handle = applicationContext.getBeansOfType(Increment.class);
-    }
-
     @Override
     public void asyncStart(Mapping mapping) {
-        ListenerConfig listenerConfig = mapping.getListener();
-        Connector connector = manager.getConnector(mapping.getSourceConnectorId());
-        Assert.notNull(connector, "连接器不能为空.");
-        // log/timing
-        String type = StringUtil.toLowerCaseFirstOne(listenerConfig.getListenerType()).concat("Increment");
-        Increment increment = handle.get(type);
-        Assert.notNull(increment, "未知的增量同步方式.");
-
+        final String mappingId = mapping.getId();
         final String metaId = mapping.getMetaId();
         map.putIfAbsent(metaId, new Task(metaId));
 
         try {
+            List<TableGroup> list = manager.getTableGroupAll(mappingId);
+            Assert.notEmpty(list, "映射关系不能为空");
+
             // 执行任务
             logger.info("启动任务:{}", metaId);
             Task task = map.get(metaId);
-            increment.execute(task, listenerConfig, connector);
+            doTask(task, mapping, list);
+
         } catch (Exception e) {
             // TODO 记录错误日志
             logger.error(e.getMessage());
         } finally {
             map.remove(metaId);
             publishClosedEvent(metaId);
-            logger.info("启动成功:{}", metaId);
+            logger.info("结束任务:{}", metaId);
         }
     }
 
@@ -83,19 +68,41 @@ public class IncrementPuller extends AbstractPuller implements ApplicationContex
     public void close(String metaId) {
         Task task = map.get(metaId);
         if (null != task) {
-            task.notifyClosedEvent();
+            task.stop();
         }
     }
 
     @Override
-    public void onApplicationEvent(IncrementRefreshEvent event) {
+    public void onApplicationEvent(FullRefreshEvent event) {
         // 异步监听任务刷新事件
         flush(event.getTask());
+    }
+
+    private void doTask(Task task, Mapping mapping, List<TableGroup> list) {
+        // 记录开始时间
+        long now = System.currentTimeMillis();
+        task.setBeginTime(now);
+        task.setEndTime(now);
+        flush(task);
+
+        for (TableGroup t : list) {
+            if (!task.isRunning()) {
+                break;
+            }
+            parser.execute(task, mapping, t);
+        }
+
+        // 记录结束时间
+        task.setEndTime(System.currentTimeMillis());
+        flush(task);
     }
 
     private void flush(Task task) {
         Meta meta = manager.getMeta(task.getId());
         Assert.notNull(meta, "检查meta为空.");
+
+        meta.setBeginTime(task.getBeginTime());
+        meta.setEndTime(task.getEndTime());
         manager.editMeta(meta);
     }
 
