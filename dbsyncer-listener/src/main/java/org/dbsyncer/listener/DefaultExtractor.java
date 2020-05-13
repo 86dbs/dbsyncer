@@ -16,9 +16,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public abstract class DefaultExtractor implements Extractor {
 
-    private ConnectorConfig connectorConfig;
-    private ListenerConfig listenerConfig;
-    private Map<String, String> map;
+    protected ConnectorConfig connectorConfig;
+    protected ListenerConfig listenerConfig;
+    protected Map<String, String> map;
+
     private List<Event> watcher;
     private Action action;
 
