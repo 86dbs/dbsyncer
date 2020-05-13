@@ -7,6 +7,7 @@ import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.enums.IncrementEnum;
 import org.dbsyncer.parser.enums.ModelEnum;

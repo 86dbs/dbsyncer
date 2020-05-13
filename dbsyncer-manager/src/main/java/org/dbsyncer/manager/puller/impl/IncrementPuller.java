@@ -4,6 +4,7 @@ import org.dbsyncer.common.event.Event;
 import org.dbsyncer.listener.DefaultExtractor;
 import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
+import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.enums.IncrementEnum;
 import org.dbsyncer.manager.puller.AbstractPuller;

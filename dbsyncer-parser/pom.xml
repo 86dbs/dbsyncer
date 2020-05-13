@@ -12,17 +12,10 @@
     <artifactId>dbsyncer-parser</artifactId>
 
     <dependencies>
-        <!-- Connector 连接器 -->
+        <!-- Listener 监听器 -->
         <dependency>
             <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-connector</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <!-- Message 消息服务 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-message</artifactId>
+            <artifactId>dbsyncer-listener</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

@@ -7,7 +7,7 @@ import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.enums.IncrementEnum;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.ListenerConfig;
+import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.parser.model.Mapping;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;

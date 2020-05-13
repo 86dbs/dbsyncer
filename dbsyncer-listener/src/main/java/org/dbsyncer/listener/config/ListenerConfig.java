@@ -1,4 +1,4 @@
-package org.dbsyncer.parser.model;
+package org.dbsyncer.listener.config;
 
 /**
  * @author AE86
