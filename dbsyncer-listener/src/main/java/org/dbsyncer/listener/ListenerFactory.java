@@ -2,17 +2,20 @@ package org.dbsyncer.listener;
 
 
 import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerEnum;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component
 public class ListenerFactory implements Listener {
 
     @Override
-    public Extractor createExtractor(ConnectorConfig connectorConfig) {
-        String type = connectorConfig.getConnectorType();
-        Extractor extractor = ListenerEnum.getExtractor(type);
-
+    public DefaultExtractor createExtractor(ConnectorConfig config, ListenerConfig listenerConfig, Map<String, String> map) {
+        DefaultExtractor extractor = ListenerEnum.getExtractor(config.getConnectorType());
+        extractor.setConnectorConfig(config);
+        extractor.setListenerConfig(listenerConfig);
         return extractor;
     }
 }

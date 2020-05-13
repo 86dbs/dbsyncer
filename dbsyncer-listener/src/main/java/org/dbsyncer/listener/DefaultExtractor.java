@@ -2,6 +2,8 @@ package org.dbsyncer.listener;
 
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.listener.config.ListenerConfig;
 
 import java.util.List;
 import java.util.Map;
@@ -14,8 +16,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public abstract class DefaultExtractor implements Extractor {
 
+    private ConnectorConfig connectorConfig;
+    private ListenerConfig listenerConfig;
     private Map<String, String> map;
-    private List<Event>         watcher;
+    private List<Event> watcher;
 
     public void addListener(Event event) {
         if (null != event) {
@@ -30,6 +34,22 @@ public abstract class DefaultExtractor implements Extractor {
         if (!CollectionUtils.isEmpty(watcher)) {
             watcher.forEach(w -> w.changedEvent(event, before, after));
         }
+    }
+
+    public ConnectorConfig getConnectorConfig() {
+        return connectorConfig;
+    }
+
+    public void setConnectorConfig(ConnectorConfig connectorConfig) {
+        this.connectorConfig = connectorConfig;
+    }
+
+    public ListenerConfig getListenerConfig() {
+        return listenerConfig;
+    }
+
+    public void setListenerConfig(ListenerConfig listenerConfig) {
+        this.listenerConfig = listenerConfig;
     }
 
     public Map<String, String> getMap() {

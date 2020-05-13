@@ -1,6 +1,7 @@
 package org.dbsyncer.manager.puller.impl;
 
 import org.dbsyncer.common.event.Event;
+import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.listener.DefaultExtractor;
 import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
@@ -10,7 +11,10 @@ import org.dbsyncer.manager.enums.IncrementEnum;
 import org.dbsyncer.manager.puller.AbstractPuller;
 import org.dbsyncer.manager.puller.Increment;
 import org.dbsyncer.parser.Parser;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,12 +63,11 @@ public class IncrementPuller extends AbstractPuller {
             Assert.notEmpty(list, "映射关系不能为空");
             Meta meta = manager.getMeta(metaId);
             Assert.notNull(meta, "Meta不能为空.");
-            DefaultExtractor extractor = (DefaultExtractor) listener.createExtractor(connector.getConfig());
+            DefaultExtractor extractor = listener.createExtractor(connector.getConfig(), listenerConfig, meta.getMap());
             Assert.notNull(extractor, "未知的监听配置.");
 
             // 监听数据变更事件
             extractor.addListener(new DefaultListener(mapping, list));
-            extractor.setMap(meta.getMap());
             map.putIfAbsent(metaId, extractor);
 
             // 执行任务
@@ -106,7 +109,7 @@ public class IncrementPuller extends AbstractPuller {
 
     final class DefaultListener implements Event {
 
-        private Mapping          mapping;
+        private Mapping mapping;
         private List<TableGroup> list;
 
         public DefaultListener(Mapping mapping, List<TableGroup> list) {

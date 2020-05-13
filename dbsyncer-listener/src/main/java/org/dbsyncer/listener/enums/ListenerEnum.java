@@ -2,7 +2,7 @@ package org.dbsyncer.listener.enums;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.connector.enums.ConnectorEnum;
-import org.dbsyncer.listener.Extractor;
+import org.dbsyncer.listener.DefaultExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.extractor.MysqlExtractor;
 
@@ -20,9 +20,9 @@ public enum ListenerEnum {
     ;
 
     private String type;
-    private Extractor extractor;
+    private DefaultExtractor extractor;
 
-    ListenerEnum(String type, Extractor extractor) {
+    ListenerEnum(String type, DefaultExtractor extractor) {
         this.type = type;
         this.extractor = extractor;
     }
@@ -34,7 +34,7 @@ public enum ListenerEnum {
      * @return
      * @throws ListenerException
      */
-    public static Extractor getExtractor(String type) throws ListenerException {
+    public static DefaultExtractor getExtractor(String type) throws ListenerException {
         for (ListenerEnum e : ListenerEnum.values()) {
             if (StringUtils.equals(type, e.getType())) {
                 return e.getExtractor();
@@ -47,7 +47,7 @@ public enum ListenerEnum {
         return type;
     }
 
-    public Extractor getExtractor() {
+    public DefaultExtractor getExtractor() {
         return extractor;
     }
 }
