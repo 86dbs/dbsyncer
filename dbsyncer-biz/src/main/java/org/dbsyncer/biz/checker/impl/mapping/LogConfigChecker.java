@@ -4,10 +4,10 @@ import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.MappingLogConfigChecker;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.parser.model.ListenerConfig;
-import org.dbsyncer.parser.enums.ListenerEnum;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.manager.enums.IncrementEnum;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.ListenerConfig;
 import org.dbsyncer.parser.model.Mapping;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,7 +51,7 @@ public class LogConfigChecker implements MappingConfigChecker, ApplicationContex
         ListenerConfig listener = mapping.getListener();
         Assert.notNull(listener, "ListenerConfig can not be null.");
 
-        listener.setListenerType(ListenerEnum.LOG.getCode());
+        listener.setListenerType(IncrementEnum.LOG.getType());
     }
 
 }

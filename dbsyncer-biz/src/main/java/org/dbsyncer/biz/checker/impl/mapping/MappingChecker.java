@@ -7,14 +7,10 @@ import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.model.ListenerConfig;
-import org.dbsyncer.parser.enums.ListenerEnum;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.manager.enums.IncrementEnum;
 import org.dbsyncer.parser.enums.ModelEnum;
-import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +65,7 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         mapping.setSourceConnectorId(sourceConnectorId);
         mapping.setTargetConnectorId(targetConnectorId);
         mapping.setModel(ModelEnum.FULL.getCode());
-        mapping.setListener(new ListenerConfig(ListenerEnum.TIMING.getCode()));
+        mapping.setListener(new ListenerConfig(IncrementEnum.TIMING.getType()));
 
         // 修改基本配置
         this.modifyConfigModel(mapping, params);

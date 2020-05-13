@@ -118,4 +118,12 @@ public interface Parser {
      * @param tableGroup
      */
     void execute(Task task, Mapping mapping, TableGroup tableGroup);
+
+    /**
+     * 增量同步
+     *
+     * @param mapping
+     * @param tableGroup
+     */
+    void execute(Mapping mapping, TableGroup tableGroup);
 }

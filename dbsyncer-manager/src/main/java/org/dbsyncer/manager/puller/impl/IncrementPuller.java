@@ -1,28 +1,22 @@
 package org.dbsyncer.manager.puller.impl;
 
-import org.dbsyncer.common.event.IncrementRefreshEvent;
-import org.dbsyncer.common.model.Task;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.listener.Listener;
-import org.dbsyncer.manager.puller.AbstractPuller;
+import org.dbsyncer.common.event.Event;
+import org.dbsyncer.listener.DefaultExtractor;
 import org.dbsyncer.listener.Extractor;
-import org.dbsyncer.parser.model.ListenerConfig;
+import org.dbsyncer.listener.Listener;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.manager.enums.IncrementEnum;
+import org.dbsyncer.manager.puller.AbstractPuller;
 import org.dbsyncer.manager.puller.Increment;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.Parser;
+import org.dbsyncer.parser.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,9 +28,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2020/04/26 15:28
  */
 @Component
-public class IncrementPuller extends AbstractPuller implements ApplicationContextAware, ApplicationListener<IncrementRefreshEvent> {
+public class IncrementPuller extends AbstractPuller {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Autowired
+    private Parser parser;
 
     @Autowired
     private Listener listener;
@@ -44,42 +41,38 @@ public class IncrementPuller extends AbstractPuller implements ApplicationContex
     @Autowired
     private Manager manager;
 
-    private Map<String, Extractor> map = new ConcurrentHashMap<>();
-
-    private Map<String, Increment> handle;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        handle = applicationContext.getBeansOfType(Increment.class);
-    }
+    private Map<String, DefaultExtractor> map = new ConcurrentHashMap<>();
 
     @Override
     public void asyncStart(Mapping mapping) {
         final String mappingId = mapping.getId();
         final String metaId = mapping.getMetaId();
         try {
-            // log/timing
             ListenerConfig listenerConfig = mapping.getListener();
-            String listenerType = listenerConfig.getListenerType();
-            String type = StringUtil.toLowerCaseFirstOne(listenerType).concat("Increment");
-            Increment increment = handle.get(type);
+            // log/timing
+            Increment increment = IncrementEnum.getIncrement(listenerConfig.getListenerType());
             Assert.notNull(increment, "未知的增量同步方式.");
             Connector connector = manager.getConnector(mapping.getSourceConnectorId());
             Assert.notNull(connector, "连接器不能为空.");
-            Extractor extractor = listener.createExtractor(connector.getConfig());
-            Assert.notNull(extractor, "未知的连接器配置.");
+            List<TableGroup> list = manager.getTableGroupAll(mappingId);
+            Assert.notEmpty(list, "映射关系不能为空");
+            Meta meta = manager.getMeta(metaId);
+            Assert.notNull(meta, "Meta不能为空.");
+            DefaultExtractor extractor = (DefaultExtractor) listener.createExtractor(connector.getConfig());
+            Assert.notNull(extractor, "未知的监听配置.");
+
+            // 监听数据变更事件
+            extractor.addListener(new DefaultListener(mapping, list));
+            extractor.setMap(meta.getMap());
             map.putIfAbsent(metaId, extractor);
 
             // 执行任务
-            logger.info("启动任务:{}", metaId);
-            extractor = map.get(metaId);
-            increment.execute(mappingId, metaId, extractor);
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-            map.remove(metaId);
-            publishClosedEvent(metaId);
-        } finally {
             logger.info("启动成功:{}", metaId);
+            increment.execute(map.get(metaId));
+        } catch (Exception e) {
+            logger.error("任务:{} 运行异常:{}", metaId, e.getMessage());
+        } finally {
+            finished(metaId);
         }
     }
 
@@ -91,16 +84,42 @@ public class IncrementPuller extends AbstractPuller implements ApplicationContex
         }
     }
 
-    @Override
-    public void onApplicationEvent(IncrementRefreshEvent event) {
-        // 异步监听任务刷新事件
-        flush(event.getTask());
+    /**
+     * TODO 更新待优化，存在性能问题
+     *
+     * @param metaId
+     */
+    private void flush(String metaId) {
+        Meta meta = manager.getMeta(metaId);
+        DefaultExtractor extractor = map.get(metaId);
+        if (null != meta && null != extractor) {
+            meta.setMap(extractor.getMap());
+            manager.editMeta(meta);
+        }
     }
 
-    private void flush(Task task) {
-        Meta meta = manager.getMeta(task.getId());
-        Assert.notNull(meta, "检查meta为空.");
-        manager.editMeta(meta);
+    private void finished(String metaId) {
+        map.remove(metaId);
+        publishClosedEvent(metaId);
+    }
+
+    final class DefaultListener implements Event {
+
+        private Mapping          mapping;
+        private List<TableGroup> list;
+
+        public DefaultListener(Mapping mapping, List<TableGroup> list) {
+            this.mapping = mapping;
+            this.list = list;
+        }
+
+        @Override
+        public void changedEvent(String event, Map<String, Object> before, Map<String, Object> after) {
+            // 处理过程有异常向上抛
+            list.forEach(tableGroup -> parser.execute(mapping, tableGroup));
+            flush(mapping.getMetaId());
+        }
+
     }
 
 }

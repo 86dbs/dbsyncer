@@ -2,8 +2,8 @@ package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
+import org.dbsyncer.manager.enums.IncrementEnum;
 import org.dbsyncer.parser.model.ListenerConfig;
-import org.dbsyncer.parser.enums.ListenerEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -47,7 +47,7 @@ public class TimingConfigChecker implements MappingConfigChecker {
             config.setDelete(delete);
         }
 
-        config.setListenerType(ListenerEnum.TIMING.getCode());
+        config.setListenerType(IncrementEnum.TIMING.getType());
         mapping.setListener(config);
     }
 

@@ -1,8 +1,10 @@
 package org.dbsyncer.listener;
 
 import org.dbsyncer.common.event.Event;
+import org.dbsyncer.common.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -10,23 +12,31 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @Author AE86
  * @Date 2020-05-12 20:35
  */
-public abstract class AbstractExtractor implements Extractor {
+public abstract class DefaultExtractor implements Extractor {
 
-    private List<Event> watcher = new CopyOnWriteArrayList<>();;
+    private Map<String, String> map;
+    private List<Event>         watcher;
 
-    /**
-     * 订阅事件
-     */
-    public void attach(Event event) {
-        watcher.add(event);
+    public void addListener(Event event) {
+        if (null != event) {
+            if (null == watcher) {
+                watcher = new CopyOnWriteArrayList<>();
+            }
+            watcher.add(event);
+        }
     }
 
-    /**
-     * 通知关闭事件
-     */
-    public void notifyEvent() {
-        watcher.forEach(w -> w.changedEvent());
+    public void changedEvent(String event, Map<String, Object> before, Map<String, Object> after) {
+        if (!CollectionUtils.isEmpty(watcher)) {
+            watcher.forEach(w -> w.changedEvent(event, before, after));
+        }
     }
 
+    public Map<String, String> getMap() {
+        return map;
+    }
 
+    public void setMap(Map<String, String> map) {
+        this.map = map;
+    }
 }

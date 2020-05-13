@@ -4,6 +4,6 @@ import org.dbsyncer.listener.Extractor;
 
 public interface Increment {
 
-    void execute(String mappingId, String metaId, Extractor extractor);
+    void execute(Extractor extractor);
 
 }

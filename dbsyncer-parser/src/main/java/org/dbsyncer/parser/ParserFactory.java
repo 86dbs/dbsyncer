@@ -224,6 +224,11 @@ public class ParserFactory implements Parser {
         }
     }
 
+    @Override
+    public void execute(Mapping mapping, TableGroup tableGroup) {
+
+    }
+
     /**
      * 更新缓存
      *
@@ -287,7 +292,8 @@ public class ParserFactory implements Parser {
      * @param batchSize
      * @return
      */
-    private Result executeBatch(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> target, int threadSize, int batchSize) {
+    private Result executeBatch(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> target,
+                                int threadSize, int batchSize) {
         // 总数
         int total = target.size();
         // 单次任务
@@ -303,12 +309,13 @@ public class ParserFactory implements Parser {
         Queue<Map<String, Object>> queue = new ConcurrentLinkedQueue<>(target);
 
         // 创建线程池
-        final ThreadPoolTaskExecutor executor = getThreadPoolTaskExecutor(threadSize);
+        final ThreadPoolTaskExecutor executor = getThreadPoolTaskExecutor(threadSize, taskSize - threadSize);
         final Result result = new Result();
         for (; ; ) {
             if (taskSize <= 0) {
                 break;
             }
+            // TODO 优化 CountDownLatch
             final CountDownLatch latch = new CountDownLatch(threadSize);
             for (int i = 0; i < threadSize; i++) {
                 executor.execute(() -> {
@@ -333,11 +340,13 @@ public class ParserFactory implements Parser {
 
             taskSize -= threadSize;
         }
+
         executor.shutdown();
         return result;
     }
 
-    private Result parallelTask(int batchSize, Queue<Map<String, Object>> queue, ConnectorConfig config, Map<String, String> command, List<Field> fields) {
+    private Result parallelTask(int batchSize, Queue<Map<String, Object>> queue, ConnectorConfig config, Map<String, String> command,
+                                List<Field> fields) {
         List<Map<String, Object>> data = new ArrayList<>();
         for (int j = 0; j < batchSize; j++) {
             Map<String, Object> poll = queue.poll();
@@ -349,11 +358,11 @@ public class ParserFactory implements Parser {
         return connectorFactory.writer(config, command, fields, data);
     }
 
-    private ThreadPoolTaskExecutor getThreadPoolTaskExecutor(int threadSize) {
+    private ThreadPoolTaskExecutor getThreadPoolTaskExecutor(int threadSize, int queueCapacity) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(threadSize);
         executor.setMaxPoolSize(threadSize);
-        executor.setQueueCapacity(0);
+        executor.setQueueCapacity(queueCapacity);
         executor.setKeepAliveSeconds(30);
         executor.setAwaitTerminationSeconds(30);
         executor.setThreadNamePrefix("ParserExecutor");
