@@ -4,8 +4,8 @@ import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.MappingLogConfigChecker;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.listener.enums.ListenerTypeEnum;
 import org.dbsyncer.manager.Manager;
-import org.dbsyncer.manager.enums.IncrementEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.parser.model.Mapping;
@@ -51,7 +51,7 @@ public class LogConfigChecker implements MappingConfigChecker, ApplicationContex
         ListenerConfig listener = mapping.getListener();
         Assert.notNull(listener, "ListenerConfig can not be null.");
 
-        listener.setListenerType(IncrementEnum.LOG.getType());
+        listener.setListenerType(ListenerTypeEnum.LOG.getType());
     }
 
 }

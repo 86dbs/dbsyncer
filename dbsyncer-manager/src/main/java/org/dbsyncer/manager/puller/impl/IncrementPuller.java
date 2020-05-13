@@ -1,13 +1,11 @@
 package org.dbsyncer.manager.puller.impl;
 
 import org.dbsyncer.common.event.Event;
-import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.listener.DefaultExtractor;
 import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.manager.Manager;
-import org.dbsyncer.manager.enums.IncrementEnum;
 import org.dbsyncer.manager.puller.AbstractPuller;
 import org.dbsyncer.manager.puller.Increment;
 import org.dbsyncer.parser.Parser;
@@ -53,17 +51,13 @@ public class IncrementPuller extends AbstractPuller {
         final String mappingId = mapping.getId();
         final String metaId = mapping.getMetaId();
         try {
-            ListenerConfig listenerConfig = mapping.getListener();
-            // log/timing
-            Increment increment = IncrementEnum.getIncrement(listenerConfig.getListenerType());
-            Assert.notNull(increment, "未知的增量同步方式.");
             Connector connector = manager.getConnector(mapping.getSourceConnectorId());
             Assert.notNull(connector, "连接器不能为空.");
             List<TableGroup> list = manager.getTableGroupAll(mappingId);
             Assert.notEmpty(list, "映射关系不能为空");
             Meta meta = manager.getMeta(metaId);
             Assert.notNull(meta, "Meta不能为空.");
-            DefaultExtractor extractor = listener.createExtractor(connector.getConfig(), listenerConfig, meta.getMap());
+            DefaultExtractor extractor = listener.createExtractor(connector.getConfig(), mapping.getListener(), meta.getMap());
             Assert.notNull(extractor, "未知的监听配置.");
 
             // 监听数据变更事件
@@ -72,7 +66,7 @@ public class IncrementPuller extends AbstractPuller {
 
             // 执行任务
             logger.info("启动成功:{}", metaId);
-            increment.execute(map.get(metaId));
+            map.get(metaId).run();
         } catch (Exception e) {
             logger.error("任务:{} 运行异常:{}", metaId, e.getMessage());
         } finally {

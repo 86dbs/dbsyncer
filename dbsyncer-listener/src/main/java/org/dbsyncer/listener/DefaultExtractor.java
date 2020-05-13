@@ -20,6 +20,11 @@ public abstract class DefaultExtractor implements Extractor {
     private ListenerConfig listenerConfig;
     private Map<String, String> map;
     private List<Event> watcher;
+    private Action action;
+
+    public void run() {
+        action.execute(this);
+    }
 
     public void addListener(Event event) {
         if (null != event) {
@@ -58,5 +63,9 @@ public abstract class DefaultExtractor implements Extractor {
 
     public void setMap(Map<String, String> map) {
         this.map = map;
+    }
+
+    public void setAction(Action action) {
+        this.action = action;
     }
 }
