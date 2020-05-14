@@ -1,9 +1,9 @@
-package org.dbsyncer.manager.extractor.impl;
+package org.dbsyncer.manager.puller.impl;
 
-import org.dbsyncer.common.event.RefreshEvent;
-import org.dbsyncer.common.task.Task;
+import org.dbsyncer.common.event.FullRefreshEvent;
+import org.dbsyncer.common.model.Task;
 import org.dbsyncer.manager.Manager;
-import org.dbsyncer.manager.extractor.AbstractExtractor;
+import org.dbsyncer.manager.puller.AbstractPuller;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2020/04/26 15:28
  */
 @Component
-public class FullExtractor extends AbstractExtractor implements ApplicationListener<RefreshEvent> {
+public class FullPuller extends AbstractPuller implements ApplicationListener<FullRefreshEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -37,7 +37,7 @@ public class FullExtractor extends AbstractExtractor implements ApplicationListe
     @Autowired
     private Manager manager;
 
-    protected Map<String, Task> map = new ConcurrentHashMap<>();
+    private Map<String, Task> map = new ConcurrentHashMap<>();
 
     @Override
     public void asyncStart(Mapping mapping) {
@@ -47,7 +47,7 @@ public class FullExtractor extends AbstractExtractor implements ApplicationListe
 
         try {
             List<TableGroup> list = manager.getTableGroupAll(mappingId);
-            Assert.notEmpty(list, "映射关系为空");
+            Assert.notEmpty(list, "映射关系不能为空");
 
             // 执行任务
             logger.info("启动任务:{}", metaId);
@@ -55,7 +55,6 @@ public class FullExtractor extends AbstractExtractor implements ApplicationListe
             doTask(task, mapping, list);
 
         } catch (Exception e) {
-            // TODO 记录错误日志
             logger.error(e.getMessage());
         } finally {
             map.remove(metaId);
@@ -73,9 +72,9 @@ public class FullExtractor extends AbstractExtractor implements ApplicationListe
     }
 
     @Override
-    public void onApplicationEvent(RefreshEvent refreshEvent) {
+    public void onApplicationEvent(FullRefreshEvent event) {
         // 异步监听任务刷新事件
-        flush(refreshEvent.getTask());
+        flush(event.getTask());
     }
 
     private void doTask(Task task, Mapping mapping, List<TableGroup> list) {

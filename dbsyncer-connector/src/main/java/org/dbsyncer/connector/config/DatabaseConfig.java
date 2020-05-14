@@ -11,7 +11,7 @@ public class DatabaseConfig extends ConnectorConfig {
     // 驱动com.mysql.jdbc.Driver
     private String driverClassName;
 
-    // 连接地址jdbc:mysql://127.0.0.1:3306/test?seUnicode=true&characterEncoding=UTF8&useSSL=true
+    // 连接地址
     private String url;
 
     // 帐号

@@ -19,13 +19,6 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-        <!-- Listener 监听器 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-listener</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
         <!-- Cache 缓存服务 -->
         <dependency>
             <groupId>org.ghi</groupId>
@@ -44,13 +37,6 @@
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-plugin</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <!-- Message 消息服务 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-message</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

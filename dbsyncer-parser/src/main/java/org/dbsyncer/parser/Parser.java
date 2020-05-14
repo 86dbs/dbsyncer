@@ -1,6 +1,6 @@
 package org.dbsyncer.parser;
 
-import org.dbsyncer.common.task.Task;
+import org.dbsyncer.common.model.Task;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -118,4 +118,12 @@ public interface Parser {
      * @param tableGroup
      */
     void execute(Task task, Mapping mapping, TableGroup tableGroup);
+
+    /**
+     * 增量同步
+     *
+     * @param mapping
+     * @param tableGroup
+     */
+    void execute(Mapping mapping, TableGroup tableGroup);
 }
