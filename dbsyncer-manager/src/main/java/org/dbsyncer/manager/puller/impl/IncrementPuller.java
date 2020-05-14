@@ -75,8 +75,9 @@ public class IncrementPuller extends AbstractPuller {
 
     @Override
     public void close(String metaId) {
-        Extractor extractor = map.get(metaId);
+        DefaultExtractor extractor = map.get(metaId);
         if (null != extractor) {
+            extractor.clearAllListener();
             extractor.close();
             finished(metaId);
         }

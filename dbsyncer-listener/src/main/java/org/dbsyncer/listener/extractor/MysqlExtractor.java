@@ -70,7 +70,6 @@ public class MysqlExtractor extends DefaultExtractor {
     @Override
     public void close() {
         try {
-            clearAllListener();
             client.stopQuietly();
         } catch (Exception e) {
             logger.error("关闭失败:{}", e.getMessage());
