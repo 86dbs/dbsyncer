@@ -82,20 +82,6 @@ public class IncrementPuller extends AbstractPuller {
         }
     }
 
-    /**
-     * TODO 更新待优化，存在性能问题
-     *
-     * @param metaId
-     */
-    private void flush(String metaId) {
-        Meta meta = manager.getMeta(metaId);
-        DefaultExtractor extractor = map.get(metaId);
-        if (null != meta && null != extractor) {
-            meta.setMap(extractor.getMap());
-            manager.editMeta(meta);
-        }
-    }
-
     private void finished(String metaId) {
         map.remove(metaId);
         publishClosedEvent(metaId);
@@ -105,10 +91,12 @@ public class IncrementPuller extends AbstractPuller {
 
         private Mapping mapping;
         private List<TableGroup> list;
+        private String metaId;
 
         public DefaultListener(Mapping mapping, List<TableGroup> list) {
             this.mapping = mapping;
             this.list = list;
+            this.metaId = mapping.getMetaId();
         }
 
         @Override
@@ -120,7 +108,15 @@ public class IncrementPuller extends AbstractPuller {
 
         @Override
         public void flushEvent() {
-            flush(mapping.getMetaId());
+            // TODO 更新待优化，存在性能问题
+            DefaultExtractor extractor = map.get(metaId);
+            if (null != extractor) {
+                Meta meta = manager.getMeta(metaId);
+                if (null != meta) {
+                    meta.setMap(extractor.getMap());
+                    manager.editMeta(meta);
+                }
+            }
         }
 
     }
