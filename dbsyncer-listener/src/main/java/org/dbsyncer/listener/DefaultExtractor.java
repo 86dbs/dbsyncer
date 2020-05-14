@@ -36,6 +36,13 @@ public abstract class DefaultExtractor implements Extractor {
         }
     }
 
+    public void clearAllListener() {
+        if (null != watcher) {
+            watcher.clear();
+            watcher = null;
+        }
+    }
+
     public void changedEvent(String tableName, String event, List<Object> before, List<Object> after) {
         if (!CollectionUtils.isEmpty(watcher)) {
             watcher.forEach(w -> w.changedEvent(tableName, event, before, after));

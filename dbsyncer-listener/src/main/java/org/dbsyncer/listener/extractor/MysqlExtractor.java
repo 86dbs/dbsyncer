@@ -70,6 +70,7 @@ public class MysqlExtractor extends DefaultExtractor {
     @Override
     public void close() {
         try {
+            clearAllListener();
             client.stopQuietly();
         } catch (Exception e) {
             logger.error("关闭失败:{}", e.getMessage());
@@ -107,14 +108,18 @@ public class MysqlExtractor extends DefaultExtractor {
     private void refresh(AbstractBinlogEventV4 event) {
         String binlogFilename = event.getBinlogFilename();
         long nextPosition = event.getHeader().getNextPosition();
-        if (!StringUtils.equals(binlogFilename, client.getBinlogFileName()) || 0 != Long.compare(nextPosition,
-                client.getBinlogPosition())) {
+
+        // binlogFileName
+        if (StringUtils.isNotBlank(binlogFilename) && !StringUtils.equals(binlogFilename, client.getBinlogFileName())) {
             client.setBinlogFileName(binlogFilename);
-            client.setBinlogPosition(nextPosition);
-            map.put(BINLOG_FILENAME, client.getBinlogFileName());
-            map.put(BINLOG_POSITION, String.valueOf(nextPosition));
-            flushEvent();
         }
+        client.setBinlogPosition(nextPosition);
+
+        // nextPosition
+        logger.info("{}:{}", client.getBinlogFileName(), client.getBinlogPosition());
+        map.put(BINLOG_FILENAME, client.getBinlogFileName());
+        map.put(BINLOG_POSITION, String.valueOf(client.getBinlogPosition()));
+        flushEvent();
     }
 
     final class MysqlEventListener implements BinlogEventListener {
