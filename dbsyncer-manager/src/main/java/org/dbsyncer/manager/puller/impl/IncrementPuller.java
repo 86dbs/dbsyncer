@@ -68,9 +68,8 @@ public class IncrementPuller extends AbstractPuller {
             logger.info("启动成功:{}", metaId);
             map.get(metaId).run();
         } catch (Exception e) {
-            logger.error("任务:{} 运行异常:{}", metaId, e.getMessage());
-        } finally {
             finished(metaId);
+            logger.error("运行异常，结束任务{}:{}", metaId, e.getMessage());
         }
     }
 
@@ -112,9 +111,15 @@ public class IncrementPuller extends AbstractPuller {
         }
 
         @Override
-        public void changedEvent(String event, Map<String, Object> before, Map<String, Object> after) {
+        public void changedEvent(String tableName, String event, List<Object> before, List<Object> after) {
+            logger.info("监听数据>tableName:{},event:{},after:{}, after:{}", tableName, event, before, after);
             // 处理过程有异常向上抛
             list.forEach(tableGroup -> parser.execute(mapping, tableGroup));
+        }
+
+        @Override
+        public void flushEvent() {
+            logger.info("flushEvent");
             flush(mapping.getMetaId());
         }
 

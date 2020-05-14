@@ -19,6 +19,7 @@ public class ListenerFactory implements Listener {
         extractor.setAction(ListenerTypeEnum.getAction(listenerConfig.getListenerType()));
         extractor.setConnectorConfig(config);
         extractor.setListenerConfig(listenerConfig);
+        extractor.setMap(map);
         return extractor;
     }
 }

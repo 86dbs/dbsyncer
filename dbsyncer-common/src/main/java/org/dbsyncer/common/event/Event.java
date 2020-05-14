@@ -1,6 +1,6 @@
 package org.dbsyncer.common.event;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * @version 1.0.0
@@ -12,10 +12,16 @@ public interface Event {
     /**
      * 数据变更事件
      *
-     * @param event  事件
-     * @param before 变化前
-     * @param after  变化后
+     * @param tableName 表名
+     * @param event     事件
+     * @param before    变化前
+     * @param after     变化后
      */
-    void changedEvent(String event, Map<String, Object> before, Map<String, Object> after);
+    void changedEvent(String tableName, String event, List<Object> before, List<Object> after);
+
+    /**
+     * 写入增量点事件
+     */
+    void flushEvent();
 
 }
