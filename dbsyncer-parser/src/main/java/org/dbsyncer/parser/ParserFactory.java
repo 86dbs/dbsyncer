@@ -225,8 +225,8 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(Mapping mapping, TableGroup tableGroup) {
-
+    public void execute(Mapping mapping, TableGroup tableGroup, DataEvent dataEvent) {
+        logger.info("同步数据=> dataEvent:{}", dataEvent);
     }
 
     /**

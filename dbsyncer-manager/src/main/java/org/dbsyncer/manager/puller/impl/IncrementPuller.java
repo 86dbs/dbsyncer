@@ -1,24 +1,27 @@
 package org.dbsyncer.manager.puller.impl;
 
 import org.dbsyncer.common.event.Event;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.listener.DefaultExtractor;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.manager.config.FieldPicker;
 import org.dbsyncer.manager.puller.AbstractPuller;
 import org.dbsyncer.parser.Parser;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 增量同步
@@ -95,18 +98,34 @@ public class IncrementPuller extends AbstractPuller {
         private Mapping mapping;
         private List<TableGroup> list;
         private String metaId;
+        private Map<String, List<FieldPicker>> tablePicker;
 
         public DefaultListener(Mapping mapping, List<TableGroup> list) {
             this.mapping = mapping;
             this.list = list;
             this.metaId = mapping.getMetaId();
+            this.tablePicker = new LinkedHashMap<>();
+            list.forEach(t -> {
+                final Table table = t.getSourceTable();
+                final String tableName = table.getName();
+                tablePicker.putIfAbsent(tableName, new ArrayList<>());
+                tablePicker.get(tableName).add(new FieldPicker(t, table.getColumn(), t.getFieldMapping()));
+            });
         }
 
         @Override
         public void changedEvent(String tableName, String event, List<Object> before, List<Object> after) {
-            logger.info("监听数据>tableName:{},event:{},before:{}, after:{}", tableName, event, before, after);
+            logger.info("监听数据=> tableName:{}, event:{}, before:{}, after:{}", tableName, event, before, after);
+
             // 处理过程有异常向上抛
-            list.forEach(tableGroup -> parser.execute(mapping, tableGroup));
+            List<FieldPicker> pickers = tablePicker.get(tableName);
+            if (!CollectionUtils.isEmpty(pickers)) {
+                pickers.parallelStream().forEach(p -> {
+                    DataEvent data = new DataEvent(event, p.getColumns(before), p.getColumns(after));
+                    parser.execute(mapping, p.getTableGroup(), data);
+                });
+            }
+
         }
 
         @Override
