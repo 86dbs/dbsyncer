@@ -2,7 +2,6 @@ package org.dbsyncer.listener.enums;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.connector.enums.ConnectorEnum;
-import org.dbsyncer.listener.DefaultExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.extractor.MysqlExtractor;
 
@@ -16,15 +15,15 @@ public enum ListenerEnum {
     /**
      * Mysql
      */
-    MYSQL(ConnectorEnum.MYSQL.getType(), new MysqlExtractor()),
+    MYSQL(ConnectorEnum.MYSQL.getType(), MysqlExtractor.class),
     ;
 
     private String type;
-    private DefaultExtractor extractor;
+    private Class<?> clazz;
 
-    ListenerEnum(String type, DefaultExtractor extractor) {
+    ListenerEnum(String type, Class<?> clazz) {
         this.type = type;
-        this.extractor = extractor;
+        this.clazz = clazz;
     }
 
     /**
@@ -34,10 +33,10 @@ public enum ListenerEnum {
      * @return
      * @throws ListenerException
      */
-    public static DefaultExtractor getExtractor(String type) throws ListenerException {
+    public static Class<?> getExtractor(String type) throws ListenerException {
         for (ListenerEnum e : ListenerEnum.values()) {
             if (StringUtils.equals(type, e.getType())) {
-                return e.getExtractor();
+                return e.getClazz();
             }
         }
         throw new ListenerException(String.format("Extractor type \"%s\" does not exist.", type));
@@ -47,7 +46,7 @@ public enum ListenerEnum {
         return type;
     }
 
-    public DefaultExtractor getExtractor() {
-        return extractor;
+    public Class<?> getClazz() {
+        return clazz;
     }
 }

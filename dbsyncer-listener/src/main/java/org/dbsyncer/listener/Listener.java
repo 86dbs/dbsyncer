@@ -14,6 +14,9 @@ public interface Listener {
      * @param listenerConfig  监听器配置
      * @param map             增量参数
      * @return
+     * @throws IllegalAccessException
+     * @throws InstantiationException
      */
-    DefaultExtractor createExtractor(ConnectorConfig connectorConfig, ListenerConfig listenerConfig, Map<String, String> map);
+    DefaultExtractor createExtractor(ConnectorConfig connectorConfig, ListenerConfig listenerConfig, Map<String, String> map)
+            throws IllegalAccessException, InstantiationException;
 }

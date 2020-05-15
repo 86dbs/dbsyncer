@@ -2,12 +2,9 @@ package org.dbsyncer.manager.puller.impl;
 
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.listener.DefaultExtractor;
-import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
-import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.puller.AbstractPuller;
-import org.dbsyncer.manager.puller.Increment;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -54,11 +51,15 @@ public class IncrementPuller extends AbstractPuller {
             Connector connector = manager.getConnector(mapping.getSourceConnectorId());
             Assert.notNull(connector, "连接器不能为空.");
             List<TableGroup> list = manager.getTableGroupAll(mappingId);
-            Assert.notEmpty(list, "映射关系不能为空");
+            Assert.notEmpty(list, "映射关系不能为空.");
             Meta meta = manager.getMeta(metaId);
             Assert.notNull(meta, "Meta不能为空.");
             DefaultExtractor extractor = listener.createExtractor(connector.getConfig(), mapping.getListener(), meta.getMap());
             Assert.notNull(extractor, "未知的监听配置.");
+            long now = System.currentTimeMillis();
+            meta.setBeginTime(now);
+            meta.setEndTime(now);
+            manager.editMeta(meta);
 
             // 监听数据变更事件
             extractor.addListener(new DefaultListener(mapping, list));
@@ -80,6 +81,7 @@ public class IncrementPuller extends AbstractPuller {
             extractor.clearAllListener();
             extractor.close();
             finished(metaId);
+            logger.info("关闭成功:{}", metaId);
         }
     }
 
@@ -110,6 +112,7 @@ public class IncrementPuller extends AbstractPuller {
         @Override
         public void flushEvent() {
             // TODO 更新待优化，存在性能问题
+            logger.info("flushEvent");
             DefaultExtractor extractor = map.get(metaId);
             if (null != extractor) {
                 Meta meta = manager.getMeta(metaId);

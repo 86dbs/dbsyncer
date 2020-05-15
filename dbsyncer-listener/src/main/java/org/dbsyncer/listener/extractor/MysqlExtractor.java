@@ -1,5 +1,6 @@
 package org.dbsyncer.listener.extractor;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
@@ -48,7 +49,11 @@ public class MysqlExtractor extends DefaultExtractor {
             final Host host = cluster.get(master);
             final String username = config.getUsername();
             final String password = config.getPassword();
-            final String threadSuffixName = "mysql-binlog";
+            // mysql-binlog-127.0.0.1:3306-654321
+            final String threadSuffixName = new StringBuilder("mysql-binlog-")
+                    .append(host.getIp()).append(":").append(host.getPort()).append("-")
+                    .append(RandomStringUtils.randomNumeric(6))
+                    .toString();
 
             client = new BinlogRemoteClient(host.getIp(), host.getPort(), username, password, threadSuffixName);
             client.setBinlogFileName(map.get(BINLOG_FILENAME));
