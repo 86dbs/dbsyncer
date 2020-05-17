@@ -15,7 +15,7 @@ public abstract class AbstractSetter implements Setter {
     protected abstract void set(PreparedStatement ps, int i, Object val) throws SQLException;
 
     @Override
-    public void preparedStatementSetter(PreparedStatement ps, int i, int type, Object val) {
+    public void set(PreparedStatement ps, int i, int type, Object val) {
         try {
             if (null == val) {
                 ps.setNull(i, type);

@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.util.Assert;
 
 import java.sql.Connection;
@@ -233,16 +234,11 @@ public abstract class AbstractDatabaseConnector implements Database {
         }
         List<Object> args = new ArrayList<>();
         fields.forEach(f -> args.add(data.get(f.getName())));
-        if(!StringUtils.equals(ConnectorConstant.OPERTION_INSERT, event)){
-            // set pk
+        if (!StringUtils.equals(ConnectorConstant.OPERTION_INSERT, event)) {
             List<Field> pkList = fields.stream().filter(f -> f.isPk()).collect(Collectors.toList());
-            if (CollectionUtils.isEmpty(pkList)) {
-                logger.error("writer pk can not be empty.");
-                throw new ConnectorException("writer pk can not be empty.");
-            }
-            String pk = pkList.get(0).getName();
-            args.add(data.get(pk));
+            fields.add(pkList.get(0));
         }
+        int size = fields.size();
 
         DatabaseConfig cfg = (DatabaseConfig) config;
         JdbcTemplate jdbcTemplate = null;
@@ -252,7 +248,13 @@ public abstract class AbstractDatabaseConnector implements Database {
             jdbcTemplate = getJdbcTemplate(cfg);
 
             // 3、设置参数
-            int update = jdbcTemplate.update(sql, args);
+            int update = jdbcTemplate.update(sql, (ps)-> {
+                Field f = null;
+                for (int i = 0; i < size; i++) {
+                    f = fields.get(i);
+                    SetterEnum.getSetter(f.getType()).set(ps, i + 1, f.getType(), data.get(f.getName()));
+                }
+            });
             if (0 == update) {
                 throw new ConnectorException("写入失败");
             }
@@ -443,7 +445,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             f = fields.get(i);
             type = f.getType();
             val = row.get(f.getName());
-            SetterEnum.getSetter(type).preparedStatementSetter(ps, i + 1, type, val);
+            SetterEnum.getSetter(type).set(ps, i + 1, type, val);
         }
     }
 
