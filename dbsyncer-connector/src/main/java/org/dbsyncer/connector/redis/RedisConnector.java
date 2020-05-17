@@ -73,6 +73,11 @@ public final class RedisConnector implements Redis {
     }
 
     @Override
+    public Result writer(ConnectorConfig config, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data) {
+        return null;
+    }
+
+    @Override
     public RedisTemplate getRedisTemplate(RedisConfig config) {
         return this.getRedisTemplate(config, null, null, null);
     }

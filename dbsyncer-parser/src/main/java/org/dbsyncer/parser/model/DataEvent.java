@@ -1,6 +1,8 @@
 package org.dbsyncer.parser.model;
 
+import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 
 import java.util.Map;
 
@@ -14,6 +16,10 @@ public final class DataEvent {
         this.event = event;
         this.before = before;
         this.after = after;
+    }
+
+    public Map<String, Object> getData() {
+        return StringUtils.equals(ConnectorConstant.OPERTION_DELETE, event) ? before : after;
     }
 
     public String getEvent() {
@@ -44,4 +50,5 @@ public final class DataEvent {
     public String toString() {
         return JsonUtil.objToJson(this);
     }
+
 }

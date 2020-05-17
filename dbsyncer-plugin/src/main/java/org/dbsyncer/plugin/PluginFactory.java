@@ -29,4 +29,9 @@ public class PluginFactory {
             // TODO 插件转换
         }
     }
+
+    public void convert(Plugin plugin, String event, Map<String, Object> source, Map<String, Object> target) {
+        if (null != plugin) {
+        }
+    }
 }

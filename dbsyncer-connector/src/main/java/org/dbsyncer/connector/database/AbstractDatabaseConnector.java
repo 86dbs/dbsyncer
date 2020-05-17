@@ -5,6 +5,7 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
@@ -212,6 +213,53 @@ public abstract class AbstractDatabaseConnector implements Database {
             // 记录错误数据
             result.getFailData().addAll(data);
             result.getFail().set(size);
+            result.getError().append(e.getMessage()).append("\r\n");
+            logger.error(e.getMessage());
+        } finally {
+            // 释放连接
+            this.close(jdbcTemplate);
+        }
+        return result;
+    }
+
+    @Override
+    public Result writer(ConnectorConfig config, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data) {
+        // 1、获取 SQL
+        String sql = command.get(event);
+        Assert.hasText(sql, "执行语句不能为空.");
+        if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(fields)) {
+            logger.error("writer data can not be empty.");
+            throw new ConnectorException("writer data can not be empty.");
+        }
+        List<Object> args = new ArrayList<>();
+        fields.forEach(f -> args.add(data.get(f.getName())));
+        if(!StringUtils.equals(ConnectorConstant.OPERTION_INSERT, event)){
+            // set pk
+            List<Field> pkList = fields.stream().filter(f -> f.isPk()).collect(Collectors.toList());
+            if (CollectionUtils.isEmpty(pkList)) {
+                logger.error("writer pk can not be empty.");
+                throw new ConnectorException("writer pk can not be empty.");
+            }
+            String pk = pkList.get(0).getName();
+            args.add(data.get(pk));
+        }
+
+        DatabaseConfig cfg = (DatabaseConfig) config;
+        JdbcTemplate jdbcTemplate = null;
+        Result result = new Result();
+        try {
+            // 2、获取连接
+            jdbcTemplate = getJdbcTemplate(cfg);
+
+            // 3、设置参数
+            int update = jdbcTemplate.update(sql, args);
+            if (0 == update) {
+                throw new ConnectorException("写入失败");
+            }
+        } catch (Exception e) {
+            // 记录错误数据
+            result.getFailData().add(data);
+            result.getFail().set(1);
             result.getError().append(e.getMessage()).append("\r\n");
             logger.error(e.getMessage());
         } finally {
