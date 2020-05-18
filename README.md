@@ -23,6 +23,10 @@
 </div>
 
 <div>
+    <h3>预览</h3>
+    <p align="center">
+        <img src="https://images.gitee.com/uploads/images/2020/0519/000443_b52b4a8c_376718.png" />
+    </p>
     <h3>UI图</h3>
     <p align="center">
         <img src="http://assets.processon.com/chart_image/5da037d1e4b002a6447eba81.png" />
