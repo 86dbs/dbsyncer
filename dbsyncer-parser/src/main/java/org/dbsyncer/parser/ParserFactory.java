@@ -2,7 +2,6 @@ package org.dbsyncer.parser;
 
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.FullRefreshEvent;
-import org.dbsyncer.common.event.IncrementRefreshEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.model.Task;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -257,7 +256,6 @@ public class ParserFactory implements Parser {
 
         // 5、更新结果
         flush(metaId, writer, 1);
-        applicationContext.publishEvent(new IncrementRefreshEvent(applicationContext, metaId));
     }
 
     /**

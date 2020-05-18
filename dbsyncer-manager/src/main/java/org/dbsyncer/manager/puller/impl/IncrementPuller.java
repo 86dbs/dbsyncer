@@ -1,7 +1,6 @@
 package org.dbsyncer.manager.puller.impl;
 
 import org.dbsyncer.common.event.Event;
-import org.dbsyncer.common.event.IncrementRefreshEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.listener.DefaultExtractor;
@@ -14,7 +13,6 @@ import org.dbsyncer.parser.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -32,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2020/04/26 15:28
  */
 @Component
-public class IncrementPuller extends AbstractPuller implements ApplicationListener<IncrementRefreshEvent> {
+public class IncrementPuller extends AbstractPuller {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -89,27 +87,9 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
         }
     }
 
-    @Override
-    public void onApplicationEvent(IncrementRefreshEvent event) {
-        flush(event.getMetaId());
-    }
-
     private void finished(String metaId) {
         map.remove(metaId);
         publishClosedEvent(metaId);
-    }
-
-    private void flush(String metaId){
-        // TODO 更新待优化，存在性能问题
-        logger.info("flushEvent");
-        DefaultExtractor extractor = map.get(metaId);
-        if (null != extractor) {
-            Meta meta = manager.getMeta(metaId);
-            if (null != meta) {
-                meta.setMap(extractor.getMap());
-                manager.editMeta(meta);
-            }
-        }
     }
 
     final class DefaultListener implements Event {
@@ -149,7 +129,16 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
 
         @Override
         public void flushEvent() {
-            flush(metaId);
+            // TODO 更新待优化，存在性能问题
+            DefaultExtractor extractor = map.get(metaId);
+            if (null != extractor) {
+                logger.info("flushEvent map:{}", extractor.getMap());
+                Meta meta = manager.getMeta(metaId);
+                if (null != meta) {
+                    meta.setMap(extractor.getMap());
+                    manager.editMeta(meta);
+                }
+            }
         }
 
     }
