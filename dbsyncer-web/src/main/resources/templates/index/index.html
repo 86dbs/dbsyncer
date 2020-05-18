@@ -124,12 +124,11 @@
                                                 <table class="table table-hover">
                                                     <tbody>
                                                     <tr>
-                                                        <td>同步方式</td>
-                                                        <td class="text-left" th:text="${m?.meta?.model}"></td>
+                                                        <td>同步方式: <span th:text="${m?.meta?.model}"></span></td>
                                                     </tr>
                                                     <tr>
-                                                        <td>同步结果</td>
                                                         <td class="text-left">
+                                                            同步结果:
                                                             总数:[[${m?.meta?.total}]]
                                                             <span th:if="${m?.meta?.model eq '全量' and (m?.meta?.success + m?.meta?.fail) gt 0}">
                                                                         ,进度:[[${#numbers.formatDecimal(((m?.meta?.success + m?.meta?.fail) / m?.meta?.total * 100.00),0 ,2)}]]%
@@ -140,8 +139,10 @@
                                                         </td>
                                                     </tr>
                                                     <tr>
-                                                        <td>启动时间</td>
-                                                        <td class="text-left"><span th:if="${m?.meta?.state != 0 and m?.meta?.beginTime gt 0}">[[${#dates.format(m?.meta?.beginTime, 'yyyy-MM-dd HH:mm:ss')}]]</span></td>
+                                                        <td class="text-left">
+                                                            启动时间:
+                                                            <span th:if="${m?.meta?.state != 0 and m?.meta?.beginTime gt 0}">[[${#dates.format(m?.meta?.beginTime, 'yyyy-MM-dd HH:mm:ss')}]]</span>
+                                                        </td>
                                                     </tr>
                                                     </tbody>
                                                 </table>
