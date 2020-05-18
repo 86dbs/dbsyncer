@@ -9,22 +9,11 @@ import org.dbsyncer.parser.model.Meta;
  */
 public class MetaVo extends Meta {
 
-    // 驱动名称
-    private String mappingName;
     // 同步方式
     private String model;
 
-    public MetaVo(String mappingName, String model) {
-        this.mappingName = mappingName;
+    public MetaVo(String model) {
         this.model = model;
-    }
-
-    public String getMappingName() {
-        return mappingName;
-    }
-
-    public void setMappingName(String mappingName) {
-        this.mappingName = mappingName;
     }
 
     public String getModel() {

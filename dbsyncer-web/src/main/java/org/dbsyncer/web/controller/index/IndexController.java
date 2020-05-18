@@ -24,7 +24,6 @@ public class IndexController {
     public String index(HttpServletRequest request, ModelMap model) {
         model.put("connectors", connectorService.getConnectorAll());
         model.put("mappings", mappingService.getMappingAll());
-        model.put("metas", mappingService.getMetaAll());
         return "index/index.html";
     }
 
