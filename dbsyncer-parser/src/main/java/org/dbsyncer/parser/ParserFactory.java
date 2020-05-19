@@ -1,5 +1,6 @@
 package org.dbsyncer.parser;
 
+import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.FullRefreshEvent;
 import org.dbsyncer.common.model.Result;
@@ -13,11 +14,13 @@ import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.ParserEnum;
+import org.dbsyncer.parser.flush.FlushService;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
+import org.dbsyncer.storage.constant.ConfigConstant;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -52,6 +55,9 @@ public class ParserFactory implements Parser {
 
     @Autowired
     private CacheService cacheService;
+
+    @Autowired
+    private FlushService flushService;
 
     @Autowired
     private ApplicationContext applicationContext;
@@ -282,7 +288,16 @@ public class ParserFactory implements Parser {
         // print process
         logger.info("任务:{}, 成功:{}, 失败:{}", metaId, meta.getSuccess(), meta.getFail());
 
-        // TODO 记录错误日志
+        // 记录错误数据
+        if(!writer.getFailData().isEmpty()){
+            flushService.asyncWrite(metaId, writer.getFailData());
+        }
+        // 记录错误日志
+        String error = writer.getError().toString();
+        if(StringUtils.isNotBlank(error)){
+            flushService.asyncWrite(metaId, error);
+        }
+
     }
 
     /**

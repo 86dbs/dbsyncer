@@ -33,6 +33,22 @@ public abstract class AbstractStorageService implements StorageService, Applicat
 
     public abstract void delete(String collectionId, String id) throws IOException;
 
+    /**
+     * 记录日志
+     *
+     * @param collectionId
+     * @param params
+     */
+    public abstract void insertLog(String collectionId, Map<String,Object> params) throws IOException;
+
+    /**
+     * 记录错误数据
+     *
+     * @param collectionId
+     * @param list
+     */
+    public abstract void insertData(String collectionId, List<Map> list) throws IOException;
+
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         map = applicationContext.getBeansOfType(Strategy.class);
@@ -96,6 +112,26 @@ public abstract class AbstractStorageService implements StorageService, Applicat
             delete(getCollectionId(type, collectionId), id);
         } catch (IOException e) {
             logger.error("remove collectionId:{}, id:{}, failed:{}", collectionId, id, e.getMessage());
+            throw new StorageException(e);
+        }
+    }
+
+    @Override
+    public void addLog(StorageEnum type, Map<String, Object> params) {
+        try {
+            insertLog(getCollectionId(type, null), params);
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+            throw new StorageException(e);
+        }
+    }
+
+    @Override
+    public void addData(StorageEnum type, String collectionId, List<Map> list) {
+        try {
+            insertData(getCollectionId(type, collectionId), list);
+        } catch (IOException e) {
+            logger.error(e.getMessage());
             throw new StorageException(e);
         }
     }

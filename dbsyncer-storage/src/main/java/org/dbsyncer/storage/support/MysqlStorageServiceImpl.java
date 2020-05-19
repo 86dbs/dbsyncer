@@ -37,4 +37,14 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     public void delete(String collectionId, String id) throws IOException {
 
     }
+
+    @Override
+    public void insertLog(String collectionId, Map<String, Object> params) throws IOException {
+
+    }
+
+    @Override
+    public void insertData(String collectionId, List<Map> list) throws IOException {
+
+    }
 }

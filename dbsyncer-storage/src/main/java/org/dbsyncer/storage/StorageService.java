@@ -29,4 +29,20 @@ public interface StorageService {
 
     void remove(StorageEnum type, String id, String collectionId);
 
+    /**
+     * 记录日志
+     *
+     * @param log
+     * @param params
+     */
+    void addLog(StorageEnum log, Map<String,Object> params);
+
+    /**
+     * 记录数据
+     *
+     * @param data
+     * @param collectionId
+     * @param list
+     */
+    void addData(StorageEnum data, String collectionId, List<Map> list);
 }

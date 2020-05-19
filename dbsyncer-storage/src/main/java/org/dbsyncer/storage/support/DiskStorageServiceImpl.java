@@ -96,6 +96,19 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         map.get(collectionId).delete(new Term(ConfigConstant.CONFIG_MODEL_ID, id));
     }
 
+    @Override
+    public void insertLog(String collectionId, Map<String, Object> params) throws IOException {
+        createShardIfNotExist(collectionId);
+        // TODO 实现日志写入
+    }
+
+    @Override
+    public void insertData(String collectionId, List<Map> list) throws IOException {
+        createShardIfNotExist(collectionId);
+        // TODO 实现数据写入
+
+    }
+
     /**
      * 如果不存在分片则创建(线程安全)
      *<p>/data/config</p>
