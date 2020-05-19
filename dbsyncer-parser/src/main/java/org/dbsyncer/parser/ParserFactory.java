@@ -20,7 +20,6 @@ import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
-import org.dbsyncer.storage.constant.ConfigConstant;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -222,7 +221,7 @@ public class ParserFactory implements Parser {
             Result writer = writeBatch(tConfig, command, picker.getTargetFields(), target, threadSize, batchSize);
 
             // 6、更新结果
-            flush(task, writer, target.size());
+            flush(task, writer, target);
 
             // 7、更新分页数
             params.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(++pageIndex));
@@ -261,7 +260,9 @@ public class ParserFactory implements Parser {
         Result writer = connectorFactory.writer(tConfig, picker.getTargetFields(), command, event, target);
 
         // 5、更新结果
-        flush(metaId, writer, 1);
+        List<Map<String, Object>> list = new ArrayList<>(1);
+        list.add(target);
+        flush(metaId, writer, list);
     }
 
     /**
@@ -269,18 +270,19 @@ public class ParserFactory implements Parser {
      *
      * @param task
      * @param writer
-     * @param total
+     * @param data
      */
-    private void flush(Task task, Result writer, long total) {
-        flush(task.getId(), writer, total);
+    private void flush(Task task, Result writer, List<Map<String, Object>> data) {
+        flush(task.getId(), writer, data);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(System.currentTimeMillis());
         applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
     }
 
-    private void flush(String metaId, Result writer, long total) {
+    private void flush(String metaId, Result writer, List<Map<String, Object>> data) {
         // 引用传递
+        long total = data.size();
         long fail = writer.getFail().get();
         Meta meta = getMeta(metaId);
         meta.getFail().getAndAdd(fail);
@@ -289,12 +291,17 @@ public class ParserFactory implements Parser {
         logger.info("任务:{}, 成功:{}, 失败:{}", metaId, meta.getSuccess(), meta.getFail());
 
         // 记录错误数据
-        if(!writer.getFailData().isEmpty()){
-            flushService.asyncWrite(metaId, writer.getFailData());
+        Queue<Map<String, Object>> failData = writer.getFailData();
+        boolean success = CollectionUtils.isEmpty(failData);
+        if (!success) {
+            data.clear();
+            data.addAll(failData);
         }
+        flushService.asyncWrite(metaId, success, data);
+
         // 记录错误日志
         String error = writer.getError().toString();
-        if(StringUtils.isNotBlank(error)){
+        if (StringUtils.isNotBlank(error)) {
             flushService.asyncWrite(metaId, error);
         }
 
@@ -340,7 +347,7 @@ public class ParserFactory implements Parser {
      * @return
      */
     private Result writeBatch(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> target,
-                                int threadSize, int batchSize) {
+                              int threadSize, int batchSize) {
         // 总数
         int total = target.size();
         // 单次任务

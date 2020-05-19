@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 持久化
@@ -27,7 +28,7 @@ public class FlushServiceImpl implements FlushService {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private StorageService    storageService;
+    private StorageService storageService;
 
     @Autowired
     private SnowflakeIdWorker snowflakeIdWorker;
@@ -43,17 +44,16 @@ public class FlushServiceImpl implements FlushService {
     }
 
     @Override
-    public void asyncWrite(String metaId, Queue<Map<String, Object>> data) {
-        List<Map> list = new LinkedList<>();
+    public void asyncWrite(String metaId, boolean success, List<Map<String, Object>> data) {
         long now = System.currentTimeMillis();
-        Map<String, Object> params = null;
-        while (!data.isEmpty()){
-            params = new HashMap();
+        List<Map> list = data.parallelStream().map(r -> {
+            Map<String, Object> params = new HashMap();
             params.put(ConfigConstant.CONFIG_MODEL_ID, snowflakeIdWorker.nextId());
-            params.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(data.poll()));
+            params.put(ConfigConstant.DATA_SUCCESS, success);
+            params.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(r));
             params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
-            list.add(params);
-        }
+            return params;
+        }).collect(Collectors.toList());
         storageService.addData(StorageEnum.DATA, metaId, list);
     }
 }

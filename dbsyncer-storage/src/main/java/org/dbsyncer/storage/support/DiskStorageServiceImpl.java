@@ -98,14 +98,16 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void insertLog(String collectionId, Map<String, Object> params) throws IOException {
-        createShardIfNotExist(collectionId);
+//        createShardIfNotExist(collectionId);
         // TODO 实现日志写入
+        logger.info(params.toString());
     }
 
     @Override
     public void insertData(String collectionId, List<Map> list) throws IOException {
-        createShardIfNotExist(collectionId);
+//        createShardIfNotExist(collectionId);
         // TODO 实现数据写入
+        logger.info(list.toString());
 
     }
 

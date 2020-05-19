@@ -2,8 +2,8 @@ package org.dbsyncer.parser.flush;
 
 import org.springframework.scheduling.annotation.Async;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 
 public interface FlushService {
 
@@ -17,12 +17,12 @@ public interface FlushService {
     void asyncWrite(String metaId, String error);
 
     /**
-     * 记录错误数据
+     * 记录数据
      *
      * @param metaId
-     * @param failData
+     * @param success
+     * @param data
      */
     @Async("taskExecutor")
-    void asyncWrite(String metaId, Queue<Map<String,Object>> failData);
-
+    void asyncWrite(String metaId, boolean success, List<Map<String, Object>> data);
 }
