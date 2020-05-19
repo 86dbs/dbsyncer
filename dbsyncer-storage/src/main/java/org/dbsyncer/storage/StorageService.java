@@ -1,5 +1,6 @@
 package org.dbsyncer.storage;
 
+import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
 
 import java.util.List;
@@ -12,18 +13,20 @@ import java.util.Map;
  */
 public interface StorageService {
 
-    List<Map> queryConfig(Query query);
+    List<Map> query(StorageEnum type, Query query);
 
-    void add(String type, Map params);
+    List<Map> query(StorageEnum type, Query query, String collectionId);
 
-    void add(String type, Map params, String collectionId);
+    void add(StorageEnum type, Map params);
 
-    void edit(String type, Map params);
+    void add(StorageEnum type, Map params, String collectionId);
 
-    void edit(String type, Map params, String collectionId);
+    void edit(StorageEnum type, Map params);
 
-    void remove(String type, String id);
+    void edit(StorageEnum type, Map params, String collectionId);
 
-    void remove(String type, String id, String collectionId);
+    void remove(StorageEnum type, String id);
+
+    void remove(StorageEnum type, String id, String collectionId);
 
 }

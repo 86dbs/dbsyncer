@@ -1,5 +1,6 @@
 package org.dbsyncer.storage;
 
+import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.strategy.Strategy;
 import org.slf4j.Logger;
@@ -24,7 +25,7 @@ public abstract class AbstractStorageService implements StorageService, Applicat
 
     private Map<String, Strategy> map;
 
-    public abstract List<Map> query(String collectionId, Query query);
+    public abstract List<Map> select(String collectionId, Query query);
 
     public abstract void insert(String collectionId, Map params) throws IOException;
 
@@ -38,13 +39,23 @@ public abstract class AbstractStorageService implements StorageService, Applicat
     }
 
     @Override
-    public void add(String type, Map params) {
+    public List<Map> query(StorageEnum type, Query query) {
+        return query(type, query, null);
+    }
+
+    @Override
+    public List<Map> query(StorageEnum type, Query query, String collectionId) {
+        collectionId = getCollectionId(type, collectionId);
+        return select(collectionId, query);
+    }
+
+    @Override
+    public void add(StorageEnum type, Map params) {
         add(type, params, null);
     }
 
     @Override
-    public void add(String type, Map params, String collectionId) {
-        Assert.hasText(type, "Type can not be empty.");
+    public void add(StorageEnum type, Map params, String collectionId) {
         Assert.notNull(params, "Params can not be null.");
         logger.debug("collectionId:{}, params:{}", collectionId, params);
         try {
@@ -56,12 +67,12 @@ public abstract class AbstractStorageService implements StorageService, Applicat
     }
 
     @Override
-    public void edit(String type, Map params) {
+    public void edit(StorageEnum type, Map params) {
         edit(type, params, null);
     }
 
     @Override
-    public void edit(String type, Map params, String collectionId) {
+    public void edit(StorageEnum type, Map params, String collectionId) {
         Assert.notNull(params, "Params can not be null.");
         logger.debug("collectionId:{}, params:{}", collectionId, params);
         try {
@@ -73,12 +84,12 @@ public abstract class AbstractStorageService implements StorageService, Applicat
     }
 
     @Override
-    public void remove(String type, String id) {
+    public void remove(StorageEnum type, String id) {
         remove(type, id, null);
     }
 
     @Override
-    public void remove(String type, String id, String collectionId) {
+    public void remove(StorageEnum type, String id, String collectionId) {
         Assert.hasText(id, "ID can not be null.");
         logger.debug("collectionId:{}, id:{}", collectionId, id);
         try {
@@ -89,9 +100,10 @@ public abstract class AbstractStorageService implements StorageService, Applicat
         }
     }
 
-    private String getCollectionId(String type, String collectionId) {
-        Strategy strategy = map.get(type);
-        Assert.notNull(strategy, "Type does not exist.");
+    private String getCollectionId(StorageEnum type, String collectionId) {
+        Assert.notNull(type, "StorageEnum can not be null.");
+        Strategy strategy = map.get(type.getType().concat("Strategy"));
+        Assert.notNull(strategy, "Strategy does not exist.");
         return strategy.createCollectionId(collectionId);
     }
 

@@ -8,11 +8,13 @@ import org.dbsyncer.manager.config.OperationCallBack;
 import org.dbsyncer.manager.config.OperationConfig;
 import org.dbsyncer.manager.config.QueryConfig;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
-import org.dbsyncer.manager.template.*;
+import org.dbsyncer.manager.template.AbstractTemplate;
+import org.dbsyncer.manager.template.GroupStrategy;
+import org.dbsyncer.manager.template.Handler;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.storage.StorageService;
-import org.dbsyncer.storage.constant.StorageConstant;
+import org.dbsyncer.storage.enums.StorageEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -79,7 +81,7 @@ public final class OperationTemplate extends AbstractTemplate {
         logger.debug("params:{}", params);
         Handler handler = config.getHandler();
         Assert.notNull(handler, "Handler can not be null.");
-        handler.execute(new OperationCallBack(storageService, StorageConstant.CONFIG, params));
+        handler.execute(new OperationCallBack(storageService, StorageEnum.CONFIG, params));
 
         // 3、缓存
         GroupStrategyEnum strategy = getDefaultStrategy(config);
@@ -115,7 +117,7 @@ public final class OperationTemplate extends AbstractTemplate {
             }
         }
         cacheService.remove(id);
-        storageService.remove(StorageConstant.CONFIG, id);
+        storageService.remove(StorageEnum.CONFIG, id);
     }
 
     private String getGroupId(ConfigModel model, GroupStrategyEnum strategy) {

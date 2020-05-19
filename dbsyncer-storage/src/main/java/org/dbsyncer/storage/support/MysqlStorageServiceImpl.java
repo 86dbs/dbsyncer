@@ -19,12 +19,7 @@ import java.util.Map;
 public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
-    public List<Map> queryConfig(Query query) {
-        return null;
-    }
-
-    @Override
-    public List<Map> query(String collectionId, Query query) {
+    public List<Map> select(String collectionId, Query query) {
         return null;
     }
 

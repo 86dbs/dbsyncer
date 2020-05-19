@@ -8,7 +8,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.dbsyncer.storage.constant.StrategyConstant;
+import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.lucene.Shard;
 import org.dbsyncer.storage.query.Param;
 import org.dbsyncer.storage.query.Query;
@@ -39,44 +39,38 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
 
     private Map<String, Shard> map = new ConcurrentHashMap();
 
-    // 获取相对路径：./data
-    private static final String PATH = "data";
+    // 相对路径：./data/
+    private static final String PATH = "data" + File.separator;
 
     @PostConstruct
     private void init() {
         try {
-            String currentPath = PATH + File.separator;
-            // 存放配置：连接器、驱动、运行状态
-            map.putIfAbsent(StrategyConstant.CONFIG, new Shard(currentPath + StrategyConstant.CONFIG));
-            // 存放日志：连接器、驱动、系统
-            map.putIfAbsent(StrategyConstant.LOG, new Shard(currentPath + StrategyConstant.LOG));
+            // 创建配置和日志索引shard
+            String config = StorageEnum.CONFIG.getType();
+            map.putIfAbsent(config, new Shard(PATH + config));
+
+            String log = StorageEnum.LOG.getType();
+            map.putIfAbsent(log, new Shard(PATH + log));
         } catch (IOException e) {
             throw new StorageException(e);
         }
     }
 
     @Override
-    public List<Map> queryConfig(Query query) {
-        Shard shard = map.get(StrategyConstant.CONFIG);
-        try {
-            List<Param> params = query.getParams();
-            if (!CollectionUtils.isEmpty(params)) {
-                Param p = params.get(0);
-                Term term = new Term(p.getKey(), (String) p.getValue());
-                PrefixQuery q = new PrefixQuery(term);
-                return shard.prefixQuery(q);
-            }
-        } catch (IOException e) {
-            logger.error(e.getMessage());
-        }
-        return Collections.emptyList();
-    }
-
-    @Override
-    public List<Map> query(String collectionId, Query query) {
+    public List<Map> select(String collectionId, Query query) {
         Shard shard = map.get(collectionId);
-        if (null != shard) {
-            return Collections.emptyList();
+        if(null != shard){
+            try {
+                List<Param> params = query.getParams();
+                if (!CollectionUtils.isEmpty(params)) {
+                    Param p = params.get(0);
+                    Term term = new Term(p.getKey(), (String) p.getValue());
+                    PrefixQuery q = new PrefixQuery(term);
+                    return shard.prefixQuery(q);
+                }
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+            }
         }
         return Collections.emptyList();
     }
@@ -104,13 +98,15 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
 
     /**
      * 如果不存在分片则创建(线程安全)
+     *<p>/data/config</p>
+     *<p>/data/log</p>
+     *<p>/data/data/123</p>
      *
-     * @param collectionId /data/123
+     * @param collectionId
      * @throws IOException
      */
     private void createShardIfNotExist(String collectionId) throws IOException {
         if (null == map.get(collectionId)) {
-            // 存放数据：驱动实时同步数据, /data/${collectionId}
             map.putIfAbsent(collectionId, new Shard(PATH + collectionId));
         }
     }

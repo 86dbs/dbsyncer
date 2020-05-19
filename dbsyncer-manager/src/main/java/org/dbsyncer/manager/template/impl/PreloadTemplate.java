@@ -16,6 +16,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,7 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
         Query query = new Query();
         String filterType = config.getFilterType();
         query.put(ConfigConstant.CONFIG_MODEL_TYPE, filterType);
-        List<Map> list = storageService.queryConfig(query);
+        List<Map> list = storageService.query(StorageEnum.CONFIG, query);
         boolean empty = CollectionUtils.isEmpty(list);
         logger.info("PreLoad {}:{}", filterType, empty ? 0 : list.size());
         if (!empty) {

@@ -2,6 +2,7 @@ package org.dbsyncer.manager.config;
 
 import org.dbsyncer.manager.template.Callback;
 import org.dbsyncer.storage.StorageService;
+import org.dbsyncer.storage.enums.StorageEnum;
 
 import java.util.Map;
 
@@ -9,11 +10,11 @@ public class OperationCallBack implements Callback {
 
     private StorageService storageService;
 
-    private String type;
+    private StorageEnum type;
 
     private Map params;
 
-    public OperationCallBack(StorageService storageService, String type, Map params) {
+    public OperationCallBack(StorageService storageService, StorageEnum type, Map params) {
         this.storageService = storageService;
         this.type = type;
         this.params = params;
