@@ -8,6 +8,7 @@ import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.DataEvent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 
@@ -124,6 +125,7 @@ public interface Parser {
      *
      * @param mapping
      * @param tableGroup
+     * @param dataEvent
      */
-    void execute(Mapping mapping, TableGroup tableGroup);
+    void execute(Mapping mapping, TableGroup tableGroup, DataEvent dataEvent);
 }

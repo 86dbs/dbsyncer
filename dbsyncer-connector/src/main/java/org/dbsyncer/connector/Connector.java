@@ -71,7 +71,7 @@ public interface Connector {
     /**
      * 分页获取数据源数据
      *
-     * @param config    数据源配置
+     * @param config    连接器配置
      * @param command   执行命令
      * @param pageIndex 页数
      * @param pageSize  页大小
@@ -82,11 +82,23 @@ public interface Connector {
     /**
      * 批量写入目标源数据
      *
-     * @param config  数据源配置
+     * @param config  连接器配置
      * @param command 执行命令
+     * @param fields  字段信息
      * @param data    数据
      * @return
      */
     Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> data);
 
+    /**
+     * 写入目标源数据
+     *
+     * @param config  连接器配置
+     * @param fields  字段信息
+     * @param command 执行命令
+     * @param event   事件
+     * @param data    数据
+     * @return
+     */
+    Result writer(ConnectorConfig config, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data);
 }

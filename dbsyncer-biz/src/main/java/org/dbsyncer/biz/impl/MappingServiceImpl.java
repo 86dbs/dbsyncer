@@ -132,6 +132,7 @@ public class MappingServiceImpl implements MappingService {
     }
 
     private MappingVo convertMapping2Vo(Mapping mapping) {
+        String model = mapping.getModel();
         Assert.notNull(mapping, "Mapping can not be null.");
         Connector s = manager.getConnector(mapping.getSourceConnectorId());
         Connector t = manager.getConnector(mapping.getTargetConnectorId());
@@ -139,9 +140,14 @@ public class MappingServiceImpl implements MappingService {
         BeanUtils.copyProperties(s, sConn);
         ConnectorVo tConn = new ConnectorVo(monitor.alive(t.getId()));
         BeanUtils.copyProperties(t, tConn);
-        boolean isRunning = isRunning(mapping.getMetaId());
 
-        MappingVo vo = new MappingVo(isRunning, sConn, tConn);
+        // 元信息
+        Meta meta = manager.getMeta(mapping.getMetaId());
+        Assert.notNull(meta, "Meta can not be null.");
+        MetaVo metaVo = new MetaVo(ModelEnum.getModelEnum(model).getName());
+        BeanUtils.copyProperties(meta, metaVo);
+
+        MappingVo vo = new MappingVo(sConn, tConn, metaVo);
         BeanUtils.copyProperties(mapping, vo);
         return vo;
     }
@@ -150,7 +156,7 @@ public class MappingServiceImpl implements MappingService {
         Mapping mapping = manager.getMapping(meta.getMappingId());
         Assert.notNull(mapping, "驱动不存在.");
         ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
-        MetaVo metaVo = new MetaVo(mapping.getName(), modelEnum.getMessage());
+        MetaVo metaVo = new MetaVo(modelEnum.getName());
         BeanUtils.copyProperties(meta, metaVo);
         return metaVo;
     }

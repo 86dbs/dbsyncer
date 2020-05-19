@@ -22,11 +22,11 @@ public enum ModelEnum {
     INCREMENT("increment", "增量");
 
     private String code;
-    private String message;
+    private String name;
 
-    ModelEnum(String code, String message) {
+    ModelEnum(String code, String name) {
         this.code = code;
-        this.message = message;
+        this.name = name;
     }
 
     public static ModelEnum getModelEnum(String code) throws ParserException {
@@ -50,11 +50,11 @@ public enum ModelEnum {
         this.code = code;
     }
 
-    public String getMessage() {
-        return message;
+    public String getName() {
+        return name;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setName(String name) {
+        this.name = name;
     }
 }

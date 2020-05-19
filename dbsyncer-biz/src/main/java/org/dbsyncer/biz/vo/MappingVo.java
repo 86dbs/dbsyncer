@@ -9,40 +9,28 @@ import org.dbsyncer.parser.model.Mapping;
  */
 public class MappingVo extends Mapping {
 
-    // 是否运行
-    private boolean running;
-
     // 连接器
     private ConnectorVo sourceConnector;
     private ConnectorVo targetConnector;
 
-    public MappingVo(boolean running, ConnectorVo sourceConnector, ConnectorVo targetConnector) {
-        this.running = running;
+    // 元信息
+    private MetaVo meta;
+
+    public MappingVo(ConnectorVo sourceConnector, ConnectorVo targetConnector, MetaVo meta) {
         this.sourceConnector = sourceConnector;
         this.targetConnector = targetConnector;
-    }
-
-    public boolean isRunning() {
-        return running;
-    }
-
-    public void setRunning(boolean running) {
-        this.running = running;
+        this.meta = meta;
     }
 
     public ConnectorVo getSourceConnector() {
         return sourceConnector;
     }
 
-    public void setSourceConnector(ConnectorVo sourceConnector) {
-        this.sourceConnector = sourceConnector;
-    }
-
     public ConnectorVo getTargetConnector() {
         return targetConnector;
     }
 
-    public void setTargetConnector(ConnectorVo targetConnector) {
-        this.targetConnector = targetConnector;
+    public MetaVo getMeta() {
+        return meta;
     }
 }

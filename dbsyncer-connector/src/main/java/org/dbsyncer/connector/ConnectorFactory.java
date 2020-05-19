@@ -100,6 +100,13 @@ public class ConnectorFactory {
         return result;
     }
 
+    public Result writer(ConnectorConfig config, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data) {
+        Connector connector = getConnector(config.getConnectorType());
+        Result result = connector.writer(config, fields, command, event, data);
+        Assert.notNull(result, "Connector writer result can not null");
+        return result;
+    }
+
     /**
      * 获取连接器
      *

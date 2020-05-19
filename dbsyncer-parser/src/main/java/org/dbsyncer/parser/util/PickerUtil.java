@@ -55,6 +55,28 @@ public abstract class PickerUtil {
                 target.add(r);
             }
 
+            picker.setTargetList(target);
+        }
+    }
+
+    public static void pickData(Picker picker, Map<String, Object> row) {
+        if(!CollectionUtils.isEmpty(row)){
+            Map<String, Object> target = new HashMap<>();
+            List<Field> sFields = picker.getSourceFields();
+            List<Field> tFields = picker.getTargetFields();
+
+            final int kSize = sFields.size();
+            String sName = null;
+            String tName = null;
+            Object v = null;
+            for (int k = 0; k < kSize; k++) {
+                sName = sFields.get(k).getName();
+                v = row.get(sName);
+
+                tName = tFields.get(k).getName();
+                target.put(tName, v);
+            }
+
             picker.setTarget(target);
         }
     }

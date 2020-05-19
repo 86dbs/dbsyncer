@@ -69,6 +69,11 @@ public final class LdapConnector implements Ldap {
 	}
 
 	@Override
+	public Result writer(ConnectorConfig config, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data) {
+		return null;
+	}
+
+	@Override
 	public LdapTemplate getLdapTemplate(LdapConfig config) throws AuthenticationException, CommunicationException, javax.naming.NamingException {
 		return LdapUtil.getLdapTemplate(config);
 	}

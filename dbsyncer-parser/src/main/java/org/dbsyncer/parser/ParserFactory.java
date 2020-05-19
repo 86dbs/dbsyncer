@@ -171,14 +171,13 @@ public class ParserFactory implements Parser {
         String sTableName = tableGroup.getSourceTable().getName();
         String tTableName = tableGroup.getTargetTable().getName();
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
-        // 获取同步字段
-        Picker picker = new Picker();
-        PickerUtil.pickFields(picker, fieldMapping);
-
         // 转换配置(默认使用全局)
         List<Convert> convert = CollectionUtils.isEmpty(tableGroup.getConvert()) ? mapping.getConvert() : tableGroup.getConvert();
         // 插件配置(默认使用全局)
         Plugin plugin = null == tableGroup.getPlugin() ? mapping.getPlugin() : tableGroup.getPlugin();
+        // 获取同步字段
+        Picker picker = new Picker();
+        PickerUtil.pickFields(picker, fieldMapping);
 
         // 检查分页参数
         Map<String, String> params = getMeta(metaId).getMap();
@@ -207,14 +206,14 @@ public class ParserFactory implements Parser {
             PickerUtil.pickData(picker, data);
 
             // 3、参数转换
-            List<Map<String, Object>> target = picker.getTarget();
+            List<Map<String, Object>> target = picker.getTargetList();
             ConvertUtil.convert(convert, target);
 
             // 4、插件转换
             pluginFactory.convert(plugin, data, target);
 
             // 5、写入目标源
-            Result writer = executeBatch(tConfig, command, picker.getTargetFields(), target, threadSize, batchSize);
+            Result writer = writeBatch(tConfig, command, picker.getTargetFields(), target, threadSize, batchSize);
 
             // 6、更新结果
             flush(task, writer, target.size());
@@ -225,8 +224,38 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(Mapping mapping, TableGroup tableGroup) {
+    public void execute(Mapping mapping, TableGroup tableGroup, DataEvent dataEvent) {
+        logger.info("同步数据=> dataEvent:{}", dataEvent);
+        final String metaId = mapping.getMetaId();
 
+        ConnectorConfig tConfig = getConnectorConfig(mapping.getTargetConnectorId());
+        Map<String, String> command = tableGroup.getCommand();
+        List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
+        // 转换配置(默认使用全局)
+        List<Convert> convert = CollectionUtils.isEmpty(tableGroup.getConvert()) ? mapping.getConvert() : tableGroup.getConvert();
+        // 插件配置(默认使用全局)
+        Plugin plugin = null == tableGroup.getPlugin() ? mapping.getPlugin() : tableGroup.getPlugin();
+        // 获取同步字段
+        Picker picker = new Picker();
+        PickerUtil.pickFields(picker, fieldMapping);
+
+        // 1、映射字段
+        String event = dataEvent.getEvent();
+        Map<String, Object> data = dataEvent.getData();
+        PickerUtil.pickData(picker, data);
+
+        // 2、参数转换
+        Map<String, Object> target = picker.getTarget();
+        ConvertUtil.convert(convert, target);
+
+        // 3、插件转换
+        pluginFactory.convert(plugin, event, data, target);
+
+        // 4、写入目标源
+        Result writer = connectorFactory.writer(tConfig, picker.getTargetFields(), command, event, target);
+
+        // 5、更新结果
+        flush(metaId, writer, 1);
     }
 
     /**
@@ -237,20 +266,23 @@ public class ParserFactory implements Parser {
      * @param total
      */
     private void flush(Task task, Result writer, long total) {
-        // 引用传递
-        long fail = writer.getFail().get();
-        long success = total - fail;
-        Meta meta = getMeta(task.getId());
-        meta.getFail().getAndAdd(fail);
-        meta.getSuccess().getAndAdd(success);
-        // print process
-        logger.info("任务:{}, 成功:{}, 失败:{}", task.getId(), meta.getSuccess(), meta.getFail());
-
-        // TODO 记录错误日志
+        flush(task.getId(), writer, total);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(System.currentTimeMillis());
         applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
+    }
+
+    private void flush(String metaId, Result writer, long total) {
+        // 引用传递
+        long fail = writer.getFail().get();
+        Meta meta = getMeta(metaId);
+        meta.getFail().getAndAdd(fail);
+        meta.getSuccess().getAndAdd(total - fail);
+        // print process
+        logger.info("任务:{}, 成功:{}, 失败:{}", metaId, meta.getSuccess(), meta.getFail());
+
+        // TODO 记录错误日志
     }
 
     /**
@@ -292,7 +324,7 @@ public class ParserFactory implements Parser {
      * @param batchSize
      * @return
      */
-    private Result executeBatch(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> target,
+    private Result writeBatch(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> target,
                                 int threadSize, int batchSize) {
         // 总数
         int total = target.size();

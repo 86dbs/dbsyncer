@@ -4,7 +4,7 @@
 .connectorList .well-sign-operation{color: #999999; border-radius: 50%; }
 .connectorList .well-sign-operation:hover {color: #333333;}
 .connectorList .dropdown {position: absolute; right:16px; top: 0px;}
-.connectorList .dropdown-menu {right: -86px;left: auto; top: 15px;}
+.connectorList .dropdown-menu {left: auto; top: 15px;}
 .connectorList .dropdown-menu i{font-size: 20px;}
 
 .mappingList .jumbotron .line{margin: 43px -30px;width: 188px;border-top: 1px solid #8c7c7c;}
@@ -20,5 +20,5 @@
 .mappingList .well-sign-operation{position: absolute; right:12px; color: #999999; border-radius: 50%;}
 .mappingList .well-sign-operation:hover { color: #333333;}
 .mappingList .dropdown {position: absolute; right:0px; top: 0px;}
-.mappingList .dropdown-menu {right: -70px;left: auto; top: 28px;}
+.mappingList .dropdown-menu {right: 12px;left: auto; top: 28px;}
 .mappingList .dropdown-menu i{font-size: 20px;}

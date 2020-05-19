@@ -5,7 +5,9 @@
 <!-- Connector Mapping -->
 <div class="container-fluid">
     <div class="row">
-        <div class="col-md-4">
+
+        <!-- 连接器管理 -->
+        <div class="col-md-12">
             <form class="form-horizontal" role="form" method="post">
                 <!-- 连接器开始位置 -->
                 <div class="form-group">
@@ -23,7 +25,7 @@
                             <div class="panel-body text-center">
                                 <div class="row connectorList">
                                     <!-- 连接器__开始 -->
-                                    <div class="col-md-3" th:each="c,state : ${connectors}">
+                                    <div class="col-md-1" th:each="c,state : ${connectors}">
                                         <div th:id="${c?.id}" class="jumbotron dbsyncer_block">
                                             <div class="row">
                                                 <img th:src="@{'/images/'+ ${c?.config?.connectorType} + '.png'}">
@@ -49,7 +51,12 @@
                     </div>
                 </div>
                 <!-- 连接器开结束位置 -->
+            </form>
+        </div>
 
+        <!-- 驱动管理 -->
+        <div class="col-md-12">
+            <form class="form-horizontal" role="form" method="post">
                 <!-- 驱动开始位置 -->
                 <div class="form-group" th:if="${connectors?.size() gt 0}">
                     <div class="col-md-12">
@@ -66,7 +73,7 @@
                             <div class="panel-body">
                                 <div class="row mappingList">
                                     <!-- 驱动__开始 -->
-                                    <div class="col-md-12" th:each="m,state : ${mappings}">
+                                    <div class="col-md-4" th:each="m,state : ${mappings}">
                                         <div th:id="${m?.id}" class="jumbotron dbsyncer_block">
                                             <!--驱动标题信息 -->
                                             <div class="row text-center" th:text="${m?.name}" th:title="${m?.name}"></div>
@@ -83,15 +90,17 @@
                                                         </div>
                                                         <div class="col-md-1"></div>
                                                     </div>
-                                                    <span th:if="${m?.sourceConnector?.running}" class="well-sign-left"><i class="fa fa-2x fa-circle well-sign-green"></i></span>
+                                                    <span th:if="${m?.sourceConnector?.running}" th:title="连接器正常" class="well-sign-left"><i class="fa fa-2x fa-circle well-sign-green"></i></span>
                                                     <span th:unless="${m?.sourceConnector?.running}" th:title="连接器异常" class="well-sign-left"><i class="fa fa-2x fa-times-circle-o well-sign-red"></i></span>
                                                 </div>
 
                                                 <!--中间图标 -->
                                                 <div class="col-md-2">
                                                     <div class="line">
-                                                        <span th:if="${m?.running}" class="running-through-rate well-sign-green">✔</span>
-                                                        <span class="running-state">[[${m?.running}?'运行中':'未运行']]</span>
+                                                        <span th:if="${m?.meta?.state eq 1}" class="running-through-rate well-sign-green">✔</span>
+                                                        <span th:if="${m?.meta?.state eq 0}" class="running-state label label-info">未运行</span>
+                                                        <span th:if="${m?.meta?.state eq 1}" class="running-state label label-success">运行中</span>
+                                                        <span th:if="${m?.meta?.state eq 2}" class="running-state label label-warning">停止中</span>
                                                     </div>
                                                 </div>
 
@@ -105,10 +114,38 @@
                                                             <span th:text="${m?.targetConnector?.name}" th:title="${m?.targetConnector?.name}"></span>
                                                         </div>
                                                         <div class="col-md-1"></div>
-                                                        <span th:if="${m?.targetConnector?.running}" class="well-sign-right"><i class="fa fa-2x fa-circle well-sign-green"></i></span>
+                                                        <span th:if="${m?.targetConnector?.running}" th:title="连接器正常" class="well-sign-right"><i class="fa fa-2x fa-circle well-sign-green"></i></span>
                                                         <span th:unless="${m?.targetConnector?.running}" th:title="连接器异常" class="well-sign-right"><i class="fa fa-2x fa-times-circle-o well-sign-red"></i></span>
                                                     </div>
                                                 </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <table class="table table-hover">
+                                                    <tbody>
+                                                    <tr>
+                                                        <td>同步方式: <span th:text="${m?.meta?.model}"></span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="text-left">
+                                                            同步结果:
+                                                            总数:[[${m?.meta?.total}]]
+                                                            <span th:if="${m?.meta?.model eq '全量' and (m?.meta?.success + m?.meta?.fail) gt 0}">
+                                                                        ,进度:[[${#numbers.formatDecimal(((m?.meta?.success + m?.meta?.fail) / m?.meta?.total * 100.00),0 ,2)}]]%
+                                                                        ,耗时:[[${(m?.meta?.endTime - m?.meta?.beginTime) / 1000}]]秒
+                                                                    </span>
+                                                            <span th:if="${m?.meta?.success gt 0}">,成功:[[${m?.meta?.success}]]</span>
+                                                            <span th:if="${m?.meta?.fail gt 0}">,失败:[[${m?.meta?.fail}]] <a href="javascript:;" class="label label-danger">日志</a></span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="text-left">
+                                                            启动时间:
+                                                            <span th:if="${m?.meta?.state != 0 and m?.meta?.beginTime gt 0}">[[${#dates.format(m?.meta?.beginTime, 'yyyy-MM-dd HH:mm:ss')}]]</span>
+                                                        </td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
                                             </div>
 
                                             <div class="row text-right text-muted" th:text="${#dates.format(m?.updateTime, 'yyyy-MM-dd HH:mm:ss')}"></div>
@@ -119,11 +156,11 @@
                                             <a data-toggle="dropdown" href="javascript:;"><span class="well-sign-operation"><i class="fa fa-gears fa-2x"></i></span></a>
                                             <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
                                                 <!-- 未运行 -->
-                                                <li th:if="${not m?.running}" th:url="'/mapping/start?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-check-circle-o well-sign-green"></i>&nbsp;&nbsp;启动</a></li>
+                                                <li th:if="${m?.meta?.state ne 1}" th:url="'/mapping/start?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-check-circle-o well-sign-green"></i>&nbsp;&nbsp;启动</a></li>
                                                 <!-- 运行中 -->
-                                                <li th:if="${m?.running}" th:url="'/mapping/stop?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-times-circle-o well-sign-red"></i>&nbsp;&nbsp;停止</a></li>
+                                                <li th:if="${m?.meta?.state eq 1}" th:url="'/mapping/stop?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-times-circle-o well-sign-red"></i>&nbsp;&nbsp;停止</a></li>
                                                 <!-- 未运行 -->
-                                                <li th:if="${not m?.running}" th:url="'/mapping/remove?id='+${m?.id}" confirm="true" confirmMessage="确认删除?"><a href="javascript:;"><i class="fa fa-trash well-sign-red"></i>&nbsp;&nbsp;删除</a></li>
+                                                <li th:if="${m?.meta?.state ne 1}" th:url="'/mapping/remove?id='+${m?.id}" confirm="true" confirmMessage="确认删除?"><a href="javascript:;"><i class="fa fa-trash well-sign-red"></i>&nbsp;&nbsp;删除</a></li>
                                             </ul>
                                         </div>
                                     </div>
@@ -136,45 +173,6 @@
                 </div>
                 <!-- 驱动结束位置 -->
             </form>
-        </div>
-
-        <!-- 实时数据 -->
-        <div class="col-md-8">
-            <table th:if="${metas?.size() gt 0}" class="table table-hover">
-                <caption>驱动运行监控</caption>
-                <thead>
-                <tr>
-                    <th>序号</th>
-                    <th>任务名称</th>
-                    <th>同步方式</th>
-                    <th>结果</th>
-                    <th>状态</th>
-                    <th>启动时间</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="m,state : ${metas}">
-                    <td th:text="${state?.index + 1}"></td>
-                    <td th:text="${m?.mappingName}"></td>
-                    <td th:text="${m?.model}"></td>
-                    <td>
-                        总数:[[${m?.total}]]
-                        <span th:if="${m?.model eq '全量' and (m?.success + m?.fail) gt 0}">
-                            ,进度:[[${#numbers.formatDecimal(((m?.success + m?.fail) / m?.total * 100.00),0 ,2)}]]%
-                            ,耗时:[[${(m?.endTime - m?.beginTime) / 1000}]]秒
-                        </span>
-                        <span th:if="${m?.success gt 0}">,成功:[[${m?.success}]]</span>
-                        <span th:if="${m?.fail gt 0}">,失败:[[${m?.fail}]] <a href="javascript:;" class="label label-danger">日志</a></span>
-                    </td>
-                    <td>
-                        <span th:if="${m?.state eq 0}" class="label label-info">未运行</span>
-                        <span th:if="${m?.state eq 1}" class="label label-success">运行中</span>
-                        <span th:if="${m?.state eq 2}" class="label label-warning">停止中</span>
-                    </td>
-                    <td><span th:if="${m?.state != 0 and m?.beginTime gt 0}">[[${#dates.format(m?.beginTime, 'yyyy-MM-dd HH:mm:ss')}]]</span></td>
-                </tr>
-                </tbody>
-            </table>
         </div>
 
     </div>

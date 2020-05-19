@@ -1,14 +1,13 @@
 package org.dbsyncer.listener.extractor;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.DefaultExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.config.Host;
-import org.dbsyncer.listener.mysql.binlog.BinlogEventListener;
-import org.dbsyncer.listener.mysql.binlog.BinlogEventV4;
-import org.dbsyncer.listener.mysql.binlog.BinlogRemoteClient;
+import org.dbsyncer.listener.mysql.binlog.*;
 import org.dbsyncer.listener.mysql.binlog.impl.event.*;
 import org.dbsyncer.listener.mysql.common.glossary.Column;
 import org.dbsyncer.listener.mysql.common.glossary.Pair;
@@ -48,7 +47,11 @@ public class MysqlExtractor extends DefaultExtractor {
             final Host host = cluster.get(master);
             final String username = config.getUsername();
             final String password = config.getPassword();
-            final String threadSuffixName = "mysql-binlog";
+            // mysql-binlog-127.0.0.1:3306-654321
+            final String threadSuffixName = new StringBuilder("mysql-binlog-")
+                    .append(host.getIp()).append(":").append(host.getPort()).append("-")
+                    .append(RandomStringUtils.randomNumeric(6))
+                    .toString();
 
             client = new BinlogRemoteClient(host.getIp(), host.getPort(), username, password, threadSuffixName);
             client.setBinlogFileName(map.get(BINLOG_FILENAME));
@@ -107,14 +110,18 @@ public class MysqlExtractor extends DefaultExtractor {
     private void refresh(AbstractBinlogEventV4 event) {
         String binlogFilename = event.getBinlogFilename();
         long nextPosition = event.getHeader().getNextPosition();
-        if (!StringUtils.equals(binlogFilename, client.getBinlogFileName()) || 0 != Long.compare(nextPosition,
-                client.getBinlogPosition())) {
+
+        // binlogFileName
+        if (StringUtils.isNotBlank(binlogFilename) && !StringUtils.equals(binlogFilename, client.getBinlogFileName())) {
             client.setBinlogFileName(binlogFilename);
-            client.setBinlogPosition(nextPosition);
-            map.put(BINLOG_FILENAME, client.getBinlogFileName());
-            map.put(BINLOG_POSITION, String.valueOf(nextPosition));
-            flushEvent();
         }
+        client.setBinlogPosition(nextPosition);
+
+        // nextPosition
+        logger.info("{}:{}", client.getBinlogFileName(), client.getBinlogPosition());
+        map.put(BINLOG_FILENAME, client.getBinlogFileName());
+        map.put(BINLOG_POSITION, String.valueOf(client.getBinlogPosition()));
+        flushEvent();
     }
 
     final class MysqlEventListener implements BinlogEventListener {

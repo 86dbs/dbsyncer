@@ -5,6 +5,7 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
@@ -14,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.util.Assert;
 
 import java.sql.Connection;
@@ -222,6 +224,54 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
+    public Result writer(ConnectorConfig config, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data) {
+        // 1、获取 SQL
+        String sql = command.get(event);
+        Assert.hasText(sql, "执行语句不能为空.");
+        if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(fields)) {
+            logger.error("writer data can not be empty.");
+            throw new ConnectorException("writer data can not be empty.");
+        }
+        List<Object> args = new ArrayList<>();
+        fields.forEach(f -> args.add(data.get(f.getName())));
+        if (!StringUtils.equals(ConnectorConstant.OPERTION_INSERT, event)) {
+            List<Field> pkList = fields.stream().filter(f -> f.isPk()).collect(Collectors.toList());
+            fields.add(pkList.get(0));
+        }
+        int size = fields.size();
+
+        DatabaseConfig cfg = (DatabaseConfig) config;
+        JdbcTemplate jdbcTemplate = null;
+        Result result = new Result();
+        try {
+            // 2、获取连接
+            jdbcTemplate = getJdbcTemplate(cfg);
+
+            // 3、设置参数
+            int update = jdbcTemplate.update(sql, (ps)-> {
+                Field f = null;
+                for (int i = 0; i < size; i++) {
+                    f = fields.get(i);
+                    SetterEnum.getSetter(f.getType()).set(ps, i + 1, f.getType(), data.get(f.getName()));
+                }
+            });
+            if (0 == update) {
+                throw new ConnectorException("写入失败");
+            }
+        } catch (Exception e) {
+            // 记录错误数据
+            result.getFailData().add(data);
+            result.getFail().set(1);
+            result.getError().append(e.getMessage()).append("\r\n");
+            logger.error(e.getMessage());
+        } finally {
+            // 释放连接
+            this.close(jdbcTemplate);
+        }
+        return result;
+    }
+
+    @Override
     public JdbcTemplate getJdbcTemplate(DatabaseConfig config) {
         return DatabaseUtil.getJdbcTemplate(config);
     }
@@ -395,7 +445,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             f = fields.get(i);
             type = f.getType();
             val = row.get(f.getName());
-            SetterEnum.getSetter(type).preparedStatementSetter(ps, i + 1, type, val);
+            SetterEnum.getSetter(type).set(ps, i + 1, type, val);
         }
     }
 
