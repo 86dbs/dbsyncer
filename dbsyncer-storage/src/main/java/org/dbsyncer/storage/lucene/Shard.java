@@ -77,6 +77,13 @@ public class Shard {
         }
     }
 
+    public void insertBatch(List<Document> docs) throws IOException {
+        if (null != docs) {
+            indexWriter.addDocuments(docs);
+            indexWriter.commit();
+        }
+    }
+
     public void update(Term term, Document doc) throws IOException {
         if (null != term && null != doc) {
             indexWriter.updateDocument(term, doc);

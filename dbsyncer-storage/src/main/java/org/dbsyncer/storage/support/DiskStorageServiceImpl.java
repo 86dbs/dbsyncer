@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * @author AE86
@@ -78,14 +79,14 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
     @Override
     public void insert(String collectionId, Map params) throws IOException {
         createShardIfNotExist(collectionId);
-        Document doc = ParamsUtil.convertParamsToDocument(params);
+        Document doc = ParamsUtil.convertParams2Doc(params);
         map.get(collectionId).insert(doc);
     }
 
     @Override
     public void update(String collectionId, Map params) throws IOException {
         createShardIfNotExist(collectionId);
-        Document doc = ParamsUtil.convertParamsToDocument(params);
+        Document doc = ParamsUtil.convertParams2Doc(params);
         IndexableField field = doc.getField(ConfigConstant.CONFIG_MODEL_ID);
         map.get(collectionId).update(new Term(ConfigConstant.CONFIG_MODEL_ID, field.stringValue()), doc);
     }
@@ -108,7 +109,8 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
 //        createShardIfNotExist(collectionId);
         // TODO 实现数据写入
         logger.info(list.toString());
-
+//        List<Document> docs = list.parallelStream().map(r -> ParamsUtil.convertData2Doc(r)).collect(Collectors.toList());
+//        map.get(collectionId).insertBatch(docs);
     }
 
     /**
