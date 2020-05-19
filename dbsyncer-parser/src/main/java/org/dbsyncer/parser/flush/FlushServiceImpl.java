@@ -34,22 +34,24 @@ public class FlushServiceImpl implements FlushService {
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Override
-    public void asyncWrite(String metaId, String error) {
+    public void asyncWrite(String type, String error) {
         Map<String, Object> params = new HashMap();
         params.put(ConfigConstant.CONFIG_MODEL_ID, snowflakeIdWorker.nextId());
-        params.put(ConfigConstant.CONFIG_MODEL_TYPE, metaId);
+        params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
         params.put(ConfigConstant.CONFIG_MODEL_JSON, error);
         params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, System.currentTimeMillis());
         storageService.addLog(StorageEnum.LOG, params);
     }
 
     @Override
-    public void asyncWrite(String metaId, boolean success, List<Map<String, Object>> data) {
+    public void asyncWrite(String metaId, String event, boolean success, List<Map<String, Object>> data, String error) {
         long now = System.currentTimeMillis();
         List<Map> list = data.parallelStream().map(r -> {
             Map<String, Object> params = new HashMap();
             params.put(ConfigConstant.CONFIG_MODEL_ID, snowflakeIdWorker.nextId());
             params.put(ConfigConstant.DATA_SUCCESS, success);
+            params.put(ConfigConstant.DATA_EVENT, event);
+            params.put(ConfigConstant.DATA_ERROR, error);
             params.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(r));
             params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
             return params;

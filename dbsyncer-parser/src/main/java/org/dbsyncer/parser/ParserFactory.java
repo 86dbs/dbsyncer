@@ -1,6 +1,5 @@
 package org.dbsyncer.parser;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.FullRefreshEvent;
 import org.dbsyncer.common.model.Result;
@@ -9,6 +8,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
@@ -230,7 +230,7 @@ public class ParserFactory implements Parser {
 
     @Override
     public void execute(Mapping mapping, TableGroup tableGroup, DataEvent dataEvent) {
-        logger.info("同步数据=> dataEvent:{}", dataEvent);
+        logger.info("{}", dataEvent);
         final String metaId = mapping.getMetaId();
 
         ConnectorConfig tConfig = getConnectorConfig(mapping.getTargetConnectorId());
@@ -262,7 +262,7 @@ public class ParserFactory implements Parser {
         // 5、更新结果
         List<Map<String, Object>> list = new ArrayList<>(1);
         list.add(target);
-        flush(metaId, writer, list);
+        flush(metaId, writer, event, list);
     }
 
     /**
@@ -273,22 +273,20 @@ public class ParserFactory implements Parser {
      * @param data
      */
     private void flush(Task task, Result writer, List<Map<String, Object>> data) {
-        flush(task.getId(), writer, data);
+        flush(task.getId(), writer, ConnectorConstant.OPERTION_DELETE, data);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(System.currentTimeMillis());
         applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
     }
 
-    private void flush(String metaId, Result writer, List<Map<String, Object>> data) {
+    private void flush(String metaId, Result writer, String event, List<Map<String, Object>> data) {
         // 引用传递
         long total = data.size();
         long fail = writer.getFail().get();
         Meta meta = getMeta(metaId);
         meta.getFail().getAndAdd(fail);
         meta.getSuccess().getAndAdd(total - fail);
-        // print process
-        logger.info("任务:{}, 成功:{}, 失败:{}", metaId, meta.getSuccess(), meta.getFail());
 
         // 记录错误数据
         Queue<Map<String, Object>> failData = writer.getFailData();
@@ -297,14 +295,8 @@ public class ParserFactory implements Parser {
             data.clear();
             data.addAll(failData);
         }
-        flushService.asyncWrite(metaId, success, data);
-
-        // 记录错误日志
         String error = writer.getError().toString();
-        if (StringUtils.isNotBlank(error)) {
-            flushService.asyncWrite(metaId, error);
-        }
-
+        flushService.asyncWrite(metaId, event, success, data, error);
     }
 
     /**

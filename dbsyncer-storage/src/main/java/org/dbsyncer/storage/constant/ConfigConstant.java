@@ -29,5 +29,7 @@ public class ConfigConstant {
      * 数据
      */
     public static final String DATA_SUCCESS = "success";
+    public static final String DATA_EVENT = "event";
+    public static final String DATA_ERROR = "error";
 
 }

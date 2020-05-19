@@ -14,15 +14,16 @@ public interface FlushService {
      * @param error
      */
     @Async("taskExecutor")
-    void asyncWrite(String metaId, String error);
+    void asyncWrite(String type, String error);
 
     /**
      * 记录数据
      *
      * @param metaId
+     * @param event
      * @param success
      * @param data
      */
     @Async("taskExecutor")
-    void asyncWrite(String metaId, boolean success, List<Map<String, Object>> data);
+    void asyncWrite(String metaId, String event, boolean success, List<Map<String, Object>> data, String error);
 }

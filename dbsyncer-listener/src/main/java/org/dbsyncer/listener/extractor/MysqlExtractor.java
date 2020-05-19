@@ -118,7 +118,6 @@ public class MysqlExtractor extends DefaultExtractor {
         client.setBinlogPosition(nextPosition);
 
         // nextPosition
-        logger.info("{}:{}", client.getBinlogFileName(), client.getBinlogPosition());
         map.put(BINLOG_FILENAME, client.getBinlogFileName());
         map.put(BINLOG_POSITION, String.valueOf(client.getBinlogPosition()));
         flushEvent();
