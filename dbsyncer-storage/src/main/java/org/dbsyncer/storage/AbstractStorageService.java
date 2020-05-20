@@ -25,7 +25,7 @@ public abstract class AbstractStorageService implements StorageService, Applicat
 
     private Map<String, Strategy> map;
 
-    public abstract List<Map> select(String collectionId, Query query);
+    public abstract List<Map> select(String collectionId, Query query) throws IOException;
 
     public abstract void insert(String collectionId, Map params) throws IOException;
 
@@ -41,7 +41,7 @@ public abstract class AbstractStorageService implements StorageService, Applicat
      * @param collectionId
      * @param params
      */
-    public abstract void insertLog(String collectionId, Map<String,Object> params) throws IOException;
+    public abstract void insertLog(String collectionId, Map<String, Object> params) throws IOException;
 
     /**
      * 记录错误数据
@@ -63,8 +63,13 @@ public abstract class AbstractStorageService implements StorageService, Applicat
 
     @Override
     public List<Map> query(StorageEnum type, Query query, String collectionId) {
-        collectionId = getCollectionId(type, collectionId);
-        return select(collectionId, query);
+        try {
+            collectionId = getCollectionId(type, collectionId);
+            return select(collectionId, query);
+        } catch (IOException e) {
+            logger.error("query collectionId:{}, query:{}, failed:{}", collectionId, query, e.getMessage());
+            throw new StorageException(e);
+        }
     }
 
     @Override

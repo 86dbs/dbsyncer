@@ -57,7 +57,7 @@ public class MonitorServiceImpl implements MonitorService {
         Assert.hasText(id, "id不能为空.");
         List<DataVo> list = manager.queryData(id, pageNum, pageSize)
                 .stream()
-                .map(m -> convertData2Vo(m))
+                .map(m -> convert2Vo(m, DataVo.class))
                 .sorted(Comparator.comparing(DataVo::getCreateTime).reversed())
                 .collect(Collectors.toList());
         return list;
@@ -73,7 +73,7 @@ public class MonitorServiceImpl implements MonitorService {
     public List<LogVo> queryLog(String type, int pageNum, int pageSize) {
         List<LogVo> list = manager.queryLog(type, pageNum, pageSize)
                 .stream()
-                .map(m -> convertLog2Vo(m))
+                .map(m -> convert2Vo(m, LogVo.class))
                 .sorted(Comparator.comparing(LogVo::getCreateTime).reversed())
                 .collect(Collectors.toList());
         return list;
@@ -95,16 +95,9 @@ public class MonitorServiceImpl implements MonitorService {
         return metaVo;
     }
 
-    private DataVo convertData2Vo(Map m) {
-        // TODO VO转换
-        logger.info(m.toString());
-        DataVo dataVo = new DataVo();
-        return dataVo;
-    }
-
-    private LogVo convertLog2Vo(Map m) {
-        LogVo logVo = new LogVo();
-        return logVo;
+    private <T> T convert2Vo(Map map, Class<T> clazz) {
+        String json = JsonUtil.objToJson(map);
+        return (T) JsonUtil.jsonToObj(json, clazz);
     }
 
 }

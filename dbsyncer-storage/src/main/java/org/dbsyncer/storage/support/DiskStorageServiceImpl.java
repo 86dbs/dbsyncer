@@ -61,7 +61,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
     }
 
     @Override
-    public List<Map> select(String collectionId, Query query) {
+    public List<Map> select(String collectionId, Query query) throws IOException {
         Shard shard = map.get(collectionId);
 
         // 检查是否存在历史
@@ -70,24 +70,20 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         }
 
         if (null != shard) {
-            try {
-                int pageNum = query.getPageNum() <= 0 ? 1 : query.getPageNum();
-                int pageSize = query.getPageSize() <= 0 ? 20 : query.getPageSize();
-                // 设置参数
-                List<Param> params = query.getParams();
-                if (!CollectionUtils.isEmpty(params)) {
-                    BooleanQuery.Builder builder = new BooleanQuery.Builder();
-                    params.forEach(p ->
-                            builder.add(new TermQuery(new Term(p.getKey(), p.getValue())), BooleanClause.Occur.MUST)
-                    );
-                    BooleanQuery q = builder.build();
-                    return shard.query(q, pageNum, pageSize);
-                }
-
-                return shard.query(new MatchAllDocsQuery(), pageNum, pageSize);
-            } catch (IOException e) {
-                logger.error(e.getMessage());
+            int pageNum = query.getPageNum() <= 0 ? 1 : query.getPageNum();
+            int pageSize = query.getPageSize() <= 0 ? 20 : query.getPageSize();
+            // 设置参数
+            List<Param> params = query.getParams();
+            if (!CollectionUtils.isEmpty(params)) {
+                BooleanQuery.Builder builder = new BooleanQuery.Builder();
+                params.forEach(p ->
+                        builder.add(new TermQuery(new Term(p.getKey(), p.getValue())), BooleanClause.Occur.MUST)
+                );
+                BooleanQuery q = builder.build();
+                return shard.query(q, pageNum, pageSize);
             }
+
+            return shard.query(new MatchAllDocsQuery(), pageNum, pageSize);
         }
         return Collections.emptyList();
     }
