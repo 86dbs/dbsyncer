@@ -31,41 +31,28 @@ public class Shard {
 
     private IndexReader indexReader;
 
-    private IndexSearcher indexSearcher;
+    private IndexWriterConfig config;
 
     private String path;
+
+    private final Object lock = new Object();
 
     private static final int MAX_SIZE = 10000;
 
     public Shard(String path) throws IOException {
         this.path = path;
-        init();
-    }
-
-    private void init() throws IOException {
         // 索引存放的位置，设置在当前目录中
         directory = FSDirectory.open(Paths.get(path));
         // 分词器
         analyzer = new SmartChineseAnalyzer();
         // 创建索引写入配置
-        IndexWriterConfig config = new IndexWriterConfig(analyzer);
+        config = new IndexWriterConfig(analyzer);
         // 默认32M, 减少合并次数
         config.setRAMBufferSizeMB(32);
         // 创建索引写入对象
         indexWriter = new IndexWriter(directory, config);
         // 创建索引的读取器
         indexReader = DirectoryReader.open(indexWriter);
-        // 创建一个索引的查找器，来检索索引库
-        indexSearcher = new IndexSearcher(indexReader);
-    }
-
-    public void close() {
-        try {
-            indexWriter.close();
-            indexReader.close();
-        } catch (IOException e) {
-            throw new StorageException(e);
-        }
     }
 
     public List<Map> query(Query query, int pageNum, int pageSize) throws IOException {
@@ -96,13 +83,42 @@ public class Shard {
     public void delete(Term term) throws IOException {
         if (null != term) {
             indexWriter.deleteDocuments(term);
-            indexWriter.commit();
+            forceFlush();
         }
     }
 
     public void deleteAll() throws IOException {
         indexWriter.deleteAll();
+        forceFlush();
+    }
+
+    public void close() {
+        try {
+            indexWriter.close();
+            indexReader.close();
+        } catch (IOException e) {
+            throw new StorageException(e);
+        }
+    }
+
+    private void forceFlush() throws IOException {
         indexWriter.commit();
+        indexWriter.close();
+    }
+
+    private IndexSearcher getSearcher() throws IOException {
+        // 复用索引读取器
+        IndexReader changeReader = DirectoryReader.openIfChanged((DirectoryReader) indexReader, indexWriter, true);
+        if (null != changeReader) {
+            indexReader.close();
+            indexReader = null;
+            synchronized (lock) {
+                if (null == indexReader) {
+                    indexReader = changeReader;
+                }
+            }
+        }
+        return new IndexSearcher(indexReader);
     }
 
     /**
@@ -114,7 +130,8 @@ public class Shard {
      * @throws IOException
      */
     private List<Map> executeQuery(Query query, int pageNum, int pageSize) throws IOException {
-        TopDocs topDocs = indexSearcher.search(query, pageSize > MAX_SIZE ? MAX_SIZE : pageSize);
+        IndexSearcher searcher = getSearcher();
+        TopDocs topDocs = searcher.search(query, MAX_SIZE);
 
         ScoreDoc[] docs = topDocs.scoreDocs;
         int total = docs.length;
@@ -126,11 +143,12 @@ public class Shard {
         end = end > total ? total : end;
 
         List<Map> list = new ArrayList<>();
+        Document doc = null;
         Map r = null;
         IndexableField f = null;
         while (begin < end) {
             //取得对应的文档对象
-            Document doc = indexSearcher.doc(docs[begin].doc);
+            doc = searcher.doc(docs[begin].doc);
             r = new LinkedHashMap<>();
             Iterator<IndexableField> iterator = doc.iterator();
             while (iterator.hasNext()) {
