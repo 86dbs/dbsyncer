@@ -35,6 +35,8 @@ public class Shard {
 
     private String path;
 
+    private static final int MAX_SIZE = 10000;
+
     public Shard(String path) throws IOException {
         this.path = path;
         init();
@@ -66,8 +68,8 @@ public class Shard {
         }
     }
 
-    public List<Map> prefixQuery(Query query) throws IOException {
-        return executeQuery(query);
+    public List<Map> query(Query query, int pageNum, int pageSize) throws IOException {
+        return executeQuery(query, pageNum, pageSize);
     }
 
     public void insert(Document doc) throws IOException {
@@ -107,18 +109,28 @@ public class Shard {
      * 执行查询，并打印查询到的记录数
      *
      * @param query
+     * @param pageNum
+     * @param pageSize
      * @throws IOException
      */
-    private List<Map> executeQuery(Query query) throws IOException {
+    private List<Map> executeQuery(Query query, int pageNum, int pageSize) throws IOException {
+        TopDocs topDocs = indexSearcher.search(query, pageSize > MAX_SIZE ? MAX_SIZE : pageSize);
 
-        TopDocs topDocs = indexSearcher.search(query, 10000);
+        ScoreDoc[] docs = topDocs.scoreDocs;
+        int total = docs.length;
+        int begin = (pageNum - 1) * pageSize;
+        int end = pageNum * pageSize;
+
+        // 判断边界
+        begin = begin > total ? total : begin;
+        end = end > total ? total : end;
 
         List<Map> list = new ArrayList<>();
         Map r = null;
         IndexableField f = null;
-        for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+        while (begin < end) {
             //取得对应的文档对象
-            Document doc = indexSearcher.doc(scoreDoc.doc);
+            Document doc = indexSearcher.doc(docs[begin].doc);
             r = new LinkedHashMap<>();
             Iterator<IndexableField> iterator = doc.iterator();
             while (iterator.hasNext()) {
@@ -126,6 +138,7 @@ public class Shard {
                 r.put(f.name(), f.stringValue());
             }
             list.add(r);
+            begin++;
         }
         return list;
     }

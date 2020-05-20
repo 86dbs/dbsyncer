@@ -1,8 +1,7 @@
 package org.dbsyncer.web.controller.index;
 
-import org.dbsyncer.biz.MappingService;
+import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.vo.RestResult;
-import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,18 +12,18 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 @RequestMapping("/meta")
-public class MetaController extends BaseController {
+public class MetaController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private MappingService mappingService;
+    private MonitorService monitorService;
 
     @GetMapping("/getAll")
     @ResponseBody
     public RestResult getAll() {
         try {
-            return RestResult.restSuccess(mappingService.getMetaAll());
+            return RestResult.restSuccess(monitorService.getMetaAll());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());

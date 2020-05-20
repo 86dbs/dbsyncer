@@ -48,7 +48,7 @@ public class FlushServiceImpl implements FlushService {
         long now = System.currentTimeMillis();
         List<Map> list = data.parallelStream().map(r -> {
             Map<String, Object> params = new HashMap();
-            params.put(ConfigConstant.CONFIG_MODEL_ID, snowflakeIdWorker.nextId());
+            params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             params.put(ConfigConstant.DATA_SUCCESS, success);
             params.put(ConfigConstant.DATA_EVENT, event);
             params.put(ConfigConstant.DATA_ERROR, error);

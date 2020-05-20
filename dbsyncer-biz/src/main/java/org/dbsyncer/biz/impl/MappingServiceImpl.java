@@ -121,16 +121,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         return "驱动停止成功";
     }
 
-    @Override
-    public List<MetaVo> getMetaAll() {
-        List<MetaVo> list = manager.getMetaAll()
-                .stream()
-                .map(m -> convertMeta2Vo(m))
-                .sorted(Comparator.comparing(MetaVo::getUpdateTime).reversed())
-                .collect(Collectors.toList());
-        return list;
-    }
-
     private MappingVo convertMapping2Vo(Mapping mapping) {
         String model = mapping.getModel();
         Assert.notNull(mapping, "Mapping can not be null.");
@@ -144,21 +134,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         // 元信息
         Meta meta = manager.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "Meta can not be null.");
-        MetaVo metaVo = new MetaVo(ModelEnum.getModelEnum(model).getName());
+        MetaVo metaVo = new MetaVo(ModelEnum.getModelEnum(model).getName(), mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
 
         MappingVo vo = new MappingVo(sConn, tConn, metaVo);
         BeanUtils.copyProperties(mapping, vo);
         return vo;
-    }
-
-    private MetaVo convertMeta2Vo(Meta meta) {
-        Mapping mapping = manager.getMapping(meta.getMappingId());
-        Assert.notNull(mapping, "驱动不存在.");
-        ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
-        MetaVo metaVo = new MetaVo(modelEnum.getName());
-        BeanUtils.copyProperties(meta, metaVo);
-        return metaVo;
     }
 
     /**

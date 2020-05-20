@@ -45,4 +45,12 @@ public interface StorageService {
      * @param list
      */
     void addData(StorageEnum data, String collectionId, List<Map> list);
+
+    /**
+     * 清空数据/日志
+     *
+     * @param type
+     * @param collectionId
+     */
+    void clear(StorageEnum type, String collectionId);
 }

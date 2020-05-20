@@ -33,6 +33,21 @@ public abstract class ParamsUtil {
         return doc;
     }
 
+    public static Document convertLog2Doc(Map params) {
+        Assert.notNull(params, "Params can not be null.");
+        Document doc = new Document();
+        String id = (String) params.get(ConfigConstant.CONFIG_MODEL_ID);
+        String type = (String) params.get(ConfigConstant.CONFIG_MODEL_TYPE);
+        String json = (String) params.get(ConfigConstant.CONFIG_MODEL_JSON);
+        Long createTime = (Long) params.get(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
+
+        doc.add(new StringField(ConfigConstant.CONFIG_MODEL_ID, id, Field.Store.YES));
+        doc.add(new StringField(ConfigConstant.CONFIG_MODEL_TYPE, type, Field.Store.YES));
+        doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_JSON, json));
+        doc.add(new LongPoint(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
+        return doc;
+    }
+
     public static Document convertData2Doc(Map params) {
         Assert.notNull(params, "Params can not be null.");
         Document doc = new Document();

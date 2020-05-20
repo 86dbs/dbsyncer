@@ -7,9 +7,9 @@ package org.dbsyncer.storage.query;
  */
 public class Param {
     private String key;
-    private Object value;
+    private String value;
 
-    public Param(String key, Object value) {
+    public Param(String key, String value) {
         this.key = key;
         this.value = value;
     }
@@ -18,7 +18,7 @@ public class Param {
         return key;
     }
 
-    public Object getValue() {
+    public String getValue() {
         return value;
     }
 }

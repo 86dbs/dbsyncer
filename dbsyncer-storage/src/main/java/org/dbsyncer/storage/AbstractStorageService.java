@@ -33,6 +33,8 @@ public abstract class AbstractStorageService implements StorageService, Applicat
 
     public abstract void delete(String collectionId, String id) throws IOException;
 
+    public abstract void deleteAll(String collectionId) throws IOException;
+
     /**
      * 记录日志
      *
@@ -132,6 +134,16 @@ public abstract class AbstractStorageService implements StorageService, Applicat
             insertData(getCollectionId(type, collectionId), list);
         } catch (IOException e) {
             logger.error(e.getMessage());
+            throw new StorageException(e);
+        }
+    }
+
+    @Override
+    public void clear(StorageEnum type, String collectionId) {
+        try {
+            deleteAll(getCollectionId(type, collectionId));
+        } catch (IOException e) {
+            logger.error("clear collectionId:{}, failed:{}", collectionId, e.getMessage());
             throw new StorageException(e);
         }
     }

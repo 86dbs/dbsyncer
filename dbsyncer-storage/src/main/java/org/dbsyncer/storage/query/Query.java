@@ -12,8 +12,22 @@ public class Query {
 
     private List<Param> params;
 
+    private int pageNum = 1;
+
+    private int pageSize = 20;
+
     public Query() {
-        params = new ArrayList<>();
+        this.params = new ArrayList<>();
+    }
+
+    public Query(int pageNum, int pageSize) {
+        this.pageNum = pageNum;
+        this.pageSize = pageSize;
+        this.params = new ArrayList<>();
+    }
+
+    public void put(String key, String value) {
+        params.add(new Param(key, value));
     }
 
     public List<Param> getParams() {
@@ -24,9 +38,19 @@ public class Query {
         this.params = params;
     }
 
-    public void put(String key, String value) {
-        params.add(new Param(key, value));
+    public int getPageNum() {
+        return pageNum;
+    }
+
+    public void setPageNum(int pageNum) {
+        this.pageNum = pageNum;
+    }
+
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    public void setPageSize(int pageSize) {
+        this.pageSize = pageSize;
     }
 }
-
-

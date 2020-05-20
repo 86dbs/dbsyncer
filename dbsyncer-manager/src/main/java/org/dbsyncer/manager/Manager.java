@@ -75,6 +75,16 @@ public interface Manager extends Executor {
 
     List<Meta> getMetaAll();
 
+    // Data
+    List<Map> queryData(String id, int pageNum, int pageSize);
+
+    void clearData(String id);
+
+    // Log
+    List<Map> queryLog(String type, int pageNum, int pageSize);
+
+    void clearLog(String type);
+
     // ConnectorEnum
     List<ConnectorEnum> getConnectorEnumAll();
 

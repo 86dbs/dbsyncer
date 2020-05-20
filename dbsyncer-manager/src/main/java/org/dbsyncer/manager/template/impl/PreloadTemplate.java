@@ -60,7 +60,7 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
         boolean empty = CollectionUtils.isEmpty(list);
         logger.info("PreLoad {}:{}", filterType, empty ? 0 : list.size());
         if (!empty) {
-            Handler handler = config.getHandler();
+            Handler handler = config.getHandlerEnum().getHandler();
             GroupStrategyEnum strategy = getDefaultStrategy(config);
             list.forEach(map -> {
                 String json = (String) map.get(ConfigConstant.CONFIG_MODEL_JSON);
@@ -75,13 +75,13 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
     @Override
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
         // Load connectors
-        execute(new PreloadConfig(ConfigConstant.CONNECTOR, HandlerEnum.PRELOAD_CONNECTOR.getHandler()));
+        execute(new PreloadConfig(ConfigConstant.CONNECTOR, HandlerEnum.PRELOAD_CONNECTOR));
         // Load mappings
-        execute(new PreloadConfig(ConfigConstant.MAPPING, HandlerEnum.PRELOAD_MAPPING.getHandler()));
+        execute(new PreloadConfig(ConfigConstant.MAPPING, HandlerEnum.PRELOAD_MAPPING));
         // Load tableGroups
-        execute(new PreloadConfig(ConfigConstant.TABLE_GROUP, GroupStrategyEnum.TABLE, HandlerEnum.PRELOAD_TABLE_GROUP.getHandler()));
+        execute(new PreloadConfig(ConfigConstant.TABLE_GROUP, GroupStrategyEnum.TABLE, HandlerEnum.PRELOAD_TABLE_GROUP));
         // Load metas
-        execute(new PreloadConfig(ConfigConstant.META, HandlerEnum.PRELOAD_META.getHandler()));
+        execute(new PreloadConfig(ConfigConstant.META, HandlerEnum.PRELOAD_META));
 
         // 启动驱动
         Meta meta = new Meta();
