@@ -58,7 +58,6 @@ public class MonitorServiceImpl implements MonitorService {
         List<DataVo> list = manager.queryData(id, pageNum, pageSize)
                 .stream()
                 .map(m -> convert2Vo(m, DataVo.class))
-                .sorted(Comparator.comparing(DataVo::getCreateTime).reversed())
                 .collect(Collectors.toList());
         return list;
     }
@@ -74,7 +73,6 @@ public class MonitorServiceImpl implements MonitorService {
         List<LogVo> list = manager.queryLog(type, pageNum, pageSize)
                 .stream()
                 .map(m -> convert2Vo(m, LogVo.class))
-                .sorted(Comparator.comparing(LogVo::getCreateTime).reversed())
                 .collect(Collectors.toList());
         return list;
     }

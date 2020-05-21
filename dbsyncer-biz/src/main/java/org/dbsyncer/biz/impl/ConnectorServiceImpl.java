@@ -12,8 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author AE86
@@ -57,7 +59,11 @@ public class ConnectorServiceImpl implements ConnectorService {
 
     @Override
     public List<Connector> getConnectorAll() {
-        return manager.getConnectorAll();
+        List<Connector> list = manager.getConnectorAll()
+                .stream()
+                .sorted(Comparator.comparing(Connector::getUpdateTime).reversed())
+                .collect(Collectors.toList());
+        return list;
     }
 
     @Override

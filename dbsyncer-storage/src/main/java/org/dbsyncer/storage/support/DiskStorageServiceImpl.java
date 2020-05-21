@@ -3,10 +3,7 @@ package org.dbsyncer.storage.support;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.*;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
@@ -72,6 +69,9 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         if (null != shard) {
             int pageNum = query.getPageNum() <= 0 ? 1 : query.getPageNum();
             int pageSize = query.getPageSize() <= 0 ? 20 : query.getPageSize();
+            // 根据修改时间 > 创建时间排序
+            Sort sort = new Sort(new SortField(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortField.Type.LONG, true),
+                    new SortField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SortField.Type.LONG, true));
             // 设置参数
             List<Param> params = query.getParams();
             if (!CollectionUtils.isEmpty(params)) {
@@ -80,10 +80,10 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
                         builder.add(new TermQuery(new Term(p.getKey(), p.getValue())), BooleanClause.Occur.MUST)
                 );
                 BooleanQuery q = builder.build();
-                return shard.query(q, pageNum, pageSize);
+                return shard.query(q, pageNum, pageSize, sort);
             }
 
-            return shard.query(new MatchAllDocsQuery(), pageNum, pageSize);
+            return shard.query(new MatchAllDocsQuery(), pageNum, pageSize, sort);
         }
         return Collections.emptyList();
     }
