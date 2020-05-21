@@ -16,6 +16,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,11 +56,11 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
         Query query = new Query();
         String filterType = config.getFilterType();
         query.put(ConfigConstant.CONFIG_MODEL_TYPE, filterType);
-        List<Map> list = storageService.queryConfig(query);
+        List<Map> list = storageService.query(StorageEnum.CONFIG, query);
         boolean empty = CollectionUtils.isEmpty(list);
         logger.info("PreLoad {}:{}", filterType, empty ? 0 : list.size());
         if (!empty) {
-            Handler handler = config.getHandler();
+            Handler handler = config.getHandlerEnum().getHandler();
             GroupStrategyEnum strategy = getDefaultStrategy(config);
             list.forEach(map -> {
                 String json = (String) map.get(ConfigConstant.CONFIG_MODEL_JSON);
@@ -74,13 +75,13 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
     @Override
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
         // Load connectors
-        execute(new PreloadConfig(ConfigConstant.CONNECTOR, HandlerEnum.PRELOAD_CONNECTOR.getHandler()));
+        execute(new PreloadConfig(ConfigConstant.CONNECTOR, HandlerEnum.PRELOAD_CONNECTOR));
         // Load mappings
-        execute(new PreloadConfig(ConfigConstant.MAPPING, HandlerEnum.PRELOAD_MAPPING.getHandler()));
+        execute(new PreloadConfig(ConfigConstant.MAPPING, HandlerEnum.PRELOAD_MAPPING));
         // Load tableGroups
-        execute(new PreloadConfig(ConfigConstant.TABLE_GROUP, GroupStrategyEnum.TABLE, HandlerEnum.PRELOAD_TABLE_GROUP.getHandler()));
+        execute(new PreloadConfig(ConfigConstant.TABLE_GROUP, GroupStrategyEnum.TABLE, HandlerEnum.PRELOAD_TABLE_GROUP));
         // Load metas
-        execute(new PreloadConfig(ConfigConstant.META, HandlerEnum.PRELOAD_META.getHandler()));
+        execute(new PreloadConfig(ConfigConstant.META, HandlerEnum.PRELOAD_META));
 
         // 启动驱动
         Meta meta = new Meta();

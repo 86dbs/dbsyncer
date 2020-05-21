@@ -8,11 +8,13 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.ParserEnum;
+import org.dbsyncer.parser.flush.FlushService;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -52,6 +54,9 @@ public class ParserFactory implements Parser {
 
     @Autowired
     private CacheService cacheService;
+
+    @Autowired
+    private FlushService flushService;
 
     @Autowired
     private ApplicationContext applicationContext;
@@ -216,7 +221,7 @@ public class ParserFactory implements Parser {
             Result writer = writeBatch(tConfig, command, picker.getTargetFields(), target, threadSize, batchSize);
 
             // 6、更新结果
-            flush(task, writer, target.size());
+            flush(task, writer, target);
 
             // 7、更新分页数
             params.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(++pageIndex));
@@ -225,7 +230,7 @@ public class ParserFactory implements Parser {
 
     @Override
     public void execute(Mapping mapping, TableGroup tableGroup, DataEvent dataEvent) {
-        logger.info("同步数据=> dataEvent:{}", dataEvent);
+        logger.info("{}", dataEvent);
         final String metaId = mapping.getMetaId();
 
         ConnectorConfig tConfig = getConnectorConfig(mapping.getTargetConnectorId());
@@ -255,7 +260,9 @@ public class ParserFactory implements Parser {
         Result writer = connectorFactory.writer(tConfig, picker.getTargetFields(), command, event, target);
 
         // 5、更新结果
-        flush(metaId, writer, 1);
+        List<Map<String, Object>> list = new ArrayList<>(1);
+        list.add(target);
+        flush(metaId, writer, event, list);
     }
 
     /**
@@ -263,26 +270,33 @@ public class ParserFactory implements Parser {
      *
      * @param task
      * @param writer
-     * @param total
+     * @param data
      */
-    private void flush(Task task, Result writer, long total) {
-        flush(task.getId(), writer, total);
+    private void flush(Task task, Result writer, List<Map<String, Object>> data) {
+        flush(task.getId(), writer, ConnectorConstant.OPERTION_DELETE, data);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(System.currentTimeMillis());
         applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
     }
 
-    private void flush(String metaId, Result writer, long total) {
+    private void flush(String metaId, Result writer, String event, List<Map<String, Object>> data) {
         // 引用传递
+        long total = data.size();
         long fail = writer.getFail().get();
         Meta meta = getMeta(metaId);
         meta.getFail().getAndAdd(fail);
         meta.getSuccess().getAndAdd(total - fail);
-        // print process
-        logger.info("任务:{}, 成功:{}, 失败:{}", metaId, meta.getSuccess(), meta.getFail());
 
-        // TODO 记录错误日志
+        // 记录错误数据
+        Queue<Map<String, Object>> failData = writer.getFailData();
+        boolean success = CollectionUtils.isEmpty(failData);
+        if (!success) {
+            data.clear();
+            data.addAll(failData);
+        }
+        String error = writer.getError().toString();
+        flushService.asyncWrite(metaId, event, success, data, error);
     }
 
     /**
@@ -325,7 +339,7 @@ public class ParserFactory implements Parser {
      * @return
      */
     private Result writeBatch(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> target,
-                                int threadSize, int batchSize) {
+                              int threadSize, int batchSize) {
         // 总数
         int total = target.size();
         // 单次任务

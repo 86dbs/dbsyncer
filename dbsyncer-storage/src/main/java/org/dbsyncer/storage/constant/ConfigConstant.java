@@ -25,4 +25,11 @@ public class ConfigConstant {
     public static final String TABLE_GROUP = "tableGroup";
     public static final String META = "meta";
 
+    /**
+     * 数据
+     */
+    public static final String DATA_SUCCESS = "success";
+    public static final String DATA_EVENT = "event";
+    public static final String DATA_ERROR = "error";
+
 }

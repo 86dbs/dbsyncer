@@ -19,12 +19,7 @@ import java.util.Map;
 public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
-    public List<Map> queryConfig(Query query) {
-        return null;
-    }
-
-    @Override
-    public List<Map> query(String collectionId, Query query) {
+    public List<Map> select(String collectionId, Query query) {
         return null;
     }
 
@@ -40,6 +35,21 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void delete(String collectionId, String id) throws IOException {
+
+    }
+
+    @Override
+    public void deleteAll(String collectionId) throws IOException {
+
+    }
+
+    @Override
+    public void insertLog(String collectionId, Map<String, Object> params) throws IOException {
+
+    }
+
+    @Override
+    public void insertData(String collectionId, List<Map> list) throws IOException {
 
     }
 }

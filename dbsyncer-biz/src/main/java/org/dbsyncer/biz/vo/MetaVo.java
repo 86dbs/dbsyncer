@@ -11,9 +11,12 @@ public class MetaVo extends Meta {
 
     // 同步方式
     private String model;
+    // 驱动名称
+    private String mappingName;
 
-    public MetaVo(String model) {
+    public MetaVo(String model, String mappingName) {
         this.model = model;
+        this.mappingName = mappingName;
     }
 
     public String getModel() {
@@ -22,5 +25,13 @@ public class MetaVo extends Meta {
 
     public void setModel(String model) {
         this.model = model;
+    }
+
+    public String getMappingName() {
+        return mappingName;
+    }
+
+    public void setMappingName(String mappingName) {
+        this.mappingName = mappingName;
     }
 }

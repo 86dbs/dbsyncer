@@ -1,6 +1,7 @@
 package org.dbsyncer.manager.config;
 
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
+import org.dbsyncer.manager.enums.HandlerEnum;
 import org.dbsyncer.manager.template.Handler;
 
 public class PreloadConfig {
@@ -9,17 +10,17 @@ public class PreloadConfig {
 
     private GroupStrategyEnum groupStrategyEnum;
 
-    private Handler handler;
+    private HandlerEnum handlerEnum;
 
-    public PreloadConfig(String filterType, Handler handler) {
+    public PreloadConfig(String filterType, HandlerEnum handlerEnum) {
         this.filterType = filterType;
-        this.handler = handler;
+        this.handlerEnum = handlerEnum;
     }
 
-    public PreloadConfig(String filterType, GroupStrategyEnum groupStrategyEnum, Handler handler) {
+    public PreloadConfig(String filterType, GroupStrategyEnum groupStrategyEnum, HandlerEnum handlerEnum) {
         this.filterType = filterType;
         this.groupStrategyEnum = groupStrategyEnum;
-        this.handler = handler;
+        this.handlerEnum = handlerEnum;
     }
 
     public String getFilterType() {
@@ -30,7 +31,7 @@ public class PreloadConfig {
         return groupStrategyEnum;
     }
 
-    public Handler getHandler() {
-        return handler;
+    public HandlerEnum getHandlerEnum() {
+        return handlerEnum;
     }
 }
