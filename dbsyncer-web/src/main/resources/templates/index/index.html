@@ -135,7 +135,7 @@
                                                             ,耗时:[[${(m?.meta?.endTime - m?.meta?.beginTime) / 1000}]]秒
                                                             </span>
                                                             <span th:if="${m?.meta?.success gt 0}">,成功:[[${m?.meta?.success}]]</span>
-                                                            <span th:if="${m?.meta?.fail gt 0}">,失败:[[${m?.meta?.fail}]] <a  th:id="${m?.meta?.id}" href="javascript:;" class="label label-danger queryData">日志</a></span>
+                                                            <span th:if="${m?.meta?.fail gt 0}">,失败:[[${m?.meta?.fail}]] <a th:id="${m?.meta?.id}" href="javascript:;" class="label label-danger queryData">日志</a></span>
                                                         </td>
                                                     </tr>
                                                     <tr>

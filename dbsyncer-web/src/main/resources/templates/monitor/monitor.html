@@ -5,9 +5,6 @@
 <!-- Monitor -->
 <div class="container-fluid">
 
-    图表信息
-    <p>CPU 内存 硬盘 堆内存 </p>
-
     <div class="form-group">
         <div class="row">
             <div class="col-md-3">
@@ -22,31 +19,30 @@
 
     <!-- 数据 -->
     <table class="table table-hover">
-        <caption>
-            数据
-        </caption>
         <thead>
         <tr>
-            <th></th>
-            <th>时间</th>
-            <th>数据</th>
-            <th>事件</th>
-            <th>结果</th>
-            <th>异常</th>
+            <th style="width:3%;"></th>
+            <th style="width:12%;">时间</th>
+            <th style="width:5%;">事件</th>
+            <th style="width:5%;">结果</th>
+            <th style="width:65%;">异常</th>
+            <th style="width:10%;">详情</th>
         </tr>
         </thead>
         <tr th:each="d,s : ${data}">
             <td th:text="${s.index}+1"></td>
             <td th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
-            <td th:text="${d?.json}"></td>
             <td th:text="${d?.event}"></td>
             <td>
                 <span th:if="${d?.success}" class="label label-success">成功</span>
                 <span th:if="${not d?.success}" class="label label-warning">失败</span>
             </td>
             <td th:text="${d?.error}"></td>
+            <td><a th:json="${d?.json}" href="javascript:;" class="label label-info">查看数据</a></td>
         </tr>
     </table>
+
+    <p>CPU 内存 硬盘 堆内存 </p>
 
     <!-- 线程任务 -->
     <table class="table table-hover">
