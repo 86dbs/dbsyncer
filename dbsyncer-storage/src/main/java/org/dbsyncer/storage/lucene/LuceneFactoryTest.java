@@ -1,11 +1,13 @@
 package org.dbsyncer.storage.lucene;
 
+import org.apache.commons.lang.math.RandomUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
@@ -13,158 +15,114 @@ import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
 
 public class LuceneFactoryTest {
 
-    private Directory directory;
-
-    private Analyzer analyzer;
-
-    private IndexWriter indexWriter;
-
-    private IndexReader indexReader;
-
-    private IndexSearcher indexSearcher;
+    private Shard shard;
 
     @Before
     public void setUp() throws IOException {
-        //索引存放的位置，设置在当前目录中
-        directory = FSDirectory.open(Paths.get("target/indexDir/"));
-
-        analyzer = new SmartChineseAnalyzer();
-
-        //创建索引写入配置
-        IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
-
-        //创建索引写入对象
-        indexWriter = new IndexWriter(directory, indexWriterConfig);
-
-        //创建索引的读取器
-        indexReader = DirectoryReader.open(indexWriter);
-
-        //创建一个索引的查找器，来检索索引库
-        indexSearcher = new IndexSearcher(indexReader);
-
+        shard = new Shard("target/indexDir/");
     }
 
     @After
-    public void tearDown() throws Exception {
-        //关闭流
-        indexWriter.close();
-        indexReader.close();
+    public void tearDown() {
+        shard.close();
     }
 
-    /**
-     * 执行查询，并打印查询到的记录数
-     * @param query
-     * @throws IOException
-     */
-    protected void executeQuery(Query query) throws IOException {
+    @Test
+    public void testQuery() throws IOException {
+        int size = 3;
+        for (int i = size; i > 0; i--) {
+            Document doc = new Document();
+            doc.add(new StringField("id", String.valueOf(i), Field.Store.YES));
+            doc.add(new StringField("name", "中文" + i, Field.Store.YES));
+            doc.add(new TextField("content", "这是一串很长长长长长长长的文本", Field.Store.YES));
 
-        TopDocs topDocs = indexSearcher.search(query, 100);
+            // 创建索引
+            int age = RandomUtils.nextInt(50);
+            doc.add(new IntPoint("age", age));
+            // 需要存储内容
+            doc.add(new StoredField("age", age));
+            // 需要排序
+            doc.add(new NumericDocValuesField("age", age));
+            System.out.println(String.format("id=%s,age:=%s", String.valueOf(i), age));
 
-        //打印查询到的记录数
-        System.out.println("总共查询到" + topDocs.totalHits + "个文档");
-        for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+            // 2020-05-23 12:00:00
+            long createTime = 1590206400000L + i;
+            doc.add(new LongPoint("createTime", createTime));
+            doc.add(new StoredField("createTime", createTime));
+            doc.add(new NumericDocValuesField("createTime", createTime));
 
-            //取得对应的文档对象
-            Document document = indexSearcher.doc(scoreDoc.doc);
-            System.out.println("id：" + document.get("id"));
-            System.out.println("title：" + document.get("title"));
-            System.out.println("content：" + document.get("content"));
+            shard.insert(doc);
         }
-    }
+        // 范围查询 IntPoint.newRangeQuery("id", 1, 100)
+        // 集合查询 IntPoint.newSetQuery("id", 2, 3)
+        // 单个查询 IntPoint.newExactQuery("id", 3)
+        BooleanQuery query = new BooleanQuery.Builder()
+                .add(IntPoint.newRangeQuery("age", 1, 100), BooleanClause.Occur.MUST)
+                .build();
+        List<Map> maps = shard.query(query, new Sort(new SortField("createTime", SortField.Type.LONG, true)));
+        maps.forEach(m -> System.out.println(m));
 
-    /**
-     * 分词打印
-     *
-     * @param analyzer
-     * @param text
-     * @throws IOException
-     */
-    protected void printAnalyzerDoc(Analyzer analyzer, String text) throws IOException {
-
-        TokenStream tokenStream = analyzer.tokenStream("content", new StringReader(text));
-        CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
-        try {
-            tokenStream.reset();
-            while (tokenStream.incrementToken()) {
-                System.out.println(charTermAttribute.toString());
-            }
-            tokenStream.end();
-        } finally {
-            tokenStream.close();
-            analyzer.close();
-        }
+        // 清空
+        shard.deleteAll();
     }
 
     @Test
-    public void indexWriterTest() throws IOException {
-        long start = System.currentTimeMillis();
+    public void testCURD() throws IOException {
+        System.out.println("测试前：");
+        List<Map> maps = shard.query(new MatchAllDocsQuery());
+        maps.forEach(m -> System.out.println(m));
+        check();
 
-        //创建Document对象，存储索引
+        // 新增
         Document doc = new Document();
+        String id = "100";
+        doc.add(new StringField("id", id, Field.Store.YES));
+        doc.add(new StringField("name", "中文", Field.Store.YES));
+        shard.insert(doc);
+        System.out.println("新增后：");
+        maps = shard.query(new MatchAllDocsQuery());
+        maps.forEach(m -> System.out.println(m));
+        check();
 
-        int id = 1;
+        // 修改
+        doc.add(new StringField("name", "中文[已修改]", Field.Store.YES));
+        shard.update(new Term("id", id), doc);
+        System.out.println("修改后：");
+        maps = shard.query(new MatchAllDocsQuery());
+        maps.forEach(m -> System.out.println(m));
+        check();
 
-        //将字段加入到doc中
-        doc.add(new IntPoint("id", id));
-        doc.add(new StringField("title", "Spark", Field.Store.YES));
-        doc.add(new TextField("content", "Apache Spark 是专为大规模数据处理而设计的快速通用的计算引擎", Field.Store.YES));
-        doc.add(new StoredField("id", id));
+        // 删除
+        shard.delete(new Term("id", id));
+        System.out.println("删除后：");
+        maps = shard.query(new MatchAllDocsQuery());
+        maps.forEach(m -> System.out.println(m));
+        check();
 
-        //将doc对象保存到索引库中
-        indexWriter.addDocument(doc);
-
-        indexWriter.commit();
-
-        long end = System.currentTimeMillis();
-        System.out.println("索引花费了" + (end - start) + " 毫秒");
+        // 清空
+        shard.deleteAll();
     }
 
     @Test
-    public void updateDocumentTest() throws IOException {
-        Document doc = new Document();
-
-        int id = 1;
-
-        doc.add(new IntPoint("id", id));
-        doc.add(new StringField("title", "Spark", Field.Store.YES));
-        doc.add(new TextField("content", "Apache Spark 是专为大规模数据处理而设计的快速通用的计算引擎", Field.Store.YES));
-        doc.add(new StoredField("id", id));
-
-        long count = indexWriter.updateDocument(new Term("id", "1"), doc);
-        System.out.println("更新文档:" + count);
-        indexWriter.commit();
-    }
-
-    @Test
-    public void deleteDocumentsTest() throws IOException {
-
-        // 删除title中含有关键词“Spark”的文档
-        long count = indexWriter.deleteDocuments(new Term("title", "Spark"));
-
-        //  除此之外IndexWriter还提供了以下方法：
-        // DeleteDocuments(Query query):根据Query条件来删除单个或多个Document
-        // DeleteDocuments(Query[] queries):根据Query条件来删除单个或多个Document
-        // DeleteDocuments(Term term):根据Term来删除单个或多个Document
-        // DeleteDocuments(Term[] terms):根据Term来删除单个或多个Document
-        // DeleteAll():删除所有的Document
-
-        //使用IndexWriter进行Document删除操作时，文档并不会立即被删除，而是把这个删除动作缓存起来，当IndexWriter.Commit()或IndexWriter.Close()时，删除操作才会被真正执行。
-
-        indexWriter.commit();
-
-        System.out.println("删除完成:" + count);
+    public void fmtDate() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime localDateTime = LocalDateTime.parse("2020-05-23 12:00:00", formatter);
+        long timeStamp = localDateTime.toInstant(ZoneOffset.ofHours(8)).toEpochMilli();
+        System.out.println(timeStamp);
     }
 
     /**
@@ -179,13 +137,12 @@ public class LuceneFactoryTest {
      */
     @Test
     public void termQueryTest() throws IOException {
-
         String searchField = "title";
         //这是一个条件查询的api，用于添加条件
         TermQuery query = new TermQuery(new Term(searchField, "Spark"));
 
         //执行查询，并打印查询到的记录数
-        executeQuery(query);
+        shard.query(query);
     }
 
     /**
@@ -227,7 +184,7 @@ public class LuceneFactoryTest {
         BooleanQuery query = builder.build();
 
         //执行查询，并打印查询到的记录数
-        executeQuery(query);
+        shard.query(query);
     }
 
     /**
@@ -245,7 +202,7 @@ public class LuceneFactoryTest {
         Query query = new PrefixQuery(term);
 
         //执行查询，并打印查询到的记录数
-        executeQuery(query);
+        shard.query(query);
     }
 
     /**
@@ -273,7 +230,7 @@ public class LuceneFactoryTest {
         PhraseQuery phraseQuery = builder.build();
 
         //执行查询，并打印查询到的记录数
-        executeQuery(phraseQuery);
+        shard.query(phraseQuery);
     }
 
     /**
@@ -291,7 +248,7 @@ public class LuceneFactoryTest {
         Query query = new FuzzyQuery(t);
 
         //执行查询，并打印查询到的记录数
-        executeQuery(query);
+        shard.query(query);
     }
 
     /**
@@ -309,7 +266,7 @@ public class LuceneFactoryTest {
         Query query = new WildcardQuery(term);
 
         //执行查询，并打印查询到的记录数
-        executeQuery(query);
+        shard.query(query);
     }
 
     /**
@@ -320,7 +277,7 @@ public class LuceneFactoryTest {
      */
     @Test
     public void queryParserTest() throws IOException, ParseException {
-
+        final Analyzer analyzer = shard.getAnalyzer();
         String searchField = "content";
 
         //指定搜索字段和分析器
@@ -331,7 +288,7 @@ public class LuceneFactoryTest {
         Query query = parser.parse("Spark");
 
         //执行查询，并打印查询到的记录数
-        executeQuery(query);
+        shard.query(query);
     }
 
     /**
@@ -341,6 +298,8 @@ public class LuceneFactoryTest {
      */
     @Test
     public void HighlighterTest() throws IOException, ParseException, InvalidTokenOffsetsException {
+        final Analyzer analyzer = shard.getAnalyzer();
+        final IndexSearcher searcher = shard.getSearcher();
 
         String searchField = "content";
         String text = "Apache Spark 大规模数据处理";
@@ -351,7 +310,7 @@ public class LuceneFactoryTest {
         //用户输入内容
         Query query = parser.parse(text);
 
-        TopDocs topDocs = indexSearcher.search(query, 100);
+        TopDocs topDocs = searcher.search(query, 100);
 
         // 关键字高亮显示的html标签，需要导入lucene-highlighter-xxx.jar
         SimpleHTMLFormatter simpleHTMLFormatter = new SimpleHTMLFormatter("<span style='color:red'>", "</span>");
@@ -360,7 +319,7 @@ public class LuceneFactoryTest {
         for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
 
             //取得对应的文档对象
-            Document document = indexSearcher.doc(scoreDoc.doc);
+            Document document = searcher.doc(scoreDoc.doc);
 
             // 内容增加高亮显示
             TokenStream tokenStream = analyzer.tokenStream("content", new StringReader(document.get("content")));
@@ -371,18 +330,35 @@ public class LuceneFactoryTest {
 
     }
 
-    /**
-     * IKAnalyzer  中文分词器
-     * SmartChineseAnalyzer  smartcn分词器 需要lucene依赖 且和lucene版本同步
-     *
-     * @throws IOException
-     */
     @Test
-    public void AnalyzerTest() throws IOException {
+    public void testAnalyzerDoc() throws IOException {
+        // SmartChineseAnalyzer  smartcn分词器 需要lucene依赖 且和lucene版本同步
+        Analyzer analyzer = new SmartChineseAnalyzer();
 
         String text = "Apache Spark 是专为大规模数据处理而设计的快速通用的计算引擎";
-        analyzer = new SmartChineseAnalyzer();
-        printAnalyzerDoc(analyzer, text);
+        TokenStream tokenStream = analyzer.tokenStream("content", new StringReader(text));
+        CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
+        try {
+            tokenStream.reset();
+            while (tokenStream.incrementToken()) {
+                System.out.println(charTermAttribute.toString());
+            }
+            tokenStream.end();
+        } finally {
+            tokenStream.close();
+            analyzer.close();
+        }
     }
 
+    private void check() throws IOException {
+        final IndexSearcher searcher = shard.getSearcher();
+        IndexReader reader = searcher.getIndexReader();
+        // 通过reader可以有效的获取到文档的数量
+        // 有效的索引文档
+        System.out.println("有效的索引文档:" + reader.numDocs());
+        // 总共的索引文档
+        System.out.println("总共的索引文档:" + reader.maxDoc());
+        // 删掉的索引文档，其实不恰当，应该是在回收站里的索引文档
+        System.out.println("删掉的索引文档:" + reader.numDeletedDocs());
+    }
 }
