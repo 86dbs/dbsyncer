@@ -2,6 +2,7 @@ package org.dbsyncer.web.controller.monitor;
 
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,10 +14,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/monitor")
-public class MonitorController {
+public class MonitorController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -25,15 +27,20 @@ public class MonitorController {
 
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
+        Map<String, String> params = getParams(request);
         model.put("threadInfo", monitorService.getThreadInfo());
+        model.put("meta", monitorService.getMetaAll());
+        model.put("data", monitorService.queryData(params));
+        model.put("metaId", monitorService.getDefaultMetaId(params));
         return "monitor/monitor.html";
     }
 
     @GetMapping("/queryData")
     @ResponseBody
-    public RestResult queryData(@RequestParam(value = "id") String id, @RequestParam(value = "pageNum") int pageNum, @RequestParam(value = "pageSize") int pageSize) {
+    public RestResult queryData(HttpServletRequest request) {
         try {
-            return RestResult.restSuccess(monitorService.queryData(id, pageNum, pageSize));
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(monitorService.queryData(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());
@@ -42,9 +49,10 @@ public class MonitorController {
 
     @GetMapping("/queryLog")
     @ResponseBody
-    public RestResult queryLog(@RequestParam(value = "type") String type, @RequestParam(value = "pageNum") int pageNum, @RequestParam(value = "pageSize") int pageSize) {
+    public RestResult queryLog(HttpServletRequest request) {
         try {
-            return RestResult.restSuccess(monitorService.queryLog(type, pageNum, pageSize));
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(monitorService.queryLog(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());

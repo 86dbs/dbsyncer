@@ -20,6 +20,13 @@ function backIndexPage() {
     $initContainer.load("/index?refresh=" + new Date().getTime());
 }
 
+// 跳转菜单
+function activeMenu($url){
+    var $menu = $('#menu > li');
+    $menu.removeClass('active');
+    $menu.find("a[url='" + $url + "']").parent().addClass('active');
+}
+
 // 美化SQL
 function beautifySql(){
     var $sql = $("#sql");

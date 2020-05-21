@@ -22,21 +22,26 @@ public interface MonitorService {
     Map getThreadInfo();
 
     /**
-     * 获取运行的驱动列表
+     * 获取驱动元信息列表
      *
      * @return
      */
     List<MetaVo> getMetaAll();
 
     /**
+     * 获取驱动默认元信息id
+     * @param params
+     * @return
+     */
+    String getDefaultMetaId(Map<String, String> params);
+
+    /**
      * 查询驱动同步数据
      *
      * @return
-     * @param id
-     * @param pageNum
-     * @param pageSize
+     * @param params
      */
-    List<DataVo> queryData(String id, int pageNum, int pageSize);
+    List<DataVo> queryData(Map<String, String> params);
 
     /**
      * 清空驱动同步数据
@@ -49,12 +54,10 @@ public interface MonitorService {
     /**
      * 查询操作日志
      *
-     * @param type
-     * @param pageNum
-     * @param pageSize
+     * @param params
      * @return
      */
-    List<LogVo> queryLog(String type, int pageNum, int pageSize);
+    List<LogVo> queryLog(Map<String, String> params);
 
     /**
      * 清空操作日志
@@ -63,4 +66,5 @@ public interface MonitorService {
      * @return
      */
     String clearLog(String type);
+
 }
