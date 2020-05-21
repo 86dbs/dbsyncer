@@ -16,4 +16,21 @@ $(function () {
         changeMetaData($(this));
     });
 
+    // 查看详细数据
+    $(".metaDataList .queryData").click(function () {
+        var json = $(this).attr("json");
+        BootstrapDialog.show({
+            title: "注意信息安全",
+            type: BootstrapDialog.TYPE_INFO,
+            message: json,
+            size: BootstrapDialog.SIZE_NORMAL,
+            buttons: [{
+                label: "取消",
+                action: function (dialog) {
+                    dialog.close();
+                }
+            }]
+        });
+    });
+
 });

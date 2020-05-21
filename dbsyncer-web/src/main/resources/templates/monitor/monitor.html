@@ -18,7 +18,7 @@
     </div>
 
     <!-- 数据 -->
-    <table class="table table-hover">
+    <table class="table table-hover metaDataList">
         <thead>
         <tr>
             <th style="width:3%;"></th>
@@ -38,7 +38,7 @@
                 <span th:if="${not d?.success}" class="label label-warning">失败</span>
             </td>
             <td th:text="${d?.error}"></td>
-            <td><a th:json="${d?.json}" href="javascript:;" class="label label-info">查看数据</a></td>
+            <td><a th:json="${d?.json}" href="javascript:;" class="label label-info queryData">查看数据</a></td>
         </tr>
     </table>
 
@@ -67,10 +67,15 @@
         <thead>
         <tr>
             <th>序号</th>
-            <th>信息</th>
+            <th>内容</th>
             <th>时间</th>
         </tr>
         </thead>
+        <tr th:each="l,s : ${log}">
+            <td th:text="${s.index}+1"></td>
+            <td th:text="${l?.json}"></td>
+            <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+        </tr>
     </table>
 
 </div>

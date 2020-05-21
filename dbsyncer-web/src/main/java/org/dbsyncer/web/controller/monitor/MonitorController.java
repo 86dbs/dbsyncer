@@ -29,9 +29,10 @@ public class MonitorController extends BaseController {
     public String index(HttpServletRequest request, ModelMap model) {
         Map<String, String> params = getParams(request);
         model.put("threadInfo", monitorService.getThreadInfo());
+        model.put("metaId", monitorService.getDefaultMetaId(params));
         model.put("meta", monitorService.getMetaAll());
         model.put("data", monitorService.queryData(params));
-        model.put("metaId", monitorService.getDefaultMetaId(params));
+        model.put("log", monitorService.queryLog(params));
         return "monitor/monitor.html";
     }
 

@@ -7,7 +7,9 @@ import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.manager.logger.LogService;
 import org.dbsyncer.monitor.Monitor;
+import org.dbsyncer.parser.enums.ErrorEnum;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -38,6 +40,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Autowired
     private Checker mappingChecker;
+
+    @Autowired
+    private LogService logService;
 
     @Override
     public String add(Map<String, String> params) {
@@ -105,6 +110,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             manager.editMeta(meta);
 
             manager.start(mapping);
+
+            logService.log(ErrorEnum.RUNNING, String.format("%s:%s", ErrorEnum.RUNNING.getMessage(), mapping.getName()));
         }
         return "驱动启动成功";
     }
@@ -117,6 +124,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 throw new BizException("驱动已停止.");
             }
             manager.close(mapping);
+            logService.log(ErrorEnum.STOPPING, String.format("%s:%s", ErrorEnum.STOPPING.getMessage(), mapping.getName()));
         }
         return "驱动停止成功";
     }
