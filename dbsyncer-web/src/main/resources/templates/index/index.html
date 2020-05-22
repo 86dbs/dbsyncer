@@ -5,10 +5,10 @@
 <!-- Connector Mapping -->
 <div class="container-fluid">
     <div class="row">
+        <form class="form-horizontal" role="form" method="post">
 
-        <!-- 连接器管理 -->
-        <div class="col-md-12">
-            <form class="form-horizontal" role="form" method="post">
+            <!-- 连接器管理 -->
+            <div class="col-md-12">
                 <!-- 连接器开始位置 -->
                 <div class="form-group">
                     <div class="col-md-12">
@@ -51,12 +51,10 @@
                     </div>
                 </div>
                 <!-- 连接器开结束位置 -->
-            </form>
-        </div>
+            </div>
 
-        <!-- 驱动管理 -->
-        <div class="col-md-12">
-            <form class="form-horizontal" role="form" method="post">
+            <!-- 驱动管理 -->
+            <div class="col-md-12">
                 <!-- 驱动开始位置 -->
                 <div class="form-group" th:if="${connectors?.size() gt 0}">
                     <div class="col-md-12">
@@ -172,9 +170,9 @@
                     </div>
                 </div>
                 <!-- 驱动结束位置 -->
-            </form>
-        </div>
+            </div>
 
+        </form>
     </div>
 </div>
 
