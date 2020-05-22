@@ -1,5 +1,6 @@
 package org.dbsyncer.storage.lucene;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.document.Document;
@@ -7,9 +8,10 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.dbsyncer.storage.StorageException;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -19,6 +21,8 @@ import java.util.*;
  * @date 2019/11/12 20:29
  */
 public class Shard {
+
+    private File indexPath;
 
     private Directory directory;
 
@@ -36,7 +40,9 @@ public class Shard {
 
     public Shard(String path) throws IOException {
         // 索引存放的位置，设置在当前目录中
-        directory = FSDirectory.open(Paths.get(path));
+        Path dir = Paths.get(path);
+        indexPath = new File(dir.toUri());
+        directory = FSDirectory.open(dir);
         // 分词器
         analyzer = new SmartChineseAnalyzer();
         // 创建索引写入配置
@@ -80,15 +86,14 @@ public class Shard {
     public void deleteAll() throws IOException {
         indexWriter.deleteAll();
         indexWriter.commit();
+        close();
+        directory.close();
+        FileUtils.deleteDirectory(indexPath);
     }
 
-    public void close() {
-        try {
-            indexWriter.close();
-            indexReader.close();
-        } catch (IOException e) {
-            throw new StorageException(e);
-        }
+    public void close() throws IOException {
+        indexReader.close();
+        indexWriter.close();
     }
 
     public IndexSearcher getSearcher() throws IOException {

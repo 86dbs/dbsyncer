@@ -115,7 +115,6 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
             Shard shard = map.get(collectionId);
             if (null != shard) {
                 shard.deleteAll();
-                shard.close();
                 map.remove(collectionId);
             }
         }

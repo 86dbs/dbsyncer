@@ -37,7 +37,7 @@ public class LuceneFactoryTest {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws IOException {
         shard.close();
     }
 

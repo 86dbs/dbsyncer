@@ -9,7 +9,7 @@ function bindQueryDataEvent() {
             message: html,
             size: BootstrapDialog.SIZE_NORMAL,
             buttons: [{
-                label: "取消",
+                label: "关闭",
                 action: function (dialog) {
                     dialog.close();
                 }

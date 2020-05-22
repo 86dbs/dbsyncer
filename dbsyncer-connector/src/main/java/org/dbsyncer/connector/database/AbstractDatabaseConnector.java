@@ -256,7 +256,7 @@ public abstract class AbstractDatabaseConnector implements Database {
                 }
             });
             if (0 == update) {
-                throw new ConnectorException(String.format("执行%s操作失败", event));
+                throw new ConnectorException(String.format("执行%s操作失败, 数据不存在", event));
             }
         } catch (Exception e) {
             // 记录错误数据
