@@ -47,6 +47,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Override
     public String add(Map<String, String> params) {
         ConfigModel model = mappingChecker.checkAddConfigModel(params);
+        log((Mapping) model, LogType.MappingLog.INSERT);
         return manager.addMapping(model);
     }
 
@@ -57,6 +58,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         synchronized (LOCK) {
             assertRunning(mapping.getMetaId());
             ConfigModel model = mappingChecker.checkEditConfigModel(params);
+            log(mapping, LogType.MappingLog.UPDATE);
             return manager.editMapping(model);
         }
     }
