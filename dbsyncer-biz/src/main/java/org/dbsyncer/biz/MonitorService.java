@@ -62,9 +62,8 @@ public interface MonitorService {
     /**
      * 清空操作日志
      *
-     * @param id
      * @return
      */
-    String clearLog(String type);
+    String clearLog();
 
 }

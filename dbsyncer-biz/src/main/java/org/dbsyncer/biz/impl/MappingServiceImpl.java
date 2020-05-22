@@ -7,10 +7,10 @@ import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.manager.logger.LogService;
+import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.monitor.Monitor;
-import org.dbsyncer.parser.enums.ErrorEnum;
 import org.dbsyncer.parser.enums.ModelEnum;
+import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
@@ -64,18 +64,25 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Override
     public String remove(String id) {
         Mapping mapping = assertMappingExist(id);
+        String metaId = mapping.getMetaId();
         synchronized (LOCK) {
-            assertRunning(mapping.getMetaId());
+            assertRunning(metaId);
 
+            // 删除数据
+            manager.clearData(metaId);
+            
             // 删除meta
-            manager.removeMeta(mapping.getMetaId());
+            manager.removeMeta(metaId);
 
             // 删除tableGroup
             List<TableGroup> groupList = manager.getTableGroupAll(id);
             if (!CollectionUtils.isEmpty(groupList)) {
                 groupList.forEach(t -> manager.removeTableGroup(t.getId()));
             }
+
+            // 删除驱动
             manager.removeMapping(id);
+            log(mapping, LogType.MappingLog.DELETE);
         }
         return "驱动删除成功";
     }
@@ -111,7 +118,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
             manager.start(mapping);
 
-            logService.log(ErrorEnum.RUNNING, String.format("%s:%s", ErrorEnum.RUNNING.getMessage(), mapping.getName()));
+            log(mapping, LogType.MappingLog.RUNNING);
         }
         return "驱动启动成功";
     }
@@ -124,9 +131,16 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 throw new BizException("驱动已停止.");
             }
             manager.close(mapping);
-            logService.log(ErrorEnum.STOPPING, String.format("%s:%s", ErrorEnum.STOPPING.getMessage(), mapping.getName()));
+
+            log(mapping, LogType.MappingLog.STOP);
         }
         return "驱动停止成功";
+    }
+
+    private void log(Mapping mapping, LogType logType) {
+        String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
+        String msg = String.format("%s:%s(%s)", logType.getMessage(), mapping.getName(), model);
+        logService.log(logType, msg);
     }
 
     private MappingVo convertMapping2Vo(Mapping mapping) {

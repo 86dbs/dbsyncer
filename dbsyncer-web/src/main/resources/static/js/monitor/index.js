@@ -19,10 +19,11 @@ $(function () {
     // 查看详细数据
     $(".metaDataList .queryData").click(function () {
         var json = $(this).attr("json");
+        var html = '<div class="row driver_break_word">'+json+'</div>';
         BootstrapDialog.show({
             title: "注意信息安全",
             type: BootstrapDialog.TYPE_INFO,
-            message: json,
+            message: html,
             size: BootstrapDialog.SIZE_NORMAL,
             buttons: [{
                 label: "取消",

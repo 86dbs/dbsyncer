@@ -73,9 +73,9 @@ public class MonitorController extends BaseController {
 
     @GetMapping("/clearLog")
     @ResponseBody
-    public RestResult clearLog(@RequestParam(value = "type") String type) {
+    public RestResult clearLog() {
         try {
-            return RestResult.restSuccess(monitorService.clearLog(type));
+            return RestResult.restSuccess(monitorService.clearLog());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());

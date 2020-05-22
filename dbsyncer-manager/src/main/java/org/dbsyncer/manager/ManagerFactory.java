@@ -220,8 +220,8 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     }
 
     @Override
-    public void clearLog(String type) {
-        dataTemplate.clear(StorageEnum.LOG, type);
+    public void clearLog() {
+        dataTemplate.clear(StorageEnum.LOG, null);
     }
 
     @Override

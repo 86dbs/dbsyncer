@@ -83,7 +83,7 @@ public interface Manager extends Executor {
     // Log
     List<Map> queryLog(String type, int pageNum, int pageSize);
 
-    void clearLog(String type);
+    void clearLog();
 
     // ConnectorEnum
     List<ConnectorEnum> getConnectorEnumAll();

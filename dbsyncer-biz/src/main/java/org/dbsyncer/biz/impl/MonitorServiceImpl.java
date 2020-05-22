@@ -105,8 +105,8 @@ public class MonitorServiceImpl implements MonitorService {
     }
 
     @Override
-    public String clearLog(String type) {
-        manager.clearLog(type);
+    public String clearLog() {
+        manager.clearLog();
         return "清空日志成功";
     }
 
