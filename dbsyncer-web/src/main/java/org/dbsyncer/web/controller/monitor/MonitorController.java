@@ -59,7 +59,7 @@ public class MonitorController extends BaseController {
 
     @PostMapping("/clearData")
     @ResponseBody
-    public RestResult clearData(@RequestParam(value = "id") String id) {
+    public RestResult clearData(String id) {
         try {
             return RestResult.restSuccess(monitorService.clearData(id));
         } catch (Exception e) {

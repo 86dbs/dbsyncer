@@ -71,7 +71,7 @@ public class IncrementPuller extends AbstractPuller {
             logger.info("启动成功:{}", metaId);
             map.get(metaId).run();
         } catch (Exception e) {
-            finished(metaId);
+            close(metaId);
             logger.error("运行异常，结束任务{}:{}", metaId, e.getMessage());
         }
     }
@@ -82,14 +82,10 @@ public class IncrementPuller extends AbstractPuller {
         if (null != extractor) {
             extractor.clearAllListener();
             extractor.close();
-            finished(metaId);
+            map.remove(metaId);
+            publishClosedEvent(metaId);
             logger.info("关闭成功:{}", metaId);
         }
-    }
-
-    private void finished(String metaId) {
-        map.remove(metaId);
-        publishClosedEvent(metaId);
     }
 
     final class DefaultListener implements Event {

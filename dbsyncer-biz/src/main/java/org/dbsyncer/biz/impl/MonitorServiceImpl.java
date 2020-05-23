@@ -88,6 +88,7 @@ public class MonitorServiceImpl implements MonitorService {
 
     @Override
     public String clearData(String id) {
+        Assert.hasText(id, "驱动不存在.");
         manager.clearData(id);
         return "清空同步数据成功";
     }

@@ -73,7 +73,9 @@ public class MysqlExtractor extends DefaultExtractor {
     @Override
     public void close() {
         try {
-            client.stopQuietly();
+            if(null != client){
+                client.stopQuietly();
+            }
         } catch (Exception e) {
             logger.error("关闭失败:{}", e.getMessage());
         }
@@ -120,7 +122,6 @@ public class MysqlExtractor extends DefaultExtractor {
         // nextPosition
         map.put(BINLOG_FILENAME, client.getBinlogFileName());
         map.put(BINLOG_POSITION, String.valueOf(client.getBinlogPosition()));
-        flushEvent();
     }
 
     final class MysqlEventListener implements BinlogEventListener {
