@@ -132,7 +132,7 @@ public class IncrementPuller extends AbstractPuller {
             // TODO 更新待优化，存在性能问题
             DefaultExtractor extractor = map.get(metaId);
             if (null != extractor) {
-                logger.info("flushEvent map:{}", extractor.getMap());
+                logger.debug("flushEvent map:{}", extractor.getMap());
                 Meta meta = manager.getMeta(metaId);
                 if (null != meta) {
                     meta.setMap(extractor.getMap());

@@ -14,7 +14,7 @@ public interface LogType {
      *
      * @return
      */
-    String getTypeName();
+    String getName();
 
     /**
      * 类型
@@ -56,7 +56,7 @@ public interface LogType {
         }
 
         @Override
-        public String getTypeName() {
+        public String getName() {
             return "系统日志";
         }
 
@@ -89,7 +89,7 @@ public interface LogType {
         }
 
         @Override
-        public String getTypeName() {
+        public String getName() {
             return "连接器";
         }
 
@@ -123,7 +123,7 @@ public interface LogType {
         }
 
         @Override
-        public String getTypeName() {
+        public String getName() {
             return "驱动";
         }
 
@@ -155,7 +155,7 @@ public interface LogType {
         }
 
         @Override
-        public String getTypeName() {
+        public String getName() {
             return "映射关系";
         }
 
@@ -174,9 +174,9 @@ public interface LogType {
      * 元信息5
      */
     enum MetaLog implements LogType {
-        UPDATE("41", "修改"),
-        DELETE("42", "删除"),
-        CLEAR("43", "删除数据");
+        DELETE("50", "删除"),
+        CLEAR("51", "删除数据"),
+        TASK("52", "任务");
 
         private String type;
         private String message;
@@ -187,7 +187,7 @@ public interface LogType {
         }
 
         @Override
-        public String getTypeName() {
+        public String getName() {
             return "元信息";
         }
 

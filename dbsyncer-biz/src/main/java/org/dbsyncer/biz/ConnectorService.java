@@ -31,7 +31,7 @@ public interface ConnectorService {
      *
      * @param id
      */
-    boolean remove(String id);
+    String remove(String id);
 
     /**
      * 获取连接器

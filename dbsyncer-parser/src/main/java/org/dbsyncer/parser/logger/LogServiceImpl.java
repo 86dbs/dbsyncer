@@ -26,7 +26,7 @@ public class LogServiceImpl implements LogService {
     }
 
     @Override
-    public void log(LogType logType, String msg) {
-        flushService.asyncWrite(logType.getType(), msg);
+    public void log(LogType logType, String format, Object... args) {
+        flushService.asyncWrite(logType.getType(), String.format(format, args));
     }
 }

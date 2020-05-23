@@ -273,7 +273,7 @@ public class ParserFactory implements Parser {
      * @param data
      */
     private void flush(Task task, Result writer, List<Map<String, Object>> data) {
-        flush(task.getId(), writer, ConnectorConstant.OPERTION_DELETE, data);
+        flush(task.getId(), writer, ConnectorConstant.OPERTION_INSERT, data);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(System.currentTimeMillis());

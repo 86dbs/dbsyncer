@@ -127,11 +127,17 @@
                                                     <tr>
                                                         <td class="text-left">
                                                             同步结果>
-                                                            总数:[[${m?.meta?.total}]]
-                                                            <span th:if="${m?.meta?.model eq '全量' and (m?.meta?.success + m?.meta?.fail) gt 0}">
-                                                            ,进度:[[${#numbers.formatDecimal(((m?.meta?.success + m?.meta?.fail) / m?.meta?.total * 100.00),0 ,2)}]]%
-                                                            ,耗时:[[${(m?.meta?.endTime - m?.meta?.beginTime) / 1000}]]秒
+                                                            <span th:if="${m?.meta?.model eq '全量'}">
+                                                                总数:[[${m?.meta?.total}]]
+                                                                <span th:if="${m?.meta?.total gt 0 and (m?.meta?.success + m?.meta?.fail) gt 0}">
+                                                                ,进度:[[${#numbers.formatDecimal(((m?.meta?.success + m?.meta?.fail) / m?.meta?.total * 100.00),0 ,2)}]]%
+                                                                </span>
+                                                                ,耗时:[[${(m?.meta?.endTime - m?.meta?.beginTime) / 1000}]]秒
                                                             </span>
+                                                            <span th:if="${m?.meta?.model eq '增量'}">
+                                                                总数:[[${#numbers.formatDecimal((m?.meta?.success + m?.meta?.fail),0 ,0)}]]
+                                                            </span>
+
                                                             <span th:if="${m?.meta?.success gt 0}">,成功:[[${m?.meta?.success}]]</span>
                                                             <span th:if="${m?.meta?.fail gt 0}">,失败:[[${m?.meta?.fail}]] <a th:id="${m?.meta?.id}" href="javascript:;" class="label label-danger queryData">日志</a></span>
                                                         </td>

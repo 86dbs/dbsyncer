@@ -4,10 +4,9 @@ import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,9 +22,7 @@ import java.util.stream.Collectors;
  * @date 2019/10/17 23:20
  */
 @Service
-public class ConnectorServiceImpl implements ConnectorService {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorService {
 
     @Autowired
     private Manager manager;
@@ -36,20 +33,26 @@ public class ConnectorServiceImpl implements ConnectorService {
     @Override
     public String add(Map<String, String> params) {
         ConfigModel model = connectorChecker.checkAddConfigModel(params);
+        log(LogType.ConnectorLog.INSERT, model);
+
         return manager.addConnector(model);
     }
 
     @Override
     public String edit(Map<String, String> params) {
         ConfigModel model = connectorChecker.checkEditConfigModel(params);
+        log(LogType.ConnectorLog.UPDATE, model);
+
         return manager.editConnector(model);
     }
 
     @Override
-    public boolean remove(String id) {
-        logger.info("remove:{}", id);
+    public String remove(String id) {
+        Connector connector = manager.getConnector(id);
+        log(LogType.ConnectorLog.DELETE, connector);
+
         manager.removeConnector(id);
-        return true;
+        return "删除连接器成功!";
     }
 
     @Override
