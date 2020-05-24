@@ -13,6 +13,7 @@ import org.dbsyncer.listener.mysql.common.glossary.Column;
 import org.dbsyncer.listener.mysql.common.glossary.Pair;
 import org.dbsyncer.listener.mysql.common.glossary.Row;
 import org.dbsyncer.listener.mysql.common.glossary.column.StringColumn;
+import org.dbsyncer.listener.quartz.ScheduledTaskJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -200,6 +201,14 @@ public class MysqlExtractor extends DefaultExtractor {
             columns.forEach(c -> before.add((c instanceof StringColumn) ? c.toString() : c.getValue()));
         }
 
+    }
+
+    final class MysqlQuartzListener implements ScheduledTaskJob {
+
+        @Override
+        public void run() {
+
+        }
     }
 
 }
