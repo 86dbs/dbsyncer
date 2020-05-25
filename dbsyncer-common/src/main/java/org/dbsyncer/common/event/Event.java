@@ -1,6 +1,7 @@
 package org.dbsyncer.common.event;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @version 1.0.0
@@ -21,7 +22,9 @@ public interface Event {
 
     /**
      * 写入增量点事件
+     *
+     * @param map
      */
-    void flushEvent();
+    void flushEvent(Map<String, String> map);
 
 }

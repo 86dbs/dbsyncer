@@ -2,9 +2,12 @@ package org.dbsyncer.manager.puller.impl;
 
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.listener.DefaultExtractor;
 import org.dbsyncer.listener.Listener;
+import org.dbsyncer.listener.quartz.ScheduledTaskJob;
+import org.dbsyncer.listener.quartz.ScheduledTaskService;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.config.FieldPicker;
 import org.dbsyncer.manager.puller.AbstractPuller;
@@ -12,6 +15,8 @@ import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -21,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 增量同步
@@ -30,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2020/04/26 15:28
  */
 @Component
-public class IncrementPuller extends AbstractPuller {
+public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob, InitializingBean, DisposableBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -42,6 +48,11 @@ public class IncrementPuller extends AbstractPuller {
 
     @Autowired
     private Manager manager;
+
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
+
+    private String key;
 
     private Map<String, DefaultExtractor> map = new ConcurrentHashMap<>();
 
@@ -69,7 +80,7 @@ public class IncrementPuller extends AbstractPuller {
 
             // 执行任务
             logger.info("启动成功:{}", metaId);
-            map.get(metaId).run();
+            map.get(metaId).start();
         } catch (Exception e) {
             close(metaId);
             logger.error("运行异常，结束任务{}:{}", metaId, e.getMessage());
@@ -88,16 +99,32 @@ public class IncrementPuller extends AbstractPuller {
         }
     }
 
+    @Override
+    public void run() {
+        // 定时同步增量信息
+        map.forEach((k, v) -> v.flushEvent());
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        key = UUIDUtil.getUUID();
+        scheduledTaskService.start(key, "*/10 * * * * ?", this);
+    }
+
+    @Override
+    public void destroy() {
+        scheduledTaskService.stop(key);
+    }
+
     final class DefaultListener implements Event {
 
         private Mapping mapping;
-        private List<TableGroup> list;
         private String metaId;
         private Map<String, List<FieldPicker>> tablePicker;
+        private AtomicBoolean changed = new AtomicBoolean();
 
         public DefaultListener(Mapping mapping, List<TableGroup> list) {
             this.mapping = mapping;
-            this.list = list;
             this.metaId = mapping.getMetaId();
             this.tablePicker = new LinkedHashMap<>();
             list.forEach(t -> {
@@ -121,17 +148,18 @@ public class IncrementPuller extends AbstractPuller {
                 });
             }
 
+            // 标记有变更记录
+            changed.compareAndSet(false, true);
         }
 
         @Override
-        public void flushEvent() {
-            // TODO 更新待优化，存在性能问题
-            DefaultExtractor extractor = map.get(metaId);
-            if (null != extractor) {
-                logger.debug("flushEvent map:{}", extractor.getMap());
+        public void flushEvent(Map<String, String> map) {
+            // 如果有变更，执行更新
+            if (changed.compareAndSet(true, false)) {
                 Meta meta = manager.getMeta(metaId);
                 if (null != meta) {
-                    meta.setMap(extractor.getMap());
+                    logger.info("同步增量信息:{}>>{}", metaId, map);
+                    meta.setMap(map);
                     manager.editMeta(meta);
                 }
             }

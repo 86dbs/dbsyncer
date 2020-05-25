@@ -3,14 +3,9 @@ package org.dbsyncer.listener;
 public interface Extractor {
 
     /**
-     * 根据日志/事件等抽取
+     * 启动定时/日志等方式抽取增量数据
      */
-    void extract();
-
-    /**
-     * 定时抽取
-     */
-    void extractTiming();
+    void start();
 
     /**
      * 关闭任务

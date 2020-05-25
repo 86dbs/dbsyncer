@@ -1,8 +1,6 @@
 package org.dbsyncer.listener.enums;
 
 import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.listener.Action;
-import org.dbsyncer.listener.ListenerException;
 
 /**
  * @author AE86
@@ -12,36 +10,30 @@ import org.dbsyncer.listener.ListenerException;
 public enum ListenerTypeEnum {
 
     /**
-     * 日志
-     */
-    LOG("log", extractor -> extractor.extract()),
-    /**
      * 定时
      */
-    TIMING("timing", extractor -> extractor.extractTiming());
+    TIMING("timing"),
+    /**
+     * 日志
+     */
+    LOG("log");
 
     private String type;
-    private Action action;
 
-    ListenerTypeEnum(String type, Action action) {
+    ListenerTypeEnum(String type) {
         this.type = type;
-        this.action = action;
     }
 
-    public static Action getAction(String type) throws ListenerException {
-        for (ListenerTypeEnum e : ListenerTypeEnum.values()) {
-            if (StringUtils.equals(type, e.getType())) {
-                return e.getAction();
-            }
-        }
-        throw new ListenerException(String.format("Action type \"%s\" does not exist.", type));
+    public static boolean isTiming(String type) {
+        return StringUtils.equals(TIMING.getType(), type);
+    }
+
+    public static boolean isLog(String type) {
+        return StringUtils.equals(LOG.getType(), type);
     }
 
     public String getType() {
         return type;
     }
 
-    public Action getAction() {
-        return action;
-    }
 }

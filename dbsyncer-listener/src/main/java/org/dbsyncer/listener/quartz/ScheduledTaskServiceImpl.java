@@ -27,50 +27,27 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
     @Autowired
     private ThreadPoolTaskScheduler taskScheduler;
 
-    /**
-     * 存放已经启动的任务map
-     */
     private Map<String, ScheduledFuture> map = new ConcurrentHashMap<>();
 
-    /**
-     * 根据任务key 启动任务
-     */
     @Override
-    public void start(ScheduledTask task) {
-        logger.info(">>>>>> 启动任务 {} 开始 >>>>>>", task);
+    public void start(String key, String cron, ScheduledTaskJob job) {
         //校验任务key是否已经启动
-        String key = task.getKey();
-        if (this.isStart(key)) {
-            logger.info(">>>>>> 当前任务已经启动，无需重复启动！");
+        final ScheduledFuture scheduledFuture = map.get(key);
+        if (null != scheduledFuture && !scheduledFuture.isCancelled()) {
+            logger.warn(">>>>>> 当前任务已经启动，无需重复启动！");
+            return;
         }
-        // 定时表达式
-        String taskCron = task.getCron();
-        // delegate
-        ScheduledTaskJob job = task.getJob();
         //获取需要定时调度的接口
-        map.putIfAbsent(key, taskScheduler.schedule(job,
-                (triggerContext) -> new CronTrigger(taskCron).nextExecutionTime(triggerContext)
-        ));
+        map.putIfAbsent(key, taskScheduler.schedule(job, (trigger) -> new CronTrigger(cron).nextExecutionTime(trigger) ));
     }
 
-    /**
-     * 根据 key 停止任务
-     */
     @Override
-    public void stop(String taskKey) {
-        logger.info(">>>>>> 进入停止任务 {}  >>>>>>", taskKey);
-        ScheduledFuture job = map.get(taskKey);
+    public void stop(String key) {
+        ScheduledFuture job = map.get(key);
         if (null != job) {
+            logger.info(">>>>>> 进入停止任务 {}  >>>>>>", key);
             job.cancel(true);
         }
-    }
-
-    /**
-     * 任务是否已经启动
-     */
-    private boolean isStart(String key) {
-        final ScheduledFuture job = map.get(key);
-        return null != job && job.isCancelled();
     }
 
 }
