@@ -3,8 +3,12 @@ package org.dbsyncer.manager.puller.impl;
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.UUIDUtil;
+import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.Table;
-import org.dbsyncer.listener.DefaultExtractor;
+import org.dbsyncer.listener.AbstractExtractor;
+import org.dbsyncer.listener.config.ExtractorConfig;
+import org.dbsyncer.listener.config.ListenerConfig;
+import org.dbsyncer.listener.quartz.QuartzExtractor;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.listener.quartz.ScheduledTaskJob;
 import org.dbsyncer.listener.quartz.ScheduledTaskService;
@@ -27,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * 增量同步
@@ -54,7 +59,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
     private String key;
 
-    private Map<String, DefaultExtractor> map = new ConcurrentHashMap<>();
+    private Map<String, AbstractExtractor> map = new ConcurrentHashMap<>();
 
     @Override
     public void asyncStart(Mapping mapping) {
@@ -65,9 +70,13 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             Assert.notNull(connector, "连接器不能为空.");
             List<TableGroup> list = manager.getTableGroupAll(mappingId);
             Assert.notEmpty(list, "映射关系不能为空.");
+            List<Map<String, String>> commands = list.stream().map(t -> t.getCommand()).collect(Collectors.toList());
+            List<String> tableNames = list.stream().map(t -> t.getSourceTable().getName()).collect(Collectors.toList());
             Meta meta = manager.getMeta(metaId);
             Assert.notNull(meta, "Meta不能为空.");
-            DefaultExtractor extractor = listener.createExtractor(connector.getConfig(), mapping.getListener(), meta.getMap());
+
+            ExtractorConfig config = new ExtractorConfig(connector.getConfig(), mapping.getListener(), meta.getMap(), commands, tableNames);
+            AbstractExtractor extractor = listener.createExtractor(config);
             Assert.notNull(extractor, "未知的监听配置.");
             long now = System.currentTimeMillis();
             meta.setBeginTime(now);
@@ -89,7 +98,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
     @Override
     public void close(String metaId) {
-        DefaultExtractor extractor = map.get(metaId);
+        AbstractExtractor extractor = map.get(metaId);
         if (null != extractor) {
             extractor.clearAllListener();
             extractor.close();
