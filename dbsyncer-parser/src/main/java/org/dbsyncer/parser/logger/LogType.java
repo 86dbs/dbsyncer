@@ -144,7 +144,8 @@ public interface LogType {
     enum TableGroupLog implements LogType {
         INSERT("40", "新增"),
         UPDATE("41", "修改"),
-        DELETE("42", "删除");
+        DELETE("42", "删除"),
+        INCREMENT_FAILED("43", "增量同步异常");
 
         private String type;
         private String message;

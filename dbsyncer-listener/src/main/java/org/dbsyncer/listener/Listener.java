@@ -12,5 +12,5 @@ public interface Listener {
      * @throws IllegalAccessException
      * @throws InstantiationException
      */
-    AbstractExtractor createExtractor(ExtractorConfig config) throws IllegalAccessException, InstantiationException;
+    AbstractExtractor getExtractor(ExtractorConfig config) throws IllegalAccessException, InstantiationException;
 }

@@ -12,9 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import java.util.List;
-import java.util.Map;
-
 @Component
 public class ListenerFactory implements Listener {
 
@@ -25,30 +22,27 @@ public class ListenerFactory implements Listener {
     private ScheduledTaskService scheduledTaskService;
 
     @Override
-    public AbstractExtractor createExtractor(ExtractorConfig config)
-            throws IllegalAccessException, InstantiationException {
-        ConnectorConfig connectorConfig = config.getConnectorConfig();
-        ListenerConfig listenerConfig = config.getListenerConfig();
+    public AbstractExtractor getExtractor(ExtractorConfig config) throws IllegalAccessException, InstantiationException {
+        final ListenerConfig listenerConfig = config.getListenerConfig();
+        final ConnectorConfig connectorConfig = config.getConnectorConfig();
+        final String listenerType = listenerConfig.getListenerType();
+        final String connectorType = connectorConfig.getConnectorType();
 
-        AbstractExtractor extractor = getDefaultExtractor(listenerConfig.getListenerType(), connectorConfig.getConnectorType(),
-                config.getCommands(), config.getTableNames());
-
+        AbstractExtractor extractor = getDefaultExtractor(listenerType, connectorType, config);
         extractor.setConnectorConfig(connectorConfig);
         extractor.setListenerConfig(listenerConfig);
         extractor.setMap(config.getMap());
         return extractor;
     }
 
-    private AbstractExtractor getDefaultExtractor(String listenerType, String connectorType, List<Map<String, String>> commands, List<String> tableNames)
-            throws IllegalAccessException, InstantiationException {
+    private AbstractExtractor getDefaultExtractor(String listenerType, String connectorType, ExtractorConfig config) throws IllegalAccessException, InstantiationException {
         // 默认定时抽取
         if (ListenerTypeEnum.isTiming(listenerType)) {
             Class<QuartzExtractor> clazz = (Class<QuartzExtractor>) ListenerEnum.DEFAULT.getClazz();
             QuartzExtractor extractor = clazz.newInstance();
             extractor.setConnectorFactory(connectorFactory);
             extractor.setScheduledTaskService(scheduledTaskService);
-            extractor.setCommands(commands);
-            extractor.setTableNames(tableNames);
+            extractor.setTableCommandConfig(config.getTableCommandConfig());
             return extractor;
         }
 

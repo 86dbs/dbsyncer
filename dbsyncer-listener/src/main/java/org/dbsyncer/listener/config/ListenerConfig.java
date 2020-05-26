@@ -12,6 +12,11 @@ public class ListenerConfig {
      */
     private String listenerType;
 
+    /**
+     * 每次读取数
+     */
+    private int readNum = 200;
+
     // 定时表达式, 格式: [秒] [分] [小时] [日] [月] [周]
     private String cronExpression = "*/30 * * * * ?";
 
@@ -43,6 +48,14 @@ public class ListenerConfig {
 
     public void setListenerType(String listenerType) {
         this.listenerType = listenerType;
+    }
+
+    public int getReadNum() {
+        return readNum;
+    }
+
+    public void setReadNum(int readNum) {
+        this.readNum = readNum;
     }
 
     public String getCronExpression() {

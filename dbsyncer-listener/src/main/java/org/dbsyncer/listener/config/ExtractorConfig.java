@@ -15,15 +15,21 @@ public class ExtractorConfig {
     private ConnectorConfig connectorConfig;
     private ListenerConfig listenerConfig;
     private Map<String, String> map;
-    private List<Map<String, String>> commands;
-    private List<String> tableNames;
+    private List<TableCommandConfig> tableCommandConfig;
 
-    public ExtractorConfig(ConnectorConfig connectorConfig, ListenerConfig listenerConfig, Map<String, String> map, List<Map<String, String>> commands, List<String> tableNames) {
+    /**
+     * 抽取器配置
+     *
+     * @param connectorConfig 连接器配置
+     * @param listenerConfig 监听配置
+     * @param map 增量元信息
+     * @param tableCommandConfig 映射关系
+     */
+    public ExtractorConfig(ConnectorConfig connectorConfig, ListenerConfig listenerConfig, Map<String, String> map, List<TableCommandConfig> tableCommandConfig) {
         this.connectorConfig = connectorConfig;
         this.listenerConfig = listenerConfig;
         this.map = map;
-        this.commands = commands;
-        this.tableNames = tableNames;
+        this.tableCommandConfig = tableCommandConfig;
     }
 
     public ConnectorConfig getConnectorConfig() {
@@ -38,11 +44,7 @@ public class ExtractorConfig {
         return map;
     }
 
-    public List<Map<String, String>> getCommands() {
-        return commands;
-    }
-
-    public List<String> getTableNames() {
-        return tableNames;
+    public List<TableCommandConfig> getTableCommandConfig() {
+        return tableCommandConfig;
     }
 }

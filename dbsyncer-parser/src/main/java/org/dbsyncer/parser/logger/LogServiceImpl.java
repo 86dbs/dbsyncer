@@ -16,13 +16,13 @@ public class LogServiceImpl implements LogService {
     private FlushService flushService;
 
     @Override
-    public void log(String msg) {
-        flushService.asyncWrite(LogType.SystemLog.INFO.getType(), msg);
+    public void log(LogType logType) {
+        flushService.asyncWrite(logType.getType(), logType.getMessage());
     }
 
     @Override
-    public void log(LogType logType) {
-        flushService.asyncWrite(logType.getType(), logType.getMessage());
+    public void log(LogType logType, String msg) {
+        flushService.asyncWrite(logType.getType(), msg);
     }
 
     @Override

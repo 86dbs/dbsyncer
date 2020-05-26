@@ -11,14 +11,24 @@ import java.util.Map;
 public interface Event {
 
     /**
-     * 数据变更事件
+     * 日志数据变更事件
      *
      * @param tableName 表名
      * @param event     事件
      * @param before    变化前
      * @param after     变化后
      */
-    void changedEvent(String tableName, String event, List<Object> before, List<Object> after);
+    void changedLogEvent(String tableName, String event, List<Object> before, List<Object> after);
+
+    /**
+     * 定时数据变更事件
+     *
+     * @param tableName
+     * @param event
+     * @param before
+     * @param after
+     */
+    void changedQuartzEvent(String tableName, String event, Map<String, Object> before, Map<String, Object> after);
 
     /**
      * 写入增量点事件
@@ -26,5 +36,12 @@ public interface Event {
      * @param map
      */
     void flushEvent(Map<String, String> map);
+
+    /**
+     * 异常事件
+     *
+     * @param e
+     */
+    void errorEvent(Exception e);
 
 }

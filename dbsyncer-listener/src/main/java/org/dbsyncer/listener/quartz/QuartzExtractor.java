@@ -1,14 +1,22 @@
 package org.dbsyncer.listener.quartz;
 
+import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.AbstractExtractor;
+import org.dbsyncer.listener.config.TableCommandConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 默认定时抽取
@@ -23,33 +31,87 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
 
     private ConnectorFactory connectorFactory;
     private ScheduledTaskService scheduledTaskService;
-    private List<Map<String, String>> commands;
-    private List<String> tableNames;
+    private List<TableCommandConfig> tableCommandConfig;
+    private int tableCommandConfigSize;
+
+    private int readNum;
+    private String eventFieldName;
+    private Set<String> update;
+    private Set<String> insert;
+    private Set<String> delete;
     private String key;
+    private String cron;
     private AtomicBoolean running = new AtomicBoolean();
 
     @Override
     public void start() {
-        key = UUIDUtil.getUUID();
-        String cron = listenerConfig.getCronExpression();
-        logger.info("启动定时任务:{} >> {}", key, cron);
+        init();
         scheduledTaskService.start(key, cron, this);
+        logger.info("启动定时任务:{} >> {}", key, cron);
     }
 
     @Override
     public void run() {
-        if(running.compareAndSet(false, true)){
-            // TODO 获取tableGroup
-            Map<String, String> command = null;
-            int pageIndex = 1;
-            int pageSize = 20;
-            connectorFactory.reader(connectorConfig, command, pageIndex, pageSize);
+        if (running.compareAndSet(false, true)) {
+            // 依次执行同步映射关系
+            for (int i = 0; i < tableCommandConfigSize; i++) {
+                execute(tableCommandConfig.get(i));
+            }
         }
+
     }
 
     @Override
     public void close() {
         scheduledTaskService.stop(key);
+    }
+
+    private void execute(TableCommandConfig t) {
+        try {
+            final String table = t.getTable();
+            int pageIndex = 1;
+            for (; ; ) {
+                Result reader = connectorFactory.reader(connectorConfig, t.getCommand(), pageIndex++, readNum);
+                List<Map<String, Object>> data = reader.getData();
+                if (CollectionUtils.isEmpty(data)) {
+                    break;
+                }
+
+                Object event = null;
+                for (Map<String, Object> row : data) {
+                    event = row.get(eventFieldName);
+                    if (update.contains(event)) {
+                        changedQuartzEvent(table, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_MAP, row);
+                        continue;
+                    }
+                    if (insert.contains(event)) {
+                        changedQuartzEvent(table, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_MAP, row);
+                        continue;
+                    }
+                    if (delete.contains(event)) {
+                        changedQuartzEvent(table, ConnectorConstant.OPERTION_DELETE, row, Collections.EMPTY_MAP);
+                        continue;
+                    }
+
+                }
+            }
+        } catch (Exception e) {
+            errorEvent(e);
+            logger.error(e.getMessage());
+        }
+    }
+
+    private void init() {
+        tableCommandConfigSize = tableCommandConfig.size();
+
+        readNum = listenerConfig.getReadNum();
+        eventFieldName = listenerConfig.getEventFieldName();
+        update = Stream.of(listenerConfig.getUpdate().split(",")).collect(Collectors.toSet());
+        insert = Stream.of(listenerConfig.getInsert().split(",")).collect(Collectors.toSet());
+        delete = Stream.of(listenerConfig.getDelete().split(",")).collect(Collectors.toSet());
+
+        key = UUIDUtil.getUUID();
+        cron = listenerConfig.getCronExpression();
     }
 
     public void setConnectorFactory(ConnectorFactory connectorFactory) {
@@ -60,11 +122,8 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
         this.scheduledTaskService = scheduledTaskService;
     }
 
-    public void setCommands(List<Map<String, String>> commands) {
-        this.commands = commands;
+    public void setTableCommandConfig(List<TableCommandConfig> tableCommandConfig) {
+        this.tableCommandConfig = tableCommandConfig;
     }
 
-    public void setTableNames(List<String> tableNames) {
-        this.tableNames = tableNames;
-    }
 }

@@ -6,16 +6,18 @@ import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.listener.AbstractExtractor;
+import org.dbsyncer.listener.Listener;
 import org.dbsyncer.listener.config.ExtractorConfig;
 import org.dbsyncer.listener.config.ListenerConfig;
-import org.dbsyncer.listener.quartz.QuartzExtractor;
-import org.dbsyncer.listener.Listener;
+import org.dbsyncer.listener.config.TableCommandConfig;
 import org.dbsyncer.listener.quartz.ScheduledTaskJob;
 import org.dbsyncer.listener.quartz.ScheduledTaskService;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.config.FieldPicker;
 import org.dbsyncer.manager.puller.AbstractPuller;
 import org.dbsyncer.parser.Parser;
+import org.dbsyncer.parser.logger.LogService;
+import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +57,9 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
     private Manager manager;
 
     @Autowired
+    private LogService logService;
+
+    @Autowired
     private ScheduledTaskService scheduledTaskService;
 
     private String key;
@@ -70,13 +75,15 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             Assert.notNull(connector, "连接器不能为空.");
             List<TableGroup> list = manager.getTableGroupAll(mappingId);
             Assert.notEmpty(list, "映射关系不能为空.");
-            List<Map<String, String>> commands = list.stream().map(t -> t.getCommand()).collect(Collectors.toList());
-            List<String> tableNames = list.stream().map(t -> t.getSourceTable().getName()).collect(Collectors.toList());
             Meta meta = manager.getMeta(metaId);
             Assert.notNull(meta, "Meta不能为空.");
+            ConnectorConfig connectorConfig = connector.getConfig();
+            ListenerConfig listenerConfig = mapping.getListener();
+            List<TableCommandConfig> tableCommandConfig = list.stream().map(t ->
+                    new TableCommandConfig(t.getSourceTable().getName(), t.getCommand())
+            ).collect(Collectors.toList());
 
-            ExtractorConfig config = new ExtractorConfig(connector.getConfig(), mapping.getListener(), meta.getMap(), commands, tableNames);
-            AbstractExtractor extractor = listener.createExtractor(config);
+            AbstractExtractor extractor = listener.getExtractor(new ExtractorConfig(connectorConfig, listenerConfig, meta.getMap(), tableCommandConfig));
             Assert.notNull(extractor, "未知的监听配置.");
             long now = System.currentTimeMillis();
             meta.setBeginTime(now);
@@ -145,7 +152,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         }
 
         @Override
-        public void changedEvent(String tableName, String event, List<Object> before, List<Object> after) {
+        public void changedLogEvent(String tableName, String event, List<Object> before, List<Object> after) {
             logger.info("监听数据=> tableName:{}, event:{}, before:{}, after:{}", tableName, event, before, after);
 
             // 处理过程有异常向上抛
@@ -153,6 +160,21 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             if (!CollectionUtils.isEmpty(pickers)) {
                 pickers.parallelStream().forEach(p -> {
                     DataEvent data = new DataEvent(event, p.getColumns(before), p.getColumns(after));
+                    parser.execute(mapping, p.getTableGroup(), data);
+                });
+            }
+
+            // 标记有变更记录
+            changed.compareAndSet(false, true);
+        }
+
+        @Override
+        public void changedQuartzEvent(String tableName, String event, Map<String, Object> before, Map<String, Object> after) {
+            // 处理过程有异常向上抛
+            List<FieldPicker> pickers = tablePicker.get(tableName);
+            if (!CollectionUtils.isEmpty(pickers)) {
+                pickers.parallelStream().forEach(p -> {
+                    DataEvent data = new DataEvent(event, before, after);
                     parser.execute(mapping, p.getTableGroup(), data);
                 });
             }
@@ -172,6 +194,11 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
                     manager.editMeta(meta);
                 }
             }
+        }
+
+        @Override
+        public void errorEvent(Exception e) {
+            logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
         }
 
     }

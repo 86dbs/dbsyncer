@@ -37,15 +37,27 @@ public abstract class AbstractExtractor implements Extractor {
         }
     }
 
-    public void changedEvent(String tableName, String event, List<Object> before, List<Object> after) {
+    public void changedLogEvent(String tableName, String event, List<Object> before, List<Object> after) {
         if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.changedEvent(tableName, event, before, after));
+            watcher.forEach(w -> w.changedLogEvent(tableName, event, before, after));
+        }
+    }
+
+    public void changedQuartzEvent(String tableName, String event, Map<String, Object> before, Map<String, Object> after) {
+        if (!CollectionUtils.isEmpty(watcher)) {
+            watcher.forEach(w -> w.changedQuartzEvent(tableName, event, before, after));
         }
     }
 
     public void flushEvent() {
         if (!CollectionUtils.isEmpty(watcher)) {
             watcher.forEach(w -> w.flushEvent(map));
+        }
+    }
+
+    public void errorEvent(Exception e) {
+        if (!CollectionUtils.isEmpty(watcher)) {
+            watcher.forEach(w -> w.errorEvent(e));
         }
     }
 

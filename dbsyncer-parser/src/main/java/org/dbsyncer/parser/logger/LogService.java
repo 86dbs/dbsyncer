@@ -7,9 +7,9 @@ package org.dbsyncer.parser.logger;
  */
 public interface LogService {
 
-    void log(String msg);
-
     void log(LogType logType);
+
+    void log(LogType logType, String msg);
 
     void log(LogType logType, String format, Object... args);
 }
