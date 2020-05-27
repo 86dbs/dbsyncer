@@ -43,9 +43,9 @@ public abstract class AbstractExtractor implements Extractor {
         }
     }
 
-    public void changedQuartzEvent(String tableName, String event, Map<String, Object> before, Map<String, Object> after) {
+    public void changedQuartzEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after) {
         if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.changedQuartzEvent(tableName, event, before, after));
+            watcher.forEach(w -> w.changedQuartzEvent(tableGroupIndex, event, before, after));
         }
     }
 

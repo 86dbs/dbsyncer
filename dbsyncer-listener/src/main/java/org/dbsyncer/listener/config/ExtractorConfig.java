@@ -1,8 +1,8 @@
 package org.dbsyncer.listener.config;
 
+import org.dbsyncer.common.event.Event;
 import org.dbsyncer.connector.config.ConnectorConfig;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -15,7 +15,7 @@ public class ExtractorConfig {
     private ConnectorConfig connectorConfig;
     private ListenerConfig listenerConfig;
     private Map<String, String> map;
-    private List<TableCommandConfig> tableCommandConfig;
+    private Event event;
 
     /**
      * 抽取器配置
@@ -23,13 +23,13 @@ public class ExtractorConfig {
      * @param connectorConfig 连接器配置
      * @param listenerConfig 监听配置
      * @param map 增量元信息
-     * @param tableCommandConfig 映射关系
+     * @param event 监听器
      */
-    public ExtractorConfig(ConnectorConfig connectorConfig, ListenerConfig listenerConfig, Map<String, String> map, List<TableCommandConfig> tableCommandConfig) {
+    public ExtractorConfig(ConnectorConfig connectorConfig, ListenerConfig listenerConfig, Map<String, String> map, Event event) {
         this.connectorConfig = connectorConfig;
         this.listenerConfig = listenerConfig;
         this.map = map;
-        this.tableCommandConfig = tableCommandConfig;
+        this.event = event;
     }
 
     public ConnectorConfig getConnectorConfig() {
@@ -44,7 +44,7 @@ public class ExtractorConfig {
         return map;
     }
 
-    public List<TableCommandConfig> getTableCommandConfig() {
-        return tableCommandConfig;
+    public Event getEvent() {
+        return event;
     }
 }

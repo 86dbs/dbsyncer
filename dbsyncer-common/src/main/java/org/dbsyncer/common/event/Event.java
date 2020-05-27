@@ -23,12 +23,12 @@ public interface Event {
     /**
      * 定时数据变更事件
      *
-     * @param tableName
+     * @param tableGroupIndex
      * @param event
      * @param before
      * @param after
      */
-    void changedQuartzEvent(String tableName, String event, Map<String, Object> before, Map<String, Object> after);
+    void changedQuartzEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after);
 
     /**
      * 写入增量点事件

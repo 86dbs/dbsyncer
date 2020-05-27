@@ -1,5 +1,7 @@
 package org.dbsyncer.listener.config;
 
+import org.dbsyncer.listener.enums.ListenerTypeEnum;
+
 /**
  * @author AE86
  * @version 1.0.0
@@ -9,6 +11,7 @@ public class ListenerConfig {
 
     /**
      * 监听器类型
+     * {@link ListenerTypeEnum}
      */
     private String listenerType;
 

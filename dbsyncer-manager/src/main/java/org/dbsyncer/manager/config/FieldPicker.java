@@ -2,6 +2,8 @@ package org.dbsyncer.manager.config;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.Field;
+import org.dbsyncer.connector.config.Filter;
+import org.dbsyncer.parser.model.DataEvent;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.springframework.util.Assert;
@@ -12,16 +14,16 @@ import java.util.stream.Collectors;
 public class FieldPicker {
 
     private TableGroup tableGroup;
-    private List<Field> column;
-    private List<FieldMapping> fieldMapping;
     private List<Node> index;
     private int indexSize;
 
-    public FieldPicker(TableGroup tableGroup, List<Field> column, List<FieldMapping> fieldMapping) {
+    public FieldPicker(TableGroup tableGroup, List<Filter> filter) {
         this.tableGroup = tableGroup;
-        this.column = column;
-        this.fieldMapping = fieldMapping;
-        init();
+    }
+
+    public FieldPicker(TableGroup tableGroup, List<Filter> filter, List<Field> column, List<FieldMapping> fieldMapping) {
+        this.tableGroup = tableGroup;
+        init(filter, column, fieldMapping);
     }
 
     public Map<String, Object> getColumns(List<Object> list) {
@@ -42,7 +44,19 @@ public class FieldPicker {
         return tableGroup;
     }
 
-    private void init() {
+    /**
+     * 根据过滤条件过滤
+     *
+     * @param data
+     * @return
+     */
+    public boolean filter(DataEvent data) {
+        // TODO 过滤
+        //Map<String, Object> row = data.getData();
+        return false;
+    }
+
+    private void init(List<Filter> filter, List<Field> column, List<FieldMapping> fieldMapping) {
         // column  => [1, 86, 0, 中文, 2020-05-15T12:17:22.000+0800, 备注信息]
         Assert.notEmpty(column, "读取字段不能为空.");
         Assert.notEmpty(fieldMapping, "映射关系不能为空.");
