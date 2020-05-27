@@ -1,8 +1,12 @@
 package org.dbsyncer.manager.config;
 
+import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.CompareFilter;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.Filter;
+import org.dbsyncer.connector.enums.FilterEnum;
+import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.parser.model.DataEvent;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.TableGroup;
@@ -16,6 +20,9 @@ public class FieldPicker {
     private TableGroup tableGroup;
     private List<Node> index;
     private int indexSize;
+    private boolean filterSwitch;
+    private List<Filter> add;
+    private List<Filter> or;
 
     public FieldPicker(TableGroup tableGroup, List<Filter> filter) {
         this.tableGroup = tableGroup;
@@ -51,12 +58,46 @@ public class FieldPicker {
      * @return
      */
     public boolean filter(DataEvent data) {
-        // TODO 过滤
-        //Map<String, Object> row = data.getData();
-        return false;
+        if (!filterSwitch) {
+            return true;
+        }
+        final Map<String, Object> row = data.getData();
+        // where (id > 1 and id < 100) or (id = 100 or id =101)
+        // 或 关系(成立任意条件)
+        CompareFilter filter = null;
+        Object value = null;
+        for (Filter f: or) {
+            value = row.get(f.getName());
+            if(null == value){
+                continue;
+            }
+            filter = FilterEnum.getCompareFilter(f.getFilter());
+            if(filter.compare(String.valueOf(value), f.getValue())){
+                return true;
+            }
+        }
+        // 并 关系(成立所有条件)
+        for (Filter f: add) {
+            value = row.get(f.getName());
+            if(null == value){
+                continue;
+            }
+            filter = FilterEnum.getCompareFilter(f.getFilter());
+            if(!filter.compare(String.valueOf(value), f.getValue())){
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private void init(List<Filter> filter, List<Field> column, List<FieldMapping> fieldMapping) {
+        // 解析过滤条件
+        if ((filterSwitch == !CollectionUtils.isEmpty(filter))) {
+            add = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), OperationEnum.AND.getName())).collect(Collectors.toList());
+            or = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), OperationEnum.OR.getName())).collect(Collectors.toList());
+        }
+
         // column  => [1, 86, 0, 中文, 2020-05-15T12:17:22.000+0800, 备注信息]
         Assert.notEmpty(column, "读取字段不能为空.");
         Assert.notEmpty(fieldMapping, "映射关系不能为空.");

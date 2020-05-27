@@ -8,13 +8,13 @@ import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.Listener;
-import org.dbsyncer.listener.config.ExtractorConfig;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
 import org.dbsyncer.listener.quartz.QuartzExtractor;
 import org.dbsyncer.listener.quartz.ScheduledTaskJob;
 import org.dbsyncer.listener.quartz.ScheduledTaskService;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.manager.config.ExtractorConfig;
 import org.dbsyncer.manager.config.FieldPicker;
 import org.dbsyncer.manager.puller.AbstractPuller;
 import org.dbsyncer.parser.Parser;
@@ -237,7 +237,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
             // 处理过程有异常向上抛
             DataEvent data = new DataEvent(event, before, after);
-            if(picker.filter(data)){
+            if (picker.filter(data)) {
                 parser.execute(mapping, picker.getTableGroup(), data);
             }
 
@@ -291,7 +291,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             if (!CollectionUtils.isEmpty(pickers)) {
                 pickers.parallelStream().forEach(picker -> {
                     DataEvent data = new DataEvent(event, picker.getColumns(before), picker.getColumns(after));
-                    if(picker.filter(data)){
+                    if (picker.filter(data)) {
                         parser.execute(mapping, picker.getTableGroup(), data);
                     }
                 });

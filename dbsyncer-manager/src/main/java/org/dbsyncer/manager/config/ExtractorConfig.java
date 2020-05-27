@@ -1,7 +1,8 @@
-package org.dbsyncer.listener.config;
+package org.dbsyncer.manager.config;
 
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.listener.config.ListenerConfig;
 
 import java.util.Map;
 
