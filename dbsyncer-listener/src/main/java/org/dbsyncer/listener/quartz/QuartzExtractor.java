@@ -40,7 +40,7 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
     private Set<String> delete;
     private String key;
     private String cron;
-    private AtomicBoolean running = new AtomicBoolean();
+    private AtomicBoolean running;
 
     @Override
     public void start() {
@@ -52,13 +52,16 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
     @Override
     public void run() {
         try {
+            logger.info("执行定时任务:{} >> {}", key, cron);
             if (running.compareAndSet(false, true)) {
                 // 依次执行同步映射关系
                 for (int i = 0; i < commandSize; i++) {
                     execute(commands.get(i), i);
                 }
             }
+            running.compareAndSet(true, false);
         } catch (Exception e) {
+            running.compareAndSet(true, false);
             errorEvent(e);
             logger.error(e.getMessage());
         }
@@ -110,6 +113,7 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
 
         key = UUIDUtil.getUUID();
         cron = listenerConfig.getCronExpression();
+        running = new AtomicBoolean();
     }
 
     public void setConnectorFactory(ConnectorFactory connectorFactory) {
