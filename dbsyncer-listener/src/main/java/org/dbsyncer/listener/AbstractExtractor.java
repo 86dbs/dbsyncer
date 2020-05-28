@@ -12,20 +12,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * @version 1.0.0
  * @Author AE86
- * @Date 2020-05-12 20:35
+ * @Date 2020-05-25 22:35
  */
-public abstract class DefaultExtractor implements Extractor {
+public abstract class AbstractExtractor implements Extractor {
 
     protected ConnectorConfig connectorConfig;
     protected ListenerConfig listenerConfig;
     protected Map<String, String> map;
-
     private List<Event> watcher;
-    private Action action;
-
-    public void run() {
-        action.execute(this);
-    }
 
     public void addListener(Event event) {
         if (null != event) {
@@ -43,43 +37,40 @@ public abstract class DefaultExtractor implements Extractor {
         }
     }
 
-    public void changedEvent(String tableName, String event, List<Object> before, List<Object> after) {
+    public void changedLogEvent(String tableName, String event, List<Object> before, List<Object> after) {
         if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.changedEvent(tableName, event, before, after));
+            watcher.forEach(w -> w.changedLogEvent(tableName, event, before, after));
+        }
+    }
+
+    public void changedQuartzEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after) {
+        if (!CollectionUtils.isEmpty(watcher)) {
+            watcher.forEach(w -> w.changedQuartzEvent(tableGroupIndex, event, before, after));
         }
     }
 
     public void flushEvent() {
         if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.flushEvent());
+            watcher.forEach(w -> w.flushEvent(map));
         }
     }
 
-    public ConnectorConfig getConnectorConfig() {
-        return connectorConfig;
+    public void errorEvent(Exception e) {
+        if (!CollectionUtils.isEmpty(watcher)) {
+            watcher.forEach(w -> w.errorEvent(e));
+        }
     }
 
     public void setConnectorConfig(ConnectorConfig connectorConfig) {
         this.connectorConfig = connectorConfig;
     }
 
-    public ListenerConfig getListenerConfig() {
-        return listenerConfig;
-    }
-
     public void setListenerConfig(ListenerConfig listenerConfig) {
         this.listenerConfig = listenerConfig;
-    }
-
-    public Map<String, String> getMap() {
-        return map;
     }
 
     public void setMap(Map<String, String> map) {
         this.map = map;
     }
 
-    public void setAction(Action action) {
-        this.action = action;
-    }
 }

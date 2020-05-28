@@ -1,5 +1,3 @@
-package org.dbsyncer.storage.lucene;
-
 import org.apache.commons.lang.math.RandomUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -15,6 +13,7 @@ import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
+import org.dbsyncer.storage.lucene.Shard;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,7 +36,7 @@ public class LuceneFactoryTest {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws IOException {
         shard.close();
     }
 

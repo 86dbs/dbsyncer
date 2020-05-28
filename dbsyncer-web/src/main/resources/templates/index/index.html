@@ -5,10 +5,10 @@
 <!-- Connector Mapping -->
 <div class="container-fluid">
     <div class="row">
+        <form class="form-horizontal" role="form" method="post">
 
-        <!-- 连接器管理 -->
-        <div class="col-md-12">
-            <form class="form-horizontal" role="form" method="post">
+            <!-- 连接器管理 -->
+            <div class="col-md-12">
                 <!-- 连接器开始位置 -->
                 <div class="form-group">
                     <div class="col-md-12">
@@ -51,12 +51,10 @@
                     </div>
                 </div>
                 <!-- 连接器开结束位置 -->
-            </form>
-        </div>
+            </div>
 
-        <!-- 驱动管理 -->
-        <div class="col-md-12">
-            <form class="form-horizontal" role="form" method="post">
+            <!-- 驱动管理 -->
+            <div class="col-md-12">
                 <!-- 驱动开始位置 -->
                 <div class="form-group" th:if="${connectors?.size() gt 0}">
                     <div class="col-md-12">
@@ -129,13 +127,19 @@
                                                     <tr>
                                                         <td class="text-left">
                                                             同步结果>
-                                                            总数:[[${m?.meta?.total}]]
-                                                            <span th:if="${m?.meta?.model eq '全量' and (m?.meta?.success + m?.meta?.fail) gt 0}">
-                                                            ,进度:[[${#numbers.formatDecimal(((m?.meta?.success + m?.meta?.fail) / m?.meta?.total * 100.00),0 ,2)}]]%
-                                                            ,耗时:[[${(m?.meta?.endTime - m?.meta?.beginTime) / 1000}]]秒
+                                                            <span th:if="${m?.meta?.model eq '全量'}">
+                                                                总数:[[${m?.meta?.total}]]
+                                                                <span th:if="${m?.meta?.total gt 0 and (m?.meta?.success + m?.meta?.fail) gt 0}">
+                                                                ,进度:[[${#numbers.formatDecimal(((m?.meta?.success + m?.meta?.fail) / m?.meta?.total * 100.00),0 ,2)}]]%
+                                                                </span>
+                                                                ,耗时:[[${(m?.meta?.endTime - m?.meta?.beginTime) / 1000}]]秒
                                                             </span>
+                                                            <span th:if="${m?.meta?.model eq '增量'}">
+                                                                总数:[[${#numbers.formatDecimal((m?.meta?.success + m?.meta?.fail),0 ,0)}]]
+                                                            </span>
+
                                                             <span th:if="${m?.meta?.success gt 0}">,成功:[[${m?.meta?.success}]]</span>
-                                                            <span th:if="${m?.meta?.fail gt 0}">,失败:[[${m?.meta?.fail}]] <a href="javascript:;" class="label label-danger">日志</a></span>
+                                                            <span th:if="${m?.meta?.fail gt 0}">,失败:[[${m?.meta?.fail}]] <a th:id="${m?.meta?.id}" href="javascript:;" class="label label-danger queryData">日志</a></span>
                                                         </td>
                                                     </tr>
                                                     <tr>
@@ -172,9 +176,9 @@
                     </div>
                 </div>
                 <!-- 驱动结束位置 -->
-            </form>
-        </div>
+            </div>
 
+        </form>
     </div>
 </div>
 

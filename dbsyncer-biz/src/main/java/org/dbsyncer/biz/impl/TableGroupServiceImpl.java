@@ -4,7 +4,7 @@ import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.Field;
-import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.slf4j.Logger;
@@ -26,19 +26,19 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private Manager manager;
-
-    @Autowired
     private Checker tableGroupChecker;
 
     @Override
     public String add(Map<String, String> params) {
         TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
         assertRunning(model);
+        log(LogType.TableGroupLog.INSERT, model);
+
         String id = manager.addTableGroup(model);
 
         // 合并驱动公共字段
         mergeMappingColumn(model.getMappingId());
+
         return id;
     }
 
@@ -46,6 +46,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     public String edit(Map<String, String> params) {
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
         assertRunning(model);
+        log(LogType.TableGroupLog.UPDATE, model);
+
         return manager.editTableGroup(model);
     }
 
@@ -54,9 +56,12 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         TableGroup tableGroup = manager.getTableGroup(id);
         Assert.notNull(tableGroup, "tableGroup can not be null.");
         assertRunning(tableGroup);
+        log(LogType.TableGroupLog.DELETE, tableGroup);
 
         manager.removeTableGroup(id);
+        // 合并驱动公共字段
         mergeMappingColumn(tableGroup.getMappingId());
+
         return true;
     }
 

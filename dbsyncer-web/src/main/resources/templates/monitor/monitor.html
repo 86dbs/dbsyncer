@@ -4,27 +4,112 @@
 
 <!-- Monitor -->
 <div class="container-fluid">
+    <div class="row">
+        <form class="form-horizontal" role="form" method="post">
 
-    图表信息
-    <p>CPU 内存 硬盘 堆内存 线程数</p>
-    <table class="table table-hover">
-        <caption>任务线程</caption>
-        <thead>
-        <tr>
-            <th>序号</th>
-            <th>指标</th>
-        </tr>
-        </thead>
-        <tr th:each="item,userStat:${threadInfo}">
-            <td th:text="${userStat.index}+1"></td>
-            <td th:text="${userStat.current.key}"></td><!-- key-->
-            <td th:text="${userStat.current.value}"></td><!-- value-->
-        </tr>
-    </table>
+            <!-- 数据 -->
+            <div class="col-md-12">
+                <div class="form-group">
+                    <div class="col-md-3">
+                        <!-- 驱动下拉 -->
+                        <select id="metaData" name="metaData" class="form-control select-control">
+                            <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
+                        </select>
+                    </div>
+                    <div class="col-sm-4">
+                        <input class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)." />
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-primary">查询数据</button>
+                    </div>
+                    <div class="col-md-4 text-right">
+                        <button th:id="${metaId}" type="button" class="btn btn-default clearDataBtn">清空数据</button>
+                    </div>
+                </div>
 
-    <p>驱动增量/全量同步数据</p>
-    <p>操作日志</p>
+                <table class="table table-hover metaDataList">
+                    <thead>
+                    <tr>
+                        <th style="width:3%;"></th>
+                        <th style="width:5%;">事件</th>
+                        <th style="width:5%;">结果</th>
+                        <th style="width:60%;">异常</th>
+                        <th style="width:17%;">时间</th>
+                        <th style="width:10%;">详情</th>
+                    </tr>
+                    </thead>
+                    <tr th:each="d,s : ${data}">
+                        <td th:text="${s.index}+1"></td>
+                        <td th:text="${d?.event}"></td>
+                        <td>
+                            <span th:if="${d?.success}" class="label label-success">成功</span>
+                            <span th:if="${not d?.success}" class="label label-warning">失败</span>
+                        </td>
+                        <td th:text="${d?.error}"></td>
+                        <td th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                        <td><a th:json="${d?.json}" href="javascript:;" class="label label-info queryData">查看数据</a></td>
+                    </tr>
+                </table>
+            </div>
 
+            <!-- 性能指标 -->
+            <div class="col-md-12">
+                <p>CPU 内存 硬盘 堆内存 </p>
+            </div>
+
+            <!-- 线程任务 -->
+            <div class="col-md-12">
+                <table class="table table-hover">
+                    <caption>线程任务</caption>
+                    <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>类型</th>
+                        <th>指标</th>
+                    </tr>
+                    </thead>
+                    <tr th:each="item,userStat:${threadInfo}">
+                        <td th:text="${userStat.index}+1"></td>
+                        <td th:text="${userStat.current.key}"></td><!-- key-->
+                        <td th:text="${userStat.current.value}"></td><!-- value-->
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 日志 -->
+            <div class="col-md-12">
+                <div class="form-group">
+                    <div class="col-sm-4">
+                        <input class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)." />
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-primary">查询日志</button>
+                    </div>
+                    <div class="col-md-4"></div>
+                    <div class="col-md-3 text-right">
+                        <button th:id="${metaId}" type="button" class="btn btn-default clearLogBtn">清空日志</button>
+                    </div>
+                </div>
+
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>内容</th>
+                        <th>时间</th>
+                    </tr>
+                    </thead>
+                    <tr th:each="l,s : ${log}">
+                        <td th:text="${s.index}+1"></td>
+                        <td th:text="${l?.json}"></td>
+                        <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                    </tr>
+                </table>
+            </div>
+
+        </form>
+    </div>
 </div>
 
+<script th:src="@{/js/monitor/index.js}"></script>
 </html>

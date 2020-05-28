@@ -111,10 +111,12 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void deleteAll(String collectionId) throws IOException {
-        Shard shard = map.get(collectionId);
-        if (null != shard) {
-            shard.deleteAll();
-            map.remove(collectionId);
+        synchronized (this){
+            Shard shard = map.get(collectionId);
+            if (null != shard) {
+                shard.deleteAll();
+                map.remove(collectionId);
+            }
         }
     }
 

@@ -29,6 +29,16 @@ function bindEditMapping() {
     });
 }
 
+// 查看驱动日志
+function bindQueryData() {
+    $(".mappingList .queryData").click(function () {
+        // 阻止触发click传递事件
+        event.cancelBubble=true;
+        var $id = $(this).attr("id");
+        activeMenu('/monitor');
+        $initContainer.load('/monitor?id=' + $id);
+    });
+}
 
 function bindConnectorDropdownMenu() {
     $(".connectorList .dropdown-menu li").click(function () {
@@ -108,6 +118,7 @@ $(function () {
 
     bindAddMapping();
     bindEditMapping();
+    bindQueryData();
 
     bindConnectorDropdownMenu();
     bindMappingDropdownMenu();

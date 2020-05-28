@@ -2,8 +2,9 @@ package org.dbsyncer.listener.enums;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.connector.enums.ConnectorEnum;
+import org.dbsyncer.listener.quartz.QuartzExtractor;
 import org.dbsyncer.listener.ListenerException;
-import org.dbsyncer.listener.extractor.MysqlExtractor;
+import org.dbsyncer.listener.mysql.MysqlExtractor;
 
 /**
  * @author AE86
@@ -13,10 +14,13 @@ import org.dbsyncer.listener.extractor.MysqlExtractor;
 public enum ListenerEnum {
 
     /**
+     * 定时
+     */
+    DEFAULT(ListenerTypeEnum.TIMING.getType(), QuartzExtractor.class),
+    /**
      * Mysql
      */
-    MYSQL(ConnectorEnum.MYSQL.getType(), MysqlExtractor.class),
-    ;
+    MYSQL(ConnectorEnum.MYSQL.getType(), MysqlExtractor.class);
 
     private String type;
     private Class<?> clazz;

@@ -9,6 +9,7 @@ import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.monitor.Monitor;
 import org.dbsyncer.parser.enums.ModelEnum;
+import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
@@ -42,6 +43,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Override
     public String add(Map<String, String> params) {
         ConfigModel model = mappingChecker.checkAddConfigModel(params);
+        log(LogType.MappingLog.INSERT, (Mapping) model);
+
         return manager.addMapping(model);
     }
 
@@ -52,6 +55,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         synchronized (LOCK) {
             assertRunning(mapping.getMetaId());
             ConfigModel model = mappingChecker.checkEditConfigModel(params);
+            log(LogType.MappingLog.UPDATE, (Mapping) model);
+
             return manager.editMapping(model);
         }
     }
@@ -59,18 +64,28 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Override
     public String remove(String id) {
         Mapping mapping = assertMappingExist(id);
+        String metaId = mapping.getMetaId();
+        Meta meta = manager.getMeta(metaId);
         synchronized (LOCK) {
-            assertRunning(mapping.getMetaId());
+            assertRunning(metaId);
+
+            // 删除数据
+            manager.clearData(metaId);
+            log(LogType.MetaLog.CLEAR, meta);
 
             // 删除meta
-            manager.removeMeta(mapping.getMetaId());
+            manager.removeMeta(metaId);
+            log(LogType.MetaLog.DELETE, meta);
 
             // 删除tableGroup
             List<TableGroup> groupList = manager.getTableGroupAll(id);
             if (!CollectionUtils.isEmpty(groupList)) {
                 groupList.forEach(t -> manager.removeTableGroup(t.getId()));
             }
+
+            // 删除驱动
             manager.removeMapping(id);
+            log(LogType.MappingLog.DELETE, mapping);
         }
         return "驱动删除成功";
     }
@@ -104,7 +119,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             meta.getSuccess().set(0);
             manager.editMeta(meta);
 
+            // 启动
             manager.start(mapping);
+
+            log(LogType.MappingLog.RUNNING, mapping);
         }
         return "驱动启动成功";
     }
@@ -117,6 +135,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 throw new BizException("驱动已停止.");
             }
             manager.close(mapping);
+
+            log(LogType.MappingLog.STOP, mapping);
         }
         return "驱动停止成功";
     }

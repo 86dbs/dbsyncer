@@ -36,7 +36,7 @@ public class FlushServiceImpl implements FlushService {
     @Override
     public void asyncWrite(String type, String error) {
         Map<String, Object> params = new HashMap();
-        params.put(ConfigConstant.CONFIG_MODEL_ID, snowflakeIdWorker.nextId());
+        params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
         params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
         params.put(ConfigConstant.CONFIG_MODEL_JSON, error);
         params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, System.currentTimeMillis());

@@ -7,6 +7,8 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.logger.LogService;
+import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -34,6 +36,9 @@ public class ConnectorChecker extends AbstractChecker implements ApplicationCont
 
     @Autowired
     private Manager manager;
+
+    @Autowired
+    private LogService logService;
 
     private Map<String, ConnectorConfigChecker> map;
 
@@ -110,6 +115,9 @@ public class ConnectorChecker extends AbstractChecker implements ApplicationCont
     private void setTable(Connector connector) {
         // 获取表信息
         boolean alive = manager.alive(connector.getConfig());
+        if(!alive){
+            logService.log(LogType.ConnectorLog.FAILED);
+        }
         Assert.isTrue(alive, "无法连接.");
         List<String> table = manager.getTable(connector.getConfig());
         connector.setTable(table);

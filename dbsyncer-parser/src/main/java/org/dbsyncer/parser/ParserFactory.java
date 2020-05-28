@@ -92,8 +92,12 @@ public class ParserFactory implements Parser {
         Table sTable = new Table().setName(sTableName).setColumn(new ArrayList<>());
         Table tTable = new Table().setName(tTableName).setColumn(new ArrayList<>());
         fieldMapping.forEach(m -> {
-            sTable.getColumn().add(m.getSource());
-            tTable.getColumn().add(m.getTarget());
+            if(null != m.getSource()){
+                sTable.getColumn().add(m.getSource());
+            }
+            if(null != m.getTarget()){
+                tTable.getColumn().add(m.getTarget());
+            }
         });
         final CommandConfig sourceConfig = new CommandConfig(sType, sTable, tableGroup.getFilter());
         final CommandConfig targetConfig = new CommandConfig(tType, tTable);
@@ -273,7 +277,7 @@ public class ParserFactory implements Parser {
      * @param data
      */
     private void flush(Task task, Result writer, List<Map<String, Object>> data) {
-        flush(task.getId(), writer, ConnectorConstant.OPERTION_DELETE, data);
+        flush(task.getId(), writer, ConnectorConstant.OPERTION_INSERT, data);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(System.currentTimeMillis());

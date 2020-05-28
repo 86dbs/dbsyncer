@@ -1,5 +1,10 @@
 package org.dbsyncer.connector.enums;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
+import org.dbsyncer.connector.CompareFilter;
+import org.dbsyncer.connector.ConnectorException;
+
 /**
  * 运算符表达式类型
  *
@@ -12,37 +17,60 @@ public enum FilterEnum {
     /**
      * 等于
      */
-    EQUAL("="),
+    EQUAL("=", (value, filterValue) -> StringUtils.equals(value, filterValue)),
     /**
      * 不等于
      */
-    NOT_EQUAL("!="),
+    NOT_EQUAL("!=", (value, filterValue) -> !StringUtils.equals(value, filterValue)),
     /**
      * 大于
      */
-    GT(">"),
+    GT(">", (value, filterValue) -> NumberUtils.toInt(value) > NumberUtils.toInt(filterValue)),
     /**
      * 小于
      */
-    LT("<"),
+    LT("<", (value, filterValue) -> NumberUtils.toInt(value) < NumberUtils.toInt(filterValue)),
     /**
      * 大于等于
      */
-    GT_AND_EQUAL(">="),
+    GT_AND_EQUAL(">=", (value, filterValue) -> NumberUtils.toInt(value) >= NumberUtils.toInt(filterValue)),
     /**
      * 小于等于
      */
-    LT_AND_EQUAL("<=");
+    LT_AND_EQUAL("<=", (value, filterValue) -> NumberUtils.toInt(value) <= NumberUtils.toInt(filterValue));
 
     // 运算符名称
     private String name;
+    // 比较器
+    private CompareFilter compareFilter;
 
-    FilterEnum(String name) {
+    FilterEnum(String name, CompareFilter compareFilter) {
         this.name = name;
+        this.compareFilter = compareFilter;
+    }
+
+    /**
+     * 获取比较器
+     *
+     * @param filterName
+     * @return
+     * @throws ConnectorException
+     */
+    public static CompareFilter getCompareFilter(String filterName) throws ConnectorException {
+        for (FilterEnum e : FilterEnum.values()) {
+            if (StringUtils.equals(filterName, e.getName())) {
+                return e.getCompareFilter();
+            }
+        }
+        throw new ConnectorException(String.format("FilterEnum name \"%s\" does not exist.", filterName));
     }
 
     public String getName() {
         return name;
+    }
+
+    public CompareFilter getCompareFilter() {
+        return compareFilter;
     }
 
 }
