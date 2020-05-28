@@ -24,7 +24,7 @@ public class FieldPicker {
     private List<Filter> add;
     private List<Filter> or;
 
-    public FieldPicker(TableGroup tableGroup, List<Filter> filter) {
+    public FieldPicker(TableGroup tableGroup) {
         this.tableGroup = tableGroup;
     }
 
@@ -76,6 +76,8 @@ public class FieldPicker {
                 return true;
             }
         }
+
+        boolean pass = false;
         // 并 关系(成立所有条件)
         for (Filter f: add) {
             value = row.get(f.getName());
@@ -86,14 +88,15 @@ public class FieldPicker {
             if(!filter.compare(String.valueOf(value), f.getValue())){
                 return false;
             }
+            pass = true;
         }
 
-        return true;
+        return pass;
     }
 
     private void init(List<Filter> filter, List<Field> column, List<FieldMapping> fieldMapping) {
         // 解析过滤条件
-        if ((filterSwitch == !CollectionUtils.isEmpty(filter))) {
+        if ((filterSwitch = !CollectionUtils.isEmpty(filter))) {
             add = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), OperationEnum.AND.getName())).collect(Collectors.toList());
             or = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), OperationEnum.OR.getName())).collect(Collectors.toList());
         }

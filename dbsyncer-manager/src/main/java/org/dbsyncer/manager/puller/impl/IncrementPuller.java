@@ -204,7 +204,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
     /**
      * </p>定时模式
      * <ol>
-     * <li>获取映射关系增量数据</li>
      * <li>根据过滤条件筛选</li>
      * </ol>
      * </p>同步关系：
@@ -227,7 +226,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             this.mapping = mapping;
             this.metaId = mapping.getMetaId();
             this.tablePicker = new LinkedList<>();
-            list.forEach(t -> tablePicker.add(new FieldPicker(t, t.getFilter())));
+            list.forEach(t -> tablePicker.add(new FieldPicker(t)));
         }
 
         @Override
@@ -237,9 +236,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
             // 处理过程有异常向上抛
             DataEvent data = new DataEvent(event, before, after);
-            if (picker.filter(data)) {
-                parser.execute(mapping, picker.getTableGroup(), data);
-            }
+            parser.execute(mapping, picker.getTableGroup(), data);
 
             // 标记有变更记录
             changed.compareAndSet(false, true);
