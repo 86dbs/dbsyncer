@@ -62,6 +62,8 @@ function bindFieldMappingAddClick(){
     $btn.bind('click', function(){
         var sField = $("#sourceFieldMapping").select2("val");
         var tField = $("#targetFieldMapping").select2("val");
+        sField = sField == null ? "" : sField;
+        tField = tField == null ? "" : tField;
         // 非空检查
         if(sField == "" && tField == ""){
             bootGrowl("至少有一个表字段.", "danger");

@@ -92,8 +92,12 @@ public class ParserFactory implements Parser {
         Table sTable = new Table().setName(sTableName).setColumn(new ArrayList<>());
         Table tTable = new Table().setName(tTableName).setColumn(new ArrayList<>());
         fieldMapping.forEach(m -> {
-            sTable.getColumn().add(m.getSource());
-            tTable.getColumn().add(m.getTarget());
+            if(null != m.getSource()){
+                sTable.getColumn().add(m.getSource());
+            }
+            if(null != m.getTarget()){
+                tTable.getColumn().add(m.getTarget());
+            }
         });
         final CommandConfig sourceConfig = new CommandConfig(sType, sTable, tableGroup.getFilter());
         final CommandConfig targetConfig = new CommandConfig(tType, tTable);

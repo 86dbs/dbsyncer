@@ -36,12 +36,6 @@ public class MappingController extends BaseController {
         return "mapping/add";
     }
 
-    @GetMapping("/pageEdit")
-    public String page(ModelMap model, @RequestParam(value = "id") String id) {
-        model.put("mapping", mappingService.getMapping(id));
-        return "mapping/edit";
-    }
-
     @GetMapping("/page/{page}")
     public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id) {
         model.put("mapping", mappingService.getMapping(id));
