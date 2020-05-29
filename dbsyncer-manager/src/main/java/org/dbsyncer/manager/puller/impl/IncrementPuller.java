@@ -7,6 +7,7 @@ import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.listener.AbstractExtractor;
+import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
@@ -66,7 +67,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
     private String key;
 
-    private Map<String, AbstractExtractor> map = new ConcurrentHashMap<>();
+    private Map<String, Extractor> map = new ConcurrentHashMap<>();
 
     @Override
     public void asyncStart(Mapping mapping) {
@@ -99,7 +100,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
     @Override
     public void close(String metaId) {
-        AbstractExtractor extractor = map.get(metaId);
+        Extractor extractor = map.get(metaId);
         if (null != extractor) {
             extractor.clearAllListener();
             extractor.close();
