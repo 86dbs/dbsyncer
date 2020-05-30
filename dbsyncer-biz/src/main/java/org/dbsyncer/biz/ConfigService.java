@@ -2,6 +2,7 @@ package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.ConfigVo;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,4 +32,12 @@ public interface ConfigService {
      * @return
      */
     String getPassword();
+
+    /**
+     * 获取所有配置
+     *
+     * @return
+     */
+    List<ConfigVo> queryConfig();
+
 }

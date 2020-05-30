@@ -1,6 +1,7 @@
 package org.dbsyncer.biz.checker.impl.config;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.SHA1Util;
@@ -75,6 +76,13 @@ public class ConfigChecker extends AbstractChecker {
             logService.log(LogType.SystemLog.INFO, "修改密码成功");
         }
         logService.log(LogType.SystemLog.INFO, "修改系统配置");
+
+        // 刷新监控间隔（秒）
+        String refreshInterval = params.get("refreshInterval");
+        if(StringUtils.isNotBlank(refreshInterval)){
+            int time = NumberUtils.toInt(refreshInterval, 10);
+            config.setRefreshInterval(time);
+        }
 
         // 修改基本配置
         this.modifyConfigModel(config, params);
