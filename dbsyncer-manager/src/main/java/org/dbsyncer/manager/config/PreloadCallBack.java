@@ -2,6 +2,7 @@ package org.dbsyncer.manager.config;
 
 import org.dbsyncer.manager.template.Callback;
 import org.dbsyncer.parser.Parser;
+import org.dbsyncer.parser.model.Config;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -31,6 +32,10 @@ public class PreloadCallBack implements Callback {
 
     public Object parseMeta() {
         return parser.parseObject(json, Meta.class);
+    }
+
+    public Object parseConfig() {
+        return parser.parseObject(json, Config.class);
     }
 
 }

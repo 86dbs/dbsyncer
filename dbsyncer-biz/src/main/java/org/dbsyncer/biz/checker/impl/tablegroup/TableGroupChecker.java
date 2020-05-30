@@ -75,7 +75,7 @@ public class TableGroupChecker extends AbstractChecker {
 
     @Override
     public ConfigModel checkEditConfigModel(Map<String, String> params) {
-        logger.info("checkEditConfigModel tableGroup params:{}", params);
+        logger.info("params:{}", params);
         Assert.notEmpty(params, "TableGroupChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = manager.getTableGroup(id);

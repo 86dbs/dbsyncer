@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
-      lang="zh-CN">
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div class="container">
-    <form class="form-horizontal" role="form">
+    <form id="configEditForm" class="form-horizontal" role="form">
         <div class="row text-center">
             <h3>修改密码</h3>
         </div>
@@ -12,16 +12,21 @@
         <div class="row">
             <div class="col-md-3"></div>
             <div class="col-md-6">
+                <!-- 隐藏表单值 -->
+                <div class="form-group hidden">
+                    <input name="id" type="text" th:value="${config?.id}"/>
+                </div>
+
                 <div class="form-group">
                     <label class="col-sm-4 control-label">原密码 <strong class="driverVerifcateRequired">*</strong></label>
                     <div class="col-sm-8">
-                        <input type="password" class="form-control" name="pwd" maxlength="32" dbsyncer-valid="require" placeholder="请输入原密码">
+                        <input type="password" class="form-control" name="oldPwd" maxlength="32" dbsyncer-valid="require" placeholder="请输入原密码">
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="col-sm-4 control-label">新密码 <strong class="driverVerifcateRequired">*</strong></label>
                     <div class="col-sm-8">
-                        <input type="password" class="form-control" name="newpwd" maxlength="32" dbsyncer-valid="require" placeholder="请输入新密码">
+                        <input type="password" class="form-control" name="newPwd" maxlength="32" dbsyncer-valid="require" placeholder="请输入新密码">
                     </div>
                 </div>
                 <div class="form-group">
@@ -30,7 +35,7 @@
                         <button id="updatePwdSubBtn" type="button" class="btn btn-primary">
                             <span class="fa fa-save"></span>保存
                         </button>
-                        <button type="reset" class="btn btn-default">重置</button>
+                        <button id="updatePwdRestBtn" type="reset" class="btn btn-default">重置</button>
                     </div>
                 </div>
             </div>
@@ -39,4 +44,5 @@
     </form>
 </div>
 
+<script th:src="@{/js/pwd/index.js}"></script>
 </html>

@@ -75,6 +75,17 @@ public interface Manager extends Executor {
 
     List<Meta> getMetaAll();
 
+    // Config
+    String addConfig(ConfigModel model);
+
+    String editConfig(ConfigModel model);
+
+    Config getConfig(String configId);
+
+    void removeConfig(String configId);
+
+    List<Config> getConfigAll();
+
     // Data
     List<Map> queryData(String id, int pageNum, int pageSize);
 

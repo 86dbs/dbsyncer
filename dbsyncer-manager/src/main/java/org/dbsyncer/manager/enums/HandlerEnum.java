@@ -66,6 +66,15 @@ public enum HandlerEnum {
         protected Object preload(PreloadCallBack preloadCallBack) {
             return preloadCallBack.parseMeta();
         }
+    }),
+    /**
+     * 预加载Config
+     */
+    PRELOAD_CONFIG(new AbstractPreloadHandler(){
+        @Override
+        protected Object preload(PreloadCallBack preloadCallBack) {
+            return preloadCallBack.parseConfig();
+        }
     });
 
     private Handler handler;

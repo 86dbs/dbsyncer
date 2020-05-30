@@ -77,7 +77,7 @@ public class ConnectorChecker extends AbstractChecker implements ApplicationCont
 
     @Override
     public ConfigModel checkEditConfigModel(Map<String, String> params) {
-        logger.info("checkEditConfigModel connector params:{}", params);
+        logger.info("params:{}", params);
         Assert.notEmpty(params, "ConnectorChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Connector connector = manager.getConnector(id);

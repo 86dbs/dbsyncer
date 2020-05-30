@@ -205,6 +205,34 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     }
 
     @Override
+    public String addConfig(ConfigModel model) {
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD.getHandler()));
+    }
+
+    @Override
+    public String editConfig(ConfigModel model) {
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT.getHandler()));
+    }
+
+    @Override
+    public Config getConfig(String configId) {
+        return operationTemplate.queryObject(Config.class, configId);
+    }
+
+    @Override
+    public void removeConfig(String configId) {
+        operationTemplate.remove(new OperationConfig(configId));
+    }
+
+    @Override
+    public List<Config> getConfigAll() {
+        Config config = new Config();
+        config.setType(ConfigConstant.CONFIG);
+        QueryConfig<Config> queryConfig = new QueryConfig<>(config);
+        return operationTemplate.queryAll(queryConfig);
+    }
+
+    @Override
     public List<Map> queryData(String id, int pageNum, int pageSize) {
         return dataTemplate.query(StorageEnum.DATA, id, pageNum, pageSize);
     }
