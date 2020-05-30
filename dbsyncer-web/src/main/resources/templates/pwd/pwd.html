@@ -10,13 +10,13 @@
 
         <!-- 操作 -->
         <div class="row">
-            <div class="col-md-3"></div>
-            <div class="col-md-6">
+            <div class="col-md-3">
                 <!-- 隐藏表单值 -->
                 <div class="form-group hidden">
                     <input name="id" type="text" th:value="${config?.id}"/>
                 </div>
-
+            </div>
+            <div class="col-md-6">
                 <div class="form-group">
                     <label class="col-sm-4 control-label">原密码 <strong class="driverVerifcateRequired">*</strong></label>
                     <div class="col-sm-8">
@@ -35,7 +35,6 @@
                         <button id="updatePwdSubBtn" type="button" class="btn btn-primary">
                             <span class="fa fa-save"></span>保存
                         </button>
-                        <button id="updatePwdRestBtn" type="reset" class="btn btn-default">重置</button>
                     </div>
                 </div>
             </div>

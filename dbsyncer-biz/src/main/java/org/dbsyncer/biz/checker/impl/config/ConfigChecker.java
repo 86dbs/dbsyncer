@@ -29,7 +29,7 @@ public class ConfigChecker extends AbstractChecker {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Value(value = "${dbsyncer.config.login.password}")
+    @Value(value = "${dbsyncer.web.login.password}")
     private String password;
 
     @Autowired
@@ -68,11 +68,13 @@ public class ConfigChecker extends AbstractChecker {
         if (StringUtils.isNotBlank(newPwd) && StringUtils.isNotBlank(oldPwd)) {
             oldPwd = SHA1Util.b64_sha1(oldPwd);
             if (!StringUtils.equals(config.getPassword(), oldPwd)) {
-                logService.log(LogType.SystemLog.WARN, "修改密码失败");
+                logService.log(LogType.SystemLog.ERROR, "修改密码失败");
                 throw new BizException("修改密码失败");
             }
             config.setPassword(SHA1Util.b64_sha1(newPwd));
+            logService.log(LogType.SystemLog.INFO, "修改密码成功");
         }
+        logService.log(LogType.SystemLog.INFO, "修改系统配置");
 
         // 修改基本配置
         this.modifyConfigModel(config, params);

@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -39,13 +40,13 @@ public class FlushServiceImpl implements FlushService {
         params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
         params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
         params.put(ConfigConstant.CONFIG_MODEL_JSON, error);
-        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, System.currentTimeMillis());
+        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, Instant.now().toEpochMilli());
         storageService.addLog(StorageEnum.LOG, params);
     }
 
     @Override
     public void asyncWrite(String metaId, String event, boolean success, List<Map<String, Object>> data, String error) {
-        long now = System.currentTimeMillis();
+        long now = Instant.now().toEpochMilli();
         List<Map> list = data.parallelStream().map(r -> {
             Map<String, Object> params = new HashMap();
             params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));

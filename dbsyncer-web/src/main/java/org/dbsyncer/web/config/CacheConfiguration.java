@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  * @date 2020/04/23 11:30
  */
 @Configuration
-@ConfigurationProperties(prefix = "dbsyncer.caching")
+@ConfigurationProperties(prefix = "dbsyncer.web")
 public class CacheConfiguration {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());

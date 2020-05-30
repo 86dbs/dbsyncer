@@ -57,7 +57,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
      */
     private static final int MAXIMUM_SESSIONS = 1;
 
-    @Value(value = "${dbsyncer.config.login.username}")
+    @Value(value = "${dbsyncer.web.login.username}")
     private String username;
 
     @Autowired

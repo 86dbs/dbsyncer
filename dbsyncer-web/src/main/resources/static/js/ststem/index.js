@@ -1,19 +1,17 @@
 function submit(data) {
-    doPoster('/pwd/edit', data, function (data) {
+    doPoster('/system/edit', data, function (data) {
         if (data.success == true) {
-            doPoster("/logout", null, function (data) {
-                location.href = $basePath;
-            });
+            bootGrowl("修改成功!", "success");
         } else {
             bootGrowl(data.resultValue, "danger");
-            $initContainer.load("/pwd");
         }
+        $initContainer.load("/system");
     });
 }
 
 $(function () {
     //保存
-    $("#updatePwdSubBtn").click(function () {
+    $("#updateSystemSubBtn").click(function () {
         var $form = $("#configEditForm");
         if ($form.formValidate() == true) {
             var data = $form.serializeJson();

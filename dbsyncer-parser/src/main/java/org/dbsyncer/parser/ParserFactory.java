@@ -31,6 +31,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -280,7 +281,7 @@ public class ParserFactory implements Parser {
         flush(task.getId(), writer, ConnectorConstant.OPERTION_INSERT, data);
 
         // 发布刷新事件给FullExtractor
-        task.setEndTime(System.currentTimeMillis());
+        task.setEndTime(Instant.now().toEpochMilli());
         applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
     }
 

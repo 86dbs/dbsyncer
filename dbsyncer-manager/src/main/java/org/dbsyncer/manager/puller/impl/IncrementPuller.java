@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -83,7 +84,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             AbstractExtractor extractor = getExtractor(mapping, connector, list, meta);
             Assert.notNull(extractor, "未知的监听配置.");
 
-            long now = System.currentTimeMillis();
+            long now = Instant.now().toEpochMilli();
             meta.setBeginTime(now);
             meta.setEndTime(now);
             manager.editMeta(meta);

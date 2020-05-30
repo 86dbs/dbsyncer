@@ -15,6 +15,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,7 +80,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
 
     private void doTask(Task task, Mapping mapping, List<TableGroup> list) {
         // 记录开始时间
-        long now = System.currentTimeMillis();
+        long now = Instant.now().toEpochMilli();
         task.setBeginTime(now);
         task.setEndTime(now);
         flush(task);
@@ -92,7 +93,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         }
 
         // 记录结束时间
-        task.setEndTime(System.currentTimeMillis());
+        task.setEndTime(Instant.now().toEpochMilli());
         flush(task);
     }
 

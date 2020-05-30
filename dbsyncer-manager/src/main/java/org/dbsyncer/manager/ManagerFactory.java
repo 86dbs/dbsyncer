@@ -31,6 +31,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -304,7 +305,7 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
         int code = metaEnum.getCode();
         if (null != meta && meta.getState() != code) {
             meta.setState(code);
-            meta.setUpdateTime(System.currentTimeMillis());
+            meta.setUpdateTime(Instant.now().toEpochMilli());
             editMeta(meta);
         }
     }

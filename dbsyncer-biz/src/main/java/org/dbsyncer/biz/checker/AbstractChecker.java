@@ -18,6 +18,7 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -53,7 +54,7 @@ public abstract class AbstractChecker implements Checker {
             model.setName(name);
         }
         model.setId(StringUtils.isEmpty(model.getId()) ? String.valueOf(snowflakeIdWorker.nextId()) : model.getId());
-        long now = System.currentTimeMillis();
+        long now = Instant.now().toEpochMilli();
         model.setCreateTime(null == model.getCreateTime() ? now : model.getCreateTime());
         model.setUpdateTime(now);
     }
