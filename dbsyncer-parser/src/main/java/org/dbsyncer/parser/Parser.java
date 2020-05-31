@@ -6,6 +6,7 @@ import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.DataEvent;
@@ -96,6 +97,13 @@ public interface Parser {
      * @return
      */
     List<OperationEnum> getOperationEnumAll();
+
+    /**
+     * 获取过滤条件系统参数
+     *
+     * @return
+     */
+    List<QuartzFilterEnum> getQuartzFilterEnumAll();
 
     /**
      * 获取所有运算符类型

@@ -6,6 +6,7 @@ import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.manager.config.OperationConfig;
 import org.dbsyncer.manager.config.QueryConfig;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
@@ -261,6 +262,11 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     @Override
     public List<OperationEnum> getOperationEnumAll() {
         return parser.getOperationEnumAll();
+    }
+
+    @Override
+    public List<QuartzFilterEnum> getQuartzFilterEnumAll() {
+        return parser.getQuartzFilterEnumAll();
     }
 
     @Override

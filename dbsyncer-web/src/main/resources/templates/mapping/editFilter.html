@@ -42,11 +42,28 @@
         <div class="row">
             <div class="col-md-4">
                 <label class="col-sm-3 control-label text-right">参数</label>
+
                 <div class="col-sm-9">
                     <textarea id="conditionArg" class="form-control" rows="2" placeholder="请输入参数"></textarea>
                 </div>
             </div>
-            <div class="col-md-7"></div>
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">系统参数</label>
+
+                <div class="col-sm-9">
+                    <div class="dropdown">
+                        <button type="button" th:title="（仅适用于增量同步）" class="btn btn-default dropdown-toggle" id="conditionDropdown" data-toggle="dropdown">
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu" aria-labelledby="conditionDropdown">
+                            <li role="presentation" th:each="f,s:${condition?.quartzFilter}" >
+                                <a role="menuitem" class="conditionQuartzFilter" tabindex="-1" th:text="${f?.type}" th:title="${f?.message}" href="javascript:;"></a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3"></div>
             <div class="col-md-1">
                 <button id="conditionAdd" type="button" class="btn btn-primary">
                     <span class="fa fa-plus"></span>添加

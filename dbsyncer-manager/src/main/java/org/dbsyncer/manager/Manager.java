@@ -5,6 +5,7 @@ import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.config.Plugin;
@@ -101,6 +102,9 @@ public interface Manager extends Executor {
 
     // OperationEnum
     List<OperationEnum> getOperationEnumAll();
+
+    // QuartzFilterEnum
+    List<QuartzFilterEnum> getQuartzFilterEnumAll();
 
     // FilterEnum
     List<FilterEnum> getFilterEnumAll();

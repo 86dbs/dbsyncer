@@ -12,6 +12,7 @@ import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.flush.FlushService;
@@ -156,6 +157,11 @@ public class ParserFactory implements Parser {
     }
 
     @Override
+    public List<QuartzFilterEnum> getQuartzFilterEnumAll() {
+        return Arrays.asList(QuartzFilterEnum.values());
+    }
+
+    @Override
     public List<FilterEnum> getFilterEnumAll() {
         return Arrays.asList(FilterEnum.values());
     }
@@ -204,7 +210,7 @@ public class ParserFactory implements Parser {
 
             // 1、获取数据源数据
             int pageIndex = Integer.parseInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
-            Result reader = connectorFactory.reader(sConfig, command, pageIndex, pageSize);
+            Result reader = connectorFactory.reader(sConfig, command, new ArrayList<>(), pageIndex, pageSize);
             List<Map<String, Object>> data = reader.getData();
             if (CollectionUtils.isEmpty(data)) {
                 params.clear();

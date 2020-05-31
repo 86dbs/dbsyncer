@@ -95,6 +95,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             map.get(metaId).start();
         } catch (Exception e) {
             close(metaId);
+            logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
             logger.error("运行异常，结束任务{}:{}", metaId, e.getMessage());
         }
     }
