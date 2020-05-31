@@ -16,9 +16,9 @@ import java.util.Date;
 public enum QuartzFilterEnum {
 
     /**
-     * 时间戳
+     * 时间戳(开始)
      */
-    TIME_STAMP("$timestamp$", "系统时间戳", new QuartzFilter() {
+    TIME_STAMP_BEGIN("$timestamp_begin$", "系统时间戳(开始)", new QuartzFilter() {
         @Override
         public Object getObject() {
             return new Timestamp(Instant.now().toEpochMilli());
@@ -36,9 +36,55 @@ public enum QuartzFilterEnum {
         }
     }),
     /**
-     * 日期
+     * 时间戳(结束)
      */
-    DATE("$date$", "系统日期", new QuartzFilter() {
+    TIME_STAMP_END("$timestamp_end$", "系统时间戳(结束)", new QuartzFilter() {
+        @Override
+        public Object getObject() {
+            return new Timestamp(Instant.now().toEpochMilli());
+        }
+
+        @Override
+        public Object getObject(String s) {
+            return new Timestamp(Long.parseLong(s));
+        }
+
+        @Override
+        public String toString(Object value) {
+            Timestamp ts = (Timestamp) value;
+            return String.valueOf(ts.getTime());
+        }
+
+        @Override
+        public boolean begin() {
+            return false;
+        }
+    }),
+    /**
+     * 日期(开始)
+     */
+    DATE_BEGIN("$date_begin$", "系统日期(开始)", new QuartzFilter() {
+        @Override
+        public Object getObject() {
+            return new Date();
+        }
+
+        @Override
+        public Object getObject(String s) {
+            // TODO 日期转换
+            DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            return null;
+        }
+
+        @Override
+        public String toString(Object value) {
+            return String.valueOf(value);
+        }
+    }),
+    /**
+     * 日期(结束)
+     */
+    DATE_END("$date_end$", "系统日期(结束)", new QuartzFilter() {
         @Override
         public Object getObject() {
             return new Date();
@@ -53,6 +99,11 @@ public enum QuartzFilterEnum {
         @Override
         public String toString(Object value) {
             return String.valueOf(value);
+        }
+
+        @Override
+        public boolean begin() {
+            return false;
         }
     });
 

@@ -24,4 +24,13 @@ public interface QuartzFilter {
      * @return
      */
     String toString(Object value);
+
+    /**
+     * 是否开始字段
+     *
+     * @return
+     */
+    default boolean begin(){
+        return true;
+    }
 }
