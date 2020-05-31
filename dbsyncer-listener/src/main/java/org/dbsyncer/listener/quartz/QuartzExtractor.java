@@ -109,7 +109,7 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
 
         // 持久化
         if (point.refreshed()) {
-            point.getPosition().forEach((k, v) -> map.put(k, v));
+            map.putAll(point.getPosition());
             logger.info("增量点：{}", map);
         }
 
@@ -140,10 +140,11 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
             final String key = index + type;
 
             // 为空参数
-            if (!map.containsKey(key)) {
+            if (!map.containsKey(key) && f.begin()) {
                 final Object val = f.getObject();
                 final String valStr = f.toString(val);
                 point.addArg(val);
+                point.setBeginKey(key);
                 map.put(key, valStr);
                 continue;
             }
