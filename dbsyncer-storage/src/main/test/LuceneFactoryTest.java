@@ -90,7 +90,7 @@ public class LuceneFactoryTest {
         Document doc = new Document();
         String id = "100";
         doc.add(new StringField("id", id, Field.Store.YES));
-        doc.add(new StringField("name", "中文", Field.Store.YES));
+        doc.add(new TextField("content", "这是一款大规模数据处理软件，名字叫做Apache Spark", Field.Store.YES));
         shard.insert(doc);
         System.out.println("新增后：");
         maps = shard.query(new MatchAllDocsQuery());
@@ -98,7 +98,7 @@ public class LuceneFactoryTest {
         check();
 
         // 修改
-        doc.add(new StringField("name", "中文[已修改]", Field.Store.YES));
+        doc.add(new TextField("content", "这是一款大规模数据处理软件，名字叫做Apache Spark[已修改]", Field.Store.YES));
         shard.update(new Term("id", id), doc);
         System.out.println("修改后：");
         maps = shard.query(new MatchAllDocsQuery());
@@ -301,7 +301,7 @@ public class LuceneFactoryTest {
         final IndexSearcher searcher = shard.getSearcher();
 
         String searchField = "content";
-        String text = "Apache Spark 大规模数据处理";
+        String text = "大规模";
 
         //指定搜索字段和分析器
         QueryParser parser = new QueryParser(searchField, analyzer);
