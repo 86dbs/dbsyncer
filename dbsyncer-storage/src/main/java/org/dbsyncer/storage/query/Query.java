@@ -12,8 +12,6 @@ public class Query {
 
     private List<Param> params;
 
-    private boolean highlighter;
-
     private String preTag = "<span style='color:red'>";
 
     private String postTag = "</span>";
@@ -26,8 +24,7 @@ public class Query {
         this.params = new ArrayList<>();
     }
 
-    public Query(boolean highlighter, int pageNum, int pageSize) {
-        this.highlighter = highlighter;
+    public Query(int pageNum, int pageSize) {
         this.pageNum = pageNum;
         this.pageSize = pageSize;
         this.params = new ArrayList<>();
@@ -37,16 +34,16 @@ public class Query {
         params.add(new Param(key, value));
     }
 
+    public void put(String key, String value, boolean highlighter) {
+        params.add(new Param(key, value, highlighter));
+    }
+
     public List<Param> getParams() {
         return params;
     }
 
     public void setParams(List<Param> params) {
         this.params = params;
-    }
-
-    public boolean isHighlighter() {
-        return highlighter;
     }
 
     public String getPreTag() {

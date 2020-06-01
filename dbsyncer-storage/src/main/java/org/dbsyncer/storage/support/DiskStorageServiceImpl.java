@@ -76,9 +76,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
             List<Param> params = query.getParams();
             if (!CollectionUtils.isEmpty(params)) {
                 BooleanQuery.Builder builder = new BooleanQuery.Builder();
-                params.forEach(p ->
-                        builder.add(new TermQuery(new Term(p.getKey(), p.getValue())), BooleanClause.Occur.MUST)
-                );
+                params.forEach(p -> builder.add(new TermQuery(new Term(p.getKey(), p.getValue())), BooleanClause.Occur.MUST));
                 BooleanQuery q = builder.build();
                 return shard.query(q, pageNum, pageSize, sort);
             }

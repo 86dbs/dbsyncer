@@ -8,10 +8,17 @@ package org.dbsyncer.storage.query;
 public class Param {
     private String key;
     private String value;
+    private boolean highlighter;
 
     public Param(String key, String value) {
         this.key = key;
         this.value = value;
+    }
+
+    public Param(String key, String value, boolean highlighter) {
+        this.key = key;
+        this.value = value;
+        this.highlighter = highlighter;
     }
 
     public String getKey() {
@@ -20,5 +27,9 @@ public class Param {
 
     public String getValue() {
         return value;
+    }
+
+    public boolean isHighlighter() {
+        return highlighter;
     }
 }
