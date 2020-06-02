@@ -13,13 +13,44 @@
 </div>
 
 <div>
-    <h3>使用说明</h3>
-    <p>// TODO 此处应有一份Nubility的手册</p>
     <p>运行环境</p>
     <ol>
         <li><a target="_blank" href="https://www.oracle.com/java/technologies/jdk8-downloads.html">JRE 1.8 +</a></li>
         <li><a target="_blank" href="http://apache.fayea.com/zookeeper/stable/">Zookeeper - 3.5.5</a> （高可用模式下需要）</li>
         <li><a target="_blank" href="#">DBsyncer-1.0.0.zip</a></li>
+    </ol>
+    <h3>安装说明</h3>
+    <ol>
+        <li>下载安装包dbsyncer-1.0.0-Alpha.zip</li>
+        <li>解压，进入目录bin</li>
+        <li>Windows平台：startup.bat启动脚本</li>
+        <li>Linux平台：startup.sh启动脚本</li>
+        <li>打开浏览器，输入访问地址：http://127.0.0.1:18686</li>
+        <li>默认账号和密码：admin/admin</li>
+    </ol>
+    <h3>使用说明</h3>
+    <p>驱动管理<p/>
+    <ol>
+        <li>首先，创建一个连接器。选择数据源类型，比如：Mysql，填写配置，保存</li>
+        <li>添加驱动。配置数据源和目标源（数据源：数据的发送端，目标源：数据接受端），保存</li>
+        <li>模式支持全量同步（默认：全量复制）和增量同步（监听变化的数据）</li>
+        <li>基本配置里面，添加映射关系。添加数据源表同步到目标源表关系</li>
+        <li>单击映射关系，进入表字段详细页面，默认匹配相识字段，识别主键（主键用于增量同步，更新和删除使用），保存</li>
+        <li>高级配置省略</li>
+        <li>点击驱动右上角齿轮按钮，启动或删除</li>
+        <li>驱动面板下方显示同步的详细，如果有异常日志，点击日志可跳转至监控菜单查看详细</li>
+    </ol>
+    <p>监控<p/>
+    <ol>
+        <li>查看驱动同步数据</li>
+        <li>查看系统性能指标</li>
+        <li>查看系统操作日志</li>
+    </ol>
+    <p>其他<p/>
+    <ol>
+        <li>参数>>修改系统参数</li>
+        <li>参数>>修改管理员密码</li>
+        <li>注销</li>
     </ol>
 </div>
 
