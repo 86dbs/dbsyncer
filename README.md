@@ -13,7 +13,7 @@
 <div>
     <p>运行环境</p>
     <ol>
-        <li><a target="_blank" href="#">DBSyncer-1.0.0-Alpha.zip</a>（安装包）</li>
+        <li><a target="_blank" href="https://files.gitee.com/group1/M00/0E/A1/wKgCNF7WcZiAAWzLAiH6Q9mvOvQ271.zip?token=4c63569655f2ba420f9e26ef11ff25b5&ts=1591112119&attname=dbsyncer-1.0.0-Alpha.zip&disposition=attachment">DBSyncer-1.0.0-Alpha.zip</a>（安装包）</li>
         <li><a target="_blank" href="https://www.oracle.com/java/technologies/jdk8-downloads.html">JRE 1.8 +</a></li>
         <li><a target="_blank" href="http://apache.fayea.com/zookeeper/stable/">Zookeeper - 3.5.5</a> （高可用模式下需要）</li>
     </ol>
