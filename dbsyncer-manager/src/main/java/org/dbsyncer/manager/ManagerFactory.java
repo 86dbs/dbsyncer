@@ -12,8 +12,8 @@ import org.dbsyncer.manager.config.QueryConfig;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.manager.enums.HandlerEnum;
 import org.dbsyncer.manager.puller.Puller;
-import org.dbsyncer.manager.template.impl.OperationTemplate;
 import org.dbsyncer.manager.template.impl.DataTemplate;
+import org.dbsyncer.manager.template.impl.OperationTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.MetaEnum;
@@ -22,6 +22,7 @@ import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageEnum;
+import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -235,18 +236,18 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     }
 
     @Override
-    public List<Map> queryData(String id, int pageNum, int pageSize) {
-        return dataTemplate.query(StorageEnum.DATA, id, pageNum, pageSize);
+    public List<Map> queryData(Query query, String collectionId) {
+        return dataTemplate.query(StorageEnum.DATA, query, collectionId);
     }
 
     @Override
-    public void clearData(String id) {
-        dataTemplate.clear(StorageEnum.DATA, id);
+    public void clearData(String collectionId) {
+        dataTemplate.clear(StorageEnum.DATA, collectionId);
     }
 
     @Override
-    public List<Map> queryLog(String type, int pageNum, int pageSize) {
-        return dataTemplate.query(StorageEnum.LOG, type, pageNum, pageSize);
+    public List<Map> queryLog(Query query) {
+        return dataTemplate.query(StorageEnum.LOG, query, null);
     }
 
     @Override

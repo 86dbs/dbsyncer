@@ -12,10 +12,6 @@ public class Query {
 
     private List<Param> params;
 
-    private String preTag = "<span style='color:red'>";
-
-    private String postTag = "</span>";
-
     private int pageNum = 1;
 
     private int pageSize = 20;
@@ -46,28 +42,12 @@ public class Query {
         this.params = params;
     }
 
-    public String getPreTag() {
-        return preTag;
-    }
-
-    public String getPostTag() {
-        return postTag;
-    }
-
     public int getPageNum() {
         return pageNum;
     }
 
-    public void setPageNum(int pageNum) {
-        this.pageNum = pageNum;
-    }
-
     public int getPageSize() {
         return pageSize;
-    }
-
-    public void setPageSize(int pageSize) {
-        this.pageSize = pageSize;
     }
 
 }

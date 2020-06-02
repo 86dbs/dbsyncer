@@ -2,12 +2,15 @@ package org.dbsyncer.storage.lucene;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.dbsyncer.storage.query.Option;
 
 import java.io.File;
 import java.io.IOException;
@@ -116,23 +119,19 @@ public class Shard {
     }
 
     public List<Map> query(Query query) throws IOException {
-        return query(query, 1, 20);
+        final IndexSearcher searcher = getSearcher();
+        final TopDocs topDocs = searcher.search(query, MAX_SIZE);
+        return search(searcher, topDocs, new Option(), 1, 20);
     }
 
     public List<Map> query(Query query, Sort sort) throws IOException {
-        return query(query, 1, 20, sort);
+        return query(new Option(query), 1, 20, sort);
     }
 
-    public List<Map> query(Query query, int pageNum, int pageSize) throws IOException {
+    public List<Map> query(Option option, int pageNum, int pageSize, Sort sort) throws IOException {
         final IndexSearcher searcher = getSearcher();
-        final TopDocs topDocs = searcher.search(query, MAX_SIZE);
-        return search(searcher, topDocs, pageNum, pageSize);
-    }
-
-    public List<Map> query(Query query, int pageNum, int pageSize, Sort sort) throws IOException {
-        final IndexSearcher searcher = getSearcher();
-        final TopDocs topDocs = searcher.search(query, MAX_SIZE, sort);
-        return search(searcher, topDocs, pageNum, pageSize);
+        final TopDocs topDocs = searcher.search(option.getQuery(), MAX_SIZE, sort);
+        return search(searcher, topDocs, option, pageNum, pageSize);
     }
 
     /**
@@ -140,11 +139,12 @@ public class Shard {
      *
      * @param searcher
      * @param topDocs
+     * @param option
      * @param pageNum
      * @param pageSize
      * @throws IOException
      */
-    private List<Map> search(final IndexSearcher searcher, final TopDocs topDocs, int pageNum, int pageSize) throws IOException {
+    private List<Map> search(IndexSearcher searcher, TopDocs topDocs, Option option, int pageNum, int pageSize) throws IOException {
         ScoreDoc[] docs = topDocs.scoreDocs;
         int total = docs.length;
         int begin = (pageNum - 1) * pageSize;
@@ -166,6 +166,23 @@ public class Shard {
             r = new LinkedHashMap<>();
             while (iterator.hasNext()) {
                 f = iterator.next();
+
+                // 开启高亮
+                if (option.isEnableHighLightSearch()) {
+                    try {
+                        final String key = f.name();
+                        if (option.getHighLightKeys().contains(key)) {
+                            String content = doc.get(key);
+                            TokenStream tokenStream = analyzer.tokenStream("", content);
+                            content = option.getHighlighter().getBestFragment(tokenStream, content);
+                            r.put(key, content);
+                            continue;
+                        }
+                    } catch (InvalidTokenOffsetsException e) {
+                        e.printStackTrace();
+                    }
+                }
+
                 r.put(f.name(), f.stringValue());
             }
             list.add(r);

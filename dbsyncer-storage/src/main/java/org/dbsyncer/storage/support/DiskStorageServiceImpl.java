@@ -10,6 +10,7 @@ import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.lucene.Shard;
+import org.dbsyncer.storage.query.Option;
 import org.dbsyncer.storage.query.Param;
 import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.util.ParamsUtil;
@@ -78,10 +79,10 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
                 BooleanQuery.Builder builder = new BooleanQuery.Builder();
                 params.forEach(p -> builder.add(new TermQuery(new Term(p.getKey(), p.getValue())), BooleanClause.Occur.MUST));
                 BooleanQuery q = builder.build();
-                return shard.query(q, pageNum, pageSize, sort);
+                return shard.query(new Option(q, query.getParams()), pageNum, pageSize, sort);
             }
 
-            return shard.query(new MatchAllDocsQuery(), pageNum, pageSize, sort);
+            return shard.query(new Option(new MatchAllDocsQuery()), pageNum, pageSize, sort);
         }
         return Collections.emptyList();
     }

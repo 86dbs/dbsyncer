@@ -9,6 +9,7 @@ import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.config.Plugin;
+import org.dbsyncer.storage.query.Query;
 
 import java.util.List;
 import java.util.Map;
@@ -88,12 +89,12 @@ public interface Manager extends Executor {
     List<Config> getConfigAll();
 
     // Data
-    List<Map> queryData(String id, int pageNum, int pageSize);
+    List<Map> queryData(Query query, String collectionId);
 
-    void clearData(String id);
+    void clearData(String collectionId);
 
     // Log
-    List<Map> queryLog(String type, int pageNum, int pageSize);
+    List<Map> queryLog(Query query);
 
     void clearLog();
 
