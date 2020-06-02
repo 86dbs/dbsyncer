@@ -3,6 +3,8 @@ package org.dbsyncer.storage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+
 @Component
 public class SnowflakeIdWorker {
     /**
@@ -58,7 +60,7 @@ public class SnowflakeIdWorker {
     /**
      * 工作机器ID(0~31)
      */
-    @Value(value = "${dbsyncer.worker.id}")
+    @Value(value = "${dbsyncer.storage.id}")
     private long workerId;
 
     /**
@@ -141,20 +143,17 @@ public class SnowflakeIdWorker {
      * @return 当前时间(毫秒)
      */
     private long timeGen() {
-        return System.currentTimeMillis();
+        return Instant.now().toEpochMilli();
     }
 
-    /**
-     * 测试
-     */
-    public static void main(String[] args) {
-        SnowflakeIdWorker idWorker = new SnowflakeIdWorker();
-        for (int i = 0; i < 1000; i++) {
-            long id = idWorker.nextId();
-            System.out.println(Long.toBinaryString(id));
-            System.out.println(id);
-        }
-    }
+//    public static void main(String[] args) {
+//        SnowflakeIdWorker idWorker = new SnowflakeIdWorker();
+//        for (int i = 0; i < 1000; i++) {
+//            long id = idWorker.nextId();
+//            System.out.println(Long.toBinaryString(id));
+//            System.out.println(id);
+//        }
+//    }
 
     private class SnowflakeId {
         private long workerId;

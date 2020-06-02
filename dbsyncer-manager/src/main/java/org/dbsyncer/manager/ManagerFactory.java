@@ -6,13 +6,14 @@ import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.manager.config.OperationConfig;
 import org.dbsyncer.manager.config.QueryConfig;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.manager.enums.HandlerEnum;
 import org.dbsyncer.manager.puller.Puller;
-import org.dbsyncer.manager.template.impl.OperationTemplate;
 import org.dbsyncer.manager.template.impl.DataTemplate;
+import org.dbsyncer.manager.template.impl.OperationTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.MetaEnum;
@@ -21,6 +22,7 @@ import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageEnum;
+import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -31,6 +33,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -205,18 +208,46 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     }
 
     @Override
-    public List<Map> queryData(String id, int pageNum, int pageSize) {
-        return dataTemplate.query(StorageEnum.DATA, id, pageNum, pageSize);
+    public String addConfig(ConfigModel model) {
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD.getHandler()));
     }
 
     @Override
-    public void clearData(String id) {
-        dataTemplate.clear(StorageEnum.DATA, id);
+    public String editConfig(ConfigModel model) {
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT.getHandler()));
     }
 
     @Override
-    public List<Map> queryLog(String type, int pageNum, int pageSize) {
-        return dataTemplate.query(StorageEnum.LOG, type, pageNum, pageSize);
+    public Config getConfig(String configId) {
+        return operationTemplate.queryObject(Config.class, configId);
+    }
+
+    @Override
+    public void removeConfig(String configId) {
+        operationTemplate.remove(new OperationConfig(configId));
+    }
+
+    @Override
+    public List<Config> getConfigAll() {
+        Config config = new Config();
+        config.setType(ConfigConstant.CONFIG);
+        QueryConfig<Config> queryConfig = new QueryConfig<>(config);
+        return operationTemplate.queryAll(queryConfig);
+    }
+
+    @Override
+    public List<Map> queryData(Query query, String collectionId) {
+        return dataTemplate.query(StorageEnum.DATA, query, collectionId);
+    }
+
+    @Override
+    public void clearData(String collectionId) {
+        dataTemplate.clear(StorageEnum.DATA, collectionId);
+    }
+
+    @Override
+    public List<Map> queryLog(Query query) {
+        return dataTemplate.query(StorageEnum.LOG, query, null);
     }
 
     @Override
@@ -232,6 +263,11 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     @Override
     public List<OperationEnum> getOperationEnumAll() {
         return parser.getOperationEnumAll();
+    }
+
+    @Override
+    public List<QuartzFilterEnum> getQuartzFilterEnumAll() {
+        return parser.getQuartzFilterEnumAll();
     }
 
     @Override
@@ -276,7 +312,7 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
         int code = metaEnum.getCode();
         if (null != meta && meta.getState() != code) {
             meta.setState(code);
-            meta.setUpdateTime(System.currentTimeMillis());
+            meta.setUpdateTime(Instant.now().toEpochMilli());
             editMeta(meta);
         }
     }

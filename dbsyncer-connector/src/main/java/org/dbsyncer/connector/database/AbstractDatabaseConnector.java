@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.util.Assert;
 
 import java.sql.Connection;
@@ -146,7 +145,7 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
-    public Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize) {
+    public Result reader(ConnectorConfig config, Map<String, String> command, List<Object> args, int pageIndex, int pageSize) {
         // 1、获取select SQL
         String querySql = command.get(SqlBuilderEnum.QUERY.getName());
         Assert.hasText(querySql, "查询语句不能为空.");
@@ -158,10 +157,10 @@ public abstract class AbstractDatabaseConnector implements Database {
             jdbcTemplate = getJdbcTemplate(cfg);
 
             // 3、设置参数
-            Object[] args = getPageArgs(pageIndex, pageSize);
+            Collections.addAll(args, getPageArgs(pageIndex, pageSize));
 
             // 4、执行SQL
-            List<Map<String, Object>> list = jdbcTemplate.queryForList(querySql, args);
+            List<Map<String, Object>> list = jdbcTemplate.queryForList(querySql, args.toArray());
 
             // 5、返回结果集
             return new Result(list);

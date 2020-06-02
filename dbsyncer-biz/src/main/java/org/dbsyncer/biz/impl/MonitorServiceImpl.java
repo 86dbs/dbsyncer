@@ -14,6 +14,7 @@ import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -79,8 +80,14 @@ public class MonitorServiceImpl implements MonitorService {
 
         int pageNum = NumberUtils.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtils.toInt(params.get("pageSize"), 20);
-        List<DataVo> list = manager.queryData(id, pageNum, pageSize)
-                .stream()
+        Query query = new Query(pageNum, pageSize);
+        // 查询异常信息
+        String error = params.get(ConfigConstant.DATA_ERROR);
+        if(StringUtils.isNotBlank(error)){
+            query.put(ConfigConstant.DATA_ERROR, error, true);
+        }
+
+        List<DataVo> list = manager.queryData(query, id).stream()
                 .map(m -> convert2Vo(m, DataVo.class))
                 .collect(Collectors.toList());
         return list;
@@ -95,11 +102,15 @@ public class MonitorServiceImpl implements MonitorService {
 
     @Override
     public List<LogVo> queryLog(Map<String, String> params) {
-        String type = params.get(ConfigConstant.CONFIG_MODEL_TYPE);
         int pageNum = NumberUtils.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtils.toInt(params.get("pageSize"), 20);
-        List<LogVo> list = manager.queryLog(type, pageNum, pageSize)
-                .stream()
+        Query query = new Query(pageNum, pageSize);
+        // 查询日志内容
+        String json = params.get(ConfigConstant.CONFIG_MODEL_JSON);
+        if(StringUtils.isNotBlank(json)){
+            query.put(ConfigConstant.CONFIG_MODEL_JSON, json, true);
+        }
+        List<LogVo> list = manager.queryLog(query).stream()
                 .map(m -> convert2Vo(m, LogVo.class))
                 .collect(Collectors.toList());
         return list;

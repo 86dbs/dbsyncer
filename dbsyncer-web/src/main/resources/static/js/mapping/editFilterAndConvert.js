@@ -106,6 +106,15 @@ function bindConditionAddClick() {
     });
 }
 
+// 绑定添加定时系统参数
+function bindConditionQuartzFilterAddClick(){
+    var $conditionQuartzFilter = $(".conditionQuartzFilter");
+    $conditionQuartzFilter.unbind("click");
+    $conditionQuartzFilter.bind('click', function () {
+        $("#conditionArg").val($(this).text());
+    });
+}
+
 // 绑定新增转换点击事件
 function bindConvertAddClick() {
     var $convertAdd = $("#convertAdd");
@@ -157,6 +166,7 @@ $(function() {
     // 过滤条件
     initFilter();
     bindConditionAddClick();
+    bindConditionQuartzFilterAddClick();
     // 转换配置
     initConvert();
     bindConvertAddClick();

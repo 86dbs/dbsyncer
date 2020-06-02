@@ -73,11 +73,12 @@ public interface Connector {
      *
      * @param config    连接器配置
      * @param command   执行命令
+     * @param args      命令参数
      * @param pageIndex 页数
      * @param pageSize  页大小
      * @return
      */
-    Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize);
+    Result reader(ConnectorConfig config, Map<String, String> command, List<Object> args, int pageIndex, int pageSize);
 
     /**
      * 批量写入目标源数据

@@ -4,6 +4,7 @@ import org.dbsyncer.biz.ConditionService;
 import org.dbsyncer.biz.vo.ConditionVo;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.manager.Manager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,8 +24,9 @@ public class ConditionServiceImpl implements ConditionService {
 
     @Override
     public ConditionVo getCondition() {
-        List<OperationEnum> operationEnumList = manager.getOperationEnumAll();
+        List<OperationEnum> operationEnumAll = manager.getOperationEnumAll();
+        List<QuartzFilterEnum> quartzFilterEnumAll = manager.getQuartzFilterEnumAll();
         List<FilterEnum> filterEnumAll = manager.getFilterEnumAll();
-        return new ConditionVo(operationEnumList, filterEnumAll);
+        return new ConditionVo(operationEnumAll, quartzFilterEnumAll, filterEnumAll);
     }
 }

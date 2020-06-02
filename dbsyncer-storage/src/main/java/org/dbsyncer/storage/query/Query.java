@@ -30,6 +30,10 @@ public class Query {
         params.add(new Param(key, value));
     }
 
+    public void put(String key, String value, boolean highlighter) {
+        params.add(new Param(key, value, highlighter));
+    }
+
     public List<Param> getParams() {
         return params;
     }
@@ -42,15 +46,8 @@ public class Query {
         return pageNum;
     }
 
-    public void setPageNum(int pageNum) {
-        this.pageNum = pageNum;
-    }
-
     public int getPageSize() {
         return pageSize;
     }
 
-    public void setPageSize(int pageSize) {
-        this.pageSize = pageSize;
-    }
 }

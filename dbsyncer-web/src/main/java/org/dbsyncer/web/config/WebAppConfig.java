@@ -1,11 +1,13 @@
 package org.dbsyncer.web.config;
 
 import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.biz.ConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.SHA1Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -55,11 +57,11 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
      */
     private static final int MAXIMUM_SESSIONS = 1;
 
-    @Value(value = "${dbsyncer.config.login.username}")
+    @Value(value = "${dbsyncer.web.login.username}")
     private String username;
 
-    @Value(value = "${dbsyncer.config.login.password}")
-    private String password;
+    @Autowired
+    private ConfigService configService;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception { //配置策略
@@ -154,7 +156,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         String password = (String) authentication.getCredentials();
         password = SHA1Util.b64_sha1(password);
 
-        if (!StringUtils.equals(username, this.username) || !StringUtils.equals(password, this.password)) {
+        if (!StringUtils.equals(username, this.username) || !StringUtils.equals(configService.getPassword(), password)) {
             throw new BadCredentialsException("对不起,您输入的帐号或密码错误");
         }
         return new UsernamePasswordAuthenticationToken(username, password, AuthorityUtils.commaSeparatedStringToAuthorityList("admin"));

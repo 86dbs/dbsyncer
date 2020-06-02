@@ -82,6 +82,8 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
         execute(new PreloadConfig(ConfigConstant.TABLE_GROUP, GroupStrategyEnum.TABLE, HandlerEnum.PRELOAD_TABLE_GROUP));
         // Load metas
         execute(new PreloadConfig(ConfigConstant.META, HandlerEnum.PRELOAD_META));
+        // Load configs
+        execute(new PreloadConfig(ConfigConstant.CONFIG, HandlerEnum.PRELOAD_CONFIG));
 
         // 启动驱动
         Meta meta = new Meta();

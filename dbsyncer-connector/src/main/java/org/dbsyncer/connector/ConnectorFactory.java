@@ -86,9 +86,9 @@ public class ConnectorFactory {
         return connector.getCount(config, command);
     }
 
-    public Result reader(ConnectorConfig config, Map<String, String> command, int pageIndex, int pageSize) {
+    public Result reader(ConnectorConfig config, Map<String, String> command, List<Object> args, int pageIndex, int pageSize) {
         Connector connector = getConnector(config.getConnectorType());
-        Result result = connector.reader(config, command, pageIndex, pageSize);
+        Result result = connector.reader(config, command, args, pageIndex, pageSize);
         Assert.notNull(result, "Connector reader result can not null");
         return result;
     }

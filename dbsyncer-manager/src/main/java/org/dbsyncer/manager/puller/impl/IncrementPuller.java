@@ -7,6 +7,7 @@ import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.listener.AbstractExtractor;
+import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
@@ -29,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -66,7 +68,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
     private String key;
 
-    private Map<String, AbstractExtractor> map = new ConcurrentHashMap<>();
+    private Map<String, Extractor> map = new ConcurrentHashMap<>();
 
     @Override
     public void asyncStart(Mapping mapping) {
@@ -82,7 +84,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             AbstractExtractor extractor = getExtractor(mapping, connector, list, meta);
             Assert.notNull(extractor, "未知的监听配置.");
 
-            long now = System.currentTimeMillis();
+            long now = Instant.now().toEpochMilli();
             meta.setBeginTime(now);
             meta.setEndTime(now);
             manager.editMeta(meta);
@@ -93,13 +95,14 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             map.get(metaId).start();
         } catch (Exception e) {
             close(metaId);
+            logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
             logger.error("运行异常，结束任务{}:{}", metaId, e.getMessage());
         }
     }
 
     @Override
     public void close(String metaId) {
-        AbstractExtractor extractor = map.get(metaId);
+        Extractor extractor = map.get(metaId);
         if (null != extractor) {
             extractor.clearAllListener();
             extractor.close();

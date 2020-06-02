@@ -21,6 +21,7 @@ public abstract class AbstractExtractor implements Extractor {
     protected Map<String, String> map;
     private List<Event> watcher;
 
+    @Override
     public void addListener(Event event) {
         if (null != event) {
             if (null == watcher) {
@@ -30,6 +31,7 @@ public abstract class AbstractExtractor implements Extractor {
         }
     }
 
+    @Override
     public void clearAllListener() {
         if (null != watcher) {
             watcher.clear();
@@ -37,24 +39,28 @@ public abstract class AbstractExtractor implements Extractor {
         }
     }
 
-    public void changedLogEvent(String tableName, String event, List<Object> before, List<Object> after) {
-        if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.changedLogEvent(tableName, event, before, after));
-        }
-    }
-
+    @Override
     public void changedQuartzEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after) {
         if (!CollectionUtils.isEmpty(watcher)) {
             watcher.forEach(w -> w.changedQuartzEvent(tableGroupIndex, event, before, after));
         }
     }
 
+    @Override
+    public void changedLogEvent(String tableName, String event, List<Object> before, List<Object> after) {
+        if (!CollectionUtils.isEmpty(watcher)) {
+            watcher.forEach(w -> w.changedLogEvent(tableName, event, before, after));
+        }
+    }
+
+    @Override
     public void flushEvent() {
         if (!CollectionUtils.isEmpty(watcher)) {
             watcher.forEach(w -> w.flushEvent(map));
         }
     }
 
+    @Override
     public void errorEvent(Exception e) {
         if (!CollectionUtils.isEmpty(watcher)) {
             watcher.forEach(w -> w.errorEvent(e));
