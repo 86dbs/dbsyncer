@@ -17,11 +17,11 @@
     <ol>
         <li><a target="_blank" href="https://www.oracle.com/java/technologies/jdk8-downloads.html">JRE 1.8 +</a></li>
         <li><a target="_blank" href="http://apache.fayea.com/zookeeper/stable/">Zookeeper - 3.5.5</a> （高可用模式下需要）</li>
-        <li><a target="_blank" href="#">DBsyncer-1.0.0.zip</a></li>
     </ol>
     <h3>安装说明</h3>
     <ol>
-        <li>下载安装包dbsyncer-1.0.0-Alpha.zip</li>
+        <li>安装JRE1.8版本以上（省略详细）</li>
+        <li>下载安装包<a target="_blank" href="#">dbsyncer-1.0.0-Alpha.zip</a></li>
         <li>解压，进入目录bin</li>
         <li>Windows平台：startup.bat启动脚本</li>
         <li>Linux平台：startup.sh启动脚本</li>
