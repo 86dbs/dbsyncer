@@ -1,9 +1,7 @@
 <div>
-	<p>DBSyncer是一款开源的数据同步软件，提供Mysql、Oracle、SqlServer、Redis、SQL结果集等场景，支持自定义同步转换业务。</p>
-</div>
-
-<div>
-    <h3>特点</h3>
+    <h3>介绍</h3>
+    <p>DBSyncer是一款开源的数据同步软件，提供Mysql、Oracle、SqlServer、Redis、SQL结果集等场景，支持自定义同步转换业务。</p>
+    <p>特点</p>
     <ol>
         <li>组合驱动，自定义库同步到库组合，关系型数据库与非关系型之间组合，任意搭配表同步映射关系</li>
         <li>实时监控，驱动全量或增量实时同步运行状态、结果、同步日志和系统日志</li>
@@ -15,16 +13,15 @@
 <div>
     <p>运行环境</p>
     <ol>
+        <li><a target="_blank" href="#">DBSyncer-1.0.0-Alpha.zip</a>(安装包)</li>
         <li><a target="_blank" href="https://www.oracle.com/java/technologies/jdk8-downloads.html">JRE 1.8 +</a></li>
         <li><a target="_blank" href="http://apache.fayea.com/zookeeper/stable/">Zookeeper - 3.5.5</a> （高可用模式下需要）</li>
     </ol>
     <h3>安装说明</h3>
     <ol>
         <li>安装JRE1.8版本以上（省略详细）</li>
-        <li>下载安装包<a target="_blank" href="#">dbsyncer-1.0.0-Alpha.zip</a></li>
-        <li>解压，进入目录bin</li>
-        <li>Windows平台：startup.bat启动脚本</li>
-        <li>Linux平台：startup.sh启动脚本</li>
+        <li>下载安装包DBSyncer-X.X.X-RELEASE.zip</li>
+        <li>解压，进入目录bin，启动脚本startup.bat（Windows平台）/startup.sh(Linux平台)</li>
         <li>打开浏览器，输入访问地址：http://127.0.0.1:18686</li>
         <li>默认账号和密码：admin/admin</li>
     </ol>
