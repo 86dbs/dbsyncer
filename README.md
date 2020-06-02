@@ -19,6 +19,7 @@
     <ol>
         <li><a target="_blank" href="https://www.oracle.com/java/technologies/jdk8-downloads.html">JRE 1.8 +</a></li>
         <li><a target="_blank" href="http://apache.fayea.com/zookeeper/stable/">Zookeeper - 3.5.5</a> （高可用模式下需要）</li>
+        <li><a target="_blank" href="#">DBsyncer-1.0.0.zip</a></li>
     </ol>
 </div>
 
@@ -27,9 +28,17 @@
     <p align="center">
         <img src="https://images.gitee.com/uploads/images/2020/0519/000443_b52b4a8c_376718.png" />
     </p>
-    <h3>UI图</h3>
     <p align="center">
-        <img src="http://assets.processon.com/chart_image/5da037d1e4b002a6447eba81.png" />
+        <img src="https://images.gitee.com/uploads/images/2020/0602/221008_64dbb479_376718.png" />
+    </p>
+    <p align="center">
+        <img src="https://images.gitee.com/uploads/images/2020/0602/221018_20d0ef67_376718.png" />
+    </p>
+    <p align="center">
+        <img src="https://images.gitee.com/uploads/images/2020/0602/221029_c4f5d804_376718.png" />
+    </p>
+    <p align="center">
+        <img src="https://images.gitee.com/uploads/images/2020/0602/220345_291a73af_376718.png" />
     </p>
     <h3>流程图</h3>
     <p align="center">
