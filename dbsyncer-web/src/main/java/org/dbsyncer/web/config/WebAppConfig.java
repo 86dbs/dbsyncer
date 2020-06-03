@@ -67,7 +67,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     protected void configure(HttpSecurity http) throws Exception { //配置策略
         http.csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/css/**", "/js/**", "/images/**", "/config/**", "/plugins/**").permitAll().anyRequest()
+                .antMatchers("/css/**", "/js/**", "/img/**", "/config/**", "/plugins/**").permitAll().anyRequest()
                 .authenticated()
                 .and()
                 .formLogin()

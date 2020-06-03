@@ -8,10 +8,10 @@ var $formHtml = "<dl class=\"admin_login\">\n" +
     "\t</dt>\n" +
     "\t<div id=\"loginTip\" class=\"loginVerifcateTextError\"></div>\n" +
     "\t<dd class=\"user_icon\">\n" +
-    "\t\t<input type=\"text\" name=\"username\" placeholder=\"请输入帐号\" class=\"login_txtbx required\" value=\"admin\"/>\n" +
+    "\t\t<input type=\"text\" name=\"username\" placeholder=\"请输入帐号\" class=\"login_txtbx required\" />\n" +
     "\t</dd>\n" +
     "\t<dd class=\"pwd_icon\">\n" +
-    "\t\t<input type=\"password\" name=\"password\" placeholder=\"请输入密码\" class=\"login_txtbx required\" value=\"admin\"/>\n" +
+    "\t\t<input type=\"password\" name=\"password\" placeholder=\"请输入密码\" class=\"login_txtbx required\" />\n" +
     "\t</dd>\n" +
     "\t<dd>\n" +
     "\t\t<input type=\"button\" value=\"登录\" class=\"submit_btn\" id=\"loginSubmitBtn\" />\n" +

@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableAsync
 @EnableScheduling
 @EnableCaching
-@SpringBootApplication(scanBasePackages ="org.dbsyncer", exclude = DataSourceAutoConfiguration.class)
+@SpringBootApplication(scanBasePackages = "org.dbsyncer", exclude = DataSourceAutoConfiguration.class)
 public class Application {
 
     public static void main(String[] args) {
