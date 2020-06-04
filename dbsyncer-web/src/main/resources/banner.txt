@@ -10,5 +10,5 @@ ${AnsiColor.BRIGHT_YELLOW}
    |_______ /     |________ /    |________|        |__|       |__|  |__|    |________|    |________|    |__|
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ${AnsiColor.DEFAULT}
-Application Version: ${application.version}
+Application Version: ${info.app.version}
 Spring Boot Version: ${spring-boot.version}
