@@ -1,11 +1,10 @@
 package org.dbsyncer.listener.enums;
 
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.listener.QuartzFilter;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 /**
@@ -71,14 +70,12 @@ public enum QuartzFilterEnum {
 
         @Override
         public Object getObject(String s) {
-            // TODO 日期转换
-            DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            return null;
+            return DateFormatUtil.stringToDate(s);
         }
 
         @Override
         public String toString(Object value) {
-            return String.valueOf(value);
+            return DateFormatUtil.dateToString((Date) value);
         }
     }),
     /**
@@ -92,13 +89,12 @@ public enum QuartzFilterEnum {
 
         @Override
         public Object getObject(String s) {
-            DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            return null;
+            return DateFormatUtil.stringToDate(s);
         }
 
         @Override
         public String toString(Object value) {
-            return String.valueOf(value);
+            return DateFormatUtil.dateToString((Date) value);
         }
 
         @Override
@@ -128,4 +124,5 @@ public enum QuartzFilterEnum {
     public QuartzFilter getQuartzFilter() {
         return quartzFilter;
     }
+
 }
