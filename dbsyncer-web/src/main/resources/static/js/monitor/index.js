@@ -90,21 +90,6 @@ function bindQueryDataEvent() {
         });
     });
 }
-
-// 查看日志
-function bindQueryLogEvent() {
-    $("#queryLogBtn").click(function () {
-        var keyword = $("#searchLogKeyword").val();
-        doGetter('/monitor/queryLog', {"json": keyword}, function (data) {
-            if (data.success == true) {
-                showLogList(data.resultValue);
-            } else {
-                bootGrowl(data.resultValue, "danger");
-            }
-        });
-    });
-}
-
 function showDataList(arr){
     var size = arr.length;
     var html = '';
@@ -122,6 +107,19 @@ function showDataList(arr){
     bindQueryDataDetailEvent();
 }
 
+// 查看日志
+function bindQueryLogEvent() {
+    $("#queryLogBtn").click(function () {
+        var keyword = $("#searchLogKeyword").val();
+        doGetter('/monitor/queryLog', {"json": keyword}, function (data) {
+            if (data.success == true) {
+                showLogList(data.resultValue);
+            } else {
+                bootGrowl(data.resultValue, "danger");
+            }
+        });
+    });
+}
 function showLogList(arr){
     var size = arr.length;
     var html = '';
@@ -133,6 +131,86 @@ function showLogList(arr){
         html += '</tr>';
     }
     $("#logList").html(html);
+}
+
+// 查看系统指标
+function showSystemInfo(){
+    $.getJSON("/app/health", function (data) {
+        console.log(data);
+        console.log("节点状态" + data.status);
+        var details = data.details;
+        var html = '';
+        showMem();
+        showCPU();
+        html += showDisk(details.diskSpace);
+        // $("#systemList").html(html);
+    });
+}
+
+// 内存
+function showMem(){
+    return showPoint();
+}
+
+// CPU
+function showCPU(){
+    var ctx = $("#cpuChart");
+    var data = {
+            labels: ["已用","空闲"],
+            datasets: [
+                {
+                    backgroundColor: ["rgba(220,20,60, 0.8)","rgba(255,130,71,0.8)"],
+                    data: [60,100]
+                }
+            ]
+        };
+    var cpuChart = new Chart(ctx,{
+        type: 'doughnut',//doughnut是甜甜圈,pie是饼状图
+        data: data,
+        options: {
+            title: {
+                display: true,
+                text: 'CPU'
+            },
+            legend: {
+               display: true,
+               position: 'bottom',
+               labels: {
+                   fontColor: 'rgb(255, 99, 132)'
+               }
+            }
+        }
+    });
+}
+
+// 硬盘
+function showDisk(diskSpace){
+    var title = ;
+    var status = diskSpace.status;
+    var details = diskSpace.details;
+    var total = (details.total / 1024 / 1024 / 1024).toFixed(2);
+    var threshold = (details.threshold / 1024 / 1024 / 1024).toFixed(2);
+    var free = (details.free / 1024 / 1024 / 1024).toFixed(2);
+
+    // 总共140GB,已使用11GB,空闲129GB,状态UP
+    var text = "总共"+ total +"GB,已用"+ threshold +"GB,空闲"+ free + "GB";
+    console.log(text);
+    return showPoint("硬盘", status, total, threshold, free, "GB");
+}
+
+function showPoint(title, status, total, threshold, free, pointSuffix){
+    var html = "";
+    html += "<tr>";
+    html += "   <td>堆内存</td>";
+    html += "   <td><span class='label label-success'>UP</span></td>";
+    html += "   <td>";
+    html += "       <div class='progress' title='总共4096MB,已使用2048MB,空闲2048MB'>";
+    html += "       <div class='progress-bar progress-bar-warning progress-bar-striped active' style='min-width: 2em;width: 50%'>2048MB</div>";
+    html += "       <div class='progress-bar' style='min-width: 2em;width: 50%'>2048MB</div>";
+    html += "       </div>";
+    html += "   </td>";
+    html += "</tr>";
+    return html;
 }
 
 $(function () {
@@ -153,5 +231,7 @@ $(function () {
     bindQueryDataDetailEvent();
     bindClearEvent($(".clearDataBtn"), "确认清空数据？", "清空数据成功!", "/monitor/clearData");
     bindClearEvent($(".clearLogBtn"), "确认清空日志？", "清空日志成功!", "/monitor/clearLog");
+
+    showSystemInfo();
 
 });

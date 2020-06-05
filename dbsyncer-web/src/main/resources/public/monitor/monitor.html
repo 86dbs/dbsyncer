@@ -8,107 +8,162 @@
         <form class="form-horizontal" role="form" method="post">
 
             <!-- 数据 -->
-            <div class="col-md-12">
-                <div class="form-group">
-                    <div class="col-md-3">
-                        <!-- 驱动下拉 -->
-                        <select id="metaData" name="metaData" class="form-control select-control">
-                            <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
-                        </select>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            <!-- 驱动下拉 -->
+                            <select id="metaData" name="metaData" class="form-control select-control">
+                                <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <input id="searchDataKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)." />
+                        </div>
+                        <div class="col-md-1">
+                            <button id="queryDataBtn" type="button" class="btn btn-primary">查询数据</button>
+                        </div>
+                        <div class="col-md-4 text-right">
+                            <button th:id="${metaId}" type="button" class="btn btn-default clearDataBtn">清空数据</button>
+                        </div>
                     </div>
-                    <div class="col-sm-4">
-                        <input id="searchDataKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)." />
-                    </div>
-                    <div class="col-md-1">
-                        <button id="queryDataBtn" type="button" class="btn btn-primary">查询数据</button>
-                    </div>
-                    <div class="col-md-4 text-right">
-                        <button th:id="${metaId}" type="button" class="btn btn-default clearDataBtn">清空数据</button>
-                    </div>
-                </div>
 
-                <table class="table table-hover metaDataList">
-                    <thead>
-                    <tr>
-                        <th style="width:3%;"></th>
-                        <th style="width:5%;">事件</th>
-                        <th style="width:5%;">结果</th>
-                        <th style="width:60%;">异常</th>
-                        <th style="width:17%;">时间</th>
-                        <th style="width:10%;">详情</th>
-                    </tr>
-                    </thead>
-                    <tbody id="dataList">
-                        <tr th:each="d,s : ${data}">
-                            <td th:text="${s.index}+1"></td>
-                            <td th:text="${d?.event}"></td>
-                            <td>
-                                <span th:if="${d?.success}" class="label label-success">成功</span>
-                                <span th:if="${not d?.success}" class="label label-warning">失败</span>
-                            </td>
-                            <td th:text="${d?.error}"></td>
-                            <td th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
-                            <td><a th:json="${d?.json}" href="javascript:;" class="label label-info queryData">查看数据</a></td>
+                    <table class="table table-hover metaDataList">
+                        <thead>
+                        <tr>
+                            <th style="width:3%;"></th>
+                            <th style="width:5%;">事件</th>
+                            <th style="width:5%;">结果</th>
+                            <th style="width:60%;">异常</th>
+                            <th style="width:17%;">时间</th>
+                            <th style="width:10%;">详情</th>
                         </tr>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody id="dataList">
+                            <tr th:each="d,s : ${data}">
+                                <td th:text="${s.index}+1"></td>
+                                <td th:text="${d?.event}"></td>
+                                <td>
+                                    <span th:if="${d?.success}" class="label label-success">成功</span>
+                                    <span th:if="${not d?.success}" class="label label-warning">失败</span>
+                                </td>
+                                <td th:text="${d?.error}"></td>
+                                <td th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                                <td><a th:json="${d?.json}" href="javascript:;" class="label label-info queryData">查看数据</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- 性能指标 -->
-            <div class="col-md-12">
-                <p>CPU 内存 硬盘 堆内存 </p>
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-hover">
+                        <caption>系统性能</caption>
+                        <thead>
+                        <tr>
+                            <th style="width:10%;">类型</th>
+                            <th style="width:10%;">状态</th>
+                            <th style="width:80%;">指标</th>
+                        </tr>
+                        </thead>
+                        <tbody id="systemList">
+                        <tr>
+                            <td>堆内存</td>
+                            <td><span class="label label-success">UP</span></td>
+                            <td>
+                                <div class="progress" title="总共4096MB,已用2048MB,,空闲2048MB">
+                                    <div class="progress-bar progress-bar-warning progress-bar-striped active" style="min-width: 2em;width: 50%">2048MB</div>
+                                    <div class="progress-bar" style="min-width: 2em;width: 50%">2048MB</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>内存</td>
+                            <td><span class="label label-warning">DOWN</span></td>
+                            <td>
+                                <div class="progress" title="总共8192MB,已用7168MB,,空闲1024MB">
+                                    <div class="progress-bar progress-bar-danger progress-bar-striped active" style="min-width: 2em;width: 75%">7168MB</div>
+                                    <div class="progress-bar" style="min-width: 2em;width: 25%">1024MB</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>硬盘</td>
+                            <td><span class="label label-success">UP</span></td>
+                            <td>
+                                <div class="progress" title="总共140GB,已用11GB,空闲129GB">
+                                    <div class="progress-bar progress-bar-success progress-bar-striped active" style="min-width: 2em;width: 10%">11GB</div>
+                                    <div class="progress-bar progress-bar-default" style="min-width: 2em;width: 90%">129GB</div>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+
+                    </table>
+                </div>
+
+                <div class="col-md-6">
+                    <canvas id="cpuChart"></canvas>
+                </div>
+
             </div>
 
             <!-- 线程任务 -->
-            <div class="col-md-12">
-                <table class="table table-hover">
-                    <caption>线程任务</caption>
-                    <thead>
-                    <tr>
-                        <th style="width:3%;"></th>
-                        <th style="width:70%;">类型</th>
-                        <th style="width:27%;">指标</th>
-                    </tr>
-                    </thead>
-                    <tr th:each="item,userStat:${threadInfo}">
-                        <td th:text="${userStat.index}+1"></td>
-                        <td th:text="${userStat.current.key}"></td><!-- key-->
-                        <td th:text="${userStat.current.value}"></td><!-- value-->
-                    </tr>
-                </table>
+            <div class="row">
+                <div class="col-md-12">
+                    <table class="table table-hover">
+                        <caption>线程任务</caption>
+                        <thead>
+                        <tr>
+                            <th style="width:3%;"></th>
+                            <th style="width:70%;">类型</th>
+                            <th style="width:27%;">指标</th>
+                        </tr>
+                        </thead>
+                        <tr th:each="item,userStat:${threadInfo}">
+                            <td th:text="${userStat.index}+1"></td>
+                            <td th:text="${userStat.current.key}"></td><!-- key-->
+                            <td th:text="${userStat.current.value}"></td><!-- value-->
+                        </tr>
+                    </table>
+                </div>
             </div>
 
             <!-- 日志 -->
-            <div class="col-md-12">
-                <div class="form-group">
-                    <div class="col-sm-4">
-                        <input id="searchLogKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)." />
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <div class="col-sm-4">
+                            <input id="searchLogKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)." />
+                        </div>
+                        <div class="col-md-1">
+                            <button id="queryLogBtn" type="button" class="btn btn-primary">查询日志</button>
+                        </div>
+                        <div class="col-md-4"></div>
+                        <div class="col-md-3 text-right">
+                            <button th:id="${metaId}" type="button" class="btn btn-default clearLogBtn">清空日志</button>
+                        </div>
                     </div>
-                    <div class="col-md-1">
-                        <button id="queryLogBtn" type="button" class="btn btn-primary">查询日志</button>
-                    </div>
-                    <div class="col-md-4"></div>
-                    <div class="col-md-3 text-right">
-                        <button th:id="${metaId}" type="button" class="btn btn-default clearLogBtn">清空日志</button>
-                    </div>
-                </div>
 
-                <table class="table table-hover">
-                    <thead>
-                    <tr>
-                        <th style="width:3%;"></th>
-                        <th style="width:70%;">内容</th>
-                        <th style="width:27%;">时间</th>
-                    </tr>
-                    </thead>
-                    <tbody id="logList">
-                        <tr th:each="l,s : ${log}">
-                            <td th:text="${s.index}+1"></td>
-                            <td th:text="${l?.json}"></td>
-                            <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                    <table class="table table-hover">
+                        <thead>
+                        <tr>
+                            <th style="width:3%;"></th>
+                            <th style="width:70%;">内容</th>
+                            <th style="width:27%;">时间</th>
                         </tr>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody id="logList">
+                            <tr th:each="l,s : ${log}">
+                                <td th:text="${s.index}+1"></td>
+                                <td th:text="${l?.json}"></td>
+                                <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
         </form>
