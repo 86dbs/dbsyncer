@@ -136,77 +136,82 @@ function showLogList(arr){
 // 查看系统指标
 function showSystemInfo(){
     $.getJSON("/app/health", function (data) {
-        console.log(data);
-        console.log("节点状态" + data.status);
         var details = data.details;
         var html = '';
-        showMem();
-        showCPU();
-        html += showDisk(details.diskSpace);
-        // $("#systemList").html(html);
+        html += showPoint("硬盘", details.diskSpace);
+        $("#systemList").html(html);
     });
 }
 
 // 内存
 function showMem(){
-    return showPoint();
-}
+    // 最大内存
+    // jvm.memory.max
+    // 已用内存
+    // jvm.memory.used
+    // 剩余内存
+    // jvm.memory.committed
+    $.getJSON("/app/metrics/jvm.memory.max", function (data) {
+        var max = data.measurements[0].value;
+        $.getJSON("/app/metrics/jvm.memory.used", function (data) {
+            var used = data.measurements[0].value;
+            $.getJSON("/app/metrics/jvm.memory.committed", function (data) {
+                var committed = data.measurements[0].value;
+                new Chart($("#cpuChart"),{
+                    type: 'doughnut',//doughnut是甜甜圈,pie是饼状图
+                    data: {
+                        labels: ["最大%sGB", "已用", "空闲"],
+                        datasets: [
+                            {
+                                backgroundColor: ["rgba(51,122,183, 0.8)","rgba(220,20,60, 0.8)","rgba(255,130,71,0.8)"],
+                                data: [max, used, committed]
+                            }
+                        ]
+                    },
+                    options: {
+                        title: {
+                            display: true,
+                            text: '内存使用情况'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                fontColor: 'rgb(255, 99, 132)'
+                            }
+                        }
+                    }
+                });
 
-// CPU
-function showCPU(){
-    var ctx = $("#cpuChart");
-    var data = {
-            labels: ["已用","空闲"],
-            datasets: [
-                {
-                    backgroundColor: ["rgba(220,20,60, 0.8)","rgba(255,130,71,0.8)"],
-                    data: [60,100]
-                }
-            ]
-        };
-    var cpuChart = new Chart(ctx,{
-        type: 'doughnut',//doughnut是甜甜圈,pie是饼状图
-        data: data,
-        options: {
-            title: {
-                display: true,
-                text: 'CPU'
-            },
-            legend: {
-               display: true,
-               position: 'bottom',
-               labels: {
-                   fontColor: 'rgb(255, 99, 132)'
-               }
-            }
-        }
+            });
+        });
     });
+
 }
 
-// 硬盘
-function showDisk(diskSpace){
-    var title = ;
-    var status = diskSpace.status;
-    var details = diskSpace.details;
-    var total = (details.total / 1024 / 1024 / 1024).toFixed(2);
-    var threshold = (details.threshold / 1024 / 1024 / 1024).toFixed(2);
-    var free = (details.free / 1024 / 1024 / 1024).toFixed(2);
+function showPoint(title, point){
+    var status = point.status;
+    var d = point.details;
+    var total = (d.total / 1024 / 1024 / 1024).toFixed(2);
+    var threshold = (d.threshold / 1024 / 1024 / 1024).toFixed(2);
+    var free = (d.free / 1024 / 1024 / 1024).toFixed(2);
 
-    // 总共140GB,已使用11GB,空闲129GB,状态UP
-    var text = "总共"+ total +"GB,已用"+ threshold +"GB,空闲"+ free + "GB";
-    console.log(text);
-    return showPoint("硬盘", status, total, threshold, free, "GB");
-}
+    // UP/DOWN success/danger
+    var statusColor = status == 'UP' ? 'success' : 'danger';
 
-function showPoint(title, status, total, threshold, free, pointSuffix){
+    // more than 63%/78% waring/danger
+    var precent = Math.round(threshold / total);
+    var barColor = precent >= 63 ? 'waring' : 'success';
+    barColor = precent >= 78 ? 'danger' : barColor;
+
     var html = "";
     html += "<tr>";
-    html += "   <td>堆内存</td>";
-    html += "   <td><span class='label label-success'>UP</span></td>";
+    html += "   <td>" + title + "</td>";
+    html += "   <td><span class='label label-" + statusColor + "'>" + status + "</span></td>";
     html += "   <td>";
-    html += "       <div class='progress' title='总共4096MB,已使用2048MB,空闲2048MB'>";
-    html += "       <div class='progress-bar progress-bar-warning progress-bar-striped active' style='min-width: 2em;width: 50%'>2048MB</div>";
-    html += "       <div class='progress-bar' style='min-width: 2em;width: 50%'>2048MB</div>";
+    html += "       <div class='progress' title='总共" + total + "GB,已用" + threshold + "GB,空闲" + free + "GB'>";
+    html += "           <div class='progress-bar progress-bar-" + barColor + " progress-bar-striped active' style='width: " + precent + "%'>" + threshold + "GB</div>";
+    html += "           <div class='progress-bar' style='width: " + (100 - precent) + "%'>" + free + "GB</div>";
     html += "       </div>";
     html += "   </td>";
     html += "</tr>";
@@ -232,6 +237,22 @@ $(function () {
     bindClearEvent($(".clearDataBtn"), "确认清空数据？", "清空数据成功!", "/monitor/clearData");
     bindClearEvent($(".clearLogBtn"), "确认清空日志？", "清空日志成功!", "/monitor/clearLog");
 
+    showMem();
     showSystemInfo();
+
+
+    // 系统CPU
+    // system.cpu.usage
+    // 程序CPU
+    // process.cpu.usage
+
+    // 守护线程数
+    // jvm.threads.daemon
+    // 活跃线程数
+    // jvm.threads.live
+    // 峰值线程数
+    // jvm.threads.peak
+    // GC 耗时
+    // jvm.gc.pause
 
 });
