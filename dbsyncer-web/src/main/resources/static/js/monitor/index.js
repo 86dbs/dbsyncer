@@ -137,51 +137,128 @@ function showLogList(arr){
 function showSystemInfo(){
     $.getJSON("/app/health", function (data) {
         var details = data.details;
-        var html = '';
-        html += showPoint("硬盘", details.diskSpace);
-        $("#systemList").html(html);
+        var html = showPoint("硬盘", details.diskSpace);
+
+        $.getJSON("/app/metrics/jvm.threads.live", function (data) {
+            html += showSystemItem("线程活跃", data.measurements[0].value);
+            $.getJSON("/app/metrics/jvm.threads.peak", function (data) {
+                html += showSystemItem("线程峰值", data.measurements[0].value);
+                $.getJSON("/app/metrics/jvm.gc.pause", function (data) {
+                    var count =  data.measurements[0].value;
+                    var time =  data.measurements[1].value;
+                    time = time.toFixed(2);
+                    var text = count+"次";
+                    text += "，耗时:"+time + "秒";
+                    html += showSystemItem("GC", text);
+                    $("#systemList").html(html);
+                });
+            });
+        });
+    });
+
+}
+
+// CPU
+function showCpu(){
+    $.getJSON("/app/metrics/system.cpu.usage", function (data) {
+        var value = data.measurements[0].value * 100;
+        value = value.toFixed(2);
+        var option={
+            title:{
+                text:"CPU",
+                x:'center',
+                y: 'top'
+            },
+            tooltip : {
+                formatter: "{a}: {c}%",
+                position: 'top'
+            },
+            series: [
+                {
+                    name: "已用",
+                    animation: true,
+                    type: 'gauge',
+                    min: 0,
+                    max: 100,
+                    splitNumber: 4,
+                    axisLine: {            // 坐标轴线
+                        lineStyle: {       // 属性lineStyle控制线条样式
+                            color: [[0.1, '#d9534f'], [0.3, '#f0ad4e'],[0.8, '#5bc0de'],[1, '#5cb85c']],
+                            width: 10
+                        }
+                    },
+                    axisTick: {            // 坐标轴小标记
+                        length: 15,        // 属性length控制线长
+                        lineStyle: {       // 属性lineStyle控制线条样式
+                            color: 'auto'
+                        }
+                    },
+                    splitLine: {           // 分隔线
+                        length: 20,         // 属性length控制线长
+                        lineStyle: {       // 属性lineStyle（详见lineStyle）控制线条样式
+                            color: 'auto'
+                        }
+                    },
+                    detail: {formatter:'{value}%', fontSize:12, offsetCenter:[0,'65%']},
+                    data: [{value: value, name: ''}]
+                }
+            ]
+        };
+        echarts.init(document.getElementById('cpuChart')).setOption(option);
+
     });
 }
 
 // 内存
 function showMem(){
-    // 最大内存
-    // jvm.memory.max
-    // 已用内存
-    // jvm.memory.used
-    // 剩余内存
-    // jvm.memory.committed
     $.getJSON("/app/metrics/jvm.memory.max", function (data) {
         var max = data.measurements[0].value;
+        max = (max / 1024 / 1024 / 1024).toFixed(2);
         $.getJSON("/app/metrics/jvm.memory.used", function (data) {
             var used = data.measurements[0].value;
+            used = (used / 1024 / 1024 / 1024).toFixed(2);
             $.getJSON("/app/metrics/jvm.memory.committed", function (data) {
                 var committed = data.measurements[0].value;
-                new Chart($("#cpuChart"),{
-                    type: 'doughnut',//doughnut是甜甜圈,pie是饼状图
-                    data: {
-                        labels: ["最大%sGB", "已用", "空闲"],
-                        datasets: [
-                            {
-                                backgroundColor: ["rgba(51,122,183, 0.8)","rgba(220,20,60, 0.8)","rgba(255,130,71,0.8)"],
-                                data: [max, used, committed]
-                            }
-                        ]
+                committed = (committed / 1024 / 1024 / 1024).toFixed(2);
+
+                var option = {
+                    title : {
+                        show:true,
+                        text: '内存'+ max +'GB',
+                        x:'center',
+                        y: 'top'
                     },
-                    options: {
-                        title: {
-                            display: true,
-                            text: '内存使用情况'
-                        },
-                        legend: {
-                            display: true,
-                            position: 'bottom',
-                            labels: {
-                                fontColor: 'rgb(255, 99, 132)'
-                            }
+                    tooltip : {
+                        trigger: 'item',
+                        formatter: "{b} : {c} GB"
+                    },
+                    series : [
+                        {
+                            name:'内存',
+                            type:'pie',
+                            color: function(params) {
+                                // build a color map as your need.
+                                var colorList = [
+                                    '#60C0DD','#F0805A','#89DFAA'
+                                ];
+                                return colorList[params.dataIndex]
+                            },
+                            label:{
+                                normal:{
+                                    show:true,
+                                    position:'inner',
+                                    formatter:'{d}%'
+                                }
+                            },
+                            data:[
+                                {value:max,name:'总共'},
+                                {value:used,name:'已用'},
+                                {value:committed,name:'空闲'}
+                            ]
                         }
-                    }
-                });
+                    ]
+                };
+                echarts.init(document.getElementById('memChart')).setOption(option);
 
             });
         });
@@ -200,7 +277,7 @@ function showPoint(title, point){
     var statusColor = status == 'UP' ? 'success' : 'danger';
 
     // more than 63%/78% waring/danger
-    var precent = Math.round(threshold / total);
+    var precent = (threshold / total).toFixed(2);
     var barColor = precent >= 63 ? 'waring' : 'success';
     barColor = precent >= 78 ? 'danger' : barColor;
 
@@ -214,6 +291,16 @@ function showPoint(title, point){
     html += "           <div class='progress-bar' style='width: " + (100 - precent) + "%'>" + free + "GB</div>";
     html += "       </div>";
     html += "   </td>";
+    html += "</tr>";
+    return html;
+}
+
+function showSystemItem(title, value){
+    var html = "";
+    html += "<tr>";
+    html += "   <td>" + title + "</td>";
+    html += "   <td><span class='label label-success'>UP</span></td>";
+    html += "   <td>"+value+"</td>";
     html += "</tr>";
     return html;
 }
@@ -237,22 +324,20 @@ $(function () {
     bindClearEvent($(".clearDataBtn"), "确认清空数据？", "清空数据成功!", "/monitor/clearData");
     bindClearEvent($(".clearLogBtn"), "确认清空日志？", "清空日志成功!", "/monitor/clearLog");
 
+    showCpu();
     showMem();
     showSystemInfo();
 
-
-    // 系统CPU
-    // system.cpu.usage
-    // 程序CPU
-    // process.cpu.usage
-
-    // 守护线程数
-    // jvm.threads.daemon
-    // 活跃线程数
-    // jvm.threads.live
-    // 峰值线程数
-    // jvm.threads.peak
-    // GC 耗时
-    // jvm.gc.pause
+    // 绑定回车事件
+    $("#searchDataKeyword").keydown(function (e) {
+        if (e.which == 13) {
+            $("#queryDataBtn").trigger("click");
+        }
+    });
+    $("#searchLogKeyword").keydown(function (e) {
+        if (e.which == 13) {
+            $("#queryLogBtn").trigger("click");
+        }
+    });
 
 });
