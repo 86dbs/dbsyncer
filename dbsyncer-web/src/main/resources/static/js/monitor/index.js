@@ -81,7 +81,7 @@ function bindQueryDataEvent() {
     $("#queryDataBtn").click(function () {
         var keyword = $("#searchDataKeyword").val();
         var id = $("select[name='metaData']").select2("val");
-        doGetter('/monitor/queryData', {"error": keyword, "id" : id}, function (data) {
+        doGetter('/monitor/queryData', {"error": keyword, "id" : id, "pageNum" : 1, "pageSize" : 10}, function (data) {
             if (data.success == true) {
                 showDataList(data.resultValue);
             } else {
@@ -111,7 +111,7 @@ function showDataList(arr){
 function bindQueryLogEvent() {
     $("#queryLogBtn").click(function () {
         var keyword = $("#searchLogKeyword").val();
-        doGetter('/monitor/queryLog', {"json": keyword}, function (data) {
+        doGetter('/monitor/queryLog', {"json": keyword, "pageNum" : 1, "pageSize" : 10}, function (data) {
             if (data.success == true) {
                 showLogList(data.resultValue);
             } else {
