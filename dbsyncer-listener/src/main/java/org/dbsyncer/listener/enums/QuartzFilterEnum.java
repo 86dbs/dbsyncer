@@ -60,9 +60,9 @@ public enum QuartzFilterEnum {
         }
     }),
     /**
-     * 日期(开始)
+     * 日期
      */
-    DATE_BEGIN("$date_begin$", "系统日期(开始)", new QuartzFilter() {
+    DATE_BEGIN("$date$", "系统日期", new QuartzFilter() {
         @Override
         public Object getObject() {
             return new Date();
@@ -76,30 +76,6 @@ public enum QuartzFilterEnum {
         @Override
         public String toString(Object value) {
             return DateFormatUtil.dateToString((Date) value);
-        }
-    }),
-    /**
-     * 日期(结束)
-     */
-    DATE_END("$date_end$", "系统日期(结束)", new QuartzFilter() {
-        @Override
-        public Object getObject() {
-            return new Date();
-        }
-
-        @Override
-        public Object getObject(String s) {
-            return DateFormatUtil.stringToDate(s);
-        }
-
-        @Override
-        public String toString(Object value) {
-            return DateFormatUtil.dateToString((Date) value);
-        }
-
-        @Override
-        public boolean begin() {
-            return false;
         }
     });
 
