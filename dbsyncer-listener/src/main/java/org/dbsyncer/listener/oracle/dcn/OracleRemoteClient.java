@@ -20,26 +20,47 @@ public class OracleRemoteClient {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    private OracleConnection conn;
+    private OracleStatement statement;
+    private DatabaseChangeRegistration dcr;
+
     public void init() throws SQLException {
         OracleDataSource dataSource = new OracleDataSource();
         dataSource.setUser("admin");
         dataSource.setPassword("admin");
         dataSource.setURL("jdbc:oracle:thin:@127.0.0.1:1521:orcl");
-        final OracleConnection conn = (OracleConnection) dataSource.getConnection();
+        conn = (OracleConnection) dataSource.getConnection();
+
+        // 配置监听参数
         Properties prop = new Properties();
+        prop.setProperty(OracleConnection.NTF_TIMEOUT, "0");
         prop.setProperty(OracleConnection.DCN_NOTIFY_ROWIDS, "true");
-        DatabaseChangeRegistration dcn = conn.registerDatabaseChangeNotification(prop);
+        prop.setProperty(OracleConnection.DCN_IGNORE_UPDATEOP,"true");
+        prop.setProperty(OracleConnection.DCN_IGNORE_INSERTOP,"true");
+        prop.setProperty(OracleConnection.DCN_IGNORE_DELETEOP, "true");
 
-        dcn.addListener(new DataBaseChangeListener());
+        statement = (OracleStatement) conn.createStatement();
+        dcr = conn.registerDatabaseChangeNotification(prop);
+        dcr.addListener(new DataBaseChangeListener());
+        statement.setDatabaseChangeRegistration(dcr);
 
-        // 模拟请求
-        OracleStatement statement = (OracleStatement) conn.createStatement();
-        statement.setDatabaseChangeRegistration(dcn);
+        // 监听的表
         statement.executeQuery("select * from USER t where 1=2");
+
         statement.close();
         conn.close();
-
         logger.info("数据库更改通知开启");
+    }
+
+    public void close() throws SQLException {
+        if(null != statement){
+            statement.close();
+        }
+
+        if(null != conn){
+            conn.unregisterDatabaseChangeNotification(dcr);
+            conn.close();
+        }
     }
 
     final class DataBaseChangeListener implements DatabaseChangeListener {
@@ -70,6 +91,7 @@ public class OracleRemoteClient {
     public static void main(String[] args) throws SQLException {
         OracleRemoteClient client = new OracleRemoteClient();
         client.init();
+        client.close();
     }
 
 }
