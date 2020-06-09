@@ -17,6 +17,11 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
     }
 
     @Override
+    protected String getQueryTablesSql(DatabaseConfig config) {
+        return "";
+    }
+
+    @Override
     public String getPageSql(String tableName, String pk, String querySQL) {
         if(StringUtils.isBlank(pk)){
             logger.error("Table primary key can not be empty.");

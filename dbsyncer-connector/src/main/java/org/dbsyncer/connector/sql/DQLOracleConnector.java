@@ -16,6 +16,11 @@ public final class DQLOracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    protected String getQueryTablesSql(DatabaseConfig config) {
+        return String.format("SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER='%s'", config.getUsername()).toUpperCase();
+    }
+
+    @Override
     public String getPageSql(String tableName, String pk, String querySQL) {
         // Oracle 分页查询
         return DatabaseConstant.ORACLE_PAGE_SQL_START + querySQL + DatabaseConstant.ORACLE_PAGE_SQL_END;

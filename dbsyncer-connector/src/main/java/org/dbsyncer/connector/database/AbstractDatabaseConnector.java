@@ -27,14 +27,8 @@ public abstract class AbstractDatabaseConnector implements Database {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    /**
-     * 获取表元信息SQL, 具体实现交给对应的连接器
-     *
-     * @param config
-     * @param tableName
-     * @return
-     */
     protected abstract String getMetaSql(DatabaseConfig config, String tableName);
+    protected abstract String getQueryTablesSql(DatabaseConfig config);
 
     @Override
     public boolean isAlive(ConnectorConfig config) {
@@ -57,7 +51,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         JdbcTemplate jdbcTemplate = null;
         try {
             jdbcTemplate = getJdbcTemplate(databaseConfig);
-            String sql = "show tables";
+            String sql = getQueryTablesSql(databaseConfig);
             tables = jdbcTemplate.queryForList(sql, String.class);
         } catch (Exception e) {
             logger.error("getTable failed", e.getMessage());
