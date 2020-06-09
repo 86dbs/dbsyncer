@@ -17,6 +17,11 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    protected String getQueryCountSql(String tableName) {
+        return String.format("select count(*) from %s", tableName);
+    }
+
+    @Override
     public String getPageSql(String tableName, String pk, String querySQL) {
         // Mysql 分页查询
         return querySQL + DatabaseConstant.MYSQL_PAGE_SQL;

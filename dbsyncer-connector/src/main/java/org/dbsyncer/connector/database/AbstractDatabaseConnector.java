@@ -29,6 +29,7 @@ public abstract class AbstractDatabaseConnector implements Database {
 
     protected abstract String getMetaSql(DatabaseConfig config, String tableName);
     protected abstract String getQueryTablesSql(DatabaseConfig config);
+    protected abstract String getQueryCountSql(String tableName);
 
     @Override
     public boolean isAlive(ConnectorConfig config) {
@@ -93,8 +94,13 @@ public abstract class AbstractDatabaseConnector implements Database {
         String query = SqlBuilderEnum.QUERY.getName();
         map.put(query, buildSql(query, table, queryFilterSql));
 
-        String queryCount = SqlBuilderEnum.QUERY_COUNT.getName();
-        map.put(queryCount, buildSql(queryCount, table, queryFilterSql));
+        // 获取查询总数SQL
+        StringBuilder queryCount = new StringBuilder();
+        queryCount.append(getQueryCountSql(table.getName()));
+        if (StringUtils.isNotBlank(queryFilterSql)) {
+            queryCount.append(queryFilterSql);
+        }
+        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
         return map;
     }
 
@@ -118,7 +124,7 @@ public abstract class AbstractDatabaseConnector implements Database {
     @Override
     public long getCount(ConnectorConfig config, Map<String, String> command) {
         // 1、获取select SQL
-        String queryCountSql = command.get(SqlBuilderEnum.QUERY_COUNT.getName());
+        String queryCountSql = command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
         Assert.hasText(queryCountSql, "查询总数语句不能为空.");
 
         DatabaseConfig cfg = (DatabaseConfig) config;

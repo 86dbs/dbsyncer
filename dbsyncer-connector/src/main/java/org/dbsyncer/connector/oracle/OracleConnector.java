@@ -8,13 +8,18 @@ public final class OracleConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getMetaSql(DatabaseConfig config, String tableName) {
-        return new StringBuilder().append("SELECT * FROM ").append(tableName).toString();
+        return String.format("select * from \"%s\"", tableName);
     }
 
     @Override
     protected String getQueryTablesSql(DatabaseConfig config) {
         // "SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER='AE86'"
         return String.format("SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER='%s'", config.getUsername()).toUpperCase();
+    }
+
+    @Override
+    protected String getQueryCountSql(String tableName) {
+        return String.format("select count(*) from \"%s\"", tableName);
     }
 
     @Override
