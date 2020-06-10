@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
+import java.util.EnumSet;
 import java.util.Properties;
 
 /**
@@ -24,10 +25,10 @@ public class OracleRemoteClient {
     private OracleStatement statement;
     private DatabaseChangeRegistration dcr;
 
-    public void init() throws SQLException {
+    public void init() throws SQLException, InterruptedException {
         OracleDataSource dataSource = new OracleDataSource();
-        dataSource.setUser("admin");
-        dataSource.setPassword("admin");
+        dataSource.setUser("ae86");
+        dataSource.setPassword("123");
         dataSource.setURL("jdbc:oracle:thin:@127.0.0.1:1521:orcl");
         conn = (OracleConnection) dataSource.getConnection();
 
@@ -35,9 +36,10 @@ public class OracleRemoteClient {
         Properties prop = new Properties();
         prop.setProperty(OracleConnection.NTF_TIMEOUT, "0");
         prop.setProperty(OracleConnection.DCN_NOTIFY_ROWIDS, "true");
-        prop.setProperty(OracleConnection.DCN_IGNORE_UPDATEOP,"true");
-        prop.setProperty(OracleConnection.DCN_IGNORE_INSERTOP,"true");
-        prop.setProperty(OracleConnection.DCN_IGNORE_DELETEOP, "true");
+        prop.setProperty(OracleConnection.DCN_IGNORE_UPDATEOP, "false");
+        prop.setProperty(OracleConnection.DCN_IGNORE_INSERTOP, "false");
+        prop.setProperty(OracleConnection.DCN_IGNORE_INSERTOP, "false");
+        prop.setProperty(OracleConnection.CONNECTION_PROPERTY_CREATE_DESCRIPTOR_USE_CURRENT_SCHEMA_FOR_SCHEMA_NAME_DEFAULT, "true");
 
         statement = (OracleStatement) conn.createStatement();
         dcr = conn.registerDatabaseChangeNotification(prop);
@@ -45,19 +47,23 @@ public class OracleRemoteClient {
         statement.setDatabaseChangeRegistration(dcr);
 
         // 监听的表
-        statement.executeQuery("select * from USER t where 1=2");
+        statement.executeQuery("select * from \"my_user\" t where 1=2");
+        statement.executeQuery("select * from \"my_org\" t where 1=2");
 
-        statement.close();
-        conn.close();
+        long regId = dcr.getRegId();
+        String[] dcrTables = dcr.getTables();
+        logger.info("regId:{}", regId);
+        logger.info("dcrTables:{}", dcrTables);
+
         logger.info("数据库更改通知开启");
     }
 
     public void close() throws SQLException {
-        if(null != statement){
+        if (null != statement) {
             statement.close();
         }
 
-        if(null != conn){
+        if (null != conn) {
             conn.unregisterDatabaseChangeNotification(dcr);
             conn.close();
         }
@@ -70,8 +76,9 @@ public class OracleRemoteClient {
             TableChangeDescription[] tds = event.getTableChangeDescription();
             logger.info("=============================");
 
-            logger.info("'TableChangeDescription'(数据表的变化次数):{}", tds.length);
             for (TableChangeDescription td : tds) {
+                EnumSet<TableChangeDescription.TableOperation> operations = td.getTableOperations();
+                operations.contains("DELETE");
                 logger.info("数据库表id：{}", td.getObjectNumber());
                 logger.info("数据表名称：{}", td.getTableName());
 
@@ -82,16 +89,17 @@ public class OracleRemoteClient {
                     logger.info("数据库表行级变化：", rowOperation.toString());
 
                     ROWID rowid = rd.getRowid();
-                    logger.info(rowid.stringValue());
+                    logger.info("事件：{}，ROWID：{}", rowOperation.name(), rowid.stringValue());
                 }
             }
         }
     }
 
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args) throws SQLException, InterruptedException {
         OracleRemoteClient client = new OracleRemoteClient();
         client.init();
-        client.close();
+        Thread.currentThread().join();
+//        client.close();
     }
 
 }
