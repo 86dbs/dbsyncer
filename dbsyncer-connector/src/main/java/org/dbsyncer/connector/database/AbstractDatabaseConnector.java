@@ -320,6 +320,14 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     /**
+     * 查询语句表名和字段带上引号（默认不加）
+     * @return
+     */
+    protected String buildSqlWithQuotation(){
+        return "";
+    }
+
+    /**
      * 获取查询SQL
      *
      * @param type           {@link SqlBuilderEnum}
@@ -360,7 +368,9 @@ public abstract class AbstractDatabaseConnector implements Database {
             logger.error("Table name can not be empty.");
             throw new ConnectorException("Table name can not be empty.");
         }
-        return SqlBuilderEnum.getSqlBuilder(type).buildSql(tableName, pk, filedNames, queryFilterSQL, this);
+
+        String quotation = buildSqlWithQuotation();
+        return SqlBuilderEnum.getSqlBuilder(type).buildSql(tableName, pk, filedNames, queryFilterSQL, quotation, this);
     }
 
     /**
@@ -417,10 +427,11 @@ public abstract class AbstractDatabaseConnector implements Database {
         StringBuilder sql = new StringBuilder();
         sql.append("(");
         Filter c = null;
+        String quotation = buildSqlWithQuotation();
         for (int i = 0; i < size; i++) {
             c = list.get(i);
-            // USER = 'zhangsan'
-            sql.append(c.getName()).append(c.getFilter()).append("'").append(c.getValue()).append("'");
+            // "USER" = 'zhangsan'
+            sql.append(quotation).append(c.getName()).append(quotation).append(c.getFilter()).append("'").append(c.getValue()).append("'");
             if (i < end) {
                 sql.append(" ").append(queryOperator).append(" ");
             }

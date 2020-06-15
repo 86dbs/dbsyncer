@@ -33,4 +33,8 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         return new Object[]{pageIndex * pageSize, (pageIndex - 1) * pageSize};
     }
 
+    @Override
+    protected String buildSqlWithQuotation(){
+        return "\"";
+    }
 }

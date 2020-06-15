@@ -15,20 +15,20 @@ import java.util.List;
 public class SqlBuilderQuery implements SqlBuilder {
 
     @Override
-    public String buildSql(String tableName, String pk, List<String> filedNames, String queryFilter, Database database) {
+    public String buildSql(String tableName, String pk, List<String> filedNames, String queryFilter, String quotation, Database database) {
         StringBuilder sql = new StringBuilder();
         int size = filedNames.size();
         int end = size - 1;
         for (int i = 0; i < size; i++) {
-            // USER.USERNAME
-            sql.append(tableName).append(".").append(filedNames.get(i));
+            // "USERNAME"
+            sql.append(quotation).append(filedNames.get(i)).append(quotation);
             //如果不是最后一个字段
             if (i < end) {
                 sql.append(", ");
             }
         }
-        // SELECT USER.ID,USER.NAME FROM USER
-        sql.insert(0, "SELECT ").append(" FROM ").append(tableName);
+        // SELECT "ID","NAME" FROM "USER"
+        sql.insert(0, "SELECT ").append(" FROM ").append(quotation).append(tableName).append(quotation);
         // 解析查询条件
         if (StringUtils.isNotBlank(queryFilter)) {
             sql.append(queryFilter);

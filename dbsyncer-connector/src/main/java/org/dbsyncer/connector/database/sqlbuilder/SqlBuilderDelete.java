@@ -18,13 +18,13 @@ public class SqlBuilderDelete implements SqlBuilder {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public String buildSql(String tableName, String pk, List<String> filedNames, String queryFilter, Database database) {
+    public String buildSql(String tableName, String pk, List<String> filedNames, String queryFilter, String quotation, Database database) {
         if(StringUtils.isBlank(pk)){
             logger.error("Table primary key can not be empty.");
             throw new ConnectorException("Table primary key can not be empty.");
         }
-        // DELETE FROM USER WHERE USER.ID=?
-        return new StringBuilder().append("DELETE FROM ").append(tableName).append(" WHERE ").append(tableName).append(".").append(pk)
+        // DELETE FROM "USER" WHERE "ID"=?
+        return new StringBuilder().append("DELETE FROM ").append(quotation).append(tableName).append(quotation).append(" WHERE ").append(quotation).append(pk).append(quotation)
                 .append("=?").toString();
     }
 

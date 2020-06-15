@@ -45,4 +45,10 @@ public final class DQLOracleConnector extends AbstractDatabaseConnector {
     public MetaInfo getMetaInfo(ConnectorConfig config, String tableName) {
         return super.getDqlMetaInfo(config);
     }
+
+    @Override
+    protected String buildSqlWithQuotation(){
+        return "\"";
+    }
+
 }
