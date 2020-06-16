@@ -7,18 +7,8 @@ import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 public final class MysqlConnector extends AbstractDatabaseConnector {
 
     @Override
-    public String getMetaSql(DatabaseConfig config, String tableName) {
-        return new StringBuilder().append("SELECT * FROM ").append(tableName).toString();
-    }
-
-    @Override
     protected String getQueryTablesSql(DatabaseConfig config) {
         return "show tables";
-    }
-
-    @Override
-    protected String getQueryCountSql(String tableName) {
-        return String.format("select count(*) from %s", tableName);
     }
 
     @Override

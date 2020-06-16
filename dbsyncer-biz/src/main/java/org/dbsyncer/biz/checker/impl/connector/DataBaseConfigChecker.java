@@ -32,4 +32,12 @@ public abstract class DataBaseConfigChecker implements ConnectorConfigChecker {
         config.setUrl(url);
         config.setDriverClassName(driverClassName);
     }
+
+    protected void modifyDql(Connector connector, Map<String, String> params) {
+        String sql = params.get("sql");
+        Assert.hasText(sql, "Sql is empty.");
+        DatabaseConfig config = (DatabaseConfig) connector.getConfig();
+        config.setSql(sql);
+    }
+
 }

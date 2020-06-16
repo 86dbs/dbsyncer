@@ -12,17 +12,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public String getMetaSql(DatabaseConfig config, String tableName) {
-        return new StringBuilder().append("SELECT * FROM ").append(tableName).toString();
-    }
-
-    @Override
     protected String getQueryTablesSql(DatabaseConfig config) {
-        return "";
-    }
-
-    @Override
-    protected String getQueryCountSql(String tableName) {
         return "";
     }
 

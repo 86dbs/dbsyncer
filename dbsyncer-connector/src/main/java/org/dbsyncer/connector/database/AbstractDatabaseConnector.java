@@ -27,9 +27,7 @@ public abstract class AbstractDatabaseConnector implements Database {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected abstract String getMetaSql(DatabaseConfig config, String tableName);
     protected abstract String getQueryTablesSql(DatabaseConfig config);
-    protected abstract String getQueryCountSql(String tableName);
 
     @Override
     public boolean isAlive(ConnectorConfig config) {
@@ -70,8 +68,9 @@ public abstract class AbstractDatabaseConnector implements Database {
         MetaInfo metaInfo = null;
         try {
             jdbcTemplate = getJdbcTemplate(cfg);
-            String metaSql = getMetaSql(cfg, tableName);
-            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, metaSql);
+            String quotation = buildSqlWithQuotation();
+            String metaSql = new StringBuilder().append("select * from ").append(quotation).append(tableName).append(quotation).toString();
+            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, metaSql, tableName);
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
@@ -96,7 +95,8 @@ public abstract class AbstractDatabaseConnector implements Database {
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
-        queryCount.append(getQueryCountSql(table.getName()));
+        String quotation = buildSqlWithQuotation();
+        queryCount.append("select count(*) from ").append(quotation).append(table.getName()).append(quotation);
         if (StringUtils.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
@@ -298,7 +298,7 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     /**
-     * 获取DQl元信息
+     * 获取DQL元信息
      *
      * @param config
      * @return
@@ -309,7 +309,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         MetaInfo metaInfo = null;
         try {
             jdbcTemplate = getJdbcTemplate(cfg);
-            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, cfg.getSql());
+            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, cfg.getSql(), null);
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
@@ -320,57 +320,44 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     /**
+     * 获取DQL源配置
+     *
+     * @param commandConfig
+     * @param tableLabel
+     * @return
+     */
+    protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig, String tableLabel){
+        // 获取过滤SQL
+        List<Filter> filter = commandConfig.getFilter();
+        String queryFilterSql = getQueryFilterSql(filter);
+
+        // 获取查询SQL
+        Table table = commandConfig.getTable();
+        Map<String, String> map = new HashMap<>();
+        String querySql = table.getName();
+
+        // 存在条件
+        if(StringUtils.isNotBlank(queryFilterSql)){
+            querySql += queryFilterSql;
+        }
+        map.put(SqlBuilderEnum.QUERY.getName(), querySql);
+
+        // 获取查询总数SQL
+        StringBuilder queryCount = new StringBuilder();
+        queryCount.append("select count(*) from (").append(table.getName()).append(")").append(tableLabel);
+        if (StringUtils.isNotBlank(queryFilterSql)) {
+            queryCount.append(queryFilterSql);
+        }
+        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
+        return map;
+    }
+
+    /**
      * 查询语句表名和字段带上引号（默认不加）
      * @return
      */
     protected String buildSqlWithQuotation(){
         return "";
-    }
-
-    /**
-     * 获取查询SQL
-     *
-     * @param type           {@link SqlBuilderEnum}
-     * @param table
-     * @param queryFilterSQL
-     * @return
-     */
-    private String buildSql(String type, Table table, String queryFilterSQL) {
-        if (null == table) {
-            logger.error("Table can not be null.");
-            throw new ConnectorException("Table can not be null.");
-        }
-        List<Field> column = table.getColumn();
-        if (CollectionUtils.isEmpty(column)) {
-            logger.error("Table column can not be empty.");
-            throw new ConnectorException("Table column can not be empty.");
-        }
-        // 获取主键
-        String pk = null;
-        // 去掉重复的查询字段
-        List<String> filedNames = new ArrayList<>();
-        for (Field c : column) {
-            if (c.isPk()) {
-                pk = c.getName();
-            }
-            String name = c.getName();
-            // 如果没有重复
-            if (StringUtils.isNotBlank(name) && !filedNames.contains(name)) {
-                filedNames.add(name);
-            }
-        }
-        if (CollectionUtils.isEmpty(filedNames)) {
-            logger.error("The filedNames can not be empty.");
-            throw new ConnectorException("The filedNames can not be empty.");
-        }
-        String tableName = table.getName();
-        if (StringUtils.isBlank(tableName)) {
-            logger.error("Table name can not be empty.");
-            throw new ConnectorException("Table name can not be empty.");
-        }
-
-        String quotation = buildSqlWithQuotation();
-        return SqlBuilderEnum.getSqlBuilder(type).buildSql(tableName, pk, filedNames, queryFilterSQL, quotation, this);
     }
 
     /**
@@ -438,6 +425,52 @@ public abstract class AbstractDatabaseConnector implements Database {
         }
         sql.append(")");
         return sql.toString();
+    }
+
+    /**
+     * 获取查询SQL
+     *
+     * @param type {@link SqlBuilderEnum}
+     * @param table
+     * @param queryFilterSQL
+     * @return
+     */
+    private String buildSql(String type, Table table, String queryFilterSQL) {
+        if (null == table) {
+            logger.error("Table can not be null.");
+            throw new ConnectorException("Table can not be null.");
+        }
+        List<Field> column = table.getColumn();
+        if (CollectionUtils.isEmpty(column)) {
+            logger.error("Table column can not be empty.");
+            throw new ConnectorException("Table column can not be empty.");
+        }
+        // 获取主键
+        String pk = null;
+        // 去掉重复的查询字段
+        List<String> filedNames = new ArrayList<>();
+        for (Field c : column) {
+            if (c.isPk()) {
+                pk = c.getName();
+            }
+            String name = c.getName();
+            // 如果没有重复
+            if (StringUtils.isNotBlank(name) && !filedNames.contains(name)) {
+                filedNames.add(name);
+            }
+        }
+        if (CollectionUtils.isEmpty(filedNames)) {
+            logger.error("The filedNames can not be empty.");
+            throw new ConnectorException("The filedNames can not be empty.");
+        }
+        String tableName = table.getName();
+        if (StringUtils.isBlank(tableName)) {
+            logger.error("Table name can not be empty.");
+            throw new ConnectorException("Table name can not be empty.");
+        }
+
+        String quotation = buildSqlWithQuotation();
+        return SqlBuilderEnum.getSqlBuilder(type).buildSql(tableName, pk, filedNames, queryFilterSQL, quotation, this);
     }
 
     /**
