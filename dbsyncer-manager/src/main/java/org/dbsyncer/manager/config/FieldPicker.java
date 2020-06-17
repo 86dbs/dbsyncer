@@ -36,7 +36,7 @@ public class FieldPicker {
     public Map<String, Object> getColumns(List<Object> list) {
         if (!CollectionUtils.isEmpty(list)) {
             Map<String, Object> data = new HashMap<>(indexSize);
-            int size = list.size();
+            final int size = list.size() - 1;
             index.parallelStream().forEach(node -> {
                 if (node.i <= size) {
                     data.put(node.name, list.get(node.i));
@@ -66,26 +66,26 @@ public class FieldPicker {
         // 或 关系(成立任意条件)
         CompareFilter filter = null;
         Object value = null;
-        for (Filter f: or) {
+        for (Filter f : or) {
             value = row.get(f.getName());
-            if(null == value){
+            if (null == value) {
                 continue;
             }
             filter = FilterEnum.getCompareFilter(f.getFilter());
-            if(filter.compare(String.valueOf(value), f.getValue())){
+            if (filter.compare(String.valueOf(value), f.getValue())) {
                 return true;
             }
         }
 
         boolean pass = false;
         // 并 关系(成立所有条件)
-        for (Filter f: add) {
+        for (Filter f : add) {
             value = row.get(f.getName());
-            if(null == value){
+            if (null == value) {
                 continue;
             }
             filter = FilterEnum.getCompareFilter(f.getFilter());
-            if(!filter.compare(String.valueOf(value), f.getValue())){
+            if (!filter.compare(String.valueOf(value), f.getValue())) {
                 return false;
             }
             pass = true;
@@ -97,7 +97,8 @@ public class FieldPicker {
     private void init(List<Filter> filter, List<Field> column, List<FieldMapping> fieldMapping) {
         // 解析过滤条件
         if ((filterSwitch = !CollectionUtils.isEmpty(filter))) {
-            add = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), OperationEnum.AND.getName())).collect(Collectors.toList());
+            add = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), OperationEnum.AND.getName())).collect(
+                    Collectors.toList());
             or = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), OperationEnum.OR.getName())).collect(Collectors.toList());
         }
 
@@ -126,7 +127,7 @@ public class FieldPicker {
         // 属性
         String name;
         // 索引
-        int i;
+        int    i;
 
         public Node(String name, int i) {
             this.name = name;

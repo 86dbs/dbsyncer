@@ -10,9 +10,7 @@ import org.dbsyncer.listener.oracle.dcn.RowChangeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.SQLException;
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @version 1.0.0
@@ -49,7 +47,6 @@ public class OracleExtractor extends AbstractExtractor {
     }
 
     private void onEvent(RowChangeEvent event){
-        logger.info(event.toString());
         if(event.getEvent() == TableChangeDescription.TableOperation.UPDATE.getCode()){
             changedLogEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, event.getData());
             return;
@@ -64,14 +61,6 @@ public class OracleExtractor extends AbstractExtractor {
             changedLogEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getData(), Collections.EMPTY_LIST);
             return;
         }
-    }
-
-    public static void main(String[] args) throws SQLException, InterruptedException {
-        DBChangeNotification client = new DBChangeNotification("ae86", "123", "jdbc:oracle:thin:@127.0.0.1:1521:xe");
-        client.addRowEventListener((event) -> System.out.println(event));
-        client.start();
-        TimeUnit.SECONDS.sleep(120);
-        client.close();
     }
 
 }

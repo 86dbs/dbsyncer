@@ -106,10 +106,10 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         if (null != extractor) {
             extractor.clearAllListener();
             extractor.close();
-            map.remove(metaId);
-            publishClosedEvent(metaId);
-            logger.info("关闭成功:{}", metaId);
         }
+        map.remove(metaId);
+        publishClosedEvent(metaId);
+        logger.info("关闭成功:{}", metaId);
     }
 
     @Override
@@ -190,7 +190,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             if (changed.compareAndSet(true, false)) {
                 Meta meta = manager.getMeta(metaId);
                 if (null != meta) {
-                    logger.info("同步增量信息:{}>>{}", metaId, map);
                     meta.setMap(map);
                     manager.editMeta(meta);
                 }

@@ -231,12 +231,19 @@ public abstract class AbstractDatabaseConnector implements Database {
             logger.error("writer data can not be empty.");
             throw new ConnectorException("writer data can not be empty.");
         }
-        List<Object> args = new ArrayList<>();
-        fields.forEach(f -> args.add(data.get(f.getName())));
-        if (!StringUtils.equals(ConnectorConstant.OPERTION_INSERT, event)) {
+
+        // Update / Delete
+        if (StringUtils.equals(ConnectorConstant.OPERTION_UPDATE, event)) {
+            // update attrs by id
             List<Field> pkList = fields.stream().filter(f -> f.isPk()).collect(Collectors.toList());
             fields.add(pkList.get(0));
+        } else if (StringUtils.equals(ConnectorConstant.OPERTION_DELETE, event)) {
+            // delete by id
+            List<Field> pkList = fields.stream().filter(f -> f.isPk()).collect(Collectors.toList());
+            fields.clear();
+            fields.add(pkList.get(0));
         }
+
         int size = fields.size();
 
         DatabaseConfig cfg = (DatabaseConfig) config;
@@ -247,7 +254,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             jdbcTemplate = getJdbcTemplate(cfg);
 
             // 3、设置参数
-            int update = jdbcTemplate.update(sql, (ps)-> {
+            int update = jdbcTemplate.update(sql, (ps) -> {
                 Field f = null;
                 for (int i = 0; i < size; i++) {
                     f = fields.get(i);
@@ -326,7 +333,7 @@ public abstract class AbstractDatabaseConnector implements Database {
      * @param tableLabel
      * @return
      */
-    protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig, String tableLabel){
+    protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig, String tableLabel) {
         // 获取过滤SQL
         List<Filter> filter = commandConfig.getFilter();
         String queryFilterSql = getQueryFilterSql(filter);
@@ -337,7 +344,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         String querySql = table.getName();
 
         // 存在条件
-        if(StringUtils.isNotBlank(queryFilterSql)){
+        if (StringUtils.isNotBlank(queryFilterSql)) {
             querySql += queryFilterSql;
         }
         map.put(SqlBuilderEnum.QUERY.getName(), querySql);
@@ -354,9 +361,10 @@ public abstract class AbstractDatabaseConnector implements Database {
 
     /**
      * 查询语句表名和字段带上引号（默认不加）
+     *
      * @return
      */
-    protected String buildSqlWithQuotation(){
+    protected String buildSqlWithQuotation() {
         return "";
     }
 
@@ -430,7 +438,7 @@ public abstract class AbstractDatabaseConnector implements Database {
     /**
      * 获取查询SQL
      *
-     * @param type {@link SqlBuilderEnum}
+     * @param type           {@link SqlBuilderEnum}
      * @param table
      * @param queryFilterSQL
      * @return

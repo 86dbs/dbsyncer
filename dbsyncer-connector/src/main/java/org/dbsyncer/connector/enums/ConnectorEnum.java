@@ -93,6 +93,10 @@ public enum ConnectorEnum {
         throw new ConnectorException(String.format("Connector type \"%s\" does not exist.", type));
     }
 
+    public static boolean isOracle(String connectorType) {
+        return StringUtils.equals(ORACLE.getType(), connectorType) || StringUtils.equals(DQL_ORACLE.getType(), connectorType);
+    }
+
     public String getType() {
         return type;
     }
