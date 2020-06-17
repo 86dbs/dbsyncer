@@ -65,31 +65,31 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+//        http.csrf().disable()
+//                .authorizeRequests()
+//                .anyRequest().permitAll()
+//                .and().logout().permitAll();
+
         http.csrf().disable()
                 .authorizeRequests()
-                .anyRequest().permitAll()
-                .and().logout().permitAll();
-
-        //http.csrf().disable()
-        //        .authorizeRequests()
-        //        .antMatchers("/css/**", "/js/**", "/img/**", "/config/**", "/plugins/**").permitAll().anyRequest()
-        //        .authenticated()
-        //        .and()
-        //        .formLogin()
-        //        .loginProcessingUrl(LOGIN)
-        //        .loginPage(LOGIN_PAGE)
-        //        .successHandler(loginSuccessHandler())
-        //        .failureHandler(loginFailHandler())
-        //        .permitAll()
-        //        .and()
-        //        .logout()
-        //        .permitAll()
-        //        .invalidateHttpSession(true).deleteCookies("JSESSIONID").logoutSuccessHandler(logoutHandler())
-        //        .and()
-        //        .sessionManagement()
-        //        .sessionFixation()
-        //        .migrateSession()
-        //        .maximumSessions(MAXIMUM_SESSIONS);
+                .antMatchers("/css/**", "/js/**", "/img/**", "/config/**", "/plugins/**").permitAll().anyRequest()
+                .authenticated()
+                .and()
+                .formLogin()
+                .loginProcessingUrl(LOGIN)
+                .loginPage(LOGIN_PAGE)
+                .successHandler(loginSuccessHandler())
+                .failureHandler(loginFailHandler())
+                .permitAll()
+                .and()
+                .logout()
+                .permitAll()
+                .invalidateHttpSession(true).deleteCookies("JSESSIONID").logoutSuccessHandler(logoutHandler())
+                .and()
+                .sessionManagement()
+                .sessionFixation()
+                .migrateSession()
+                .maximumSessions(MAXIMUM_SESSIONS);
     }
 
     /**

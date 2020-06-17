@@ -159,33 +159,34 @@ public class TableGroupChecker extends AbstractChecker {
         String eventFieldName = mapping.getListener().getEventFieldName();
         if (StringUtils.isNotBlank(eventFieldName)) {
             Map<String, Field> fields = convert2Map(group.getSourceTable().getColumn());
-            addFieldMapping(fieldMapping, eventFieldName, fields);
+            addFieldMapping(fieldMapping, eventFieldName, fields, true);
         }
 
         // 检查过滤条件是否在映射关系中
         List<Filter> filter = group.getFilter();
         if (!CollectionUtils.isEmpty(filter)) {
             Map<String, Field> fields = convert2Map(group.getSourceTable().getColumn());
-            filter.forEach(f -> addFieldMapping(fieldMapping, f.getName(), fields));
+            filter.forEach(f -> addFieldMapping(fieldMapping, f.getName(), fields, true));
         }
 
     }
 
-    private void addFieldMapping(List<FieldMapping> fieldMapping, String name, Map<String, Field> fields) {
+    private void addFieldMapping(List<FieldMapping> fieldMapping, String name, Map<String, Field> fields, boolean checkSource) {
         if (StringUtils.isNotBlank(name)) {
             boolean exist = false;
             for (FieldMapping m : fieldMapping) {
-                Field source = m.getSource();
-                if (null == source) {
+                Field f = checkSource ? m.getSource() : m.getTarget();
+                if (null == f) {
                     continue;
                 }
-                if (StringUtils.equals(source.getName(), name)) {
+                if (StringUtils.equals(f.getName(), name)) {
                     exist = true;
                     break;
                 }
             }
             if (!exist && null != fields.get(name)) {
-                fieldMapping.add(new FieldMapping(fields.get(name), null));
+                FieldMapping fm = checkSource ? new FieldMapping(fields.get(name), null) : new FieldMapping(null, fields.get(name));
+                fieldMapping.add(fm);
             }
         }
     }
