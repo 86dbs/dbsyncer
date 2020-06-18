@@ -22,6 +22,7 @@ import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.util.PickerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -228,7 +229,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             this.mapping = mapping;
             this.metaId = mapping.getMetaId();
             this.tablePicker = new LinkedList<>();
-            list.forEach(t -> tablePicker.add(new FieldPicker(t)));
+            list.forEach(t -> tablePicker.add(new FieldPicker(PickerUtil.mergeTableGroupConfig(mapping, t))));
         }
 
         @Override
@@ -277,7 +278,8 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
                 final Table table = t.getSourceTable();
                 final String tableName = table.getName();
                 tablePicker.putIfAbsent(tableName, new ArrayList<>());
-                tablePicker.get(tableName).add(new FieldPicker(t, t.getFilter(), table.getColumn(), t.getFieldMapping()));
+                TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, t);
+                tablePicker.get(tableName).add(new FieldPicker(group, group.getFilter(), table.getColumn(), group.getFieldMapping()));
             });
         }
 

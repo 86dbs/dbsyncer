@@ -5,7 +5,6 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.Field;
-import org.dbsyncer.connector.config.Filter;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -14,6 +13,7 @@ import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -102,15 +102,7 @@ public class TableGroupChecker extends AbstractChecker {
     }
 
     public void setCommand(Mapping mapping, TableGroup tableGroup) {
-        TableGroup group = new TableGroup();
-        group.setFieldMapping(new ArrayList<>(tableGroup.getFieldMapping()));
-        group.setSourceTable(tableGroup.getSourceTable());
-        group.setTargetTable(tableGroup.getTargetTable());
-        // 默认使用全局的过滤条件
-        group.setFilter(CollectionUtils.isEmpty(tableGroup.getFilter()) ? mapping.getFilter() : tableGroup.getFilter());
-
-        // 添加增量配置事件和过滤条件字段
-        appendEventAndFilter(mapping, group);
+        TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
 
         Map<String, String> command = manager.getCommand(mapping, group);
         tableGroup.setCommand(command);
@@ -148,45 +140,6 @@ public class TableGroupChecker extends AbstractChecker {
                     logger.error(error);
                     throw new BizException(error);
                 }
-            }
-        }
-    }
-
-    private void appendEventAndFilter(Mapping mapping, TableGroup group) {
-        final List<FieldMapping> fieldMapping = group.getFieldMapping();
-
-        // 检查增量字段是否在映射关系中
-        String eventFieldName = mapping.getListener().getEventFieldName();
-        if (StringUtils.isNotBlank(eventFieldName)) {
-            Map<String, Field> fields = convert2Map(group.getSourceTable().getColumn());
-            addFieldMapping(fieldMapping, eventFieldName, fields, true);
-        }
-
-        // 检查过滤条件是否在映射关系中
-        List<Filter> filter = group.getFilter();
-        if (!CollectionUtils.isEmpty(filter)) {
-            Map<String, Field> fields = convert2Map(group.getSourceTable().getColumn());
-            filter.forEach(f -> addFieldMapping(fieldMapping, f.getName(), fields, true));
-        }
-
-    }
-
-    private void addFieldMapping(List<FieldMapping> fieldMapping, String name, Map<String, Field> fields, boolean checkSource) {
-        if (StringUtils.isNotBlank(name)) {
-            boolean exist = false;
-            for (FieldMapping m : fieldMapping) {
-                Field f = checkSource ? m.getSource() : m.getTarget();
-                if (null == f) {
-                    continue;
-                }
-                if (StringUtils.equals(f.getName(), name)) {
-                    exist = true;
-                    break;
-                }
-            }
-            if (!exist && null != fields.get(name)) {
-                FieldMapping fm = checkSource ? new FieldMapping(fields.get(name), null) : new FieldMapping(null, fields.get(name));
-                fieldMapping.add(fm);
             }
         }
     }
@@ -238,8 +191,8 @@ public class TableGroupChecker extends AbstractChecker {
                 throw new BizException("映射关系不能为空");
             }
 
-            final Map<String, Field> sMap = convert2Map(tableGroup.getSourceTable().getColumn());
-            final Map<String, Field> tMap = convert2Map(tableGroup.getTargetTable().getColumn());
+            final Map<String, Field> sMap = PickerUtil.convert2Map(tableGroup.getSourceTable().getColumn());
+            final Map<String, Field> tMap = PickerUtil.convert2Map(tableGroup.getTargetTable().getColumn());
             int length = mapping.length();
             List<FieldMapping> list = new ArrayList<>();
             JSONObject row = null;
@@ -263,12 +216,6 @@ public class TableGroupChecker extends AbstractChecker {
             logger.error(e.getMessage());
             throw new BizException(e.getMessage());
         }
-    }
-
-    private Map<String, Field> convert2Map(List<Field> col) {
-        final Map<String, Field> map = new HashMap<>();
-        col.forEach(f -> map.put(f.getName(), f));
-        return map;
     }
 
 }

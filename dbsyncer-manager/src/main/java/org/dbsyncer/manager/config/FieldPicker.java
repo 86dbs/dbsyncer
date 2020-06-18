@@ -107,7 +107,7 @@ public class FieldPicker {
         Assert.notEmpty(fieldMapping, "映射关系不能为空.");
 
         // 找到同步字段 => [{source.name}]
-        Set<String> key = fieldMapping.stream().map(m -> m.getSource().getName()).collect(Collectors.toSet());
+        Set<String> key = fieldMapping.stream().filter(m -> null != m.getSource()).map(m -> m.getSource().getName()).collect(Collectors.toSet());
 
         // 记录字段索引 [{"ID":0},{"NAME":1}]
         index = new LinkedList<>();
