@@ -2,6 +2,7 @@ package org.dbsyncer.connector.util;
 
 import com.sun.rowset.CachedRowSetImpl;
 import org.apache.commons.dbcp.BasicDataSource;
+import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -65,9 +66,10 @@ public abstract class DatabaseUtil {
      *
      * @param jdbcTemplate
      * @param metaSql      查询元数据
+     * @param tableName    表名
      * @return
      */
-    public static MetaInfo getMetaInfo(JdbcTemplate jdbcTemplate, String metaSql) throws SQLException {
+    public static MetaInfo getMetaInfo(JdbcTemplate jdbcTemplate, String metaSql, String tableName) throws SQLException {
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(metaSql);
         ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
         CachedRowSetImpl resultSet = (CachedRowSetImpl) rowSet.getResultSet();
@@ -88,19 +90,19 @@ public abstract class DatabaseUtil {
             String name = null;
             String label = null;
             String typeName = null;
-            String tableName = null;
+            String table = null;
             int columnType;
             boolean pk;
             for (int i = 1; i <= columnCount; i++) {
-                tableName = metaData.getTableName(i);
-                if (null == tables.get(tableName)) {
-                    tables.putIfAbsent(tableName, findTablePrimaryKeys(md, tableName));
+                table = StringUtils.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
+                if (null == tables.get(table)) {
+                    tables.putIfAbsent(table, findTablePrimaryKeys(md, table));
                 }
                 name = metaData.getColumnName(i);
                 label = metaData.getColumnLabel(i);
                 typeName = metaData.getColumnTypeName(i);
                 columnType = metaData.getColumnType(i);
-                pk = isPk(tables, tableName, name);
+                pk = isPk(tables, table, name);
                 fields.add(new Field(label, typeName, columnType, pk));
             }
         } finally {

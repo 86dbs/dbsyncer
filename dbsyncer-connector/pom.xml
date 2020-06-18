@@ -44,21 +44,13 @@
         <!-- oracle-driver -->
         <dependency>
             <groupId>com.oracle</groupId>
-            <artifactId>ojdbc14</artifactId>
+            <artifactId>ojdbc6</artifactId>
         </dependency>
 
         <!-- sqlserver-driver -->
         <dependency>
             <groupId>microsoft</groupId>
             <artifactId>sqljdbc</artifactId>
-        </dependency>
-
-        <!-- Spring LDAP 是一个用于操作 LDAP 的 Java 框架。它是基于 Spring 的 JdbcTemplate 模式。这个框架能够帮助开发人员简化
-			looking up，closing contexts，looping through NamingEnumerations，encoding/decoding
-			values与 filters 等操作。 -->
-        <dependency>
-            <groupId>org.springframework.ldap</groupId>
-            <artifactId>spring-ldap-core</artifactId>
         </dependency>
 
         <!-- redis客户端连接工具 -->

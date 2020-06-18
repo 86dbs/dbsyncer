@@ -4,9 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.LdapConfig;
 import org.dbsyncer.connector.config.RedisConfig;
-import org.dbsyncer.connector.ldap.LdapConnector;
 import org.dbsyncer.connector.mysql.MysqlConnector;
 import org.dbsyncer.connector.oracle.OracleConnector;
 import org.dbsyncer.connector.redis.RedisConnector;
@@ -44,10 +42,6 @@ public enum ConnectorEnum {
      */
     DQL_ORACLE("DqlOracle", new DQLOracleConnector(), DatabaseConfig.class),
     /**
-     * Ldap 连接器
-     */
-    LDAP("Ldap", new LdapConnector(), LdapConfig.class),
-    /**
      * Redis 连接器
      */
     REDIS("Redis", new RedisConnector(), RedisConfig.class);
@@ -69,6 +63,7 @@ public enum ConnectorEnum {
 
     /**
      * 获取连接器
+     *
      * @param type
      * @return
      * @throws ConnectorException
@@ -84,6 +79,7 @@ public enum ConnectorEnum {
 
     /**
      * 获取连接配置
+     *
      * @param type
      * @return
      * @throws ConnectorException
@@ -95,6 +91,10 @@ public enum ConnectorEnum {
             }
         }
         throw new ConnectorException(String.format("Connector type \"%s\" does not exist.", type));
+    }
+
+    public static boolean isOracle(String connectorType) {
+        return StringUtils.equals(ORACLE.getType(), connectorType) || StringUtils.equals(DQL_ORACLE.getType(), connectorType);
     }
 
     public String getType() {

@@ -5,7 +5,7 @@ echo 'Starting up ...'
 CURRENT_DIR=$(pwd);
 # the path of application.properties
 PRO_CONFIG_NAME=application.properties
-PRO_CONFIG_PATH='conf/boot/'$PRO_CONFIG_NAME
+PRO_CONFIG_PATH='conf/'$PRO_CONFIG_NAME
 if [[ ! -f $PRO_CONFIG_PATH ]] 
 then
    echo "The '"$PRO_CONFIG_NAME"' does't exist, please check it first!"; exit 1;

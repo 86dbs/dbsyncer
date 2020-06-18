@@ -27,11 +27,6 @@ public class TestController {
     @Autowired
     private MappingService mappingService;
 
-    @GetMapping("")
-    public String index(HttpServletRequest request, ModelMap model) {
-        return "test.html";
-    }
-
     @RequestMapping("/demo")
     @ResponseBody
     public Object demo(Model model) {
@@ -52,7 +47,6 @@ public class TestController {
                 }
             }).start();
         }
-
 
         return "hello";
     }

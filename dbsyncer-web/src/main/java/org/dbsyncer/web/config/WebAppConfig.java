@@ -64,10 +64,15 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     private ConfigService configService;
 
     @Override
-    protected void configure(HttpSecurity http) throws Exception { //配置策略
+    protected void configure(HttpSecurity http) throws Exception {
+//        http.csrf().disable()
+//                .authorizeRequests()
+//                .anyRequest().permitAll()
+//                .and().logout().permitAll();
+
         http.csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/css/**", "/js/**", "/images/**", "/config/**", "/plugins/**").permitAll().anyRequest()
+                .antMatchers("/css/**", "/js/**", "/img/**", "/config/**", "/plugins/**").permitAll().anyRequest()
                 .authenticated()
                 .and()
                 .formLogin()

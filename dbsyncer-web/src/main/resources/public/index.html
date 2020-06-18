@@ -12,70 +12,42 @@
     <meta name="description" content="search">
     <meta name="author" content="AE86">
     <title>dbsyncer</title>
-    <link type="image/x-icon" rel="icon" th:href="@{/images/sync.ico}"/>
+    <link type="image/x-icon" rel="icon" th:href="@{/img/sync.ico}"/>
     <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/bootstrap/bootstrap.min.css}"/>
     <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/bootstrap-dialog/bootstrap-dialog.min.css}"/>
     <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/icheck/all.css}"/>
     <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/font-awesome.min.css}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/loading-plus/loading-plus.css}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/select2/select2.min.css}"/>
     <link type="text/css" rel="stylesheet" th:href="@{/css/common.css}">
+    <link type="text/css" rel="stylesheet" th:href="@{/css/index/index.css}">
 </head>
 <body>
 
-<div class="form-group">
-    <table class="table table-hover">
-        <thead>
-        <tr>
-            <th>数据源字段</th>
-            <th>目标源字段</th>
-            <th>操作</th>
-        </tr>
-        </thead>
-        <tbody id="fieldList">
-        <tr title='转换配置' class='dbsyncer_pointer'>
-            <td>ID</td>
-            <td>ID</td>
-            <td><a class='fa fa-remove fa-2x fieldDelete dbsyncer_pointer' title='删除' ></a></td>
-        </tr>
-        <tr title='转换配置' class='dbsyncer_pointer'>
-            <td>NAME</td>
-            <td>NAME</td>
-            <td><a class='fa fa-remove fa-2x fieldDelete dbsyncer_pointer' title='删除' ></a></td>
-        </tr>
-        </tbody>
-    </table>
-</div>
+<!-- 导航栏 -->
+<div th:replace="nav :: nav"></div>
+
+<!-- 内容区域 -->
+<div th:replace="content :: content"></div>
+
+<!-- 底部区域 -->
+<div th:replace="footer :: copy"></div>
 
 </body>
-<script th:src="@{/plugins/js/bootstrap/respond.min.js}" ></script>
+<script th:src="@{/plugins/js/bootstrap/respond.min.js}"></script>
 <script th:src="@{/plugins/js/bootstrap/html5shiv.min.js}"></script>
 <!-- 上述2个js文件解决IE8以上bootstrap的兼容性问题 -->
 <script th:src="@{/plugins/js/jquery/jquery-1.11.3.min.js}"></script>
 <script th:src="@{/plugins/js/bootstrap/bootstrap.min.js}"></script>
 <script th:src="@{/plugins/js/bootstrap-dialog/bootstrap-dialog.min.js}"></script>
 <script th:src="@{/plugins/js/bootstrap-growl/jquery.bootstrap-growl.min.js}"></script>
-
-<script type="text/javascript">
-    // 全局提示框
-    function bootGrowl(data, type) {
-        $.bootstrapGrowl(data, { // data为提示信息
-            type : type == undefined ? 'success' : type,// type指提示类型
-            delay : 1000,// 提示框显示时间
-            allow_dismiss : true // 显示取消提示框
-        });
-    }
-
-    $(function () {
-        $("#fieldList tr").on("click", function(){
-            bootGrowl("编辑!", "danger");
-        });
-
-        var $del = $(".fieldDelete");
-        $del.bind('click', function(){
-            // 阻止tr触发click事件
-            event.cancelBubble=true;
-            bootGrowl("delete!", "success");
-        });
-    })
-
-</script>
+<script th:src="@{/plugins/js/icheck/icheck.min.js}"></script>
+<script th:src="@{/plugins/js/loading-plus/loading-plus.js}"></script>
+<script th:src="@{/plugins/js/placeholder/jquery.placeholder.js}"></script>
+<script th:src="@{/plugins/js/select2/select2.min.js}"></script>
+<script th:src="@{/plugins/js/formValidate/formValidate.js}"></script>
+<script th:src="@{/plugins/js/sql-formatter/sql-formatter.min.js}"></script>
+<script th:src="@{/plugins/js/echarts/echarts.min.js}"></script>
+<script th:src="@{/js/common.js}"></script>
+<script th:src="@{/js/index.js}"></script>
 </html>

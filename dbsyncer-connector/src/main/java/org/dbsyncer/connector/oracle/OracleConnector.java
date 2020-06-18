@@ -7,8 +7,9 @@ import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 public final class OracleConnector extends AbstractDatabaseConnector {
 
     @Override
-    public String getMetaSql(DatabaseConfig config, String tableName) {
-        return new StringBuilder().append("SELECT * FROM ").append(tableName).toString();
+    protected String getQueryTablesSql(DatabaseConfig config) {
+        // "SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER='AE86'"
+        return String.format("SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER='%s'", config.getUsername()).toUpperCase();
     }
 
     @Override
@@ -22,4 +23,8 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         return new Object[]{pageIndex * pageSize, (pageIndex - 1) * pageSize};
     }
 
+    @Override
+    protected String buildSqlWithQuotation(){
+        return "\"";
+    }
 }

@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.sql;
 
+import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.MetaInfo;
@@ -7,12 +8,13 @@ import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 
 import java.util.List;
+import java.util.Map;
 
 public final class DQLMysqlConnector extends AbstractDatabaseConnector {
 
     @Override
-    public String getMetaSql(DatabaseConfig config, String tableName) {
-        return config.getSql();
+    protected String getQueryTablesSql(DatabaseConfig config) {
+        return "show tables";
     }
 
     @Override
@@ -23,7 +25,7 @@ public final class DQLMysqlConnector extends AbstractDatabaseConnector {
 
     @Override
     public Object[] getPageArgs(int pageIndex, int pageSize) {
-        return new Object[]{(pageIndex - 1) * pageSize, pageSize};
+        return new Object[] {(pageIndex - 1) * pageSize, pageSize};
     }
 
     @Override
@@ -34,5 +36,10 @@ public final class DQLMysqlConnector extends AbstractDatabaseConnector {
     @Override
     public MetaInfo getMetaInfo(ConnectorConfig config, String tableName) {
         return super.getDqlMetaInfo(config);
+    }
+
+    @Override
+    public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
+        return super.getDqlSourceCommand(commandConfig, " _T");
     }
 }

@@ -22,7 +22,7 @@ public class LogServiceImpl implements LogService {
 
     @Override
     public void log(LogType logType, String msg) {
-        flushService.asyncWrite(logType.getType(), msg);
+        flushService.asyncWrite(logType.getType(), null == msg ? logType.getMessage() : msg);
     }
 
     @Override

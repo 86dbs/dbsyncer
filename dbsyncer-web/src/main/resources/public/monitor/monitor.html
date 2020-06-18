@@ -17,7 +17,7 @@
                         </select>
                     </div>
                     <div class="col-sm-4">
-                        <input id="searchDataKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)." />
+                        <input id="searchDataKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入异常关键字(最多32个字)." />
                     </div>
                     <div class="col-md-1">
                         <button id="queryDataBtn" type="button" class="btn btn-primary">查询数据</button>
@@ -56,26 +56,48 @@
 
             <!-- 性能指标 -->
             <div class="col-md-12">
-                <p>CPU 内存 硬盘 堆内存 </p>
+                <div class="col-md-6">
+                    <table class="table table-hover">
+                        <caption>系统性能</caption>
+                        <thead>
+                        <tr>
+                            <th style="width:10%;">类型</th>
+                            <th style="width:10%;">状态</th>
+                            <th style="width:80%;">指标</th>
+                        </tr>
+                        </thead>
+                        <tbody id="systemList"></tbody>
+                    </table>
+                </div>
+
+                <div class="col-md-3">
+                    <div id="cpuChart" style="height: 260px; max-width: 260px; margin: 0px auto;"></div>
+                </div>
+
+                <div class="col-md-3">
+                    <div id="memChart" style="height: 260px; max-width: 260px; margin: 0px auto;"></div>
+                </div>
             </div>
 
             <!-- 线程任务 -->
             <div class="col-md-12">
-                <table class="table table-hover">
-                    <caption>线程任务</caption>
-                    <thead>
-                    <tr>
-                        <th style="width:3%;"></th>
-                        <th style="width:70%;">类型</th>
-                        <th style="width:27%;">指标</th>
-                    </tr>
-                    </thead>
-                    <tr th:each="item,userStat:${threadInfo}">
-                        <td th:text="${userStat.index}+1"></td>
-                        <td th:text="${userStat.current.key}"></td><!-- key-->
-                        <td th:text="${userStat.current.value}"></td><!-- value-->
-                    </tr>
-                </table>
+                <div class="col-md-6">
+                    <table class="table table-hover">
+                        <caption>线程任务</caption>
+                        <thead>
+                        <tr>
+                            <th style="width:3%;"></th>
+                            <th style="width:70%;">类型</th>
+                            <th style="width:27%;">指标</th>
+                        </tr>
+                        </thead>
+                        <tr th:each="item,userStat:${threadInfo}">
+                            <td th:text="${userStat.index}+1"></td>
+                            <td th:text="${userStat.current.key}"></td><!-- key-->
+                            <td th:text="${userStat.current.value}"></td><!-- value-->
+                        </tr>
+                    </table>
+                </div>
             </div>
 
             <!-- 日志 -->
@@ -102,11 +124,11 @@
                     </tr>
                     </thead>
                     <tbody id="logList">
-                        <tr th:each="l,s : ${log}">
-                            <td th:text="${s.index}+1"></td>
-                            <td th:text="${l?.json}"></td>
-                            <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
-                        </tr>
+                    <tr th:each="l,s : ${log}">
+                        <td th:text="${s.index}+1"></td>
+                        <td th:text="${l?.json}"></td>
+                        <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                    </tr>
                     </tbody>
                 </table>
             </div>

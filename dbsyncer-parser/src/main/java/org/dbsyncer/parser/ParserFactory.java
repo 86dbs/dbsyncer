@@ -20,7 +20,6 @@ import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
-import org.dbsyncer.plugin.config.Plugin;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -94,10 +93,10 @@ public class ParserFactory implements Parser {
         Table sTable = new Table().setName(sTableName).setColumn(new ArrayList<>());
         Table tTable = new Table().setName(tTableName).setColumn(new ArrayList<>());
         fieldMapping.forEach(m -> {
-            if(null != m.getSource()){
+            if (null != m.getSource()) {
                 sTable.getColumn().add(m.getSource());
             }
-            if(null != m.getTarget()){
+            if (null != m.getTarget()) {
                 tTable.getColumn().add(m.getTarget());
             }
         });
@@ -181,16 +180,13 @@ public class ParserFactory implements Parser {
         Assert.notNull(sConfig, "数据源配置不能为空.");
         ConnectorConfig tConfig = getConnectorConfig(targetConnectorId);
         Assert.notNull(tConfig, "目标源配置不能为空.");
-        Map<String, String> command = tableGroup.getCommand();
+        TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
+        Map<String, String> command = group.getCommand();
         Assert.notEmpty(command, "执行命令不能为空.");
-        List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
-        String sTableName = tableGroup.getSourceTable().getName();
-        String tTableName = tableGroup.getTargetTable().getName();
+        List<FieldMapping> fieldMapping = group.getFieldMapping();
+        String sTableName = group.getSourceTable().getName();
+        String tTableName = group.getTargetTable().getName();
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
-        // 转换配置(默认使用全局)
-        List<Convert> convert = CollectionUtils.isEmpty(tableGroup.getConvert()) ? mapping.getConvert() : tableGroup.getConvert();
-        // 插件配置(默认使用全局)
-        Plugin plugin = null == tableGroup.getPlugin() ? mapping.getPlugin() : tableGroup.getPlugin();
         // 获取同步字段
         Picker picker = new Picker();
         PickerUtil.pickFields(picker, fieldMapping);
@@ -223,10 +219,10 @@ public class ParserFactory implements Parser {
 
             // 3、参数转换
             List<Map<String, Object>> target = picker.getTargetList();
-            ConvertUtil.convert(convert, target);
+            ConvertUtil.convert(group.getConvert(), target);
 
             // 4、插件转换
-            pluginFactory.convert(plugin, data, target);
+            pluginFactory.convert(group.getPlugin(), data, target);
 
             // 5、写入目标源
             Result writer = writeBatch(tConfig, command, picker.getTargetFields(), target, threadSize, batchSize);
@@ -245,15 +241,9 @@ public class ParserFactory implements Parser {
         final String metaId = mapping.getMetaId();
 
         ConnectorConfig tConfig = getConnectorConfig(mapping.getTargetConnectorId());
-        Map<String, String> command = tableGroup.getCommand();
-        List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
-        // 转换配置(默认使用全局)
-        List<Convert> convert = CollectionUtils.isEmpty(tableGroup.getConvert()) ? mapping.getConvert() : tableGroup.getConvert();
-        // 插件配置(默认使用全局)
-        Plugin plugin = null == tableGroup.getPlugin() ? mapping.getPlugin() : tableGroup.getPlugin();
         // 获取同步字段
         Picker picker = new Picker();
-        PickerUtil.pickFields(picker, fieldMapping);
+        PickerUtil.pickFields(picker, tableGroup.getFieldMapping());
 
         // 1、映射字段
         String event = dataEvent.getEvent();
@@ -262,13 +252,13 @@ public class ParserFactory implements Parser {
 
         // 2、参数转换
         Map<String, Object> target = picker.getTarget();
-        ConvertUtil.convert(convert, target);
+        ConvertUtil.convert(tableGroup.getConvert(), target);
 
         // 3、插件转换
-        pluginFactory.convert(plugin, event, data, target);
+        pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
 
         // 4、写入目标源
-        Result writer = connectorFactory.writer(tConfig, picker.getTargetFields(), command, event, target);
+        Result writer = connectorFactory.writer(tConfig, picker.getTargetFields(), tableGroup.getCommand(), event, target);
 
         // 5、更新结果
         List<Map<String, Object>> list = new ArrayList<>(1);

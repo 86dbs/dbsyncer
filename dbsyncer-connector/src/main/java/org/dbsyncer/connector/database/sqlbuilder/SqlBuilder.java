@@ -19,9 +19,10 @@ public interface SqlBuilder {
      * @param pk
      * @param filedNames
      * @param queryFilter
+     * @param quotation
      * @param database
      * @return
      */
-    String buildSql(String tableName, String pk, List<String> filedNames, String queryFilter, Database database);
+    String buildSql(String tableName, String pk, List<String> filedNames, String queryFilter, String quotation, Database database);
 
 }

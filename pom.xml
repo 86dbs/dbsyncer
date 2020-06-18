@@ -44,7 +44,7 @@
         <commons-dbcp.version>1.4</commons-dbcp.version>
         <commons-pool.version>1.6</commons-pool.version>
         <lucene.version>7.6.0</lucene.version>
-        <oracle.version>10.2.0.4.0</oracle.version>
+        <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
         <mysql.version>5.1.40</mysql.version>
         <sqljdbc.version>1.2</sqljdbc.version>
         <json.version>20090211</json.version>
@@ -147,6 +147,13 @@
                 <version>${mysql.version}</version>
             </dependency>
 
+            <!-- oracle-driver -->
+            <dependency>
+                <groupId>com.oracle</groupId>
+                <artifactId>ojdbc6</artifactId>
+                <version>${ojdbc6.version}</version>
+            </dependency>
+
             <!-- mvn install:install-file -DgroupId=microsoft -DartifactId=sqljdbc
                 -Dversion=1.2 -Dpackaging=jar -Dfile=D:\sqljdbc-1.2.jar -->
             <!-- sqlserver-driver -->
@@ -154,15 +161,6 @@
                 <groupId>microsoft</groupId>
                 <artifactId>sqljdbc</artifactId>
                 <version>${sqljdbc.version}</version>
-            </dependency>
-
-            <!-- mvn install:install-file -DgroupId=com.oracle -DartifactId=ojdbc14
-                -Dversion=10.2.0.4.0 -Dpackaging=jar -Dfile=D:\ojdbc14-10.2.0.4.0.jar -->
-            <!-- oracle-driver -->
-            <dependency>
-                <groupId>com.oracle</groupId>
-                <artifactId>ojdbc14</artifactId>
-                <version>${oracle.version}</version>
             </dependency>
 
             <dependency>

@@ -123,7 +123,7 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
             return StringUtils.contains(query, f.getType());
         }).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(filterEnums)) {
-            return new Point(command, Collections.EMPTY_LIST);
+            return new Point(command, new ArrayList<>());
         }
 
         Point point = new Point();
@@ -139,22 +139,20 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
             // 创建参数索引key
             final String key = index + type;
 
-            // 为空参数
-            if (!map.containsKey(key) && f.begin()) {
-                final Object val = f.getObject();
-                final String valStr = f.toString(val);
-                point.addArg(val);
-                point.setBeginKey(key);
-                map.put(key, valStr);
-                continue;
-            }
-
-            // 读取历史增量点
             // 开始位置
             if(f.begin()){
+                if (!map.containsKey(key)) {
+                    final Object val = f.getObject();
+                    point.addArg(val);
+                    map.put(key, f.toString(val));
+                    continue;
+                }
+
+                // 读取历史增量点
                 Object val = f.getObject(map.get(key));
                 point.addArg(val);
                 point.setBeginKey(key);
+                point.setBeginValue(f.toString(f.getObject()));
                 continue;
             }
             // 结束位置(刷新)
@@ -226,8 +224,10 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
         }
 
         public void refresh() {
-            position.put(beginKey, beginValue);
-            refreshed = true;
+            if(StringUtils.isNotBlank(beginKey) && StringUtils.isNotBlank(beginValue)){
+                position.put(beginKey, beginValue);
+                refreshed = true;
+            }
         }
 
         public boolean refreshed() {

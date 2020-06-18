@@ -6,24 +6,23 @@
     <div class="form-group">
         <label class="col-sm-2 control-label">帐号 <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-4">
-            <input class="form-control" name="username" type="text" maxlength="32" dbsyncer-valid="require"
-                   placeholder="root" />
+            <input class="form-control" name="username" type="text" maxlength="32" dbsyncer-valid="require" placeholder="root" th:value="${connector?.config?.username}"/>
         </div>
         <label class="col-sm-2 control-label">密码 <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-4 ">
-            <input class="form-control" name="password" type="password" maxlength="32" dbsyncer-valid="require" />
+            <input class="form-control" name="password" type="password" maxlength="32" dbsyncer-valid="require" th:value="${connector?.config?.password}"/>
         </div>
     </div>
     <div class="form-group">
         <label class="col-sm-2 control-label">URL <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-10">
-            <textarea name="url" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="5">jdbc:oracle:thin:@127.0.0.1:1521:ORCL</textarea>
+            <textarea name="url" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="5" th:text="${connector?.config?.url} ?: 'jdbc:oracle:thin:@127.0.0.1:1521:ORCL'"></textarea>
         </div>
     </div>
     <div class="form-group">
         <label class="col-sm-2 control-label">驱动 </label>
         <div class="col-sm-10">
-            <input class="form-control" readonly="true" name="driverClassName" type="text" value="oracle.jdbc.OracleDriver" />
+            <input class="form-control" readonly="true" name="driverClassName" type="text" th:value="${connector?.config?.driverClassName} ?: 'oracle.jdbc.OracleDriver'" />
         </div>
     </div>
 </div>

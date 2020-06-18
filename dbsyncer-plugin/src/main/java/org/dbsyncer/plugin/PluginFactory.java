@@ -17,10 +17,6 @@ public class PluginFactory {
 
     public List<Plugin> getPluginAll() {
         List<Plugin> list = new ArrayList<>();
-        Plugin plugin = new Plugin();
-        plugin.setName("正式知识库插件");
-        plugin.setClassName("com.knowledge.xx.impl");
-        list.add(plugin);
         return list;
     }
 

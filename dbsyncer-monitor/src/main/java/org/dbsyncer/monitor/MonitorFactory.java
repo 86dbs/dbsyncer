@@ -41,16 +41,15 @@ public class MonitorFactory implements Monitor {
     @Override
     public Map getThreadInfo() {
         Map map = new HashMap();
-        if(taskExecutor instanceof ThreadPoolTaskExecutor){
+        if (taskExecutor instanceof ThreadPoolTaskExecutor) {
             ThreadPoolTaskExecutor threadTask = (ThreadPoolTaskExecutor) taskExecutor;
             ThreadPoolExecutor threadPoolExecutor = threadTask.getThreadPoolExecutor();
 
-            map.put("提交任务数", threadPoolExecutor.getTaskCount());
-            map.put("完成任务数", threadPoolExecutor.getCompletedTaskCount());
-            map.put("当前有多少线程正在处理任务", threadPoolExecutor.getActiveCount());
-            map.put("还剩多少个任务未执行", threadPoolExecutor.getQueue().size());
-            map.put("当前可用队列长度", threadPoolExecutor.getQueue().remainingCapacity());
-            map.put("当前时间", DateFormatUtil.getCurrentDateTime());
+            map.put("已提交", threadPoolExecutor.getTaskCount());
+            map.put("已完成", threadPoolExecutor.getCompletedTaskCount());
+            map.put("处理中", threadPoolExecutor.getActiveCount());
+            map.put("排队中", threadPoolExecutor.getQueue().size());
+            map.put("队列长度", threadPoolExecutor.getQueue().remainingCapacity());
         }
         return map;
     }

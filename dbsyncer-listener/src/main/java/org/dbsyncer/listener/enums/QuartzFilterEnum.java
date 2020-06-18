@@ -1,11 +1,10 @@
 package org.dbsyncer.listener.enums;
 
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.listener.QuartzFilter;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 /**
@@ -61,9 +60,9 @@ public enum QuartzFilterEnum {
         }
     }),
     /**
-     * 日期(开始)
+     * 日期
      */
-    DATE_BEGIN("$date_begin$", "系统日期(开始)", new QuartzFilter() {
+    DATE_BEGIN("$date$", "系统日期", new QuartzFilter() {
         @Override
         public Object getObject() {
             return new Date();
@@ -71,39 +70,12 @@ public enum QuartzFilterEnum {
 
         @Override
         public Object getObject(String s) {
-            // TODO 日期转换
-            DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            return null;
+            return DateFormatUtil.stringToDate(s);
         }
 
         @Override
         public String toString(Object value) {
-            return String.valueOf(value);
-        }
-    }),
-    /**
-     * 日期(结束)
-     */
-    DATE_END("$date_end$", "系统日期(结束)", new QuartzFilter() {
-        @Override
-        public Object getObject() {
-            return new Date();
-        }
-
-        @Override
-        public Object getObject(String s) {
-            DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            return null;
-        }
-
-        @Override
-        public String toString(Object value) {
-            return String.valueOf(value);
-        }
-
-        @Override
-        public boolean begin() {
-            return false;
+            return DateFormatUtil.dateToString((Date) value);
         }
     });
 
@@ -128,4 +100,5 @@ public enum QuartzFilterEnum {
     public QuartzFilter getQuartzFilter() {
         return quartzFilter;
     }
+
 }

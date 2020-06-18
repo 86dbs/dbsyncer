@@ -79,7 +79,7 @@ public class MonitorServiceImpl implements MonitorService {
         }
 
         int pageNum = NumberUtils.toInt(params.get("pageNum"), 1);
-        int pageSize = NumberUtils.toInt(params.get("pageSize"), 20);
+        int pageSize = NumberUtils.toInt(params.get("pageSize"), 10);
         Query query = new Query(pageNum, pageSize);
         // 查询异常信息
         String error = params.get(ConfigConstant.DATA_ERROR);
@@ -103,7 +103,7 @@ public class MonitorServiceImpl implements MonitorService {
     @Override
     public List<LogVo> queryLog(Map<String, String> params) {
         int pageNum = NumberUtils.toInt(params.get("pageNum"), 1);
-        int pageSize = NumberUtils.toInt(params.get("pageSize"), 20);
+        int pageSize = NumberUtils.toInt(params.get("pageSize"), 10);
         Query query = new Query(pageNum, pageSize);
         // 查询日志内容
         String json = params.get(ConfigConstant.CONFIG_MODEL_JSON);
