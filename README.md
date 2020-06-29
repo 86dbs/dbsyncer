@@ -29,7 +29,7 @@
     <p>驱动管理<p/>
     <ol>
         <li>首先，创建一个连接器。选择数据源类型，比如：Mysql，填写配置，保存</li>
-        <li>添加驱动。配置数据源和目标源（数据源：数据的发送端，目标源：数据接受端），保存</li>
+        <li>添加驱动。配置数据源和目标源（数据源：数据的发送端，目标源：数据接收端），保存</li>
         <li>模式支持全量同步（默认：全量复制）和增量同步（监听变化的数据）</li>
         <li>基本配置里面，添加映射关系。添加数据源表同步到目标源表关系</li>
         <li>单击映射关系，进入表字段详细页面，默认匹配相识字段，识别主键（主键用于增量同步，更新和删除使用），保存</li>
@@ -49,6 +49,45 @@
         <li>参数>>修改管理员密码</li>
         <li>注销</li>
     </ol>
+    <h3>增量同步配置</h3>
+    <table>
+        <tbody>
+            <tr>
+                <td><b>类型</b></td>
+                <td><b>配置</b></td>
+                <td><b>原理</b></td>
+            </tr>
+            <tr>
+                <td>
+                    <p>Mysql</p>
+                    <p>开启Binlog功能，my.ini配置:</p>
+                </td>
+                <td>
+                    <p># 服务唯一ID</p>
+                    <p>server_id=1</p>
+                    <p>log-bin=mysql_bin</p>
+                    <p>binlog-format=ROW</p>
+                    <p>max_binlog_cache_size = 256M</p>
+                    <p>max_binlog_size = 512M</p>
+                    <p>expire_logs_days = 7</p>
+                    <p># 多个库使用英文逗号“,”拼接</p>
+                    <p>replicate-do-db=test</p>
+                </td>
+                <td>Dump Binlog二进制日志。Master同步Slave, 创建IO线程读取数据，写入relaylog，基于消息订阅捕获增量数据。</td>
+            </tr>
+            <tr>
+                <td>
+                    <p>Oracle</p>
+                    <p>授予账号监听权限:</p>
+                </td>
+                <td>
+                    <p>grant change notification to AE86</p>
+                    <p>要求目标源表必须定义一个字段，用于接收rowid值，来实现增删改操作</p>
+                </td>
+                <td>CDN注册订阅。监听增删改事件，得到rowid，根据rowid执行SQL查询，得到变化数据</td>
+            </tr>
+        </tbody>
+    </table>
 </div>
 
 <div>
