@@ -45,10 +45,66 @@
     </ol>
     <p>其他<p/>
     <ol>
-        <li>参数>>修改系统参数</li>
-        <li>参数>>修改管理员密码</li>
+        <li>参数>修改系统参数</li>
+        <li>参数>修改管理员密码</li>
         <li>注销</li>
     </ol>
+    <h3>应用场景</h3>
+    <table>
+        <tbody>
+            <tr>
+                <td colspan="2" rowspan="3">Every point is a DataBase</td>
+                <td colspan="4" align="center">目标源</td>
+            </tr>
+            <tr>
+                <td colspan="2" align="center">全量</td>
+                <td colspan="2" align="center">增量</td>
+            </tr>
+            <tr>
+                <td>mysql</td>
+                <td>oracle</td>
+                <td>mysql</td>
+                <td>oracle</td>
+            </tr>
+            <tr>
+                <td rowspan="4">数据源</td>
+                <td>mysql</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+            </tr>
+            <tr>
+                <td>oracle</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+            </tr>
+            <tr>
+                <td>dql_mysql</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+            </tr>
+            <tr>
+                <td>dql_oracle</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+            </tr>
+            <tr>
+                <td>最近计划：</td>
+                <td colspan="5">结构化类型：（sql_server）; 半结构化类型：（redis、kafka、es、postgrep）</td>
+            </tr>
+            <tr>
+                <td>长期计划：</td>
+                <td colspan="5">半结构化类型：（网页、日志、JSON、XML、Word）; 非结构化类型：图片、图像、社区消息，新闻</td>
+            </tr>
+        </tbody>
+    </table>
     <h3>增量同步配置</h3>
     <table>
         <tbody>
@@ -110,10 +166,6 @@
     <h3>流程图</h3>
     <p align="center">
         <img src="http://assets.processon.com/chart_image/5d53b405e4b09965fac2ae27.png" />
-    </p>
-    <h3>部署图</h3>
-    <p align="center">
-        <img src="http://assets.processon.com/chart_image/5d63b0bce4b0ac2b61877037.png" />
     </p>
 </div>
 
