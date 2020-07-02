@@ -11,20 +11,6 @@
 </div>
 
 <div>
-    <p>运行环境</p>
-    <ol>
-        <li><a target="_blank" href="https://gitee.com/ghi/dbsyncer/releases">DBSyncer-1.0.0-Alpha.zip</a>（安装包）</li>
-        <li><a target="_blank" href="https://www.oracle.com/java/technologies/jdk8-downloads.html">JRE 1.8 +</a></li>
-        <li><a target="_blank" href="http://apache.fayea.com/zookeeper/stable/">Zookeeper - 3.5.5</a> （高可用模式下需要）</li>
-    </ol>
-    <h3>安装说明</h3>
-    <ol>
-        <li>安装JRE1.8版本以上（省略详细）</li>
-        <li>下载安装包DBSyncer-X.X.X-RELEASE.zip</li>
-        <li>解压，进入目录bin，启动脚本startup.bat（Windows）/startup.sh（Linux）</li>
-        <li>打开浏览器，输入访问地址：http://127.0.0.1:18686</li>
-        <li>默认账号和密码：admin/admin</li>
-    </ol>
     <h3>应用场景</h3>
     <table>
         <tbody>
@@ -81,6 +67,21 @@
             </tr>
         </tbody>
     </table>
+    <h3>安装说明</h3>
+    <p>准备</p>
+    <ol>
+        <li><a target="_blank" href="https://gitee.com/ghi/dbsyncer/releases">DBSyncer-1.0.0-Alpha.zip</a>（安装包）</li>
+        <li><a target="_blank" href="https://www.oracle.com/java/technologies/jdk8-downloads.html">JRE 1.8 +</a></li>
+        <li><a target="_blank" href="http://apache.fayea.com/zookeeper/stable/">Zookeeper - 3.5.5</a> （高可用模式下需要）</li>
+    </ol>
+    <p>步骤</p>
+    <ol>
+        <li>安装JRE1.8版本以上（省略详细）</li>
+        <li>下载安装包DBSyncer-X.X.X-RELEASE.zip</li>
+        <li>解压，进入目录bin，启动脚本startup.bat（Windows）/startup.sh（Linux）</li>
+        <li>打开浏览器，输入访问地址：http://127.0.0.1:18686</li>
+        <li>默认账号和密码：admin/admin</li>
+    </ol>
     <h3>增量同步配置</h3>
     <table>
         <tbody>
