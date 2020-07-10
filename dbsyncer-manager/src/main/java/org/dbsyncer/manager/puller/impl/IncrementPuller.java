@@ -202,6 +202,11 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
         }
 
+        @Override
+        public void interruptException(Exception e) {
+            errorEvent(e);
+            close(metaId);
+        }
     }
 
     /**

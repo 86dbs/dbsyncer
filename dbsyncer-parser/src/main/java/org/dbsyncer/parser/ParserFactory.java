@@ -373,7 +373,7 @@ public class ParserFactory implements Parser {
                         result.getFail().getAndAdd(w.getFail().get());
                         result.getError().append(w.getError());
                     } catch (Exception e) {
-                        result.getError().append(e.getMessage()).append("\r\n");
+                        result.getError().append(e.getMessage()).append(System.lineSeparator());
                     } finally {
                         latch.countDown();
                     }

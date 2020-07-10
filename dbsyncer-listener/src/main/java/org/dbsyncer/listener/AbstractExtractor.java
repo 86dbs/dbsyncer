@@ -67,6 +67,13 @@ public abstract class AbstractExtractor implements Extractor {
         }
     }
 
+    @Override
+    public void interruptException(Exception e) {
+        if (!CollectionUtils.isEmpty(watcher)) {
+            watcher.forEach(w -> w.interruptException(e));
+        }
+    }
+
     public void setConnectorConfig(ConnectorConfig connectorConfig) {
         this.connectorConfig = connectorConfig;
     }
