@@ -6,6 +6,7 @@ import org.dbsyncer.storage.strategy.Strategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.util.Assert;
@@ -19,7 +20,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2019/11/16 1:28
  */
-public abstract class AbstractStorageService implements StorageService, ApplicationContextAware {
+public abstract class AbstractStorageService implements StorageService, ApplicationContextAware, DisposableBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

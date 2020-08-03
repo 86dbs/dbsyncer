@@ -33,8 +33,8 @@ import java.util.stream.Collectors;
  * @version 1.0.0
  * @date 2019/9/10 23:22
  */
-@Component("diskStorageServiceImpl")
-@ConditionalOnProperty(value = "dbsyncer.storage.support.disk")
+@Component
+@ConditionalOnProperty(value = "dbsyncer.storage.support.disk", havingValue = "true")
 public class DiskStorageServiceImpl extends AbstractStorageService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -160,4 +160,10 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         return map.get(collectionId);
     }
 
+    @Override
+    public void destroy() throws Exception {
+        for (Map.Entry<String, Shard> m: map.entrySet()) {
+            m.getValue().close();
+        }
+    }
 }

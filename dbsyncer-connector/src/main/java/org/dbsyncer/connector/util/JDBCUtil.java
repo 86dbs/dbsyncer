@@ -12,7 +12,7 @@ public abstract class JDBCUtil {
 
     private final static Logger logger = LoggerFactory.getLogger(JDBCUtil.class);
 
-    public static Connection getConnection(String driver, String url, String username, String password) throws ClassNotFoundException, SQLException {
+    public static Connection getConnection(String driver, String url, String username, String password) throws SQLException {
         // com.mysql.jdbc.JDBC4Connection 
         // 不需要显式调用 Class.forName(driver), DriverManager.getConnection会自动加载合适的驱动
         return DriverManager.getConnection(url, username, password);
@@ -42,17 +42,5 @@ public abstract class JDBCUtil {
         close(statement);
         close(conn);
     }
-
-    //    public static void main(String[] args) {
-    //        String url = "jdbc:mysql://10.238.206.222:13306/test?seUnicode=true&characterEncoding=UTF8&useSSL=true";
-    //        String username = "root";
-    //        String password = "123";
-    //        Connection connection = JDBCUtil.getConnection("com.mysql.jdbc.Driver", url, username, password);
-    //        if(connection!=null){
-    //            JDBCUtil.close(connection);
-    //        }else{
-    //            logger.error("can not connect url.");
-    //        }
-    //    }
 
 }
