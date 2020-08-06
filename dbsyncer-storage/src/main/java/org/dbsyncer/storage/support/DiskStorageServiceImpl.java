@@ -90,14 +90,14 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
     @Override
     public void insert(String collectionId, Map params) throws IOException {
         createShardIfNotExist(collectionId);
-        Document doc = ParamsUtil.convertParams2Doc(params);
+        Document doc = ParamsUtil.convertConfig2Doc(params);
         map.get(collectionId).insert(doc);
     }
 
     @Override
     public void update(String collectionId, Map params) throws IOException {
         createShardIfNotExist(collectionId);
-        Document doc = ParamsUtil.convertParams2Doc(params);
+        Document doc = ParamsUtil.convertConfig2Doc(params);
         IndexableField field = doc.getField(ConfigConstant.CONFIG_MODEL_ID);
         map.get(collectionId).update(new Term(ConfigConstant.CONFIG_MODEL_ID, field.stringValue()), doc);
     }
