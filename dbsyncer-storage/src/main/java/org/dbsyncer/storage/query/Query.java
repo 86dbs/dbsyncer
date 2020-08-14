@@ -1,5 +1,7 @@
 package org.dbsyncer.storage.query;
 
+import org.dbsyncer.storage.enums.StorageEnum;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,6 +11,13 @@ import java.util.List;
  * @date 2019/11/16 22:56
  */
 public class Query {
+
+    /**
+     * {@link StorageEnum}
+     */
+    private String type;
+
+    private String collection;
 
     private List<Param> params;
 
@@ -32,6 +41,22 @@ public class Query {
 
     public void put(String key, String value, boolean highlighter) {
         params.add(new Param(key, value, highlighter));
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getCollection() {
+        return collection;
+    }
+
+    public void setCollection(String collection) {
+        this.collection = collection;
     }
 
     public List<Param> getParams() {

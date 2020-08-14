@@ -21,9 +21,10 @@ public interface Strategy {
     /**
      * 创建集合ID
      *
+     * @param separator
      * @param id
      * @return
      */
-    String createCollectionId(String id);
+    String createCollectionId(String separator, String id);
 
 }

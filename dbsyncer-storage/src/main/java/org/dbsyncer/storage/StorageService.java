@@ -13,9 +13,7 @@ import java.util.Map;
  */
 public interface StorageService {
 
-    List<Map> query(StorageEnum type, Query query);
-
-    List<Map> query(StorageEnum type, Query query, String collectionId);
+    List<Map> query(Query query);
 
     void add(StorageEnum type, Map params);
 

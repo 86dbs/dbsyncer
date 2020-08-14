@@ -9,6 +9,7 @@ import org.dbsyncer.connector.mysql.MysqlConnector;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.connector.util.JDBCUtil;
 import org.dbsyncer.storage.AbstractStorageService;
+import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
@@ -84,7 +85,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             field.setAccessible(true);
             database = (String) field.get(delegate);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            throw new StorageException(e.getMessage());
         } finally {
             JDBCUtil.close(conn);
         }
@@ -94,45 +95,45 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     }
 
     @Override
-    public List<Map> select(String table, Query query) {
-        getExecutor(table, StorageEnum.CONFIG.getType());
+    public List<Map> select(Query query) {
+        getExecutor(query.getType(), query.getCollection());
 
         return null;
     }
 
     @Override
-    public void insert(String table, Map params) {
-        getExecutor(table, StorageEnum.CONFIG.getType());
+    public void insert(StorageEnum type, String table, Map params) {
+        getExecutor(type.getType(), table);
 
     }
 
     @Override
-    public void update(String table, Map params) {
-        getExecutor(table, StorageEnum.CONFIG.getType());
+    public void update(StorageEnum type, String table, Map params) {
+        getExecutor(type.getType(), table);
 
     }
 
     @Override
-    public void delete(String table, String id) {
-        getExecutor(table, StorageEnum.CONFIG.getType());
+    public void delete(StorageEnum type, String table, String id) {
+        getExecutor(type.getType(), table);
 
     }
 
     @Override
-    public void deleteAll(String table) {
-        getExecutor(table, StorageEnum.CONFIG.getType());
+    public void deleteAll(StorageEnum type, String table) {
+        getExecutor(type.getType(), table);
 
     }
 
     @Override
-    public void insertLog(String table, Map<String, Object> params) {
-        getExecutor(table, StorageEnum.LOG.getType());
+    public void insertLog(StorageEnum type, String table, Map<String, Object> params) {
+        getExecutor(type.getType(), table);
 
     }
 
     @Override
-    public void insertData(String table, List<Map> list) {
-        getExecutor(table, StorageEnum.DATA.getType());
+    public void insertData(StorageEnum type, String table, List<Map> list) {
+        getExecutor(type.getType(), table);
 
     }
 
@@ -141,7 +142,12 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         DatabaseUtil.close(jdbcTemplate);
     }
 
-    private Executor getExecutor(String table, String group) {
+    @Override
+    protected String getSeparator() {
+        return "_";
+    }
+
+    private Executor getExecutor(String group, String table) {
         // 获取模板
         Executor executor = tables.get(group);
         Assert.notNull(executor, "未知的存储类型");

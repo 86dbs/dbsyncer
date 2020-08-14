@@ -26,8 +26,8 @@ public final class DataTemplate {
     @Autowired
     private StorageService storageService;
 
-    public List<Map> query(StorageEnum type, Query query, String collectionId) {
-        return storageService.query(type, query, collectionId);
+    public List<Map> query(Query query) {
+        return storageService.query(query);
     }
 
     public void clear(StorageEnum type, String collectionId) {
