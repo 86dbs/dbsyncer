@@ -237,7 +237,7 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
 
     @Override
     public List<Map> queryData(Query query, String collectionId) {
-        query.setType(StorageEnum.DATA.getType());
+        query.setType(StorageEnum.DATA);
         query.setCollection(collectionId);
         return dataTemplate.query(query);
     }
@@ -249,7 +249,7 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
 
     @Override
     public List<Map> queryLog(Query query) {
-        query.setType(StorageEnum.LOG.getType());
+        query.setType(StorageEnum.LOG);
         return dataTemplate.query(query);
     }
 

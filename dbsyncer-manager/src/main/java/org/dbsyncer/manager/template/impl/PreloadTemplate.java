@@ -54,7 +54,7 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
 
     public void execute(PreloadConfig config) {
         Query query = new Query();
-        query.setType(StorageEnum.CONFIG.getType());
+        query.setType(StorageEnum.CONFIG);
         String filterType = config.getFilterType();
         query.put(ConfigConstant.CONFIG_MODEL_TYPE, filterType);
         List<Map> list = storageService.query(query);

@@ -15,7 +15,7 @@ public class Query {
     /**
      * {@link StorageEnum}
      */
-    private String type;
+    private StorageEnum type;
 
     private String collection;
 
@@ -43,11 +43,11 @@ public class Query {
         params.add(new Param(key, value, highlighter));
     }
 
-    public String getType() {
+    public StorageEnum getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(StorageEnum type) {
         this.type = type;
     }
 
