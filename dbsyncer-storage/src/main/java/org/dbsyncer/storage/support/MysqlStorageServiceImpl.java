@@ -55,7 +55,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     private static final String PREFIX_TABLE      = "dbsyncer_";
     private static final String SHOW_TABLE        = "show tables where Tables_in_%s = \"%s\"";
-    private static final String TRUNCATE_TABLE    = "TRUNCATE TABLE \"%s\"";
+    private static final String TRUNCATE_TABLE    = "TRUNCATE TABLE %s";
     private static final String PK                = ConfigConstant.CONFIG_MODEL_ID;
     private static final String TABLE_CREATE_TIME = "create_time";
     private static final String TABLE_UPDATE_TIME = "update_time";
@@ -146,7 +146,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void deleteAll(StorageEnum type, String table) {
-        String sql = String.format(TRUNCATE_TABLE, table);
+        String sql = String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(table));
         jdbcTemplate.execute(sql);
     }
 
@@ -210,8 +210,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                 return e;
             }
             // 不存在
-            Executor newExecutor = new Executor();
-            BeanUtils.copyProperties(executor, newExecutor);
+            Executor newExecutor = new Executor(executor.getGroup(), executor.getFieldPairs(), executor.dynamicTableName);
             createTableIfNotExist(table, newExecutor);
 
             tables.putIfAbsent(table, newExecutor);
@@ -362,9 +361,6 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         private StorageEnum     group;
         private List<FieldPair> fieldPairs;
         private boolean         dynamicTableName;
-
-        public Executor() {
-        }
 
         public Executor(StorageEnum group, List<FieldPair> fieldPairs) {
             this.group = group;
