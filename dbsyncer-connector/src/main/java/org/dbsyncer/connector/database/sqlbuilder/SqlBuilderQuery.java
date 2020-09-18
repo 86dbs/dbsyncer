@@ -1,8 +1,6 @@
 package org.dbsyncer.connector.database.sqlbuilder;
 
 import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.database.Database;
 
 import java.util.List;
@@ -16,6 +14,11 @@ public class SqlBuilderQuery implements SqlBuilder {
 
     @Override
     public String buildSql(String tableName, String pk, List<String> filedNames, String queryFilter, String quotation, Database database) {
+        // 分页语句
+        return database.getPageSql(tableName, pk, buildStandardSql(tableName, pk, filedNames, queryFilter, quotation));
+    }
+
+    public String buildStandardSql(String tableName, String pk, List<String> filedNames, String queryFilter, String quotation) {
         StringBuilder sql = new StringBuilder();
         int size = filedNames.size();
         int end = size - 1;
@@ -33,8 +36,7 @@ public class SqlBuilderQuery implements SqlBuilder {
         if (StringUtils.isNotBlank(queryFilter)) {
             sql.append(queryFilter);
         }
-        // 分页语句
-        return database.getPageSql(tableName, pk, sql.toString());
+        return sql.toString();
     }
 
 }

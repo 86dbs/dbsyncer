@@ -136,7 +136,9 @@ public class BinlogRemoteClient {
         // exception thrown elsewhere in the code.
         this.transport.disconnect();
 
-        this.binlogParser.stop(timeout, unit);
+        if(null != this.binlogParser){
+            this.binlogParser.stop(timeout, unit);
+        }
     }
 
     public void stopQuietly() throws Exception {

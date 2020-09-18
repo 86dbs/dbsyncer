@@ -213,7 +213,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             // 记录错误数据
             result.getFailData().addAll(data);
             result.getFail().set(size);
-            result.getError().append(e.getMessage()).append("\r\n");
+            result.getError().append(e.getMessage()).append(System.lineSeparator());
             logger.error(e.getMessage());
         } finally {
             // 释放连接
@@ -268,7 +268,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             // 记录错误数据
             result.getFailData().add(data);
             result.getFail().set(1);
-            result.getError().append(e.getMessage()).append("\r\n");
+            result.getError().append(e.getMessage()).append(System.lineSeparator());
             logger.error(e.getMessage());
         } finally {
             // 释放连接

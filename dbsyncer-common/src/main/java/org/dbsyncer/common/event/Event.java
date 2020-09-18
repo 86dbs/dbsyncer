@@ -44,4 +44,11 @@ public interface Event {
      */
     void errorEvent(Exception e);
 
+    /**
+     * 中断异常
+     *
+     * @param e
+     */
+    void interruptException(Exception e);
+
 }

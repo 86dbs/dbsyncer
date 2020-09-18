@@ -5,8 +5,6 @@ import org.dbsyncer.storage.strategy.Strategy;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import java.io.File;
-
 /**
  * 数据：全量或增量数据
  *
@@ -17,12 +15,10 @@ import java.io.File;
 @Component
 public class DataStrategy implements Strategy {
 
-    private static final String COLLECTION_ID = StorageEnum.DATA.getType() + File.separator;
-
     @Override
-    public String createCollectionId(String id) {
+    public String createCollectionId(String separator, String id) {
         Assert.hasText(id, "Id can not be empty.");
         // 同步数据较多，根据不同的驱动生成集合ID: data/123
-        return COLLECTION_ID + id;
+        return new StringBuilder(StorageEnum.DATA.getType()).append(separator).append(id).toString();
     }
 }

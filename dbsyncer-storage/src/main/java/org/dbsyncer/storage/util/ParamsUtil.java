@@ -43,7 +43,7 @@ import java.util.Map;
 public abstract class ParamsUtil {
     private ParamsUtil(){}
 
-    public static Document convertParams2Doc(Map params) {
+    public static Document convertConfig2Doc(Map params) {
         Assert.notNull(params, "Params can not be null.");
         Document doc = new Document();
         String id = (String) params.get(ConfigConstant.CONFIG_MODEL_ID);
@@ -56,6 +56,7 @@ public abstract class ParamsUtil {
         doc.add(new StringField(ConfigConstant.CONFIG_MODEL_ID, id, Field.Store.YES));
         doc.add(new StringField(ConfigConstant.CONFIG_MODEL_TYPE, type, Field.Store.YES));
         doc.add(new TextField(ConfigConstant.CONFIG_MODEL_NAME, name, Field.Store.YES));
+        // 配置信息
         doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_JSON, json));
         // 创建时间(不需要存储)
         doc.add(new LongPoint(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));

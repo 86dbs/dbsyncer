@@ -33,8 +33,8 @@ import java.util.stream.Collectors;
  * @version 1.0.0
  * @date 2019/9/10 23:22
  */
-@Component("diskStorageServiceImpl")
-@ConditionalOnProperty(value = "dbsyncer.storage.support.disk")
+@Component
+@ConditionalOnProperty(value = "dbsyncer.storage.support.disk", havingValue = "true")
 public class DiskStorageServiceImpl extends AbstractStorageService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -59,12 +59,12 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
     }
 
     @Override
-    public List<Map> select(String collectionId, Query query) throws IOException {
-        Shard shard = map.get(collectionId);
+    public List<Map> select(Query query) throws IOException {
+        Shard shard = map.get(query.getCollection());
 
         // 检查是否存在历史
         if (null == shard) {
-            shard = cacheShardIfExist(collectionId);
+            shard = cacheShardIfExist(query.getCollection());
         }
 
         if (null != shard) {
@@ -79,7 +79,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
                 BooleanQuery.Builder builder = new BooleanQuery.Builder();
                 params.forEach(p -> builder.add(new TermQuery(new Term(p.getKey(), p.getValue())), BooleanClause.Occur.MUST));
                 BooleanQuery q = builder.build();
-                return shard.query(new Option(q, query.getParams()), pageNum, pageSize, sort);
+                return shard.query(new Option(q, params), pageNum, pageSize, sort);
             }
 
             return shard.query(new Option(new MatchAllDocsQuery()), pageNum, pageSize, sort);
@@ -88,49 +88,49 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
     }
 
     @Override
-    public void insert(String collectionId, Map params) throws IOException {
-        createShardIfNotExist(collectionId);
-        Document doc = ParamsUtil.convertParams2Doc(params);
-        map.get(collectionId).insert(doc);
+    public void insert(StorageEnum type, String collection, Map params) throws IOException {
+        createShardIfNotExist(collection);
+        Document doc = ParamsUtil.convertConfig2Doc(params);
+        map.get(collection).insert(doc);
     }
 
     @Override
-    public void update(String collectionId, Map params) throws IOException {
-        createShardIfNotExist(collectionId);
-        Document doc = ParamsUtil.convertParams2Doc(params);
+    public void update(StorageEnum type, String collection, Map params) throws IOException {
+        createShardIfNotExist(collection);
+        Document doc = ParamsUtil.convertConfig2Doc(params);
         IndexableField field = doc.getField(ConfigConstant.CONFIG_MODEL_ID);
-        map.get(collectionId).update(new Term(ConfigConstant.CONFIG_MODEL_ID, field.stringValue()), doc);
+        map.get(collection).update(new Term(ConfigConstant.CONFIG_MODEL_ID, field.stringValue()), doc);
     }
 
     @Override
-    public void delete(String collectionId, String id) throws IOException {
-        createShardIfNotExist(collectionId);
-        map.get(collectionId).delete(new Term(ConfigConstant.CONFIG_MODEL_ID, id));
+    public void delete(StorageEnum type, String collection, String id) throws IOException {
+        createShardIfNotExist(collection);
+        map.get(collection).delete(new Term(ConfigConstant.CONFIG_MODEL_ID, id));
     }
 
     @Override
-    public void deleteAll(String collectionId) throws IOException {
+    public void deleteAll(StorageEnum type, String collection) throws IOException {
         synchronized (this){
-            Shard shard = map.get(collectionId);
+            Shard shard = map.get(collection);
             if (null != shard) {
                 shard.deleteAll();
-                map.remove(collectionId);
+                map.remove(collection);
             }
         }
     }
 
     @Override
-    public void insertLog(String collectionId, Map<String, Object> params) throws IOException {
-        createShardIfNotExist(collectionId);
+    public void insertLog(StorageEnum type, String collection, Map<String, Object> params) throws IOException {
+        createShardIfNotExist(collection);
         Document doc = ParamsUtil.convertLog2Doc(params);
-        map.get(collectionId).insert(doc);
+        map.get(collection).insert(doc);
     }
 
     @Override
-    public void insertData(String collectionId, List<Map> list) throws IOException {
-        createShardIfNotExist(collectionId);
+    public void insertData(StorageEnum type, String collection, List<Map> list) throws IOException {
+        createShardIfNotExist(collection);
         List<Document> docs = list.parallelStream().map(r -> ParamsUtil.convertData2Doc(r)).collect(Collectors.toList());
-        map.get(collectionId).insertBatch(docs);
+        map.get(collection).insertBatch(docs);
     }
 
     /**
@@ -160,4 +160,10 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         return map.get(collectionId);
     }
 
+    @Override
+    public void destroy() throws Exception {
+        for (Map.Entry<String, Shard> m: map.entrySet()) {
+            m.getValue().close();
+        }
+    }
 }
