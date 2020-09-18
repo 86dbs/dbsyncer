@@ -19,7 +19,6 @@ import org.dbsyncer.storage.query.Param;
 import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -55,8 +54,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     private static final String PREFIX_TABLE      = "dbsyncer_";
     private static final String SHOW_TABLE        = "show tables where Tables_in_%s = \"%s\"";
-    private static final String TRUNCATE_TABLE    = "TRUNCATE TABLE %s";
-    private static final String PK                = ConfigConstant.CONFIG_MODEL_ID;
+    private static final String DROP_TABLE        = "DROP TABLE %s";
     private static final String TABLE_CREATE_TIME = "create_time";
     private static final String TABLE_UPDATE_TIME = "update_time";
 
@@ -119,11 +117,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void insert(StorageEnum type, String table, Map params) {
-        Executor executor = getExecutor(type, table);
-        String sql = executor.getInsert();
-        List<Object> args = getParams(executor, params);
-        int insert = jdbcTemplate.update(sql, args.toArray());
-        Assert.isTrue(insert > 0, "insert failed");
+        executeInsert(type, table, params);
     }
 
     @Override
@@ -146,20 +140,18 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void deleteAll(StorageEnum type, String table) {
-        String sql = String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(table));
+        String sql = String.format(DROP_TABLE, PREFIX_TABLE.concat(table));
         jdbcTemplate.execute(sql);
     }
 
     @Override
     public void insertLog(StorageEnum type, String table, Map<String, Object> params) {
-        getExecutor(type, table);
-
+        executeInsert(type, table, params);
     }
 
     @Override
     public void insertData(StorageEnum type, String table, List<Map> list) {
-        getExecutor(type, table);
-
+        executeInsert(type, table, list);
     }
 
     @Override
@@ -172,8 +164,44 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         return "_";
     }
 
+    private int executeInsert(StorageEnum type, String table, Map params) {
+        Executor executor = getExecutor(type, table);
+        String sql = executor.getInsert();
+        List<Object> args = getParams(executor, params);
+        int insert = jdbcTemplate.update(sql, args.toArray());
+        if (insert < 1) {
+            logger.error("table:{}, params:{}");
+            throw new StorageException("insert failed");
+        }
+        return insert;
+    }
+
+    private void executeInsert(StorageEnum type, String table, List<Map> list) {
+
+    }
+
     private List<Object> getParams(Executor executor, Map params) {
         return executor.getFieldPairs().stream().map(p -> p.convert(params.get(p.labelName))).collect(Collectors.toList());
+    }
+
+    private Executor getExecutor(StorageEnum type, String table) {
+        // 获取模板
+        Executor executor = tables.get(type.getType());
+        Assert.notNull(executor, "未知的存储类型");
+
+        synchronized (tables) {
+            // 检查本地缓存
+            Executor e = tables.get(table);
+            if (tables.containsKey(table)) {
+                return e;
+            }
+            // 不存在
+            Executor newExecutor = new Executor(executor.getGroup(), executor.getFieldPairs(), executor.dynamicTableName);
+            createTableIfNotExist(table, newExecutor);
+
+            tables.putIfAbsent(table, newExecutor);
+            return newExecutor;
+        }
     }
 
     private String buildQuerySql(Query query, Executor executor, List<Object> args) {
@@ -196,26 +224,6 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         args.add((query.getPageNum() - 1) * query.getPageSize());
         args.add(query.getPageSize());
         return sql.toString();
-    }
-
-    private Executor getExecutor(StorageEnum type, String table) {
-        // 获取模板
-        Executor executor = tables.get(type.getType());
-        Assert.notNull(executor, "未知的存储类型");
-
-        synchronized (tables) {
-            // 检查本地缓存
-            Executor e = tables.get(table);
-            if (tables.containsKey(table)) {
-                return e;
-            }
-            // 不存在
-            Executor newExecutor = new Executor(executor.getGroup(), executor.getFieldPairs(), executor.dynamicTableName);
-            createTableIfNotExist(table, newExecutor);
-
-            tables.putIfAbsent(table, newExecutor);
-            return newExecutor;
-        }
     }
 
     private void initTable() {
@@ -271,11 +279,12 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             jdbcTemplate.execute(ddl);
         }
 
+        String pk = ConfigConstant.CONFIG_MODEL_ID;
         List<String> fieldName = executor.getFieldPairs().stream().map(p -> p.columnName).collect(Collectors.toList());
-        String query = new SqlBuilderQuery().buildStandardSql(table, PK, fieldName, "", "");
-        String insert = SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(table, PK, fieldName, "", "", connector);
-        String update = SqlBuilderEnum.UPDATE.getSqlBuilder().buildSql(table, PK, fieldName, "", "", connector);
-        String delete = SqlBuilderEnum.DELETE.getSqlBuilder().buildSql(table, PK, fieldName, "", "", connector);
+        String query = new SqlBuilderQuery().buildStandardSql(table, pk, fieldName, "", "");
+        String insert = SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(table, pk, fieldName, "", "", connector);
+        String update = SqlBuilderEnum.UPDATE.getSqlBuilder().buildSql(table, pk, fieldName, "", "", connector);
+        String delete = SqlBuilderEnum.DELETE.getSqlBuilder().buildSql(table, pk, fieldName, "", "", connector);
         executor.setQuery(query).setInsert(insert).setUpdate(update).setDelete(delete);
     }
 
