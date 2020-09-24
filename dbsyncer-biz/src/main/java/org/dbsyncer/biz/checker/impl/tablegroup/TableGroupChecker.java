@@ -115,17 +115,17 @@ public class TableGroupChecker extends AbstractChecker {
     private Table getTable(String connectorId, String tableName) {
         MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接器表信息.");
-        String connectorType = manager.getConnector(connectorId).getConfig().getConnectorType();
         // Oralce 监听需要ROWID字段
-        if(ConnectorEnum.isOracle(connectorType)){
-            List<Field> column = metaInfo.getColumn();
-            List<Field> list = new ArrayList<>();
-            list.add(new Field("ROWID", "VARCHAR2",12));
-            list.addAll(column);
-
-            column.clear();
-            column.addAll(list);
-        }
+        //String connectorType = manager.getConnector(connectorId).getConfig().getConnectorType();
+        //if(ConnectorEnum.isOracle(connectorType)){
+        //    List<Field> column = metaInfo.getColumn();
+        //    List<Field> list = new ArrayList<>();
+        //    list.add(new Field("ROWID", "VARCHAR2",12));
+        //    list.addAll(column);
+        //
+        //    column.clear();
+        //    column.addAll(list);
+        //}
         return new Table().setName(tableName).setColumn(metaInfo.getColumn());
     }
 
