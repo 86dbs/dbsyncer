@@ -2,6 +2,7 @@ package org.dbsyncer.listener.mysql;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.AbstractExtractor;
@@ -185,7 +186,7 @@ public class MysqlExtractor extends AbstractExtractor {
                     List<Object> after = new ArrayList<>();
                     addAll(before, p.getBefore().getColumns());
                     addAll(after, p.getAfter().getColumns());
-                    changedLogEvent(tableName, ConnectorConstant.OPERTION_UPDATE, before, after);
+                    changedLogEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_UPDATE, before, after));
                     break;
                 }
                 return;
@@ -198,7 +199,7 @@ public class MysqlExtractor extends AbstractExtractor {
                 for (Row row : rows) {
                     List<Object> after = new ArrayList<>();
                     addAll(after, row.getColumns());
-                    changedLogEvent(tableName, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after);
+                    changedLogEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after));
                     break;
                 }
                 return;
@@ -211,7 +212,7 @@ public class MysqlExtractor extends AbstractExtractor {
                 for (Row row : rows) {
                     List<Object> before = new ArrayList<>();
                     addAll(before, row.getColumns());
-                    changedLogEvent(tableName, ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST);
+                    changedLogEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST));
                     break;
                 }
                 return;

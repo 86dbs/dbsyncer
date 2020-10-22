@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.listener.oracle.dcn;
 
+import org.dbsyncer.common.event.RowChangedEvent;
+
 /**
  * 行变更监听器
  *
@@ -12,6 +14,6 @@ package org.dbsyncer.listener.oracle.dcn;
  */
 public interface RowEventListener {
 
-    void onEvents(RowChangeEvent event);
+    void onEvents(RowChangedEvent rowChangedEvent);
 
 }

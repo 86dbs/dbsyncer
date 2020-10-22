@@ -7,6 +7,8 @@ import oracle.jdbc.OracleDriver;
 import oracle.jdbc.OracleStatement;
 import oracle.jdbc.dcn.*;
 import oracle.jdbc.driver.OracleConnection;
+import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +110,7 @@ public class DBChangeNotification {
         }
     }
 
-    private void close(ResultSet rs){
+    private void close(ResultSet rs) {
         if (null != rs) {
             try {
                 rs.close();
@@ -204,35 +206,45 @@ public class DBChangeNotification {
             for (TableChangeDescription td : tds) {
                 RowChangeDescription[] rds = td.getRowChangeDescription();
                 for (RowChangeDescription rd : rds) {
-                    RowChangeDescription.RowOperation opr = rd.getRowOperation();
-                    parseEvent(tables.get(td.getObjectNumber()), rd.getRowid().stringValue(), opr);
+                    parseEvent(tables.get(td.getObjectNumber()), rd.getRowid().stringValue(), rd.getRowOperation());
                 }
             }
         }
 
         private void parseEvent(String tableName, String rowId, RowChangeDescription.RowOperation event) {
-            List<Object> data = new ArrayList<>();
-            data.add(rowId);
+            if (event.getCode() == TableChangeDescription.TableOperation.UPDATE.getCode()) {
+                RowChangedEvent rowChangedEvent = new RowChangedEvent(tableName, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, read(tableName, rowId), rowId);
+                listeners.forEach(e -> e.onEvents(rowChangedEvent));
 
-            if(event.getCode() != TableChangeDescription.TableOperation.DELETE.getCode()){
-                ResultSet rs = null;
-                try {
-                    rs = statement.executeQuery(String.format(QUERY_ROW_DATA_SQL, tableName, rowId));
-                    final int size = rs.getMetaData().getColumnCount();
-                    while (rs.next()) {
-                        for (int i = 1; i <= size; i++) {
-                            data.add(rs.getObject(i));
-                        }
-                    }
-                } catch (SQLException e) {
-                    logger.error(e.getMessage());
-                } finally {
-                    close(rs);
-                }
+            }else if(event.getCode() == TableChangeDescription.TableOperation.INSERT.getCode()){
+                RowChangedEvent rowChangedEvent = new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, read(tableName, rowId), rowId);
+                listeners.forEach(e -> e.onEvents(rowChangedEvent));
+
+            }else{
+                RowChangedEvent rowChangedEvent = new RowChangedEvent(tableName, ConnectorConstant.OPERTION_DELETE, Collections.EMPTY_LIST, Collections.EMPTY_LIST, rowId);
+                listeners.forEach(e -> e.onEvents(rowChangedEvent));
             }
-
-            listeners.forEach(e -> e.onEvents(new RowChangeEvent(tableName, event.getCode(), data)));
         }
+
+        private List<Object> read(String tableName, String rowId) {
+            List<Object> data = new ArrayList<>();
+            ResultSet rs = null;
+            try {
+                rs = statement.executeQuery(String.format(QUERY_ROW_DATA_SQL, tableName, rowId));
+                final int size = rs.getMetaData().getColumnCount();
+                while (rs.next()) {
+                    for (int i = 1; i <= size; i++) {
+                        data.add(rs.getObject(i));
+                    }
+                }
+            } catch (SQLException e) {
+                logger.error(e.getMessage());
+            } finally {
+                close(rs);
+            }
+            return data;
+        }
+
     }
 
 }

@@ -1,11 +1,15 @@
 package org.dbsyncer.manager.puller.impl;
 
+import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.event.Event;
+import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.Table;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
@@ -15,13 +19,17 @@ import org.dbsyncer.listener.quartz.QuartzExtractor;
 import org.dbsyncer.listener.quartz.ScheduledTaskJob;
 import org.dbsyncer.listener.quartz.ScheduledTaskService;
 import org.dbsyncer.manager.Manager;
-import org.dbsyncer.manager.config.ExtractorConfig;
 import org.dbsyncer.manager.config.FieldPicker;
 import org.dbsyncer.manager.puller.AbstractPuller;
 import org.dbsyncer.parser.Parser;
+import org.dbsyncer.parser.enums.PrimaryKeyMappingEnum;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.strategy.PrimaryKeyMappingStrategy;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,8 +151,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             QuartzExtractor extractor = listener.getExtractor(listenerType, QuartzExtractor.class);
             List<Map<String, String>> commands = list.stream().map(t -> t.getCommand()).collect(Collectors.toList());
 
-            ExtractorConfig config = new ExtractorConfig(connectorConfig, listenerConfig, meta.getMap(), new QuartzListener(mapping, list));
-            setExtractorConfig(extractor, config);
+            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new QuartzListener(mapping, list));
             extractor.setConnectorFactory(connectorFactory);
             extractor.setScheduledTaskService(scheduledTaskService);
             extractor.setCommands(commands);
@@ -155,35 +162,26 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         if (ListenerTypeEnum.isLog(listenerType)) {
             final String connectorType = connectorConfig.getConnectorType();
             AbstractExtractor extractor = listener.getExtractor(connectorType, AbstractExtractor.class);
+            PrimaryKeyMappingStrategy strategy = PrimaryKeyMappingEnum.getPrimaryKeyMappingStrategy(connectorType);
 
-            ExtractorConfig config = new ExtractorConfig(connectorConfig, listenerConfig, meta.getMap(), new LogListener(mapping, list));
-            setExtractorConfig(extractor, config);
+            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new LogListener(mapping, list, strategy));
             return extractor;
         }
         return null;
     }
 
-    private void setExtractorConfig(AbstractExtractor extractor, ExtractorConfig config) {
-        extractor.setConnectorConfig(config.getConnectorConfig());
-        extractor.setListenerConfig(config.getListenerConfig());
-        extractor.setMap(config.getMap());
-        extractor.addListener(config.getEvent());
+    private void setExtractorConfig(AbstractExtractor extractor, ConnectorConfig connector, ListenerConfig listener,
+                                    Map<String, String> map, Event event) {
+        extractor.setConnectorConfig(connector);
+        extractor.setListenerConfig(listener);
+        extractor.setMap(map);
+        extractor.addListener(event);
     }
 
     abstract class AbstractListener implements Event {
-        protected Mapping mapping;
-        protected String metaId;
+        protected Mapping       mapping;
+        protected String        metaId;
         protected AtomicBoolean changed = new AtomicBoolean();
-
-        @Override
-        public void changedLogEvent(String tableName, String event, List<Object> before, List<Object> after) {
-            // nothing to do
-        }
-
-        @Override
-        public void changedQuartzEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after) {
-            // nothing to do
-        }
 
         @Override
         public void flushEvent(Map<String, String> map) {
@@ -238,13 +236,15 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         }
 
         @Override
-        public void changedQuartzEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after) {
-            final FieldPicker picker = tablePicker.get(tableGroupIndex);
-            logger.info("监听数据=> tableName:{}, event:{}, before:{}, after:{}", picker.getTableGroup().getSourceTable().getName(), event, before, after);
+        public void changedQuartzEvent(RowChangedEvent rowChangedEvent) {
+            final FieldPicker picker = tablePicker.get(rowChangedEvent.getTableGroupIndex());
+            logger.info("监听数据=> tableName:{}, event:{}, before:{}, after:{}", picker.getTableGroup().getSourceTable().getName(),
+                    rowChangedEvent.getEvent(),
+                    rowChangedEvent.getBefore(),
+                    rowChangedEvent.getAfter());
 
             // 处理过程有异常向上抛
-            DataEvent data = new DataEvent(event, before, after);
-            parser.execute(mapping, picker.getTableGroup(), data);
+            parser.execute(mapping, picker.getTableGroup(), rowChangedEvent, null);
 
             // 标记有变更记录
             changed.compareAndSet(false, true);
@@ -275,30 +275,40 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
         private Map<String, List<FieldPicker>> tablePicker;
 
-        public LogListener(Mapping mapping, List<TableGroup> list) {
+        private PrimaryKeyMappingStrategy strategy;
+
+        public LogListener(Mapping mapping, List<TableGroup> list, PrimaryKeyMappingStrategy strategy) {
             this.mapping = mapping;
             this.metaId = mapping.getMetaId();
             this.tablePicker = new LinkedHashMap<>();
+            this.strategy = strategy;
             list.forEach(t -> {
                 final Table table = t.getSourceTable();
                 final String tableName = table.getName();
+                List<Field> pkList = t.getTargetTable().getColumn().stream().filter(field -> field.isPk()).collect(Collectors.toList());
                 tablePicker.putIfAbsent(tableName, new ArrayList<>());
                 TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, t);
-                tablePicker.get(tableName).add(new FieldPicker(group, group.getFilter(), table.getColumn(), group.getFieldMapping()));
+                tablePicker.get(tableName).add(new FieldPicker(group, pkList, group.getFilter(), table.getColumn(), group.getFieldMapping()));
             });
         }
 
         @Override
-        public void changedLogEvent(String tableName, String event, List<Object> before, List<Object> after) {
-            logger.info("监听数据=> tableName:{}, event:{}, before:{}, after:{}", tableName, event, before, after);
+        public void changedLogEvent(RowChangedEvent rowChangedEvent) {
+            logger.info("监听数据=> tableName:{}, event:{}, before:{}, after:{}, rowId:{}", rowChangedEvent.getTableName(),
+                    rowChangedEvent.getEvent(),
+                    rowChangedEvent.getBefore(), rowChangedEvent.getAfter(), rowChangedEvent.getRowId());
 
             // 处理过程有异常向上抛
-            List<FieldPicker> pickers = tablePicker.get(tableName);
+            List<FieldPicker> pickers = tablePicker.get(rowChangedEvent.getTableName());
             if (!CollectionUtils.isEmpty(pickers)) {
                 pickers.parallelStream().forEach(picker -> {
-                    DataEvent data = new DataEvent(event, picker.getColumns(before), picker.getColumns(after));
-                    if (picker.filter(data)) {
-                        parser.execute(mapping, picker.getTableGroup(), data);
+                    final Map<String, Object> before = picker.getColumns(rowChangedEvent.getBeforeData());
+                    final Map<String, Object> after = picker.getColumns(rowChangedEvent.getAfterData());
+                    if (picker.filter(StringUtils.equals(ConnectorConstant.OPERTION_DELETE, rowChangedEvent.getEvent()) ? before : after)) {
+                        rowChangedEvent.setBefore(before);
+                        rowChangedEvent.setAfter(after);
+                        rowChangedEvent.setPk(picker.getPk());
+                        parser.execute(mapping, picker.getTableGroup(), rowChangedEvent, strategy);
                     }
                 });
             }

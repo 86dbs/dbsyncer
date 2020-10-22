@@ -1,6 +1,7 @@
 package org.dbsyncer.listener.quartz;
 
 import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.UUIDUtil;
@@ -89,15 +90,15 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
             for (Map<String, Object> row : data) {
                 event = row.get(eventFieldName);
                 if (update.contains(event)) {
-                    changedQuartzEvent(index, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_MAP, row);
+                    changedQuartzEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_MAP, row));
                     continue;
                 }
                 if (insert.contains(event)) {
-                    changedQuartzEvent(index, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_MAP, row);
+                    changedQuartzEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_MAP, row));
                     continue;
                 }
                 if (delete.contains(event)) {
-                    changedQuartzEvent(index, ConnectorConstant.OPERTION_DELETE, row, Collections.EMPTY_MAP);
+                    changedQuartzEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_DELETE, row, Collections.EMPTY_MAP));
                     continue;
                 }
 

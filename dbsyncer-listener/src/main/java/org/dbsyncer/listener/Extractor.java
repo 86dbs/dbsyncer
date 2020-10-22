@@ -1,9 +1,7 @@
 package org.dbsyncer.listener;
 
 import org.dbsyncer.common.event.Event;
-
-import java.util.List;
-import java.util.Map;
+import org.dbsyncer.common.event.RowChangedEvent;
 
 public interface Extractor {
 
@@ -32,22 +30,16 @@ public interface Extractor {
     /**
      * 定时模式: 监听增量事件
      *
-     * @param tableGroupIndex
-     * @param event
-     * @param before
-     * @param after
+     * @param rowChangedEvent
      */
-    void changedQuartzEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after);
+    void changedQuartzEvent(RowChangedEvent rowChangedEvent);
 
     /**
      * 日志模式: 监听增量事件
      *
-     * @param tableName
-     * @param event
-     * @param before
-     * @param after
+     * @param rowChangedEvent
      */
-    void changedLogEvent(String tableName, String event, List<Object> before, List<Object> after);
+    void changedLogEvent(RowChangedEvent rowChangedEvent);
 
     /**
      * 刷新增量点事件
