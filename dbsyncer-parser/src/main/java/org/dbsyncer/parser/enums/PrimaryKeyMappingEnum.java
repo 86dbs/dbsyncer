@@ -20,7 +20,12 @@ public enum PrimaryKeyMappingEnum {
     /**
      * Oracle
      */
-    ORACLE(ConnectorEnum.ORACLE.getType(), new OraclePrimaryKeyMappingStrategy());
+    ORACLE(ConnectorEnum.ORACLE.getType(), new OraclePrimaryKeyMappingStrategy()),
+
+    /**
+     * 默认
+     */
+    DEFAULT("DEFAULT", new PrimaryKeyMappingStrategy() {});
 
     private String type;
 
@@ -43,7 +48,7 @@ public enum PrimaryKeyMappingEnum {
                 return e.getPrimaryKeyMappingStrategy();
             }
         }
-        return new PrimaryKeyMappingStrategy() {};
+        return DEFAULT.getPrimaryKeyMappingStrategy();
     }
 
     public String getType() {
