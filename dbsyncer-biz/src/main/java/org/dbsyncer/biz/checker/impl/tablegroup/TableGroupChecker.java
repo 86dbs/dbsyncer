@@ -7,8 +7,8 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.Table;
-import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
@@ -108,24 +108,13 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setCommand(command);
 
         // 获取数据源总数
-        long count = manager.getCount(mapping.getSourceConnectorId(), command);
+        long count = ModelEnum.isFull(mapping.getModel()) ? manager.getCount(mapping.getSourceConnectorId(), command) : 0;
         tableGroup.getSourceTable().setCount(count);
     }
 
     private Table getTable(String connectorId, String tableName) {
         MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接器表信息.");
-        // Oralce 监听需要ROWID字段
-        //String connectorType = manager.getConnector(connectorId).getConfig().getConnectorType();
-        //if(ConnectorEnum.isOracle(connectorType)){
-        //    List<Field> column = metaInfo.getColumn();
-        //    List<Field> list = new ArrayList<>();
-        //    list.add(new Field("ROWID", "VARCHAR2",12));
-        //    list.addAll(column);
-        //
-        //    column.clear();
-        //    column.addAll(list);
-        //}
         return new Table().setName(tableName).setColumn(metaInfo.getColumn());
     }
 
