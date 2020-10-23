@@ -58,11 +58,11 @@
                 <td>√</td>
             </tr>
             <tr>
-                <td>最近计划：</td>
+                <td>最近计划</td>
                 <td colspan="5">结构化类型：（sql_server）; 半结构化类型：（redis、kafka、es、postgrep）</td>
             </tr>
             <tr>
-                <td>长期计划：</td>
+                <td>长期计划</td>
                 <td colspan="5">半结构化类型：（网页、日志、JSON、XML、Word）; 非结构化类型：图片、图像、新闻消息</td>
             </tr>
         </tbody>
@@ -121,11 +121,24 @@
             </tr>
         </tbody>
     </table>
-    <h3>Oracle增量同步示例</h3>
+    <p>定时示例</p>
+    <p align="center">
+        <img src="https://images.gitee.com/uploads/images/2020/1023/160953_d34d6d11_376718.png" />
+    </p>
+    <p>Mysql增量示例</p>
+    <p align="left">
+        <img src="https://images.gitee.com/uploads/images/2020/1023/162452_f7133a6b_376718.png" />
+    </p>
+    <p align="center">
+        <img src="https://images.gitee.com/uploads/images/2020/1023/162318_8dcebee2_376718.png" />
+    </p>
+    <p>Oracle增量示例</p>
+    <p align="left">
+        <img src="https://images.gitee.com/uploads/images/2020/1023/162452_f7133a6b_376718.png" />
+    </p>
     <p align="center">
         <img src="https://images.gitee.com/uploads/images/2020/1023/113038_cc055fd3_376718.png" />
     </p>
-    
 </div>
 
 <div>
