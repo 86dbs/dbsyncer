@@ -55,7 +55,7 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
     @Override
     public void run() {
         try {
-            logger.info("执行定时任务:{} >> {}", taskKey, cron);
+            logger.debug("执行定时任务:{} >> {}", taskKey, cron);
             if (running.compareAndSet(false, true)) {
                 // 依次执行同步映射关系
                 for (int i = 0; i < commandSize; i++) {
