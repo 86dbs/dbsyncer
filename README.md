@@ -115,12 +115,17 @@
                 </td>
                 <td>
                     <p>grant change notification to AE86</p>
-                    <p>要求目标源表必须定义一个字段，用于接收rowid值，来实现增删改操作</p>
+                    <p>要求目标源表必须定义一个长度为18的varchar字段，用于接收rowid值，来实现增删改操作</p>
                 </td>
                 <td>CDN注册订阅。监听增删改事件，得到rowid，根据rowid执行SQL查询，得到变化数据</td>
             </tr>
         </tbody>
     </table>
+    <h3>Oracle增量同步示例</h3>
+    <p align="center">
+        <img src="https://images.gitee.com/uploads/images/2020/1023/113038_cc055fd3_376718.png" />
+    </p>
+    
 </div>
 
 <div>
