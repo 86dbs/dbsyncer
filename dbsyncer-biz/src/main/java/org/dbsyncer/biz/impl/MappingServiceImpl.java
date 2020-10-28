@@ -2,7 +2,8 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.MappingService;
-import org.dbsyncer.biz.checker.Checker;
+import org.dbsyncer.biz.TableGroupService;
+import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,14 +40,22 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private Monitor monitor;
 
     @Autowired
-    private Checker mappingChecker;
+    private MappingChecker mappingChecker;
+
+    @Autowired
+    private TableGroupService tableGroupService;
 
     @Override
     public String add(Map<String, String> params) {
         ConfigModel model = mappingChecker.checkAddConfigModel(params);
         log(LogType.MappingLog.INSERT, (Mapping) model);
 
-        return manager.addMapping(model);
+        String id = manager.addMapping(model);
+
+        // 匹配相似表
+        matchSimilarTable(model);
+
+        return id;
     }
 
     @Override
@@ -172,6 +182,35 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Mapping mapping = manager.getMapping(mappingId);
         Assert.notNull(mapping, "驱动不存在.");
         return mapping;
+    }
+
+    /**
+     * 匹配相似表
+     *
+     * @param model
+     */
+    private void matchSimilarTable(ConfigModel model) {
+        Mapping mapping = (Mapping) model;
+        Connector s = manager.getConnector(mapping.getSourceConnectorId());
+        Connector t = manager.getConnector(mapping.getTargetConnectorId());
+        List<String> sTables = s.getTable();
+        List<String> tTables = t.getTable();
+        if (CollectionUtils.isEmpty(sTables) || CollectionUtils.isEmpty(tTables)) {
+            return;
+        }
+
+        // 存在交集
+        sTables.retainAll(tTables);
+        if (!CollectionUtils.isEmpty(sTables)) {
+            Map<String, String> params = new HashMap<>();
+            params.put("mappingId", mapping.getId());
+            sTables.forEach(table -> {
+                params.put("sourceTable", table);
+                params.put("targetTable", table);
+                tableGroupService.add(params);
+            });
+            mappingChecker.updateMeta(mapping);
+        }
     }
 
 }
