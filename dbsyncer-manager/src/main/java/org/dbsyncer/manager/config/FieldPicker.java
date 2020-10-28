@@ -7,7 +7,6 @@ import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.Filter;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
-import org.dbsyncer.parser.model.DataEvent;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.springframework.util.Assert;
@@ -18,6 +17,7 @@ import java.util.stream.Collectors;
 public class FieldPicker {
 
     private TableGroup tableGroup;
+    private List<Field> pkList;
     private List<Node> index;
     private int indexSize;
     private boolean filterSwitch;
@@ -28,8 +28,9 @@ public class FieldPicker {
         this.tableGroup = tableGroup;
     }
 
-    public FieldPicker(TableGroup tableGroup, List<Filter> filter, List<Field> column, List<FieldMapping> fieldMapping) {
+    public FieldPicker(TableGroup tableGroup, List<Field> pkList, List<Filter> filter, List<Field> column, List<FieldMapping> fieldMapping) {
         this.tableGroup = tableGroup;
+        this.pkList = pkList;
         init(filter, column, fieldMapping);
     }
 
@@ -47,21 +48,16 @@ public class FieldPicker {
         return Collections.EMPTY_MAP;
     }
 
-    public TableGroup getTableGroup() {
-        return tableGroup;
-    }
-
     /**
      * 根据过滤条件过滤
      *
-     * @param data
+     * @param row
      * @return
      */
-    public boolean filter(DataEvent data) {
+    public boolean filter(Map<String, Object> row) {
         if (!filterSwitch) {
             return true;
         }
-        final Map<String, Object> row = data.getData();
         // where (id > 1 and id < 100) or (id = 100 or id =101)
         // 或 关系(成立任意条件)
         CompareFilter filter = null;
@@ -121,6 +117,14 @@ public class FieldPicker {
         }
         Assert.notEmpty(index, "同步映射关系不能为空.");
         this.indexSize = index.size();
+    }
+
+    public TableGroup getTableGroup() {
+        return tableGroup;
+    }
+
+    public String getPk() {
+        return pkList.get(0).getName();
     }
 
     final class Node {

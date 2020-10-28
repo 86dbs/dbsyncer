@@ -1,7 +1,9 @@
 package org.dbsyncer.parser;
 
+import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.FullRefreshEvent;
+import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.model.Task;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -17,6 +19,7 @@ import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.flush.FlushService;
 import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.strategy.PrimaryKeyMappingStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
@@ -236,8 +239,9 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(Mapping mapping, TableGroup tableGroup, DataEvent dataEvent) {
-        logger.info("{}", dataEvent);
+    public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent rowChangedEvent, PrimaryKeyMappingStrategy strategy) {
+        logger.info("解析数据=> tableName:{}, event:{}, before:{}, after:{}, rowId:{}", rowChangedEvent.getTableName(), rowChangedEvent.getEvent(),
+                rowChangedEvent.getBefore(), rowChangedEvent.getAfter(), rowChangedEvent.getRowId());
         final String metaId = mapping.getMetaId();
 
         ConnectorConfig tConfig = getConnectorConfig(mapping.getTargetConnectorId());
@@ -246,21 +250,24 @@ public class ParserFactory implements Parser {
         PickerUtil.pickFields(picker, tableGroup.getFieldMapping());
 
         // 1、映射字段
-        String event = dataEvent.getEvent();
-        Map<String, Object> data = dataEvent.getData();
+        final String event = rowChangedEvent.getEvent();
+        Map<String, Object> data = StringUtils.equals(ConnectorConstant.OPERTION_DELETE, event) ? rowChangedEvent.getBefore() : rowChangedEvent.getAfter();
         PickerUtil.pickData(picker, data);
 
-        // 2、参数转换
+        // 2、主键映射策略，Oracle需要替换主键为rowId
         Map<String, Object> target = picker.getTarget();
+        strategy.handle(target, rowChangedEvent);
+
+        // 3、参数转换
         ConvertUtil.convert(tableGroup.getConvert(), target);
 
-        // 3、插件转换
+        // 4、插件转换
         pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
 
-        // 4、写入目标源
+        // 5、写入目标源
         Result writer = connectorFactory.writer(tConfig, picker.getTargetFields(), tableGroup.getCommand(), event, target);
 
-        // 5、更新结果
+        // 6、更新结果
         List<Map<String, Object>> list = new ArrayList<>(1);
         list.add(target);
         flush(metaId, writer, event, list);

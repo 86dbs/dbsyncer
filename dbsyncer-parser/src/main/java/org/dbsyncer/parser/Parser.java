@@ -1,5 +1,6 @@
 package org.dbsyncer.parser;
 
+import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Task;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
@@ -9,9 +10,9 @@ import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.DataEvent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.strategy.PrimaryKeyMappingStrategy;
 
 import java.util.List;
 import java.util.Map;
@@ -133,7 +134,8 @@ public interface Parser {
      *
      * @param mapping
      * @param tableGroup
-     * @param dataEvent
+     * @param rowChangedEvent
+     * @param strategy
      */
-    void execute(Mapping mapping, TableGroup tableGroup, DataEvent dataEvent);
+    void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent rowChangedEvent, PrimaryKeyMappingStrategy strategy);
 }

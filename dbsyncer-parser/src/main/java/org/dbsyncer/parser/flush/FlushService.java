@@ -10,7 +10,7 @@ public interface FlushService {
     /**
      * 记录错误日志
      *
-     * @param metaId
+     * @param type
      * @param error
      */
     @Async("taskExecutor")

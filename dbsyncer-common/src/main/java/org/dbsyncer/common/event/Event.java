@@ -1,6 +1,5 @@
 package org.dbsyncer.common.event;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -13,22 +12,20 @@ public interface Event {
     /**
      * 日志数据变更事件
      *
-     * @param tableName 表名
-     * @param event     事件
-     * @param before    变化前
-     * @param after     变化后
+     * @param rowChangedEvent
      */
-    void changedLogEvent(String tableName, String event, List<Object> before, List<Object> after);
+    default void changedLogEvent(RowChangedEvent rowChangedEvent) {
+        // nothing to do
+    }
 
     /**
      * 定时数据变更事件
      *
-     * @param tableGroupIndex
-     * @param event
-     * @param before
-     * @param after
+     * @param rowChangedEvent
      */
-    void changedQuartzEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after);
+    default void changedQuartzEvent(RowChangedEvent rowChangedEvent){
+        // nothing to do
+    }
 
     /**
      * 写入增量点事件

@@ -35,7 +35,7 @@ SERVER_OPTS='-Xms1024m -Xmx1024m -Xss1m -XX:MetaspaceSize=128m -XX:MaxMetaspaceS
 # set debug model
 #SERVER_OPTS="$SERVER_OPTS -Djava.compiler=NONE -Xnoagent -Xdebug -Xrunjdwp:transport=dt_socket,address=15005,server=y,suspend=n"
 # set jmxremote args
-JMXREMOTE_CONFIG_PATH="$CURRENT_DIR/conf/boot"
+JMXREMOTE_CONFIG_PATH="$CURRENT_DIR/conf"
 JMXREMOTE_HOSTNAME="-Djava.rmi.server.hostname=$HOST"
 JMXREMOTE_PORT="-Dcom.sun.management.jmxremote.port=15099"
 JMXREMOTE_SSL="-Dcom.sun.management.jmxremote.ssl=false"
@@ -54,7 +54,7 @@ SERVER_PID=$CURRENT_DIR/tmp.pid
 java $SERVER_OPTS \
 -Dfile.encoding=utf8 \
 -Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:./plugins:./lib \
--Dspring.config.location=%cd%\conf\application.properties \
+-Dspring.config.location=$PRO_CONFIG_PATH \
 org.dbsyncer.web.Application \
 > $SERVER_LOGS & echo $! > $SERVER_PID
 echo 'Start successfully!'

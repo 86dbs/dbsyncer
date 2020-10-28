@@ -8,11 +8,6 @@ public class DatabaseConstant {
      */
     public static final String MYSQL_PAGE_SQL = " LIMIT ?,?";
 
-    /**
-     * Mysql驱动
-     */
-    public static final String MYSQL_DRIVER_CLASSNAME = "com.mysql.jdbc.Driver";
-
     //*********************************** Oracle **************************************//
     /**
      * Oracle分页语句开始
@@ -23,11 +18,6 @@ public class DatabaseConstant {
      * Oracle分页语句结束
      */
     public static final String ORACLE_PAGE_SQL_END = ")A WHERE ROWNUM <= ?) WHERE RN > ?";
-
-    /**
-     * Oracle驱动
-     */
-    public static final String ORACLE_DRIVER_CLASSNAME = "oracle.jdbc.OracleDriver";
 
     //*********************************** SqlServer **************************************//
     /**

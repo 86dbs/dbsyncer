@@ -83,14 +83,14 @@ public abstract class PickerUtil {
     }
 
     public static void pickData(Picker picker, Map<String, Object> row) {
+        Map<String, Object> target = new HashMap<>();
         if (!CollectionUtils.isEmpty(row)) {
-            Map<String, Object> target = new HashMap<>();
             List<Field> sFields = picker.getSourceFields();
             List<Field> tFields = picker.getTargetFields();
 
             exchange(sFields.size(), sFields, tFields, row, target);
-            picker.setTarget(target);
         }
+        picker.setTarget(target);
     }
 
     public static Map<String, Field> convert2Map(List<Field> col) {

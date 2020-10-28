@@ -11,7 +11,10 @@ import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.enums.ModelEnum;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,6 +128,23 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
     }
 
     /**
+     * 更新元信息
+     *
+     * @param mapping
+     */
+    public void updateMeta(Mapping mapping) {
+        Meta meta = manager.getMeta(mapping.getMetaId());
+        Assert.notNull(meta, "驱动meta不存在.");
+
+        // 清空状态
+        meta.clear();
+
+        getMetaTotal(meta, mapping.getModel());
+
+        manager.editMeta(meta);
+    }
+
+    /**
      * <b>更新映射关系过滤条件</b>
      * <p>如果映射关系没有过滤条件，使用全局的过滤条件</p>
      *
@@ -151,18 +171,6 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
 
         String id = manager.addMeta(meta);
         mapping.setMetaId(id);
-    }
-
-    private void updateMeta(Mapping mapping) {
-        Meta meta = manager.getMeta(mapping.getMetaId());
-        Assert.notNull(meta, "驱动meta不存在.");
-
-        // 清空状态
-        meta.clear();
-
-        getMetaTotal(meta, mapping.getModel());
-
-        manager.editMeta(meta);
     }
 
     private void getMetaTotal(Meta meta, String model) {

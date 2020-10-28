@@ -1,6 +1,7 @@
 package org.dbsyncer.listener;
 
 import org.dbsyncer.common.event.Event;
+import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.listener.config.ListenerConfig;
@@ -40,16 +41,16 @@ public abstract class AbstractExtractor implements Extractor {
     }
 
     @Override
-    public void changedQuartzEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after) {
+    public void changedQuartzEvent(RowChangedEvent rowChangedEvent) {
         if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.changedQuartzEvent(tableGroupIndex, event, before, after));
+            watcher.forEach(w -> w.changedQuartzEvent(rowChangedEvent));
         }
     }
 
     @Override
-    public void changedLogEvent(String tableName, String event, List<Object> before, List<Object> after) {
+    public void changedLogEvent(RowChangedEvent rowChangedEvent) {
         if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.changedLogEvent(tableName, event, before, after));
+            watcher.forEach(w -> w.changedLogEvent(rowChangedEvent));
         }
     }
 
