@@ -347,7 +347,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         if (StringUtils.isNotBlank(queryFilterSql)) {
             querySql += queryFilterSql;
         }
-        map.put(SqlBuilderEnum.QUERY.getName(), querySql);
+        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(null, null, querySql));
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
@@ -379,27 +379,27 @@ public abstract class AbstractDatabaseConnector implements Database {
             return "";
         }
         // 过滤条件SQL
-        StringBuilder condition = new StringBuilder();
+        StringBuilder sql = new StringBuilder();
 
         // 拼接并且SQL
         String addSql = getFilterSql(OperationEnum.AND.getName(), filter);
         // 如果Add条件存在
         if (StringUtils.isNotBlank(addSql)) {
-            condition.append(addSql);
+            sql.append(addSql);
         }
 
         // 拼接或者SQL
         String orSql = getFilterSql(OperationEnum.OR.getName(), filter);
         // 如果Or条件和Add条件都存在
         if (StringUtils.isNotBlank(orSql) && StringUtils.isNotBlank(addSql)) {
-            condition.append(" OR ").append(orSql);
+            sql.append(" OR ");
         }
+        sql.append(orSql);
 
         // 如果有条件加上 WHERE
-        StringBuilder sql = new StringBuilder();
-        if (StringUtils.isNotBlank(condition.toString())) {
+        if (StringUtils.isNotBlank(sql.toString())) {
             // WHERE (USER.USERNAME = 'zhangsan' AND USER.AGE='20') OR (USER.TEL='18299996666')
-            sql.insert(0, " WHERE ").append(condition);
+            sql.insert(0, " WHERE ");
         }
         return sql.toString();
     }
