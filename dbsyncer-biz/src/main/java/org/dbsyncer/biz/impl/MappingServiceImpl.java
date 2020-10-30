@@ -20,10 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -193,13 +190,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Mapping mapping = (Mapping) model;
         Connector s = manager.getConnector(mapping.getSourceConnectorId());
         Connector t = manager.getConnector(mapping.getTargetConnectorId());
-        List<String> sTables = s.getTable();
-        List<String> tTables = t.getTable();
-        if (CollectionUtils.isEmpty(sTables) || CollectionUtils.isEmpty(tTables)) {
+        if (CollectionUtils.isEmpty(s.getTable()) || CollectionUtils.isEmpty(t.getTable())) {
             return;
         }
 
         // 存在交集
+        List<String> sTables = new LinkedList<>(s.getTable());
+        List<String> tTables = new LinkedList<>(t.getTable());
         sTables.retainAll(tTables);
         if (!CollectionUtils.isEmpty(sTables)) {
             Map<String, String> params = new HashMap<>();

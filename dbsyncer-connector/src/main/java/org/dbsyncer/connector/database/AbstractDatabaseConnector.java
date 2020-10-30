@@ -199,7 +199,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             // 3、设置参数
             jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
                 @Override
-                public void setValues(PreparedStatement preparedStatement, int i) throws SQLException {
+                public void setValues(PreparedStatement preparedStatement, int i) {
                     batchRowsSetter(preparedStatement, fields, fSize, data.get(i));
                 }
 
@@ -301,7 +301,9 @@ public abstract class AbstractDatabaseConnector implements Database {
         MetaInfo metaInfo = getDqlMetaInfo(config);
         Assert.notNull(metaInfo, "SQL解析异常.");
         DatabaseConfig cfg = (DatabaseConfig) config;
-        return Arrays.asList(cfg.getSql());
+        List<String> tables = new ArrayList<>();
+        tables.add(cfg.getSql());
+        return tables;
     }
 
     /**
