@@ -58,6 +58,15 @@
                 <td>√</td>
             </tr>
             <tr>
+                <td rowspan="2">版本支持</td>
+                <td>Mysql</td>
+                <td colspan="4">5.7.19以上（Mysql-8.0暂不支持）</td>
+            </tr>
+            <tr>
+                <td>Oracle</td>
+                <td colspan="4">10g以上（Oracle-9i未测试）</td>
+            </tr>
+            <tr>
                 <td>最近计划</td>
                 <td colspan="5">结构化类型：（sql_server）; 半结构化类型：（redis、kafka、es、postgrep）</td>
             </tr>
