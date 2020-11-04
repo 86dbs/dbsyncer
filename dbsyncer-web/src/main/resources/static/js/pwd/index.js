@@ -6,7 +6,7 @@ function submit(data) {
             });
         } else {
             bootGrowl(data.resultValue, "danger");
-            $initContainer.load("/pwd");
+            doLoader("/pwd");
         }
     });
 }

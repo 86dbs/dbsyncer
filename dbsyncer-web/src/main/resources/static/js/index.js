@@ -3,7 +3,7 @@
 $(function () {
 
     // 初始化版权信息
-    $.getJSON("/config/system.json", function (data) {
+    doGetter("/config/system.json",{}, function (data) {
         // 获取头部版权信息
         $("#logoName").html(data.headName);
         // 获取底部版权信息
@@ -38,7 +38,7 @@ $(function () {
     // 绑定所有的菜单链接点击事件，根据不同的URL加载页面
     $("#menu li a[url]").click(function () {
         // 加载页面
-        $initContainer.load($(this).attr("url"));
+        doLoader($(this).attr("url"));
     });
 
     // 头部导航栏选中切换事件

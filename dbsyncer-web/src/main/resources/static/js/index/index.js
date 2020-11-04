@@ -2,7 +2,7 @@
 function bindAddConnector() {
     // 绑定添加连接器按钮点击事件
     $("#indexAddConnectorBtn").click(function () {
-        $initContainer.load('/connector/page/add');
+        doLoader('/connector/page/add');
     });
 }
 
@@ -10,14 +10,14 @@ function bindAddConnector() {
 function bindEditConnector() {
     $(".connectorList .dbsyncer_block").click(function () {
         var $id = $(this).attr("id");
-        $initContainer.load('/connector/page/edit?id=' + $id);
+        doLoader('/connector/page/edit?id=' + $id);
     });
 }
 
 // 添加驱动
 function bindAddMapping() {
     $("#indexAddMappingBtn").click(function () {
-        $initContainer.load('/mapping/pageAdd');
+        doLoader('/mapping/pageAdd');
     });
 }
 
@@ -25,7 +25,7 @@ function bindAddMapping() {
 function bindEditMapping() {
     $(".mappingList .dbsyncer_block").click(function () {
         var $id = $(this).attr("id");
-        $initContainer.load('/mapping/page/edit?id=' + $id);
+        doLoader('/mapping/page/edit?id=' + $id);
     });
 }
 
@@ -34,9 +34,12 @@ function bindQueryData() {
     $(".mappingList .queryData").click(function () {
         // 阻止触发click传递事件
         event.cancelBubble=true;
+        var $menu = $('#menu > li');
+        $menu.removeClass('active');
+        $menu.find("a[url='/monitor']").parent().addClass('active');
+
         var $id = $(this).attr("id");
-        activeMenu('/monitor');
-        $initContainer.load('/monitor?id=' + $id);
+        doLoader('/monitor?id=' + $id);
     });
 }
 

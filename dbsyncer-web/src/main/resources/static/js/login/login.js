@@ -1,6 +1,7 @@
 // 获取项目地址
 var $location = (window.location + '').split('/');
-var $basePath = $location[0] + '//' + $location[2];
+var $path = document.location.pathname;
+var $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.substr(1).indexOf("/")+1);
 
 var $formHtml = "<dl class=\"admin_login\">\n" +
     "\t<dt>\n" +
@@ -54,7 +55,7 @@ $(document).ready(function () {
 
 //初始化加载版权信息
 function initLoginCopyrightInfo() {
-    $.getJSON("/config/system.json", function (data) {
+    $.getJSON($basePath + "/config/system.json", function (data) {
         // 获取底部版权信息
         $("#loginCopyrightInfo").html(data.footerName);
     });
@@ -82,7 +83,7 @@ function login($form) {
         $form.find("#loginTip").removeClass("loginVerifcateTextError").addClass("loginVerifcateTextTip").html("登录中...");
         $form.find("input").attr("disabled", "disabled");
         // 点击确定确认登录请求后台
-        $.post("/login", {"username": username, "password": password}, function (data) {
+        $.post($basePath + "/login", {"username": username, "password": password}, function (data) {
             showResponse($form, data);
         }).error(function (xhr, status, info) {
             var data = {success: false, resultValue: "登录异常，请刷新或重试."};

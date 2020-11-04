@@ -12,7 +12,7 @@ function submit(data) {
 //*********************************** 驱动保存 结束位置***********************************//
 // 刷新页面
 function refresh(id){
-    $initContainer.load('/mapping/page/edit?id=' + id);
+    doLoader('/mapping/page/edit?id=' + id);
 }
 
 // 绑定修改驱动同步方式切换事件
@@ -52,7 +52,7 @@ function bindMappingTableGroupListClick() {
     var $tableGroupList = $("#tableGroupList");
     $tableGroupList.unbind("click");
     $tableGroupList.find("tr").bind('click', function () {
-        $initContainer.load('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
+        doLoader('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
     });
 
     var $del = $(".tableGroupDelete");

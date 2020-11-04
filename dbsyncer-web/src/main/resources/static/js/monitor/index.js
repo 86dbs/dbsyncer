@@ -10,18 +10,6 @@ function formatDate(time) {
   return YY + MM + DD +" "+hh + mm + ss;
 }
 
-// 全局Ajax get
-function doGetter(url, params, action) {
-    $.loadingT(true);
-    $.get(url, params, function (data) {
-        $.loadingT(false);
-        action(data);
-    }).error(function (xhr, status, info) {
-        $.loadingT(false);
-        bootGrowl("访问异常，请刷新或重试.", "danger");
-    });
-}
-
 // 查看详细数据
 function bindQueryDataDetailEvent() {
     $(".metaDataList .queryData").click(function () {
@@ -58,7 +46,7 @@ function bindClearEvent($btn, $title, $msg, $url){
                     doPoster($url, data, function (data) {
                         if (data.success == true) {
                             bootGrowl($msg, "success");
-                            $initContainer.load('/monitor?id=' + $id);
+                            doLoader('/monitor?id=' + $id);
                         } else {
                             bootGrowl(data.resultValue, "danger");
                         }
@@ -135,15 +123,15 @@ function showLogList(arr){
 
 // 查看系统指标
 function showSystemInfo(){
-    $.getJSON("/app/health", function (data) {
+    doGetWithoutLoading("/app/health",{}, function (data) {
         var details = data.details;
         var html = showPoint("硬盘", details.diskSpace);
 
-        $.getJSON("/app/metrics/jvm.threads.live", function (data) {
+        doGetWithoutLoading("/app/metrics/jvm.threads.live",{}, function (data) {
             html += showSystemItem("线程活跃", data.measurements[0].value);
-            $.getJSON("/app/metrics/jvm.threads.peak", function (data) {
+            doGetWithoutLoading("/app/metrics/jvm.threads.peak",{}, function (data) {
                 html += showSystemItem("线程峰值", data.measurements[0].value);
-                $.getJSON("/app/metrics/jvm.gc.pause", function (data) {
+                doGetWithoutLoading("/app/metrics/jvm.gc.pause",{}, function (data) {
                     var count =  data.measurements[0].value;
                     var time =  data.measurements[1].value;
                     time = time.toFixed(2);
@@ -160,7 +148,7 @@ function showSystemInfo(){
 
 // CPU
 function showCpu(){
-    $.getJSON("/app/metrics/system.cpu.usage", function (data) {
+    doGetWithoutLoading("/app/metrics/system.cpu.usage",{}, function (data) {
         var value = data.measurements[0].value * 100;
         value = value.toFixed(2);
         var option={
@@ -211,13 +199,13 @@ function showCpu(){
 
 // 内存
 function showMem(){
-    $.getJSON("/app/metrics/jvm.memory.max", function (data) {
+    doGetWithoutLoading("/app/metrics/jvm.memory.max",{}, function (data) {
         var max = data.measurements[0].value;
         max = (max / 1024 / 1024 / 1024).toFixed(2);
-        $.getJSON("/app/metrics/jvm.memory.used", function (data) {
+        doGetWithoutLoading("/app/metrics/jvm.memory.used",{}, function (data) {
             var used = data.measurements[0].value;
             used = (used / 1024 / 1024 / 1024).toFixed(2);
-            $.getJSON("/app/metrics/jvm.memory.committed", function (data) {
+            doGetWithoutLoading("/app/metrics/jvm.memory.committed",{}, function (data) {
                 var committed = data.measurements[0].value;
                 committed = (committed / 1024 / 1024 / 1024).toFixed(2);
 
@@ -315,7 +303,7 @@ $(function () {
     //连接器类型切换事件
     $("select[name='metaData']").change(function () {
         var $id = $(this).val();
-        $initContainer.load('/monitor?id=' + $id);
+        doLoader('/monitor?id=' + $id);
     });
 
     bindQueryLogEvent();
