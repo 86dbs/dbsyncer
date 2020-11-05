@@ -479,8 +479,8 @@ public abstract class AbstractDatabaseConnector implements Database {
             throw new ConnectorException("Table name can not be empty.");
         }
 
-        String quotation = buildSqlWithQuotation();
-        return SqlBuilderEnum.getSqlBuilder(type).buildSql(tableName, pk, filedNames, queryFilterSQL, quotation, this);
+        SqlBuilderConfig config = new SqlBuilderConfig(this, tableName, pk, filedNames, queryFilterSQL, buildSqlWithQuotation());
+        return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
     }
 
     /**

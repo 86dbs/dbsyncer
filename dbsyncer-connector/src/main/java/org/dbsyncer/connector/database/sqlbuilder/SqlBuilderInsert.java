@@ -1,6 +1,7 @@
 package org.dbsyncer.connector.database.sqlbuilder;
 
-import org.dbsyncer.connector.database.Database;
+import org.dbsyncer.connector.config.SqlBuilderConfig;
+import org.dbsyncer.connector.database.AbstractSqlBuilder;
 
 import java.util.List;
 
@@ -9,10 +10,14 @@ import java.util.List;
  * @version 1.0.0
  * @date 2019/9/26 23:58
  */
-public class SqlBuilderInsert implements SqlBuilder {
+public class SqlBuilderInsert extends AbstractSqlBuilder {
 
     @Override
-    public String buildSql(String tableName, String pk, List<String> filedNames, String queryFilter, String quotation, Database database) {
+    public String buildSql(SqlBuilderConfig config) {
+        String tableName = config.getTableName();
+        List<String> filedNames = config.getFiledNames();
+        String quotation = config.getQuotation();
+
         StringBuilder sql = new StringBuilder();
         StringBuilder fs = new StringBuilder();
         StringBuilder vs = new StringBuilder();
@@ -29,7 +34,8 @@ public class SqlBuilderInsert implements SqlBuilder {
             }
         }
         // INSERT INTO "USER"("USERNAME","AGE") VALUES (?,?)
-        sql.insert(0, "INSERT INTO ").append(quotation).append(tableName).append(quotation).append("(").append(fs).append(") VALUES (").append(vs).append(")");
+        sql.insert(0, "INSERT INTO ").append(quotation).append(tableName).append(quotation).append("(").append(fs).append(") VALUES (")
+                .append(vs).append(")");
         return sql.toString();
     }
 

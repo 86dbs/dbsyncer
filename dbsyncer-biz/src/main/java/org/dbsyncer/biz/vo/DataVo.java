@@ -3,7 +3,7 @@ package org.dbsyncer.biz.vo;
 public class DataVo {
 
     private String id;
-    private boolean success;
+    private int success;
     private String event;
     private String error;
     private String json;
@@ -17,11 +17,11 @@ public class DataVo {
         this.id = id;
     }
 
-    public boolean isSuccess() {
+    public int getSuccess() {
         return success;
     }
 
-    public void setSuccess(boolean success) {
+    public void setSuccess(int success) {
         this.success = success;
     }
 
