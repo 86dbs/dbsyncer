@@ -8,7 +8,7 @@
   "config": {
     "connectorType": "Mysql",
     "driverClassName": "com.mysql.jdbc.Driver",
-    "url": "jdbc:mysql://127.0.0.1:3306/test?rewriteBatchedStatements=true&seUnicode=true&characterEncoding=UTF8&useSSL=true",
+    "url": "jdbc:mysql://127.0.0.1:3306/test?rewriteBatchedStatements=true&seUnicode=true&characterEncoding=UTF8&serverTimezone=UTC&useSSL=false&verifyServerCertificate=false",
     "username": "root",
     "password": "123"
   }

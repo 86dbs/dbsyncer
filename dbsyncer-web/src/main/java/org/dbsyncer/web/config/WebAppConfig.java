@@ -53,11 +53,6 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     private static final String LOGIN_PAGE = "/login.html";
 
     /**
-     * 404页面
-     */
-    private static final String ERROR_404_PAGE = "/404.html";
-
-    /**
      * 每个帐号允许同时登录会话数, 默认同一个帐号只能在一个地方登录
      */
     private static final int MAXIMUM_SESSIONS = 1;
