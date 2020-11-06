@@ -104,6 +104,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
         List<Map> result = new ArrayList<>();
         List<Map<String, Object>> list = jdbcTemplate.queryForList(sql, args.toArray());
+        replaceHighLight(query, list);
         result.addAll(list);
         return result;
     }
@@ -134,7 +135,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     @Override
     public void deleteAll(StorageEnum type, String table) {
         Executor executor = getExecutor(type, table);
-        if(executor.isSystemType()){
+        if (executor.isSystemType()) {
             String sql = String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(table));
             jdbcTemplate.execute(sql);
             return;
@@ -155,7 +156,12 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     @Override
     public void insertData(StorageEnum type, String table, List<Map> list) {
         if (!CollectionUtils.isEmpty(list)) {
-            list.forEach(params -> executeInsert(type, table, params));
+            Executor executor = getExecutor(type, table);
+            List<Object[]> args = new ArrayList<>(list.size());
+            list.parallelStream().forEach(params -> args.add(getParams(executor, params).toArray()));
+
+            // 根据JDBC 2.0规范，值为-2表示操作成功，但受影响的行数是未知的
+            jdbcTemplate.batchUpdate(executor.getInsert(), args);
         }
     }
 
@@ -197,7 +203,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                 return e;
             }
             // 不存在
-            Executor newExecutor = new Executor(executor.getGroup(), executor.getFieldPairs(), executor.dynamicTableName);
+            Executor newExecutor = new Executor(executor.getGroup(), executor.getFieldPairs(), executor.isDynamicTableName(), executor.isSystemType(), executor.isOrderByUpdateTime());
             createTableIfNotExist(table, newExecutor);
 
             tables.putIfAbsent(table, newExecutor);
@@ -216,11 +222,17 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                     sql.append(" AND ");
                 }
                 // name=?
-                sql.append(p.getKey()).append("=").append("?");
-                args.add(p.getValue());
+                sql.append(p.getKey()).append(p.isHighlighter() ? " like ?" : "=?");
+                args.add(p.isHighlighter() ? new StringBuilder("%").append(p.getValue()).append("%"): p.getValue());
                 flag.compareAndSet(false, true);
             });
         }
+        // order by updateTime,createTime desc
+        sql.append(" order by ");
+        if (executor.isOrderByUpdateTime()) {
+            sql.append(ConfigConstant.CONFIG_MODEL_UPDATE_TIME).append(",");
+        }
+        sql.append(ConfigConstant.CONFIG_MODEL_CREATE_TIME).append(" desc");
         sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
         args.add((query.getPageNum() - 1) * query.getPageSize());
         args.add(query.getPageSize());
@@ -250,9 +262,9 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                 new FieldPair(ConfigConstant.DATA_ERROR),
                 new FieldPair(ConfigConstant.CONFIG_MODEL_CREATE_TIME, TABLE_CREATE_TIME),
                 new FieldPair(ConfigConstant.CONFIG_MODEL_JSON));
-        tables.putIfAbsent(StorageEnum.CONFIG.getType(), new Executor(StorageEnum.CONFIG, configFields));
-        tables.putIfAbsent(StorageEnum.LOG.getType(), new Executor(StorageEnum.LOG, logFields));
-        tables.putIfAbsent(StorageEnum.DATA.getType(), new Executor(StorageEnum.DATA, dataFields, true));
+        tables.putIfAbsent(StorageEnum.CONFIG.getType(), new Executor(StorageEnum.CONFIG, configFields, false, true, true));
+        tables.putIfAbsent(StorageEnum.LOG.getType(), new Executor(StorageEnum.LOG, logFields, false, true, false));
+        tables.putIfAbsent(StorageEnum.DATA.getType(), new Executor(StorageEnum.DATA, dataFields, true, false, false));
         // 创建表
         tables.forEach((tableName, e) -> {
             if (!e.isDynamicTableName()) {
@@ -327,6 +339,20 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         }
     }
 
+    private void replaceHighLight(Query query, List<Map<String,Object>> list) {
+        // 开启高亮
+        if(!CollectionUtils.isEmpty(list) && query.isEnableHighLightSearch()){
+            List<Param> highLight = query.getParams().stream().filter(p -> p.isHighlighter()).collect(Collectors.toList());
+            list.parallelStream().forEach(row -> {
+                highLight.forEach(p -> {
+                    String text = String.valueOf(row.get(p.getKey()));
+                    String replacement = new StringBuilder("<span style='color:red'>").append(p.getValue()).append("</span>").toString();
+                    row.put(p.getKey(), StringUtils.replace(text, p.getValue(), replacement));
+                });
+            });
+        }
+    }
+
     public void setConfig(DatabaseConfig config) {
         this.config = config;
     }
@@ -355,18 +381,14 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         private List<FieldPair> fieldPairs;
         private boolean         dynamicTableName;
         private boolean         systemType;
+        private boolean         orderByUpdateTime;
 
-        public Executor(StorageEnum group, List<FieldPair> fieldPairs) {
-            this.group = group;
-            this.fieldPairs = fieldPairs;
-            this.systemType = true;
-        }
-
-        public Executor(StorageEnum group, List<FieldPair> fieldPairs, boolean dynamicTableName) {
+        public Executor(StorageEnum group, List<FieldPair> fieldPairs, boolean dynamicTableName, boolean systemType, boolean orderByUpdateTime) {
             this.group = group;
             this.fieldPairs = fieldPairs;
             this.dynamicTableName = dynamicTableName;
-            this.systemType = false;
+            this.systemType = systemType;
+            this.orderByUpdateTime = orderByUpdateTime;
         }
 
         public String getQuery() {
@@ -420,5 +442,10 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         public boolean isSystemType() {
             return systemType;
         }
+
+        public boolean isOrderByUpdateTime() {
+            return orderByUpdateTime;
+        }
+
     }
 }

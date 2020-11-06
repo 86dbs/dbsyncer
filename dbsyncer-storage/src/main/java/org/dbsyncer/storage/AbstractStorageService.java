@@ -163,10 +163,7 @@ public abstract class AbstractStorageService implements StorageService, Applicat
 
     private String getCollection(StorageEnum type, String collection) {
         Assert.notNull(type, "StorageEnum type can not be null.");
-        return getCollection(type.getType(), collection);
-    }
-    private String getCollection(String type, String collection) {
-        Strategy strategy = map.get(type.concat("Strategy"));
+        Strategy strategy = map.get(type.getType().concat("Strategy"));
         Assert.notNull(strategy, "Strategy does not exist.");
         return strategy.createCollectionId(getSeparator(), collection);
     }
