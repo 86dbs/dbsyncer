@@ -20,9 +20,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -35,14 +33,16 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
         @Override
         protected void initSSLContext(SSLContext sc) throws GeneralSecurityException {
-            sc.init(null, new TrustManager[] {
+            sc.init(null, new TrustManager[]{
                     new X509TrustManager() {
 
                         @Override
-                        public void checkClientTrusted(X509Certificate[] x509Certificates, String s) { }
+                        public void checkClientTrusted(X509Certificate[] x509Certificates, String s) {
+                        }
 
                         @Override
-                        public void checkServerTrusted(X509Certificate[] x509Certificates, String s) { }
+                        public void checkServerTrusted(X509Certificate[] x509Certificates, String s) {
+                        }
 
                         @Override
                         public X509Certificate[] getAcceptedIssuers() {
@@ -56,36 +56,33 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     // https://dev.mysql.com/doc/internals/en/sending-more-than-16mbyte.html
     private static final int MAX_PACKET_LENGTH = 16777215;
 
-    private final String  hostname;
-    private final int     port;
-    private final String  schema;
-    private final String  username;
-    private final String  password;
-    private       SSLMode sslMode = SSLMode.DISABLED;
+    private final String hostname;
+    private final int port;
+    private final String schema;
+    private final String username;
+    private final String password;
+    private SSLMode sslMode = SSLMode.DISABLED;
 
-    private          boolean blocking       = true;
-    private          long    serverId       = 65535;
-    private volatile String  binlogFilename;
-    private volatile long    binlogPosition = 4;
-    private volatile long    connectionId;
-
-    private final Object  gtidSetAccessLock = new Object();
-    private       GtidSet gtidSet;
-    private       boolean gtidSetFallbackToPurged;
-    private       boolean useBinlogFilenamePositionInGtidMode;
-    private       String  gtid;
-    private       boolean tx;
-
-    private       EventDeserializer                             eventDeserializer  = new EventDeserializer();
-    private final List<BinaryLogRemoteClient.EventListener>     eventListeners     = new CopyOnWriteArrayList<>();
-    private final List<BinaryLogRemoteClient.LifecycleListener> lifecycleListeners = new CopyOnWriteArrayList<>();
-
+    private EventDeserializer eventDeserializer;
+    private boolean blocking = true;
+    private boolean simpleEventModel = false;
+    private long serverId = 65535;
+    private volatile String binlogFilename;
+    private volatile long binlogPosition = 4;
+    private volatile long connectionId;
     private volatile PacketChannel channel;
-    private volatile boolean       connected;
-
-    private int timeout = 3000;
+    private volatile boolean connected;
 
     private final Lock connectLock = new ReentrantLock();
+    private final Object gtidSetAccessLock = new Object();
+    private GtidSet gtidSet;
+    private String gtid;
+    private boolean tx;
+    private boolean gtidSetFallbackToPurged;
+    private boolean useBinlogFilenamePositionInGtidMode;
+
+    private final List<BinaryLogRemoteClient.EventListener> eventListeners = new CopyOnWriteArrayList<>();
+    private final List<BinaryLogRemoteClient.LifecycleListener> lifecycleListeners = new CopyOnWriteArrayList<>();
 
     /**
      * Alias for BinaryLogRemoteClient(hostname, port, &lt;no schema&gt; = null, username, password).
@@ -119,6 +116,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             if (isConnected()) {
                 throw new IllegalStateException("BinaryLogRemoteClient is already connected");
             }
+            setConfig();
             openChannel();
             // dump binary log
             requestBinaryLogStream(channel);
@@ -161,7 +159,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private void openChannel() throws IOException {
         try {
             Socket socket = new Socket();
-            socket.connect(new InetSocketAddress(hostname, port), timeout);
+            socket.connect(new InetSocketAddress(hostname, port), 3000);
             channel = new PacketChannel(socket);
             if (channel.getInputStream().peek() == -1) {
                 throw new EOFException();
@@ -523,6 +521,39 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         }
     }
 
+    private void setConfig() {
+        IdentityHashMap eventDataDeserializers = new IdentityHashMap();
+        Map<Long, TableMapEventData> tableMapEventByTableId = new HashMap();
+        if(null == eventDeserializer){
+            this.eventDeserializer = new EventDeserializer(new EventHeaderV4Deserializer(), new NullEventDataDeserializer(), eventDataDeserializers, tableMapEventByTableId);
+            eventDeserializer.setCompatibilityMode(
+                    EventDeserializer.CompatibilityMode.DATE_AND_TIME_AS_LONG,
+                    EventDeserializer.CompatibilityMode.CHAR_AND_BINARY_AS_BYTE_ARRAY
+            );
+        }
+
+        // Process event priority: RotateEvent > FormatDescriptionEvent > TableMapEvent > RowsEvent > XidEvent
+        eventDataDeserializers.put(EventType.ROTATE, new RotateEventDataDeserializer());
+        eventDataDeserializers.put(EventType.FORMAT_DESCRIPTION, new FormatDescriptionEventDataDeserializer());
+        eventDataDeserializers.put(EventType.TABLE_MAP, new TableMapEventDataDeserializer());
+        eventDataDeserializers.put(EventType.UPDATE_ROWS, new UpdateRowsEventDataDeserializer(tableMapEventByTableId));
+        eventDataDeserializers.put(EventType.WRITE_ROWS, new WriteRowsEventDataDeserializer(tableMapEventByTableId));
+        eventDataDeserializers.put(EventType.DELETE_ROWS, new DeleteRowsEventDataDeserializer(tableMapEventByTableId));
+        eventDataDeserializers.put(EventType.XID, new XidEventDataDeserializer());
+
+        if(!simpleEventModel){
+            eventDataDeserializers.put(EventType.INTVAR, new IntVarEventDataDeserializer());
+            eventDataDeserializers.put(EventType.QUERY, new QueryEventDataDeserializer());
+            eventDataDeserializers.put(EventType.EXT_WRITE_ROWS, (new WriteRowsEventDataDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
+            eventDataDeserializers.put(EventType.EXT_UPDATE_ROWS, (new UpdateRowsEventDataDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
+            eventDataDeserializers.put(EventType.EXT_DELETE_ROWS, (new DeleteRowsEventDataDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
+            eventDataDeserializers.put(EventType.ROWS_QUERY, new RowsQueryEventDataDeserializer());
+            eventDataDeserializers.put(EventType.GTID, new GtidEventDataDeserializer());
+            eventDataDeserializers.put(EventType.PREVIOUS_GTIDS, new PreviousGtidSetDeserializer());
+            eventDataDeserializers.put(EventType.XA_PREPARE, new XAPrepareEventDataDeserializer());
+        }
+    }
+
     private void notifyEventListeners(Event event) {
         if (event.getData() instanceof EventDeserializer.EventDataWrapper) {
             event = new Event(event.getHeader(), ((EventDeserializer.EventDataWrapper) event.getData()).getExternal());
@@ -568,6 +599,29 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     @Override
     public void setBinlogPosition(long binlogPosition) {
         this.binlogPosition = binlogPosition;
+    }
+
+    @Override
+    public EventDeserializer getEventDeserializer() {
+        return eventDeserializer;
+    }
+
+    @Override
+    public void setEventDeserializer(EventDeserializer eventDeserializer) {
+        if (eventDeserializer == null) {
+            throw new IllegalArgumentException("Event deserializer cannot be NULL");
+        }
+        this.eventDeserializer = eventDeserializer;
+    }
+
+    @Override
+    public boolean isSimpleEventModel() {
+        return simpleEventModel;
+    }
+
+    @Override
+    public void setSimpleEventModel(boolean simpleEventModel) {
+        this.simpleEventModel = simpleEventModel;
     }
 
     public SSLMode getSSLMode() {
@@ -639,16 +693,6 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
      */
     public void setUseBinlogFilenamePositionInGtidMode(boolean useBinlogFilenamePositionInGtidMode) {
         this.useBinlogFilenamePositionInGtidMode = useBinlogFilenamePositionInGtidMode;
-    }
-
-    /**
-     * @param eventDeserializer custom event deserializer
-     */
-    public void setEventDeserializer(EventDeserializer eventDeserializer) {
-        if (eventDeserializer == null) {
-            throw new IllegalArgumentException("Event deserializer cannot be NULL");
-        }
-        this.eventDeserializer = eventDeserializer;
     }
 
     public interface EventListener {

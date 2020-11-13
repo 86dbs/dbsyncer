@@ -1,6 +1,7 @@
 package org.dbsyncer.listener.mysql;
 
 import com.github.shyiko.mysql.binlog.event.EventType;
+import com.github.shyiko.mysql.binlog.event.deserialization.EventDeserializer;
 import com.github.shyiko.mysql.binlog.network.AuthenticationException;
 import com.github.shyiko.mysql.binlog.network.ServerException;
 
@@ -67,4 +68,28 @@ public interface BinaryLogClient {
      */
     void setBinlogPosition(long binlogPosition);
 
+    /**
+     * @return event deserializer
+     * @see #setEventDeserializer(EventDeserializer)
+     */
+    EventDeserializer getEventDeserializer();
+
+    /**
+     * @param eventDeserializer custom event deserializer
+     */
+    void setEventDeserializer(EventDeserializer eventDeserializer);
+
+    /**
+     * SimpleEventModel
+     * @return
+     */
+    boolean isSimpleEventModel();
+
+    /**
+     * <p>true: ROTATE > FORMAT_DESCRIPTION > TABLE_MAP > WRITE_ROWS > UPDATE_ROWS > DELETE_ROWS > XID
+     * <p>false: Support all events
+     *
+     * @param simpleEventModel
+     */
+    void setSimpleEventModel(boolean simpleEventModel);
 }
