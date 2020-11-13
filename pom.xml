@@ -45,7 +45,8 @@
         <commons-pool.version>1.6</commons-pool.version>
         <lucene.version>7.6.0</lucene.version>
         <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
-        <mysql.version>8.0.17</mysql.version>
+        <mysql.version>5.1.40</mysql.version>
+        <mysql-binlog.version>0.21.0</mysql-binlog.version>
         <sqljdbc.version>1.2</sqljdbc.version>
         <json.version>20090211</json.version>
         <junit.version>4.12</junit.version>
@@ -161,6 +162,12 @@
                 <groupId>microsoft</groupId>
                 <artifactId>sqljdbc</artifactId>
                 <version>${sqljdbc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.shyiko</groupId>
+                <artifactId>mysql-binlog-connector-java</artifactId>
+                <version>${mysql-binlog.version}</version>
             </dependency>
 
             <dependency>
