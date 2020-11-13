@@ -54,6 +54,7 @@
 
     <!-- 镜像仓库地址 -->
     <repositories>
+        <!-- 阿里云仓库 -->
         <repository>
             <id>ali</id>
             <name>ali Repository</name>
@@ -62,6 +63,27 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+
+        <!-- 中央仓库1 -->
+        <repository>
+            <id>repo1</id>
+            <name>Central Repository</name>
+            <url>https://repo1.maven.org/maven2/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+
+        <!-- 中央仓库2 -->
+        <repository>
+            <id>repo2</id>
+            <name>Central Repository</name>
+            <url>https://repo2.maven.org/maven2/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+
     </repositories>
 
     <!-- 统一管理第三方依赖jar -->
