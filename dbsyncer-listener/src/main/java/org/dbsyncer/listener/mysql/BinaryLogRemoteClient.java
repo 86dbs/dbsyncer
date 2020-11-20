@@ -72,6 +72,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private volatile long connectionId;
     private volatile PacketChannel channel;
     private volatile boolean connected;
+    private Thread worker;
 
     private final Lock connectLock = new ReentrantLock();
     private final Object gtidSetAccessLock = new Object();
@@ -113,16 +114,21 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     public void connect() throws Exception {
         try {
             connectLock.lock();
-            if (isConnected()) {
+            if (connected) {
                 throw new IllegalStateException("BinaryLogRemoteClient is already connected");
             }
             setConfig();
             openChannel();
             // dump binary log
             requestBinaryLogStream(channel);
-            notifyConnectEvent();
             ensureEventDeserializerHasRequiredEDDs();
-            listenForEventPackets(channel);
+
+            // new Thread
+            this.worker = new Thread(()-> listenForEventPackets(channel));
+            this.worker.setDaemon(false);
+            this.worker.setName(new StringBuilder("binlog-parser-").append(hostname).append("_").append(port).append("_").append(connectionId).toString());
+            this.worker.start();
+            notifyConnectEvent();
         } finally {
             connectLock.unlock();
         }
@@ -130,10 +136,14 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
     @Override
     public void disconnect() throws Exception {
-        if (!connected) {
+        if (connected) {
             try {
                 connectLock.lock();
                 closeChannel(channel);
+                if(null != this.worker && !worker.isInterrupted()){
+                    this.worker.interrupt();
+                    this.worker = null;
+                }
                 notifyDisconnectEvent();
             } finally {
                 connectLock.unlock();
