@@ -73,6 +73,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private volatile PacketChannel channel;
     private volatile boolean connected;
     private Thread worker;
+    private String workerThreadName;
 
     private final Lock connectLock = new ReentrantLock();
     private final Object gtidSetAccessLock = new Object();
@@ -126,7 +127,8 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             // new Thread
             this.worker = new Thread(()-> listenForEventPackets(channel));
             this.worker.setDaemon(false);
-            this.worker.setName(new StringBuilder("binlog-parser-").append(hostname).append("_").append(port).append("_").append(connectionId).toString());
+            this.workerThreadName = new StringBuilder("binlog-parser-").append(hostname).append("_").append(port).append("_").append(connectionId).toString();
+            this.worker.setName(workerThreadName);
             this.worker.start();
             notifyConnectEvent();
         } finally {
@@ -632,6 +634,11 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     @Override
     public void setSimpleEventModel(boolean simpleEventModel) {
         this.simpleEventModel = simpleEventModel;
+    }
+
+    @Override
+    public String getWorkerThreadName() {
+        return workerThreadName;
     }
 
     public SSLMode getSSLMode() {

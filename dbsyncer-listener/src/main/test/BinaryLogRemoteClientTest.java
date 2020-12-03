@@ -5,6 +5,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @version 1.0.0
  * @Author AE86
@@ -22,12 +25,21 @@ public class BinaryLogRemoteClientTest {
         String password = "123";
 
         BinaryLogClient client = new BinaryLogRemoteClient(hostname, port, username, password);
-        client.setBinlogFilename("mysql_bin.000029");
-        client.setBinlogPosition(154);
+        //client.setBinlogFilename("mysql_bin.000021");
+        //client.setBinlogPosition(154);
+        client.setSimpleEventModel(true);
         client.registerEventListener(new BinaryLogRemoteClient.EventListener() {
+
+            Map<Long, String> table = new HashMap<>();
+
             @Override
             public void onEvent(Event event) {
+                // ROTATE > FORMAT_DESCRIPTION > TABLE_MAP > WRITE_ROWS > UPDATE_ROWS > DELETE_ROWS > XID
                 logger.info(event.toString());
+                if (event == null) {
+                    logger.error("binlog event is null");
+                    return;
+                }
             }
         });
         client.registerLifecycleListener(new BinaryLogRemoteClient.LifecycleListener() {
@@ -53,6 +65,12 @@ public class BinaryLogRemoteClientTest {
         });
 
         client.connect();
+
+        logger.info("test wait...");
+        //TimeUnit.SECONDS.sleep(300);
+        //client.disconnect();
+        Thread.currentThread().join();
+        logger.info("test end");
     }
 
 }

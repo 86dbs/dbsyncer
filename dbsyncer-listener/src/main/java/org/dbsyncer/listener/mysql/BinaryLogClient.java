@@ -81,6 +81,7 @@ public interface BinaryLogClient {
 
     /**
      * SimpleEventModel
+     *
      * @return
      */
     boolean isSimpleEventModel();
@@ -92,4 +93,12 @@ public interface BinaryLogClient {
      * @param simpleEventModel
      */
     void setSimpleEventModel(boolean simpleEventModel);
+
+    /**
+     * binlog-parser-127.0.0.1_3306_1
+     *
+     * @return workerThreadName
+     */
+    String getWorkerThreadName();
+
 }
