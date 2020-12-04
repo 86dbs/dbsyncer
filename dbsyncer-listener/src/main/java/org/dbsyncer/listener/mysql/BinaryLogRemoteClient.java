@@ -64,6 +64,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private SSLMode sslMode = SSLMode.DISABLED;
 
     private EventDeserializer eventDeserializer;
+    private Map<Long, TableMapEventData> tableMapEventByTableId;
     private boolean blocking = true;
     private boolean simpleEventModel = false;
     private long serverId = 65535;
@@ -127,7 +128,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             // new Thread
             this.worker = new Thread(()-> listenForEventPackets(channel));
             this.worker.setDaemon(false);
-            this.workerThreadName = new StringBuilder("binlog-parser-").append(hostname).append("_").append(port).append("_").append(connectionId).toString();
+            this.workerThreadName = new StringBuilder("binlog-parser-").append(hostname).append(":").append(port).append("_").append(connectionId).toString();
             this.worker.setName(workerThreadName);
             this.worker.start();
             notifyConnectEvent();
@@ -534,8 +535,11 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     }
 
     private void setConfig() {
+        if(null == tableMapEventByTableId){
+            tableMapEventByTableId = new HashMap<>();
+        }
+
         IdentityHashMap eventDataDeserializers = new IdentityHashMap();
-        Map<Long, TableMapEventData> tableMapEventByTableId = new HashMap();
         if(null == eventDeserializer){
             this.eventDeserializer = new EventDeserializer(new EventHeaderV4Deserializer(), new NullEventDataDeserializer(), eventDataDeserializers, tableMapEventByTableId);
             eventDeserializer.setCompatibilityMode(
@@ -551,14 +555,14 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         eventDataDeserializers.put(EventType.UPDATE_ROWS, new UpdateRowsEventDataDeserializer(tableMapEventByTableId));
         eventDataDeserializers.put(EventType.WRITE_ROWS, new WriteRowsEventDataDeserializer(tableMapEventByTableId));
         eventDataDeserializers.put(EventType.DELETE_ROWS, new DeleteRowsEventDataDeserializer(tableMapEventByTableId));
+        eventDataDeserializers.put(EventType.EXT_WRITE_ROWS, (new WriteRowsEventDataDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
+        eventDataDeserializers.put(EventType.EXT_UPDATE_ROWS, (new UpdateRowsEventDataDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
+        eventDataDeserializers.put(EventType.EXT_DELETE_ROWS, (new DeleteRowsEventDataDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
         eventDataDeserializers.put(EventType.XID, new XidEventDataDeserializer());
 
-        if(!simpleEventModel){
+        if(simpleEventModel){
             eventDataDeserializers.put(EventType.INTVAR, new IntVarEventDataDeserializer());
             eventDataDeserializers.put(EventType.QUERY, new QueryEventDataDeserializer());
-            eventDataDeserializers.put(EventType.EXT_WRITE_ROWS, (new WriteRowsEventDataDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
-            eventDataDeserializers.put(EventType.EXT_UPDATE_ROWS, (new UpdateRowsEventDataDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
-            eventDataDeserializers.put(EventType.EXT_DELETE_ROWS, (new DeleteRowsEventDataDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
             eventDataDeserializers.put(EventType.ROWS_QUERY, new RowsQueryEventDataDeserializer());
             eventDataDeserializers.put(EventType.GTID, new GtidEventDataDeserializer());
             eventDataDeserializers.put(EventType.PREVIOUS_GTIDS, new PreviousGtidSetDeserializer());
@@ -624,6 +628,16 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             throw new IllegalArgumentException("Event deserializer cannot be NULL");
         }
         this.eventDeserializer = eventDeserializer;
+    }
+
+    @Override
+    public Map<Long, TableMapEventData> getTableMapEventByTableId() {
+        return tableMapEventByTableId;
+    }
+
+    @Override
+    public void setTableMapEventByTableId(Map<Long, TableMapEventData> tableMapEventByTableId) {
+        this.tableMapEventByTableId = tableMapEventByTableId;
     }
 
     @Override

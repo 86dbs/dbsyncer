@@ -189,11 +189,16 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         public void flushEvent(Map<String, String> map) {
             // 如果有变更，执行更新
             if (changed.compareAndSet(true, false)) {
-                Meta meta = manager.getMeta(metaId);
-                if (null != meta) {
-                    meta.setMap(map);
-                    manager.editMeta(meta);
-                }
+                forceFlushEvent(map);
+            }
+        }
+
+        @Override
+        public void forceFlushEvent(Map<String, String> map) {
+            Meta meta = manager.getMeta(metaId);
+            if (null != meta) {
+                meta.setMap(map);
+                manager.editMeta(meta);
             }
         }
 
@@ -295,7 +300,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
         @Override
         public void changedLogEvent(RowChangedEvent rowChangedEvent) {
-            logger.info("监听数据=> tableName:{}, event:{}, beforeData:{}, afterData:{}, rowId:{}", rowChangedEvent.getTableName(),
+            logger.info("event>tableName:{}, event:{}, beforeData:{}, afterData:{}, rowId:{}", rowChangedEvent.getTableName(),
                     rowChangedEvent.getEvent(),
                     rowChangedEvent.getBeforeData(), rowChangedEvent.getAfterData(), rowChangedEvent.getRowId());
 
@@ -312,10 +317,9 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
                         parser.execute(mapping, picker.getTableGroup(), rowChangedEvent, strategy);
                     }
                 });
+                // 标记有变更记录
+                changed.compareAndSet(false, true);
             }
-
-            // 标记有变更记录
-            changed.compareAndSet(false, true);
         }
 
     }

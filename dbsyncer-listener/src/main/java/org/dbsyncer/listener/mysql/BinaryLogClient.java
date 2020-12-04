@@ -1,9 +1,12 @@
 package org.dbsyncer.listener.mysql;
 
 import com.github.shyiko.mysql.binlog.event.EventType;
+import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.deserialization.EventDeserializer;
 import com.github.shyiko.mysql.binlog.network.AuthenticationException;
 import com.github.shyiko.mysql.binlog.network.ServerException;
+
+import java.util.Map;
 
 public interface BinaryLogClient {
 
@@ -78,6 +81,16 @@ public interface BinaryLogClient {
      * @param eventDeserializer custom event deserializer
      */
     void setEventDeserializer(EventDeserializer eventDeserializer);
+
+    /**
+     * @return tableMapEventByTableId
+     */
+    Map<Long, TableMapEventData> getTableMapEventByTableId();
+
+    /**
+     * @param tableMapEventByTableId tableMapEventMetadata
+     */
+    void setTableMapEventByTableId(Map<Long, TableMapEventData> tableMapEventByTableId);
 
     /**
      * SimpleEventModel

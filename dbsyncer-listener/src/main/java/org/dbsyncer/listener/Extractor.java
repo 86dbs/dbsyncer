@@ -47,6 +47,11 @@ public interface Extractor {
     void flushEvent();
 
     /**
+     * 强制刷新增量点事件
+     */
+    void forceFlushEvent();
+
+    /**
      * 异常事件
      *
      * @param e

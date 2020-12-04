@@ -1,12 +1,15 @@
-import com.github.shyiko.mysql.binlog.event.Event;
+import com.github.shyiko.mysql.binlog.event.*;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.mysql.BinaryLogClient;
 import org.dbsyncer.listener.mysql.BinaryLogRemoteClient;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @version 1.0.0
@@ -25,21 +28,47 @@ public class BinaryLogRemoteClientTest {
         String password = "123";
 
         BinaryLogClient client = new BinaryLogRemoteClient(hostname, port, username, password);
-        //client.setBinlogFilename("mysql_bin.000021");
-        //client.setBinlogPosition(154);
-        client.setSimpleEventModel(true);
-        client.registerEventListener(new BinaryLogRemoteClient.EventListener() {
+        //client.setBinlogFilename("mysql_bin.000028");
+        //client.setBinlogPosition(1149);
+        client.registerEventListener(event -> {
+            // ROTATE > FORMAT_DESCRIPTION > TABLE_MAP > WRITE_ROWS > UPDATE_ROWS > DELETE_ROWS > XID
+            EventHeader header = event.getHeader();
+            // XID
+            if (header.getEventType() == EventType.XID) {
+                logger.info(header.toString());
+                return;
+            }
 
-            Map<Long, String> table = new HashMap<>();
+            if(EventType.isUpdate(header.getEventType())){
+                UpdateRowsEventData data = event.getData();
+                data.getRows().forEach(m -> {
+                    List<Object> before = Stream.of(m.getKey()).collect(Collectors.toList());
+                    List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
+                    logger.info("event:{}, tableName:{}, before:{}, after:{}", ConnectorConstant.OPERTION_UPDATE, data.getTableId(), before, after);
+                });
+                return;
+            }
+            if(EventType.isWrite(header.getEventType())){
+                WriteRowsEventData data = event.getData();
+                data.getRows().forEach(m -> {
+                    List<Object> after = Stream.of(m).collect(Collectors.toList());
+                    logger.info("event:{}, tableName:{}, before:{}, after:{}", ConnectorConstant.OPERTION_INSERT, data.getTableId(), Collections.EMPTY_LIST, after);
+                });
+                return;
+            }
+            if(EventType.isDelete(header.getEventType())){
+                DeleteRowsEventData data = event.getData();
+                data.getRows().forEach(m -> {
+                    List<Object> before = Stream.of(m).collect(Collectors.toList());
+                    logger.info("event:{}, tableName:{}, before:{}, after:{}", ConnectorConstant.OPERTION_DELETE, data.getTableId(), before, Collections.EMPTY_LIST);
+                });
+                return;
+            }
 
-            @Override
-            public void onEvent(Event event) {
-                // ROTATE > FORMAT_DESCRIPTION > TABLE_MAP > WRITE_ROWS > UPDATE_ROWS > DELETE_ROWS > XID
-                logger.info(event.toString());
-                if (event == null) {
-                    logger.error("binlog event is null");
-                    return;
-                }
+            if (header.getEventType() == EventType.ROTATE) {
+                RotateEventData data = event.getData();
+                logger.info(data.toString());
+                return;
             }
         });
         client.registerLifecycleListener(new BinaryLogRemoteClient.LifecycleListener() {
