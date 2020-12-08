@@ -151,7 +151,6 @@ public class MysqlExtractor extends AbstractExtractor {
         public void onConnect(BinaryLogRemoteClient client) {
             // 记录binlog增量点
             refresh(client.getBinlogFilename(), client.getBinlogPosition());
-            forceFlushEvent();
         }
 
         @Override
@@ -217,6 +216,7 @@ public class MysqlExtractor extends AbstractExtractor {
                 RotateEventData data = event.getData();
                 refresh(data.getBinlogFilename(), data.getBinlogPosition());
                 forceFlushEvent();
+                logger.info("Force flush:{}", map);
                 return;
             }
         }

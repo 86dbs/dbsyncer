@@ -189,6 +189,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         public void flushEvent(Map<String, String> map) {
             // 如果有变更，执行更新
             if (changed.compareAndSet(true, false)) {
+                logger.info("{}", map);
                 forceFlushEvent(map);
             }
         }
@@ -300,7 +301,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
         @Override
         public void changedLogEvent(RowChangedEvent rowChangedEvent) {
-            logger.info("event>tableName:{}, event:{}, beforeData:{}, afterData:{}, rowId:{}", rowChangedEvent.getTableName(),
+            logger.info("tableName:{}, event:{}, beforeData:{}, afterData:{}, rowId:{}", rowChangedEvent.getTableName(),
                     rowChangedEvent.getEvent(),
                     rowChangedEvent.getBeforeData(), rowChangedEvent.getAfterData(), rowChangedEvent.getRowId());
 
