@@ -542,10 +542,6 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         IdentityHashMap eventDataDeserializers = new IdentityHashMap();
         if(null == eventDeserializer){
             this.eventDeserializer = new EventDeserializer(new EventHeaderV4Deserializer(), new NullEventDataDeserializer(), eventDataDeserializers, tableMapEventByTableId);
-            eventDeserializer.setCompatibilityMode(
-                    EventDeserializer.CompatibilityMode.DATE_AND_TIME_AS_LONG,
-                    EventDeserializer.CompatibilityMode.CHAR_AND_BINARY_AS_BYTE_ARRAY
-            );
         }
 
         // Process event priority: RotateEvent > FormatDescriptionEvent > TableMapEvent > RowsEvent > XidEvent
@@ -568,6 +564,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             eventDataDeserializers.put(EventType.PREVIOUS_GTIDS, new PreviousGtidSetDeserializer());
             eventDataDeserializers.put(EventType.XA_PREPARE, new XAPrepareEventDataDeserializer());
         }
+
     }
 
     private void notifyEventListeners(Event event) {

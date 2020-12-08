@@ -36,7 +36,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         try {
             connection = JDBCUtil.getConnection(cfg.getDriverClassName(), cfg.getUrl(), cfg.getUsername(), cfg.getPassword());
         } catch (Exception e) {
-            logger.error("Failed to connect:{}", cfg.getUrl(), e.getMessage());
+            logger.error("Failed to connect:{}, message:{}", cfg.getUrl(), e.getMessage());
         } finally {
             JDBCUtil.close(connection);
         }
