@@ -1,5 +1,7 @@
 package org.dbsyncer.common.util;
 
+import org.dbsyncer.common.CommonException;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -11,7 +13,7 @@ public abstract class SHA1Util {
 		try {
 			instance = MessageDigest.getInstance("SHA1");
 		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
+            throw new CommonException(e);
 		}
 	}
 	
