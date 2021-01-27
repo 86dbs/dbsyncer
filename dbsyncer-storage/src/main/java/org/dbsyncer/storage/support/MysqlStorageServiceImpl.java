@@ -87,6 +87,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             field.setAccessible(true);
             database = (String) field.get(delegate);
         } catch (Exception e) {
+            logger.error("无法连接Mysql,URL:{}", config.getUrl());
             throw new StorageException(e.getMessage());
         } finally {
             JDBCUtil.close(conn);

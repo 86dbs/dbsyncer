@@ -1,6 +1,7 @@
 package org.dbsyncer.listener.mysql;
 
 import com.github.shyiko.mysql.binlog.event.*;
+import com.github.shyiko.mysql.binlog.network.ServerException;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -56,7 +57,6 @@ public class MysqlExtractor extends AbstractExtractor {
         } catch (Exception e) {
             logger.error("关闭失败:{}", e.getMessage());
         }
-
     }
 
     private void run() throws Exception {
@@ -102,8 +102,6 @@ public class MysqlExtractor extends AbstractExtractor {
     }
 
     private void reStart() {
-        this.close();
-
         for (int i = 1; i <= RETRY_TIMES; i++) {
             try {
                 if (null != client) {
@@ -154,7 +152,26 @@ public class MysqlExtractor extends AbstractExtractor {
         }
 
         @Override
-        public void onCommunicationFailure(BinaryLogRemoteClient client, Exception ex) {
+        public void onCommunicationFailure(BinaryLogRemoteClient client, Exception e) {
+            logger.error(e.getMessage());
+            /**
+             * e:
+             * case1> Due to the automatic expiration and deletion mechanism of MySQL binlog files, the binlog file cannot be found.
+             * case2> Got fatal error 1236 from master when reading data from binary log.
+             * case3> Log event entry exceeded max_allowed_packet; Increase max_allowed_packet on master.
+             */
+            if(e instanceof ServerException){
+                ServerException serverException = (ServerException) e;
+                if(serverException.getErrorCode() == 1236){
+                    close();
+                    String log = String.format("线程[%s]执行异常。由于MySQL配置了过期binlog文件自动删除机制，已无法找到原binlog文件%s。建议先保存驱动（加载最新的binlog文件），再启动驱动。",
+                            client.getWorkerThreadName(),
+                            client.getBinlogFilename());
+                    interruptException(new ListenerException(log));
+                    return;
+                }
+            }
+
             reStart();
         }
 

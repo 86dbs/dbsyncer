@@ -33,7 +33,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
         @Override
         protected void initSSLContext(SSLContext sc) throws GeneralSecurityException {
-            sc.init(null, new TrustManager[]{
+            sc.init(null, new TrustManager[] {
                     new X509TrustManager() {
 
                         @Override
@@ -126,12 +126,12 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             ensureEventDeserializerHasRequiredEDDs();
 
             // new Thread
-            this.worker = new Thread(()-> listenForEventPackets(channel));
+            this.worker = new Thread(() -> listenForEventPackets(channel));
             this.worker.setDaemon(false);
             this.workerThreadName = new StringBuilder("binlog-parser-").append(hostname).append(":").append(port).append("_").append(connectionId).toString();
             this.worker.setName(workerThreadName);
             this.worker.start();
-            notifyConnectEvent();
+            lifecycleListeners.forEach(listener -> listener.onConnect(this));
         } finally {
             connectLock.unlock();
         }
@@ -143,11 +143,11 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             try {
                 connectLock.lock();
                 closeChannel(channel);
-                if(null != this.worker && !worker.isInterrupted()){
+                if (null != this.worker && !worker.isInterrupted()) {
                     this.worker.interrupt();
                     this.worker = null;
                 }
-                notifyDisconnectEvent();
+                lifecycleListeners.forEach(listener -> listener.onDisconnect(this));
             } finally {
                 connectLock.unlock();
             }
@@ -242,11 +242,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                     if (cause instanceof EOFException || cause instanceof SocketException) {
                         throw e;
                     }
-                    if (connected) {
-                        for (BinaryLogRemoteClient.LifecycleListener lifecycleListener : lifecycleListeners) {
-                            lifecycleListener.onEventDeserializationFailure(this, e);
-                        }
-                    }
+                    lifecycleListeners.forEach(listener -> listener.onEventDeserializationFailure(this, e));
                     continue;
                 }
                 if (connected) {
@@ -256,11 +252,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 }
             }
         } catch (Exception e) {
-            if (connected) {
-                for (BinaryLogRemoteClient.LifecycleListener lifecycleListener : lifecycleListeners) {
-                    lifecycleListener.onCommunicationFailure(this, e);
-                }
-            }
+            lifecycleListeners.forEach(listener -> listener.onCommunicationFailure(this, e));
         }
     }
 
@@ -535,7 +527,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     }
 
     private void setConfig() {
-        if(null == tableMapEventByTableId){
+        if (null == tableMapEventByTableId) {
             tableMapEventByTableId = new HashMap<>();
         }
 
@@ -556,7 +548,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         eventDataDeserializers.put(EventType.EXT_DELETE_ROWS, (new DeleteRowsEventDataDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
         eventDataDeserializers.put(EventType.XID, new XidEventDataDeserializer());
 
-        if(simpleEventModel){
+        if (simpleEventModel) {
             eventDataDeserializers.put(EventType.INTVAR, new IntVarEventDataDeserializer());
             eventDataDeserializers.put(EventType.QUERY, new QueryEventDataDeserializer());
             eventDataDeserializers.put(EventType.ROWS_QUERY, new RowsQueryEventDataDeserializer());
@@ -579,18 +571,6 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                     logger.warn(eventListener + " choked on " + event, e);
                 }
             }
-        }
-    }
-
-    private void notifyConnectEvent() {
-        for (BinaryLogRemoteClient.LifecycleListener lifecycleListener : lifecycleListeners) {
-            lifecycleListener.onConnect(this);
-        }
-    }
-
-    private void notifyDisconnectEvent() {
-        for (BinaryLogRemoteClient.LifecycleListener lifecycleListener : lifecycleListeners) {
-            lifecycleListener.onDisconnect(this);
         }
     }
 
