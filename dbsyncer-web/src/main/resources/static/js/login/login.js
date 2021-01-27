@@ -5,7 +5,7 @@ var $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.subst
 
 var $formHtml = "<dl class=\"admin_login\">\n" +
     "\t<dt>\n" +
-    "\t\t<strong id=\"appName\">DBSyncer</strong>\n" +
+    "\t\t<strong id=\"appName\"></strong>\n" +
     "\t</dt>\n" +
     "\t<div id=\"loginTip\" class=\"loginVerifcateTextError\"></div>\n" +
     "\t<dd class=\"user_icon\">\n" +
