@@ -5,7 +5,7 @@ var $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.subst
 
 var $formHtml = "<dl class=\"admin_login\">\n" +
     "\t<dt>\n" +
-    "\t\t<strong>DBSyncer</strong>\n" +
+    "\t\t<strong id=\"appName\">DBSyncer</strong>\n" +
     "\t</dt>\n" +
     "\t<div id=\"loginTip\" class=\"loginVerifcateTextError\"></div>\n" +
     "\t<dd class=\"user_icon\">\n" +
@@ -55,9 +55,13 @@ $(document).ready(function () {
 
 //初始化加载版权信息
 function initLoginCopyrightInfo() {
-    $.getJSON($basePath + "/config/system.json", function (data) {
-        // 获取底部版权信息
-        $("#loginCopyrightInfo").html(data.footerName);
+    $.get($basePath + "/index/version.json", {}, function (data) {
+        if (data.success == true) {
+            // 获取头部版权信息
+            $("#appName").html(data.resultValue.appName);
+            // 获取底部版权信息
+            $("#appCopyRight").html(data.resultValue.appCopyRight);
+        }
     });
 }
 

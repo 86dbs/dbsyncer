@@ -3,11 +3,13 @@
 $(function () {
 
     // 初始化版权信息
-    doGetter("/config/system.json",{}, function (data) {
-        // 获取头部版权信息
-        $("#logoName").html(data.headName);
-        // 获取底部版权信息
-        $("#copyrightInfo").html(data.footerName);
+    doGetter("/index/version.json",{}, function (data) {
+        if (data.success == true) {
+            // 获取头部版权信息
+            $("#appName").html(data.resultValue.appName);
+            // 获取底部版权信息
+            $("#appCopyRight").html(data.resultValue.appCopyRight);
+        }
     });
 
     // 注销
