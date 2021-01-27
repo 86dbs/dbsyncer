@@ -4,9 +4,9 @@ import org.apache.commons.dbcp.DelegatingDatabaseMetaData;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.config.SqlBuilderConfig;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.Database;
-import org.dbsyncer.connector.database.sqlbuilder.SqlBuilderQuery;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
 import org.dbsyncer.connector.mysql.MysqlConnector;
 import org.dbsyncer.connector.util.DatabaseUtil;
@@ -31,7 +31,6 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -55,6 +54,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     private static final String PREFIX_TABLE      = "dbsyncer_";
     private static final String SHOW_TABLE        = "show tables where Tables_in_%s = \"%s\"";
     private static final String DROP_TABLE        = "DROP TABLE %s";
+    private static final String TRUNCATE_TABLE    = "TRUNCATE TABLE %s";
     private static final String TABLE_CREATE_TIME = "create_time";
     private static final String TABLE_UPDATE_TIME = "update_time";
 
@@ -70,13 +70,6 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @PostConstruct
     private void init() {
-        config = null == config ? new DatabaseConfig() : config;
-        config.setUrl(StringUtils.isNotBlank(config.getUrl()) ? config.getUrl()
-                : "jdbc:mysql://127.0.0.1:3306/dbsyncer?rewriteBatchedStatements=true&seUnicode=true&characterEncoding=UTF8&useSSL=true");
-        config.setDriverClassName(
-                StringUtils.isNotBlank(config.getDriverClassName()) ? config.getDriverClassName() : "com.mysql.jdbc.Driver");
-        config.setUsername(StringUtils.isNotBlank(config.getUsername()) ? config.getUsername() : "root");
-        config.setPassword(StringUtils.isNotBlank(config.getPassword()) ? config.getPassword() : "123");
         logger.info("url:{}", config.getUrl());
         logger.info("driverClassName:{}", config.getDriverClassName());
         logger.info("username:{}", config.getUsername());
@@ -94,6 +87,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             field.setAccessible(true);
             database = (String) field.get(delegate);
         } catch (Exception e) {
+            logger.error("无法连接Mysql,URL:{}", config.getUrl());
             throw new StorageException(e.getMessage());
         } finally {
             JDBCUtil.close(conn);
@@ -111,6 +105,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
         List<Map> result = new ArrayList<>();
         List<Map<String, Object>> list = jdbcTemplate.queryForList(sql, args.toArray());
+        replaceHighLight(query, list);
         result.addAll(list);
         return result;
     }
@@ -140,8 +135,18 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void deleteAll(StorageEnum type, String table) {
-        String sql = String.format(DROP_TABLE, PREFIX_TABLE.concat(table));
-        jdbcTemplate.execute(sql);
+        Executor executor = getExecutor(type, table);
+        if (executor.isSystemType()) {
+            String sql = String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(table));
+            jdbcTemplate.execute(sql);
+            return;
+        }
+
+        if (tables.containsKey(table)) {
+            tables.remove(table);
+            String sql = String.format(DROP_TABLE, PREFIX_TABLE.concat(table));
+            jdbcTemplate.execute(sql);
+        }
     }
 
     @Override
@@ -151,7 +156,14 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void insertData(StorageEnum type, String table, List<Map> list) {
-        executeInsert(type, table, list);
+        if (!CollectionUtils.isEmpty(list)) {
+            Executor executor = getExecutor(type, table);
+            List<Object[]> args = new ArrayList<>(list.size());
+            list.parallelStream().forEach(params -> args.add(getParams(executor, params).toArray()));
+
+            // 根据JDBC 2.0规范，值为-2表示操作成功，但受影响的行数是未知的
+            jdbcTemplate.batchUpdate(executor.getInsert(), args);
+        }
     }
 
     @Override
@@ -176,12 +188,8 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         return insert;
     }
 
-    private void executeInsert(StorageEnum type, String table, List<Map> list) {
-
-    }
-
     private List<Object> getParams(Executor executor, Map params) {
-        return executor.getFieldPairs().stream().map(p -> p.convert(params.get(p.labelName))).collect(Collectors.toList());
+        return executor.getFieldPairs().stream().map(p -> params.get(p.labelName)).collect(Collectors.toList());
     }
 
     private Executor getExecutor(StorageEnum type, String table) {
@@ -196,7 +204,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                 return e;
             }
             // 不存在
-            Executor newExecutor = new Executor(executor.getGroup(), executor.getFieldPairs(), executor.dynamicTableName);
+            Executor newExecutor = new Executor(executor.getGroup(), executor.getFieldPairs(), executor.isDynamicTableName(), executor.isSystemType(), executor.isOrderByUpdateTime());
             createTableIfNotExist(table, newExecutor);
 
             tables.putIfAbsent(table, newExecutor);
@@ -215,11 +223,17 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                     sql.append(" AND ");
                 }
                 // name=?
-                sql.append(p.getKey()).append("=").append("?");
-                args.add(p.getValue());
+                sql.append(p.getKey()).append(p.isHighlighter() ? " like ?" : "=?");
+                args.add(p.isHighlighter() ? new StringBuilder("%").append(p.getValue()).append("%"): p.getValue());
                 flag.compareAndSet(false, true);
             });
         }
+        // order by updateTime,createTime desc
+        sql.append(" order by ");
+        if (executor.isOrderByUpdateTime()) {
+            sql.append(ConfigConstant.CONFIG_MODEL_UPDATE_TIME).append(",");
+        }
+        sql.append(ConfigConstant.CONFIG_MODEL_CREATE_TIME).append(" desc");
         sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
         args.add((query.getPageNum() - 1) * query.getPageSize());
         args.add(query.getPageSize());
@@ -232,28 +246,26 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                 new FieldPair(ConfigConstant.CONFIG_MODEL_ID),
                 new FieldPair(ConfigConstant.CONFIG_MODEL_NAME),
                 new FieldPair(ConfigConstant.CONFIG_MODEL_TYPE),
-                new TimestampFieldPair(ConfigConstant.CONFIG_MODEL_CREATE_TIME, TABLE_CREATE_TIME),
-                new TimestampFieldPair(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, TABLE_UPDATE_TIME),
+                new FieldPair(ConfigConstant.CONFIG_MODEL_CREATE_TIME, TABLE_CREATE_TIME),
+                new FieldPair(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, TABLE_UPDATE_TIME),
                 new FieldPair(ConfigConstant.CONFIG_MODEL_JSON));
         // 日志
         List<FieldPair> logFields = Arrays.asList(
                 new FieldPair(ConfigConstant.CONFIG_MODEL_ID),
-                new FieldPair(ConfigConstant.CONFIG_MODEL_NAME),
                 new FieldPair(ConfigConstant.CONFIG_MODEL_TYPE),
-                new TimestampFieldPair(ConfigConstant.CONFIG_MODEL_CREATE_TIME, TABLE_CREATE_TIME),
+                new FieldPair(ConfigConstant.CONFIG_MODEL_CREATE_TIME, TABLE_CREATE_TIME),
                 new FieldPair(ConfigConstant.CONFIG_MODEL_JSON));
         // 数据
         List<FieldPair> dataFields = Arrays.asList(
                 new FieldPair(ConfigConstant.CONFIG_MODEL_ID),
-                new FieldPair(ConfigConstant.CONFIG_MODEL_NAME),
                 new FieldPair(ConfigConstant.DATA_SUCCESS),
                 new FieldPair(ConfigConstant.DATA_EVENT),
                 new FieldPair(ConfigConstant.DATA_ERROR),
-                new TimestampFieldPair(ConfigConstant.CONFIG_MODEL_CREATE_TIME, TABLE_CREATE_TIME),
+                new FieldPair(ConfigConstant.CONFIG_MODEL_CREATE_TIME, TABLE_CREATE_TIME),
                 new FieldPair(ConfigConstant.CONFIG_MODEL_JSON));
-        tables.putIfAbsent(StorageEnum.CONFIG.getType(), new Executor(StorageEnum.CONFIG, configFields));
-        tables.putIfAbsent(StorageEnum.LOG.getType(), new Executor(StorageEnum.LOG, logFields));
-        tables.putIfAbsent(StorageEnum.DATA.getType(), new Executor(StorageEnum.DATA, dataFields, true));
+        tables.putIfAbsent(StorageEnum.CONFIG.getType(), new Executor(StorageEnum.CONFIG, configFields, false, true, true));
+        tables.putIfAbsent(StorageEnum.LOG.getType(), new Executor(StorageEnum.LOG, logFields, false, true, false));
+        tables.putIfAbsent(StorageEnum.DATA.getType(), new Executor(StorageEnum.DATA, dataFields, true, false, false));
         // 创建表
         tables.forEach((tableName, e) -> {
             if (!e.isDynamicTableName()) {
@@ -279,12 +291,19 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             jdbcTemplate.execute(ddl);
         }
 
-        String pk = ConfigConstant.CONFIG_MODEL_ID;
-        List<String> fieldName = executor.getFieldPairs().stream().map(p -> p.columnName).collect(Collectors.toList());
-        String query = new SqlBuilderQuery().buildStandardSql(table, pk, fieldName, "", "");
-        String insert = SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(table, pk, fieldName, "", "", connector);
-        String update = SqlBuilderEnum.UPDATE.getSqlBuilder().buildSql(table, pk, fieldName, "", "", connector);
-        String delete = SqlBuilderEnum.DELETE.getSqlBuilder().buildSql(table, pk, fieldName, "", "", connector);
+        List<String> fieldNames = new ArrayList<>();
+        List<String> labelNames = new ArrayList<>();
+        executor.getFieldPairs().forEach(p -> {
+            fieldNames.add(p.columnName);
+            labelNames.add(p.labelName);
+        });
+        final SqlBuilderConfig config = new SqlBuilderConfig(connector, table, ConfigConstant.CONFIG_MODEL_ID, fieldNames, labelNames, "",
+                "");
+
+        String query = SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config);
+        String insert = SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(config);
+        String update = SqlBuilderEnum.UPDATE.getSqlBuilder().buildSql(config);
+        String delete = SqlBuilderEnum.DELETE.getSqlBuilder().buildSql(config);
         executor.setQuery(query).setInsert(insert).setUpdate(update).setDelete(delete);
     }
 
@@ -321,44 +340,36 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         }
     }
 
+    private void replaceHighLight(Query query, List<Map<String,Object>> list) {
+        // 开启高亮
+        if(!CollectionUtils.isEmpty(list) && query.isEnableHighLightSearch()){
+            List<Param> highLight = query.getParams().stream().filter(p -> p.isHighlighter()).collect(Collectors.toList());
+            list.parallelStream().forEach(row -> {
+                highLight.forEach(p -> {
+                    String text = String.valueOf(row.get(p.getKey()));
+                    String replacement = new StringBuilder("<span style='color:red'>").append(p.getValue()).append("</span>").toString();
+                    row.put(p.getKey(), StringUtils.replace(text, p.getValue(), replacement));
+                });
+            });
+        }
+    }
+
     public void setConfig(DatabaseConfig config) {
         this.config = config;
     }
 
-    interface FieldHandler {
-        Object convert(Object val);
-    }
-
     class FieldPair {
-        String       labelName;
-        String       columnName;
-        FieldHandler handler;
+        String labelName;
+        String columnName;
 
         public FieldPair(String labelName) {
             this.labelName = labelName;
             this.columnName = labelName;
-            this.handler = val -> val;
         }
 
         public FieldPair(String labelName, String columnName) {
             this.labelName = labelName;
             this.columnName = columnName;
-        }
-
-        public Object convert(Object val) {
-            return val;
-        }
-    }
-
-    class TimestampFieldPair extends FieldPair {
-
-        public TimestampFieldPair(String labelName, String columnName) {
-            super(labelName, columnName);
-        }
-
-        @Override
-        public Object convert(Object val) {
-            return new Timestamp((Long) val);
         }
     }
 
@@ -370,16 +381,15 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         private StorageEnum     group;
         private List<FieldPair> fieldPairs;
         private boolean         dynamicTableName;
+        private boolean         systemType;
+        private boolean         orderByUpdateTime;
 
-        public Executor(StorageEnum group, List<FieldPair> fieldPairs) {
-            this.group = group;
-            this.fieldPairs = fieldPairs;
-        }
-
-        public Executor(StorageEnum group, List<FieldPair> fieldPairs, boolean dynamicTableName) {
+        public Executor(StorageEnum group, List<FieldPair> fieldPairs, boolean dynamicTableName, boolean systemType, boolean orderByUpdateTime) {
             this.group = group;
             this.fieldPairs = fieldPairs;
             this.dynamicTableName = dynamicTableName;
+            this.systemType = systemType;
+            this.orderByUpdateTime = orderByUpdateTime;
         }
 
         public String getQuery() {
@@ -429,5 +439,14 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         public boolean isDynamicTableName() {
             return dynamicTableName;
         }
+
+        public boolean isSystemType() {
+            return systemType;
+        }
+
+        public boolean isOrderByUpdateTime() {
+            return orderByUpdateTime;
+        }
+
     }
 }

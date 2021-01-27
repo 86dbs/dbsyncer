@@ -50,7 +50,7 @@ public class FlushServiceImpl implements FlushService {
         List<Map> list = data.parallelStream().map(r -> {
             Map<String, Object> params = new HashMap();
             params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
-            params.put(ConfigConstant.DATA_SUCCESS, success);
+            params.put(ConfigConstant.DATA_SUCCESS, success ? 1 : 0);
             params.put(ConfigConstant.DATA_EVENT, event);
             params.put(ConfigConstant.DATA_ERROR, error);
             params.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(r));

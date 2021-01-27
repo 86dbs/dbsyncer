@@ -90,14 +90,15 @@ public abstract class ParamsUtil {
         Assert.notNull(params, "Params can not be null.");
         Document doc = new Document();
         String id = (String) params.get(ConfigConstant.CONFIG_MODEL_ID);
-        Boolean success = (Boolean) params.get(ConfigConstant.DATA_SUCCESS);
+        Integer success = (Integer) params.get(ConfigConstant.DATA_SUCCESS);
         String event = (String) params.get(ConfigConstant.DATA_EVENT);
         String error = (String) params.get(ConfigConstant.DATA_ERROR);
         String json = (String) params.get(ConfigConstant.CONFIG_MODEL_JSON);
         Long createTime = (Long) params.get(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
 
         doc.add(new StringField(ConfigConstant.CONFIG_MODEL_ID, id, Field.Store.YES));
-        doc.add(new StringField(ConfigConstant.DATA_SUCCESS, String.valueOf(success), Field.Store.YES));
+        doc.add(new IntPoint(ConfigConstant.DATA_SUCCESS, success));
+        doc.add(new StoredField(ConfigConstant.DATA_SUCCESS, success));
         doc.add(new StringField(ConfigConstant.DATA_EVENT, event, Field.Store.YES));
         doc.add(new TextField(ConfigConstant.DATA_ERROR, error, Field.Store.YES));
         doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_JSON, json));

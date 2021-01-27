@@ -1,6 +1,7 @@
 // 获取项目地址
 var $location = (window.location + '').split('/');
-var $basePath = $location[0] + '//' + $location[2];
+var $path = document.location.pathname;
+var $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.substr(1).indexOf("/")+1);
 // 全局内容区域
 var $initContainer = $("#initContainer");
 
@@ -17,14 +18,7 @@ function bootGrowl(data, type) {
 // 跳转主页
 function backIndexPage() {
     // 加载页面
-    $initContainer.load("/index?refresh=" + new Date().getTime());
-}
-
-// 跳转菜单
-function activeMenu($url){
-    var $menu = $('#menu > li');
-    $menu.removeClass('active');
-    $menu.find("a[url='" + $url + "']").parent().addClass('active');
+    doLoader("/index?refresh=" + new Date().getTime());
 }
 
 // 美化SQL
@@ -57,10 +51,16 @@ $.fn.serializeJson = function () {
     return o;
 };
 
+// 全局加载页面
+function doLoader(url){
+    // 加载页面
+    $initContainer.load($basePath + url);
+}
+
 // 全局Ajax post
 function doPoster(url, params, action) {
     $.loadingT(true);
-    $.post(url, params, function (data) {
+    $.post($basePath + url, params, function (data) {
         $.loadingT(false);
         // 异常请求：302
         if (!(data instanceof Object)) {
@@ -77,13 +77,32 @@ function doPoster(url, params, action) {
     });
 }
 
+// 全局Ajax get
+function doGetter(url, params, action, loading) {
+    if(loading == undefined || loading == true){
+        $.loadingT(true);
+    }
+    $.get($basePath + url, params, function (data) {
+        $.loadingT(false);
+        action(data);
+    }).error(function (xhr, status, info) {
+        $.loadingT(false);
+        bootGrowl("访问异常，请刷新或重试.", "danger");
+    });
+}
+
+// 全局Ajax get, 不显示加载动画
+function doGetWithoutLoading(url, params, action) {
+    doGetter(url, params, action, false);
+}
+
 // ******************* 常量配置 ***************************
 // 连接器类型
 var ConnectorConstant = {
-    "Mysql" : "/connector/page/addMysql",
-    "Oracle" : "/connector/page/addOracle",
-    "SqlServer" : "/connector/page/addSqlServer",
-    "DqlMysql" : "/connector/page/addDqlMysql",
-    "DqlOracle" : "/connector/page/addDqlOracle",
-    "Redis" : "/connector/page/addRedis"
+    "Mysql" : $basePath + "/connector/page/addMysql",
+    "Oracle" : $basePath + "/connector/page/addOracle",
+    "SqlServer" : $basePath + "/connector/page/addSqlServer",
+    "DqlMysql" : $basePath + "/connector/page/addDqlMysql",
+    "DqlOracle" : $basePath + "/connector/page/addDqlOracle",
+    "Redis" : $basePath + "/connector/page/addRedis"
 }

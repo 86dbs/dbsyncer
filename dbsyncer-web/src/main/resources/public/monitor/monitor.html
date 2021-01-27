@@ -43,8 +43,8 @@
                             <td th:text="${s.index}+1"></td>
                             <td th:text="${d?.event}"></td>
                             <td>
-                                <span th:if="${d?.success}" class="label label-success">成功</span>
-                                <span th:if="${not d?.success}" class="label label-warning">失败</span>
+                                <span th:if="${d?.success == 1}" class="label label-success">成功</span>
+                                <span th:if="${d?.success == 0}" class="label label-warning">失败</span>
                             </td>
                             <td th:text="${d?.error}"></td>
                             <td th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>

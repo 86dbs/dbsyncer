@@ -62,6 +62,13 @@ public abstract class AbstractExtractor implements Extractor {
     }
 
     @Override
+    public void forceFlushEvent(){
+        if (!CollectionUtils.isEmpty(watcher)) {
+            watcher.forEach(w -> w.forceFlushEvent(map));
+        }
+    }
+
+    @Override
     public void errorEvent(Exception e) {
         if (!CollectionUtils.isEmpty(watcher)) {
             watcher.forEach(w -> w.errorEvent(e));

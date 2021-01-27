@@ -102,7 +102,7 @@ function bindAutoSelect(){
 }
 // 返回驱动配置页面
 function backMappingPage($this){
-    $initContainer.load('/mapping/page/edit?id=' + $this.attr("mappingId"));
+    doLoader('/mapping/page/edit?id=' + $this.attr("mappingId"));
 }
 
 $(function() {

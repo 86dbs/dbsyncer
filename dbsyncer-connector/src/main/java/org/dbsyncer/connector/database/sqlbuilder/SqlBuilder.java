@@ -1,8 +1,6 @@
 package org.dbsyncer.connector.database.sqlbuilder;
 
-import org.dbsyncer.connector.database.Database;
-
-import java.util.List;
+import org.dbsyncer.connector.config.SqlBuilderConfig;
 
 /**
  * SQL生成器
@@ -15,14 +13,15 @@ public interface SqlBuilder {
 
     /**
      * 生成SQL
-     * @param tableName
-     * @param pk
-     * @param filedNames
-     * @param queryFilter
-     * @param quotation
-     * @param database
+     * @param config
      * @return
      */
-    String buildSql(String tableName, String pk, List<String> filedNames, String queryFilter, String quotation, Database database);
+    String buildSql(SqlBuilderConfig config);
 
+    /**
+     * 生成查询SQL
+     * @param config
+     * @return
+     */
+    String buildQuerySql(SqlBuilderConfig config);
 }

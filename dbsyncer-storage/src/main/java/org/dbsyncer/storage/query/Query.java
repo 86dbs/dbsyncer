@@ -25,6 +25,8 @@ public class Query {
 
     private int pageSize = 20;
 
+    private boolean enableHighLightSearch;
+
     public Query() {
         this.params = new ArrayList<>();
     }
@@ -41,6 +43,7 @@ public class Query {
 
     public void put(String key, String value, boolean highlighter) {
         params.add(new Param(key, value, highlighter));
+        enableHighLightSearch = highlighter;
     }
 
     public StorageEnum getType() {
@@ -75,4 +78,7 @@ public class Query {
         return pageSize;
     }
 
+    public boolean isEnableHighLightSearch() {
+        return enableHighLightSearch;
+    }
 }

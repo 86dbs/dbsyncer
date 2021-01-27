@@ -63,35 +63,6 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     @Autowired
     private ConfigService configService;
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-//        http.csrf().disable()
-//                .authorizeRequests()
-//                .anyRequest().permitAll()
-//                .and().logout().permitAll();
-
-        http.csrf().disable()
-                .authorizeRequests()
-                .antMatchers("/css/**", "/js/**", "/img/**", "/config/**", "/plugins/**").permitAll().anyRequest()
-                .authenticated()
-                .and()
-                .formLogin()
-                .loginProcessingUrl(LOGIN)
-                .loginPage(LOGIN_PAGE)
-                .successHandler(loginSuccessHandler())
-                .failureHandler(loginFailHandler())
-                .permitAll()
-                .and()
-                .logout()
-                .permitAll()
-                .invalidateHttpSession(true).deleteCookies("JSESSIONID").logoutSuccessHandler(logoutHandler())
-                .and()
-                .sessionManagement()
-                .sessionFixation()
-                .migrateSession()
-                .maximumSessions(MAXIMUM_SESSIONS);
-    }
-
     /**
      * 登录失败
      *
@@ -124,11 +95,6 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         };
     }
 
-    /**
-     * 注销
-     *
-     * @return
-     */
     @Bean
     public LogoutSuccessHandler logoutHandler() {
         return new LogoutSuccessHandler() {
@@ -146,13 +112,35 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         };
     }
 
-    /**
-     * 认证
-     *
-     * @param authentication
-     * @return
-     * @throws AuthenticationException
-     */
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        //http.csrf().disable()
+        //        .authorizeRequests()
+        //        .anyRequest().permitAll()
+        //        .and().logout().permitAll();
+
+        http.csrf().disable()
+                .authorizeRequests()
+                .antMatchers("/css/**", "/js/**", "/img/**", "/config/**", "/plugins/**").permitAll().anyRequest()
+                .authenticated()
+                .and()
+                .formLogin()
+                .loginProcessingUrl(LOGIN)
+                .loginPage(LOGIN_PAGE)
+                .successHandler(loginSuccessHandler())
+                .failureHandler(loginFailHandler())
+                .permitAll()
+                .and()
+                .logout()
+                .permitAll()
+                .invalidateHttpSession(true).deleteCookies("JSESSIONID").logoutSuccessHandler(logoutHandler())
+                .and()
+                .sessionManagement()
+                .sessionFixation()
+                .migrateSession()
+                .maximumSessions(MAXIMUM_SESSIONS);
+    }
+
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         // 获取表单用户名
@@ -170,6 +158,18 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     @Override
     public boolean supports(Class<?> aClass) {
         return true;
+    }
+
+    @Override
+    public void sessionCreated(HttpSessionEvent se) {
+        logger.debug("创建会话:{}", se.getSession().getId());
+        int maxInactiveInterval = se.getSession().getMaxInactiveInterval();
+        logger.debug(String.valueOf(maxInactiveInterval));
+    }
+
+    @Override
+    public void sessionDestroyed(HttpSessionEvent se) {
+        logger.debug("销毁会话:{}", se.getSession().getId());
     }
 
     /**
@@ -195,15 +195,4 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         }
     }
 
-    @Override
-    public void sessionCreated(HttpSessionEvent se) {
-        logger.debug("创建会话:{}", se.getSession().getId());
-        int maxInactiveInterval = se.getSession().getMaxInactiveInterval();
-        logger.debug(String.valueOf(maxInactiveInterval));
-    }
-
-    @Override
-    public void sessionDestroyed(HttpSessionEvent se) {
-        logger.debug("销毁会话:{}", se.getSession().getId());
-    }
 }

@@ -35,6 +35,13 @@ public interface Event {
     void flushEvent(Map<String, String> map);
 
     /**
+     * 强制写入增量点事件
+     *
+     * @param map
+     */
+    void forceFlushEvent(Map<String,String> map);
+
+    /**
      * 异常事件
      *
      * @param e

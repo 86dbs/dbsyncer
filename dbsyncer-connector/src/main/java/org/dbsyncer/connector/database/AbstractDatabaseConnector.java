@@ -36,7 +36,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         try {
             connection = JDBCUtil.getConnection(cfg.getDriverClassName(), cfg.getUrl(), cfg.getUsername(), cfg.getPassword());
         } catch (Exception e) {
-            logger.error("Failed to connect:{}", cfg.getUrl(), e.getMessage());
+            logger.error("Failed to connect:{}, message:{}", cfg.getUrl(), e.getMessage());
         } finally {
             JDBCUtil.close(connection);
         }
@@ -479,8 +479,8 @@ public abstract class AbstractDatabaseConnector implements Database {
             throw new ConnectorException("Table name can not be empty.");
         }
 
-        String quotation = buildSqlWithQuotation();
-        return SqlBuilderEnum.getSqlBuilder(type).buildSql(tableName, pk, filedNames, queryFilterSQL, quotation, this);
+        SqlBuilderConfig config = new SqlBuilderConfig(this, tableName, pk, filedNames, queryFilterSQL, buildSqlWithQuotation());
+        return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
     }
 
     /**
