@@ -60,7 +60,7 @@
             <tr>
                 <td rowspan="2">版本支持</td>
                 <td>Mysql</td>
-                <td colspan="4">5.7.19以上（Mysql-8.0暂不支持）</td>
+                <td colspan="4">5.7.19以上</td>
             </tr>
             <tr>
                 <td>Oracle</td>
@@ -81,7 +81,6 @@
     <ol>
         <li><a target="_blank" href="https://gitee.com/ghi/dbsyncer/releases">DBSyncer-1.0.0-Alpha.zip</a>（安装包）</li>
         <li><a target="_blank" href="https://www.oracle.com/java/technologies/jdk8-downloads.html">JRE 1.8 +</a></li>
-        <li><a target="_blank" href="http://apache.fayea.com/zookeeper/stable/">Zookeeper - 3.5.5</a> （高可用模式下需要）</li>
     </ol>
     <p>步骤</p>
     <ol>

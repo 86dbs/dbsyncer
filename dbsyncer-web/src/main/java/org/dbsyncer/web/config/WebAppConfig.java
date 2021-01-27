@@ -121,7 +121,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
         http.csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/css/**", "/js/**", "/img/**", "/config/**", "/plugins/**").permitAll().anyRequest()
+                .antMatchers("/css/**", "/js/**", "/img/**", "/config/**", "/plugins/**", "/index/version.json").permitAll().anyRequest()
                 .authenticated()
                 .and()
                 .formLogin()
