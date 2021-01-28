@@ -233,7 +233,6 @@ public class MysqlExtractor extends AbstractExtractor {
                 RotateEventData data = event.getData();
                 refresh(data.getBinlogFilename(), data.getBinlogPosition());
                 forceFlushEvent();
-                logger.info("Force flush:{}", map);
                 return;
             }
         }

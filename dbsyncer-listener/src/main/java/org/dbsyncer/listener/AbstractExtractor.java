@@ -5,6 +5,8 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.listener.config.ListenerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -17,6 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public abstract class AbstractExtractor implements Extractor {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     protected ConnectorConfig connectorConfig;
     protected ListenerConfig listenerConfig;
     protected Map<String, String> map;
@@ -64,6 +67,7 @@ public abstract class AbstractExtractor implements Extractor {
     @Override
     public void forceFlushEvent(){
         if (!CollectionUtils.isEmpty(watcher)) {
+            logger.info("Force flush:{}", map);
             watcher.forEach(w -> w.forceFlushEvent(map));
         }
     }
