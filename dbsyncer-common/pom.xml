@@ -11,11 +11,6 @@
     <artifactId>dbsyncer-common</artifactId>
 
     <dependencies>
-		<!-- json -->
-	    <dependency>
-	      <groupId>org.springframework.boot</groupId>
-	      <artifactId>spring-boot-starter-json</artifactId>
-	    </dependency>
 
         <!-- Log4j2框架的性能是最强的 -->
         <dependency>
@@ -64,6 +59,11 @@
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
+        </dependency>
+        <!-- fastjson -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
         </dependency>
 
     </dependencies>
