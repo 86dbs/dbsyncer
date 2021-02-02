@@ -49,7 +49,7 @@
         <mysql-binlog.version>0.21.0</mysql-binlog.version>
         <sqljdbc.version>1.2</sqljdbc.version>
         <json.version>20090211</json.version>
-        <fastjson.version>1.2.68</fastjson.version>
+        <fastjson.version>1.2.75</fastjson.version>
         <junit.version>4.12</junit.version>
     </properties>
 
