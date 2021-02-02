@@ -11,3 +11,4 @@ velocity.log.1
 */.settings/*
 target/
 log.txt
+*.zip
