@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 mvn clean -f pom.xml
 mvn compile package -f pom.xml -Dmaven.test.skip=true
