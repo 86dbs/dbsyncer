@@ -90,13 +90,13 @@ public abstract class AbstractDatabaseConnector implements Database {
         Table table = commandConfig.getTable();
         Map<String, String> map = new HashMap<>();
 
-        String query = SqlBuilderEnum.QUERY.getName();
+        String query = ConnectorConstant.OPERTION_QUERY;
         map.put(query, buildSql(query, table, queryFilterSql));
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
         String quotation = buildSqlWithQuotation();
-        queryCount.append("select count(*) from ").append(quotation).append(table.getName()).append(quotation);
+        queryCount.append("SELECT COUNT(*) FROM ").append(quotation).append(table.getName()).append(quotation);
         if (StringUtils.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
