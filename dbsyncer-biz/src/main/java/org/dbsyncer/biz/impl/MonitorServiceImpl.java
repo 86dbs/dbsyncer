@@ -6,6 +6,7 @@ import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.vo.DataVo;
 import org.dbsyncer.biz.vo.LogVo;
 import org.dbsyncer.biz.vo.MetaVo;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.manager.Manager;
@@ -22,7 +23,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -66,31 +69,33 @@ public class MonitorServiceImpl implements MonitorService {
     }
 
     @Override
-    public List<DataVo> queryData(Map<String, String> params) {
+    public Paging queryData(Map<String, String> params) {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         // 获取默认驱动元信息
         if (StringUtils.isBlank(id)) {
             id = getDefaultMetaId();
         }
 
-        // 没有驱动
-        if (StringUtils.isBlank(id)) {
-            return Collections.EMPTY_LIST;
-        }
-
         int pageNum = NumberUtils.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtils.toInt(params.get("pageSize"), 10);
+        // 没有驱动
+        if (StringUtils.isBlank(id)) {
+            return new Paging(pageNum, pageSize);
+        }
+
         Query query = new Query(pageNum, pageSize);
         // 查询异常信息
         String error = params.get(ConfigConstant.DATA_ERROR);
-        if(StringUtils.isNotBlank(error)){
+        if (StringUtils.isNotBlank(error)) {
             query.put(ConfigConstant.DATA_ERROR, error, true);
         }
 
-        List<DataVo> list = manager.queryData(query, id).stream()
+        Paging paging = manager.queryData(query, id);
+        List<Map> data = (List<Map>) paging.getData();
+        paging.setData(data.stream()
                 .map(m -> convert2Vo(m, DataVo.class))
-                .collect(Collectors.toList());
-        return list;
+                .collect(Collectors.toList()));
+        return paging;
     }
 
     @Override
@@ -101,19 +106,21 @@ public class MonitorServiceImpl implements MonitorService {
     }
 
     @Override
-    public List<LogVo> queryLog(Map<String, String> params) {
+    public Paging queryLog(Map<String, String> params) {
         int pageNum = NumberUtils.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtils.toInt(params.get("pageSize"), 10);
         Query query = new Query(pageNum, pageSize);
         // 查询日志内容
         String json = params.get(ConfigConstant.CONFIG_MODEL_JSON);
-        if(StringUtils.isNotBlank(json)){
+        if (StringUtils.isNotBlank(json)) {
             query.put(ConfigConstant.CONFIG_MODEL_JSON, json, true);
         }
-        List<LogVo> list = manager.queryLog(query).stream()
+        Paging paging = manager.queryLog(query);
+        List<Map> data = (List<Map>) paging.getData();
+        paging.setData(data.stream()
                 .map(m -> convert2Vo(m, LogVo.class))
-                .collect(Collectors.toList());
-        return list;
+                .collect(Collectors.toList()));
+        return paging;
     }
 
     @Override
@@ -134,7 +141,7 @@ public class MonitorServiceImpl implements MonitorService {
 
     private <T> T convert2Vo(Map map, Class<T> clazz) {
         String json = JsonUtil.objToJson(map);
-        return (T) JsonUtil.jsonToObj(json, clazz);
+        return JsonUtil.jsonToObj(json, clazz);
     }
 
     private String getDefaultMetaId() {

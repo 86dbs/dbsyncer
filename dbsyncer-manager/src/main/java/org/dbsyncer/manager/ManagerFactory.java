@@ -1,6 +1,7 @@
 package org.dbsyncer.manager;
 
 import org.dbsyncer.common.event.ClosedEvent;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -236,7 +237,7 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     }
 
     @Override
-    public List<Map> queryData(Query query, String collectionId) {
+    public Paging queryData(Query query, String collectionId) {
         query.setType(StorageEnum.DATA);
         query.setCollection(collectionId);
         return dataTemplate.query(query);
@@ -248,7 +249,7 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     }
 
     @Override
-    public List<Map> queryLog(Query query) {
+    public Paging queryLog(Query query) {
         query.setType(StorageEnum.LOG);
         return dataTemplate.query(query);
     }

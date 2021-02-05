@@ -2,6 +2,7 @@ package org.dbsyncer.storage.support;
 
 import org.apache.commons.dbcp.DelegatingDatabaseMetaData;
 import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
@@ -98,16 +99,21 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     }
 
     @Override
-    public List<Map> select(Query query) {
+    public Paging select(Query query) {
         Executor executor = getExecutor(query.getType(), query.getCollection());
-        List<Object> args = new ArrayList<>();
-        String sql = buildQuerySql(query, executor, args);
+        List<Object> queryArgs = new ArrayList<>();
+        List<Object> queryCountArgs = new ArrayList<>();
+        String querySql = buildQuerySql(query, executor, queryArgs);
+        String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
 
-        List<Map> result = new ArrayList<>();
-        List<Map<String, Object>> list = jdbcTemplate.queryForList(sql, args.toArray());
-        replaceHighLight(query, list);
-        result.addAll(list);
-        return result;
+        List<Map<String, Object>> data = jdbcTemplate.queryForList(querySql, queryArgs.toArray());
+        replaceHighLight(query, data);
+        Long total = jdbcTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class);
+
+        Paging paging = new Paging(query.getPageNum(), query.getPageSize());
+        paging.setData(data);
+        paging.setTotal(total);
+        return paging;
     }
 
     @Override
@@ -214,6 +220,27 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     private String buildQuerySql(Query query, Executor executor, List<Object> args) {
         StringBuilder sql = new StringBuilder(executor.getQuery());
+        buildQuerySqlWithParams(query, args, sql);
+        // order by updateTime,createTime desc
+        sql.append(" order by ");
+        if (executor.isOrderByUpdateTime()) {
+            sql.append(ConfigConstant.CONFIG_MODEL_UPDATE_TIME).append(",");
+        }
+        sql.append(ConfigConstant.CONFIG_MODEL_CREATE_TIME).append(" desc");
+        sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
+        args.add((query.getPageNum() - 1) * query.getPageSize());
+        args.add(query.getPageSize());
+        return sql.toString();
+    }
+
+    private String buildQueryCountSql(Query query, Executor executor, List<Object> args) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (").append(executor.getQuery());
+        buildQuerySqlWithParams(query, args, sql);
+        sql.append(") _T");
+        return sql.toString();
+    }
+
+    private void buildQuerySqlWithParams(Query query, List<Object> args, StringBuilder sql) {
         List<Param> params = query.getParams();
         if (!CollectionUtils.isEmpty(params)) {
             sql.append(" WHERE ");
@@ -228,16 +255,6 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                 flag.compareAndSet(false, true);
             });
         }
-        // order by updateTime,createTime desc
-        sql.append(" order by ");
-        if (executor.isOrderByUpdateTime()) {
-            sql.append(ConfigConstant.CONFIG_MODEL_UPDATE_TIME).append(",");
-        }
-        sql.append(ConfigConstant.CONFIG_MODEL_CREATE_TIME).append(" desc");
-        sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
-        args.add((query.getPageNum() - 1) * query.getPageSize());
-        args.add(query.getPageSize());
-        return sql.toString();
     }
 
     private void initTable() {

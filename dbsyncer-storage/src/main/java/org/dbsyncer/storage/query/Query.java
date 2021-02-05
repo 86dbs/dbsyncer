@@ -74,8 +74,16 @@ public class Query {
         return pageNum;
     }
 
+    public void setPageNum(int pageNum) {
+        this.pageNum = pageNum;
+    }
+
     public int getPageSize() {
         return pageSize;
+    }
+
+    public void setPageSize(int pageSize) {
+        this.pageSize = pageSize;
     }
 
     public boolean isEnableHighLightSearch() {

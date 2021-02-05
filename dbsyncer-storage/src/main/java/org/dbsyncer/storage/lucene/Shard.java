@@ -10,6 +10,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.storage.query.Option;
 
 import java.io.File;
@@ -124,14 +125,18 @@ public class Shard {
         return search(searcher, topDocs, new Option(), 1, 20);
     }
 
-    public List<Map> query(Query query, Sort sort) throws IOException {
+    public Paging query(Query query, Sort sort) throws IOException {
         return query(new Option(query), 1, 20, sort);
     }
 
-    public List<Map> query(Option option, int pageNum, int pageSize, Sort sort) throws IOException {
+    public Paging query(Option option, int pageNum, int pageSize, Sort sort) throws IOException {
         final IndexSearcher searcher = getSearcher();
         final TopDocs topDocs = searcher.search(option.getQuery(), MAX_SIZE, sort);
-        return search(searcher, topDocs, option, pageNum, pageSize);
+        Paging paging = new Paging(pageNum, pageSize);
+        List<Map> data = search(searcher, topDocs, option, pageNum, pageSize);
+        paging.setTotal(topDocs.scoreDocs.length);
+        paging.setData(data);
+        return paging;
     }
 
     /**

@@ -1,5 +1,6 @@
 package org.dbsyncer.manager;
 
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -89,12 +90,12 @@ public interface Manager extends Executor {
     List<Config> getConfigAll();
 
     // Data
-    List<Map> queryData(Query query, String collectionId);
+    Paging queryData(Query query, String collectionId);
 
     void clearData(String collectionId);
 
     // Log
-    List<Map> queryLog(Query query);
+    Paging queryLog(Query query);
 
     void clearLog();
 

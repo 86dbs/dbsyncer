@@ -13,6 +13,7 @@ import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.storage.lucene.Shard;
 import org.junit.After;
 import org.junit.Before;
@@ -72,8 +73,8 @@ public class LuceneFactoryTest {
         BooleanQuery query = new BooleanQuery.Builder()
                 .add(IntPoint.newRangeQuery("age", 1, 100), BooleanClause.Occur.MUST)
                 .build();
-        List<Map> maps = shard.query(query, new Sort(new SortField("createTime", SortField.Type.LONG, true)));
-        maps.forEach(m -> System.out.println(m));
+        Paging paging = shard.query(query, new Sort(new SortField("createTime", SortField.Type.LONG, true)));
+        paging.getData().forEach(m -> System.out.println(m));
 
         // 清空
         shard.deleteAll();
