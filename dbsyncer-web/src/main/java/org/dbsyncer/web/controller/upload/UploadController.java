@@ -46,6 +46,7 @@ public class UploadController {
                         FileUtils.copyInputStreamToFile(file.getInputStream(), dest);
                     }
                 }
+                pluginService.loadPlugins();
             }
             return RestResult.restSuccess("ok");
         } catch (Exception e) {

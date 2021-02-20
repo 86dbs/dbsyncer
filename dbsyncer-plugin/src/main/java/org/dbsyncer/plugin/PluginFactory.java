@@ -32,10 +32,12 @@ public class PluginFactory {
     private final List<Plugin> plugins = new LinkedList<>();
 
     public void loadPlugins() {
+        plugins.clear();
         Collection<File> files = FileUtils.listFiles(new File(PLUGIN_PATH), new String[] {"jar"}, true);
         if (!CollectionUtils.isEmpty(files)) {
             files.forEach(f -> plugins.add(new Plugin(f.getName(), f.getName())));
         }
+        logger.info("PreLoad plugin:{}", plugins.size());
     }
 
     public String getPluginPath() {

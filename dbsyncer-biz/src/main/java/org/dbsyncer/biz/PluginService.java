@@ -24,4 +24,8 @@ public interface PluginService {
      */
     String getPluginPath();
 
+    /**
+     * 加载插件
+     */
+    void loadPlugins();
 }
