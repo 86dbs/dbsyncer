@@ -18,4 +18,10 @@ public interface PluginService {
      */
     List<Plugin> getPluginAll();
 
+    /**
+     * 获取插件上传路径
+     * @return
+     */
+    String getPluginPath();
+
 }

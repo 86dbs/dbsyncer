@@ -117,4 +117,7 @@ public interface Manager extends Executor {
     // Plugin
     List<Plugin> getPluginAll();
 
+    String getPluginPath();
+
+    void loadPlugins();
 }

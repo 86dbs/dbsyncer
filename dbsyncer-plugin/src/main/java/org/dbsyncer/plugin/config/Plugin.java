@@ -13,6 +13,14 @@ public class Plugin {
     // 插件实现
     private String className;
 
+    public Plugin() {
+    }
+
+    public Plugin(String name, String className) {
+        this.name = name;
+        this.className = className;
+    }
+
     public String getName() {
         return name;
     }

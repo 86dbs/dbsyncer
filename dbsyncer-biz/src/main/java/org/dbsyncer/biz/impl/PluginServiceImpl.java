@@ -23,4 +23,9 @@ public class PluginServiceImpl implements PluginService {
     public List<Plugin> getPluginAll() {
         return manager.getPluginAll();
     }
+
+    @Override
+    public String getPluginPath() {
+        return manager.getPluginPath();
+    }
 }

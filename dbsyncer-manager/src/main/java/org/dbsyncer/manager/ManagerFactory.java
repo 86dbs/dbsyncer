@@ -290,6 +290,16 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     }
 
     @Override
+    public String getPluginPath() {
+        return pluginFactory.getPluginPath();
+    }
+
+    @Override
+    public void loadPlugins() {
+        pluginFactory.loadPlugins();
+    }
+
+    @Override
     public void start(Mapping mapping) {
         Puller puller = getPuller(mapping);
 

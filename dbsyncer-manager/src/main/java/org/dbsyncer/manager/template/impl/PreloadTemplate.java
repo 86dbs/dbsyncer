@@ -99,6 +99,9 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
         // Load configs
         execute(new PreloadConfig(ConfigConstant.CONFIG, HandlerEnum.PRELOAD_CONFIG));
 
+        // Load plugins
+        manager.loadPlugins();
+
         // 启动驱动
         Meta meta = new Meta();
         meta.setType(ConfigConstant.META);
