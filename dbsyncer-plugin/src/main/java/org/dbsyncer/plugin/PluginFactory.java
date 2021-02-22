@@ -9,10 +9,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -40,10 +40,7 @@ public class PluginFactory {
         service.clear();
         Collection<File> files = FileUtils.listFiles(new File(PLUGIN_PATH), new String[] {"jar"}, true);
         if (!CollectionUtils.isEmpty(files)) {
-            files.forEach(f -> {
-                plugins.add(new Plugin(f.getName(), f.getName()));
-                loadPlugin(f);
-            });
+            files.forEach(f -> loadPlugin(f));
         }
         logger.info("PreLoad plugin:{}", plugins.size());
     }
@@ -71,10 +68,22 @@ public class PluginFactory {
     /**
      * SPI, 扫描jar扩展接口实现，注册为本地服务
      *
-     * @param file
+     * @param jar
      */
-    private void loadPlugin(File file) {
-        // TODO 加载扩展实现
+    private void loadPlugin(File jar) {
+        try {
+            URL url = jar.toURI().toURL();
+            URLClassLoader loader = new URLClassLoader(new URL[] {url}, Thread.currentThread().getContextClassLoader());
+            ServiceLoader<ConvertService> services = ServiceLoader.load(ConvertService.class, loader);
+            for (ConvertService s : services) {
+                String className = s.getClass().getName();
+                service.put(className, s);
+                plugins.add(new Plugin(s.getName() + "_" + s.getVersion(), className, s.getVersion()));
+            }
+        } catch (MalformedURLException e) {
+            logger.error(e.getMessage());
+        }
+
     }
 
 }

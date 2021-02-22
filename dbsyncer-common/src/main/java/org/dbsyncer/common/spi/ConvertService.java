@@ -30,4 +30,22 @@ public interface ConvertService {
      */
     void convert(String event, Map<String, Object> source, Map<String, Object> target);
 
+    /**
+     * 版本号
+     *
+     * @return
+     */
+    default String getVersion() {
+        return "1.0.0";
+    }
+
+    /**
+     * 插件名称
+     *
+     * @return
+     */
+    default String getName() {
+        return getClass().getSimpleName();
+    }
+
 }

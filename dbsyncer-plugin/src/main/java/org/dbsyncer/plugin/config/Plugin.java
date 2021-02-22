@@ -14,14 +14,15 @@ public class Plugin {
     private String className;
 
     // 版本号
-    private String version = "1.0.0";
+    private String version;
 
     public Plugin() {
     }
 
-    public Plugin(String name, String className) {
+    public Plugin(String name, String className, String version) {
         this.name = name;
         this.className = className;
+        this.version = version;
     }
 
     public String getName() {
