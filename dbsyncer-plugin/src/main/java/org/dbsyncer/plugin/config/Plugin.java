@@ -13,6 +13,9 @@ public class Plugin {
     // 插件实现
     private String className;
 
+    // 版本号
+    private String version = "1.0.0";
+
     public Plugin() {
     }
 
@@ -35,6 +38,15 @@ public class Plugin {
 
     public Plugin setClassName(String className) {
         this.className = className;
+        return this;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public Plugin setVersion(String version) {
+        this.version = version;
         return this;
     }
 }
