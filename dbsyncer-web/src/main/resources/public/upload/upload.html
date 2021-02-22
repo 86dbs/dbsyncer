@@ -3,48 +3,59 @@
       lang="zh-CN">
 
 <div class="container">
-    <form class="form-horizontal" role="form">
+    <form id="uploadForm" class="form-horizontal" role="form">
         <div class="row text-center">
-            <h3>文件上传测试</h3>
+            <h3>上传插件</h3>
         </div>
 
-        <!-- 操作 -->
-        <div class="row">
-            <form method="post" enctype="multipart/form-data">
-                File:<input id="formFile" type="file" name="flie"/>
-                <br>
-                <input id="subBtn" type="submit" value="Submit"/>
-            </form>
+        <div class="form-group">
+            <label class="col-sm-2 control-label">插件 <strong class="driverVerifcateRequired">*</strong></label>
+            <div class="col-sm-10">
+                <input id="formFile" type="file" accept="application/zip" name="file" dbsyncer-valid="require" multiple="multiple" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-2 control-label"></label>
+            <div class="col-sm-10">
+                <button id="subBtn" type="button" class="btn btn-default">
+                    <span class="fa fa-arrow-circle-o-up"></span>上传
+                </button>
+            </div>
         </div>
     </form>
 </div>
 
 <script type="text/javascript">
     $("#subBtn").click(function(){
-        // 创建表单数据对象
-        var obj = new FormData();
+        var $form = $("#uploadForm");
+        if (!$form.formValidate()) {
+            return;
+        }
+
+        var data = new FormData();
         // 获取文件框中的数据
-        var file = document.getElementById("formFile").files[0];
+        var files = document.getElementById("formFile").files[0];
+        console.log(files);
         // 将文件数据添加至表单数据对象中
-        obj.append("file", file);
+        data.append("files", files);
         $.ajax({
             url:'/upload/upload',
             type:'POST',
-            data: obj,
+            data: data,
             processData : false, // 使数据不做处理
             contentType : false, // 不要设置Content-Type请求头
             mimeType : 'multipart/form-data',
+            dataType: 'json',
             success: function(data){
                 console.log(data);
-                if (data.status == 'ok') {
-                    alert('上传成功！');
+                if (data.success == true) {
+                    bootGrowl(data.resultValue, "success");
+                } else {
+                    bootGrowl(data.resultValue, "danger");
                 }
-            },
-            error:function(response){
-                console.log(response);
             }
         });
     })
-
 </script>
 </html>

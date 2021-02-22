@@ -32,14 +32,13 @@ public class UploadController {
 
     @RequestMapping(value = "/upload")
     @ResponseBody
-    public RestResult upload(HttpServletRequest request, @RequestParam("file") MultipartFile[] files) {
+    public RestResult upload(MultipartFile[] files) {
         try {
-            if (files != null) {
-                int length = files.length;
+            if (files != null && files.length > 0) {
                 MultipartFile file = null;
                 String filePath = pluginService.getPluginPath();
                 FileUtils.forceMkdir(new File(filePath));
-                for (int i = 0; i < length; i++) {
+                for (int i = 0; i < files.length; i++) {
                     file = files[i];
                     if (file != null) {
                         File dest = new File(filePath + file.getOriginalFilename());
