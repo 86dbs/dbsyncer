@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -38,6 +39,11 @@ public class PluginFactory {
     public void loadPlugins() {
         plugins.clear();
         service.clear();
+        try {
+            FileUtils.forceMkdir(new File(PLUGIN_PATH));
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+        }
         Collection<File> files = FileUtils.listFiles(new File(PLUGIN_PATH), new String[] {"jar"}, true);
         if (!CollectionUtils.isEmpty(files)) {
             files.forEach(f -> loadPlugin(f));
