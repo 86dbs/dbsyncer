@@ -14,11 +14,7 @@ public enum FileSuffixEnum {
     /**
      * jar
      */
-    JAR("jar"),
-    /**
-     * zip
-     */
-    ZIP("zip");
+    JAR("jar");
 
     private String name;
 
@@ -27,17 +23,21 @@ public enum FileSuffixEnum {
     }
 
     /**
-     * 是否jar格式
+     * 获取文件类型
      *
      * @param suffix
      * @return
      */
-    public static boolean isJar(String suffix) {
-        return StringUtils.equals(JAR.name, suffix);
+    public static FileSuffixEnum getFileSuffix(String suffix) {
+        for (FileSuffixEnum e : FileSuffixEnum.values()) {
+            if (StringUtils.equals(suffix, e.getName())) {
+                return e;
+            }
+        }
+        return null;
     }
 
     public String getName() {
         return name;
     }
-
 }

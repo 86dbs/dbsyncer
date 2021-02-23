@@ -203,4 +203,35 @@ public interface LogType {
         }
     }
 
+    /**
+     * 插件信息6
+     */
+    enum PluginLog implements LogType {
+        UPDATE("60", "上传成功"),
+        CHECK_ERROR("61", "格式不正确");
+
+        private String type;
+        private String message;
+
+        PluginLog(String type, String message) {
+            this.type = type;
+            this.message = message;
+        }
+
+        @Override
+        public String getName() {
+            return "插件";
+        }
+
+        @Override
+        public String getType() {
+            return type;
+        }
+
+        @Override
+        public String getMessage() {
+            return message;
+        }
+    }
+
 }
