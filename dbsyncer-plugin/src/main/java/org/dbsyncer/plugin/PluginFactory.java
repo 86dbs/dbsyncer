@@ -36,7 +36,7 @@ public class PluginFactory {
 
     private final Map<String, ConvertService> service = new ConcurrentHashMap<>();
 
-    public void loadPlugins() {
+    public synchronized void loadPlugins() {
         plugins.clear();
         service.clear();
         try {
