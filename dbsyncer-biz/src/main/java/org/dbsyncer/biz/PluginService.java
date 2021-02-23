@@ -20,6 +20,7 @@ public interface PluginService {
 
     /**
      * 获取插件上传路径
+     *
      * @return
      */
     String getPluginPath();
@@ -28,4 +29,11 @@ public interface PluginService {
      * 加载插件
      */
     void loadPlugins();
+
+    /**
+     * 检查文件格式
+     *
+     * @param filename
+     */
+    void checkFileSuffix(String filename);
 }

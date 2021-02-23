@@ -76,7 +76,7 @@
         msgImageResizeException: '调整图像大小时发生错误。<pre>{errors}</pre>',
         msgAjaxError: '{operation} 发生错误. 请重试!',
         msgAjaxProgressError: '{operation} 失败',
-        msgDuplicateFile: 'File "{name}" of same size "{size} KB" has already been selected earlier. Skipping duplicate selection.',
+        msgDuplicateFile: '文件 "{name}"（{size}）KB已选择',
         msgResumableUploadRetriesExceeded:  'Upload aborted beyond <b>{max}</b> retries for file <b>{file}</b>! Error Details: <pre>{error}</pre>',
         msgPendingTime: '{time} remaining',
         msgCalculatingTime: 'calculating time remaining',

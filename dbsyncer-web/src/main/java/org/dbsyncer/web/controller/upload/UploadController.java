@@ -9,11 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 
 @Controller
@@ -41,7 +39,9 @@ public class UploadController {
                 for (int i = 0; i < files.length; i++) {
                     file = files[i];
                     if (file != null) {
-                        File dest = new File(filePath + file.getOriginalFilename());
+                        String filename = file.getOriginalFilename();
+                        pluginService.checkFileSuffix(filename);
+                        File dest = new File(filePath + filename);
                         FileUtils.copyInputStreamToFile(file.getInputStream(), dest);
                     }
                 }
