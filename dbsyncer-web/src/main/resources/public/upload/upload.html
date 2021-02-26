@@ -15,6 +15,29 @@
             </div>
         </div>
 
+        <div class="form-group">
+            <table class="table table-hover">
+                <caption>插件列表([[${plugins?.size()} ?: 0]])</caption>
+                <thead>
+                <tr>
+                    <th>名称</th>
+                    <th>类名</th>
+                    <th>版本</th>
+                    <th>文件</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody id="pluginList">
+                <tr th:id="${p?.name}" th:each="p,state : ${plugins}">
+                    <td th:text="${p?.name}"/>
+                    <td th:text="${p?.className}"/>
+                    <td th:text="${p?.version}"/>
+                    <td th:text="${p?.fileName}"/>
+                    <td><a th:id="${p?.name}" class='fa fa-remove fa-2x pluginDelete dbsyncer_pointer' title='暂不支持' aria-disabled="true"></a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </form>
 </div>
 
@@ -35,6 +58,7 @@
         if (!data.response.success) {
             bootGrowl(data.response.resultValue, "danger");
         }
+        doLoader("/upload");
     });
 </script>
 </html>

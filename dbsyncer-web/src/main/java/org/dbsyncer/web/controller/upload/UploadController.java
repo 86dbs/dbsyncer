@@ -22,6 +22,7 @@ public class UploadController {
 
     @RequestMapping("")
     public String index(ModelMap model) {
+        model.put("plugins", pluginService.getPluginAll());
         return "upload/upload";
     }
 

@@ -16,13 +16,17 @@ public class Plugin {
     // 版本号
     private String version;
 
+    // Jar名称
+    private String fileName;
+
     public Plugin() {
     }
 
-    public Plugin(String name, String className, String version) {
+    public Plugin(String name, String className, String version, String fileName) {
         this.name = name;
         this.className = className;
         this.version = version;
+        this.fileName = fileName;
     }
 
     public String getName() {
@@ -48,6 +52,15 @@ public class Plugin {
 
     public Plugin setVersion(String version) {
         this.version = version;
+        return this;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public Plugin setFileName(String fileName) {
+        this.fileName = fileName;
         return this;
     }
 }

@@ -78,13 +78,14 @@ public class PluginFactory {
      */
     private void loadPlugin(File jar) {
         try {
+            String fileName = jar.getName();
             URL url = jar.toURI().toURL();
             URLClassLoader loader = new URLClassLoader(new URL[] {url}, Thread.currentThread().getContextClassLoader());
             ServiceLoader<ConvertService> services = ServiceLoader.load(ConvertService.class, loader);
             for (ConvertService s : services) {
                 String className = s.getClass().getName();
                 service.put(className, s);
-                plugins.add(new Plugin(s.getName() + "_" + s.getVersion(), className, s.getVersion()));
+                plugins.add(new Plugin(s.getName(), className, s.getVersion(), fileName));
             }
         } catch (MalformedURLException e) {
             logger.error(e.getMessage());
