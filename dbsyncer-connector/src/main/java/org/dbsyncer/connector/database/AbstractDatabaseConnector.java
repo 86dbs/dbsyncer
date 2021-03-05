@@ -69,8 +69,11 @@ public abstract class AbstractDatabaseConnector implements Database {
         try {
             jdbcTemplate = getJdbcTemplate(cfg);
             String quotation = buildSqlWithQuotation();
-            String metaSql = new StringBuilder().append("select * from ").append(quotation).append(tableName).append(quotation).toString();
-            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, metaSql, tableName);
+            String queryMetaSql = getPageSql(tableName, null, new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).toString());
+            String queryCountSql = new StringBuilder().append("SELECT COUNT(*) FROM ").append(quotation).append(tableName).append(quotation).toString();
+            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql, getPageArgs(1, 0), tableName);
+            Long count = jdbcTemplate.queryForObject(queryCountSql, Long.class);
+            metaInfo.setCount(count);
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
@@ -318,7 +321,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         MetaInfo metaInfo = null;
         try {
             jdbcTemplate = getJdbcTemplate(cfg);
-            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, cfg.getSql(), null);
+            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, cfg.getSql(), getPageArgs(1, 0),null);
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
@@ -452,8 +455,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         }
         List<Field> column = table.getColumn();
         if (CollectionUtils.isEmpty(column)) {
-            logger.error("Table column can not be empty.");
-            throw new ConnectorException("Table column can not be empty.");
+            return null;
         }
         // 获取主键
         String pk = null;

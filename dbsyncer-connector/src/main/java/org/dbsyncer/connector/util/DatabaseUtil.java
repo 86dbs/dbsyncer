@@ -1,6 +1,5 @@
 package org.dbsyncer.connector.util;
 
-import com.sun.rowset.CachedRowSetImpl;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -69,10 +68,9 @@ public abstract class DatabaseUtil {
      * @param tableName    表名
      * @return
      */
-    public static MetaInfo getMetaInfo(JdbcTemplate jdbcTemplate, String metaSql, String tableName) throws SQLException {
-        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(metaSql);
+    public static MetaInfo getMetaInfo(JdbcTemplate jdbcTemplate, String metaSql, Object[] args, String tableName) throws SQLException {
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(metaSql, args);
         ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
-        CachedRowSetImpl resultSet = (CachedRowSetImpl) rowSet.getResultSet();
         SqlRowSetMetaData metaData = rowSet.getMetaData();
 
         // 查询表字段信息
@@ -109,7 +107,7 @@ public abstract class DatabaseUtil {
             tables.clear();
             close(connection);
         }
-        return new MetaInfo(fields, resultSet.size());
+        return new MetaInfo().setColumn(fields);
     }
 
     private static boolean isPk(Map<String, List<String>> tables, String tableName, String name) {
