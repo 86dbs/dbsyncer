@@ -70,10 +70,8 @@ public abstract class AbstractDatabaseConnector implements Database {
             jdbcTemplate = getJdbcTemplate(cfg);
             String quotation = buildSqlWithQuotation();
             String queryMetaSql = getPageSql(tableName, null, new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).toString());
-            String queryCountSql = new StringBuilder().append("SELECT COUNT(*) FROM ").append(quotation).append(tableName).append(quotation).toString();
-            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql, getPageArgs(1, 0), tableName);
-            Long count = jdbcTemplate.queryForObject(queryCountSql, Long.class);
-            metaInfo.setCount(count);
+            Object[] metaArgs = getPageArgs(1, 0);
+            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql, metaArgs, tableName);
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
