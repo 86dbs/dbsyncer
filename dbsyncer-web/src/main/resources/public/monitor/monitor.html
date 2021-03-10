@@ -12,8 +12,14 @@
                 <div class="form-group">
                     <div class="col-md-3">
                         <!-- 驱动下拉 -->
-                        <select id="metaData" name="metaData" class="form-control select-control">
+                        <select id="searchMetaData" class="form-control select-control">
                             <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <!-- 是否包含成功 -->
+                        <select id="searchDataSuccess" class="form-control select-control">
+                            <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}"/>
                         </select>
                     </div>
                     <div class="col-sm-4">
@@ -22,7 +28,7 @@
                     <div class="col-md-1">
                         <button id="queryDataBtn" type="button" class="btn btn-primary">查询数据</button>
                     </div>
-                    <div class="col-md-4 text-right">
+                    <div class="col-md-3 text-right">
                         <button th:id="${metaId}" type="button" class="btn btn-default clearDataBtn">清空数据</button>
                     </div>
                 </div>

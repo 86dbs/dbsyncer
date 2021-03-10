@@ -22,6 +22,7 @@ import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
@@ -282,6 +283,11 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     @Override
     public List<ConvertEnum> getConvertEnumAll() {
         return parser.getConvertEnumAll();
+    }
+
+    @Override
+    public List<StorageDataStatusEnum> getStorageDataStatusEnumAll() {
+        return parser.getStorageDataStatusEnumAll();
     }
 
     @Override

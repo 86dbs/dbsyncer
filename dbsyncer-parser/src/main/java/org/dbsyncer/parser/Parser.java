@@ -13,6 +13,7 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.strategy.PrimaryKeyMappingStrategy;
+import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
 import java.util.List;
 import java.util.Map;
@@ -119,6 +120,13 @@ public interface Parser {
      * @return
      */
     List<ConvertEnum> getConvertEnumAll();
+
+    /**
+     * 获取所有同步数据状态类型
+     *
+     * @return
+     */
+    List<StorageDataStatusEnum> getStorageDataStatusEnumAll();
 
     /**
      * 全量同步

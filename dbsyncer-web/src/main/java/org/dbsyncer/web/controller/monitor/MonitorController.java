@@ -28,6 +28,7 @@ public class MonitorController extends BaseController {
         model.put("threadInfo", monitorService.getThreadInfo());
         model.put("metaId", monitorService.getDefaultMetaId(params));
         model.put("meta", monitorService.getMetaAll());
+        model.put("storageDataStatus", monitorService.getStorageDataStatusEnumAll());
         model.put("pagingData", monitorService.queryData(params));
         model.put("pagingLog", monitorService.queryLog(params));
         return "monitor/monitor.html";

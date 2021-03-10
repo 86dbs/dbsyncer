@@ -10,6 +10,7 @@ import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.config.Plugin;
+import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.query.Query;
 
 import java.util.List;
@@ -113,6 +114,9 @@ public interface Manager extends Executor {
 
     // ConvertEnum
     List<ConvertEnum> getConvertEnumAll();
+
+    // StorageDataStatusEnum
+    List<StorageDataStatusEnum> getStorageDataStatusEnumAll();
 
     // Plugin
     List<Plugin> getPluginAll();

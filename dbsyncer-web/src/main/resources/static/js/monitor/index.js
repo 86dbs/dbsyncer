@@ -86,8 +86,9 @@ function showMore($this, $url, $params, $call){
 function bindQueryDataEvent() {
     $("#queryDataBtn").click(function () {
         var keyword = $("#searchDataKeyword").val();
-        var id = $("select[name='metaData']").select2("val");
-        doGetter('/monitor/queryData', {"error": keyword, "id" : id, "pageNum" : 1, "pageSize" : 10}, function (data) {
+        var id = $("#searchMetaData").select2("val");
+        var success = $("#searchDataSuccess").select2("val");
+        doGetter('/monitor/queryData', {"error": keyword, "success": success, "id" : id, "pageNum" : 1, "pageSize" : 10}, function (data) {
             if (data.success == true) {
                 refreshDataList(data.resultValue);
             } else {
@@ -99,8 +100,9 @@ function bindQueryDataEvent() {
 function bindQueryDataMoreEvent() {
     $("#queryDataMore").click(function () {
         var keyword = $("#searchDataKeyword").val();
-        var id = $("select[name='metaData']").select2("val");
-        showMore($(this), '/monitor/queryData', {"error": keyword, "id" : id}, function(resultValue){
+        var id = $("#searchMetaData").select2("val");
+        var success = $("#searchDataSuccess").select2("val");
+        showMore($(this), '/monitor/queryData', {"error": keyword, "success": success, "id" : id}, function(resultValue){
             refreshDataList(resultValue, true)
         });
     });
@@ -365,10 +367,14 @@ $(function () {
         theme: "classic"
     });
 
-    //连接器类型切换事件
-    $("select[name='metaData']").change(function () {
+    // 连接器类型切换事件
+    $("#searchMetaData").change(function () {
         var $id = $(this).val();
         doLoader('/monitor?id=' + $id);
+    });
+    // 数据状态切换事件
+    $("#searchDataSuccess").change(function () {
+        $("#queryDataBtn").click();
     });
 
     bindQueryLogEvent();

@@ -23,6 +23,7 @@ import org.dbsyncer.parser.strategy.PrimaryKeyMappingStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -168,6 +169,11 @@ public class ParserFactory implements Parser {
     @Override
     public List<ConvertEnum> getConvertEnumAll() {
         return Arrays.asList(ConvertEnum.values());
+    }
+
+    @Override
+    public List<StorageDataStatusEnum> getStorageDataStatusEnumAll() {
+        return Arrays.asList(StorageDataStatusEnum.values());
     }
 
     @Override

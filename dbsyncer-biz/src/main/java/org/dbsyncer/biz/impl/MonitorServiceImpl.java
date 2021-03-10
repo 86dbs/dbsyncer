@@ -15,6 +15,7 @@ import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,6 +90,9 @@ public class MonitorServiceImpl implements MonitorService {
         if (StringUtils.isNotBlank(error)) {
             query.put(ConfigConstant.DATA_ERROR, error, true);
         }
+        // 查询是否成功, 默认查询失败
+        String success = params.get(ConfigConstant.DATA_SUCCESS);
+        query.put(ConfigConstant.DATA_SUCCESS, StringUtils.isNotBlank(success) ? success : StorageDataStatusEnum.FAIL.getCode());
 
         Paging paging = manager.queryData(query, id);
         List<Map> data = (List<Map>) paging.getData();
@@ -127,6 +131,11 @@ public class MonitorServiceImpl implements MonitorService {
     public String clearLog() {
         manager.clearLog();
         return "清空日志成功";
+    }
+
+    @Override
+    public List<StorageDataStatusEnum> getStorageDataStatusEnumAll() {
+        return manager.getStorageDataStatusEnumAll();
     }
 
     private MetaVo convertMeta2Vo(Meta meta) {
