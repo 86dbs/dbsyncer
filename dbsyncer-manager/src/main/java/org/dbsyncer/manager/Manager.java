@@ -1,5 +1,6 @@
 package org.dbsyncer.manager;
 
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -9,6 +10,7 @@ import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.config.Plugin;
+import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.query.Query;
 
 import java.util.List;
@@ -89,12 +91,12 @@ public interface Manager extends Executor {
     List<Config> getConfigAll();
 
     // Data
-    List<Map> queryData(Query query, String collectionId);
+    Paging queryData(Query query, String collectionId);
 
     void clearData(String collectionId);
 
     // Log
-    List<Map> queryLog(Query query);
+    Paging queryLog(Query query);
 
     void clearLog();
 
@@ -113,7 +115,13 @@ public interface Manager extends Executor {
     // ConvertEnum
     List<ConvertEnum> getConvertEnumAll();
 
+    // StorageDataStatusEnum
+    List<StorageDataStatusEnum> getStorageDataStatusEnumAll();
+
     // Plugin
     List<Plugin> getPluginAll();
 
+    String getPluginPath();
+
+    void loadPlugins();
 }

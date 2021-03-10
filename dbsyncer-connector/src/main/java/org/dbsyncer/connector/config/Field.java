@@ -1,5 +1,7 @@
 package org.dbsyncer.connector.config;
 
+import org.dbsyncer.common.util.JsonUtil;
+
 /**
  * 字段属性
  *
@@ -32,12 +34,6 @@ public class Field {
     public Field() {
     }
 
-    public Field(String name, String typeName, int type) {
-        this.name = name;
-        this.typeName = typeName;
-        this.type = type;
-    }
-
     public Field(String name, String typeName, int type, boolean pk) {
         this.name = name;
         this.typeName = typeName;
@@ -49,12 +45,24 @@ public class Field {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getTypeName() {
         return typeName;
     }
 
+    public void setTypeName(String typeName) {
+        this.typeName = typeName;
+    }
+
     public int getType() {
         return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
     }
 
     public boolean isPk() {
@@ -67,9 +75,6 @@ public class Field {
 
     @Override
     public String toString() {
-        return new StringBuilder().append("Field{").append("name='").append(name).append('\'')
-                .append(", typeName='").append(typeName).append('\'')
-                .append(", type=").append(type)
-                .append(", pk=").append(pk).append('}').toString();
+        return JsonUtil.objToJson(this);
     }
 }

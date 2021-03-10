@@ -1,5 +1,6 @@
 package org.dbsyncer.storage;
 
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.strategy.Strategy;
@@ -27,7 +28,7 @@ public abstract class AbstractStorageService implements StorageService, Applicat
 
     private Map<String, Strategy> map;
 
-    public abstract List<Map> select(Query query) throws IOException;
+    public abstract Paging select(Query query) throws IOException;
 
     public abstract void insert(StorageEnum type, String collection, Map params) throws IOException;
 
@@ -59,7 +60,7 @@ public abstract class AbstractStorageService implements StorageService, Applicat
     }
 
     @Override
-    public List<Map> query(Query query) {
+    public Paging query(Query query) {
         try {
             String collection = getCollection(query.getType(), query.getCollection());
             query.setCollection(collection);

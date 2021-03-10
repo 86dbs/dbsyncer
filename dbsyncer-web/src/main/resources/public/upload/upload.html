@@ -1,50 +1,64 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
-      lang="zh-CN">
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div class="container">
-    <form class="form-horizontal" role="form">
-        <div class="row text-center">
-            <h3>文件上传测试</h3>
+    <form id="uploadForm" class="form-horizontal" role="form">
+
+        <div class="page-header">
+            <h3>上传插件 <small>只支持 "jar" 的文件扩展名.</small></h3>
         </div>
 
-        <!-- 操作 -->
-        <div class="row">
-            <form method="post" enctype="multipart/form-data">
-                File:<input id="formFile" type="file" name="flie"/>
-                <br>
-                <input id="subBtn" type="submit" value="Submit"/>
-            </form>
+        <div class="form-group">
+            <div class="file-loading">
+                <input id="filePlugin" type="file" name="files" multiple="multiple" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <table class="table table-hover">
+                <caption>插件列表([[${plugins?.size()} ?: 0]])</caption>
+                <thead>
+                <tr>
+                    <th>名称</th>
+                    <th>类名</th>
+                    <th>版本</th>
+                    <th>文件</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody id="pluginList">
+                <tr th:id="${p?.name}" th:each="p,state : ${plugins}">
+                    <td th:text="${p?.name}"/>
+                    <td th:text="${p?.className}"/>
+                    <td th:text="${p?.version}"/>
+                    <td th:text="${p?.fileName}"/>
+                    <td><a th:id="${p?.name}" class='fa fa-remove fa-2x pluginDelete dbsyncer_pointer' title='暂不支持' aria-disabled="true"></a></td>
+                </tr>
+                </tbody>
+            </table>
         </div>
     </form>
 </div>
 
 <script type="text/javascript">
-    $("#subBtn").click(function(){
-        // 创建表单数据对象
-        var obj = new FormData();
-        // 获取文件框中的数据
-        var file = document.getElementById("formFile").files[0];
-        // 将文件数据添加至表单数据对象中
-        obj.append("file", file);
-        $.ajax({
-            url:'/upload/upload',
-            type:'POST',
-            data: obj,
-            processData : false, // 使数据不做处理
-            contentType : false, // 不要设置Content-Type请求头
-            mimeType : 'multipart/form-data',
-            success: function(data){
-                console.log(data);
-                if (data.status == 'ok') {
-                    alert('上传成功！');
-                }
-            },
-            error:function(response){
-                console.log(response);
-            }
-        });
-    })
-
+    $("#filePlugin").fileinput({
+        theme: 'fas',
+        language: 'zh',
+        uploadUrl: '/upload/upload',
+        enctype: 'multipart/form-data',
+        removeFromPreviewOnError:true, //当选择的文件不符合规则时，例如不是指定后缀文件、大小超出配置等，选择的文件不会出现在预览框中，只会显示错误信息
+        allowedFileExtensions: ['jar'],
+        minFileCount: 0, //每次多次上载允许的最小文件数。如果设置为0，则表示文件数是可选的
+        maxFileCount: 5, //表示允许同时上传的最大文件个数 如果设置为0，则表示允许的文件数不受限制
+        showPreview: true,
+        showUpload:true,//不展示上传按钮
+        validateInitialCount:true,//是否在验证minFileCount和包含初始预览文件计数（服务器上载文件）maxFileCount
+    }).on("fileuploaded", function(event, data, previewId, index) {
+        if (!data.response.success) {
+            bootGrowl(data.response.resultValue, "danger");
+        }
+        doLoader("/upload");
+    });
 </script>
 </html>

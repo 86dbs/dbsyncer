@@ -1,5 +1,6 @@
 package org.dbsyncer.storage;
 
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
 
@@ -13,7 +14,7 @@ import java.util.Map;
  */
 public interface StorageService {
 
-    List<Map> query(Query query);
+    Paging query(Query query);
 
     void add(StorageEnum type, Map params);
 

@@ -1,5 +1,6 @@
 package org.dbsyncer.manager.template.impl;
 
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
@@ -26,7 +27,7 @@ public final class DataTemplate {
     @Autowired
     private StorageService storageService;
 
-    public List<Map> query(Query query) {
+    public Paging query(Query query) {
         return storageService.query(query);
     }
 

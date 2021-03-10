@@ -1,16 +1,18 @@
 package org.dbsyncer.web.controller.upload;
 
+import org.apache.commons.io.FileUtils;
+import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
+import java.io.File;
 
 @Controller
 @RequestMapping("/upload")
@@ -20,22 +22,31 @@ public class UploadController {
 
     @RequestMapping("")
     public String index(ModelMap model) {
+        model.put("plugins", pluginService.getPluginAll());
         return "upload/upload";
     }
 
-    //@PreAuthorize("hasAuthority('ROLE_')")
+    @Autowired
+    private PluginService pluginService;
+
     @RequestMapping(value = "/upload")
     @ResponseBody
-    public RestResult upload(HttpServletRequest request, @RequestParam("file") MultipartFile[] files) {
+    public RestResult upload(MultipartFile[] files) {
         try {
-            if (files != null) {
-                int length = files.length;
+            if (files != null && files.length > 0) {
                 MultipartFile file = null;
-                for (int i = 0; i < length; i++) {
+                String filePath = pluginService.getPluginPath();
+                FileUtils.forceMkdir(new File(filePath));
+                for (int i = 0; i < files.length; i++) {
                     file = files[i];
-                    String fileName = file.getOriginalFilename();
-                    System.out.println(fileName);
+                    if (file != null) {
+                        String filename = file.getOriginalFilename();
+                        pluginService.checkFileSuffix(filename);
+                        File dest = new File(filePath + filename);
+                        FileUtils.copyInputStreamToFile(file.getInputStream(), dest);
+                    }
                 }
+                pluginService.loadPlugins();
             }
             return RestResult.restSuccess("ok");
         } catch (Exception e) {

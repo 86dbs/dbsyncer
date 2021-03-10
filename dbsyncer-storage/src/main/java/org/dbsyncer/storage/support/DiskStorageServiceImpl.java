@@ -4,6 +4,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
@@ -22,7 +23,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,7 +59,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
     }
 
     @Override
-    public List<Map> select(Query query) throws IOException {
+    public Paging select(Query query) throws IOException {
         Shard shard = map.get(query.getCollection());
 
         // 检查是否存在历史
@@ -84,7 +84,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
 
             return shard.query(new Option(new MatchAllDocsQuery()), pageNum, pageSize, sort);
         }
-        return Collections.emptyList();
+        return new Paging(query.getPageNum(), query.getPageSize());
     }
 
     @Override
@@ -110,7 +110,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void deleteAll(StorageEnum type, String collection) throws IOException {
-        synchronized (this){
+        synchronized (this) {
             Shard shard = map.get(collection);
             if (null != shard) {
                 shard.deleteAll();
@@ -162,7 +162,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void destroy() throws Exception {
-        for (Map.Entry<String, Shard> m: map.entrySet()) {
+        for (Map.Entry<String, Shard> m : map.entrySet()) {
             m.getValue().close();
         }
     }

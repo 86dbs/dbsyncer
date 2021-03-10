@@ -12,8 +12,14 @@
                 <div class="form-group">
                     <div class="col-md-3">
                         <!-- 驱动下拉 -->
-                        <select id="metaData" name="metaData" class="form-control select-control">
+                        <select id="searchMetaData" class="form-control select-control">
                             <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <!-- 是否包含成功 -->
+                        <select id="searchDataSuccess" class="form-control select-control">
+                            <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}"/>
                         </select>
                     </div>
                     <div class="col-sm-4">
@@ -22,7 +28,7 @@
                     <div class="col-md-1">
                         <button id="queryDataBtn" type="button" class="btn btn-primary">查询数据</button>
                     </div>
-                    <div class="col-md-4 text-right">
+                    <div class="col-md-3 text-right">
                         <button th:id="${metaId}" type="button" class="btn btn-default clearDataBtn">清空数据</button>
                     </div>
                 </div>
@@ -39,7 +45,7 @@
                     </tr>
                     </thead>
                     <tbody id="dataList">
-                        <tr th:each="d,s : ${data}">
+                        <tr th:each="d,s : ${pagingData?.data}">
                             <td th:text="${s.index}+1"></td>
                             <td th:text="${d?.event}"></td>
                             <td>
@@ -52,6 +58,14 @@
                         </tr>
                     </tbody>
                 </table>
+
+                <div class="form-group">
+                    <div class="col-md-5">共计: <span id="dataTotal">[[${pagingData?.total}]]</span>条</div>
+                    <div class="col-md-7">
+                        <a href="javascript:void(0);" id="queryDataMore" num="1">显示更多<i class="fa fa-angle-double-down" aria-hidden="true"></i></a>
+                    </div>
+                </div>
+
             </div>
 
             <!-- 性能指标 -->
@@ -124,13 +138,20 @@
                     </tr>
                     </thead>
                     <tbody id="logList">
-                    <tr th:each="l,s : ${log}">
+                    <tr th:each="l,s : ${pagingLog?.data}">
                         <td th:text="${s.index}+1"></td>
                         <td th:text="${l?.json}"></td>
                         <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
                     </tr>
                     </tbody>
                 </table>
+
+                <div class="form-group">
+                    <div class="col-md-5">共计: <span id="logTotal">[[${pagingLog?.total}]]</span>条</div>
+                    <div class="col-md-7">
+                        <a href="javascript:void(0);" id="queryLogMore" num="1">显示更多<i class="fa fa-angle-double-down" aria-hidden="true"></i></a>
+                    </div>
+                </div>
             </div>
 
         </form>

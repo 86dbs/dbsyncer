@@ -69,8 +69,9 @@ public abstract class AbstractDatabaseConnector implements Database {
         try {
             jdbcTemplate = getJdbcTemplate(cfg);
             String quotation = buildSqlWithQuotation();
-            String metaSql = new StringBuilder().append("select * from ").append(quotation).append(tableName).append(quotation).toString();
-            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, metaSql, tableName);
+            String queryMetaSql = getPageSql(tableName, null, new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).toString());
+            Object[] metaArgs = getPageArgs(1, 0);
+            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql, metaArgs, tableName);
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
@@ -90,13 +91,13 @@ public abstract class AbstractDatabaseConnector implements Database {
         Table table = commandConfig.getTable();
         Map<String, String> map = new HashMap<>();
 
-        String query = SqlBuilderEnum.QUERY.getName();
+        String query = ConnectorConstant.OPERTION_QUERY;
         map.put(query, buildSql(query, table, queryFilterSql));
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
         String quotation = buildSqlWithQuotation();
-        queryCount.append("select count(*) from ").append(quotation).append(table.getName()).append(quotation);
+        queryCount.append("SELECT COUNT(*) FROM ").append(quotation).append(table.getName()).append(quotation);
         if (StringUtils.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
@@ -318,7 +319,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         MetaInfo metaInfo = null;
         try {
             jdbcTemplate = getJdbcTemplate(cfg);
-            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, cfg.getSql(), null);
+            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, cfg.getSql(), getPageArgs(1, 0),null);
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
@@ -452,8 +453,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         }
         List<Field> column = table.getColumn();
         if (CollectionUtils.isEmpty(column)) {
-            logger.error("Table column can not be empty.");
-            throw new ConnectorException("Table column can not be empty.");
+            return null;
         }
         // 获取主键
         String pk = null;

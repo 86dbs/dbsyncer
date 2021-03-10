@@ -18,4 +18,22 @@ public interface PluginService {
      */
     List<Plugin> getPluginAll();
 
+    /**
+     * 获取插件上传路径
+     *
+     * @return
+     */
+    String getPluginPath();
+
+    /**
+     * 加载插件
+     */
+    void loadPlugins();
+
+    /**
+     * 检查文件格式
+     *
+     * @param filename
+     */
+    void checkFileSuffix(String filename);
 }

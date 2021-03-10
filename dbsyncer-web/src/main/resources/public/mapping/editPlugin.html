@@ -12,7 +12,7 @@
                 <div class="col-sm-9">
                     <select id="sourceStrategyConvertRule" name="pluginClassName" class="form-control select-control">
                         <option value="">无</option>
-                        <option th:value="${p?.className}" th:text="${p?.name}" th:each="p,state : ${plugin}" th:selected="${tableGroup eq null and p.className eq mapping?.plugin?.className or p.className eq tableGroup?.plugin?.className}">
+                        <option th:value="${p?.className}" th:text="${p?.name +'_'+ p?.version}" th:each="p,state : ${plugin}" th:selected="${tableGroup eq null and p.className eq mapping?.plugin?.className or p.className eq tableGroup?.plugin?.className}">
                     </select>
                 </div>
             </div>

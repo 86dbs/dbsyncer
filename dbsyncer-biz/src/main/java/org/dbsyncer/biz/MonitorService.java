@@ -1,8 +1,8 @@
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.vo.DataVo;
-import org.dbsyncer.biz.vo.LogVo;
 import org.dbsyncer.biz.vo.MetaVo;
+import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
 import java.util.List;
 import java.util.Map;
@@ -41,7 +41,7 @@ public interface MonitorService {
      * @return
      * @param params
      */
-    List<DataVo> queryData(Map<String, String> params);
+    Paging queryData(Map<String, String> params);
 
     /**
      * 清空驱动同步数据
@@ -57,7 +57,7 @@ public interface MonitorService {
      * @param params
      * @return
      */
-    List<LogVo> queryLog(Map<String, String> params);
+    Paging queryLog(Map<String, String> params);
 
     /**
      * 清空操作日志
@@ -66,4 +66,10 @@ public interface MonitorService {
      */
     String clearLog();
 
+    /**
+     * 获取所有同步数据状态类型
+     *
+     * @return
+     */
+    List<StorageDataStatusEnum> getStorageDataStatusEnumAll();
 }

@@ -231,11 +231,13 @@ public class DBChangeNotification {
             ResultSet rs = null;
             try {
                 rs = statement.executeQuery(String.format(QUERY_ROW_DATA_SQL, tableName, rowId));
-                final int size = rs.getMetaData().getColumnCount();
-                while (rs.next()) {
-                    for (int i = 1; i <= size; i++) {
-                        data.add(rs.getObject(i));
-                    }
+                if(rs.next()){
+                    final int size = rs.getMetaData().getColumnCount();
+                    do{
+                        for (int i = 1; i <= size; i++) {
+                            data.add(rs.getObject(i));
+                        }
+                    } while(rs.next());
                 }
             } catch (SQLException e) {
                 logger.error(e.getMessage());

@@ -13,6 +13,22 @@ public class Plugin {
     // 插件实现
     private String className;
 
+    // 版本号
+    private String version;
+
+    // Jar名称
+    private String fileName;
+
+    public Plugin() {
+    }
+
+    public Plugin(String name, String className, String version, String fileName) {
+        this.name = name;
+        this.className = className;
+        this.version = version;
+        this.fileName = fileName;
+    }
+
     public String getName() {
         return name;
     }
@@ -27,6 +43,24 @@ public class Plugin {
 
     public Plugin setClassName(String className) {
         this.className = className;
+        return this;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public Plugin setVersion(String version) {
+        this.version = version;
+        return this;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public Plugin setFileName(String fileName) {
+        this.fileName = fileName;
         return this;
     }
 }

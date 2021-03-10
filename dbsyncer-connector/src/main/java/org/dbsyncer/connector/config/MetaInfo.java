@@ -7,7 +7,7 @@ import java.util.List;
  *
  * @author AE86
  * @ClassName: MetaInfo
- * @Description: 包括连接器的配置、元信息、总条数
+ * @Description: 包括字段信息、总条数
  * @date: 2017年7月20日 下午3:37:59
  */
 public class MetaInfo {
@@ -23,21 +23,22 @@ public class MetaInfo {
      */
     private long count;
 
-    public MetaInfo() {
-    }
-
-    public MetaInfo(List<Field> column, long count) {
-        super();
-        this.column = column;
-        this.count = count;
-    }
-
     public List<Field> getColumn() {
         return column;
     }
 
+    public MetaInfo setColumn(List<Field> column) {
+        this.column = column;
+        return this;
+    }
+
     public long getCount() {
         return count;
+    }
+
+    public MetaInfo setCount(long count) {
+        this.count = count;
+        return this;
     }
 
     @Override

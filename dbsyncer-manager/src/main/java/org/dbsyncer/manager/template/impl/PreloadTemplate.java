@@ -1,5 +1,6 @@
 package org.dbsyncer.manager.template.impl;
 
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.config.PreloadCallBack;
@@ -57,20 +58,32 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
         query.setType(StorageEnum.CONFIG);
         String filterType = config.getFilterType();
         query.put(ConfigConstant.CONFIG_MODEL_TYPE, filterType);
-        List<Map> list = storageService.query(query);
-        boolean empty = CollectionUtils.isEmpty(list);
-        logger.info("PreLoad {}:{}", filterType, empty ? 0 : list.size());
-        if (!empty) {
+
+        int pageNum = 1;
+        int pageSize = 20;
+        long total = 0;
+        for(;;){
+            query.setPageNum(pageNum);
+            query.setPageSize(pageSize);
+            Paging paging = storageService.query(query);
+            List<Map> data = (List<Map>) paging.getData();
+            if (CollectionUtils.isEmpty(data)) {
+                break;
+            }
             Handler handler = config.getHandlerEnum().getHandler();
             GroupStrategyEnum strategy = getDefaultStrategy(config);
-            list.forEach(map -> {
+            data.forEach(map -> {
                 String json = (String) map.get(ConfigConstant.CONFIG_MODEL_JSON);
                 ConfigModel model = (ConfigModel) handler.execute(new PreloadCallBack(parser, json));
                 if (null != model) {
                     operationTemplate.cache(model, strategy);
                 }
             });
+            total += paging.getTotal();
+            pageNum ++;
         }
+
+        logger.info("PreLoad {}:{}", filterType, total);
     }
 
     @Override
@@ -85,6 +98,9 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
         execute(new PreloadConfig(ConfigConstant.META, HandlerEnum.PRELOAD_META));
         // Load configs
         execute(new PreloadConfig(ConfigConstant.CONFIG, HandlerEnum.PRELOAD_CONFIG));
+
+        // Load plugins
+        manager.loadPlugins();
 
         // 启动驱动
         Meta meta = new Meta();

@@ -94,7 +94,6 @@ public class TestController implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() {
-        logger.info("123");
         // 初始化拦截mapping
         initHandlerMapping();
         // 添加解析器

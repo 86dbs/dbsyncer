@@ -108,7 +108,7 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setCommand(command);
 
         // 获取数据源总数
-        long count = ModelEnum.isFull(mapping.getModel()) ? manager.getCount(mapping.getSourceConnectorId(), command) : 0;
+        long count = ModelEnum.isFull(mapping.getModel()) && !CollectionUtils.isEmpty(command) ? manager.getCount(mapping.getSourceConnectorId(), command) : 0;
         tableGroup.getSourceTable().setCount(count);
     }
 
@@ -150,11 +150,11 @@ public class TableGroupChecker extends AbstractChecker {
         k1.retainAll(k2);
 
         // 有相似字段
+        List<FieldMapping> fields = new ArrayList<>();
         if (!CollectionUtils.isEmpty(k1)) {
-            List<FieldMapping> fields = new ArrayList<>();
             k1.forEach(k -> fields.add(new FieldMapping(m1.get(k), m2.get(k))));
-            tableGroup.setFieldMapping(fields);
         }
+        tableGroup.setFieldMapping(fields);
     }
 
     private void shuffleColumn(List<Field> col, List<String> key, Map<String, Field> map) {

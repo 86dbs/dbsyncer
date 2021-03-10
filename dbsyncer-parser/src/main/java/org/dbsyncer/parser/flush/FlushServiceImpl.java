@@ -4,6 +4,7 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.storage.SnowflakeIdWorker;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,7 @@ public class FlushServiceImpl implements FlushService {
         List<Map> list = data.parallelStream().map(r -> {
             Map<String, Object> params = new HashMap();
             params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
-            params.put(ConfigConstant.DATA_SUCCESS, success ? 1 : 0);
+            params.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
             params.put(ConfigConstant.DATA_EVENT, event);
             params.put(ConfigConstant.DATA_ERROR, error);
             params.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(r));

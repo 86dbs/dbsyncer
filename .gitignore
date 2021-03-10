@@ -1,5 +1,6 @@
 .idea
 data
+plugins
 *.iml
 out
 gen
@@ -11,3 +12,4 @@ velocity.log.1
 */.settings/*
 target/
 log.txt
+*.zip

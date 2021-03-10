@@ -23,6 +23,7 @@ import org.dbsyncer.parser.strategy.PrimaryKeyMappingStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -83,26 +84,23 @@ public class ParserFactory implements Parser {
 
     @Override
     public Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup) {
-        final String sourceConnectorId = mapping.getSourceConnectorId();
-        final String targetConnectorId = mapping.getTargetConnectorId();
-        List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
-        if (CollectionUtils.isEmpty(fieldMapping)) {
-            return null;
-        }
-        String sType = getConnectorConfig(sourceConnectorId).getConnectorType();
-        String tType = getConnectorConfig(targetConnectorId).getConnectorType();
+        String sType = getConnectorConfig(mapping.getSourceConnectorId()).getConnectorType();
+        String tType = getConnectorConfig(mapping.getTargetConnectorId()).getConnectorType();
         String sTableName = tableGroup.getSourceTable().getName();
         String tTableName = tableGroup.getTargetTable().getName();
         Table sTable = new Table().setName(sTableName).setColumn(new ArrayList<>());
         Table tTable = new Table().setName(tTableName).setColumn(new ArrayList<>());
-        fieldMapping.forEach(m -> {
-            if (null != m.getSource()) {
-                sTable.getColumn().add(m.getSource());
-            }
-            if (null != m.getTarget()) {
-                tTable.getColumn().add(m.getTarget());
-            }
-        });
+        List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
+        if (!CollectionUtils.isEmpty(fieldMapping)) {
+            fieldMapping.forEach(m -> {
+                if (null != m.getSource()) {
+                    sTable.getColumn().add(m.getSource());
+                }
+                if (null != m.getTarget()) {
+                    tTable.getColumn().add(m.getTarget());
+                }
+            });
+        }
         final CommandConfig sourceConfig = new CommandConfig(sType, sTable, tableGroup.getFilter());
         final CommandConfig targetConfig = new CommandConfig(tType, tTable);
         // 获取连接器同步参数
@@ -171,6 +169,11 @@ public class ParserFactory implements Parser {
     @Override
     public List<ConvertEnum> getConvertEnumAll() {
         return Arrays.asList(ConvertEnum.values());
+    }
+
+    @Override
+    public List<StorageDataStatusEnum> getStorageDataStatusEnumAll() {
+        return Arrays.asList(StorageDataStatusEnum.values());
     }
 
     @Override

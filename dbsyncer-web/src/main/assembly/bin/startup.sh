@@ -53,7 +53,7 @@ SERVER_PID=$CURRENT_DIR/tmp.pid
 # execute commond
 java $SERVER_OPTS \
 -Dfile.encoding=utf8 \
--Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:./plugins:./lib \
+-Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:./lib \
 -Dspring.config.location=$PRO_CONFIG_PATH \
 org.dbsyncer.web.Application \
 > $SERVER_LOGS & echo $! > $SERVER_PID
