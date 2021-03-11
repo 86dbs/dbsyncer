@@ -92,7 +92,7 @@ public class MonitorServiceImpl implements MonitorService {
         }
         // 查询是否成功, 默认查询失败
         String success = params.get(ConfigConstant.DATA_SUCCESS);
-        query.put(ConfigConstant.DATA_SUCCESS, StringUtils.isNotBlank(success) ? success : StorageDataStatusEnum.FAIL.getCode());
+        query.put(ConfigConstant.DATA_SUCCESS, StringUtils.isNotBlank(success) ? success : StorageDataStatusEnum.FAIL.getCode(), false, true);
 
         Paging paging = manager.queryData(query, id);
         List<Map> data = (List<Map>) paging.getData();
