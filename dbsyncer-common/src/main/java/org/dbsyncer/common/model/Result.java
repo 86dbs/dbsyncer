@@ -9,10 +9,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Result {
 
     // 读取数据
-    private List<Map<String, Object>> data;
+    private List<Map> data;
 
     // 错误数据
-    private Queue<Map<String, Object>> failData;
+    private Queue<Map> failData;
 
     // 错误数
     private AtomicLong fail;
@@ -24,7 +24,7 @@ public class Result {
         init();
     }
 
-    public Result(List<Map<String, Object>> data) {
+    public Result(List<Map> data) {
         init();
         this.data = data;
     }
@@ -35,11 +35,11 @@ public class Result {
         this.error = new StringBuffer();
     }
 
-    public List<Map<String, Object>> getData() {
+    public List<Map> getData() {
         return data;
     }
 
-    public Queue<Map<String, Object>> getFailData() {
+    public Queue<Map> getFailData() {
         return failData;
     }
 

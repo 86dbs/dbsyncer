@@ -35,9 +35,12 @@ public abstract class DataBaseConfigChecker implements ConnectorConfigChecker {
 
     protected void modifyDql(Connector connector, Map<String, String> params) {
         String sql = params.get("sql");
+        String table = params.get("table");
         Assert.hasText(sql, "Sql is empty.");
+        Assert.hasText(table, "Table is empty.");
         DatabaseConfig config = (DatabaseConfig) connector.getConfig();
         config.setSql(sql);
+        config.setTable(table);
     }
 
 }

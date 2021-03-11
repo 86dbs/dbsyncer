@@ -27,7 +27,7 @@ public abstract class AbstractDatabaseConnector implements Database {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected abstract String getQueryTablesSql(DatabaseConfig config);
+    protected abstract String getTablesSql(DatabaseConfig config);
 
     @Override
     public boolean isAlive(ConnectorConfig config) {
@@ -50,7 +50,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         JdbcTemplate jdbcTemplate = null;
         try {
             jdbcTemplate = getJdbcTemplate(databaseConfig);
-            String sql = getQueryTablesSql(databaseConfig);
+            String sql = getTablesSql(databaseConfig);
             tables = jdbcTemplate.queryForList(sql, String.class);
         } catch (Exception e) {
             logger.error("getTable failed", e.getMessage());
@@ -69,9 +69,8 @@ public abstract class AbstractDatabaseConnector implements Database {
         try {
             jdbcTemplate = getJdbcTemplate(cfg);
             String quotation = buildSqlWithQuotation();
-            String queryMetaSql = getPageSql(tableName, null, new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).toString());
-            Object[] metaArgs = getPageArgs(1, 0);
-            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql, metaArgs, tableName);
+            String queryMetaSql = getTableColumnSql(new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).toString());
+            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql, tableName);
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
@@ -97,7 +96,8 @@ public abstract class AbstractDatabaseConnector implements Database {
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
         String quotation = buildSqlWithQuotation();
-        queryCount.append("SELECT COUNT(*) FROM ").append(quotation).append(table.getName()).append(quotation);
+        String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
+        queryCount.append("SELECT COUNT(").append(quotation).append(pk).append(quotation).append(") FROM ").append(quotation).append(table.getName()).append(quotation);
         if (StringUtils.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
@@ -164,7 +164,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             List<Map<String, Object>> list = jdbcTemplate.queryForList(querySql, args.toArray());
 
             // 5、返回结果集
-            return new Result(list);
+            return new Result(new ArrayList<>(list));
         } catch (Exception e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e.getMessage());
@@ -175,7 +175,7 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
-    public Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> data) {
+    public Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map> data) {
         // 1、获取select SQL
         String insertSql = command.get(SqlBuilderEnum.INSERT.getName());
         Assert.hasText(insertSql, "插入语句不能为空.");
@@ -319,7 +319,8 @@ public abstract class AbstractDatabaseConnector implements Database {
         MetaInfo metaInfo = null;
         try {
             jdbcTemplate = getJdbcTemplate(cfg);
-            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, cfg.getSql(), getPageArgs(1, 0),null);
+            String queryMetaSql = getTableColumnSql(cfg.getSql());
+            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql, cfg.getTable());
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
@@ -354,7 +355,9 @@ public abstract class AbstractDatabaseConnector implements Database {
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
-        queryCount.append("select count(*) from (").append(table.getName()).append(")").append(tableLabel);
+        String quotation = buildSqlWithQuotation();
+        String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
+        queryCount.append("SELECT COUNT(").append(pk).append(") FROM (").append(table.getName()).append(")").append(tableLabel);;
         if (StringUtils.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
@@ -489,7 +492,7 @@ public abstract class AbstractDatabaseConnector implements Database {
      * @param fSize  同步字段个数
      * @param row    同步字段对应的值，例如{ID=123, NAME=张三11}
      */
-    private void batchRowsSetter(PreparedStatement ps, List<Field> fields, int fSize, Map<String, Object> row) {
+    private void batchRowsSetter(PreparedStatement ps, List<Field> fields, int fSize, Map row) {
         Field f = null;
         int type;
         Object val = null;

@@ -20,6 +20,9 @@ public class DatabaseConfig extends ConnectorConfig {
     // 密码
     private String password;
 
+    // 通过SQL获取表
+    private String table;
+
     // 通过SQL获取表信息
     private String sql;
 
@@ -56,6 +59,15 @@ public class DatabaseConfig extends ConnectorConfig {
 
     public DatabaseConfig setPassword(String password) {
         this.password = password;
+        return this;
+    }
+
+    public String getTable() {
+        return table;
+    }
+
+    public DatabaseConfig setTable(String table) {
+        this.table = table;
         return this;
     }
 

@@ -11,6 +11,14 @@ public interface Database extends Connector {
     void close(JdbcTemplate jdbcTemplate);
 
     /**
+     * 获取表列信息SQL
+     *
+     * @param querySQL
+     * @return
+     */
+    String getTableColumnSql(String querySQL);
+
+    /**
      * 获取分页SQL
      *
      * @param tableName
@@ -28,4 +36,5 @@ public interface Database extends Connector {
      * @return
      */
     Object[] getPageArgs(int pageIndex, int pageSize);
+
 }

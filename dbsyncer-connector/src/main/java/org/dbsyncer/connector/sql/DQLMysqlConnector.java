@@ -13,8 +13,14 @@ import java.util.Map;
 public final class DQLMysqlConnector extends AbstractDatabaseConnector {
 
     @Override
-    protected String getQueryTablesSql(DatabaseConfig config) {
+    protected String getTablesSql(DatabaseConfig config) {
         return "show tables";
+    }
+
+    @Override
+    public String getTableColumnSql(String querySQL) {
+        // Mysql 表列查询
+        return querySQL + DatabaseConstant.MYSQL_TABLE_COLUMN_SQL;
     }
 
     @Override

@@ -21,7 +21,7 @@ public class OraclePrimaryKeyMappingStrategy implements PrimaryKeyMappingStrateg
      * @param row
      */
     @Override
-    public void handle(Map<String, Object> row, RowChangedEvent rowChangedEvent) {
+    public void handle(Map row, RowChangedEvent rowChangedEvent) {
         row.put(rowChangedEvent.getPk(), rowChangedEvent.getRowId());
     }
 }

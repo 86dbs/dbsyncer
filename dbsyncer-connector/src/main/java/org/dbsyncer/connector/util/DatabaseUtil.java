@@ -1,16 +1,19 @@
 package org.dbsyncer.connector.util;
 
 import org.apache.commons.dbcp.BasicDataSource;
+import org.apache.commons.dbcp.DelegatingDatabaseMetaData;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.config.Table;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
+import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -68,8 +71,8 @@ public abstract class DatabaseUtil {
      * @param tableName    表名
      * @return
      */
-    public static MetaInfo getMetaInfo(JdbcTemplate jdbcTemplate, String metaSql, Object[] args, String tableName) throws SQLException {
-        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(metaSql, args);
+    public static MetaInfo getMetaInfo(JdbcTemplate jdbcTemplate, String metaSql, String tableName) throws SQLException {
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(metaSql);
         ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
         SqlRowSetMetaData metaData = rowSet.getMetaData();
 
@@ -110,6 +113,51 @@ public abstract class DatabaseUtil {
         return new MetaInfo().setColumn(fields);
     }
 
+    /**
+     * 获取数据库名称
+     * @param conn
+     * @return
+     * @throws NoSuchFieldException
+     * @throws SQLException
+     * @throws IllegalAccessException
+     */
+    public static String getDataBaseName(Connection conn) throws NoSuchFieldException, SQLException, IllegalAccessException {
+        DelegatingDatabaseMetaData md = (DelegatingDatabaseMetaData) conn.getMetaData();
+        DatabaseMetaData delegate = md.getDelegate();
+        String driverVersion = delegate.getDriverVersion();
+        boolean driverThanMysql8 = isDriverVersionMoreThanMysql8(driverVersion);
+        String databaseProductVersion = delegate.getDatabaseProductVersion();
+        boolean dbThanMysql8 = isDatabaseProductVersionMoreThanMysql8(databaseProductVersion);
+        Assert.isTrue(driverThanMysql8 == dbThanMysql8, String.format("当前驱动%s和数据库%s版本不一致.", driverVersion, databaseProductVersion));
+
+        Class clazz = driverThanMysql8 ? delegate.getClass() : delegate.getClass().getSuperclass();
+        java.lang.reflect.Field field = clazz.getDeclaredField("database");
+        field.setAccessible(true);
+        return (String) field.get(delegate);
+    }
+
+    /**
+     * Mysql 8.0
+     * <p>mysql-connector-java-8.0.11</p>
+     * <p>mysql-connector-java-5.1.40</p>
+     * @param driverVersion
+     * @return
+     */
+    private static boolean isDriverVersionMoreThanMysql8(String driverVersion) {
+        return StringUtils.startsWith(driverVersion, "mysql-connector-java-8");
+    }
+
+    /**
+     * Mysql 8.0
+     * <p>8.0.0-log</p>
+     * <p>5.7.26-log</p>
+     * @param databaseProductVersion
+     * @return
+     */
+    private static boolean isDatabaseProductVersionMoreThanMysql8(String databaseProductVersion) {
+        return StringUtils.startsWith(databaseProductVersion,"8");
+    }
+
     private static boolean isPk(Map<String, List<String>> tables, String tableName, String name) {
         List<String> pk = tables.get(tableName);
         return !CollectionUtils.isEmpty(pk) && pk.contains(name);
@@ -130,4 +178,23 @@ public abstract class DatabaseUtil {
         return primaryKeys;
     }
 
+    /**
+     * 返回主键名称
+     * @param table
+     * @param quotation
+     * @return * / id
+     */
+    public static String findTablePrimaryKey(Table table, String quotation) {
+        if (null != table) {
+            List<Field> column = table.getColumn();
+            if (!CollectionUtils.isEmpty(column)) {
+                for (Field c : column) {
+                    if(c.isPk()){
+                        return new StringBuilder(quotation).append(c.getName()).append(quotation).toString();
+                    }
+                }
+            }
+        }
+        return "*";
+    }
 }

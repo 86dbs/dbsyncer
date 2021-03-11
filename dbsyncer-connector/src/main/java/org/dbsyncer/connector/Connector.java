@@ -89,7 +89,7 @@ public interface Connector {
      * @param data    数据
      * @return
      */
-    Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> data);
+    Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map> data);
 
     /**
      * 写入目标源数据

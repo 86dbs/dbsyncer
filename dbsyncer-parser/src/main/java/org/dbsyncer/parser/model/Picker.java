@@ -9,8 +9,8 @@ public class Picker {
 
     private List<Field> sourceFields;
     private List<Field> targetFields;
-    private List<Map<String, Object>> targetList;
-    private Map<String, Object> target;
+    private List<Map> targetList;
+    private Map target;
 
     public List<Field> getSourceFields() {
         return sourceFields;
@@ -28,19 +28,19 @@ public class Picker {
         this.targetFields = targetFields;
     }
 
-    public List<Map<String, Object>> getTargetList() {
+    public List<Map> getTargetList() {
         return targetList;
     }
 
-    public void setTargetList(List<Map<String, Object>> targetList) {
+    public void setTargetList(List<Map> targetList) {
         this.targetList = targetList;
     }
 
-    public Map<String, Object> getTarget() {
+    public Map getTarget() {
         return target;
     }
 
-    public void setTarget(Map<String, Object> target) {
+    public void setTarget(Map target) {
         this.target = target;
     }
 }

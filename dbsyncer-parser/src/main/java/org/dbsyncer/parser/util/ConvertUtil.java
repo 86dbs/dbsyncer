@@ -18,7 +18,7 @@ public abstract class ConvertUtil {
      * @param convert
      * @param data
      */
-    public static void convert(List<Convert> convert, List<Map<String, Object>> data) {
+    public static void convert(List<Convert> convert, List<Map> data) {
         if (!CollectionUtils.isEmpty(convert) && !CollectionUtils.isEmpty(data)) {
             // 并行流计算
             data.parallelStream().forEach(row -> {
@@ -33,7 +33,7 @@ public abstract class ConvertUtil {
      * @param convert
      * @param row
      */
-    public static void convert(List<Convert> convert, Map<String, Object> row) {
+    public static void convert(List<Convert> convert, Map row) {
         if (!CollectionUtils.isEmpty(convert) && !CollectionUtils.isEmpty(row)) {
             // 替换row值, 复用堆栈地址，减少开销
             final int size = convert.size();
