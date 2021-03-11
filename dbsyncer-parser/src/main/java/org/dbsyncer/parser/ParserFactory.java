@@ -213,7 +213,7 @@ public class ParserFactory implements Parser {
             // 1、获取数据源数据
             int pageIndex = Integer.parseInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
             Result reader = connectorFactory.reader(sConfig, command, new ArrayList<>(), pageIndex, pageSize);
-            List<Map<String, Object>> data = reader.getData();
+            List<Map> data = reader.getData();
             if (CollectionUtils.isEmpty(data)) {
                 params.clear();
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
@@ -224,7 +224,7 @@ public class ParserFactory implements Parser {
             PickerUtil.pickData(picker, data);
 
             // 3、参数转换
-            List<Map<String, Object>> target = picker.getTargetList();
+            List<Map> target = picker.getTargetList();
             ConvertUtil.convert(group.getConvert(), target);
 
             // 4、插件转换
@@ -258,7 +258,7 @@ public class ParserFactory implements Parser {
         PickerUtil.pickData(picker, data);
 
         // 2、主键映射策略，Oracle需要替换主键为rowId
-        Map<String, Object> target = picker.getTarget();
+        Map target = picker.getTarget();
         strategy.handle(target, rowChangedEvent);
 
         // 3、参数转换
@@ -271,7 +271,7 @@ public class ParserFactory implements Parser {
         Result writer = connectorFactory.writer(tConfig, picker.getTargetFields(), tableGroup.getCommand(), event, target);
 
         // 6、更新结果
-        List<Map<String, Object>> list = new ArrayList<>(1);
+        List<Map> list = new ArrayList<>(1);
         list.add(target);
         flush(metaId, writer, event, list);
     }
@@ -283,7 +283,7 @@ public class ParserFactory implements Parser {
      * @param writer
      * @param data
      */
-    private void flush(Task task, Result writer, List<Map<String, Object>> data) {
+    private void flush(Task task, Result writer, List<Map> data) {
         flush(task.getId(), writer, ConnectorConstant.OPERTION_INSERT, data);
 
         // 发布刷新事件给FullExtractor
@@ -291,7 +291,7 @@ public class ParserFactory implements Parser {
         applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
     }
 
-    private void flush(String metaId, Result writer, String event, List<Map<String, Object>> data) {
+    private void flush(String metaId, Result writer, String event, List<Map> data) {
         // 引用传递
         long total = data.size();
         long fail = writer.getFail().get();
@@ -300,7 +300,7 @@ public class ParserFactory implements Parser {
         meta.getSuccess().getAndAdd(total - fail);
 
         // 记录错误数据
-        Queue<Map<String, Object>> failData = writer.getFailData();
+        Queue<Map> failData = writer.getFailData();
         boolean success = CollectionUtils.isEmpty(failData);
         if (!success) {
             data.clear();
@@ -349,7 +349,7 @@ public class ParserFactory implements Parser {
      * @param batchSize
      * @return
      */
-    private Result writeBatch(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> target,
+    private Result writeBatch(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map> target,
                               int threadSize, int batchSize) {
         // 总数
         int total = target.size();
@@ -363,7 +363,7 @@ public class ParserFactory implements Parser {
         threadSize = taskSize <= threadSize ? taskSize : threadSize;
 
         // 转换为消息队列，根据batchSize获取数据，并发写入
-        Queue<Map<String, Object>> queue = new ConcurrentLinkedQueue<>(target);
+        Queue<Map> queue = new ConcurrentLinkedQueue<>(target);
 
         // 创建线程池
         final ThreadPoolTaskExecutor executor = getThreadPoolTaskExecutor(threadSize, taskSize - threadSize);
@@ -402,11 +402,11 @@ public class ParserFactory implements Parser {
         return result;
     }
 
-    private Result parallelTask(int batchSize, Queue<Map<String, Object>> queue, ConnectorConfig config, Map<String, String> command,
+    private Result parallelTask(int batchSize, Queue<Map> queue, ConnectorConfig config, Map<String, String> command,
                                 List<Field> fields) {
-        List<Map<String, Object>> data = new ArrayList<>();
+        List<Map> data = new ArrayList<>();
         for (int j = 0; j < batchSize; j++) {
-            Map<String, Object> poll = queue.poll();
+            Map poll = queue.poll();
             if (null == poll) {
                 break;
             }

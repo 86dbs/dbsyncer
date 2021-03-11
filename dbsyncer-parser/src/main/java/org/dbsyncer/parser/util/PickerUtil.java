@@ -61,9 +61,9 @@ public abstract class PickerUtil {
         }
     }
 
-    public static void pickData(Picker picker, List<Map<String, Object>> data) {
+    public static void pickData(Picker picker, List<Map> data) {
         if (!CollectionUtils.isEmpty(data)) {
-            List<Map<String, Object>> target = new ArrayList<>();
+            List<Map> target = new ArrayList<>();
             List<Field> sFields = picker.getSourceFields();
             List<Field> tFields = picker.getTargetFields();
 

@@ -59,7 +59,7 @@ public class PluginFactory {
         return plugins;
     }
 
-    public void convert(Plugin plugin, List<Map<String, Object>> source, List<Map<String, Object>> target) {
+    public void convert(Plugin plugin, List<Map> source, List<Map> target) {
         if (null != plugin && service.containsKey(plugin.getClassName())) {
             service.get(plugin.getClassName()).convert(source, target);
         }

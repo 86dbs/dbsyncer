@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public interface PrimaryKeyMappingStrategy {
 
-    default void handle(Map<String, Object> row, RowChangedEvent rowChangedEvent) {
+    default void handle(Map row, RowChangedEvent rowChangedEvent) {
         // nothing to do
     }
 

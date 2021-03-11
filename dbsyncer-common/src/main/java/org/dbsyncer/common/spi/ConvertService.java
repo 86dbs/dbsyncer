@@ -19,7 +19,7 @@ public interface ConvertService {
      * @param source 数据源
      * @param target 目标源
      */
-    void convert(List<Map<String, Object>> source, List<Map<String, Object>> target);
+    void convert(List<Map> source, List<Map> target);
 
     /**
      * 增量同步
@@ -28,7 +28,7 @@ public interface ConvertService {
      * @param source 数据源
      * @param target 目标源
      */
-    void convert(String event, Map<String, Object> source, Map<String, Object> target);
+    void convert(String event, Map source, Map target);
 
     /**
      * 版本号

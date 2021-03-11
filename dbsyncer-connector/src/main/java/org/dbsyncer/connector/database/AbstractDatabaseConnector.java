@@ -164,7 +164,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             List<Map<String, Object>> list = jdbcTemplate.queryForList(querySql, args.toArray());
 
             // 5、返回结果集
-            return new Result(list);
+            return new Result(new ArrayList<>(list));
         } catch (Exception e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e.getMessage());
@@ -175,7 +175,7 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
-    public Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map<String, Object>> data) {
+    public Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map> data) {
         // 1、获取select SQL
         String insertSql = command.get(SqlBuilderEnum.INSERT.getName());
         Assert.hasText(insertSql, "插入语句不能为空.");
@@ -492,7 +492,7 @@ public abstract class AbstractDatabaseConnector implements Database {
      * @param fSize  同步字段个数
      * @param row    同步字段对应的值，例如{ID=123, NAME=张三11}
      */
-    private void batchRowsSetter(PreparedStatement ps, List<Field> fields, int fSize, Map<String, Object> row) {
+    private void batchRowsSetter(PreparedStatement ps, List<Field> fields, int fSize, Map row) {
         Field f = null;
         int type;
         Object val = null;
