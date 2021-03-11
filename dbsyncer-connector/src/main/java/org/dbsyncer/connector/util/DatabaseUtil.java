@@ -128,7 +128,7 @@ public abstract class DatabaseUtil {
         boolean driverThanMysql8 = isDriverVersionMoreThanMysql8(driverVersion);
         String databaseProductVersion = delegate.getDatabaseProductVersion();
         boolean dbThanMysql8 = isDatabaseProductVersionMoreThanMysql8(databaseProductVersion);
-        Assert.isTrue(driverThanMysql8 && dbThanMysql8, String.format("当前驱动%s和数据库%s版本不一致.", driverVersion, databaseProductVersion));
+        Assert.isTrue(driverThanMysql8 == dbThanMysql8, String.format("当前驱动%s和数据库%s版本不一致.", driverVersion, databaseProductVersion));
 
         Class clazz = driverThanMysql8 ? delegate.getClass() : delegate.getClass().getSuperclass();
         java.lang.reflect.Field field = clazz.getDeclaredField("database");
