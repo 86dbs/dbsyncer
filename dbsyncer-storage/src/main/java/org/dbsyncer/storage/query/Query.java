@@ -38,11 +38,15 @@ public class Query {
     }
 
     public void put(String key, String value) {
-        params.add(new Param(key, value));
+        put(key, value, false, false);
     }
 
     public void put(String key, String value, boolean highlighter) {
-        params.add(new Param(key, value, highlighter));
+        put(key, value, highlighter, false);
+    }
+
+    public void put(String key, String value, boolean highlighter, boolean number) {
+        params.add(new Param(key, value, highlighter, number));
         enableHighLightSearch = highlighter;
     }
 

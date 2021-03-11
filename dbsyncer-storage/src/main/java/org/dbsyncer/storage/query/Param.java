@@ -9,16 +9,18 @@ public class Param {
     private String key;
     private String value;
     private boolean highlighter;
+    private boolean number;
 
     public Param(String key, String value) {
         this.key = key;
         this.value = value;
     }
 
-    public Param(String key, String value, boolean highlighter) {
+    public Param(String key, String value, boolean highlighter, boolean number) {
         this.key = key;
         this.value = value;
         this.highlighter = highlighter;
+        this.number = number;
     }
 
     public String getKey() {
@@ -31,5 +33,9 @@ public class Param {
 
     public boolean isHighlighter() {
         return highlighter;
+    }
+
+    public boolean isNumber() {
+        return number;
     }
 }

@@ -1,6 +1,8 @@
 package org.dbsyncer.storage.support;
 
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
@@ -77,7 +79,13 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
             List<Param> params = query.getParams();
             if (!CollectionUtils.isEmpty(params)) {
                 BooleanQuery.Builder builder = new BooleanQuery.Builder();
-                params.forEach(p -> builder.add(new TermQuery(new Term(p.getKey(), p.getValue())), BooleanClause.Occur.MUST));
+                params.forEach(p -> {
+                    if(p.isNumber()){
+                        builder.add(IntPoint.newExactQuery(p.getKey(), NumberUtils.toInt(p.getValue())), BooleanClause.Occur.MUST);
+                    }else{
+                        builder.add(new TermQuery(new Term(p.getKey(), p.getValue())), BooleanClause.Occur.MUST);
+                    }
+                });
                 BooleanQuery q = builder.build();
                 return shard.query(new Option(q, params), pageNum, pageSize, sort);
             }
