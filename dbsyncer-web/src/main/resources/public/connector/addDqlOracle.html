@@ -20,7 +20,11 @@
         </div>
     </div>
     <div class="form-group">
-        <div class="col-sm-12 text-right">
+        <label class="col-sm-2 control-label">表 <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-4">
+            <input class="form-control" name="table" type="text" maxlength="32" dbsyncer-valid="require" placeholder="USER" th:value="${connector?.config?.table}"/>
+        </div>
+        <div class="col-sm-6 text-right">
             <a href="javascript:beautifySql();"><span class="fa fa-magic fa-1x fa-flip-horizontal dbsyncer_pointer" title="美化SQL"></span>美化SQL</a>
         </div>
     </div>

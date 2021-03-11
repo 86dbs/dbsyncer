@@ -7,6 +7,7 @@ import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.config.Table;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
@@ -68,8 +69,8 @@ public abstract class DatabaseUtil {
      * @param tableName    表名
      * @return
      */
-    public static MetaInfo getMetaInfo(JdbcTemplate jdbcTemplate, String metaSql, Object[] args, String tableName) throws SQLException {
-        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(metaSql, args);
+    public static MetaInfo getMetaInfo(JdbcTemplate jdbcTemplate, String metaSql, String tableName) throws SQLException {
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(metaSql);
         ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
         SqlRowSetMetaData metaData = rowSet.getMetaData();
 
@@ -130,4 +131,23 @@ public abstract class DatabaseUtil {
         return primaryKeys;
     }
 
+    /**
+     * 返回主键名称
+     * @param table
+     * @param quotation
+     * @return * / id
+     */
+    public static String findTablePrimaryKey(Table table, String quotation) {
+        if (null != table) {
+            List<Field> column = table.getColumn();
+            if (!CollectionUtils.isEmpty(column)) {
+                for (Field c : column) {
+                    if(c.isPk()){
+                        return new StringBuilder(quotation).append(c.getName()).append(quotation).toString();
+                    }
+                }
+            }
+        }
+        return "*";
+    }
 }

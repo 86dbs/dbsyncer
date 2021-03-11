@@ -15,16 +15,20 @@ public class CommandConfig {
 
     private Table table;
 
+    private Table originalTable;
+
     private List<Filter> filter;
 
-    public CommandConfig(String type, Table table) {
+    public CommandConfig(String type, Table table, Table originalTable) {
         this.type = type;
         this.table = table;
+        this.originalTable = originalTable;
     }
 
-    public CommandConfig(String type, Table table, List<Filter> filter) {
+    public CommandConfig(String type, Table table, Table originalTable, List<Filter> filter) {
         this.type = type;
         this.table = table;
+        this.originalTable = originalTable;
         this.filter = filter;
     }
 
@@ -40,4 +44,7 @@ public class CommandConfig {
         return filter;
     }
 
+    public Table getOriginalTable() {
+        return originalTable;
+    }
 }

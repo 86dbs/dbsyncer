@@ -234,7 +234,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     }
 
     private String buildQueryCountSql(Query query, Executor executor, List<Object> args) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (").append(executor.getQuery());
+        StringBuilder sql = new StringBuilder("SELECT COUNT(ID) FROM (").append(executor.getQuery());
         buildQuerySqlWithParams(query, args, sql);
         sql.append(") _T");
         return sql.toString();

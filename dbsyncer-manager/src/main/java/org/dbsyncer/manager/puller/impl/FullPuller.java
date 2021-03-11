@@ -5,6 +5,8 @@ import org.dbsyncer.common.model.Task;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.puller.AbstractPuller;
 import org.dbsyncer.parser.Parser;
+import org.dbsyncer.parser.logger.LogService;
+import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -38,6 +40,9 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
     @Autowired
     private Manager manager;
 
+    @Autowired
+    private LogService logService;
+
     private Map<String, Task> map = new ConcurrentHashMap<>();
 
     @Override
@@ -57,6 +62,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
 
         } catch (Exception e) {
             logger.error(e.getMessage());
+            logService.log(LogType.SystemLog.ERROR, e.getMessage());
         } finally {
             map.remove(metaId);
             publishClosedEvent(metaId);

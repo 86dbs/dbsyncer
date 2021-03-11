@@ -86,10 +86,10 @@ public class ParserFactory implements Parser {
     public Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup) {
         String sType = getConnectorConfig(mapping.getSourceConnectorId()).getConnectorType();
         String tType = getConnectorConfig(mapping.getTargetConnectorId()).getConnectorType();
-        String sTableName = tableGroup.getSourceTable().getName();
-        String tTableName = tableGroup.getTargetTable().getName();
-        Table sTable = new Table().setName(sTableName).setColumn(new ArrayList<>());
-        Table tTable = new Table().setName(tTableName).setColumn(new ArrayList<>());
+        Table sourceTable = tableGroup.getSourceTable();
+        Table targetTable = tableGroup.getTargetTable();
+        Table sTable = new Table().setName(sourceTable.getName()).setColumn(new ArrayList<>());
+        Table tTable = new Table().setName(targetTable.getName()).setColumn(new ArrayList<>());
         List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
         if (!CollectionUtils.isEmpty(fieldMapping)) {
             fieldMapping.forEach(m -> {
@@ -101,8 +101,8 @@ public class ParserFactory implements Parser {
                 }
             });
         }
-        final CommandConfig sourceConfig = new CommandConfig(sType, sTable, tableGroup.getFilter());
-        final CommandConfig targetConfig = new CommandConfig(tType, tTable);
+        final CommandConfig sourceConfig = new CommandConfig(sType, sTable, sourceTable, tableGroup.getFilter());
+        final CommandConfig targetConfig = new CommandConfig(tType, tTable, targetTable);
         // 获取连接器同步参数
         Map<String, String> command = connectorFactory.getCommand(sourceConfig, targetConfig);
         return command;
