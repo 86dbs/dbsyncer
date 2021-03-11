@@ -69,7 +69,7 @@
 
     <build>
         <!-- 指定打包名称 -->
-        <finalName>${project.parent.artifactId}-1.0.4-Alpha</finalName>
+        <finalName>${project.parent.artifactId}-1.0.5-Alpha</finalName>
 
         <plugins>
             <!-- compiler插件参数设置，指定编码 -->
