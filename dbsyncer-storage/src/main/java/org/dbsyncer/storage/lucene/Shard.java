@@ -134,7 +134,7 @@ public class Shard {
         final TopDocs topDocs = searcher.search(option.getQuery(), MAX_SIZE, sort);
         Paging paging = new Paging(pageNum, pageSize);
         List<Map> data = search(searcher, topDocs, option, pageNum, pageSize);
-        paging.setTotal(topDocs.scoreDocs.length);
+        paging.setTotal(topDocs.totalHits);
         paging.setData(data);
         return paging;
     }

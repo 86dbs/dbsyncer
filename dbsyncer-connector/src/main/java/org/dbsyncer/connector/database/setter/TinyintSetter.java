@@ -9,7 +9,7 @@ public class TinyintSetter extends AbstractSetter {
 
     @Override
     protected void set(PreparedStatement ps, int i, Object val) throws SQLException {
-        ps.setInt(i, Integer.parseInt(String.valueOf(val)));
+        ps.setInt(i, (Integer) val);
     }
 
 }

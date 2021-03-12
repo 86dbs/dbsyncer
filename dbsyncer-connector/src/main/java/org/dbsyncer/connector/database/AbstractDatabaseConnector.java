@@ -91,7 +91,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         Map<String, String> map = new HashMap<>();
 
         String query = ConnectorConstant.OPERTION_QUERY;
-        map.put(query, buildSql(query, table, queryFilterSql));
+        map.put(query, buildSql(query, table, null, queryFilterSql));
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
@@ -110,15 +110,16 @@ public abstract class AbstractDatabaseConnector implements Database {
         // 获取增删改SQL
         Map<String, String> map = new HashMap<>();
         Table table = commandConfig.getTable();
+        Table originalTable = commandConfig.getOriginalTable();
 
         String insert = SqlBuilderEnum.INSERT.getName();
-        map.put(insert, buildSql(insert, table, null));
+        map.put(insert, buildSql(insert, table, originalTable, null));
 
         String update = SqlBuilderEnum.UPDATE.getName();
-        map.put(update, buildSql(update, table, null));
+        map.put(update, buildSql(update, table, originalTable, null));
 
         String delete = SqlBuilderEnum.DELETE.getName();
-        map.put(delete, buildSql(delete, table, null));
+        map.put(delete, buildSql(delete, table, originalTable, null));
         return map;
     }
 
@@ -446,10 +447,11 @@ public abstract class AbstractDatabaseConnector implements Database {
      *
      * @param type           {@link SqlBuilderEnum}
      * @param table
+     * @param originalTable
      * @param queryFilterSQL
      * @return
      */
-    private String buildSql(String type, Table table, String queryFilterSQL) {
+    private String buildSql(String type, Table table, Table originalTable, String queryFilterSQL) {
         if (null == table) {
             logger.error("Table can not be null.");
             throw new ConnectorException("Table can not be null.");
@@ -480,6 +482,9 @@ public abstract class AbstractDatabaseConnector implements Database {
         if (StringUtils.isBlank(tableName)) {
             logger.error("Table name can not be empty.");
             throw new ConnectorException("Table name can not be empty.");
+        }
+        if (StringUtils.isBlank(pk)) {
+            pk = DatabaseUtil.findTablePrimaryKey(originalTable, "");
         }
 
         SqlBuilderConfig config = new SqlBuilderConfig(this, tableName, pk, filedNames, queryFilterSQL, buildSqlWithQuotation());

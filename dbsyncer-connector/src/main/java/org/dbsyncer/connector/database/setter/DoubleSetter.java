@@ -9,7 +9,7 @@ public class DoubleSetter extends AbstractSetter {
 
     @Override
     protected void set(PreparedStatement ps, int i, Object val) throws SQLException {
-        ps.setDouble(i, Double.parseDouble(String.valueOf(val)));
+        ps.setDouble(i, (Double) val);
     }
 
 }

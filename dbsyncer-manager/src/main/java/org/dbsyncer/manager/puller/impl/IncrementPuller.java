@@ -190,7 +190,9 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         public void flushEvent(Map<String, String> map) {
             // 如果有变更，执行更新
             if (changed.compareAndSet(true, false)) {
-                logger.info("{}", map);
+                if (!CollectionUtils.isEmpty(map)) {
+                    logger.info("{}", map);
+                }
                 forceFlushEvent(map);
             }
         }
@@ -198,7 +200,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         @Override
         public void forceFlushEvent(Map<String, String> map) {
             Meta meta = manager.getMeta(metaId);
-            if (null != meta) {
+            if (null != meta && !CollectionUtils.isEmpty(map)) {
                 meta.setMap(map);
                 manager.editMeta(meta);
             }
@@ -329,7 +331,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             }
 
             // 防止挤压无效的增量数据，刷新最新的有效记录点
-            if(eventCounter.incrementAndGet() >= MAX_LOG_CACHE_SIZE){
+            if (eventCounter.incrementAndGet() >= MAX_LOG_CACHE_SIZE) {
                 extractor.forceFlushEvent();
                 eventCounter.set(0);
             }

@@ -29,6 +29,7 @@ public enum SetterEnum {
 
     // 很少使用
     TINYINT(Types.TINYINT, new TinyintSetter()),
+    DECIMAL(Types.DECIMAL, new DecimalSetter()),
     DOUBLE(Types.DOUBLE, new DoubleSetter()),
     FLOAT(Types.FLOAT, new FloatSetter()),
     REAL(Types.REAL, new RealSetter());

@@ -9,7 +9,7 @@ public class FloatSetter extends AbstractSetter {
 
     @Override
     protected void set(PreparedStatement ps, int i, Object val) throws SQLException {
-        ps.setFloat(i, Float.parseFloat(String.valueOf(val)));
+        ps.setFloat(i, (Float) val);
     }
 
 }
