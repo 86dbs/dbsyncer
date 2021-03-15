@@ -358,7 +358,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         String quotation = buildSqlWithQuotation();
         String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
         StringBuilder queryCount = new StringBuilder();
-        queryCount.append("SELECT COUNT(1) FROM (").append(quotation).append(table.getName()).append(quotation);
+        queryCount.append("SELECT COUNT(1) FROM (").append(table.getName());
         if (StringUtils.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
