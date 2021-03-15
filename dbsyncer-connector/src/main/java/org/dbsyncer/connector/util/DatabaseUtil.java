@@ -137,6 +137,27 @@ public abstract class DatabaseUtil {
     }
 
     /**
+     * 返回主键名称
+     *
+     * @param table
+     * @param quotation
+     * @return
+     */
+    public static String findTablePrimaryKey(Table table, String quotation) {
+        if (null != table) {
+            List<Field> column = table.getColumn();
+            if (!CollectionUtils.isEmpty(column)) {
+                for (Field c : column) {
+                    if(c.isPk()){
+                        return new StringBuilder(quotation).append(c.getName()).append(quotation).toString();
+                    }
+                }
+            }
+        }
+        throw new ConnectorException("Table primary key can not be empty.");
+    }
+
+    /**
      * Mysql 8.0
      * <p>mysql-connector-java-8.0.11</p>
      * <p>mysql-connector-java-5.1.40</p>
@@ -178,23 +199,4 @@ public abstract class DatabaseUtil {
         return primaryKeys;
     }
 
-    /**
-     * 返回主键名称
-     * @param table
-     * @param quotation
-     * @return * / id
-     */
-    public static String findTablePrimaryKey(Table table, String quotation) {
-        if (null != table) {
-            List<Field> column = table.getColumn();
-            if (!CollectionUtils.isEmpty(column)) {
-                for (Field c : column) {
-                    if(c.isPk()){
-                        return new StringBuilder(quotation).append(c.getName()).append(quotation).toString();
-                    }
-                }
-            }
-        }
-        return "*";
-    }
 }

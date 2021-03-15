@@ -1,7 +1,5 @@
 package org.dbsyncer.connector.database.sqlbuilder;
 
-import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
 import org.dbsyncer.connector.database.AbstractSqlBuilder;
 import org.slf4j.Logger;
@@ -20,11 +18,6 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
 
     @Override
     public String buildSql(SqlBuilderConfig config) {
-        String pk = config.getPk();
-        if (StringUtils.isBlank(pk)) {
-            logger.error("Table primary key can not be empty.");
-            throw new ConnectorException("Table primary key can not be empty.");
-        }
         String tableName = config.getTableName();
         List<String> filedNames = config.getFiledNames();
         String quotation = config.getQuotation();
@@ -41,7 +34,7 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
             }
         }
         // UPDATE "USER" SET "USERNAME"=?,"AGE"=? WHERE "ID"=?
-        sql.append(" WHERE ").append(quotation).append(pk).append(quotation).append("=?");
+        sql.append(" WHERE ").append(quotation).append(config.getPk()).append(quotation).append("=?");
         return sql.toString();
     }
 

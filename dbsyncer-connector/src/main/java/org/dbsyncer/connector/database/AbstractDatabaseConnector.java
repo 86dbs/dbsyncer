@@ -97,10 +97,11 @@ public abstract class AbstractDatabaseConnector implements Database {
         String quotation = buildSqlWithQuotation();
         String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
         StringBuilder queryCount = new StringBuilder();
-        queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(quotation).append(table.getName()).append(quotation).append(" GROUP BY ").append(quotation).append(pk).append(quotation).append(") _T");
+        queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(quotation).append(table.getName()).append(quotation);
         if (StringUtils.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
+        queryCount.append(" GROUP BY ").append(pk).append(") _T");
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
         return map;
     }
@@ -335,10 +336,9 @@ public abstract class AbstractDatabaseConnector implements Database {
      * 获取DQL源配置
      *
      * @param commandConfig
-     * @param tableLabel
      * @return
      */
-    protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig, String tableLabel) {
+    protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig) {
         // 获取过滤SQL
         List<Filter> filter = commandConfig.getFilter();
         String queryFilterSql = getQueryFilterSql(filter);
@@ -355,13 +355,14 @@ public abstract class AbstractDatabaseConnector implements Database {
         map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(null, null, querySql));
 
         // 获取查询总数SQL
-        StringBuilder queryCount = new StringBuilder();
         String quotation = buildSqlWithQuotation();
         String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
-        queryCount.append("SELECT COUNT(").append(pk).append(") FROM (").append(table.getName()).append(")").append(tableLabel);;
+        StringBuilder queryCount = new StringBuilder();
+        queryCount.append("SELECT COUNT(1) FROM (").append(quotation).append(table.getName()).append(quotation);
         if (StringUtils.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
+        queryCount.append(" GROUP BY ").append(pk).append(") _T");
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
         return map;
     }
