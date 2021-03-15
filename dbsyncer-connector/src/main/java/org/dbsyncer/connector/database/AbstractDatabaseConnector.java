@@ -94,10 +94,10 @@ public abstract class AbstractDatabaseConnector implements Database {
         map.put(query, buildSql(query, table, null, queryFilterSql));
 
         // 获取查询总数SQL
-        StringBuilder queryCount = new StringBuilder();
         String quotation = buildSqlWithQuotation();
         String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
-        queryCount.append("SELECT COUNT(").append(pk).append(") FROM ").append(quotation).append(table.getName()).append(quotation);
+        StringBuilder queryCount = new StringBuilder();
+        queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(quotation).append(table.getName()).append(quotation).append(" GROUP BY ").append(quotation).append(pk).append(quotation).append(") _T");
         if (StringUtils.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }

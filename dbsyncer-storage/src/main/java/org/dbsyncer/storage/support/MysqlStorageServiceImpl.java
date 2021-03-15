@@ -233,9 +233,8 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     }
 
     private String buildQueryCountSql(Query query, Executor executor, List<Object> args) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(ID) FROM (").append(executor.getQuery());
+        StringBuilder sql = new StringBuilder("SELECT COUNT(1) FROM ").append(executor.getTable());
         buildQuerySqlWithParams(query, args, sql);
-        sql.append(") _T");
         return sql.toString();
     }
 
@@ -249,7 +248,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                     sql.append(" AND ");
                 }
                 // name=?
-                sql.append(p.getKey()).append(p.isHighlighter() ? " like ?" : "=?");
+                sql.append(p.getKey()).append(p.isHighlighter() ? " LIKE ?" : "=?");
                 args.add(p.isHighlighter() ? new StringBuilder("%").append(p.getValue()).append("%") : p.getValue());
                 flag.compareAndSet(false, true);
             });
@@ -342,7 +341,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         String insert = SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(config);
         String update = SqlBuilderEnum.UPDATE.getSqlBuilder().buildSql(config);
         String delete = SqlBuilderEnum.DELETE.getSqlBuilder().buildSql(config);
-        executor.setQuery(query).setInsert(insert).setUpdate(update).setDelete(delete);
+        executor.setTable(table).setQuery(query).setInsert(insert).setUpdate(update).setDelete(delete);
     }
 
     private String readSql(String filePath) {
@@ -412,6 +411,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     }
 
     class Executor {
+        private String table;
         private String query;
         private String insert;
         private String update;
@@ -430,6 +430,15 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             this.dynamicTableName = dynamicTableName;
             this.systemType = systemType;
             this.orderByUpdateTime = orderByUpdateTime;
+        }
+
+        public Executor setTable(String table) {
+            this.table = table;
+            return this;
+        }
+
+        public String getTable() {
+            return table;
         }
 
         public String getQuery() {
