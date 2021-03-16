@@ -24,6 +24,7 @@ public enum SetterEnum {
 
     // 较少使用
     CHAR(Types.CHAR, new CharSetter()),
+    NCHAR(Types.NCHAR, new NCharSetter()),
     LONGVARCHAR(Types.LONGVARCHAR, new LongVarcharSetter()),
     NUMERIC(Types.NUMERIC, new NumericSetter()),
 
@@ -32,6 +33,9 @@ public enum SetterEnum {
     DECIMAL(Types.DECIMAL, new DecimalSetter()),
     DOUBLE(Types.DOUBLE, new DoubleSetter()),
     FLOAT(Types.FLOAT, new FloatSetter()),
+    BLOB(Types.BLOB, new BlobSetter()),
+    CLOB(Types.CLOB, new ClobSetter()),
+    ROWID(Types.ROWID, new RowIdSetter()),
     REAL(Types.REAL, new RealSetter());
 
     private int type;
