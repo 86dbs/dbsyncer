@@ -117,14 +117,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String start(String id) {
         Mapping mapping = assertMappingExist(id);
         final String metaId = mapping.getMetaId();
+        // 如果已经完成了，重置状态
+        clearMetaIfFinished(metaId);
+
         synchronized (LOCK) {
             assertRunning(metaId);
-
-            // 清空同步记录
-            Meta meta = manager.getMeta(metaId);
-            meta.getFail().set(0);
-            meta.getSuccess().set(0);
-            manager.editMeta(meta);
 
             // 启动
             manager.start(mapping);
@@ -207,6 +204,16 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 tableGroupService.add(params);
             });
             mappingChecker.updateMeta(mapping);
+        }
+    }
+
+    private void clearMetaIfFinished(String metaId) {
+        Meta meta = manager.getMeta(metaId);
+        Assert.notNull(meta, "Mapping meta can not be null.");
+        if (meta.getTotal().get() >= (meta.getSuccess().get() + meta.getFail().get())) {
+            meta.getFail().set(0);
+            meta.getSuccess().set(0);
+            manager.editMeta(meta);
         }
     }
 

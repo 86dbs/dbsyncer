@@ -101,7 +101,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         if (StringUtils.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
-        queryCount.append(" GROUP BY ").append(pk).append(") _T");
+        queryCount.append(" GROUP BY ").append(pk).append(") DBSYNCER_T");
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
         return map;
     }
@@ -336,9 +336,10 @@ public abstract class AbstractDatabaseConnector implements Database {
      * 获取DQL源配置
      *
      * @param commandConfig
+     * @param appendGroupByPK
      * @return
      */
-    protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig) {
+    protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig, boolean appendGroupByPK) {
         // 获取过滤SQL
         List<Filter> filter = commandConfig.getFilter();
         String queryFilterSql = getQueryFilterSql(filter);
@@ -362,7 +363,11 @@ public abstract class AbstractDatabaseConnector implements Database {
         if (StringUtils.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
-        queryCount.append(" GROUP BY ").append(pk).append(") _T");
+        // Mysql
+        if(appendGroupByPK){
+            queryCount.append(" GROUP BY ").append(pk);
+        }
+        queryCount.append(") DBSYNCER_T");
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
         return map;
     }

@@ -69,7 +69,7 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         mapping.setSourceConnectorId(sourceConnectorId);
         mapping.setTargetConnectorId(targetConnectorId);
         mapping.setModel(ModelEnum.FULL.getCode());
-        mapping.setListener(new ListenerConfig(ListenerTypeEnum.TIMING.getType()));
+        mapping.setListener(new ListenerConfig(ListenerTypeEnum.LOG.getType()));
 
         // 修改基本配置
         this.modifyConfigModel(mapping, params);

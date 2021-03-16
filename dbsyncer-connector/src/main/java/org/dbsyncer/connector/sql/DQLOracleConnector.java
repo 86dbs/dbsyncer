@@ -46,7 +46,7 @@ public final class DQLOracleConnector extends AbstractDatabaseConnector {
 
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        return super.getDqlSourceCommand(commandConfig);
+        return super.getDqlSourceCommand(commandConfig,false);
     }
 
     @Override
