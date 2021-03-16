@@ -34,8 +34,11 @@
 
     <div class="form-group">
         <div class="row">
-            <div class="col-md-11"></div>
-            <div class="col-md-1">
+            <div class="col-md-10"></div>
+            <div class="col-md-2 text-right">
+                <button id="tableGroupDel" type="button" class="btn btn-default">
+                    <span class="fa fa-remove"></span>删除
+                </button>
                 <button id="tableGroupAdd" th:mappingId="${mapping?.id}" type="button" class="btn btn-primary">
                     <span class="fa fa-plus"></span>添加
                 </button>
@@ -44,19 +47,37 @@
     </div>
 
     <div class="form-group">
-        <table class="table table-hover">
+        <table class="table table-hover" id="mappingTableGroupList">
             <thead>
             <tr>
                 <th>数据源表</th>
                 <th>目标源表</th>
-                <th>操作</th>
+                <th>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="icheck-danger">
+                                <input type="checkbox" id="del_all" />
+                                <label for="del_all">操作</label>
+                            </div>
+                        </div>
+                    </div>
+                </th>
             </tr>
             </thead>
             <tbody id="tableGroupList">
                 <tr th:id="${t?.id}" title='点击编辑' class='dbsyncer_pointer' th:each="t,state : ${tableGroups}">
                     <td th:text="${t?.sourceTable.name}"/>
                     <td th:text="${t?.targetTable.name}"/>
-                    <td><a th:id="${t?.id}" th:mappingId="${mapping?.id}" class='fa fa-remove fa-2x tableGroupDelete dbsyncer_pointer' title='删除'></a></td>
+                    <td>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="icheck-danger">
+                                    <input type="checkbox" id="del_all" />
+                                    <a th:id="${t?.id}" th:mappingId="${mapping?.id}" class='fa fa-remove fa-2x tableGroupDelete dbsyncer_pointer' title='删除'></a>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
                 </tr>
             </tbody>
         </table>

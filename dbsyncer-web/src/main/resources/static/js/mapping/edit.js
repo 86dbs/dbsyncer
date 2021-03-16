@@ -33,6 +33,31 @@ function bindMappingModelChange() {
     showMappingEditConfig(value);
 }
 
+// 绑定删除表关系复选框删除事件
+function bindMappingTableGroupDelClick(){
+    var $mappingTableGroupList = $("#mappingTableGroupList");
+    var $checkbox = $mappingTableGroupList.find('input:checkbox[type="checkbox"]');
+    // 初始化icheck插件
+    $checkbox.iCheck({
+        checkboxClass: 'icheckbox_square-red',
+        labelHover: false,
+        cursor: true
+    }).on('ifChecked', function (event) {
+        var length = $('.ck_tags input:checked').length;
+        if (length > 0) {
+            // 显示删除删除按钮
+
+        }
+        console.log(length);
+    }).on('ifUnchecked', function (event) {
+        var length = $('.ck_tags input:checked').length;
+        if (length < 1) {
+            // 隐藏删除删除按钮
+        }
+        console.log(length);
+    });
+}
+
 // 显示驱动编辑配置（全量/增量）
 function showMappingEditConfig($value) {
     var $full = $("#mappingFullConfig");
@@ -93,16 +118,6 @@ function bindMappingTableGroupAddClick() {
     });
 }
 
-// 绑定过滤条件点击事件
-function bindMappingFilterListClick() {
-//    bindMappingDeleteClick($(".filterDelete"));
-}
-
-// 绑定转换配置点击事件
-function bindMappingConvertListClick() {
-//    bindMappingDeleteClick($(".convertDelete"));
-}
-
 // 绑定下拉自动匹配字段
 function bindAutoSelect(){
     var $sourceSelect = $("#sourceTable");
@@ -133,17 +148,13 @@ function mappingModifyName(){
 $(function () {
     // 绑定同步方式切换事件
     bindMappingModelChange();
+    // 绑定删除表映射事件
+    bindMappingTableGroupDelClick();
 
     // 绑定表关系点击事件
     bindMappingTableGroupListClick();
     // 绑定新增表关系点击事件
     bindMappingTableGroupAddClick();
-
-    // 绑定过滤条件点击事件
-    bindMappingFilterListClick();
-
-    // 绑定转换配置点击事件
-    bindMappingConvertListClick();
 
     // 绑定下拉自动匹配字段
     bindAutoSelect();
