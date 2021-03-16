@@ -6,10 +6,11 @@ import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class NumericSetter extends AbstractSetter {
+public class NumericSetter extends AbstractSetter<BigDecimal> {
 
     @Override
-    protected void set(PreparedStatement ps, int i, Object val) throws SQLException {
-        ps.setBigDecimal(i, (BigDecimal) val);
+    protected void set(PreparedStatement ps, int i, BigDecimal val) throws SQLException {
+        ps.setBigDecimal(i, val);
     }
+    
 }

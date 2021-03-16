@@ -3,7 +3,7 @@ package org.dbsyncer.connector.database;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public abstract class AbstractSetter implements Setter {
+public abstract class AbstractSetter<T> implements Setter {
 
     /**
      * 实现字段类型参数设置
@@ -12,7 +12,7 @@ public abstract class AbstractSetter implements Setter {
      * @param i
      * @param val
      */
-    protected abstract void set(PreparedStatement ps, int i, Object val) throws SQLException;
+    protected abstract void set(PreparedStatement ps, int i, T val) throws SQLException;
 
     @Override
     public void set(PreparedStatement ps, int i, int type, Object val) {
@@ -20,7 +20,7 @@ public abstract class AbstractSetter implements Setter {
             if (null == val) {
                 ps.setNull(i, type);
             } else {
-                set(ps, i, val);
+                set(ps, i, (T) val);
             }
         } catch (Exception e) {
             try {

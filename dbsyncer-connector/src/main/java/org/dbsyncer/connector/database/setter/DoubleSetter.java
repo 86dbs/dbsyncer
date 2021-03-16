@@ -5,11 +5,11 @@ import org.dbsyncer.connector.database.AbstractSetter;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class DoubleSetter extends AbstractSetter {
+public class DoubleSetter extends AbstractSetter<Double> {
 
     @Override
-    protected void set(PreparedStatement ps, int i, Object val) throws SQLException {
-        ps.setDouble(i, (Double) val);
+    protected void set(PreparedStatement ps, int i, Double val) throws SQLException {
+        ps.setDouble(i, val);
     }
 
 }
