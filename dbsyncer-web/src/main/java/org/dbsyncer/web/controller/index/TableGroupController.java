@@ -1,6 +1,7 @@
 package org.dbsyncer.web.controller.index;
 
-import org.dbsyncer.biz.*;
+import org.dbsyncer.biz.MappingService;
+import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.web.controller.BaseController;
@@ -62,9 +63,9 @@ public class TableGroupController extends BaseController {
 
     @PostMapping("/remove")
     @ResponseBody
-    public RestResult remove(@RequestParam(value = "id") String id) {
+    public RestResult remove(@RequestParam(value = "mappingId") String mappingId, @RequestParam(value = "ids") String ids) {
         try {
-            return RestResult.restSuccess(tableGroupService.remove(id));
+            return RestResult.restSuccess(tableGroupService.remove(mappingId, ids));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());
