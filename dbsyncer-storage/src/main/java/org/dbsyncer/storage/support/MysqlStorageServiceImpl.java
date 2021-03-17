@@ -75,7 +75,6 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     @PostConstruct
     private void init() {
         logger.info("url:{}", config.getUrl());
-        logger.info("driverClassName:{}", config.getDriverClassName());
         logger.info("username:{}", config.getUsername());
         logger.info("password:{}", config.getPassword());
         ConnectorConfig cfg = config;
@@ -294,7 +293,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                 new FieldPair(ConfigConstant.CONFIG_MODEL_JSON));
         List<Field> dfields = Arrays.asList(
                 new Field(ConfigConstant.CONFIG_MODEL_ID, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType(), true),
-                new Field(ConfigConstant.DATA_SUCCESS, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType(), false),
+                new Field(ConfigConstant.DATA_SUCCESS, SetterEnum.INTEGER.name(), SetterEnum.INTEGER.getType(), false),
                 new Field(ConfigConstant.DATA_EVENT, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType(), false),
                 new Field(ConfigConstant.DATA_ERROR, SetterEnum.LONGVARCHAR.name(), SetterEnum.LONGVARCHAR.getType(), false),
                 new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SetterEnum.BIGINT.name(), SetterEnum.BIGINT.getType(), false),
