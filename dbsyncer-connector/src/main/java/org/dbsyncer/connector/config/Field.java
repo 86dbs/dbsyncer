@@ -34,6 +34,12 @@ public class Field {
     public Field() {
     }
 
+    public Field(String name, String typeName, int type) {
+        this.name = name;
+        this.typeName = typeName;
+        this.type = type;
+    }
+
     public Field(String name, String typeName, int type, boolean pk) {
         this.name = name;
         this.typeName = typeName;

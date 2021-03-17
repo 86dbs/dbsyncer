@@ -24,6 +24,7 @@ import org.dbsyncer.storage.query.Param;
 import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -39,6 +40,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author AE86
@@ -256,48 +258,20 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     private void initTable() {
         // 配置
-        List<FieldPair> configFields = Arrays.asList(
-                new FieldPair(ConfigConstant.CONFIG_MODEL_ID),
-                new FieldPair(ConfigConstant.CONFIG_MODEL_NAME),
-                new FieldPair(ConfigConstant.CONFIG_MODEL_TYPE),
-                new FieldPair(ConfigConstant.CONFIG_MODEL_CREATE_TIME, TABLE_CREATE_TIME),
-                new FieldPair(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, TABLE_UPDATE_TIME),
-                new FieldPair(ConfigConstant.CONFIG_MODEL_JSON));
-        List<Field> cfields = Arrays.asList(
-                new Field(ConfigConstant.CONFIG_MODEL_ID, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType(), true),
-                new Field(ConfigConstant.CONFIG_MODEL_NAME, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType(), false),
-                new Field(ConfigConstant.CONFIG_MODEL_TYPE, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType(), false),
-                new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SetterEnum.BIGINT.name(), SetterEnum.BIGINT.getType(), false),
-                new Field(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SetterEnum.BIGINT.name(), SetterEnum.BIGINT.getType(), false),
-                new Field(ConfigConstant.CONFIG_MODEL_JSON, SetterEnum.LONGVARCHAR.name(), SetterEnum.LONGVARCHAR.getType(), false));
+        FieldBuilder builder = new FieldBuilder();
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        List<FieldPair> configFields = builder.getFieldPairs();
+        List<Field> cfields = builder.getFields();
 
         // 日志
-        List<FieldPair> logFields = Arrays.asList(
-                new FieldPair(ConfigConstant.CONFIG_MODEL_ID),
-                new FieldPair(ConfigConstant.CONFIG_MODEL_TYPE),
-                new FieldPair(ConfigConstant.CONFIG_MODEL_CREATE_TIME, TABLE_CREATE_TIME),
-                new FieldPair(ConfigConstant.CONFIG_MODEL_JSON));
-        List<Field> lfields = Arrays.asList(
-                new Field(ConfigConstant.CONFIG_MODEL_ID, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType(), true),
-                new Field(ConfigConstant.CONFIG_MODEL_TYPE, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType(), false),
-                new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SetterEnum.BIGINT.name(), SetterEnum.BIGINT.getType(), false),
-                new Field(ConfigConstant.CONFIG_MODEL_JSON, SetterEnum.LONGVARCHAR.name(), SetterEnum.LONGVARCHAR.getType(), false));
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        List<FieldPair> logFields = builder.getFieldPairs();
+        List<Field> lfields = builder.getFields();
 
         // 数据
-        List<FieldPair> dataFields = Arrays.asList(
-                new FieldPair(ConfigConstant.CONFIG_MODEL_ID),
-                new FieldPair(ConfigConstant.DATA_SUCCESS),
-                new FieldPair(ConfigConstant.DATA_EVENT),
-                new FieldPair(ConfigConstant.DATA_ERROR),
-                new FieldPair(ConfigConstant.CONFIG_MODEL_CREATE_TIME, TABLE_CREATE_TIME),
-                new FieldPair(ConfigConstant.CONFIG_MODEL_JSON));
-        List<Field> dfields = Arrays.asList(
-                new Field(ConfigConstant.CONFIG_MODEL_ID, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType(), true),
-                new Field(ConfigConstant.DATA_SUCCESS, SetterEnum.INTEGER.name(), SetterEnum.INTEGER.getType(), false),
-                new Field(ConfigConstant.DATA_EVENT, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType(), false),
-                new Field(ConfigConstant.DATA_ERROR, SetterEnum.LONGVARCHAR.name(), SetterEnum.LONGVARCHAR.getType(), false),
-                new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SetterEnum.BIGINT.name(), SetterEnum.BIGINT.getType(), false),
-                new Field(ConfigConstant.CONFIG_MODEL_JSON, SetterEnum.LONGVARCHAR.name(), SetterEnum.LONGVARCHAR.getType(), false));
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.DATA_SUCCESS, ConfigConstant.DATA_EVENT, ConfigConstant.DATA_ERROR, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        List<FieldPair> dataFields = builder.getFieldPairs();
+        List<Field> dfields = builder.getFields();
 
         tables.putIfAbsent(StorageEnum.CONFIG.getType(), new Executor(StorageEnum.CONFIG, configFields, cfields, false, true, true));
         tables.putIfAbsent(StorageEnum.LOG.getType(), new Executor(StorageEnum.LOG, logFields, lfields, false, true, false));
@@ -406,6 +380,52 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         public FieldPair(String labelName, String columnName) {
             this.labelName = labelName;
             this.columnName = columnName;
+        }
+    }
+
+    class FieldBuilder {
+        Map<String, FieldPair> fieldPairMap = new ConcurrentHashMap<>();
+        Map<String, Field> fieldMap = new ConcurrentHashMap<>();
+        List<FieldPair> fieldPairs;
+        List<Field> fields;
+
+        public FieldBuilder() {
+            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_ID, new FieldPair(ConfigConstant.CONFIG_MODEL_ID));
+            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_NAME, new FieldPair(ConfigConstant.CONFIG_MODEL_NAME));
+            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_TYPE, new FieldPair(ConfigConstant.CONFIG_MODEL_TYPE));
+            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_CREATE_TIME, new FieldPair(ConfigConstant.CONFIG_MODEL_CREATE_TIME, TABLE_CREATE_TIME));
+            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, new FieldPair(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, TABLE_UPDATE_TIME));
+            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_JSON, new FieldPair(ConfigConstant.CONFIG_MODEL_JSON));
+            fieldPairMap.putIfAbsent(ConfigConstant.DATA_SUCCESS, new FieldPair(ConfigConstant.DATA_SUCCESS));
+            fieldPairMap.putIfAbsent(ConfigConstant.DATA_EVENT, new FieldPair(ConfigConstant.DATA_EVENT));
+            fieldPairMap.putIfAbsent(ConfigConstant.DATA_ERROR, new FieldPair(ConfigConstant.DATA_ERROR));
+
+            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_ID, new Field(ConfigConstant.CONFIG_MODEL_ID, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType(), true));
+            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_NAME, new Field(ConfigConstant.CONFIG_MODEL_NAME, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType()));
+            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_TYPE, new Field(ConfigConstant.CONFIG_MODEL_TYPE, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType()));
+            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_CREATE_TIME, new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SetterEnum.BIGINT.name(), SetterEnum.BIGINT.getType()));
+            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, new Field(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SetterEnum.BIGINT.name(), SetterEnum.BIGINT.getType()));
+            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_JSON, new Field(ConfigConstant.CONFIG_MODEL_JSON, SetterEnum.LONGVARCHAR.name(), SetterEnum.LONGVARCHAR.getType()));
+            fieldMap.putIfAbsent(ConfigConstant.DATA_SUCCESS, new Field(ConfigConstant.DATA_SUCCESS, SetterEnum.INTEGER.name(), SetterEnum.INTEGER.getType()));
+            fieldMap.putIfAbsent(ConfigConstant.DATA_EVENT, new Field(ConfigConstant.DATA_EVENT, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType()));
+            fieldMap.putIfAbsent(ConfigConstant.DATA_ERROR, new Field(ConfigConstant.DATA_ERROR, SetterEnum.LONGVARCHAR.name(), SetterEnum.LONGVARCHAR.getType()));
+        }
+
+        public List<FieldPair> getFieldPairs() {
+            return fieldPairs;
+        }
+
+        public List<Field> getFields() {
+            return fields;
+        }
+
+        public void build(String... fieldNames) {
+            fieldPairs = new ArrayList<>(fieldNames.length);
+            fields = new ArrayList<>(fieldNames.length);
+            Stream.of(fieldNames).parallel().forEach(k -> {
+                fieldPairs.add(fieldPairMap.get(k));
+                fields.add(fieldMap.get(k));
+            });
         }
     }
 
