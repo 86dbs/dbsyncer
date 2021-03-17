@@ -52,30 +52,14 @@
             <tr>
                 <th>数据源表</th>
                 <th>目标源表</th>
-                <th>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="icheck-danger">
-                                <input type="checkbox" class="tableGroupCheckboxAll" />
-                            </div>
-                        </div>
-                    </div>
-                </th>
+                <th><input type="checkbox" class="tableGroupCheckboxAll" /></th>
             </tr>
             </thead>
             <tbody id="tableGroupList">
                 <tr th:id="${t?.id}" title='点击编辑' class='dbsyncer_pointer' th:each="t,state : ${tableGroups}">
                     <td th:text="${t?.sourceTable.name}"/>
                     <td th:text="${t?.targetTable.name}"/>
-                    <td>
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="icheck-danger">
-                                    <input th:value="${t?.id}" th:mappingId="${mapping?.id}" type="checkbox" class="tableGroupCheckbox" />
-                                </div>
-                            </div>
-                        </div>
-                    </td>
+                    <td><input th:value="${t?.id}" th:mappingId="${mapping?.id}" type="checkbox" class="tableGroupCheckbox" /></td>
                 </tr>
             </tbody>
         </table>

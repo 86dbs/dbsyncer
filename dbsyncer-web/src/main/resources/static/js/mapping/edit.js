@@ -33,11 +33,11 @@ function bindMappingModelChange() {
     showMappingEditConfig(value);
 }
 
-// 绑定删除表关系复选框删除事件
+// 绑定删除表关系复选框事件
 function bindMappingTableGroupCheckBoxClick(){
     var $checkboxAll = $('.tableGroupCheckboxAll');
     var $checkbox = $('.tableGroupCheckbox');
-    var $tableGroupDelBtn = $("#tableGroupDelBtn");
+    var $delBtn = $("#tableGroupDelBtn");
     $checkboxAll.iCheck({
         checkboxClass: 'icheckbox_square-red',
         labelHover: false,
@@ -47,7 +47,7 @@ function bindMappingTableGroupCheckBoxClick(){
     }).on('ifUnchecked', function (event) {
         $checkbox.iCheck('uncheck');
     }).on('ifChanged', function (event) {
-        showMappingTableGroupDelBtn($checkbox);
+        $delBtn.prop('disabled', getCheckedBoxSize($checkbox).length < 1);
     });
 
     // 初始化icheck插件
@@ -55,12 +55,12 @@ function bindMappingTableGroupCheckBoxClick(){
         checkboxClass: 'icheckbox_square-red',
         cursor: true
     }).on('ifChanged', function (event) {
-        showMappingTableGroupDelBtn($checkbox);
+        $delBtn.prop('disabled', getCheckedBoxSize($checkbox).length < 1);
     });
 }
 
 // 获取选择的CheckBox[value]
-function getTableGroupCheckBoxSize($checkbox){
+function getCheckedBoxSize($checkbox){
     var checked = [];
     $checkbox.each(function(){
         if($(this).prop('checked')){
@@ -68,12 +68,6 @@ function getTableGroupCheckBoxSize($checkbox){
         }
     });
     return checked;
-}
-
-// 显示批量删除表按钮
-function showMappingTableGroupDelBtn($checkbox){
-    var checked = getTableGroupCheckBoxSize($checkbox);
-    $("#tableGroupDel").prop('disabled', checked.length < 1);
 }
 
 // 显示驱动编辑配置（全量/增量）
@@ -101,9 +95,9 @@ function bindMappingTableGroupListClick() {
 
 // 绑定新增表关系点击事件
 function bindMappingTableGroupAddClick() {
-    var $tableGroupAddBtn = $("#tableGroupAddBtn");
-    $tableGroupAddBtn.unbind("click");
-    $tableGroupAddBtn.bind('click', function () {
+    var $addBtn = $("#tableGroupAddBtn");
+    $addBtn.unbind("click");
+    $addBtn.bind('click', function () {
         var m = {};
         m.mappingId = $(this).attr("mappingId");
         m.sourceTable = $("#sourceTable option:checked").val();
@@ -121,8 +115,8 @@ function bindMappingTableGroupAddClick() {
 
 // 绑定删除表关系点击事件
 function bindMappingTableGroupDelClick() {
-    $("#tableGroupDel").click(function () {
-        var ids = getTableGroupCheckBoxSize($(".tableGroupCheckbox"));
+    $("#tableGroupDelBtn").click(function () {
+        var ids = getCheckedBoxSize($(".tableGroupCheckbox"));
         if (ids.length > 0) {
             var $mappingId = $(this).attr("mappingId");
             doPoster("/tableGroup/remove", {"mappingId": $mappingId, "ids" : ids.join()}, function (data) {
