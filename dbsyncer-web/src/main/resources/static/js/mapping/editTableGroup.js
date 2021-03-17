@@ -135,6 +135,7 @@ function bindFieldMappingDelClick(){
                 $("#" + ids[i]).parent().parent().parent().remove();
             }
             $fieldMappingDelBtn.prop('disabled', true);
+            initFieldMappingParams();
         }
     });
 }
