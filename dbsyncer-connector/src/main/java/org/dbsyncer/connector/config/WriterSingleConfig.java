@@ -17,12 +17,13 @@ public class WriterSingleConfig extends WriterConfig {
 
     private String table;
 
-    public WriterSingleConfig(ConnectorConfig config, List<Field> fields, Map<String,String> command, String event, Map<String,Object> data) {
+    public WriterSingleConfig(ConnectorConfig config, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data, String table) {
         setConfig(config);
         setCommand(command);
         setFields(fields);
         setData(data);
         setEvent(event);
+        setTable(table);
     }
 
     public Map<String, Object> getData() {

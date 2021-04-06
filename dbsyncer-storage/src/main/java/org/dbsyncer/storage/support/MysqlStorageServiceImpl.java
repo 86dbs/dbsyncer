@@ -4,10 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.Field;
-import org.dbsyncer.connector.config.SqlBuilderConfig;
+import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.Database;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -166,7 +163,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             Executor executor = getExecutor(type, table);
             Map<String, String> command = new HashMap<>();
             command.put(SqlBuilderEnum.INSERT.getName(), executor.getInsert());
-            connectorFactory.writer(config, command, executor.getFields(), list);
+            connectorFactory.writer(new WriterBatchConfig(config, command, executor.getFields(), list));
         }
 
     }

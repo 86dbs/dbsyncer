@@ -212,7 +212,7 @@ public class ParserFactory implements Parser {
 
             // 1、获取数据源数据
             int pageIndex = Integer.parseInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
-            Result reader = connectorFactory.reader(sConfig, command, new ArrayList<>(), pageIndex, pageSize);
+            Result reader = connectorFactory.reader(new ReaderConfig(sConfig, command, new ArrayList<>(), pageIndex, pageSize));
             List<Map> data = reader.getData();
             if (CollectionUtils.isEmpty(data)) {
                 params.clear();
@@ -268,7 +268,7 @@ public class ParserFactory implements Parser {
         pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
 
         // 5、写入目标源
-        Result writer = connectorFactory.writer(tConfig, picker.getTargetFields(), tableGroup.getCommand(), event, target);
+        Result writer = connectorFactory.writer(new WriterSingleConfig(tConfig, picker.getTargetFields(), tableGroup.getCommand(), event, target, rowChangedEvent.getTableName()));
 
         // 6、更新结果
         List<Map> list = new ArrayList<>(1);
@@ -355,7 +355,7 @@ public class ParserFactory implements Parser {
         int total = target.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(config, command, fields, target);
+            return connectorFactory.writer(new WriterBatchConfig(config, command, fields, target));
         }
 
         // 批量任务, 拆分
@@ -412,7 +412,7 @@ public class ParserFactory implements Parser {
             }
             data.add(poll);
         }
-        return connectorFactory.writer(config, command, fields, data);
+        return connectorFactory.writer(new WriterBatchConfig(config, command, fields, data));
     }
 
     private ThreadPoolTaskExecutor getThreadPoolTaskExecutor(int threadSize, int queueCapacity) {

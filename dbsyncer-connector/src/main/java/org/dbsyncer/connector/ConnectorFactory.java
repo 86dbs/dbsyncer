@@ -83,23 +83,23 @@ public class ConnectorFactory {
         return connector.getCount(config, command);
     }
 
-    public Result reader(ConnectorConfig config, Map<String, String> command, List<Object> args, int pageIndex, int pageSize) {
-        Connector connector = getConnector(config.getConnectorType());
-        Result result = connector.reader(new ReaderConfig(config, command, args, pageIndex, pageSize));
+    public Result reader(ReaderConfig config) {
+        Connector connector = getConnector(config.getConfig().getConnectorType());
+        Result result = connector.reader(config);
         Assert.notNull(result, "Connector reader result can not null");
         return result;
     }
 
-    public Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map> data) {
-        Connector connector = getConnector(config.getConnectorType());
-        Result result = connector.writer(new WriterBatchConfig(config, command, fields, data));
+    public Result writer(WriterBatchConfig config) {
+        Connector connector = getConnector(config.getConfig().getConnectorType());
+        Result result = connector.writer(config);
         Assert.notNull(result, "Connector writer result can not null");
         return result;
     }
 
-    public Result writer(ConnectorConfig config, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data) {
-        Connector connector = getConnector(config.getConnectorType());
-        Result result = connector.writer(new WriterSingleConfig(config, fields, command, event, data));
+    public Result writer(WriterSingleConfig config) {
+        Connector connector = getConnector(config.getConfig().getConnectorType());
+        Result result = connector.writer(config);
         Assert.notNull(result, "Connector writer result can not null");
         return result;
     }
