@@ -1,10 +1,7 @@
 package org.dbsyncer.connector;
 
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.config.Field;
-import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.springframework.util.Assert;
 
@@ -88,21 +85,21 @@ public class ConnectorFactory {
 
     public Result reader(ConnectorConfig config, Map<String, String> command, List<Object> args, int pageIndex, int pageSize) {
         Connector connector = getConnector(config.getConnectorType());
-        Result result = connector.reader(config, command, args, pageIndex, pageSize);
+        Result result = connector.reader(new ReaderConfig(config, command, args, pageIndex, pageSize));
         Assert.notNull(result, "Connector reader result can not null");
         return result;
     }
 
     public Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map> data) {
         Connector connector = getConnector(config.getConnectorType());
-        Result result = connector.writer(config, command, fields, data);
+        Result result = connector.writer(new WriterBatchConfig(config, command, fields, data));
         Assert.notNull(result, "Connector writer result can not null");
         return result;
     }
 
     public Result writer(ConnectorConfig config, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data) {
         Connector connector = getConnector(config.getConnectorType());
-        Result result = connector.writer(config, fields, command, event, data);
+        Result result = connector.writer(new WriterSingleConfig(config, fields, command, event, data));
         Assert.notNull(result, "Connector writer result can not null");
         return result;
     }

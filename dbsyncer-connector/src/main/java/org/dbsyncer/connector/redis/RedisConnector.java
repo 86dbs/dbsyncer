@@ -63,17 +63,17 @@ public final class RedisConnector implements Redis {
     }
 
     @Override
-    public Result reader(ConnectorConfig config, Map<String, String> command, List<Object> args, int pageIndex, int pageSize) {
+    public Result reader(ReaderConfig config) {
         return null;
     }
 
     @Override
-    public Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map> data) {
+    public Result writer(WriterBatchConfig config) {
         return null;
     }
 
     @Override
-    public Result writer(ConnectorConfig config, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data) {
+    public Result writer(WriterSingleConfig config) {
         return null;
     }
 

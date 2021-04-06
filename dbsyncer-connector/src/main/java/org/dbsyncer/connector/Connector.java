@@ -1,10 +1,7 @@
 package org.dbsyncer.connector;
 
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.config.Field;
-import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.config.*;
 
 import java.util.List;
 import java.util.Map;
@@ -71,35 +68,24 @@ public interface Connector {
     /**
      * 分页获取数据源数据
      *
-     * @param config    连接器配置
-     * @param command   执行命令
-     * @param args      命令参数
-     * @param pageIndex 页数
-     * @param pageSize  页大小
+     * @param config
      * @return
      */
-    Result reader(ConnectorConfig config, Map<String, String> command, List<Object> args, int pageIndex, int pageSize);
+    Result reader(ReaderConfig config);
 
     /**
      * 批量写入目标源数据
      *
-     * @param config  连接器配置
-     * @param command 执行命令
-     * @param fields  字段信息
-     * @param data    数据
+     * @param config
      * @return
      */
-    Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map> data);
+    Result writer(WriterBatchConfig config);
 
     /**
      * 写入目标源数据
      *
-     * @param config  连接器配置
-     * @param fields  字段信息
-     * @param command 执行命令
-     * @param event   事件
-     * @param data    数据
+     * @param config
      * @return
      */
-    Result writer(ConnectorConfig config, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data);
+    Result writer(WriterSingleConfig config);
 }

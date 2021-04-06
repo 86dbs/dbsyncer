@@ -148,22 +148,22 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
-    public Result reader(ConnectorConfig config, Map<String, String> command, List<Object> args, int pageIndex, int pageSize) {
+    public Result reader(ReaderConfig config) {
         // 1、获取select SQL
-        String querySql = command.get(SqlBuilderEnum.QUERY.getName());
+        String querySql = config.getCommand().get(SqlBuilderEnum.QUERY.getName());
         Assert.hasText(querySql, "查询语句不能为空.");
 
-        DatabaseConfig cfg = (DatabaseConfig) config;
+        DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
         JdbcTemplate jdbcTemplate = null;
         try {
             // 2、获取连接
             jdbcTemplate = getJdbcTemplate(cfg);
 
             // 3、设置参数
-            Collections.addAll(args, getPageArgs(pageIndex, pageSize));
+            Collections.addAll(config.getArgs(), getPageArgs(config.getPageIndex(), config.getPageSize()));
 
             // 4、执行SQL
-            List<Map<String, Object>> list = jdbcTemplate.queryForList(querySql, args.toArray());
+            List<Map<String, Object>> list = jdbcTemplate.queryForList(querySql, config.getArgs().toArray());
 
             // 5、返回结果集
             return new Result(new ArrayList<>(list));
@@ -177,9 +177,12 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
-    public Result writer(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map> data) {
+    public Result writer(WriterBatchConfig config) {
+        List<Field> fields = config.getFields();
+        List<Map> data = config.getData();
+
         // 1、获取select SQL
-        String insertSql = command.get(SqlBuilderEnum.INSERT.getName());
+        String insertSql = config.getCommand().get(SqlBuilderEnum.INSERT.getName());
         Assert.hasText(insertSql, "插入语句不能为空.");
         if (CollectionUtils.isEmpty(fields)) {
             logger.error("writer fields can not be empty.");
@@ -192,7 +195,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         final int size = data.size();
         final int fSize = fields.size();
 
-        DatabaseConfig cfg = (DatabaseConfig) config;
+        DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
         JdbcTemplate jdbcTemplate = null;
         Result result = new Result();
         try {
@@ -226,9 +229,12 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
-    public Result writer(ConnectorConfig config, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data) {
+    public Result writer(WriterSingleConfig config) {
+        String event = config.getEvent();
+        List<Field> fields = config.getFields();
+        Map<String, Object> data = config.getData();
         // 1、获取 SQL
-        String sql = command.get(event);
+        String sql = config.getCommand().get(event);
         Assert.hasText(sql, "执行语句不能为空.");
         if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(fields)) {
             logger.error("writer data can not be empty.");
@@ -249,7 +255,7 @@ public abstract class AbstractDatabaseConnector implements Database {
 
         int size = fields.size();
 
-        DatabaseConfig cfg = (DatabaseConfig) config;
+        DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
         JdbcTemplate jdbcTemplate = null;
         Result result = new Result();
         try {
@@ -265,7 +271,7 @@ public abstract class AbstractDatabaseConnector implements Database {
                 }
             });
             if (0 == update) {
-                throw new ConnectorException(String.format("执行%s操作失败, 数据不存在", event));
+                throw new ConnectorException(String.format("[%s]表执行%s操作失败, 数据不存在", config.getTable(), event));
             }
         } catch (Exception e) {
             // 记录错误数据
