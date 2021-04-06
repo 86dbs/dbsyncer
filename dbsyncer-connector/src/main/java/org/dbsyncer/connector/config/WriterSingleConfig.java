@@ -15,7 +15,15 @@ public class WriterSingleConfig extends WriterConfig {
      */
     private String event;
 
+    /**
+     * 表名
+     */
     private String table;
+
+    /**
+     * 更新失败转insert
+     */
+    private boolean retry;
 
     public WriterSingleConfig(ConnectorConfig config, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data, String table) {
         setConfig(config);
@@ -51,5 +59,13 @@ public class WriterSingleConfig extends WriterConfig {
     public WriterSingleConfig setTable(String table) {
         this.table = table;
         return this;
+    }
+
+    public boolean isRetry() {
+        return retry;
+    }
+
+    public void setRetry(boolean retry) {
+        this.retry = retry;
     }
 }

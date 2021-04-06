@@ -258,21 +258,19 @@ public abstract class AbstractDatabaseConnector implements Database {
         DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
         JdbcTemplate jdbcTemplate = null;
         Result result = new Result();
+        int update = 0;
         try {
             // 2、获取连接
             jdbcTemplate = getJdbcTemplate(cfg);
 
             // 3、设置参数
-            int update = jdbcTemplate.update(sql, (ps) -> {
+            update = jdbcTemplate.update(sql, (ps) -> {
                 Field f = null;
                 for (int i = 0; i < size; i++) {
                     f = fields.get(i);
                     SetterEnum.getSetter(f.getType()).set(ps, i + 1, f.getType(), data.get(f.getName()));
                 }
             });
-            if (0 == update) {
-                throw new ConnectorException(String.format("%s表执行%s操作失败, 数据不存在", config.getTable(), event));
-            }
         } catch (Exception e) {
             // 记录错误数据
             result.getFailData().add(data);
@@ -282,6 +280,14 @@ public abstract class AbstractDatabaseConnector implements Database {
         } finally {
             // 释放连接
             this.close(jdbcTemplate);
+        }
+
+        if (0 == update && !config.isRetry()) {
+            fields.remove(fields.size() - 1);
+            config.setEvent(ConnectorConstant.OPERTION_INSERT);
+            config.setRetry(true);
+            logger.warn("{}表执行{}失败, 尝试执行{}", config.getTable(), event, config.getEvent());
+            result = writer(config);
         }
         return result;
     }
@@ -370,7 +376,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             queryCount.append(queryFilterSql);
         }
         // Mysql
-        if(appendGroupByPK){
+        if (appendGroupByPK) {
             queryCount.append(" GROUP BY ").append(pk);
         }
         queryCount.append(") DBSYNCER_T");
