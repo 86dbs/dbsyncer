@@ -3,7 +3,9 @@ package org.dbsyncer.biz.checker.impl.tablegroup;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.biz.checker.ConnectorConfigChecker;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.Table;
@@ -39,6 +41,9 @@ public class TableGroupChecker extends AbstractChecker {
     @Autowired
     private Manager manager;
 
+    @Autowired
+    private Map<String, ConnectorConfigChecker> map;
+
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
@@ -59,8 +64,8 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setName(ConfigConstant.TABLE_GROUP);
         tableGroup.setType(ConfigConstant.TABLE_GROUP);
         tableGroup.setMappingId(mappingId);
-        tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable));
-        tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable));
+        tableGroup.setSourceTable(getTable(mapping, sourceTable, true));
+        tableGroup.setTargetTable(getTable(mapping, targetTable, false));
 
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
@@ -112,9 +117,17 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.getSourceTable().setCount(count);
     }
 
-    private Table getTable(String connectorId, String tableName) {
+    private Table getTable(Mapping mapping, String tableName, boolean isSourceTable) {
+        String connectorId = isSourceTable ? mapping.getSourceConnectorId() : mapping.getTargetConnectorId();
         MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接器表信息.");
+
+        String connectorType = manager.getConnector(connectorId).getConfig().getConnectorType();
+        String type = StringUtil.toLowerCaseFirstOne(connectorType).concat("ConfigChecker");
+        ConnectorConfigChecker checker = map.get(type);
+        Assert.notNull(checker, "Checker can not be null.");
+        // TODO 暂时实现
+        //checker.updateFields(mapping, metaInfo.getColumn(), isSourceTable);
         return new Table().setName(tableName).setColumn(metaInfo.getColumn());
     }
 

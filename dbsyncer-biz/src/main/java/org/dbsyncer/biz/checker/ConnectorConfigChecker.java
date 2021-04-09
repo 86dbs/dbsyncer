@@ -1,7 +1,10 @@
 package org.dbsyncer.biz.checker;
 
+import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Mapping;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -10,6 +13,15 @@ import java.util.Map;
  * @date 2020/1/7 23:17
  */
 public interface ConnectorConfigChecker {
+
+    /**
+     * 设置默认字段
+     *
+     * @param mapping
+     * @param column
+     * @param isSourceTable
+     */
+    default void updateFields(Mapping mapping, List<Field> column, boolean isSourceTable) {}
 
     /**
      * 修改配置

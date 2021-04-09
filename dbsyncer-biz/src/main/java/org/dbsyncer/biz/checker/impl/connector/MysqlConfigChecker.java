@@ -8,6 +8,6 @@ import org.springframework.stereotype.Component;
  * @date 2020/1/8 15:17
  */
 @Component
-public class MysqlConfigChecker extends DataBaseConfigChecker {
+public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
 
 }

@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.config;
 
+import com.alibaba.fastjson.annotation.JSONField;
 import org.dbsyncer.common.util.JsonUtil;
 
 /**
@@ -30,6 +31,12 @@ public class Field {
      * 主键
      */
     private boolean pk;
+
+    /**
+     * 是否数据源表字段
+     */
+    @JSONField(serialize = false)
+    private boolean sourceTable;
 
     public Field() {
     }
@@ -77,6 +84,15 @@ public class Field {
 
     public void setPk(boolean pk) {
         this.pk = pk;
+    }
+
+    public boolean isSourceTable() {
+        return sourceTable;
+    }
+
+    public Field setSourceTable(boolean sourceTable) {
+        this.sourceTable = sourceTable;
+        return this;
     }
 
     @Override
