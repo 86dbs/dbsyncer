@@ -45,7 +45,7 @@ import java.util.Map;
  * @date 2019/9/16 23:59
  */
 @Component
-public class ManagerFactory implements Manager, ApplicationContextAware, ApplicationListener<ClosedEvent> {
+public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -61,12 +61,8 @@ public class ManagerFactory implements Manager, ApplicationContextAware, Applica
     @Autowired
     private DataTemplate dataTemplate;
 
+    @Autowired
     private Map<String, Puller> map;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        map = applicationContext.getBeansOfType(Puller.class);
-    }
 
     @Override
     public boolean alive(ConnectorConfig config) {

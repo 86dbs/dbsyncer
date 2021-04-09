@@ -14,10 +14,7 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -30,7 +27,7 @@ import java.util.Map;
  * @date 2020/1/8 15:17
  */
 @Component
-public class ConnectorChecker extends AbstractChecker implements ApplicationContextAware {
+public class ConnectorChecker extends AbstractChecker {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -40,12 +37,8 @@ public class ConnectorChecker extends AbstractChecker implements ApplicationCont
     @Autowired
     private LogService logService;
 
+    @Autowired
     private Map<String, ConnectorConfigChecker> map;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        map = applicationContext.getBeansOfType(ConnectorConfigChecker.class);
-    }
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
@@ -115,7 +108,7 @@ public class ConnectorChecker extends AbstractChecker implements ApplicationCont
     private void setTable(Connector connector) {
         // 获取表信息
         boolean alive = manager.alive(connector.getConfig());
-        if(!alive){
+        if (!alive) {
             logService.log(LogType.ConnectorLog.FAILED);
         }
         Assert.isTrue(alive, "无法连接.");
