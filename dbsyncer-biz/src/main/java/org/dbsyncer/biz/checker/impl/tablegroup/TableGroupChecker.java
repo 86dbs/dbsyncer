@@ -61,11 +61,12 @@ public class TableGroupChecker extends AbstractChecker {
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
+        tableGroup.setFieldMapping(new ArrayList<>());
         tableGroup.setName(ConfigConstant.TABLE_GROUP);
         tableGroup.setType(ConfigConstant.TABLE_GROUP);
         tableGroup.setMappingId(mappingId);
-        tableGroup.setSourceTable(getTable(mapping, sourceTable, true));
-        tableGroup.setTargetTable(getTable(mapping, targetTable, false));
+        tableGroup.setSourceTable(getTable(mapping, tableGroup, sourceTable, true));
+        tableGroup.setTargetTable(getTable(mapping, tableGroup, targetTable, false));
 
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
@@ -117,7 +118,7 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.getSourceTable().setCount(count);
     }
 
-    private Table getTable(Mapping mapping, String tableName, boolean isSourceTable) {
+    private Table getTable(Mapping mapping, TableGroup tableGroup, String tableName, boolean isSourceTable) {
         String connectorId = isSourceTable ? mapping.getSourceConnectorId() : mapping.getTargetConnectorId();
         MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接器表信息.");
@@ -127,7 +128,7 @@ public class TableGroupChecker extends AbstractChecker {
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
         // TODO 暂时实现
-        //checker.updateFields(mapping, metaInfo.getColumn(), isSourceTable);
+        checker.updateFields(mapping, tableGroup, metaInfo.getColumn(), isSourceTable);
         return new Table().setName(tableName).setColumn(metaInfo.getColumn());
     }
 
@@ -167,7 +168,7 @@ public class TableGroupChecker extends AbstractChecker {
         if (!CollectionUtils.isEmpty(k1)) {
             k1.forEach(k -> fields.add(new FieldMapping(m1.get(k), m2.get(k))));
         }
-        tableGroup.setFieldMapping(fields);
+        tableGroup.getFieldMapping().addAll(fields);
     }
 
     private void shuffleColumn(List<Field> col, List<String> key, Map<String, Field> map) {

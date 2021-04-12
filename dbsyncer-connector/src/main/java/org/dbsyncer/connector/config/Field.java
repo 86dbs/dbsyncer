@@ -54,6 +54,14 @@ public class Field {
         this.pk = pk;
     }
 
+    public Field(String name, String typeName, int type, boolean pk, boolean sourceTable) {
+        this.name = name;
+        this.typeName = typeName;
+        this.type = type;
+        this.pk = pk;
+        this.sourceTable = sourceTable;
+    }
+
     public String getName() {
         return name;
     }

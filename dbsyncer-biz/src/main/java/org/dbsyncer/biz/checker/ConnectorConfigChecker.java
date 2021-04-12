@@ -3,6 +3,7 @@ package org.dbsyncer.biz.checker;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.TableGroup;
 
 import java.util.List;
 import java.util.Map;
@@ -18,10 +19,11 @@ public interface ConnectorConfigChecker {
      * 设置默认字段
      *
      * @param mapping
+     * @param tableGroup
      * @param column
      * @param isSourceTable
      */
-    default void updateFields(Mapping mapping, List<Field> column, boolean isSourceTable) {}
+    default void updateFields(Mapping mapping, TableGroup tableGroup, List<Field> column, boolean isSourceTable) {}
 
     /**
      * 修改配置
