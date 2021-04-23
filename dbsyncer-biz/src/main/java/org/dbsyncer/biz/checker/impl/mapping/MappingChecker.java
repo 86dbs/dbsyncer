@@ -1,6 +1,5 @@
 package org.dbsyncer.biz.checker.impl.mapping;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
@@ -86,19 +85,12 @@ public class MappingChecker extends AbstractChecker {
 
         // 同步方式(仅支持全量或增量同步方式)
         String model = params.get("model");
-        if (StringUtils.isNotBlank(model)) {
-            if (null != ModelEnum.getModelEnum(model)) {
-                mapping.setModel(model);
-            }
-        }
+        mapping.setModel(null != ModelEnum.getModelEnum(model) ? model : ModelEnum.FULL.getCode());
 
         // 全量配置
-        String readNum = params.get("readNum");
-        mapping.setReadNum(NumberUtils.toInt(readNum, mapping.getReadNum()));
-        String threadNum = params.get("threadNum");
-        mapping.setThreadNum(NumberUtils.toInt(threadNum, mapping.getThreadNum()));
-        String batchNum = params.get("batchNum");
-        mapping.setBatchNum(NumberUtils.toInt(batchNum, mapping.getBatchNum()));
+        mapping.setReadNum(NumberUtils.toInt(params.get("readNum"), mapping.getReadNum()));
+        mapping.setThreadNum(NumberUtils.toInt(params.get("threadNum"), mapping.getThreadNum()));
+        mapping.setBatchNum(NumberUtils.toInt(params.get("batchNum"), mapping.getBatchNum()));
 
         // 增量配置(日志/定时)
         String incrementStrategy = params.get("incrementStrategy");
@@ -112,7 +104,7 @@ public class MappingChecker extends AbstractChecker {
         this.modifySuperConfigModel(mapping, params);
 
         // 更新映射关系过滤条件
-        setFilterCommand(mapping);
+        batchUpdateTableGroupCommand(mapping);
 
         // 更新meta
         updateMeta(mapping);
@@ -143,11 +135,11 @@ public class MappingChecker extends AbstractChecker {
      *
      * @param mapping
      */
-    private void setFilterCommand(Mapping mapping) {
+    private void batchUpdateTableGroupCommand(Mapping mapping) {
         List<TableGroup> groupAll = manager.getTableGroupAll(mapping.getId());
         if (!CollectionUtils.isEmpty(groupAll)) {
             for (TableGroup g : groupAll) {
-                tableGroupChecker.setCommand(mapping, g);
+                tableGroupChecker.genCommand(mapping, g);
                 manager.editTableGroup(g);
             }
         }

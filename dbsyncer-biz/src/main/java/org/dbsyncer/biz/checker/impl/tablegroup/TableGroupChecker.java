@@ -65,17 +65,20 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setName(ConfigConstant.TABLE_GROUP);
         tableGroup.setType(ConfigConstant.TABLE_GROUP);
         tableGroup.setMappingId(mappingId);
-        tableGroup.setSourceTable(getTable(mapping, tableGroup, sourceTable, true));
-        tableGroup.setTargetTable(getTable(mapping, tableGroup, targetTable, false));
+        tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable));
+        tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable));
 
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
+
+        // 处理策略
+        dealIncrementStrategy(mapping, tableGroup);
 
         // 匹配相似字段
         mergeFieldMapping(tableGroup);
 
         // 生成command
-        setCommand(mapping, tableGroup);
+        genCommand(mapping, tableGroup);
 
         return tableGroup;
     }
@@ -102,12 +105,12 @@ public class TableGroupChecker extends AbstractChecker {
         this.modifySuperConfigModel(tableGroup, params);
 
         // 生成command
-        setCommand(mapping, tableGroup);
+        genCommand(mapping, tableGroup);
 
         return tableGroup;
     }
 
-    public void setCommand(Mapping mapping, TableGroup tableGroup) {
+    public void genCommand(Mapping mapping, TableGroup tableGroup) {
         TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
 
         Map<String, String> command = manager.getCommand(mapping, group);
@@ -118,17 +121,17 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.getSourceTable().setCount(count);
     }
 
-    private Table getTable(Mapping mapping, TableGroup tableGroup, String tableName, boolean isSourceTable) {
-        String connectorId = isSourceTable ? mapping.getSourceConnectorId() : mapping.getTargetConnectorId();
-        MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
-        Assert.notNull(metaInfo, "无法获取连接器表信息.");
-
-        String connectorType = manager.getConnector(connectorId).getConfig().getConnectorType();
+    public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup) {
+        String connectorType = manager.getConnector(mapping.getSourceConnectorId()).getConfig().getConnectorType();
         String type = StringUtil.toLowerCaseFirstOne(connectorType).concat("ConfigChecker");
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
-        // TODO 暂时实现
-        checker.updateFields(mapping, tableGroup, metaInfo.getColumn(), isSourceTable);
+        checker.dealIncrementStrategy(mapping, tableGroup);
+    }
+
+    private Table getTable(String connectorId, String tableName) {
+        MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
+        Assert.notNull(metaInfo, "无法获取连接器表信息.");
         return new Table().setName(tableName).setColumn(metaInfo.getColumn());
     }
 
@@ -139,7 +142,7 @@ public class TableGroupChecker extends AbstractChecker {
                 // 数据源表和目标表都存在
                 if (StringUtils.equals(sourceTable, g.getSourceTable().getName())
                         && StringUtils.equals(targetTable, g.getTargetTable().getName())) {
-                    final String error = String.format("映射关系已存在.", sourceTable, targetTable);
+                    final String error = String.format("映射关系已存在.%s > %s", sourceTable, targetTable);
                     logger.error(error);
                     throw new BizException(error);
                 }
