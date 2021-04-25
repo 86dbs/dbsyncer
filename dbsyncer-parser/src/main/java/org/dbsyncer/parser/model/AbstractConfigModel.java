@@ -4,8 +4,12 @@ import org.dbsyncer.connector.config.Filter;
 import org.dbsyncer.plugin.config.Plugin;
 
 import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractConfigModel extends ConfigModel {
+
+    // 全局参数
+    private Map<String, String> params;
 
     // 过滤条件
     private List<Filter> filter;
@@ -15,6 +19,15 @@ public abstract class AbstractConfigModel extends ConfigModel {
 
     // 插件配置
     private Plugin plugin;
+
+    public Map<String, String> getParams() {
+        return params;
+    }
+
+    public AbstractConfigModel setParams(Map<String, String> params) {
+        this.params = params;
+        return this;
+    }
 
     public List<Filter> getFilter() {
         return filter;

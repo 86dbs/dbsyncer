@@ -71,11 +71,11 @@ public class TableGroupChecker extends AbstractChecker {
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
 
+        // 匹配相似字段映射关系
+        mergeFieldMapping(tableGroup);
+
         // 处理策略
         dealIncrementStrategy(mapping, tableGroup);
-
-        // 匹配相似字段
-        mergeFieldMapping(tableGroup);
 
         // 生成command
         genCommand(mapping, tableGroup);
@@ -98,11 +98,14 @@ public class TableGroupChecker extends AbstractChecker {
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
 
+        // 修改高级配置：过滤条件/转换配置/插件配置
+        this.modifySuperConfigModel(tableGroup, params);
+
         // 字段映射关系
         setFieldMapping(tableGroup, fieldMappingJson);
 
-        // 修改高级配置：过滤条件/转换配置/插件配置
-        this.modifySuperConfigModel(tableGroup, params);
+        // 处理策略
+        dealIncrementStrategy(mapping, tableGroup);
 
         // 生成command
         genCommand(mapping, tableGroup);
@@ -167,11 +170,9 @@ public class TableGroupChecker extends AbstractChecker {
         k1.retainAll(k2);
 
         // 有相似字段
-        List<FieldMapping> fields = new ArrayList<>();
         if (!CollectionUtils.isEmpty(k1)) {
-            k1.forEach(k -> fields.add(new FieldMapping(m1.get(k), m2.get(k))));
+            k1.forEach(k -> tableGroup.getFieldMapping().add(new FieldMapping(m1.get(k), m2.get(k))));
         }
-        tableGroup.getFieldMapping().addAll(fields);
     }
 
     private void shuffleColumn(List<Field> col, List<String> key, Map<String, Field> map) {

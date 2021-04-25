@@ -22,6 +22,9 @@
       "pk":true
     }
   ],
+  "params":{
+    "ORACLE_ROW_ID":"RID"
+  },
   "filter": [
     {
       "name": "AGE",

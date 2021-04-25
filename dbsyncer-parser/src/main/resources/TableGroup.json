@@ -49,6 +49,9 @@
     "UPDATE":"UPDATE MY_USER set name=? where MY_USER.id=?",
     "DELETE":"DELETE MY_USER WHERE MY_USER.id=?"
   },
+  "params":{
+    "ORACLE_ROW_ID":"RID"
+  },
   "filter": [
     {
       "name": "AGE",
