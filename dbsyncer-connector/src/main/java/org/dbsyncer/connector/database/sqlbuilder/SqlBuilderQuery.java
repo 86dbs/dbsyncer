@@ -1,7 +1,7 @@
 package org.dbsyncer.connector.database.sqlbuilder;
 
 import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
 import org.dbsyncer.connector.database.AbstractSqlBuilder;
 import org.dbsyncer.connector.database.Database;
@@ -25,23 +25,25 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
     @Override
     public String buildQuerySql(SqlBuilderConfig config) {
         String tableName = config.getTableName();
-        List<String> filedNames = config.getFiledNames();
-        List<String> labelNames = config.getLabelNames();
-        boolean appendLabel = !CollectionUtils.isEmpty(labelNames);
+        List<Field> fields = config.getFields();
         String quotation = config.getQuotation();
         String queryFilter = config.getQueryFilter();
 
         StringBuilder sql = new StringBuilder();
-        int size = filedNames.size();
+        int size = fields.size();
         int end = size - 1;
+        Field field = null;
         for (int i = 0; i < size; i++) {
-            // "USERNAME"
-            sql.append(quotation).append(filedNames.get(i)).append(quotation);
+            field = fields.get(i);
+            if (field.isUnmodifiabled()) {
+                sql.append(field.getName());
+            } else {
+                sql.append(quotation).append(field.getName()).append(quotation);
+            }
 
-            // label
-            if(appendLabel){
-                // name as "myName"
-                sql.append(" as \"").append(labelNames.get(i)).append("\"");
+            // "USERNAME" as "myName"
+            if (StringUtils.isNotEmpty(field.getLabelName())) {
+                sql.append(" as ").append(quotation).append(field.getLabelName()).append(quotation);
             }
 
             //如果不是最后一个字段

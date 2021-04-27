@@ -19,7 +19,6 @@ import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.flush.FlushService;
 import org.dbsyncer.parser.model.*;
-import org.dbsyncer.parser.strategy.PrimaryKeyMappingStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
@@ -242,7 +241,7 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent rowChangedEvent, PrimaryKeyMappingStrategy strategy) {
+    public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent rowChangedEvent) {
         logger.info("解析数据=> tableName:{}, event:{}, before:{}, after:{}, rowId:{}", rowChangedEvent.getTableName(), rowChangedEvent.getEvent(),
                 rowChangedEvent.getBefore(), rowChangedEvent.getAfter(), rowChangedEvent.getRowId());
         final String metaId = mapping.getMetaId();
@@ -257,9 +256,8 @@ public class ParserFactory implements Parser {
         Map<String, Object> data = StringUtils.equals(ConnectorConstant.OPERTION_DELETE, event) ? rowChangedEvent.getBefore() : rowChangedEvent.getAfter();
         PickerUtil.pickData(picker, data);
 
-        // 2、主键映射策略，Oracle需要替换主键为rowId
+        // 2、获取目标源字段
         Map target = picker.getTarget();
-        strategy.handle(target, rowChangedEvent);
 
         // 3、参数转换
         ConvertUtil.convert(tableGroup.getConvert(), target);

@@ -108,7 +108,7 @@ public abstract class PickerUtil {
             sField = sFields.get(k);
             tField = tFields.get(k);
             if (null != sField && null != tField) {
-                v = source.get(sField.getName());
+                v = source.get(sField.isUnmodifiabled() ? sField.getLabelName() : sField.getName());
                 target.put(tField.getName(), v);
             }
         }

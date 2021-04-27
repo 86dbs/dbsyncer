@@ -151,9 +151,8 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         if (ListenerTypeEnum.isTiming(listenerType)) {
             QuartzExtractor extractor = listener.getExtractor(listenerType, QuartzExtractor.class);
             List<Map<String, String>> commands = list.stream().map(t -> t.getCommand()).collect(Collectors.toList());
-            PrimaryKeyMappingStrategy strategy = PrimaryKeyMappingEnum.DEFAULT.getPrimaryKeyMappingStrategy();
 
-            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new QuartzListener(mapping, list, strategy));
+            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new QuartzListener(mapping, list));
             extractor.setConnectorFactory(connectorFactory);
             extractor.setScheduledTaskService(scheduledTaskService);
             extractor.setCommands(commands);
@@ -164,9 +163,8 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         if (ListenerTypeEnum.isLog(listenerType)) {
             final String connectorType = connectorConfig.getConnectorType();
             AbstractExtractor extractor = listener.getExtractor(connectorType, AbstractExtractor.class);
-            PrimaryKeyMappingStrategy strategy = PrimaryKeyMappingEnum.getPrimaryKeyMappingStrategy(connectorType);
 
-            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new LogListener(mapping, list, strategy, extractor));
+            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new LogListener(mapping, list, extractor));
             return extractor;
         }
         return null;
@@ -184,7 +182,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         protected Mapping                   mapping;
         protected String                    metaId;
         protected AtomicBoolean             changed = new AtomicBoolean();
-        protected PrimaryKeyMappingStrategy strategy;
 
         @Override
         public void flushEvent(Map<String, String> map) {
@@ -239,9 +236,8 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
         private List<FieldPicker> tablePicker;
 
-        public QuartzListener(Mapping mapping, List<TableGroup> list, PrimaryKeyMappingStrategy strategy) {
+        public QuartzListener(Mapping mapping, List<TableGroup> list) {
             this.mapping = mapping;
-            this.strategy = strategy;
             this.metaId = mapping.getMetaId();
             this.tablePicker = new LinkedList<>();
             list.forEach(t -> tablePicker.add(new FieldPicker(PickerUtil.mergeTableGroupConfig(mapping, t))));
@@ -256,7 +252,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
                     rowChangedEvent.getAfter());
 
             // 处理过程有异常向上抛
-            parser.execute(mapping, picker.getTableGroup(), rowChangedEvent, strategy);
+            parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);
 
             // 标记有变更记录
             changed.compareAndSet(false, true);
@@ -290,10 +286,9 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         private AtomicInteger eventCounter;
         private static final int MAX_LOG_CACHE_SIZE = 128;
 
-        public LogListener(Mapping mapping, List<TableGroup> list, PrimaryKeyMappingStrategy strategy, Extractor extractor) {
+        public LogListener(Mapping mapping, List<TableGroup> list, Extractor extractor) {
             this.mapping = mapping;
             this.metaId = mapping.getMetaId();
-            this.strategy = strategy;
             this.extractor = extractor;
             this.tablePicker = new LinkedHashMap<>();
             this.eventCounter = new AtomicInteger();
@@ -321,7 +316,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
                         rowChangedEvent.setBefore(before);
                         rowChangedEvent.setAfter(after);
                         rowChangedEvent.setPk(picker.getPk());
-                        parser.execute(mapping, picker.getTableGroup(), rowChangedEvent, strategy);
+                        parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);
                     }
                 });
                 // 标记有变更记录

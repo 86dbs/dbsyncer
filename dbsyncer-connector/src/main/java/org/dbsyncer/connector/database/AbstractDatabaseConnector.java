@@ -91,7 +91,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         Map<String, String> map = new HashMap<>();
 
         String query = ConnectorConstant.OPERTION_QUERY;
-        map.put(query, buildSql(query, table, null, queryFilterSql));
+        map.put(query, buildSql(query, table, commandConfig.getOriginalTable(), queryFilterSql));
 
         // 获取查询总数SQL
         String quotation = buildSqlWithQuotation();
@@ -476,25 +476,27 @@ public abstract class AbstractDatabaseConnector implements Database {
         }
         List<Field> column = table.getColumn();
         if (CollectionUtils.isEmpty(column)) {
-            return null;
+            throw new ConnectorException("Column can not be null.");
         }
-        // 获取主键
         String pk = null;
-        // 去掉重复的查询字段
-        List<String> filedNames = new ArrayList<>();
+        Set<String> mark = new HashSet<>();
+        List<Field> fields = new ArrayList<>();
         for (Field c : column) {
-            if (c.isPk()) {
-                pk = c.getName();
-            }
             String name = c.getName();
-            // 如果没有重复
-            if (StringUtils.isNotBlank(name) && !filedNames.contains(name)) {
-                filedNames.add(name);
+            if(StringUtils.isBlank(name)){
+                throw new ConnectorException("The field name can not be empty.");
+            }
+            if (c.isPk()) {
+                pk = name;
+            }
+            if (!mark.contains(name)) {
+                fields.add(c);
+                mark.add(name);
             }
         }
-        if (CollectionUtils.isEmpty(filedNames)) {
-            logger.error("The filedNames can not be empty.");
-            throw new ConnectorException("The filedNames can not be empty.");
+        if (CollectionUtils.isEmpty(fields)) {
+            logger.error("The fields can not be empty.");
+            throw new ConnectorException("The fields can not be empty.");
         }
         String tableName = table.getName();
         if (StringUtils.isBlank(tableName)) {
@@ -505,7 +507,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             pk = DatabaseUtil.findTablePrimaryKey(originalTable, "");
         }
 
-        SqlBuilderConfig config = new SqlBuilderConfig(this, tableName, pk, filedNames, queryFilterSQL, buildSqlWithQuotation());
+        SqlBuilderConfig config = new SqlBuilderConfig(this, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());
         return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
     }
 

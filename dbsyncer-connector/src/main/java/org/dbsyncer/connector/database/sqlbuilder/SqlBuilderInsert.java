@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.database.sqlbuilder;
 
+import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
 import org.dbsyncer.connector.database.AbstractSqlBuilder;
 
@@ -15,17 +16,17 @@ public class SqlBuilderInsert extends AbstractSqlBuilder {
     @Override
     public String buildSql(SqlBuilderConfig config) {
         String tableName = config.getTableName();
-        List<String> filedNames = config.getFiledNames();
+        List<Field> fields = config.getFields();
         String quotation = config.getQuotation();
 
         StringBuilder sql = new StringBuilder();
         StringBuilder fs = new StringBuilder();
         StringBuilder vs = new StringBuilder();
-        int size = filedNames.size();
+        int size = fields.size();
         int end = size - 1;
         for (int i = 0; i < size; i++) {
             // "USERNAME"
-            fs.append(quotation).append(filedNames.get(i)).append(quotation);
+            fs.append(quotation).append(fields.get(i).getName()).append(quotation);
             vs.append("?");
             //如果不是最后一个字段
             if (i < end) {

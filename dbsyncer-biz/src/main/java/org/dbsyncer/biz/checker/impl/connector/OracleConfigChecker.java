@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * <p>1、增量同步时，目标源必须有一个主键字段用于接收ROW_ID值。</p>
@@ -30,7 +31,7 @@ public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
      * 默认ROWID列名称
      */
     private static final String ROW_ID_NAME = "ORACLE_ROW_ID";
-    private static final String ROW_ID      = "ROWIDTOCHAR(ROWID) as " + ROW_ID_NAME;
+    private static final String ROW_ID      = "ROWIDTOCHAR(ROWID)";
 
     @Autowired
     private Manager manager;
@@ -39,7 +40,7 @@ public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
     public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup) {
         // TODO 模拟测试
         Map<String, String> params = mapping.getParams();
-        mapping.getParams().put(ROW_ID_NAME, "RID");
+        mapping.getParams().put(ROW_ID_NAME, "row_id");
 
         // 没有定义目标源ROW_ID字段
         if (CollectionUtils.isEmpty(mapping.getParams()) || !params.containsKey(ROW_ID_NAME)) {
@@ -57,13 +58,24 @@ public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
         }
 
         List<Field> sourceColumn = tableGroup.getSourceTable().getColumn();
-        Field sourceField = new Field(ROW_ID, "VARCHAR2", 12, false, true);
-        sourceColumn.add(0, sourceField);
+        List<Field> sFieldList = sourceColumn.stream().filter(f -> StringUtils.endsWithIgnoreCase(f.getName(), ROW_ID)).collect(Collectors.toList());
+        Field sourceField = new Field(ROW_ID, "VARCHAR2", 12, false, ROW_ID_NAME, true);
+        if(CollectionUtils.isEmpty(sFieldList)){
+            sourceColumn.add(0, sourceField);
+        }
 
         List<Field> targetColumn = tableGroup.getTargetTable().getColumn();
-        targetColumn.parallelStream().forEach(f -> f.setPk(false));
-        Field targetField = new Field(targetRowIdName, "VARCHAR2", 12, true, false);
-        targetColumn.add(0, targetField);
+        Field targetField = null;
+        for(Field f : targetColumn){
+            f.setPk(StringUtils.endsWithIgnoreCase(f.getName(), targetRowIdName));
+            if(f.isPk()){
+                targetField = f;
+            }
+        }
+        if(null == targetField){
+            targetField = new Field(targetRowIdName, "VARCHAR2", 12, true);
+            targetColumn.add(0, targetField);
+        }
 
         tableGroup.getFieldMapping().add(0, new FieldMapping(sourceField, targetField));
     }

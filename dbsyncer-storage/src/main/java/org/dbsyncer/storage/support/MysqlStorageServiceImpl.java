@@ -297,14 +297,8 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             jdbcTemplate.execute(ddl);
         }
 
-        List<String> fieldNames = new ArrayList<>();
-        List<String> labelNames = new ArrayList<>();
-        executor.getFieldPairs().forEach(p -> {
-            fieldNames.add(p.columnName);
-            labelNames.add(p.labelName);
-        });
-        final SqlBuilderConfig config = new SqlBuilderConfig(connector, table, ConfigConstant.CONFIG_MODEL_ID, fieldNames, labelNames, "",
-                "");
+        List<Field> fields = executor.getFieldPairs().stream().map(p -> new Field(p.columnName, p.labelName)).collect(Collectors.toList());
+        final SqlBuilderConfig config = new SqlBuilderConfig(connector, table, ConfigConstant.CONFIG_MODEL_ID, fields, "","");
 
         String query = SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config);
         String insert = SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(config);
@@ -365,17 +359,17 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     }
 
     class FieldPair {
-        String labelName;
         String columnName;
+        String labelName;
 
-        public FieldPair(String labelName) {
-            this.labelName = labelName;
-            this.columnName = labelName;
+        public FieldPair(String columnName) {
+            this.columnName = columnName;
+            this.labelName = columnName;
         }
 
-        public FieldPair(String labelName, String columnName) {
-            this.labelName = labelName;
+        public FieldPair(String columnName, String labelName) {
             this.columnName = columnName;
+            this.labelName = labelName;
         }
     }
 
@@ -389,8 +383,8 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_ID, new FieldPair(ConfigConstant.CONFIG_MODEL_ID));
             fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_NAME, new FieldPair(ConfigConstant.CONFIG_MODEL_NAME));
             fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_TYPE, new FieldPair(ConfigConstant.CONFIG_MODEL_TYPE));
-            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_CREATE_TIME, new FieldPair(ConfigConstant.CONFIG_MODEL_CREATE_TIME, TABLE_CREATE_TIME));
-            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, new FieldPair(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, TABLE_UPDATE_TIME));
+            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_CREATE_TIME, new FieldPair(TABLE_CREATE_TIME, ConfigConstant.CONFIG_MODEL_CREATE_TIME));
+            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, new FieldPair(TABLE_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME));
             fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_JSON, new FieldPair(ConfigConstant.CONFIG_MODEL_JSON));
             fieldPairMap.putIfAbsent(ConfigConstant.DATA_SUCCESS, new FieldPair(ConfigConstant.DATA_SUCCESS));
             fieldPairMap.putIfAbsent(ConfigConstant.DATA_EVENT, new FieldPair(ConfigConstant.DATA_EVENT));

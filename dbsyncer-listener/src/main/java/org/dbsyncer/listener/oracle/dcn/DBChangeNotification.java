@@ -234,6 +234,7 @@ public class DBChangeNotification {
                 if(rs.next()){
                     final int size = rs.getMetaData().getColumnCount();
                     do{
+                        data.add(rowId);
                         for (int i = 1; i <= size; i++) {
                             data.add(rs.getObject(i));
                         }

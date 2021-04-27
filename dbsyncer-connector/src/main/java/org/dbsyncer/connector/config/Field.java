@@ -1,6 +1,5 @@
 package org.dbsyncer.connector.config;
 
-import com.alibaba.fastjson.annotation.JSONField;
 import org.dbsyncer.common.util.JsonUtil;
 
 /**
@@ -33,12 +32,21 @@ public class Field {
     private boolean pk;
 
     /**
-     * 是否数据源表字段
+     * 字段别名
      */
-    @JSONField(serialize = false)
-    private boolean sourceTable;
+    private String labelName;
+
+    /**
+     * 是否系统字段
+     */
+    private boolean unmodifiabled;
 
     public Field() {
+    }
+
+    public Field(String name, String labelName) {
+        this.name = name;
+        this.labelName = labelName;
     }
 
     public Field(String name, String typeName, int type) {
@@ -54,12 +62,13 @@ public class Field {
         this.pk = pk;
     }
 
-    public Field(String name, String typeName, int type, boolean pk, boolean sourceTable) {
+    public Field(String name, String typeName, int type, boolean pk, String labelName, boolean unmodifiabled) {
         this.name = name;
         this.typeName = typeName;
         this.type = type;
         this.pk = pk;
-        this.sourceTable = sourceTable;
+        this.labelName = labelName;
+        this.unmodifiabled = unmodifiabled;
     }
 
     public String getName() {
@@ -94,12 +103,21 @@ public class Field {
         this.pk = pk;
     }
 
-    public boolean isSourceTable() {
-        return sourceTable;
+    public String getLabelName() {
+        return labelName;
     }
 
-    public Field setSourceTable(boolean sourceTable) {
-        this.sourceTable = sourceTable;
+    public Field setLabelName(String labelName) {
+        this.labelName = labelName;
+        return this;
+    }
+
+    public boolean isUnmodifiabled() {
+        return unmodifiabled;
+    }
+
+    public Field setUnmodifiabled(boolean unmodifiabled) {
+        this.unmodifiabled = unmodifiabled;
         return this;
     }
 

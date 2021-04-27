@@ -6,37 +6,24 @@ import java.util.List;
 
 public class SqlBuilderConfig {
 
-    private Database     database;
+    private Database    database;
     // 表名
-    private String       tableName;
+    private String      tableName;
     // 主键
-    private String       pk;
-    // 字段名称
-    private List<String> filedNames;
-    // 字段别名
-    private List<String> labelNames;
+    private String      pk;
+    // 字段
+    private List<Field> fields;
     // 过滤条件
-    private String       queryFilter;
+    private String      queryFilter;
     // 引号
-    private String       quotation;
+    private String      quotation;
 
-    public SqlBuilderConfig(Database database, String tableName, String pk, List<String> filedNames, String queryFilter,
+    public SqlBuilderConfig(Database database, String tableName, String pk, List<Field> fields, String queryFilter,
                             String quotation) {
         this.database = database;
         this.tableName = tableName;
         this.pk = pk;
-        this.filedNames = filedNames;
-        this.queryFilter = queryFilter;
-        this.quotation = quotation;
-    }
-
-    public SqlBuilderConfig(Database database, String tableName, String pk, List<String> filedNames,
-                            List<String> labelNames, String queryFilter, String quotation) {
-        this.database = database;
-        this.tableName = tableName;
-        this.pk = pk;
-        this.filedNames = filedNames;
-        this.labelNames = labelNames;
+        this.fields = fields;
         this.queryFilter = queryFilter;
         this.quotation = quotation;
     }
@@ -53,12 +40,8 @@ public class SqlBuilderConfig {
         return pk;
     }
 
-    public List<String> getFiledNames() {
-        return filedNames;
-    }
-
-    public List<String> getLabelNames() {
-        return labelNames;
+    public List<Field> getFields() {
+        return fields;
     }
 
     public String getQueryFilter() {
