@@ -91,6 +91,10 @@ public class FieldPicker {
     }
 
     private void init(List<Filter> filter, List<Field> column, List<FieldMapping> fieldMapping) {
+        // column  => [1, 86, 0, 中文, 2020-05-15T12:17:22.000+0800, 备注信息]
+        Assert.notEmpty(column, "读取字段不能为空.");
+        Assert.notEmpty(fieldMapping, "映射关系不能为空.");
+
         // 解析过滤条件
         if ((filterSwitch = !CollectionUtils.isEmpty(filter))) {
             add = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), OperationEnum.AND.getName())).collect(
@@ -98,22 +102,15 @@ public class FieldPicker {
             or = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), OperationEnum.OR.getName())).collect(Collectors.toList());
         }
 
-        // column  => [1, 86, 0, 中文, 2020-05-15T12:17:22.000+0800, 备注信息]
-        Assert.notEmpty(column, "读取字段不能为空.");
-        Assert.notEmpty(fieldMapping, "映射关系不能为空.");
-
-        // 找到同步字段 => [{source.name}]
-        Set<String> key = fieldMapping.stream().filter(m -> null != m.getSource()).map(m -> m.getSource().getName()).collect(Collectors.toSet());
-
         // 记录字段索引 [{"ID":0},{"NAME":1}]
         index = new LinkedList<>();
         int size = column.size();
         String k = null;
+        Field field = null;
         for (int i = 0; i < size; i++) {
-            k = column.get(i).getName();
-            if (key.contains(k)) {
-                index.add(new Node(k, i));
-            }
+            field = column.get(i);
+            k = field.isUnmodifiabled() ? field.getLabelName() : field.getName();
+            index.add(new Node(k, i));
         }
         Assert.notEmpty(index, "同步映射关系不能为空.");
         this.indexSize = index.size();
