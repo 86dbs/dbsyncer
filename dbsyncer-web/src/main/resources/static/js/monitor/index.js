@@ -130,7 +130,7 @@ function showData($dataList, arr, append){
             html += '<td>' + (start + i + 1) + '</td>';
             html += '<td>' + arr[i].event + '</td>';
             html += '<td>' + (arr[i].success ? '<span class="label label-success">成功</span>' : '<span class="label label-warning">失败</span>') + '</td>';
-            html += '<td>' + arr[i].error + '</td>';
+            html += '<td title="' + arr[i].error + '" style="max-width:100px;" class="dbsyncer_over_hidden">' + arr[i].error + '</td>';
             html += '<td>' + formatDate(arr[i].createTime) + '</td>';
             html += '<td><a json=' + arr[i].json + ' href="javascript:;" class="label label-info queryData">查看数据</a></td>';
             html += '</tr>';

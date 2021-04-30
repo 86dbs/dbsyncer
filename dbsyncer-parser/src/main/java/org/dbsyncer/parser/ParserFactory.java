@@ -19,7 +19,6 @@ import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.flush.FlushService;
 import org.dbsyncer.parser.model.*;
-import org.dbsyncer.parser.strategy.PrimaryKeyMappingStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
@@ -194,8 +193,7 @@ public class ParserFactory implements Parser {
         String tTableName = group.getTargetTable().getName();
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
         // 获取同步字段
-        Picker picker = new Picker();
-        PickerUtil.pickFields(picker, fieldMapping);
+        Picker picker = new Picker(fieldMapping);
 
         // 检查分页参数
         Map<String, String> params = getMeta(metaId).getMap();
@@ -212,7 +210,7 @@ public class ParserFactory implements Parser {
 
             // 1、获取数据源数据
             int pageIndex = Integer.parseInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
-            Result reader = connectorFactory.reader(sConfig, command, new ArrayList<>(), pageIndex, pageSize);
+            Result reader = connectorFactory.reader(new ReaderConfig(sConfig, command, new ArrayList<>(), pageIndex, pageSize));
             List<Map> data = reader.getData();
             if (CollectionUtils.isEmpty(data)) {
                 params.clear();
@@ -221,10 +219,9 @@ public class ParserFactory implements Parser {
             }
 
             // 2、映射字段
-            PickerUtil.pickData(picker, data);
+            List<Map> target = picker.pickData(reader.getData());
 
             // 3、参数转换
-            List<Map> target = picker.getTargetList();
             ConvertUtil.convert(group.getConvert(), target);
 
             // 4、插件转换
@@ -242,38 +239,29 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent rowChangedEvent, PrimaryKeyMappingStrategy strategy) {
-        logger.info("解析数据=> tableName:{}, event:{}, before:{}, after:{}, rowId:{}", rowChangedEvent.getTableName(), rowChangedEvent.getEvent(),
-                rowChangedEvent.getBefore(), rowChangedEvent.getAfter(), rowChangedEvent.getRowId());
+    public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent rowChangedEvent) {
+        logger.info("解析数据=> tableName:{}, event:{}, before:{}, after:{}", rowChangedEvent.getTableName(), rowChangedEvent.getEvent(),
+                rowChangedEvent.getBefore(), rowChangedEvent.getAfter());
         final String metaId = mapping.getMetaId();
 
         ConnectorConfig tConfig = getConnectorConfig(mapping.getTargetConnectorId());
-        // 获取同步字段
-        Picker picker = new Picker();
-        PickerUtil.pickFields(picker, tableGroup.getFieldMapping());
-
-        // 1、映射字段
+        // 1、获取映射字段
         final String event = rowChangedEvent.getEvent();
         Map<String, Object> data = StringUtils.equals(ConnectorConstant.OPERTION_DELETE, event) ? rowChangedEvent.getBefore() : rowChangedEvent.getAfter();
-        PickerUtil.pickData(picker, data);
+        Picker picker = new Picker(tableGroup.getFieldMapping(), data);
+        Map target = picker.getTargetMap();
 
-        // 2、主键映射策略，Oracle需要替换主键为rowId
-        Map target = picker.getTarget();
-        strategy.handle(target, rowChangedEvent);
-
-        // 3、参数转换
+        // 2、参数转换
         ConvertUtil.convert(tableGroup.getConvert(), target);
 
-        // 4、插件转换
+        // 3、插件转换
         pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
 
-        // 5、写入目标源
-        Result writer = connectorFactory.writer(tConfig, picker.getTargetFields(), tableGroup.getCommand(), event, target);
+        // 4、写入目标源
+        Result writer = connectorFactory.writer(new WriterSingleConfig(tConfig, picker.getTargetFields(), tableGroup.getCommand(), event, target, rowChangedEvent.getTableName()));
 
-        // 6、更新结果
-        List<Map> list = new ArrayList<>(1);
-        list.add(target);
-        flush(metaId, writer, event, list);
+        // 5、更新结果
+        flush(metaId, writer, event, picker.getTargetMapList());
     }
 
     /**
@@ -355,7 +343,7 @@ public class ParserFactory implements Parser {
         int total = target.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(config, command, fields, target);
+            return connectorFactory.writer(new WriterBatchConfig(config, command, fields, target));
         }
 
         // 批量任务, 拆分
@@ -412,7 +400,7 @@ public class ParserFactory implements Parser {
             }
             data.add(poll);
         }
-        return connectorFactory.writer(config, command, fields, data);
+        return connectorFactory.writer(new WriterBatchConfig(config, command, fields, data));
     }
 
     private ThreadPoolTaskExecutor getThreadPoolTaskExecutor(int threadSize, int queueCapacity) {

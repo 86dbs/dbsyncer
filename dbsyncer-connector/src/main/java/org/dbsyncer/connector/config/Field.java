@@ -31,7 +31,28 @@ public class Field {
      */
     private boolean pk;
 
+    /**
+     * 字段别名
+     */
+    private String labelName;
+
+    /**
+     * 是否系统字段
+     */
+    private boolean unmodifiabled;
+
     public Field() {
+    }
+
+    public Field(String name, String labelName) {
+        this.name = name;
+        this.labelName = labelName;
+    }
+
+    public Field(String name, String typeName, int type) {
+        this.name = name;
+        this.typeName = typeName;
+        this.type = type;
     }
 
     public Field(String name, String typeName, int type, boolean pk) {
@@ -39,6 +60,15 @@ public class Field {
         this.typeName = typeName;
         this.type = type;
         this.pk = pk;
+    }
+
+    public Field(String name, String typeName, int type, boolean pk, String labelName, boolean unmodifiabled) {
+        this.name = name;
+        this.typeName = typeName;
+        this.type = type;
+        this.pk = pk;
+        this.labelName = labelName;
+        this.unmodifiabled = unmodifiabled;
     }
 
     public String getName() {
@@ -71,6 +101,24 @@ public class Field {
 
     public void setPk(boolean pk) {
         this.pk = pk;
+    }
+
+    public String getLabelName() {
+        return labelName;
+    }
+
+    public Field setLabelName(String labelName) {
+        this.labelName = labelName;
+        return this;
+    }
+
+    public boolean isUnmodifiabled() {
+        return unmodifiabled;
+    }
+
+    public Field setUnmodifiabled(boolean unmodifiabled) {
+        this.unmodifiabled = unmodifiabled;
+        return this;
     }
 
     @Override

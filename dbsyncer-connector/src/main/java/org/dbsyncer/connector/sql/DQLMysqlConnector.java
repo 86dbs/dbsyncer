@@ -46,6 +46,6 @@ public final class DQLMysqlConnector extends AbstractDatabaseConnector {
 
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        return super.getDqlSourceCommand(commandConfig, " _T");
+        return super.getDqlSourceCommand(commandConfig, true);
     }
 }

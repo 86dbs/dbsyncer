@@ -5,7 +5,7 @@
     <parent>
         <artifactId>dbsyncer</artifactId>
         <groupId>org.ghi</groupId>
-        <version>1.0.0-Alpha</version>
+		<version>1.0.6-Alpha</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -69,7 +69,7 @@
 
     <build>
         <!-- 指定打包名称 -->
-        <finalName>${project.parent.artifactId}-1.0.5-Alpha</finalName>
+        <finalName>${project.parent.artifactId}-${project.parent.version}</finalName>
 
         <plugins>
             <!-- compiler插件参数设置，指定编码 -->

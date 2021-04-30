@@ -4,15 +4,12 @@ import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.MappingLogConfigChecker;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.parser.model.Mapping;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -26,17 +23,13 @@ import java.util.Map;
  * @date 2020/1/8 15:17
  */
 @Component
-public class LogConfigChecker implements MappingConfigChecker, ApplicationContextAware {
+public class LogConfigChecker implements MappingConfigChecker {
 
     @Autowired
     private Manager manager;
 
+    @Autowired
     private Map<String, MappingLogConfigChecker> map;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        map = applicationContext.getBeansOfType(MappingLogConfigChecker.class);
-    }
 
     @Override
     public void modify(Mapping mapping, Map<String, String> params) {

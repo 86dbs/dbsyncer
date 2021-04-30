@@ -212,39 +212,42 @@ public class DBChangeNotification {
         }
 
         private void parseEvent(String tableName, String rowId, RowChangeDescription.RowOperation event) {
+            List<Object> data = new ArrayList<>();
             if (event.getCode() == TableChangeDescription.TableOperation.UPDATE.getCode()) {
-                RowChangedEvent rowChangedEvent = new RowChangedEvent(tableName, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, read(tableName, rowId), rowId);
+                read(tableName, rowId, data);
+                RowChangedEvent rowChangedEvent = new RowChangedEvent(tableName, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, data);
                 listeners.forEach(e -> e.onEvents(rowChangedEvent));
 
-            }else if(event.getCode() == TableChangeDescription.TableOperation.INSERT.getCode()){
-                RowChangedEvent rowChangedEvent = new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, read(tableName, rowId), rowId);
+            } else if (event.getCode() == TableChangeDescription.TableOperation.INSERT.getCode()) {
+                read(tableName, rowId, data);
+                RowChangedEvent rowChangedEvent = new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, data);
                 listeners.forEach(e -> e.onEvents(rowChangedEvent));
 
-            }else{
-                RowChangedEvent rowChangedEvent = new RowChangedEvent(tableName, ConnectorConstant.OPERTION_DELETE, Collections.EMPTY_LIST, Collections.EMPTY_LIST, rowId);
+            } else {
+                data.add(rowId);
+                RowChangedEvent rowChangedEvent = new RowChangedEvent(tableName, ConnectorConstant.OPERTION_DELETE, data, Collections.EMPTY_LIST);
                 listeners.forEach(e -> e.onEvents(rowChangedEvent));
             }
         }
 
-        private List<Object> read(String tableName, String rowId) {
-            List<Object> data = new ArrayList<>();
+        private void read(String tableName, String rowId, List<Object> data) {
             ResultSet rs = null;
             try {
                 rs = statement.executeQuery(String.format(QUERY_ROW_DATA_SQL, tableName, rowId));
-                if(rs.next()){
+                if (rs.next()) {
                     final int size = rs.getMetaData().getColumnCount();
-                    do{
+                    do {
+                        data.add(rowId);
                         for (int i = 1; i <= size; i++) {
                             data.add(rs.getObject(i));
                         }
-                    } while(rs.next());
+                    } while (rs.next());
                 }
             } catch (SQLException e) {
                 logger.error(e.getMessage());
             } finally {
                 close(rs);
             }
-            return data;
         }
 
     }

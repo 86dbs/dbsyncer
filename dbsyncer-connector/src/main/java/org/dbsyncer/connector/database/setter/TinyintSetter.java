@@ -5,11 +5,11 @@ import org.dbsyncer.connector.database.AbstractSetter;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class TinyintSetter extends AbstractSetter {
+public class TinyintSetter extends AbstractSetter<Integer> {
 
     @Override
-    protected void set(PreparedStatement ps, int i, Object val) throws SQLException {
-        ps.setInt(i, Integer.parseInt(String.valueOf(val)));
+    protected void set(PreparedStatement ps, int i, Integer val) throws SQLException {
+        ps.setInt(i, val);
     }
 
 }

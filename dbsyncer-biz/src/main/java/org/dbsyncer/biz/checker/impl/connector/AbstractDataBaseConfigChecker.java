@@ -13,7 +13,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2020/1/8 15:17
  */
-public abstract class DataBaseConfigChecker implements ConnectorConfigChecker {
+public abstract class AbstractDataBaseConfigChecker implements ConnectorConfigChecker {
 
     @Override
     public void modify(Connector connector, Map<String, String> params) {

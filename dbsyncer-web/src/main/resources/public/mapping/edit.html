@@ -69,11 +69,11 @@
                     </div>
                     <div class="col-sm-6"></div>
                     <div class="col-md-2 text-right">
-                        <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
-                            <span class="fa fa-save"></span>保存
-                        </button>
                         <button id="mappingBackBtn" type="button" class="btn btn-default">
                             <span class="fa fa-reply"></span>返回
+                        </button>
+                        <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
+                            <span class="fa fa-save"></span>保存
                         </button>
                     </div>
                 </div>
@@ -116,6 +116,9 @@
                                 <div th:replace="mapping/editIncrement :: content"></div>
                             </div>
 
+                            <!-- 参数配置 -->
+                            <div th:replace="mapping/editParameter :: content"></div>
+
                             <!-- 过滤条件 -->
                             <div th:replace="mapping/editFilter :: content"></div>
 
@@ -135,6 +138,7 @@
 </div>
 
 <script th:src="@{/js/mapping/edit.js}"></script>
+<script th:src="@{/js/mapping/editParam.js}"></script>
 <script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
 <script th:src="@{/js/mapping/editIncrement.js}"></script>
 </html>

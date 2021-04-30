@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * @author AE86
@@ -52,16 +53,22 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     @Override
-    public boolean remove(String id) {
-        TableGroup tableGroup = manager.getTableGroup(id);
-        Assert.notNull(tableGroup, "tableGroup can not be null.");
-        assertRunning(tableGroup);
-        log(LogType.TableGroupLog.DELETE, tableGroup);
+    public boolean remove(String mappingId, String ids) {
+        Assert.hasText(mappingId, "Mapping id can not be null");
+        Assert.hasText(ids, "TableGroup ids can not be null");
+        Mapping mapping = manager.getMapping(mappingId);
+        Assert.notNull(mapping, "Mapping can not be null");
+        assertRunning(mapping.getMetaId());
 
-        manager.removeTableGroup(id);
+        // 批量删除表
+        Stream.of(ids.split(",")).parallel().forEach(id -> {
+            TableGroup model = manager.getTableGroup(id);
+            log(LogType.TableGroupLog.DELETE, model);
+            manager.removeTableGroup(id);
+        });
+
         // 合并驱动公共字段
-        mergeMappingColumn(tableGroup.getMappingId());
-
+        mergeMappingColumn(mapping.getId());
         return true;
     }
 

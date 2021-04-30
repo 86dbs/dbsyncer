@@ -47,7 +47,9 @@ public class Query {
 
     public void put(String key, String value, boolean highlighter, boolean number) {
         params.add(new Param(key, value, highlighter, number));
-        enableHighLightSearch = highlighter;
+        if (highlighter) {
+            enableHighLightSearch = highlighter;
+        }
     }
 
     public StorageEnum getType() {

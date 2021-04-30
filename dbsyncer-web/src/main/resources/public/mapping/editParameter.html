@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content" th:if="${'Oracle' eq mapping?.sourceConnector?.config?.connectorType}">
+    <p class="text-muted">参数配置</p>
+
+    <div id="paramsList" class="form-group">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">目标源ROWID</label>
+                <div class="col-sm-9">
+                    <!-- Mapping params -->
+                    <input th:if="${tableGroup} == null" th:value="${mapping?.params?.get('ORACLE_ROW_ID')}" name="ORACLE_ROW_ID" type="text" class="form-control" title="区分Oracle增量同步数据字段，会将该字段设置为目标源唯一主键"/>
+
+                    <!-- TableGroup params -->
+                    <input th:if="${tableGroup} != null" th:value="${tableGroup?.params?.get('ORACLE_ROW_ID')}" name="ORACLE_ROW_ID" type="text" class="form-control" title="区分Oracle增量同步数据字段，会将该字段设置为目标源唯一主键"/>
+                </div>
+            </div>
+            <div class="col-md-8"></div>
+        </div>
+    </div>
+
+    <!-- 隐藏表单值 -->
+    <div class="form-group hidden">
+        <input id="params" name="params" class="form-control" type="text"/>
+    </div>
+</div>
+
+</html>

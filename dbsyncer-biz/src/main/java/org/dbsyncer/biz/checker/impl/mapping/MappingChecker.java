@@ -1,6 +1,5 @@
 package org.dbsyncer.biz.checker.impl.mapping;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
@@ -18,10 +17,7 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -36,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @date 2020/1/8 15:17
  */
 @Component
-public class MappingChecker extends AbstractChecker implements ApplicationContextAware {
+public class MappingChecker extends AbstractChecker {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -46,12 +42,8 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
     @Autowired
     private TableGroupChecker tableGroupChecker;
 
+    @Autowired
     private Map<String, MappingConfigChecker> map;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        map = applicationContext.getBeansOfType(MappingConfigChecker.class);
-    }
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
@@ -69,7 +61,7 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
         mapping.setSourceConnectorId(sourceConnectorId);
         mapping.setTargetConnectorId(targetConnectorId);
         mapping.setModel(ModelEnum.FULL.getCode());
-        mapping.setListener(new ListenerConfig(ListenerTypeEnum.TIMING.getType()));
+        mapping.setListener(new ListenerConfig(ListenerTypeEnum.LOG.getType()));
 
         // 修改基本配置
         this.modifyConfigModel(mapping, params);
@@ -93,19 +85,12 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
 
         // 同步方式(仅支持全量或增量同步方式)
         String model = params.get("model");
-        if (StringUtils.isNotBlank(model)) {
-            if (null != ModelEnum.getModelEnum(model)) {
-                mapping.setModel(model);
-            }
-        }
+        mapping.setModel(null != ModelEnum.getModelEnum(model) ? model : ModelEnum.FULL.getCode());
 
         // 全量配置
-        String readNum = params.get("readNum");
-        mapping.setReadNum(NumberUtils.toInt(readNum, mapping.getReadNum()));
-        String threadNum = params.get("threadNum");
-        mapping.setThreadNum(NumberUtils.toInt(threadNum, mapping.getThreadNum()));
-        String batchNum = params.get("batchNum");
-        mapping.setBatchNum(NumberUtils.toInt(batchNum, mapping.getBatchNum()));
+        mapping.setReadNum(NumberUtils.toInt(params.get("readNum"), mapping.getReadNum()));
+        mapping.setThreadNum(NumberUtils.toInt(params.get("threadNum"), mapping.getThreadNum()));
+        mapping.setBatchNum(NumberUtils.toInt(params.get("batchNum"), mapping.getBatchNum()));
 
         // 增量配置(日志/定时)
         String incrementStrategy = params.get("incrementStrategy");
@@ -117,9 +102,6 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
 
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(mapping, params);
-
-        // 更新映射关系过滤条件
-        setFilterCommand(mapping);
 
         // 更新meta
         updateMeta(mapping);
@@ -145,16 +127,15 @@ public class MappingChecker extends AbstractChecker implements ApplicationContex
     }
 
     /**
-     * <b>更新映射关系过滤条件</b>
-     * <p>如果映射关系没有过滤条件，使用全局的过滤条件</p>
+     * 合并关联的映射关系配置
      *
      * @param mapping
      */
-    private void setFilterCommand(Mapping mapping) {
+    public void batchMergeTableGroupConfig(Mapping mapping) {
         List<TableGroup> groupAll = manager.getTableGroupAll(mapping.getId());
         if (!CollectionUtils.isEmpty(groupAll)) {
             for (TableGroup g : groupAll) {
-                tableGroupChecker.setCommand(mapping, g);
+                tableGroupChecker.mergeConfig(mapping, g);
                 manager.editTableGroup(g);
             }
         }

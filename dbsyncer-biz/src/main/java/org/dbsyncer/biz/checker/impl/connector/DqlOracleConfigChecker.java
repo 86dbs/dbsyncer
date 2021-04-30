@@ -11,7 +11,7 @@ import java.util.Map;
  * @date 2020/1/8 15:17
  */
 @Component
-public class DqlOracleConfigChecker extends DataBaseConfigChecker {
+public class DqlOracleConfigChecker extends AbstractDataBaseConfigChecker {
 
     @Override
     public void modify(Connector connector, Map<String, String> params) {

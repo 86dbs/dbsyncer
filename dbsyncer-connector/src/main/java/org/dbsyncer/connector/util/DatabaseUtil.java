@@ -130,10 +130,31 @@ public abstract class DatabaseUtil {
         boolean dbThanMysql8 = isDatabaseProductVersionMoreThanMysql8(databaseProductVersion);
         Assert.isTrue(driverThanMysql8 == dbThanMysql8, String.format("当前驱动%s和数据库%s版本不一致.", driverVersion, databaseProductVersion));
 
-        Class clazz = driverThanMysql8 ? delegate.getClass() : delegate.getClass().getSuperclass();
+        Class clazz = delegate.getClass().getSuperclass();
         java.lang.reflect.Field field = clazz.getDeclaredField("database");
         field.setAccessible(true);
         return (String) field.get(delegate);
+    }
+
+    /**
+     * 返回主键名称
+     *
+     * @param table
+     * @param quotation
+     * @return
+     */
+    public static String findTablePrimaryKey(Table table, String quotation) {
+        if (null != table) {
+            List<Field> column = table.getColumn();
+            if (!CollectionUtils.isEmpty(column)) {
+                for (Field c : column) {
+                    if(c.isPk()){
+                        return new StringBuilder(quotation).append(c.getName()).append(quotation).toString();
+                    }
+                }
+            }
+        }
+        throw new ConnectorException("Table primary key can not be empty.");
     }
 
     /**
@@ -178,23 +199,4 @@ public abstract class DatabaseUtil {
         return primaryKeys;
     }
 
-    /**
-     * 返回主键名称
-     * @param table
-     * @param quotation
-     * @return * / id
-     */
-    public static String findTablePrimaryKey(Table table, String quotation) {
-        if (null != table) {
-            List<Field> column = table.getColumn();
-            if (!CollectionUtils.isEmpty(column)) {
-                for (Field c : column) {
-                    if(c.isPk()){
-                        return new StringBuilder(quotation).append(c.getName()).append(quotation).toString();
-                    }
-                }
-            }
-        }
-        return "*";
-    }
 }

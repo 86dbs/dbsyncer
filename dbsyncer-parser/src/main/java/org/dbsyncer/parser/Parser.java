@@ -143,7 +143,6 @@ public interface Parser {
      * @param mapping
      * @param tableGroup
      * @param rowChangedEvent
-     * @param strategy
      */
-    void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent rowChangedEvent, PrimaryKeyMappingStrategy strategy);
+    void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent rowChangedEvent);
 }

@@ -33,6 +33,45 @@ function initFieldMappingParams(){
     });
     $("#fieldMapping").val(JSON.stringify(row));
 }
+
+// 获取选择的CheckBox[value]
+function getCheckedBoxSize($checkbox){
+    var checked = [];
+    $checkbox.each(function(){
+        if($(this).prop('checked')){
+            checked.push($(this).attr("id"));
+        }
+    });
+    return checked;
+}
+// 绑定删除表字段复选框事件
+function bindFieldMappingCheckBoxClick(){
+    var $checkboxAll = $('.fieldMappingDeleteCheckboxAll');
+    var $checkbox = $('.fieldMappingDeleteCheckbox');
+    var $delBtn = $("#fieldMappingDelBtn");
+    $checkboxAll.iCheck({
+        checkboxClass: 'icheckbox_square-red',
+        labelHover: false,
+        cursor: true
+    }).on('ifChecked', function (event) {
+        $checkbox.iCheck('check');
+    }).on('ifUnchecked', function (event) {
+        $checkbox.iCheck('uncheck');
+    }).on('ifChanged', function (event) {
+        $delBtn.prop('disabled', getCheckedBoxSize($('.fieldMappingDeleteCheckbox')).length < 1);
+    });
+
+    // 初始化icheck插件
+    $checkbox.iCheck({
+        checkboxClass: 'icheckbox_square-red',
+        cursor: true
+    }).on('ifChanged', function (event) {
+        // 阻止tr触发click事件
+        event.stopPropagation();
+        event.cancelBubble=true;
+        $delBtn.prop('disabled', getCheckedBoxSize($checkbox).length < 1);
+    });
+}
 // 绑定字段映射表格点击事件
 function bindFieldMappingListClick(){
     // 行双击事件
@@ -45,20 +84,10 @@ function bindFieldMappingListClick(){
         $pk.html(isPk ? '<i title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i>' : '');
         initFieldMappingParams();
     });
-
-    // 删除事件
-    var $del = $(".fieldMappingDelete");
-    $del.unbind("click");
-    $del.bind('click', function(){
-        // 阻止tr触发click事件
-        event.cancelBubble=true;
-        $(this).parent().parent().remove();
-        initFieldMappingParams();
-    });
 }
 // 绑定添加字段映射点击事件
 function bindFieldMappingAddClick(){
-    var $btn = $("#fieldMappingAdd");
+    var $btn = $("#fieldMappingAddBtn");
     $btn.bind('click', function(){
         var sField = $("#sourceFieldMapping").select2("val");
         var tField = $("#targetFieldMapping").select2("val");
@@ -73,7 +102,8 @@ function bindFieldMappingAddClick(){
         // 检查重复字段
         var repeated = false;
         var $fieldMappingList = $("#fieldMappingList");
-        $fieldMappingList.find("tr").each(function(k,v){
+        var $tr = $fieldMappingList.find("tr");
+        $tr.each(function(k,v){
              var sf = $(this).find("td:eq(0)").text();
              var tf = $(this).find("td:eq(1)").text();
              if(repeated = (sField==sf && tField==tf)){
@@ -82,11 +112,31 @@ function bindFieldMappingAddClick(){
              }
         });
         if(repeated){ return; }
-        var trHtml = "<tr title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td></td><td><a class='fa fa-remove fa-2x fieldMappingDelete dbsyncer_pointer' title='删除' ></a></td></tr>";
+
+        var index = $tr.size();
+        var trHtml = "<tr title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td></td><td><input id='fieldIndex_"+ (index + 1) +"' type='checkbox' class='fieldMappingDeleteCheckbox' /></td></tr>";
         $fieldMappingList.append(trHtml);
 
         initFieldMappingParams();
         bindFieldMappingListClick();
+        bindFieldMappingCheckBoxClick();
+        bindFieldMappingDelClick();
+    });
+}
+// 绑定删除字段映射点击事件
+function bindFieldMappingDelClick(){
+    var $fieldMappingDelBtn = $("#fieldMappingDelBtn");
+    $fieldMappingDelBtn.unbind("click");
+    $fieldMappingDelBtn.click(function () {
+        var ids = getCheckedBoxSize($('.fieldMappingDeleteCheckbox'));
+        if (ids.length > 0) {
+            var len = ids.length;
+            for(i = 0; i < len; i++){
+                $("#" + ids[i]).parent().parent().parent().remove();
+            }
+            $fieldMappingDelBtn.prop('disabled', true);
+            initFieldMappingParams();
+        }
     });
 }
 // 绑定下拉自动匹配字段
@@ -108,8 +158,11 @@ function backMappingPage($this){
 $(function() {
     // 绑定表字段关系点击事件
     initFieldMappingParams();
+    // 绑定删除表字段映射事件
+    bindFieldMappingCheckBoxClick();
     bindFieldMappingListClick();
     bindFieldMappingAddClick();
+    bindFieldMappingDelClick();
     // 绑定下拉自动匹配字段
     bindAutoSelect();
 

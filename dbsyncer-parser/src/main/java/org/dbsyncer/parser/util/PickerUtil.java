@@ -8,9 +8,9 @@ import org.dbsyncer.parser.model.*;
 import org.springframework.beans.BeanUtils;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public abstract class PickerUtil {
 
@@ -18,7 +18,7 @@ public abstract class PickerUtil {
     }
 
     /**
-     * 合并过滤条件、转换配置、插件配置、目标源字段、数据源字段
+     * 合并参数配置、过滤条件、转换配置、插件配置、目标源字段、数据源字段
      *
      * @param mapping
      * @param tableGroup
@@ -36,6 +36,8 @@ public abstract class PickerUtil {
         group.setTargetTable(tableGroup.getTargetTable());
         group.setCommand(tableGroup.getCommand());
 
+        // 参数配置(默认使用全局)
+        group.setParams(CollectionUtils.isEmpty(tableGroup.getParams()) ? mapping.getParams() : tableGroup.getParams());
         // 过滤条件(默认使用全局)
         group.setFilter(CollectionUtils.isEmpty(tableGroup.getFilter()) ? mapping.getFilter() : tableGroup.getFilter());
         // 转换配置(默认使用全局)
@@ -48,70 +50,8 @@ public abstract class PickerUtil {
         return group;
     }
 
-    public static void pickFields(Picker picker, List<FieldMapping> fieldMapping) {
-        if (!CollectionUtils.isEmpty(fieldMapping)) {
-            List<Field> sFields = new ArrayList<>();
-            List<Field> tFields = new ArrayList<>();
-            fieldMapping.forEach(m -> {
-                sFields.add(m.getSource());
-                tFields.add(m.getTarget());
-            });
-            picker.setSourceFields(sFields);
-            picker.setTargetFields(tFields);
-        }
-    }
-
-    public static void pickData(Picker picker, List<Map> data) {
-        if (!CollectionUtils.isEmpty(data)) {
-            List<Map> target = new ArrayList<>();
-            List<Field> sFields = picker.getSourceFields();
-            List<Field> tFields = picker.getTargetFields();
-
-            final int size = data.size();
-            final int sFieldSize = sFields.size();
-            Map<String, Object> row = null;
-            Map<String, Object> r = null;
-            for (int i = 0; i < size; i++) {
-                row = data.get(i);
-                r = new HashMap<>();
-                exchange(sFieldSize, sFields, tFields, row, r);
-                target.add(r);
-            }
-
-            picker.setTargetList(target);
-        }
-    }
-
-    public static void pickData(Picker picker, Map<String, Object> row) {
-        Map<String, Object> target = new HashMap<>();
-        if (!CollectionUtils.isEmpty(row)) {
-            List<Field> sFields = picker.getSourceFields();
-            List<Field> tFields = picker.getTargetFields();
-
-            exchange(sFields.size(), sFields, tFields, row, target);
-        }
-        picker.setTarget(target);
-    }
-
     public static Map<String, Field> convert2Map(List<Field> col) {
-        final Map<String, Field> map = new HashMap<>();
-        col.forEach(f -> map.put(f.getName(), f));
-        return map;
-    }
-
-    private static void exchange(int sFieldSize, List<Field> sFields, List<Field> tFields, Map<String, Object> source,
-                                 Map<String, Object> target) {
-        Field sField = null;
-        Field tField = null;
-        Object v = null;
-        for (int k = 0; k < sFieldSize; k++) {
-            sField = sFields.get(k);
-            tField = tFields.get(k);
-            if (null != sField && null != tField) {
-                v = source.get(sField.getName());
-                target.put(tField.getName(), v);
-            }
-        }
+        return col.stream().collect(Collectors.toMap(Field::getName, f -> f));
     }
 
     private static void appendFieldMapping(Mapping mapping, TableGroup group) {
@@ -137,7 +77,6 @@ public abstract class PickerUtil {
             Map<String, Field> fields = convert2Map(group.getTargetTable().getColumn());
             convert.forEach(c -> addFieldMapping(fieldMapping, c.getName(), fields, false));
         }
-
     }
 
     private static void addFieldMapping(List<FieldMapping> fieldMapping, String name, Map<String, Field> fields, boolean checkSource) {

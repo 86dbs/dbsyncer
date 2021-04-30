@@ -1,7 +1,6 @@
 package org.dbsyncer.connector.database.sqlbuilder;
 
-import org.apache.commons.lang.StringUtils;
-import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
 import org.dbsyncer.connector.database.AbstractSqlBuilder;
 import org.slf4j.Logger;
@@ -20,28 +19,23 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
 
     @Override
     public String buildSql(SqlBuilderConfig config) {
-        String pk = config.getPk();
-        if (StringUtils.isBlank(pk)) {
-            logger.error("Table primary key can not be empty.");
-            throw new ConnectorException("Table primary key can not be empty.");
-        }
         String tableName = config.getTableName();
-        List<String> filedNames = config.getFiledNames();
+        List<Field> fields = config.getFields();
         String quotation = config.getQuotation();
         StringBuilder sql = new StringBuilder();
-        int size = filedNames.size();
+        int size = fields.size();
         int end = size - 1;
         sql.append("UPDATE ").append(quotation).append(tableName).append(quotation).append(" SET ");
         for (int i = 0; i < size; i++) {
             // "USERNAME"=?
-            sql.append(quotation).append(filedNames.get(i)).append(quotation).append("=?");
+            sql.append(quotation).append(fields.get(i).getName()).append(quotation).append("=?");
             //如果不是最后一个字段
             if (i < end) {
                 sql.append(",");
             }
         }
         // UPDATE "USER" SET "USERNAME"=?,"AGE"=? WHERE "ID"=?
-        sql.append(" WHERE ").append(quotation).append(pk).append(quotation).append("=?");
+        sql.append(" WHERE ").append(quotation).append(config.getPk()).append(quotation).append("=?");
         return sql.toString();
     }
 

@@ -34,9 +34,12 @@
 
     <div class="form-group">
         <div class="row">
-            <div class="col-md-11"></div>
-            <div class="col-md-1">
-                <button id="tableGroupAdd" th:mappingId="${mapping?.id}" type="button" class="btn btn-primary">
+            <div class="col-md-10"></div>
+            <div class="col-md-2 text-right">
+                <button id="tableGroupDelBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-default" disabled="disabled">
+                    <span class="fa fa-remove"></span>删除
+                </button>
+                <button id="tableGroupAddBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-primary">
                     <span class="fa fa-plus"></span>添加
                 </button>
             </div>
@@ -49,14 +52,14 @@
             <tr>
                 <th>数据源表</th>
                 <th>目标源表</th>
-                <th>操作</th>
+                <th><input type="checkbox" class="tableGroupCheckboxAll" /></th>
             </tr>
             </thead>
             <tbody id="tableGroupList">
                 <tr th:id="${t?.id}" title='点击编辑' class='dbsyncer_pointer' th:each="t,state : ${tableGroups}">
                     <td th:text="${t?.sourceTable.name}"/>
                     <td th:text="${t?.targetTable.name}"/>
-                    <td><a th:id="${t?.id}" th:mappingId="${mapping?.id}" class='fa fa-remove fa-2x tableGroupDelete dbsyncer_pointer' title='删除'></a></td>
+                    <td><input th:value="${t?.id}" th:mappingId="${mapping?.id}" type="checkbox" class="tableGroupCheckbox" /></td>
                 </tr>
             </tbody>
         </table>

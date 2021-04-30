@@ -3,7 +3,9 @@ package org.dbsyncer.biz.checker.impl.tablegroup;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.biz.checker.ConnectorConfigChecker;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.Table;
@@ -39,6 +41,9 @@ public class TableGroupChecker extends AbstractChecker {
     @Autowired
     private Manager manager;
 
+    @Autowired
+    private Map<String, ConnectorConfigChecker> map;
+
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
@@ -56,6 +61,7 @@ public class TableGroupChecker extends AbstractChecker {
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
+        tableGroup.setFieldMapping(new ArrayList<>());
         tableGroup.setName(ConfigConstant.TABLE_GROUP);
         tableGroup.setType(ConfigConstant.TABLE_GROUP);
         tableGroup.setMappingId(mappingId);
@@ -65,11 +71,11 @@ public class TableGroupChecker extends AbstractChecker {
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
 
-        // 匹配相似字段
+        // 匹配相似字段映射关系
         mergeFieldMapping(tableGroup);
 
-        // 生成command
-        setCommand(mapping, tableGroup);
+        // 合并配置
+        mergeConfig(mapping, tableGroup);
 
         return tableGroup;
     }
@@ -89,20 +95,24 @@ public class TableGroupChecker extends AbstractChecker {
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
 
-        // 字段映射关系
-        setFieldMapping(tableGroup, fieldMappingJson);
-
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(tableGroup, params);
 
-        // 生成command
-        setCommand(mapping, tableGroup);
+        // 字段映射关系
+        setFieldMapping(tableGroup, fieldMappingJson);
+
+        // 合并配置
+        mergeConfig(mapping, tableGroup);
 
         return tableGroup;
     }
 
-    public void setCommand(Mapping mapping, TableGroup tableGroup) {
+    public void mergeConfig(Mapping mapping, TableGroup tableGroup) {
+        // 合并高级配置
         TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
+
+        // 处理策略
+        dealIncrementStrategy(mapping, tableGroup, group.getParams());
 
         Map<String, String> command = manager.getCommand(mapping, group);
         tableGroup.setCommand(command);
@@ -110,6 +120,14 @@ public class TableGroupChecker extends AbstractChecker {
         // 获取数据源总数
         long count = ModelEnum.isFull(mapping.getModel()) && !CollectionUtils.isEmpty(command) ? manager.getCount(mapping.getSourceConnectorId(), command) : 0;
         tableGroup.getSourceTable().setCount(count);
+    }
+
+    public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup, Map<String, String> params) {
+        String connectorType = manager.getConnector(mapping.getSourceConnectorId()).getConfig().getConnectorType();
+        String type = StringUtil.toLowerCaseFirstOne(connectorType).concat("ConfigChecker");
+        ConnectorConfigChecker checker = map.get(type);
+        Assert.notNull(checker, "Checker can not be null.");
+        checker.dealIncrementStrategy(mapping, tableGroup, params);
     }
 
     private Table getTable(String connectorId, String tableName) {
@@ -125,7 +143,7 @@ public class TableGroupChecker extends AbstractChecker {
                 // 数据源表和目标表都存在
                 if (StringUtils.equals(sourceTable, g.getSourceTable().getName())
                         && StringUtils.equals(targetTable, g.getTargetTable().getName())) {
-                    final String error = String.format("映射关系已存在.", sourceTable, targetTable);
+                    final String error = String.format("映射关系已存在.%s > %s", sourceTable, targetTable);
                     logger.error(error);
                     throw new BizException(error);
                 }
@@ -150,11 +168,9 @@ public class TableGroupChecker extends AbstractChecker {
         k1.retainAll(k2);
 
         // 有相似字段
-        List<FieldMapping> fields = new ArrayList<>();
         if (!CollectionUtils.isEmpty(k1)) {
-            k1.forEach(k -> fields.add(new FieldMapping(m1.get(k), m2.get(k))));
+            k1.forEach(k -> tableGroup.getFieldMapping().add(new FieldMapping(m1.get(k), m2.get(k))));
         }
-        tableGroup.setFieldMapping(fields);
     }
 
     private void shuffleColumn(List<Field> col, List<String> key, Map<String, Field> map) {

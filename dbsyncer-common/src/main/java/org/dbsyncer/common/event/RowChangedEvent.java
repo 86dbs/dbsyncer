@@ -22,19 +22,9 @@ public class RowChangedEvent {
     private String              event;
     private List<Object>        beforeData;
     private List<Object>        afterData;
-    private String              rowId;
-    private String              pk;
     private Map<String, Object> before;
     private Map<String, Object> after;
 
-    /**
-     * 定时模式
-     *
-     * @param tableGroupIndex
-     * @param event
-     * @param before
-     * @param after
-     */
     public RowChangedEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after) {
         this.tableGroupIndex = tableGroupIndex;
         this.event = event;
@@ -42,36 +32,11 @@ public class RowChangedEvent {
         this.after = after;
     }
 
-    /**
-     * Mysql
-     *
-     * @param tableName
-     * @param event
-     * @param beforeData
-     * @param afterData
-     */
     public RowChangedEvent(String tableName, String event, List<Object> beforeData, List<Object> afterData) {
         this.tableName = tableName;
         this.event = event;
         this.beforeData = beforeData;
         this.afterData = afterData;
-    }
-
-    /**
-     * Oracle
-     *
-     * @param tableName
-     * @param event
-     * @param beforeData
-     * @param afterData
-     * @param rowId
-     */
-    public RowChangedEvent(String tableName, String event, List<Object> beforeData, List<Object> afterData, String rowId) {
-        this.tableName = tableName;
-        this.event = event;
-        this.beforeData = beforeData;
-        this.afterData = afterData;
-        this.rowId = rowId;
     }
 
     public int getTableGroupIndex() {
@@ -92,18 +57,6 @@ public class RowChangedEvent {
 
     public List<Object> getAfterData() {
         return afterData;
-    }
-
-    public String getRowId() {
-        return rowId;
-    }
-
-    public String getPk() {
-        return pk;
-    }
-
-    public void setPk(String pk) {
-        this.pk = pk;
     }
 
     public Map<String, Object> getBefore() {

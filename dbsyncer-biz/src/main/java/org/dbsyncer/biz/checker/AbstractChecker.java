@@ -19,10 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author AE86
@@ -66,6 +63,10 @@ public abstract class AbstractChecker implements Checker {
      * @param params
      */
     protected void modifySuperConfigModel(AbstractConfigModel model, Map<String, String> params) {
+        // 全局参数
+        String mappingParams = params.get("params");
+        model.setParams(StringUtils.isNotBlank(mappingParams) ? JsonUtil.jsonToObj(mappingParams, Map.class) : new LinkedHashMap());
+
         // 过滤条件
         String filterJson = params.get("filter");
         if (StringUtils.isNotBlank(filterJson)) {

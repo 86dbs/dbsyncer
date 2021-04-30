@@ -55,11 +55,11 @@
                 <div class="row">
                     <div class="col-sm-10"></div>
                     <div class="col-md-2 text-right">
-                        <button id="tableGroupSubmitBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-primary">
-                            <span class="fa fa-save"></span>保存
-                        </button>
                         <button id="tableGroupBackBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-default">
                             <span class="fa fa-reply"></span>返回
+                        </button>
+                        <button id="tableGroupSubmitBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-primary">
+                            <span class="fa fa-save"></span>保存
                         </button>
                     </div>
                 </div>
@@ -109,9 +109,12 @@
 
                             <div class="form-group">
                                 <div class="row">
-                                    <div class="col-md-11"></div>
-                                    <div class="col-md-1">
-                                        <button id="fieldMappingAdd" type="button" class="btn btn-primary">
+                                    <div class="col-md-10"></div>
+                                    <div class="col-md-2 text-right">
+                                        <button id="fieldMappingDelBtn" type="button" class="btn btn-default" disabled="disabled">
+                                            <span class="fa fa-remove"></span>删除
+                                        </button>
+                                        <button id="fieldMappingAddBtn" type="button" class="btn btn-primary">
                                             <span class="fa fa-plus"></span>添加
                                         </button>
                                     </div>
@@ -125,7 +128,7 @@
                                         <th>数据源表字段</th>
                                         <th>目标源表字段</th>
                                         <th>目标源主键</th>
-                                        <th>操作</th>
+                                        <th><input type="checkbox" class="fieldMappingDeleteCheckboxAll" /></th>
                                     </tr>
                                     </thead>
                                     <tbody id="fieldMappingList">
@@ -133,7 +136,7 @@
                                             <td>[[${f?.source?.name}]]</td>
                                             <td>[[${f?.target?.name}]]</td>
                                             <td><i th:if="${f?.target?.pk}" title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i></td>
-                                            <td><a class='fa fa-remove fa-2x fieldMappingDelete dbsyncer_pointer' title='删除' ></a></td>
+                                            <td><input th:id="'fieldIndex_'+${s.index + 1}" type="checkbox" class="fieldMappingDeleteCheckbox" /></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -160,6 +163,9 @@
                             </h4>
                         </div>
                         <div id="tableGroupSuperConfig" class="panel-body panel-collapse collapse">
+                            <!-- 参数配置 -->
+                            <div th:replace="mapping/editParameter :: content"></div>
+
                             <!-- 过滤条件 -->
                             <div th:replace="mapping/editFilter :: content"></div>
 
@@ -178,5 +184,6 @@
 </div>
 
 <script th:src="@{/js/mapping/editTableGroup.js}"></script>
+<script th:src="@{/js/mapping/editParam.js}"></script>
 <script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
 </html>

@@ -81,7 +81,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
                 BooleanQuery.Builder builder = new BooleanQuery.Builder();
                 params.forEach(p -> {
                     if(p.isNumber()){
-                        builder.add(IntPoint.newExactQuery(p.getKey(), NumberUtils.toInt(p.getValue())), BooleanClause.Occur.MUST);
+                        builder.add(IntPoint.newSetQuery(p.getKey(), NumberUtils.toInt(p.getValue())), BooleanClause.Occur.MUST);
                     }else{
                         builder.add(new TermQuery(new Term(p.getKey(), p.getValue())), BooleanClause.Occur.MUST);
                     }
