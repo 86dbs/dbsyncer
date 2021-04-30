@@ -313,7 +313,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
                     if (picker.filter(StringUtils.equals(ConnectorConstant.OPERTION_DELETE, rowChangedEvent.getEvent()) ? before : after)) {
                         rowChangedEvent.setBefore(before);
                         rowChangedEvent.setAfter(after);
-                        rowChangedEvent.setPk(picker.getPk());
                         parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);
                     }
                 });
