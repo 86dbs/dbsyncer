@@ -12,7 +12,6 @@ import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.strategy.PrimaryKeyMappingStrategy;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
 import java.util.List;
