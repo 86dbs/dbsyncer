@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div th:fragment="content">
+<div th:fragment="content" th:if="${'Oracle' eq mapping?.sourceConnector?.config?.connectorType}">
     <p class="text-muted">参数配置</p>
 
     <div id="paramsList" class="form-group">
