@@ -36,11 +36,12 @@ public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
 
     @Override
     public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup, Map<String, String> params) {
-        String targetRowIdName = params.get(OracleIncrementEnum.ROW_ID_LABEL_NAME.getName());
-        if (CollectionUtils.isEmpty(params) || StringUtils.isBlank(targetRowIdName)) {
+        String rowIdlabelName = OracleIncrementEnum.ROW_ID_LABEL_NAME.getName();
+        if (CollectionUtils.isEmpty(params) || !params.containsKey(rowIdlabelName)) {
             revert(mapping, tableGroup);
             return;
         }
+        String targetRowIdName = params.get(rowIdlabelName);
 
         // 检查目标源是否支持该自定义字段
         List<Field> targetColumn = tableGroup.getTargetTable().getColumn();
