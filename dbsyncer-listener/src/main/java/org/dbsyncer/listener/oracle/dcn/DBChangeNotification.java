@@ -54,6 +54,10 @@ public class DBChangeNotification {
         this.listeners = new ArrayList<>();
     }
 
+    public void addRowEventListener(RowEventListener rowEventListener) {
+        this.listeners.add(rowEventListener);
+    }
+
     public void start() throws SQLException {
         try {
             conn = connect();
@@ -93,28 +97,23 @@ public class DBChangeNotification {
 
     public void close() {
         try {
-            if (null != statement) {
-                statement.close();
-            }
-        } catch (SQLException e) {
-            logger.error(e.getMessage());
-        }
-
-        try {
             if (null != conn) {
                 conn.unregisterDatabaseChangeNotification(dcr);
-                conn.close();
             }
+            close(statement);
+            close(conn);
         } catch (SQLException e) {
             logger.error(e.getMessage());
         }
     }
 
-    private void close(ResultSet rs) {
+    private void close(AutoCloseable rs) {
         if (null != rs) {
             try {
                 rs.close();
             } catch (SQLException e) {
+                logger.error(e.getMessage());
+            } catch (Exception e) {
                 logger.error(e.getMessage());
             }
         }
@@ -193,10 +192,6 @@ public class DBChangeNotification {
         return (OracleConnection) dr.connect(url, prop);
     }
 
-    public void addRowEventListener(RowEventListener rowEventListener) {
-        this.listeners.add(rowEventListener);
-    }
-
     final class DCNListener implements DatabaseChangeListener {
 
         @Override
@@ -231,9 +226,11 @@ public class DBChangeNotification {
         }
 
         private void read(String tableName, String rowId, List<Object> data) {
+            OracleStatement os = null;
             ResultSet rs = null;
             try {
-                rs = statement.executeQuery(String.format(QUERY_ROW_DATA_SQL, tableName, rowId));
+                os = (OracleStatement) conn.createStatement();
+                rs = os.executeQuery(String.format(QUERY_ROW_DATA_SQL, tableName, rowId));
                 if (rs.next()) {
                     final int size = rs.getMetaData().getColumnCount();
                     do {
@@ -247,6 +244,7 @@ public class DBChangeNotification {
                 logger.error(e.getMessage());
             } finally {
                 close(rs);
+                close(os);
             }
         }
 
