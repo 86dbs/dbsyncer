@@ -54,7 +54,7 @@
                             </td>
                             <td th:text="${d?.error}" th:title="${d?.error}" style="max-width:100px;" class="dbsyncer_over_hidden"></td>
                             <td th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
-                            <td><a th:json="${d?.json}" href="javascript:;" class="label label-info queryData">查看数据</a></td>
+                            <td><a th:json="${d?.json}" href="javascript:;" class="label label-info queryData">查看数据</a><div class="hidden" th:text="${d?.json}"></div></td>
                         </tr>
                     </tbody>
                 </table>

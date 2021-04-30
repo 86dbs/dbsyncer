@@ -15,7 +15,7 @@ function bindQueryDataDetailEvent() {
     var $queryData = $(".queryData");
     $queryData.unbind("click");
     $queryData.click(function () {
-        var json = $(this).attr("json");
+        var json = $(this).parent().find("div").text();
         var html = '<div class="row driver_break_word">' + json + '</div>';
         BootstrapDialog.show({
             title: "注意信息安全",
@@ -132,7 +132,7 @@ function showData($dataList, arr, append){
             html += '<td>' + (arr[i].success ? '<span class="label label-success">成功</span>' : '<span class="label label-warning">失败</span>') + '</td>';
             html += '<td title="' + arr[i].error + '" style="max-width:100px;" class="dbsyncer_over_hidden">' + arr[i].error + '</td>';
             html += '<td>' + formatDate(arr[i].createTime) + '</td>';
-            html += '<td><a json=' + arr[i].json + ' href="javascript:;" class="label label-info queryData">查看数据</a></td>';
+            html += '<td><a href="javascript:;" class="label label-info queryData">查看数据</a><div class="hidden">' + arr[i].json + '</div></td>';
             html += '</tr>';
         }
     }

@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.flush;
 
+import com.alibaba.fastjson.JSONException;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.storage.SnowflakeIdWorker;
 import org.dbsyncer.storage.StorageService;
@@ -56,7 +57,12 @@ public class FlushServiceImpl implements FlushService {
             params.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
             params.put(ConfigConstant.DATA_EVENT, event);
             params.put(ConfigConstant.DATA_ERROR, added.get() ? "" : error);
-            params.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(r));
+            try {
+                params.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(r));
+            } catch (JSONException e) {
+                logger.warn("可能存在Blob或inputStream大文件类型, 无法序列化:{}", r);
+                params.put(ConfigConstant.CONFIG_MODEL_JSON, r.toString());
+            }
             params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
             added.set(true);
             return params;
