@@ -62,6 +62,7 @@ public class MappingChecker extends AbstractChecker {
         mapping.setTargetConnectorId(targetConnectorId);
         mapping.setModel(ModelEnum.FULL.getCode());
         mapping.setListener(new ListenerConfig(ListenerTypeEnum.LOG.getType()));
+        mapping.setParams(new HashMap<>());
 
         // 修改基本配置
         this.modifyConfigModel(mapping, params);

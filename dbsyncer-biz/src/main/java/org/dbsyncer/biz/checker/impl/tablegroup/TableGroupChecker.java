@@ -67,6 +67,7 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setMappingId(mappingId);
         tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable));
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable));
+        tableGroup.setParams(new HashMap<>());
 
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
