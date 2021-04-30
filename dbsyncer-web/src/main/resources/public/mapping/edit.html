@@ -116,6 +116,9 @@
                                 <div th:replace="mapping/editIncrement :: content"></div>
                             </div>
 
+                            <!-- 参数配置 -->
+                            <div th:replace="mapping/editParameter :: content"></div>
+
                             <!-- 过滤条件 -->
                             <div th:replace="mapping/editFilter :: content"></div>
 
@@ -135,6 +138,7 @@
 </div>
 
 <script th:src="@{/js/mapping/edit.js}"></script>
+<script th:src="@{/js/mapping/editParam.js}"></script>
 <script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
 <script th:src="@{/js/mapping/editIncrement.js}"></script>
 </html>

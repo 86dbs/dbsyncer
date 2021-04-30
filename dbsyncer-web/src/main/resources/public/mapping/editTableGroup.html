@@ -163,6 +163,9 @@
                             </h4>
                         </div>
                         <div id="tableGroupSuperConfig" class="panel-body panel-collapse collapse">
+                            <!-- 参数配置 -->
+                            <div th:replace="mapping/editParameter :: content"></div>
+
                             <!-- 过滤条件 -->
                             <div th:replace="mapping/editFilter :: content"></div>
 
@@ -181,5 +184,6 @@
 </div>
 
 <script th:src="@{/js/mapping/editTableGroup.js}"></script>
+<script th:src="@{/js/mapping/editParam.js}"></script>
 <script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
 </html>

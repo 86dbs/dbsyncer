@@ -18,7 +18,7 @@ public abstract class PickerUtil {
     }
 
     /**
-     * 合并过滤条件、转换配置、插件配置、目标源字段、数据源字段
+     * 合并参数配置、过滤条件、转换配置、插件配置、目标源字段、数据源字段
      *
      * @param mapping
      * @param tableGroup
@@ -36,6 +36,8 @@ public abstract class PickerUtil {
         group.setTargetTable(tableGroup.getTargetTable());
         group.setCommand(tableGroup.getCommand());
 
+        // 参数配置(默认使用全局)
+        group.setParams(CollectionUtils.isEmpty(tableGroup.getParams()) ? mapping.getParams() : tableGroup.getParams());
         // 过滤条件(默认使用全局)
         group.setFilter(CollectionUtils.isEmpty(tableGroup.getFilter()) ? mapping.getFilter() : tableGroup.getFilter());
         // 转换配置(默认使用全局)

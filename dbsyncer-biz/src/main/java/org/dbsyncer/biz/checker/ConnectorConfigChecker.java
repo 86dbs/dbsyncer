@@ -18,8 +18,9 @@ public interface ConnectorConfigChecker {
      *
      * @param mapping
      * @param tableGroup
+     * @param params
      */
-    default void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup) {}
+    default void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup, Map<String, String> params) {}
 
     /**
      * 修改配置

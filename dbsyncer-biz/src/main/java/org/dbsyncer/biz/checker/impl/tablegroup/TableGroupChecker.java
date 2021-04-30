@@ -74,11 +74,8 @@ public class TableGroupChecker extends AbstractChecker {
         // 匹配相似字段映射关系
         mergeFieldMapping(tableGroup);
 
-        // 处理策略
-        dealIncrementStrategy(mapping, tableGroup);
-
-        // 生成command
-        genCommand(mapping, tableGroup);
+        // 合并配置
+        mergeConfig(mapping, tableGroup);
 
         return tableGroup;
     }
@@ -104,17 +101,18 @@ public class TableGroupChecker extends AbstractChecker {
         // 字段映射关系
         setFieldMapping(tableGroup, fieldMappingJson);
 
-        // 处理策略
-        dealIncrementStrategy(mapping, tableGroup);
-
-        // 生成command
-        genCommand(mapping, tableGroup);
+        // 合并配置
+        mergeConfig(mapping, tableGroup);
 
         return tableGroup;
     }
 
-    public void genCommand(Mapping mapping, TableGroup tableGroup) {
+    public void mergeConfig(Mapping mapping, TableGroup tableGroup) {
+        // 合并高级配置
         TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
+
+        // 处理策略
+        dealIncrementStrategy(mapping, tableGroup, group.getParams());
 
         Map<String, String> command = manager.getCommand(mapping, group);
         tableGroup.setCommand(command);
@@ -124,12 +122,12 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.getSourceTable().setCount(count);
     }
 
-    public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup) {
+    public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup, Map<String, String> params) {
         String connectorType = manager.getConnector(mapping.getSourceConnectorId()).getConfig().getConnectorType();
         String type = StringUtil.toLowerCaseFirstOne(connectorType).concat("ConfigChecker");
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
-        checker.dealIncrementStrategy(mapping, tableGroup);
+        checker.dealIncrementStrategy(mapping, tableGroup, params);
     }
 
     private Table getTable(String connectorId, String tableName) {

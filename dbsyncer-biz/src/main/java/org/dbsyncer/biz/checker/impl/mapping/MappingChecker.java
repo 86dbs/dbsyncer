@@ -103,9 +103,6 @@ public class MappingChecker extends AbstractChecker {
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(mapping, params);
 
-        // 更新映射关系过滤条件
-        batchUpdateTableGroupCommand(mapping);
-
         // 更新meta
         updateMeta(mapping);
 
@@ -130,16 +127,15 @@ public class MappingChecker extends AbstractChecker {
     }
 
     /**
-     * <b>更新映射关系过滤条件</b>
-     * <p>如果映射关系没有过滤条件，使用全局的过滤条件</p>
+     * 合并关联的映射关系配置
      *
      * @param mapping
      */
-    private void batchUpdateTableGroupCommand(Mapping mapping) {
+    public void batchMergeTableGroupConfig(Mapping mapping) {
         List<TableGroup> groupAll = manager.getTableGroupAll(mapping.getId());
         if (!CollectionUtils.isEmpty(groupAll)) {
             for (TableGroup g : groupAll) {
-                tableGroupChecker.genCommand(mapping, g);
+                tableGroupChecker.mergeConfig(mapping, g);
                 manager.editTableGroup(g);
             }
         }

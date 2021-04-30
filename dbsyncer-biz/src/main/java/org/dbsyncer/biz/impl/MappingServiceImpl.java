@@ -61,9 +61,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Mapping mapping = assertMappingExist(id);
         synchronized (LOCK) {
             assertRunning(mapping.getMetaId());
-            ConfigModel model = mappingChecker.checkEditConfigModel(params);
-            log(LogType.MappingLog.UPDATE, (Mapping) model);
+            Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
+            log(LogType.MappingLog.UPDATE, model);
 
+            mappingChecker.batchMergeTableGroupConfig(model);
             return manager.editMapping(model);
         }
     }
