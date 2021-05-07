@@ -107,7 +107,7 @@ public class DBChangeNotification {
         }
     }
 
-    private void close(AutoCloseable rs) {
+    public void close(AutoCloseable rs) {
         if (null != rs) {
             try {
                 rs.close();
@@ -117,6 +117,33 @@ public class DBChangeNotification {
                 logger.error(e.getMessage());
             }
         }
+    }
+
+    public void read(String tableName, String rowId, List<Object> data) {
+        OracleStatement os = null;
+        ResultSet rs = null;
+        try {
+            os = (OracleStatement) conn.createStatement();
+            rs = os.executeQuery(String.format(QUERY_ROW_DATA_SQL, tableName, rowId));
+            if (rs.next()) {
+                final int size = rs.getMetaData().getColumnCount();
+                do {
+                    data.add(rowId);
+                    for (int i = 1; i <= size; i++) {
+                        data.add(rs.getObject(i));
+                    }
+                } while (rs.next());
+            }
+        } catch (SQLException e) {
+            logger.error(e.getMessage());
+        } finally {
+            close(rs);
+            close(os);
+        }
+    }
+
+    public OracleConnection getOracleConnection() {
+        return conn;
     }
 
     private void readTables() {
@@ -222,29 +249,6 @@ public class DBChangeNotification {
                 data.add(rowId);
                 RowChangedEvent rowChangedEvent = new RowChangedEvent(tableName, ConnectorConstant.OPERTION_DELETE, data, Collections.EMPTY_LIST);
                 listeners.forEach(e -> e.onEvents(rowChangedEvent));
-            }
-        }
-
-        private void read(String tableName, String rowId, List<Object> data) {
-            OracleStatement os = null;
-            ResultSet rs = null;
-            try {
-                os = (OracleStatement) conn.createStatement();
-                rs = os.executeQuery(String.format(QUERY_ROW_DATA_SQL, tableName, rowId));
-                if (rs.next()) {
-                    final int size = rs.getMetaData().getColumnCount();
-                    do {
-                        data.add(rowId);
-                        for (int i = 1; i <= size; i++) {
-                            data.add(rs.getObject(i));
-                        }
-                    } while (rs.next());
-                }
-            } catch (SQLException e) {
-                logger.error(e.getMessage());
-            } finally {
-                close(rs);
-                close(os);
             }
         }
 

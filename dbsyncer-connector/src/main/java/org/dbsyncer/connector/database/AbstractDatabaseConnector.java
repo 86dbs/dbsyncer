@@ -547,7 +547,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             jdbcTemplate = getJdbcTemplate(config);
             rowNum = jdbcTemplate.queryForObject(sql, new Object[] {value}, Integer.class);
         } catch (Exception e) {
-            logger.error("检查数据行是否存在异常：", e.getMessage());
+            logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
         } finally {
             this.close(jdbcTemplate);
         }
