@@ -49,9 +49,9 @@ public class DBChangeNotificationTest {
                     insert(k, dcn);
 
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    logger.error(e.getMessage());
                 } catch (BrokenBarrierException e) {
-                    e.printStackTrace();
+                    logger.error(e.getMessage());
                 } finally {
                     latch.countDown();
                 }
