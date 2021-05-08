@@ -47,7 +47,7 @@
         <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
         <mysql.version>5.1.40</mysql.version>
         <mysql-binlog.version>0.21.0</mysql-binlog.version>
-        <sqljdbc.version>1.2</sqljdbc.version>
+        <mssql-jdbc.version>6.5.4.jre10-preview</mssql-jdbc.version>
         <json.version>20090211</json.version>
         <fastjson.version>1.2.75</fastjson.version>
         <junit.version>4.12</junit.version>
@@ -184,13 +184,10 @@
                 <version>${ojdbc6.version}</version>
             </dependency>
 
-            <!-- mvn install:install-file -DgroupId=microsoft -DartifactId=sqljdbc
-                -Dversion=1.2 -Dpackaging=jar -Dfile=D:\sqljdbc-1.2.jar -->
-            <!-- sqlserver-driver -->
             <dependency>
-                <groupId>microsoft</groupId>
-                <artifactId>sqljdbc</artifactId>
-                <version>${sqljdbc.version}</version>
+                <groupId>com.microsoft.sqlserver</groupId>
+                <artifactId>mssql-jdbc</artifactId>
+                <version>${mssql-jdbc.version}</version>
             </dependency>
 
             <dependency>
