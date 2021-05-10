@@ -36,12 +36,12 @@ public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
 
     @Override
     public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup, Map<String, String> params) {
-        String rowIdlabelName = OracleIncrementEnum.ROW_ID_LABEL_NAME.getName();
-        if (CollectionUtils.isEmpty(params) || !params.containsKey(rowIdlabelName)) {
+        String rowIdLabelName = OracleIncrementEnum.ROW_ID_LABEL_NAME.getName();
+        if (CollectionUtils.isEmpty(params) || !params.containsKey(rowIdLabelName)) {
             revert(mapping, tableGroup);
             return;
         }
-        String targetRowIdName = params.get(rowIdlabelName);
+        String targetRowIdName = params.get(rowIdLabelName);
 
         // 检查目标源是否支持该自定义字段
         List<Field> targetColumn = tableGroup.getTargetTable().getColumn();
@@ -59,24 +59,29 @@ public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
                         targetRowIdName));
 
         // 检查是否更新
-        for (FieldMapping m : tableGroup.getFieldMapping()) {
+        List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
+        List<FieldMapping> list = new ArrayList<>();
+        for (FieldMapping m : fieldMapping) {
             if (null != m.getSource() && OracleIncrementEnum.isRowId(m.getSource().getName())) {
                 m.getTarget().setName(targetRowIdName);
                 return;
             }
+
+            // 排除主键关系
+            if (null != m.getTarget() && StringUtils.equals(m.getTarget().getName(), targetRowIdName)) {
+                continue;
+            }
+
+            list.add(m);
         }
 
         Field sourceField = new Field(OracleIncrementEnum.ROW_ID.getName(), "VARCHAR2", 12, false,
                 OracleIncrementEnum.ROW_ID_LABEL_NAME.getName(), true);
         tableGroup.getSourceTable().getColumn().add(0, sourceField);
 
-        // 取消主键
-        tableGroup.getFieldMapping().forEach(m -> {
-            if (null != m.getTarget()) {
-                m.getTarget().setPk(false);
-            }
-        });
-        tableGroup.getFieldMapping().add(0, new FieldMapping(sourceField, targetField));
+        list.add(0, new FieldMapping(sourceField, targetField));
+        fieldMapping.clear();
+        fieldMapping.addAll(list);
     }
 
     /**
