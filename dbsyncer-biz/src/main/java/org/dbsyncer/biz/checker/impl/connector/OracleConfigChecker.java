@@ -35,8 +35,9 @@ public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
     private Manager manager;
 
     @Override
-    public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup, Map<String, String> params) {
+    public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup) {
         String rowIdLabelName = OracleIncrementEnum.ROW_ID_LABEL_NAME.getName();
+        Map<String, String> params = tableGroup.getParams();
         if (CollectionUtils.isEmpty(params) || !params.containsKey(rowIdLabelName)) {
             revert(mapping, tableGroup);
             return;

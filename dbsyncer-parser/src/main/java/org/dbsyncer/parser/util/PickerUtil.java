@@ -4,10 +4,11 @@ import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.Filter;
-import org.dbsyncer.parser.model.*;
-import org.springframework.beans.BeanUtils;
+import org.dbsyncer.parser.model.Convert;
+import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.TableGroup;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,13 +26,7 @@ public abstract class PickerUtil {
      */
     public static TableGroup mergeTableGroupConfig(Mapping mapping, TableGroup tableGroup) {
         TableGroup group = new TableGroup();
-        List<FieldMapping> fm = new ArrayList<>();
-        tableGroup.getFieldMapping().forEach(f -> {
-            FieldMapping m = new FieldMapping();
-            BeanUtils.copyProperties(f, m);
-            fm.add(m);
-        });
-        group.setFieldMapping(fm);
+        group.setFieldMapping(tableGroup.getFieldMapping());
         group.setSourceTable(tableGroup.getSourceTable());
         group.setTargetTable(tableGroup.getTargetTable());
         group.setCommand(tableGroup.getCommand());
