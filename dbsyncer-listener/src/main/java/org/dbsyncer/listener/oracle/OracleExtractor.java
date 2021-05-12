@@ -26,7 +26,7 @@ public class OracleExtractor extends AbstractExtractor {
             String password = config.getPassword();
             String url = config.getUrl();
             client = new DBChangeNotification(username, password, url);
-            client.addRowEventListener((e) -> changedLogEvent(e));
+            client.addRowEventListener((e) -> taskExecutor.execute(() -> changedLogEvent(e)));
             client.start();
         } catch (Exception e) {
             logger.error("启动失败:{}", e.getMessage());

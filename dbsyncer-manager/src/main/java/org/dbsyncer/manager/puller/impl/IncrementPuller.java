@@ -40,6 +40,7 @@ import org.springframework.util.Assert;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -73,6 +74,9 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
     @Autowired
     private ConnectorFactory connectorFactory;
+
+    @Autowired
+    private Executor taskExecutor;
 
     private String key;
 
@@ -170,6 +174,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
     private void setExtractorConfig(AbstractExtractor extractor, ConnectorConfig connector, ListenerConfig listener,
                                     Map<String, String> map, Event event) {
+        extractor.setTaskExecutor(taskExecutor);
         extractor.setConnectorConfig(connector);
         extractor.setListenerConfig(listener);
         extractor.setMap(map);
