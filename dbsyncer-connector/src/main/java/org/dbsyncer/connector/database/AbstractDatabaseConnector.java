@@ -280,8 +280,10 @@ public abstract class AbstractDatabaseConnector implements Database {
             // 记录错误数据
             result.getFailData().add(data);
             result.getFail().set(1);
-            result.getError().append(e.getMessage()).append(System.lineSeparator());
-            logger.error(e.getMessage());
+            result.getError().append("sql:").append(sql).append(", ")
+                    .append("data:").append(data).append(", ")
+                    .append("error:").append(e.getMessage()).append(System.lineSeparator());
+            logger.error("sql:{}, data:{}, error:{}", sql, data, e.getMessage());
         } finally {
             // 释放连接
             this.close(jdbcTemplate);

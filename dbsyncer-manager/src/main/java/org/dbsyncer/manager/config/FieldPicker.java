@@ -38,7 +38,7 @@ public class FieldPicker {
         if (!CollectionUtils.isEmpty(list)) {
             Map<String, Object> data = new HashMap<>(indexSize);
             final int size = list.size() - 1;
-            index.parallelStream().forEach(node -> {
+            index.forEach(node -> {
                 if (node.i <= size) {
                     data.put(node.name, list.get(node.i));
                 }
