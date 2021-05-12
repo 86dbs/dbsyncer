@@ -195,7 +195,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         @Override
         public void forceFlushEvent(Map<String, String> map) {
             Meta meta = manager.getMeta(metaId);
-            if (null != meta && !CollectionUtils.isEmpty(map)) {
+            if (null != meta) {
                 meta.setMap(map);
                 manager.editMeta(meta);
             }
