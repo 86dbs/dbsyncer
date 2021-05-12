@@ -33,7 +33,7 @@ public class DBChangeNotification {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final String QUERY_ROW_DATA_SQL  = "SELECT * FROM \"%s\" WHERE ROWID = '%s'";
-    private static final String QUERY_TABLE_ALL_SQL = "SELECT OBJECT_ID, DATA_OBJECT_ID, OBJECT_NAME FROM DBA_OBJECTS WHERE OWNER='%S' AND OBJECT_TYPE = 'TABLE'";
+    private static final String QUERY_TABLE_ALL_SQL = "SELECT OBJECT_ID, OBJECT_NAME FROM DBA_OBJECTS WHERE OWNER='%S' AND OBJECT_TYPE = 'TABLE'";
     private static final String QUERY_TABLE_SQL     = "SELECT 1 FROM \"%s\" WHERE 1=2";
     private static final String QUERY_CALLBACK_SQL  = "SELECT REGID,CALLBACK FROM USER_CHANGE_NOTIFICATION_REGS";
     private static final String CALLBACK            = "net8://(ADDRESS=(PROTOCOL=tcp)(HOST=%s)(PORT=%s))?PR=0";
@@ -153,11 +153,7 @@ public class DBChangeNotification {
             String sql = String.format(QUERY_TABLE_ALL_SQL, username);
             rs = statement.executeQuery(sql);
             while (rs.next()) {
-                int tableId = rs.getInt(1);
-                int tableDataId = rs.getInt(2);
-                String tableName = rs.getString(3);
-                tables.put(tableId, tableName);
-                tables.put(tableDataId, tableName);
+                tables.put(rs.getInt(1), rs.getString(2));
             }
         } catch (SQLException e) {
             logger.error(e.getMessage());
