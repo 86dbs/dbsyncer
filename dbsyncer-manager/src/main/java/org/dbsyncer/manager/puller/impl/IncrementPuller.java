@@ -166,7 +166,11 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             final String connectorType = connectorConfig.getConnectorType();
             AbstractExtractor extractor = listener.getExtractor(connectorType, AbstractExtractor.class);
 
-            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new LogListener(mapping, list, extractor));
+            LogListener logListener = new LogListener(mapping, list, extractor);
+            Set<String> filterTable = new HashSet<>();
+            logListener.getTablePicker().forEach((k, fieldPickers) -> filterTable.add(k));
+            extractor.setFilterTable(filterTable);
+            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), logListener);
             return extractor;
         }
         return null;
@@ -307,8 +311,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
         @Override
         public void changedLogEvent(RowChangedEvent rowChangedEvent) {
-            logger.info("Table[{}] {}", rowChangedEvent.getTableName(), rowChangedEvent.getEvent());
-
             // 处理过程有异常向上抛
             List<FieldPicker> pickers = tablePicker.get(rowChangedEvent.getTableName());
             if (!CollectionUtils.isEmpty(pickers)) {
@@ -334,6 +336,9 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             }
         }
 
+        public Map<String, List<FieldPicker>> getTablePicker() {
+            return tablePicker;
+        }
     }
 
 }

@@ -50,6 +50,7 @@ public class DBChangeNotification {
     private Map<Integer, String>       tables;
     private BlockingQueue<DCNEvent>    queue;
     private Worker                     worker;
+    private Set<String>                filterTable;
     private List<RowEventListener>     listeners = new ArrayList<>();
 
     public DBChangeNotification(String username, String password, String url) {
@@ -239,6 +240,10 @@ public class DBChangeNotification {
         return conn;
     }
 
+    public void setFilterTable(Set<String> filterTable) {
+        this.filterTable = filterTable;
+    }
+
     final class DCNListener implements DatabaseChangeListener {
 
         @Override
@@ -246,12 +251,17 @@ public class DBChangeNotification {
             for (TableChangeDescription td : event.getTableChangeDescription()) {
                 RowChangeDescription[] rds = td.getRowChangeDescription();
                 for (RowChangeDescription rd : rds) {
+                    String tableName = tables.get(td.getObjectNumber());
+                    if(!filterTable.contains(tableName)){
+                        logger.info("Table[{}] {}", tableName, rd.getRowOperation().name());
+                        return;
+                    }
                     try {
                         // 如果BlockQueue没有空间,则调用此方法的线程被阻断直到BlockingQueue里面有空间再继续
-                        queue.put(new DCNEvent(tables.get(td.getObjectNumber()), rd.getRowid().stringValue(),
+                        queue.put(new DCNEvent(tableName, rd.getRowid().stringValue(),
                                 rd.getRowOperation().getCode()));
                     } catch (InterruptedException ex) {
-                        logger.error("Table[{}], RowId:{}, Code:{}, Error:{}", tables.get(td.getObjectNumber()),
+                        logger.error("Table[{}], RowId:{}, Code:{}, Error:{}", tableName,
                                 rd.getRowid().stringValue(), rd.getRowOperation().getCode(), ex.getMessage());
                     }
                 }
