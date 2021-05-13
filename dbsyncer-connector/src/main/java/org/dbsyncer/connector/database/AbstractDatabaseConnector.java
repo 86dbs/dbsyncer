@@ -53,7 +53,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             String sql = getTablesSql(databaseConfig);
             tables = jdbcTemplate.queryForList(sql, String.class);
         } catch (Exception e) {
-            logger.error("getTable failed", e.getMessage());
+            throw new ConnectorException(e.getMessage(), e.getCause());
         } finally {
             // 释放连接
             this.close(jdbcTemplate);

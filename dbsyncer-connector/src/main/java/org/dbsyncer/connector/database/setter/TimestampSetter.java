@@ -2,6 +2,7 @@ package org.dbsyncer.connector.database.setter;
 
 import org.dbsyncer.connector.database.AbstractSetter;
 
+import java.util.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -15,6 +16,11 @@ public class TimestampSetter extends AbstractSetter<Timestamp> {
 
     @Override
     protected void setIfValueTypeNotMatch(PreparedStatement ps, int i, int type, Object val) throws SQLException {
+        if(val instanceof Date){
+            Date date = (Date) val;
+            ps.setTimestamp(i, new Timestamp(date.getTime()));
+            return;
+        }
         ps.setTimestamp(i, Timestamp.valueOf(String.valueOf(val)));
     }
 

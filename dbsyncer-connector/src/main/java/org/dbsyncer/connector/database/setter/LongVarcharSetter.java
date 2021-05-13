@@ -12,4 +12,9 @@ public class LongVarcharSetter extends AbstractSetter<String> {
         ps.setString(i, val);
     }
 
+    @Override
+    protected void setIfValueTypeNotMatch(PreparedStatement ps, int i, int type, Object val) throws SQLException {
+        // TODO mysql5.7 text
+        ps.setString(i, String.valueOf(val));
+    }
 }
