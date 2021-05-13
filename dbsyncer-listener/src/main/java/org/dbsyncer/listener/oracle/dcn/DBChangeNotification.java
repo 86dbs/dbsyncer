@@ -254,7 +254,7 @@ public class DBChangeNotification {
                     String tableName = tables.get(td.getObjectNumber());
                     if(!filterTable.contains(tableName)){
                         logger.info("Table[{}] {}", tableName, rd.getRowOperation().name());
-                        return;
+                        continue;
                     }
                     try {
                         // 如果BlockQueue没有空间,则调用此方法的线程被阻断直到BlockingQueue里面有空间再继续
