@@ -72,8 +72,8 @@ public class MysqlExtractor extends AbstractExtractor {
         client.setBinlogFilename(map.get(BINLOG_FILENAME));
         client.setBinlogPosition(StringUtils.isBlank(pos) ? 0 : Long.parseLong(pos));
         client.setTableMapEventByTableId(tables);
-        client.registerEventListener(new MysqlExtractor.MysqlEventListener());
-        client.registerLifecycleListener(new MysqlExtractor.MysqlLifecycleListener());
+        client.registerEventListener(new MysqlEventListener());
+        client.registerLifecycleListener(new MysqlLifecycleListener());
 
         client.connect();
     }
@@ -202,7 +202,7 @@ public class MysqlExtractor extends AbstractExtractor {
                 data.getRows().forEach(m -> {
                     List<Object> before = Stream.of(m.getKey()).collect(Collectors.toList());
                     List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
-                    changedLogEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_UPDATE, before, after));
+                    asynSendRowChangedEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_UPDATE, before, after));
                 });
                 refresh(header);
                 return;
@@ -212,7 +212,7 @@ public class MysqlExtractor extends AbstractExtractor {
                 String tableName = getTableName(data.getTableId());
                 data.getRows().forEach(m -> {
                     List<Object> after = Stream.of(m).collect(Collectors.toList());
-                    changedLogEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after));
+                    asynSendRowChangedEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after));
                 });
                 refresh(header);
                 return;
@@ -222,7 +222,7 @@ public class MysqlExtractor extends AbstractExtractor {
                 String tableName = getTableName(data.getTableId());
                 data.getRows().forEach(m -> {
                     List<Object> before = Stream.of(m).collect(Collectors.toList());
-                    changedLogEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST));
+                    asynSendRowChangedEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST));
                 });
                 refresh(header);
                 return;
