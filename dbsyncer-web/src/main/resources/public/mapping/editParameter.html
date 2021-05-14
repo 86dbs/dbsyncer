@@ -8,13 +8,16 @@
     <div id="paramsList" class="form-group">
         <div class="row">
             <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">目标源ROWID</label>
+                <label class="col-sm-3 control-label text-right"><span title="区分Oracle增量同步数据字段，会将该字段设置为目标源唯一主键">ROWID</span></label>
                 <div class="col-sm-9">
-                    <!-- Mapping params -->
-                    <input th:if="${tableGroup} == null" th:value="${mapping?.params?.get('ORACLE_ROW_ID')}" name="ORACLE_ROW_ID" type="text" class="form-control" title="区分Oracle增量同步数据字段，会将该字段设置为目标源唯一主键"/>
+                    <select name="ORACLE_ROW_ID" class="form-control select-control">
+                        <option value="" selected="selected">无</option>
+                        <!-- Mapping params -->
+                        <option th:if="${tableGroup} == null" th:each="c,s:${mapping?.targetColumn}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" th:selected="${c?.name eq mapping?.params?.get('ORACLE_ROW_ID')}"/>
 
-                    <!-- TableGroup params -->
-                    <input th:if="${tableGroup} != null" th:value="${tableGroup?.params?.get('ORACLE_ROW_ID')}" name="ORACLE_ROW_ID" type="text" class="form-control" title="区分Oracle增量同步数据字段，会将该字段设置为目标源唯一主键"/>
+                        <!-- TableGroup params -->
+                        <option th:each="c,s:${tableGroup?.targetTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" th:selected="${c?.name eq tableGroup?.params?.get('ORACLE_ROW_ID')}"/>
+                    </select>
                 </div>
             </div>
             <div class="col-md-8"></div>

@@ -46,7 +46,7 @@ public abstract class PickerUtil {
     }
 
     public static Map<String, Field> convert2Map(List<Field> col) {
-        return col.stream().collect(Collectors.toMap(Field::getName, f -> f));
+        return col.stream().collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
     }
 
     private static void appendFieldMapping(Mapping mapping, TableGroup group) {

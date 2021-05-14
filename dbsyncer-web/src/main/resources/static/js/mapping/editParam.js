@@ -1,11 +1,11 @@
 // 绑定高级配置参数配置
 function bingMappingParamsInputClick(){
     var $paramsList = $("#paramsList");
-    var $inputs = $paramsList.find("input");
-    $inputs.unbind();
-    genMappingParams($inputs);
-    $inputs.blur(function(){
-        genMappingParams($inputs);
+    var $select = $paramsList.find("select");
+    genMappingParams($select);
+    // 下拉切换事件
+    $select.change(function () {
+        genMappingParams($select);
     });
 }
 
