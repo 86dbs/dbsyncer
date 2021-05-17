@@ -53,7 +53,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             String sql = getTablesSql(databaseConfig);
             tables = jdbcTemplate.queryForList(sql, String.class);
         } catch (Exception e) {
-            logger.error("getTable failed", e.getMessage());
+            throw new ConnectorException(e.getMessage(), e.getCause());
         } finally {
             // 释放连接
             this.close(jdbcTemplate);
@@ -121,6 +121,14 @@ public abstract class AbstractDatabaseConnector implements Database {
 
         String delete = SqlBuilderEnum.DELETE.getName();
         map.put(delete, buildSql(delete, table, originalTable, null));
+
+        // 获取查询数据行是否存在
+        String quotation = buildSqlWithQuotation();
+        String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
+        StringBuilder queryCount = new StringBuilder().append("SELECT COUNT(1) FROM ").append(quotation).append(table.getName()).append(
+                quotation).append(" WHERE ").append(pk).append(" = ?");
+        String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
+        map.put(queryCountExist, queryCount.toString());
         return map;
     }
 
@@ -241,20 +249,17 @@ public abstract class AbstractDatabaseConnector implements Database {
             throw new ConnectorException("writer data can not be empty.");
         }
 
+        Field pkField = null;
         // Update / Delete
-        if (StringUtils.equals(ConnectorConstant.OPERTION_UPDATE, event)) {
-            // update attrs by id
-            List<Field> pkList = fields.stream().filter(f -> f.isPk()).collect(Collectors.toList());
-            fields.add(pkList.get(0));
-        } else if (StringUtils.equals(ConnectorConstant.OPERTION_DELETE, event)) {
-            // delete by id
-            List<Field> pkList = fields.stream().filter(f -> f.isPk()).collect(Collectors.toList());
-            fields.clear();
-            fields.add(pkList.get(0));
+        if (isUpdate(event) || isDelete(event)) {
+            pkField = getPrimaryKeyField(fields);
+            if (isDelete(event)) {
+                fields.clear();
+            }
+            fields.add(pkField);
         }
 
         int size = fields.size();
-
         DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
         JdbcTemplate jdbcTemplate = null;
         Result result = new Result();
@@ -275,19 +280,26 @@ public abstract class AbstractDatabaseConnector implements Database {
             // 记录错误数据
             result.getFailData().add(data);
             result.getFail().set(1);
-            result.getError().append(e.getMessage()).append(System.lineSeparator());
-            logger.error(e.getMessage());
+            result.getError().append("SQL:").append(sql).append(System.lineSeparator())
+                    .append("DATA:").append(data).append(System.lineSeparator())
+                    .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
+            logger.error("SQL:{}, DATA:{}, ERROR:{}", sql, data, e.getMessage());
         } finally {
             // 释放连接
             this.close(jdbcTemplate);
         }
 
-        if (0 == update && !config.isRetry()) {
-            fields.remove(fields.size() - 1);
-            config.setEvent(ConnectorConstant.OPERTION_INSERT);
-            config.setRetry(true);
-            logger.warn("{}表执行{}失败, 尝试执行{}", config.getTable(), event, config.getEvent());
-            result = writer(config);
+        // 更新失败尝试插入
+        if (0 == update && isUpdate(event) && null != pkField && !config.isRetry()) {
+            // 插入前检查有无数据
+            String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
+            if (!existRow(cfg, queryCount, data.get(pkField.getName()))) {
+                fields.remove(fields.size() - 1);
+                config.setEvent(ConnectorConstant.OPERTION_INSERT);
+                config.setRetry(true);
+                logger.warn("{}表执行{}失败, 尝试执行{}", config.getTable(), event, config.getEvent());
+                result = writer(config);
+            }
         }
         return result;
     }
@@ -483,7 +495,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         List<Field> fields = new ArrayList<>();
         for (Field c : column) {
             String name = c.getName();
-            if(StringUtils.isBlank(name)){
+            if (StringUtils.isBlank(name)) {
                 throw new ConnectorException("The field name can not be empty.");
             }
             if (c.isPk()) {
@@ -530,4 +542,34 @@ public abstract class AbstractDatabaseConnector implements Database {
         }
     }
 
+    private boolean existRow(DatabaseConfig config, String sql, Object value) {
+        JdbcTemplate jdbcTemplate = null;
+        Integer rowNum = null;
+        try {
+            jdbcTemplate = getJdbcTemplate(config);
+            rowNum = jdbcTemplate.queryForObject(sql, new Object[] {value}, Integer.class);
+        } catch (Exception e) {
+            logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
+        } finally {
+            this.close(jdbcTemplate);
+        }
+        return null != rowNum && rowNum > 0;
+    }
+
+    private Field getPrimaryKeyField(List<Field> fields) {
+        for (Field f : fields) {
+            if (f.isPk()) {
+                return f;
+            }
+        }
+        throw new ConnectorException("主键为空");
+    }
+
+    private boolean isUpdate(String event) {
+        return StringUtils.equals(ConnectorConstant.OPERTION_UPDATE, event);
+    }
+
+    private boolean isDelete(String event) {
+        return StringUtils.equals(ConnectorConstant.OPERTION_DELETE, event);
+    }
 }

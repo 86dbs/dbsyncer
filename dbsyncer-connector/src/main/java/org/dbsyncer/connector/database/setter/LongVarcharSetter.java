@@ -12,4 +12,12 @@ public class LongVarcharSetter extends AbstractSetter<String> {
         ps.setString(i, val);
     }
 
+    @Override
+    protected void setIfValueTypeNotMatch(PreparedStatement ps, int i, int type, Object val) throws SQLException {
+        if(val instanceof byte[]){
+            ps.setString(i, new String((byte[]) val));
+            return;
+        }
+        ps.setString(i, String.valueOf(val));
+    }
 }

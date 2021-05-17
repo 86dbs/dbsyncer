@@ -113,7 +113,7 @@ public class TableGroupChecker extends AbstractChecker {
         TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
 
         // 处理策略
-        dealIncrementStrategy(mapping, tableGroup, group.getParams());
+        dealIncrementStrategy(mapping, group);
 
         Map<String, String> command = manager.getCommand(mapping, group);
         tableGroup.setCommand(command);
@@ -123,12 +123,12 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.getSourceTable().setCount(count);
     }
 
-    public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup, Map<String, String> params) {
+    public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup) {
         String connectorType = manager.getConnector(mapping.getSourceConnectorId()).getConfig().getConnectorType();
         String type = StringUtil.toLowerCaseFirstOne(connectorType).concat("ConfigChecker");
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
-        checker.dealIncrementStrategy(mapping, tableGroup, params);
+        checker.dealIncrementStrategy(mapping, tableGroup);
     }
 
     private Table getTable(String connectorId, String tableName) {

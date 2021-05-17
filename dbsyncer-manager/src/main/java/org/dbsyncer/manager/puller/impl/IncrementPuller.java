@@ -40,6 +40,7 @@ import org.springframework.util.Assert;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -73,6 +74,9 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
     @Autowired
     private ConnectorFactory connectorFactory;
+
+    @Autowired
+    private Executor taskExecutor;
 
     private String key;
 
@@ -162,7 +166,11 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             final String connectorType = connectorConfig.getConnectorType();
             AbstractExtractor extractor = listener.getExtractor(connectorType, AbstractExtractor.class);
 
-            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new LogListener(mapping, list, extractor));
+            LogListener logListener = new LogListener(mapping, list, extractor);
+            Set<String> filterTable = new HashSet<>();
+            logListener.getTablePicker().forEach((k, fieldPickers) -> filterTable.add(k));
+            extractor.setFilterTable(filterTable);
+            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), logListener);
             return extractor;
         }
         return null;
@@ -170,6 +178,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
     private void setExtractorConfig(AbstractExtractor extractor, ConnectorConfig connector, ListenerConfig listener,
                                     Map<String, String> map, Event event) {
+        extractor.setTaskExecutor(taskExecutor);
         extractor.setConnectorConfig(connector);
         extractor.setListenerConfig(listener);
         extractor.setMap(map);
@@ -195,7 +204,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         @Override
         public void forceFlushEvent(Map<String, String> map) {
             Meta meta = manager.getMeta(metaId);
-            if (null != meta && !CollectionUtils.isEmpty(map)) {
+            if (null != meta) {
                 meta.setMap(map);
                 manager.editMeta(meta);
             }
@@ -302,8 +311,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
         @Override
         public void changedLogEvent(RowChangedEvent rowChangedEvent) {
-            logger.info("Table[{}] {}", rowChangedEvent.getTableName(), rowChangedEvent.getEvent());
-
             // 处理过程有异常向上抛
             List<FieldPicker> pickers = tablePicker.get(rowChangedEvent.getTableName());
             if (!CollectionUtils.isEmpty(pickers)) {
@@ -329,6 +336,9 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             }
         }
 
+        public Map<String, List<FieldPicker>> getTablePicker() {
+            return tablePicker;
+        }
     }
 
 }

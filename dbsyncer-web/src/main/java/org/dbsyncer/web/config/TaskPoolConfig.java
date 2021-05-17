@@ -24,13 +24,13 @@ public class TaskPoolConfig {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         //核心线程数10：线程池创建时候初始化的线程数
         executor.setCorePoolSize(10);
-        //最大线程数20：线程池最大的线程数，只有在缓冲队列满了之后才会申请超过核心线程数的线程
+        //最大线程数128：线程池最大的线程数，只有在缓冲队列满了之后才会申请超过核心线程数的线程
         //maxPoolSize 当系统负载大道最大值时,核心线程数已无法按时处理完所有任务,这是就需要增加线程.每秒200个任务需要20个线程,那么当每秒1000个任务时,则需要(1000-queueCapacity)*(20/200),即60个线程,可将maxPoolSize设置为60;
-        executor.setMaxPoolSize(20);
-        //缓冲队列100：用来缓冲执行任务的队列
-        executor.setQueueCapacity(100);
-        //允许线程的空闲时间60秒：当超过了核心线程出之外的线程在空闲时间到达之后会被销毁
-        executor.setKeepAliveSeconds(60);
+        executor.setMaxPoolSize(128);
+        //缓冲队列360：用来缓冲执行任务的队列
+        executor.setQueueCapacity(360);
+        //允许线程的空闲时间30秒：当超过了核心线程出之外的线程在空闲时间到达之后会被销毁
+        executor.setKeepAliveSeconds(30);
         //线程池名的前缀：设置好了之后可以方便我们定位处理任务所在的线程池
         executor.setThreadNamePrefix("taskExecutor");
         //理线程池对拒绝任务的处策略：这里采用了CallerRunsPolicy策略，当线程池没有处理能力的时候，该策略会直接在 execute 方法的调用线程中运行被拒绝的任务；如果执行程序已关闭，则会丢弃该任务
@@ -44,7 +44,7 @@ public class TaskPoolConfig {
         该策略就稍微复杂一些，在pool没有关闭的前提下首先丢掉缓存在队列中的最早的任务，然后重新尝试运行该任务。这个策略需要适当小心*/
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
         executor.setWaitForTasksToCompleteOnShutdown(true);
-        executor.setAwaitTerminationSeconds(60);
+        executor.setAwaitTerminationSeconds(30);
         executor.initialize();
         return executor;
     }

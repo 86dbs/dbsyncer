@@ -32,6 +32,28 @@ function bindQueryDataDetailEvent() {
     });
 }
 
+// 查看详细数据日志
+function bindQueryErrorDetailEvent() {
+    var $queryData = $(".queryError");
+    $queryData.unbind("click");
+    $queryData.click(function () {
+        var json = $(this).text();
+        var html = '<div class="row driver_break_word">' + json + '</div>';
+        BootstrapDialog.show({
+            title: "异常详细",
+            type: BootstrapDialog.TYPE_INFO,
+            message: html,
+            size: BootstrapDialog.SIZE_NORMAL,
+            buttons: [{
+                label: "关闭",
+                action: function (dialog) {
+                    dialog.close();
+                }
+            }]
+        });
+    });
+}
+
 // 清空数据
 function bindClearEvent($btn, $title, $msg, $url){
     $btn.click(function () {
@@ -119,6 +141,7 @@ function refreshDataList(resultValue, append){
     }
     $dataTotal.html(resultValue.total);
     bindQueryDataDetailEvent();
+    bindQueryErrorDetailEvent();
 }
 function showData($dataList, arr, append){
     var html = '';
@@ -130,7 +153,7 @@ function showData($dataList, arr, append){
             html += '<td>' + (start + i + 1) + '</td>';
             html += '<td>' + arr[i].event + '</td>';
             html += '<td>' + (arr[i].success ? '<span class="label label-success">成功</span>' : '<span class="label label-warning">失败</span>') + '</td>';
-            html += '<td title="' + arr[i].error + '" style="max-width:100px;" class="dbsyncer_over_hidden">' + arr[i].error + '</td>';
+            html += '<td style="max-width:100px;" class="dbsyncer_over_hidden"><a href="javascript:;" class="dbsyncer_pointer queryError">' + arr[i].error + '</a></td>';
             html += '<td>' + formatDate(arr[i].createTime) + '</td>';
             html += '<td><a href="javascript:;" class="label label-info queryData">查看数据</a><div class="hidden">' + arr[i].json + '</div></td>';
             html += '</tr>';
@@ -382,6 +405,7 @@ $(function () {
     bindQueryDataEvent();
     bindQueryDataMoreEvent();
     bindQueryDataDetailEvent();
+    bindQueryErrorDetailEvent();
     bindClearEvent($(".clearDataBtn"), "确认清空数据？", "清空数据成功!", "/monitor/clearData");
     bindClearEvent($(".clearLogBtn"), "确认清空日志？", "清空日志成功!", "/monitor/clearLog");
 

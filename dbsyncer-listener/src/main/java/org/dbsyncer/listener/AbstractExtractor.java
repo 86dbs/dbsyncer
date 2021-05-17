@@ -10,7 +10,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * @version 1.0.0
@@ -20,9 +24,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public abstract class AbstractExtractor implements Extractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    protected BlockingQueue queue = new LinkedBlockingQueue<>(100);
+    protected Executor taskExecutor;
     protected ConnectorConfig connectorConfig;
     protected ListenerConfig listenerConfig;
     protected Map<String, String> map;
+    protected Set<String> filterTable;
     private List<Event> watcher;
 
     @Override
@@ -65,7 +72,7 @@ public abstract class AbstractExtractor implements Extractor {
     }
 
     @Override
-    public void forceFlushEvent(){
+    public void forceFlushEvent() {
         if (!CollectionUtils.isEmpty(watcher)) {
             logger.info("Force flush:{}", map);
             watcher.forEach(w -> w.forceFlushEvent(map));
@@ -86,6 +93,14 @@ public abstract class AbstractExtractor implements Extractor {
         }
     }
 
+    protected void asynSendRowChangedEvent(RowChangedEvent rowChangedEvent) {
+        taskExecutor.execute(() -> changedLogEvent(rowChangedEvent));
+    }
+
+    public void setTaskExecutor(Executor taskExecutor) {
+        this.taskExecutor = taskExecutor;
+    }
+
     public void setConnectorConfig(ConnectorConfig connectorConfig) {
         this.connectorConfig = connectorConfig;
     }
@@ -98,4 +113,7 @@ public abstract class AbstractExtractor implements Extractor {
         this.map = map;
     }
 
+    public void setFilterTable(Set<String> filterTable) {
+        this.filterTable = filterTable;
+    }
 }

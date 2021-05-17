@@ -72,8 +72,8 @@ public class MysqlExtractor extends AbstractExtractor {
         client.setBinlogFilename(map.get(BINLOG_FILENAME));
         client.setBinlogPosition(StringUtils.isBlank(pos) ? 0 : Long.parseLong(pos));
         client.setTableMapEventByTableId(tables);
-        client.registerEventListener(new MysqlExtractor.MysqlEventListener());
-        client.registerLifecycleListener(new MysqlExtractor.MysqlLifecycleListener());
+        client.registerEventListener(new MysqlEventListener());
+        client.registerLifecycleListener(new MysqlLifecycleListener());
 
         client.connect();
     }
@@ -199,31 +199,37 @@ public class MysqlExtractor extends AbstractExtractor {
             if (EventType.isUpdate(header.getEventType())) {
                 UpdateRowsEventData data = event.getData();
                 String tableName = getTableName(data.getTableId());
-                data.getRows().forEach(m -> {
-                    List<Object> before = Stream.of(m.getKey()).collect(Collectors.toList());
-                    List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
-                    changedLogEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_UPDATE, before, after));
-                });
+                if(isFilterTable(tableName, ConnectorConstant.OPERTION_UPDATE)){
+                    data.getRows().forEach(m -> {
+                        List<Object> before = Stream.of(m.getKey()).collect(Collectors.toList());
+                        List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
+                        asynSendRowChangedEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_UPDATE, before, after));
+                    });
+                }
                 refresh(header);
                 return;
             }
             if (EventType.isWrite(header.getEventType())) {
                 WriteRowsEventData data = event.getData();
                 String tableName = getTableName(data.getTableId());
-                data.getRows().forEach(m -> {
-                    List<Object> after = Stream.of(m).collect(Collectors.toList());
-                    changedLogEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after));
-                });
+                if(isFilterTable(tableName, ConnectorConstant.OPERTION_INSERT)){
+                    data.getRows().forEach(m -> {
+                        List<Object> after = Stream.of(m).collect(Collectors.toList());
+                        asynSendRowChangedEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after));
+                    });
+                }
                 refresh(header);
                 return;
             }
             if (EventType.isDelete(header.getEventType())) {
                 DeleteRowsEventData data = event.getData();
                 String tableName = getTableName(data.getTableId());
-                data.getRows().forEach(m -> {
-                    List<Object> before = Stream.of(m).collect(Collectors.toList());
-                    changedLogEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST));
-                });
+                if(isFilterTable(tableName, ConnectorConstant.OPERTION_DELETE)){
+                    data.getRows().forEach(m -> {
+                        List<Object> before = Stream.of(m).collect(Collectors.toList());
+                        asynSendRowChangedEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST));
+                    });
+                }
                 refresh(header);
                 return;
             }
@@ -239,6 +245,14 @@ public class MysqlExtractor extends AbstractExtractor {
 
         private String getTableName(long tableId) {
             return tables.get(tableId).getTable();
+        }
+
+        private boolean isFilterTable(String tableName, String event){
+            if(!filterTable.contains(tableName)){
+                logger.info("Table[{}] {}", tableName, event);
+                return false;
+            }
+            return true;
         }
 
     }

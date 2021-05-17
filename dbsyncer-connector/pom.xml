@@ -49,8 +49,8 @@
 
         <!-- sqlserver-driver -->
         <dependency>
-            <groupId>microsoft</groupId>
-            <artifactId>sqljdbc</artifactId>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
         </dependency>
 
         <!-- redis客户端连接工具 -->

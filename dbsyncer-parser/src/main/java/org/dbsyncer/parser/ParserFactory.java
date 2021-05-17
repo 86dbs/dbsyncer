@@ -240,7 +240,7 @@ public class ParserFactory implements Parser {
 
     @Override
     public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent rowChangedEvent) {
-        logger.info("解析数据=> tableName:{}, event:{}, before:{}, after:{}", rowChangedEvent.getTableName(), rowChangedEvent.getEvent(),
+        logger.info("Table[{}] {}, before:{}, after:{}", rowChangedEvent.getTableName(), rowChangedEvent.getEvent(),
                 rowChangedEvent.getBefore(), rowChangedEvent.getAfter());
         final String metaId = mapping.getMetaId();
 
