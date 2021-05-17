@@ -15,63 +15,95 @@
         <tbody>
             <tr>
                 <td colspan="2" rowspan="3">Every point is a DataBase</td>
-                <td colspan="4" align="center">目标源</td>
+                <td colspan="6" align="center">目标源</td>
             </tr>
             <tr>
-                <td colspan="2" align="center">全量</td>
-                <td colspan="2" align="center">增量</td>
+                <td colspan="3" align="center">全量</td>
+                <td colspan="3" align="center">增量</td>
             </tr>
             <tr>
-                <td>mysql</td>
-                <td>oracle</td>
-                <td>mysql</td>
-                <td>oracle</td>
-            </tr>
-            <tr>
-                <td rowspan="4">数据源</td>
-                <td>mysql</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-            </tr>
-            <tr>
-                <td>oracle</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-            </tr>
-            <tr>
-                <td>dql_mysql</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-            </tr>
-            <tr>
-                <td>dql_oracle</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-            </tr>
-            <tr>
-                <td rowspan="2">版本支持</td>
                 <td>Mysql</td>
-                <td colspan="4">5.7.19以上</td>
+                <td>Oracle</td>
+                <td>SQLServer</td>
+                <td>Mysql</td>
+                <td>Oracle</td>
+                <td>SQLServer</td>
+            </tr>
+            <tr>
+                <td rowspan="6">数据源</td>
+                <td>Mysql</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
             </tr>
             <tr>
                 <td>Oracle</td>
-                <td colspan="4">10g以上（Oracle-9i未测试）</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+            </tr>
+            <tr>
+                <td>SQLServer</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+            </tr>
+            <tr>
+                <td>DQLMysql</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+            </tr>
+            <tr>
+                <td>DQLOracle</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+            </tr>
+            <tr>
+                <td>DQLSQLServer</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+                <td>√</td>
+            </tr>
+            <tr>
+                <td rowspan="3">版本支持</td>
+                <td>Mysql</td>
+                <td colspan="7">5.7.19以上</td>
+            </tr>
+            <tr>
+                <td>Oracle</td>
+                <td colspan="7">10g以上（Oracle-9i未测试）</td>
+            </tr>
+            <tr>
+                <td>SQLServer</td>
+                <td colspan="7">2008以上</td>
             </tr>
             <tr>
                 <td>最近计划</td>
-                <td colspan="5">结构化类型：（sql_server）; 半结构化类型：（redis、kafka、es、postgrep）</td>
+                <td colspan="7">半结构化类型：（redis、kafka、es、postgrep）</td>
             </tr>
             <tr>
                 <td>长期计划</td>
-                <td colspan="5">半结构化类型：（网页、日志、JSON、XML、Word）; 非结构化类型：图片、图像、新闻消息</td>
+                <td colspan="7">半结构化类型：（网页、日志、JSON、XML、Word）</td>
             </tr>
         </tbody>
     </table>
@@ -126,25 +158,31 @@
                 </td>
                 <td>CDN注册订阅。监听增删改事件，得到rowid，根据rowid执行SQL查询，得到变化数据</td>
             </tr>
+            <tr>
+                <td>
+                    <p>SQLServer</p>
+                    <p>开启CDC:</p>
+                </td>
+                <td>
+                    <p>要求2008版本以上, 启动代理服务（Agent服务）</p>
+                    <p>EXEC sys.sp_cdc_enable_db</p>
+                    <p>EXEC sys.sp_cdc_enable_table</p>
+                </td>
+                <td>SQL Server 2008提供了内建的方法变更数据捕获（Change Data Capture 即CDC）以实现异步跟踪用户表的数据修改</td>
+            </tr>
         </tbody>
     </table>
+    <p>Mysql增量示例</p>
+    <p align="center">
+        <img src="https://images.gitee.com/uploads/images/2021/0518/004448_26286acc_376718.png" />
+    </p>
+    <p>Oracle增量示例</p>
+    <p align="center">
+        <img src="https://images.gitee.com/uploads/images/2021/0518/004239_d79cf045_376718.png" />
+    </p>
     <p>定时示例</p>
     <p align="center">
         <img src="https://images.gitee.com/uploads/images/2020/1023/160953_d34d6d11_376718.png" />
-    </p>
-    <p>Mysql增量示例</p>
-    <p align="left">
-        <img src="https://images.gitee.com/uploads/images/2020/1023/162452_f7133a6b_376718.png" />
-    </p>
-    <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2020/1023/162318_8dcebee2_376718.png" />
-    </p>
-    <p>Oracle增量示例</p>
-    <p align="left">
-        <img src="https://images.gitee.com/uploads/images/2020/1023/162452_f7133a6b_376718.png" />
-    </p>
-    <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2020/1023/113038_cc055fd3_376718.png" />
     </p>
 </div>
 
@@ -163,7 +201,13 @@
         <img src="https://images.gitee.com/uploads/images/2020/0602/221029_c4f5d804_376718.png" />
     </p>
     <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2020/0602/220345_291a73af_376718.png" />
+        <img src="https://images.gitee.com/uploads/images/2021/0518/004836_3b4b9e49_376718.png" />
+    </p>
+    <p align="center">
+        <img src="https://images.gitee.com/uploads/images/2021/0518/004947_6883e6c8_376718.png" />
+    </p>
+    <p align="center">
+        <img src="https://images.gitee.com/uploads/images/2021/0518/005017_31e6697b_376718.png" />
     </p>
     <h3>流程图</h3>
     <p align="center">
