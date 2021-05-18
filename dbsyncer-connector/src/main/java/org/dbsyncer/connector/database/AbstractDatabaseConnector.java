@@ -69,8 +69,8 @@ public abstract class AbstractDatabaseConnector implements Database {
         try {
             jdbcTemplate = getJdbcTemplate(cfg);
             String quotation = buildSqlWithQuotation();
-            String queryMetaSql = getTableColumnSql(new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).toString());
-            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql, tableName);
+            StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).append(" WHERE 1 != 1");
+            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql.toString(), tableName);
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
@@ -345,7 +345,8 @@ public abstract class AbstractDatabaseConnector implements Database {
         MetaInfo metaInfo = null;
         try {
             jdbcTemplate = getJdbcTemplate(cfg);
-            String queryMetaSql = getTableColumnSql(cfg.getSql());
+            String sql = cfg.getSql().toUpperCase();
+            String queryMetaSql = StringUtils.contains(sql, " WHERE ") ? sql + " AND 1!=1 " : sql + " WHERE 1!=1 ";
             metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql, cfg.getTable());
         } catch (Exception e) {
             logger.error(e.getMessage());
@@ -377,11 +378,11 @@ public abstract class AbstractDatabaseConnector implements Database {
         if (StringUtils.isNotBlank(queryFilterSql)) {
             querySql += queryFilterSql;
         }
-        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(null, null, querySql));
-
-        // 获取查询总数SQL
         String quotation = buildSqlWithQuotation();
         String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
+        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(querySql, pk));
+
+        // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
         queryCount.append("SELECT COUNT(1) FROM (").append(table.getName());
         if (StringUtils.isNotBlank(queryFilterSql)) {
@@ -411,7 +412,7 @@ public abstract class AbstractDatabaseConnector implements Database {
      * @param filter
      * @return
      */
-    private String getQueryFilterSql(List<Filter> filter) {
+    protected String getQueryFilterSql(List<Filter> filter) {
         if (CollectionUtils.isEmpty(filter)) {
             return "";
         }
@@ -442,37 +443,6 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     /**
-     * 根据过滤条件获取查询SQL
-     *
-     * @param queryOperator and/or
-     * @param filter
-     * @return
-     */
-    private String getFilterSql(String queryOperator, List<Filter> filter) {
-        List<Filter> list = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), queryOperator)).collect(Collectors.toList());
-        if (CollectionUtils.isEmpty(list)) {
-            return "";
-        }
-
-        int size = list.size();
-        int end = size - 1;
-        StringBuilder sql = new StringBuilder();
-        sql.append("(");
-        Filter c = null;
-        String quotation = buildSqlWithQuotation();
-        for (int i = 0; i < size; i++) {
-            c = list.get(i);
-            // "USER" = 'zhangsan'
-            sql.append(quotation).append(c.getName()).append(quotation).append(c.getFilter()).append("'").append(c.getValue()).append("'");
-            if (i < end) {
-                sql.append(" ").append(queryOperator).append(" ");
-            }
-        }
-        sql.append(")");
-        return sql.toString();
-    }
-
-    /**
      * 获取查询SQL
      *
      * @param type           {@link SqlBuilderEnum}
@@ -481,14 +451,15 @@ public abstract class AbstractDatabaseConnector implements Database {
      * @param queryFilterSQL
      * @return
      */
-    private String buildSql(String type, Table table, Table originalTable, String queryFilterSQL) {
+    protected String buildSql(String type, Table table, Table originalTable, String queryFilterSQL) {
         if (null == table) {
             logger.error("Table can not be null.");
             throw new ConnectorException("Table can not be null.");
         }
         List<Field> column = table.getColumn();
         if (CollectionUtils.isEmpty(column)) {
-            throw new ConnectorException("Column can not be null.");
+            logger.warn("Table column is null.");
+            return null;
         }
         String pk = null;
         Set<String> mark = new HashSet<>();
@@ -521,6 +492,37 @@ public abstract class AbstractDatabaseConnector implements Database {
 
         SqlBuilderConfig config = new SqlBuilderConfig(this, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());
         return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
+    }
+
+    /**
+     * 根据过滤条件获取查询SQL
+     *
+     * @param queryOperator and/or
+     * @param filter
+     * @return
+     */
+    private String getFilterSql(String queryOperator, List<Filter> filter) {
+        List<Filter> list = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), queryOperator)).collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(list)) {
+            return "";
+        }
+
+        int size = list.size();
+        int end = size - 1;
+        StringBuilder sql = new StringBuilder();
+        sql.append("(");
+        Filter c = null;
+        String quotation = buildSqlWithQuotation();
+        for (int i = 0; i < size; i++) {
+            c = list.get(i);
+            // "USER" = 'zhangsan'
+            sql.append(quotation).append(c.getName()).append(quotation).append(c.getFilter()).append("'").append(c.getValue()).append("'");
+            if (i < end) {
+                sql.append(" ").append(queryOperator).append(" ");
+            }
+        }
+        sql.append(")");
+        return sql.toString();
     }
 
     /**

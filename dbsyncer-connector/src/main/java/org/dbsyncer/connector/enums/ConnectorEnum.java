@@ -10,6 +10,7 @@ import org.dbsyncer.connector.oracle.OracleConnector;
 import org.dbsyncer.connector.redis.RedisConnector;
 import org.dbsyncer.connector.sql.DQLMysqlConnector;
 import org.dbsyncer.connector.sql.DQLOracleConnector;
+import org.dbsyncer.connector.sql.DQLSqlServerConnector;
 import org.dbsyncer.connector.sqlserver.SqlServerConnector;
 
 /**
@@ -30,7 +31,7 @@ public enum ConnectorEnum {
      */
     ORACLE("Oracle", new OracleConnector(), DatabaseConfig.class),
     /**
-     * Mysql 连接器
+     * SqlServer 连接器
      */
     SQL_SERVER("SqlServer", new SqlServerConnector(), DatabaseConfig.class),
     /**
@@ -41,6 +42,10 @@ public enum ConnectorEnum {
      * DqlOracle 连接器
      */
     DQL_ORACLE("DqlOracle", new DQLOracleConnector(), DatabaseConfig.class),
+    /**
+     * DqlSqlServer 连接器
+     */
+    DQL_SQL_SERVER("DqlSqlServer", new DQLSqlServerConnector(), DatabaseConfig.class),
     /**
      * Redis 连接器
      */

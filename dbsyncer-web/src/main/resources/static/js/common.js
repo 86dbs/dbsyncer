@@ -95,14 +95,3 @@ function doGetter(url, params, action, loading) {
 function doGetWithoutLoading(url, params, action) {
     doGetter(url, params, action, false);
 }
-
-// ******************* 常量配置 ***************************
-// 连接器类型
-var ConnectorConstant = {
-    "Mysql" : $basePath + "/connector/page/addMysql",
-    "Oracle" : $basePath + "/connector/page/addOracle",
-    "SqlServer" : $basePath + "/connector/page/addSqlServer",
-    "DqlMysql" : $basePath + "/connector/page/addDqlMysql",
-    "DqlOracle" : $basePath + "/connector/page/addDqlOracle",
-    "Redis" : $basePath + "/connector/page/addRedis"
-}
