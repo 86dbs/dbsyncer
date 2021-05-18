@@ -6,6 +6,7 @@ import org.dbsyncer.listener.oracle.OracleExtractor;
 import org.dbsyncer.listener.quartz.QuartzExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.mysql.MysqlExtractor;
+import org.dbsyncer.listener.sqlserver.SqlServerExtractor;
 
 /**
  * @author AE86
@@ -25,7 +26,11 @@ public enum ListenerEnum {
     /**
      * Oracle
      */
-    ORACLE(ConnectorEnum.ORACLE.getType(), OracleExtractor.class);
+    ORACLE(ConnectorEnum.ORACLE.getType(), OracleExtractor.class),
+    /**
+     * SqlServer
+     */
+    SQL_SERVER(ConnectorEnum.SQL_SERVER.getType(), SqlServerExtractor.class);
 
     private String type;
     private Class<?> clazz;
