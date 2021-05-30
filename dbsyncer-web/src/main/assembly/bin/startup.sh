@@ -1,6 +1,6 @@
 #!/bin/bash
 cd ../
-echo 'Starting up ...'
+echo 'Starting up'
 # current path
 CURRENT_DIR=$(pwd);
 # the path of application.properties

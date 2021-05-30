@@ -1,6 +1,6 @@
 #!/bin/bash
 cd ../
-echo 'Stopping ...'
+echo 'Stopping'
 # current path
 CURRENT_DIR=$(pwd);
 # the path of application.properties
