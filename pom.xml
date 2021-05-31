@@ -47,7 +47,7 @@
         <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
         <mysql.version>5.1.40</mysql.version>
         <mysql-binlog.version>0.21.0</mysql-binlog.version>
-        <mssql-jdbc.version>6.5.4.jre10-preview</mssql-jdbc.version>
+        <mssql-jdbc.version>8.2.0.jre8</mssql-jdbc.version>
         <json.version>20090211</json.version>
         <fastjson.version>1.2.75</fastjson.version>
         <junit.version>4.12</junit.version>

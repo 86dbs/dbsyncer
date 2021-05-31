@@ -26,14 +26,8 @@ function changeConnectorType($this) {
     //清空配置
     connectorConfig.html("");
 
-    //从公共js/common.js配置文件中读取常量
-    for (var key in ConnectorConstant) {
-        if (connType == key) {
-            //加载页面
-            connectorConfig.load(ConnectorConstant[key]);
-            break;
-        }
-    }
+    //加载页面
+    connectorConfig.load($basePath + "/connector/page/add" + connType);
 }
 
 $(function () {

@@ -19,7 +19,7 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
     public String buildSql(SqlBuilderConfig config) {
         // 分页语句
         Database database = config.getDatabase();
-        return database.getPageSql(config.getTableName(), config.getPk(), buildQuerySql(config));
+        return database.getPageSql(buildQuerySql(config), config.getPk());
     }
 
     @Override

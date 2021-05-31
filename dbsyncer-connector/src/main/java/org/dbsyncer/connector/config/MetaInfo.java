@@ -18,11 +18,6 @@ public class MetaInfo {
      */
     private List<Field> column;
 
-    /**
-     * 总条数
-     */
-    private long count;
-
     public List<Field> getColumn() {
         return column;
     }
@@ -31,18 +26,8 @@ public class MetaInfo {
         this.column = column;
         return this;
     }
-
-    public long getCount() {
-        return count;
-    }
-
-    public MetaInfo setCount(long count) {
-        this.count = count;
-        return this;
-    }
-
     @Override
     public String toString() {
-        return new StringBuilder().append("MetaInfo{").append("column=").append(column).append(", count=").append(count).append('}').toString();
+        return new StringBuilder().append("MetaInfo{").append("column=").append(column).append('}').toString();
     }
 }

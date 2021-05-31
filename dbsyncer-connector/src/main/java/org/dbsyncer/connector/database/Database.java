@@ -11,22 +11,13 @@ public interface Database extends Connector {
     void close(JdbcTemplate jdbcTemplate);
 
     /**
-     * 获取表列信息SQL
-     *
-     * @param querySQL
-     * @return
-     */
-    String getTableColumnSql(String querySQL);
-
-    /**
      * 获取分页SQL
      *
-     * @param tableName
-     * @param pk
      * @param querySQL
+     * @param pk
      * @return
      */
-    String getPageSql(String tableName, String pk, String querySQL);
+    String getPageSql(String querySQL, String pk);
 
     /**
      * 获取分页参数
