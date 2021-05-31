@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 /**
  * @version 1.0.0
  * @Author AE86
+ * @see https://www.red-gate.com/simple-talk/sql/learn-sql-server/introduction-to-change-data-capture-cdc-in-sql-server-2008/
  * @Date 2021-05-18 22:25
  */
 public class ChangeDataCaptureTest {
@@ -22,12 +23,25 @@ public class ChangeDataCaptureTest {
 
     private Connection conn = null;
 
+    /**
+     * <p>cdc.captured_columns – 此表返回捕获列列表的结果。</p>
+     * <p>cdc.change_tables – 此表返回所有启用捕获的表的列表。</p>
+     * <p>cdc.ddl_history – 此表包含自启用捕获数据以来所有 DDL 更改的历史记录。</p>
+     * <p>cdc.index_columns – 该表包含与变更表相关的索引。</p>
+     * <p>cdc.lsn_time_mapping – 此表映射 LSN编号(唯一序列号标识, 增加数字) 和时间。</p>
+     * <p>cdc.fn_cdc_get_all_changes_HumanResources_Shift - 可用于获取在特定时间段内发生的事件</p>
+     * <p>sys.fn_cdc_map_time_to_lsn - 表中是否有 tran_end_time值大于或等于指定时间的行。例如，可以用此查询来确定捕获进程是否已处理完截至前指定时间提交的更改</p>
+     * <p>sys.fn_cdc_get_max_lsn</p>
+     * <p>sys.sp_cdc_cleanup_change_table 默认情况下间隔为3天清理日志数据</p>
+     *
+     * @throws SQLException
+     */
     @Test
     public void testConnect() throws SQLException {
         ChangeDataCaptureTest cdc = new ChangeDataCaptureTest();
         cdc.start();
 
-        logger.info("read log");
+        // 读取增量
         cdc.queryAndMap(GET_LIST_OF_CDC_ENABLED_TABLES, rs -> {
             final Set<SqlServerChangeTable> changeTables = new HashSet<>();
             while (rs.next()) {
@@ -50,6 +64,14 @@ public class ChangeDataCaptureTest {
             }
             logger.info("changeTables:{} ", changeTables.size());
             return changeTables;
+        });
+
+        // 读取事务
+        cdc.queryAndMap(GET_MAX_TRANSACTION_LSN, rs -> {
+            while (rs.next()) {
+                logger.info("[{}],[{}]", rs.getString(1), rs.getString(2));
+            }
+            return null;
         });
 
         cdc.close();
