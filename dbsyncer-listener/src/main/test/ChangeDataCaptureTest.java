@@ -1,9 +1,11 @@
+import org.dbsyncer.listener.sqlserver.Lsn;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -16,14 +18,32 @@ public class ChangeDataCaptureTest {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String GET_STATE_AGENT_SERVER = "EXEC master.dbo.xp_servicecontrol N'QUERYSTATE', N'SQLSERVERAGENT'";
+    private static final String GET_AGENT_SERVER_STATE = "EXEC master.dbo.xp_servicecontrol N'QUERYSTATE', N'SQLSERVERAGENT'";
     private static final String GET_DATABASE_NAME = "SELECT db_name()";
-    private static final String GET_ENABLED_CDC_DATABASE = "SELECT is_cdc_enabled FROM sys.databases WHERE name = 'test'";
+    private static final String IS_CDC_ENABLED = "SELECT is_cdc_enabled FROM sys.databases WHERE name = 'test'";
+
     private static final String GET_MAX_TRANSACTION_LSN = "SELECT MAX(start_lsn) FROM cdc.lsn_time_mapping WHERE tran_id <> 0x00";
+    private static final String GET_MIN_LSN = "SELECT sys.fn_cdc_get_min_lsn('#')";
+
+    private static final String LOCK_TABLE = "SELECT * FROM [#] WITH (TABLOCKX)";
+    private static final String GET_ALL_CHANGES_FOR_TABLE = "SELECT *# FROM cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC, [__$operation] ASC";
     private static final String GET_LIST_OF_CDC_ENABLED_TABLES = "EXEC sys.sp_cdc_help_change_data_capture";
+    private static final String SQL_SERVER_VERSION = "SELECT @@VERSION AS 'SQL Server Version'";
+    private static final String LSN_TIMESTAMP_SELECT_STATEMENT = "sys.fn_cdc_map_lsn_to_time([__$start_lsn])";
+    private static final String AT_TIME_ZONE_UTC = "AT TIME ZONE 'UTC'";
+
+    private static final String STATEMENTS_PLACEHOLDER = "#";
     private static final Pattern BRACKET_PATTERN = Pattern.compile("[\\[\\]]");
 
-    private Connection conn = null;
+    /**
+     * 数据库的实际名称，可能与连接器配置中给定的数据库名称不同
+     */
+    private String realDatabaseName;
+    private String getAllChangesForTable;
+    private String agentState;
+    private boolean enabledCDC;
+
+    private Connection connection = null;
 
     /**
      * <p>cdc.captured_columns – 此表返回捕获列列表的结果。</p>
@@ -44,17 +64,32 @@ public class ChangeDataCaptureTest {
         cdc.start();
 
         // 获取数据库名 test
-        cdc.queryAndMap(GET_DATABASE_NAME);
-        // 获取Agent服务状态 Stopped. Running.
-        cdc.queryAndMap(GET_STATE_AGENT_SERVER);
-        // 获取数据库CDC状态 false 0 true 1
-        cdc.queryAndMap(GET_ENABLED_CDC_DATABASE);
+        realDatabaseName = cdc.queryAndMap(GET_DATABASE_NAME, rs -> rs.getString(1));
+        logger.info("数据库名:{}", realDatabaseName);
 
-        // 读取事务
-        cdc.queryAndMap(GET_MAX_TRANSACTION_LSN);
+        boolean supportsAtTimeZone = supportsAtTimeZone();
+        logger.info("支持时区:{}", supportsAtTimeZone);
+        getAllChangesForTable = GET_ALL_CHANGES_FOR_TABLE.replaceFirst(STATEMENTS_PLACEHOLDER, Matcher.quoteReplacement(lsnTimestampSelectStatement(supportsAtTimeZone)));
+
+        // 获取Agent服务状态 Stopped. Running.
+        agentState = cdc.queryAndMap(GET_AGENT_SERVER_STATE, rs -> rs.getString(1));
+        logger.info("Agent服务状态:{}", agentState);
+        // 获取数据库CDC状态 false 0 true 1
+        enabledCDC = cdc.queryAndMap(IS_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs -> rs.getBoolean(1));
+        logger.info("CDC状态:{}", enabledCDC);
+
+        // 从只读复制副本读取时，始终启用默认和唯一事务隔离是快照。这意味着CDC元数据对于长时间运行的事务不可见。
+        //因此，有必要在每次读取之前重新启动事务。对于R/W数据库，执行常规提交以保持TempDB的大小是很重要的
+//        connection.commit();
+
+        // 读取LSN 00000017:0000080d:0008
+        byte[] bytes = cdc.queryAndMap(GET_MAX_TRANSACTION_LSN, rs -> rs.getBytes(1));
+        Lsn lsn = new Lsn(bytes);
+        logger.info("最新LSN:{}", lsn);
+
         // 读取增量
-        cdc.queryAndMap(GET_LIST_OF_CDC_ENABLED_TABLES, rs -> {
-            final Set<SqlServerChangeTable> changeTables = new HashSet<>();
+        Set<SqlServerChangeTable> changeTables = cdc.queryAndMapList(GET_LIST_OF_CDC_ENABLED_TABLES, rs -> {
+            final Set<SqlServerChangeTable> tables = new HashSet<>();
             while (rs.next()) {
                 SqlServerChangeTable changeTable = new SqlServerChangeTable(
                         // schemaName
@@ -71,11 +106,15 @@ public class ChangeDataCaptureTest {
                         rs.getBytes(7),
                         // capturedColumns
                         rs.getString(15));
-                changeTables.add(changeTable);
+                tables.add(changeTable);
             }
-            logger.info("changeTables:{} ", changeTables.size());
-            return changeTables;
+            return tables;
         });
+        logger.info("监听表数:{} ", changeTables.size());
+        changeTables.forEach(t -> logger.info(t.toString()));
+
+        // Terminate the transaction otherwise CDC could not be disabled for tables
+//        connection.rollback();
 
         cdc.close();
     }
@@ -84,9 +123,9 @@ public class ChangeDataCaptureTest {
         String username = "sa";
         String password = "123";
         String url = "jdbc:sqlserver://127.0.0.1:1434;DatabaseName=test";
-        conn = DriverManager.getConnection(url, username, password);
-        if (conn != null) {
-            DatabaseMetaData dm = (DatabaseMetaData) conn.getMetaData();
+        connection = DriverManager.getConnection(url, username, password);
+        if (connection != null) {
+            DatabaseMetaData dm = (DatabaseMetaData) connection.getMetaData();
             System.out.println("Driver name: " + dm.getDriverName());
             System.out.println("Driver version: " + dm.getDriverVersion());
             System.out.println("Product name: " + dm.getDatabaseProductName());
@@ -95,8 +134,8 @@ public class ChangeDataCaptureTest {
     }
 
     private void close() {
-        if (null != conn) {
-            close(conn);
+        if (null != connection) {
+            close(connection);
         }
     }
 
@@ -104,25 +143,26 @@ public class ChangeDataCaptureTest {
         T apply(ResultSet rs) throws SQLException;
     }
 
-    public <T> T queryAndMap(String sql) throws SQLException {
-        return (T) queryAndMap(sql, rs -> {
-            ResultSetMetaData metaData = rs.getMetaData();
-            int columnCount = metaData.getColumnCount();
-            List<Map> data = new ArrayList<>();
-            while (rs.next()) {
-                Map<String, Object> row = new LinkedHashMap<>();
-                for (int i = 1; i <= columnCount; i++) {
-                    row.put(metaData.getColumnLabel(i), rs.getObject(i));
-                }
-                data.add(row);
-                logger.info(row.toString());
+    public <T> T queryAndMap(String sql, ResultSetMapper<T> mapper) throws SQLException {
+        Statement statement = connection.createStatement();
+        ResultSet rs = null;
+        T apply = null;
+        try {
+            rs = statement.executeQuery(sql);
+            if (rs.next()) {
+                apply = mapper.apply(rs);
             }
-            return data;
-        });
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        } finally {
+            close(rs);
+            close(statement);
+        }
+        return apply;
     }
 
-    public <T> T queryAndMap(String sql, ResultSetMapper<T> mapper) throws SQLException {
-        Statement statement = conn.createStatement();
+    public <T> T queryAndMapList(String sql, ResultSetMapper<T> mapper) throws SQLException {
+        Statement statement = connection.createStatement();
         ResultSet rs = null;
         T apply = null;
         try {
@@ -147,6 +187,49 @@ public class ChangeDataCaptureTest {
         }
     }
 
+    /**
+     * Returns the query for obtaining the LSN-to-TIMESTAMP query. On SQL Server
+     * 2016 and newer, the query will normalize the value to UTC. This means that
+     * the SERVER_TIMEZONE is not necessary to be given. The returned TIMESTAMP will
+     * be adjusted by the JDBC driver using this VM's TZ (as required by the JDBC
+     * spec), and that same TZ will be applied when converting
+     * the TIMESTAMP value into an {@code Instant}.
+     */
+    private String lsnTimestampSelectStatement(boolean supportsAtTimeZone) {
+        String result = ", " + LSN_TIMESTAMP_SELECT_STATEMENT;
+        if (supportsAtTimeZone) {
+            result += " " + AT_TIME_ZONE_UTC;
+        }
+        return result;
+    }
+
+    /**
+     * SELECT ... AT TIME ZONE only works on SQL Server 2016 and newer.
+     */
+    private boolean supportsAtTimeZone() {
+        try {
+            // Always expect the support if database is not standalone SQL Server, e.g. Azure
+            return getSqlServerVersion().orElse(Integer.MAX_VALUE) > 2016;
+        } catch (Exception e) {
+            logger.error("Couldn't obtain database server version; assuming 'AT TIME ZONE' is not supported.", e);
+            return false;
+        }
+    }
+
+    private Optional<Integer> getSqlServerVersion() {
+        try {
+            // As per https://www.mssqltips.com/sqlservertip/1140/how-to-tell-what-sql-server-version-you-are-running/
+            // Always beginning with 'Microsoft SQL Server NNNN' but only in case SQL Server is standalone
+            String version = queryAndMap(SQL_SERVER_VERSION, rs -> rs.getString(1));
+            if (!version.startsWith("Microsoft SQL Server ")) {
+                return Optional.empty();
+            }
+            return Optional.of(Integer.valueOf(version.substring(21, 25)));
+        } catch (Exception e) {
+            throw new RuntimeException("Couldn't obtain database server version", e);
+        }
+    }
+
     final class SqlServerChangeTable {
         String schemaName;
         String tableName;
@@ -168,6 +251,18 @@ public class ChangeDataCaptureTest {
             this.stopLsn = stopLsn;
         }
 
+        @Override
+        public String toString() {
+            return "SqlServerChangeTable{" +
+                    "schemaName='" + schemaName + '\'' +
+                    ", tableName='" + tableName + '\'' +
+                    ", captureInstance='" + captureInstance + '\'' +
+                    ", changeTableObjectId=" + changeTableObjectId +
+                    ", startLsn=" + Arrays.toString(startLsn) +
+                    ", stopLsn=" + Arrays.toString(stopLsn) +
+                    ", capturedColumns='" + capturedColumns + '\'' +
+                    '}';
+        }
     }
 
 }
