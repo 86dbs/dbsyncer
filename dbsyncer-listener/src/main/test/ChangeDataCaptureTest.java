@@ -1,4 +1,6 @@
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.listener.sqlserver.Lsn;
+import org.dbsyncer.listener.sqlserver.SqlServerChangeTable;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,10 +22,11 @@ public class ChangeDataCaptureTest {
 
     private static final String GET_AGENT_SERVER_STATE = "EXEC master.dbo.xp_servicecontrol N'QUERYSTATE', N'SQLSERVERAGENT'";
     private static final String GET_DATABASE_NAME = "SELECT db_name()";
-    private static final String IS_CDC_ENABLED = "SELECT is_cdc_enabled FROM sys.databases WHERE name = 'test'";
+    private static final String IS_CDC_ENABLED = "SELECT is_cdc_enabled FROM sys.databases WHERE name = '#'";
 
     private static final String GET_MAX_TRANSACTION_LSN = "SELECT MAX(start_lsn) FROM cdc.lsn_time_mapping WHERE tran_id <> 0x00";
     private static final String GET_MIN_LSN = "SELECT sys.fn_cdc_get_min_lsn('#')";
+    private static final String GET_MAX_LSN = "SELECT sys.fn_cdc_get_max_lsn()";
 
     private static final String LOCK_TABLE = "SELECT * FROM [#] WITH (TABLOCKX)";
     private static final String GET_ALL_CHANGES_FOR_TABLE = "SELECT *# FROM cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC, [__$operation] ASC";
@@ -67,7 +70,7 @@ public class ChangeDataCaptureTest {
         realDatabaseName = cdc.queryAndMap(GET_DATABASE_NAME, rs -> rs.getString(1));
         logger.info("数据库名:{}", realDatabaseName);
 
-        boolean supportsAtTimeZone = supportsAtTimeZone();
+        boolean supportsAtTimeZone = supportsAtTimeZone(cdc);
         logger.info("支持时区:{}", supportsAtTimeZone);
         getAllChangesForTable = GET_ALL_CHANGES_FOR_TABLE.replaceFirst(STATEMENTS_PLACEHOLDER, Matcher.quoteReplacement(lsnTimestampSelectStatement(supportsAtTimeZone)));
 
@@ -83,9 +86,11 @@ public class ChangeDataCaptureTest {
 //        connection.commit();
 
         // 读取LSN 00000017:0000080d:0008
-        byte[] bytes = cdc.queryAndMap(GET_MAX_TRANSACTION_LSN, rs -> rs.getBytes(1));
-        Lsn lsn = new Lsn(bytes);
-        logger.info("最新LSN:{}", lsn);
+        Lsn maxTransactionLsn = cdc.queryAndMap(GET_MAX_TRANSACTION_LSN, rs -> new Lsn(rs.getBytes(1)));
+        logger.info("最新事务LSN:{}", maxTransactionLsn);
+
+        final Lsn maxLsn = cdc.queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
+        logger.info("最新记录LSN:{}", maxLsn);
 
         // 读取增量
         Set<SqlServerChangeTable> changeTables = cdc.queryAndMapList(GET_LIST_OF_CDC_ENABLED_TABLES, rs -> {
@@ -113,6 +118,37 @@ public class ChangeDataCaptureTest {
         logger.info("监听表数:{} ", changeTables.size());
         changeTables.forEach(t -> logger.info(t.toString()));
 
+        if (!CollectionUtils.isEmpty(changeTables)) {
+            changeTables.forEach(changeTable -> {
+                try {
+                    final String query = getAllChangesForTable.replace(STATEMENTS_PLACEHOLDER, changeTable.getCaptureInstance());
+                    Lsn startLsn = cdc.queryAndMap(GET_MIN_LSN, rs -> new Lsn(rs.getBytes(1)));
+                    changeTable.setStartLsn(maxTransactionLsn.compareTo(startLsn) > 0 ? maxTransactionLsn.getBinary() : startLsn.getBinary());
+                    changeTable.setStopLsn(maxLsn.getBinary());
+                    logger.info("Getting changes for table {} in range[{}, {}]", changeTable.getTableName(), changeTable.getStartLsn(), changeTable.getStopLsn());
+
+                    cdc.queryAndMapList(query, statement -> {
+                        statement.setBytes(1, changeTable.getStartLsn());
+                        statement.setBytes(2, changeTable.getStopLsn());
+                    }, rs -> {
+                        int columnCount = rs.getMetaData().getColumnCount();
+                        List<List<Object>> data = new ArrayList<>(columnCount);
+                        while (rs.next()) {
+                            List<Object> row = new ArrayList<>(columnCount);
+                            for (int i = 1; i <= columnCount; i++) {
+                                Object val = rs.getObject(i);
+                                row.add(val);
+                            }
+                            logger.info("rows:{}", row);
+                            data.add(row);
+                        }
+                        return data;
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+        }
         // Terminate the transaction otherwise CDC could not be disabled for tables
 //        connection.rollback();
 
@@ -143,6 +179,10 @@ public class ChangeDataCaptureTest {
         T apply(ResultSet rs) throws SQLException;
     }
 
+    public interface StatementPreparer {
+        void accept(PreparedStatement statement) throws SQLException;
+    }
+
     public <T> T queryAndMap(String sql, ResultSetMapper<T> mapper) throws SQLException {
         Statement statement = connection.createStatement();
         ResultSet rs = null;
@@ -157,6 +197,24 @@ public class ChangeDataCaptureTest {
         } finally {
             close(rs);
             close(statement);
+        }
+        return apply;
+    }
+
+    public <T> T queryAndMapList(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> resultSetMapper) {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        T apply = null;
+        try {
+            ps = connection.prepareStatement(sql);
+            statementPreparer.accept(ps);
+            rs = ps.executeQuery();
+            apply = resultSetMapper.apply(rs);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        } finally {
+            close(rs);
+            close(ps);
         }
         return apply;
     }
@@ -204,65 +262,22 @@ public class ChangeDataCaptureTest {
     }
 
     /**
-     * SELECT ... AT TIME ZONE only works on SQL Server 2016 and newer.
+     * 2016版本以上支持时区
      */
-    private boolean supportsAtTimeZone() {
-        try {
-            // Always expect the support if database is not standalone SQL Server, e.g. Azure
-            return getSqlServerVersion().orElse(Integer.MAX_VALUE) > 2016;
-        } catch (Exception e) {
-            logger.error("Couldn't obtain database server version; assuming 'AT TIME ZONE' is not supported.", e);
-            return false;
-        }
-    }
-
-    private Optional<Integer> getSqlServerVersion() {
+    private boolean supportsAtTimeZone(ChangeDataCaptureTest cdc) {
         try {
             // As per https://www.mssqltips.com/sqlservertip/1140/how-to-tell-what-sql-server-version-you-are-running/
             // Always beginning with 'Microsoft SQL Server NNNN' but only in case SQL Server is standalone
-            String version = queryAndMap(SQL_SERVER_VERSION, rs -> rs.getString(1));
-            if (!version.startsWith("Microsoft SQL Server ")) {
-                return Optional.empty();
+            logger.info("query version");
+            String version = cdc.queryAndMap(SQL_SERVER_VERSION, rs -> rs.getString(1));
+            if (version.startsWith("Microsoft SQL Server ")) {
+                Integer num = Integer.valueOf(version.substring(21, 25));
+                return num > 2016;
             }
-            return Optional.of(Integer.valueOf(version.substring(21, 25)));
         } catch (Exception e) {
-            throw new RuntimeException("Couldn't obtain database server version", e);
+            logger.error(e.getMessage());
         }
-    }
-
-    final class SqlServerChangeTable {
-        String schemaName;
-        String tableName;
-        String captureInstance;
-        int changeTableObjectId;
-        byte[] startLsn;
-        byte[] stopLsn;
-        String capturedColumns;
-
-        public SqlServerChangeTable(String schemaName, String tableName, String captureInstance,
-                                    int changeTableObjectId,
-                                    byte[] startLsn, byte[] stopLsn, String capturedColumns) {
-            this.schemaName = schemaName;
-            this.tableName = tableName;
-            this.captureInstance = captureInstance;
-            this.capturedColumns = capturedColumns;
-            this.changeTableObjectId = changeTableObjectId;
-            this.startLsn = startLsn;
-            this.stopLsn = stopLsn;
-        }
-
-        @Override
-        public String toString() {
-            return "SqlServerChangeTable{" +
-                    "schemaName='" + schemaName + '\'' +
-                    ", tableName='" + tableName + '\'' +
-                    ", captureInstance='" + captureInstance + '\'' +
-                    ", changeTableObjectId=" + changeTableObjectId +
-                    ", startLsn=" + Arrays.toString(startLsn) +
-                    ", stopLsn=" + Arrays.toString(stopLsn) +
-                    ", capturedColumns='" + capturedColumns + '\'' +
-                    '}';
-        }
+        return false;
     }
 
 }
