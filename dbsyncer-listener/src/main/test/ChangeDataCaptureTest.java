@@ -1,6 +1,7 @@
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.listener.sqlserver.Lsn;
 import org.dbsyncer.listener.sqlserver.SqlServerChangeTable;
+import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +37,10 @@ public class ChangeDataCaptureTest {
     private static final String AT_TIME_ZONE_UTC = " AT TIME ZONE 'UTC'";
     private static final String GET_ALL_CHANGES_FOR_TABLE = "SELECT sys.fn_cdc_map_lsn_to_time([__$start_lsn])#, * FROM cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC, [__$operation] ASC";
     private static final String GET_TABLES_CDC_ENABLED = "EXEC sys.sp_cdc_help_change_data_capture";
-    private static final String GET_MAX_TRANSACTION_LSN = "SELECT MAX(start_lsn) FROM cdc.lsn_time_mapping WHERE tran_id <> 0x00";
-    private static final String GET_INCREMENT_LSN = "SELECT sys.fn_cdc_increment_lsn(?)";
     private static final String GET_MAX_LSN = "SELECT sys.fn_cdc_get_max_lsn()";
     private static final String GET_MIN_LSN = "SELECT sys.fn_cdc_get_min_lsn('#')";
+    private static final String GET_INCREMENT_LSN = "SELECT sys.fn_cdc_increment_lsn(?)";
+    private static final String GET_MAX_TRANSACTION_LSN = "SELECT MAX(start_lsn) FROM cdc.lsn_time_mapping WHERE tran_id <> 0x00";
 
     private String realDatabaseName;
     private String getAllChangesForTable;
@@ -77,6 +78,8 @@ public class ChangeDataCaptureTest {
         // 获取Agent服务状态 Stopped. Running.
         boolean enabledServerAgent = cdc.queryAndMap(IS_SERVER_AGENT_RUNNING, rs -> "Running.".equals(rs.getString(1)));
         logger.info("是否启动Agent服务:{}", enabledServerAgent);
+        Assert.assertTrue("The agent server is not running", enabledServerAgent);
+
         // 获取数据库CDC状态 false 0 true 1
         boolean enabledCDC = cdc.queryAndMap(IS_DB_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs -> rs.getBoolean(1));
         logger.info("是否启用库CDC:{}", enabledCDC);
@@ -127,32 +130,30 @@ public class ChangeDataCaptureTest {
             Lsn lastLsn = cdc.queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
             logger.info("最新记录LSN:{}", lastLsn);
 
-            while (true && count.getAndAdd(1) < 10){
-                // 读取LSN 00000017:0000080d:0008
+            while (true && count.getAndAdd(1) < 10) {
                 Lsn stopLsn = cdc.queryAndMap(GET_MAX_TRANSACTION_LSN, rs -> new Lsn(rs.getBytes(1)));
-                if(!stopLsn.isAvailable()){
+                if (!stopLsn.isAvailable()) {
                     logger.warn("No maximum LSN recorded in the database; please ensure that the SQL Server Agent is running");
                     cdc.pause();
                     continue;
                 }
 
-                if(stopLsn.compareTo(lastLsn) <= 0){
+                if (stopLsn.compareTo(lastLsn) <= 0) {
                     logger.info("There is no change in the database");
                     cdc.pause();
                     continue;
                 }
 
-                Lsn startLsn = lastLsn;
+                Lsn startLsn = getIncrementLsn(cdc, lastLsn);
                 changeTables.forEach(changeTable -> {
                     try {
+                        // FIXME 为过程或函数 cdc.fn_cdc_get_all_changes_ ...  提供的参数数目不足。
                         final String query = getAllChangesForTable.replace(STATEMENTS_PLACEHOLDER, changeTable.getCaptureInstance());
-                        changeTable.setStartLsn(startLsn.getBinary());
-                        changeTable.setStopLsn(stopLsn.getBinary());
-                        logger.info("Getting changes for table {} in range[{}, {}]", changeTable.getTableName(), changeTable.getStartLsn(), changeTable.getStopLsn());
+                        logger.info("Getting changes for table {} in range[{}, {}]", changeTable.getTableName(), startLsn, stopLsn);
 
                         cdc.queryAndMapList(query, statement -> {
-                            statement.setBytes(1, changeTable.getStartLsn());
-                            statement.setBytes(2, changeTable.getStopLsn());
+                            statement.setBytes(1, startLsn.getBinary());
+                            statement.setBytes(2, stopLsn.getBinary());
                         }, rs -> {
                             int columnCount = rs.getMetaData().getColumnCount();
                             List<List<Object>> data = new ArrayList<>(columnCount);
@@ -179,10 +180,15 @@ public class ChangeDataCaptureTest {
         cdc.close();
     }
 
+    /**
+     * 获取下一个记录点LSN
+     *
+     * @param cdc
+     * @param lastLsn
+     * @return LSN of the next position in the database
+     */
     private Lsn getIncrementLsn(ChangeDataCaptureTest cdc, Lsn lastLsn) {
-        return cdc.queryAndMap(GET_INCREMENT_LSN, statement -> {
-            statement.setBytes(1, lastLsn.getBinary());
-        }, rs -> new Lsn(rs.getBytes(1)));
+        return cdc.queryAndMap(GET_INCREMENT_LSN, statement -> statement.setBytes(1, lastLsn.getBinary()), rs -> Lsn.valueOf(rs.getBytes(1)));
     }
 
     private void pause() throws InterruptedException {
@@ -234,22 +240,7 @@ public class ChangeDataCaptureTest {
     }
 
     public <T> T queryAndMap(String sql, ResultSetMapper<T> mapper) {
-        Statement statement = null;
-        ResultSet rs = null;
-        T apply = null;
-        try {
-            statement = connection.createStatement();
-            rs = statement.executeQuery(sql);
-            if (rs.next()) {
-                apply = mapper.apply(rs);
-            }
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-        } finally {
-            close(rs);
-            close(statement);
-        }
-        return apply;
+        return queryAndMap(sql, null, mapper);
     }
 
     public <T> T queryAndMap(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
@@ -258,27 +249,13 @@ public class ChangeDataCaptureTest {
         T apply = null;
         try {
             ps = connection.prepareStatement(sql);
-            statementPreparer.accept(ps);
+            if (null != statementPreparer) {
+                statementPreparer.accept(ps);
+            }
             rs = ps.executeQuery();
-            apply = mapper.apply(rs);
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-        } finally {
-            close(rs);
-            close(ps);
-        }
-        return apply;
-    }
-
-    public <T> T queryAndMapList(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        T apply = null;
-        try {
-            ps = connection.prepareStatement(sql);
-            statementPreparer.accept(ps);
-            rs = ps.executeQuery();
-            apply = mapper.apply(rs);
+            if (rs.next()) {
+                apply = mapper.apply(rs);
+            }
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
@@ -289,18 +266,25 @@ public class ChangeDataCaptureTest {
     }
 
     public <T> T queryAndMapList(String sql, ResultSetMapper<T> mapper) {
-        Statement statement = null;
+        return queryAndMapList(sql, null, mapper);
+    }
+
+    public <T> T queryAndMapList(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
+        PreparedStatement ps = null;
         ResultSet rs = null;
         T apply = null;
         try {
-            statement = connection.createStatement();
-            rs = statement.executeQuery(sql);
+            ps = connection.prepareStatement(sql);
+            if (null != statementPreparer) {
+                statementPreparer.accept(ps);
+            }
+            rs = ps.executeQuery();
             apply = mapper.apply(rs);
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
             close(rs);
-            close(statement);
+            close(ps);
         }
         return apply;
     }
