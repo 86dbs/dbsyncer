@@ -1,3 +1,4 @@
+import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.listener.sqlserver.Lsn;
 import org.dbsyncer.listener.sqlserver.SqlServerChangeTable;
@@ -40,7 +41,6 @@ public class ChangeDataCaptureTest {
     private static final String GET_MAX_LSN = "SELECT sys.fn_cdc_get_max_lsn()";
     private static final String GET_MIN_LSN = "SELECT sys.fn_cdc_get_min_lsn('#')";
     private static final String GET_INCREMENT_LSN = "SELECT sys.fn_cdc_increment_lsn(?)";
-    private static final String GET_MAX_TRANSACTION_LSN = "SELECT MAX(start_lsn) FROM cdc.lsn_time_mapping WHERE tran_id <> 0x00";
 
     private String realDatabaseName;
     private String getAllChangesForTable;
@@ -128,10 +128,9 @@ public class ChangeDataCaptureTest {
         if (!CollectionUtils.isEmpty(changeTables)) {
             AtomicInteger count = new AtomicInteger(0);
             Lsn lastLsn = cdc.queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
-            logger.info("最新记录LSN:{}", lastLsn);
 
-            while (true && count.getAndAdd(1) < 10) {
-                Lsn stopLsn = cdc.queryAndMap(GET_MAX_TRANSACTION_LSN, rs -> new Lsn(rs.getBytes(1)));
+            while (true && count.getAndAdd(1) < 100) {
+                Lsn stopLsn = cdc.queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
                 if (!stopLsn.isAvailable()) {
                     logger.warn("No maximum LSN recorded in the database; please ensure that the SQL Server Agent is running");
                     cdc.pause();
@@ -139,7 +138,6 @@ public class ChangeDataCaptureTest {
                 }
 
                 if (stopLsn.compareTo(lastLsn) <= 0) {
-                    logger.info("There is no change in the database");
                     cdc.pause();
                     continue;
                 }
@@ -147,7 +145,6 @@ public class ChangeDataCaptureTest {
                 Lsn startLsn = getIncrementLsn(cdc, lastLsn);
                 changeTables.forEach(changeTable -> {
                     try {
-                        // FIXME 为过程或函数 cdc.fn_cdc_get_all_changes_ ...  提供的参数数目不足。
                         final String query = getAllChangesForTable.replace(STATEMENTS_PLACEHOLDER, changeTable.getCaptureInstance());
                         logger.info("Getting changes for table {} in range[{}, {}]", changeTable.getTableName(), startLsn, stopLsn);
 
@@ -192,7 +189,7 @@ public class ChangeDataCaptureTest {
     }
 
     private void pause() throws InterruptedException {
-        TimeUnit.SECONDS.sleep(5);
+        TimeUnit.SECONDS.sleep(2);
     }
 
     private void execute(String... sqlStatements) throws SQLException {
@@ -218,10 +215,10 @@ public class ChangeDataCaptureTest {
         connection = DriverManager.getConnection(url, username, password);
         if (connection != null) {
             DatabaseMetaData dm = (DatabaseMetaData) connection.getMetaData();
-            System.out.println("Driver name: " + dm.getDriverName());
-            System.out.println("Driver version: " + dm.getDriverVersion());
-            System.out.println("Product name: " + dm.getDatabaseProductName());
-            System.out.println("Product version: " + dm.getDatabaseProductVersion());
+            logger.info("Driver name: " + dm.getDriverName());
+            logger.info("Driver version: " + dm.getDriverVersion());
+            logger.info("Product name: " + dm.getDatabaseProductName());
+            logger.info("Product version: " + dm.getDatabaseProductVersion());
         }
     }
 
@@ -280,6 +277,9 @@ public class ChangeDataCaptureTest {
             }
             rs = ps.executeQuery();
             apply = mapper.apply(rs);
+        } catch (SQLServerException e) {
+            // 为过程或函数 cdc.fn_cdc_get_all_changes_ ...  提供的参数数目不足。
+            logger.debug(e.getMessage());
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
