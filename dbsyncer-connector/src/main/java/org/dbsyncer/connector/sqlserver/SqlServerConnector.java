@@ -20,7 +20,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
 
     @Override
     protected String getTablesSql(DatabaseConfig config) {
-        return "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('DBO')";
+        return "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('DBO') AND IS_MS_SHIPPED = 0";
     }
 
     @Override

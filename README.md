@@ -164,9 +164,9 @@
                     <p>开启CDC:</p>
                 </td>
                 <td>
-                    <p>要求2008版本以上, 启动代理服务（Agent服务）</p>
+                    <p>要求2008版本以上, 启动代理服务（Agent服务）, 连接账号具有 sysadmin 固定服务器角色或 db_owner 固定数据库角色的成员身份。对于所有其他用户，具有源表SELECT 权限；如果已定义捕获实例的访问控制角色，则还要求具有该数据库角色的成员身份。</p>
                     <p>EXEC sys.sp_cdc_enable_db</p>
-                    <p>EXEC sys.sp_cdc_enable_table</p>
+                    <p>EXEC sys.sp_cdc_enable_table @source_schema = N'dbo', @source_name = N'#', @role_name = NULL, @supports_net_changes = 0</p>
                 </td>
                 <td>SQL Server 2008提供了内建的方法变更数据捕获（Change Data Capture 即CDC）以实现异步跟踪用户表的数据修改</td>
             </tr>

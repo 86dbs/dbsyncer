@@ -8,10 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -29,11 +26,13 @@ public class ChangeDataCaptureTest {
     private static final String STATEMENTS_PLACEHOLDER = "#";
     private static final String GET_DATABASE_NAME = "SELECT db_name()";
     private static final String GET_DATABASE_VERSION = "SELECT @@VERSION AS 'SQL Server Version'";
+    private static final String GET_TABLE_LIST = "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('DBO') AND IS_MS_SHIPPED = 0";
     private static final String IS_SERVER_AGENT_RUNNING = "EXEC master.dbo.xp_servicecontrol N'QUERYSTATE', N'SQLSERVERAGENT'";
     private static final String IS_DB_CDC_ENABLED = "SELECT is_cdc_enabled FROM sys.databases WHERE name = '#'";
     private static final String IS_TABLE_CDC_ENABLED = "SELECT COUNT(*) FROM sys.tables tb WHERE tb.is_tracked_by_cdc = 1 AND tb.name='#'";
     private static final String ENABLE_DB_CDC = "IF EXISTS(select 1 from sys.databases where name = '#' AND is_cdc_enabled=0) EXEC sys.sp_cdc_enable_db";
     private static final String ENABLE_TABLE_CDC = "IF EXISTS(select 1 from sys.tables where name = '#' AND is_tracked_by_cdc=0) EXEC sys.sp_cdc_enable_table @source_schema = N'dbo', @source_name = N'#', @role_name = NULL, @supports_net_changes = 0";
+    private static final String DISABLE_TABLE_CDC = "EXEC sys.sp_cdc_disable_table @source_schema = N'dbo', @source_name = N'#', @capture_instance = 'all'";
 
     private static final String AT_TIME_ZONE_UTC = " AT TIME ZONE 'UTC'";
     private static final String GET_ALL_CHANGES_FOR_TABLE = "SELECT sys.fn_cdc_map_lsn_to_time([__$start_lsn])#, * FROM cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC, [__$operation] ASC";
@@ -45,6 +44,7 @@ public class ChangeDataCaptureTest {
     private String realDatabaseName;
     private String getAllChangesForTable;
     private Connection connection = null;
+    private Set<String> tables;
 
     /**
      * <p>cdc.captured_columns – 此表返回捕获列列表的结果。</p>
@@ -75,26 +75,40 @@ public class ChangeDataCaptureTest {
             supportsAtTimeZone = 2016 < Integer.valueOf(version.substring(21, 25));
         }
         logger.info("数据库版本:{}", version);
+        tables = cdc.queryAndMapList(GET_TABLE_LIST, rs -> {
+            Set<String> table = new LinkedHashSet<>();
+            while (rs.next()) {
+                table.add(rs.getString(1));
+            }
+            return table;
+        });
+        logger.info("所有表:{}", tables);
         // 获取Agent服务状态 Stopped. Running.
         boolean enabledServerAgent = cdc.queryAndMap(IS_SERVER_AGENT_RUNNING, rs -> "Running.".equals(rs.getString(1)));
         logger.info("是否启动Agent服务:{}", enabledServerAgent);
         Assert.assertTrue("The agent server is not running", enabledServerAgent);
-
-        // 获取数据库CDC状态 false 0 true 1
         boolean enabledCDC = cdc.queryAndMap(IS_DB_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs -> rs.getBoolean(1));
-        logger.info("是否启用库CDC:{}", enabledCDC);
+        logger.info("是否启用CDC库[{}]:{}", realDatabaseName, enabledCDC);
         if (!enabledCDC) {
             cdc.execute(ENABLE_DB_CDC.replace(STATEMENTS_PLACEHOLDER, realDatabaseName));
             // make sure DB has cdc-enabled before proceeding
-            TimeUnit.SECONDS.sleep(5);
+            TimeUnit.SECONDS.sleep(3);
         }
-        boolean enabledTableCDC = cdc.queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, "MY_USER"), rs -> rs.getInt(1) > 0);
-        logger.info("是否启用表CDC:{}", enabledTableCDC);
-        if (!enabledTableCDC) {
-            cdc.execute(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, "MY_USER"));
-        }
-        Lsn minLsn = cdc.queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, "MY_USER"), rs -> new Lsn(rs.getBytes(1)));
-        logger.info("表最早记录LSN:{}", minLsn);
+
+        // 注册CDC表
+        tables.forEach(table -> {
+            try {
+                boolean enabledTableCDC = cdc.queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs -> rs.getInt(1) > 0);
+                logger.info("是否启用CDC表[{}]:{}", table, enabledTableCDC);
+                if (!enabledTableCDC) {
+                    cdc.execute(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table));
+                    Lsn minLsn = cdc.queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, table), rs -> new Lsn(rs.getBytes(1)));
+                    logger.info("启用CDC表[{}]:{}", table, minLsn.isAvailable());
+                }
+            } catch (SQLException e) {
+                logger.error(e.getMessage());
+            }
+        });
 
         // 支持UTC
         getAllChangesForTable = GET_ALL_CHANGES_FOR_TABLE.replaceFirst(STATEMENTS_PLACEHOLDER, Matcher.quoteReplacement(supportsAtTimeZone ? AT_TIME_ZONE_UTC : ""));
@@ -129,7 +143,7 @@ public class ChangeDataCaptureTest {
             AtomicInteger count = new AtomicInteger(0);
             Lsn lastLsn = cdc.queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
 
-            while (true && count.getAndAdd(1) < 100) {
+            while (true && count.getAndAdd(1) < 30) {
                 Lsn stopLsn = cdc.queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
                 if (!stopLsn.isAvailable()) {
                     logger.warn("No maximum LSN recorded in the database; please ensure that the SQL Server Agent is running");
@@ -154,11 +168,11 @@ public class ChangeDataCaptureTest {
                         }, rs -> {
                             int columnCount = rs.getMetaData().getColumnCount();
                             List<List<Object>> data = new ArrayList<>(columnCount);
+                            List<Object> row = null;
                             while (rs.next()) {
-                                List<Object> row = new ArrayList<>(columnCount);
+                                row = new ArrayList<>(columnCount);
                                 for (int i = 1; i <= columnCount; i++) {
-                                    Object val = rs.getObject(i);
-                                    row.add(val);
+                                    row.add(rs.getObject(i));
                                 }
                                 logger.info("rows:{}", row);
                                 data.add(row);
@@ -174,16 +188,43 @@ public class ChangeDataCaptureTest {
             }
         }
 
+        // 注销CDC表
+        for (String table : tables) {
+            cdc.execute(DISABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table));
+        }
         cdc.close();
     }
 
-    /**
-     * 获取下一个记录点LSN
-     *
-     * @param cdc
-     * @param lastLsn
-     * @return LSN of the next position in the database
-     */
+    public void start() throws SQLException {
+        String username = "sa";
+        String password = "123";
+        String url = "jdbc:sqlserver://127.0.0.1:1434;DatabaseName=test";
+        connection = DriverManager.getConnection(url, username, password);
+        if (connection != null) {
+            DatabaseMetaData dm = (DatabaseMetaData) connection.getMetaData();
+            logger.info("Driver name: " + dm.getDriverName());
+            logger.info("Driver version: " + dm.getDriverVersion());
+            logger.info("Product name: " + dm.getDatabaseProductName());
+            logger.info("Product version: " + dm.getDatabaseProductVersion());
+        }
+    }
+
+    public void close() {
+        if (null != connection) {
+            close(connection);
+        }
+    }
+
+    private void close(AutoCloseable closeable) {
+        if (null != closeable) {
+            try {
+                closeable.close();
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+            }
+        }
+    }
+
     private Lsn getIncrementLsn(ChangeDataCaptureTest cdc, Lsn lastLsn) {
         return cdc.queryAndMap(GET_INCREMENT_LSN, statement -> statement.setBytes(1, lastLsn.getBinary()), rs -> Lsn.valueOf(rs.getBytes(1)));
     }
@@ -205,26 +246,6 @@ public class ChangeDataCaptureTest {
             logger.error(e.getMessage());
         } finally {
             close(statement);
-        }
-    }
-
-    private void start() throws SQLException {
-        String username = "sa";
-        String password = "123";
-        String url = "jdbc:sqlserver://127.0.0.1:1434;DatabaseName=test";
-        connection = DriverManager.getConnection(url, username, password);
-        if (connection != null) {
-            DatabaseMetaData dm = (DatabaseMetaData) connection.getMetaData();
-            logger.info("Driver name: " + dm.getDriverName());
-            logger.info("Driver version: " + dm.getDriverVersion());
-            logger.info("Product name: " + dm.getDatabaseProductName());
-            logger.info("Product version: " + dm.getDatabaseProductVersion());
-        }
-    }
-
-    private void close() {
-        if (null != connection) {
-            close(connection);
         }
     }
 
@@ -279,7 +300,7 @@ public class ChangeDataCaptureTest {
             apply = mapper.apply(rs);
         } catch (SQLServerException e) {
             // 为过程或函数 cdc.fn_cdc_get_all_changes_ ...  提供的参数数目不足。
-            logger.debug(e.getMessage());
+            logger.warn(e.getMessage());
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
@@ -287,16 +308,6 @@ public class ChangeDataCaptureTest {
             close(ps);
         }
         return apply;
-    }
-
-    private void close(AutoCloseable closeable) {
-        if (null != closeable) {
-            try {
-                closeable.close();
-            } catch (Exception e) {
-                logger.error(e.getMessage());
-            }
-        }
     }
 
 }
