@@ -17,7 +17,7 @@ import java.util.regex.Matcher;
  * @version 1.0.0
  * @Author AE86
  * @Date 2021-06-14 01:55
- * @see https://www.red-gate.com/simple-talk/sql/learn-sql-server/introduction-to-change-data-capture-cdc-in-sql-server-2008/
+ * @Link https://www.red-gate.com/simple-talk/sql/learn-sql-server/introduction-to-change-data-capture-cdc-in-sql-server-2008/
  */
 public class ChangeDataCaptureTest {
 
@@ -132,12 +132,12 @@ public class ChangeDataCaptureTest {
                         rs.getBytes(7),
                         // capturedColumns
                         rs.getString(15));
+                logger.info(changeTable.toString());
                 tables.add(changeTable);
             }
             return tables;
         });
         logger.info("监听表数:{} ", changeTables.size());
-        changeTables.forEach(t -> logger.info(t.toString()));
 
         if (!CollectionUtils.isEmpty(changeTables)) {
             AtomicInteger count = new AtomicInteger(0);

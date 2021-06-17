@@ -28,56 +28,28 @@ public class SqlServerChangeTable {
         return schemaName;
     }
 
-    public void setSchemaName(String schemaName) {
-        this.schemaName = schemaName;
-    }
-
     public String getTableName() {
         return tableName;
-    }
-
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
     }
 
     public String getCaptureInstance() {
         return captureInstance;
     }
 
-    public void setCaptureInstance(String captureInstance) {
-        this.captureInstance = captureInstance;
-    }
-
     public int getChangeTableObjectId() {
         return changeTableObjectId;
-    }
-
-    public void setChangeTableObjectId(int changeTableObjectId) {
-        this.changeTableObjectId = changeTableObjectId;
     }
 
     public byte[] getStartLsn() {
         return startLsn;
     }
 
-    public void setStartLsn(byte[] startLsn) {
-        this.startLsn = startLsn;
-    }
-
     public byte[] getStopLsn() {
         return stopLsn;
     }
 
-    public void setStopLsn(byte[] stopLsn) {
-        this.stopLsn = stopLsn;
-    }
-
     public String getCapturedColumns() {
         return capturedColumns;
-    }
-
-    public void setCapturedColumns(String capturedColumns) {
-        this.capturedColumns = capturedColumns;
     }
 
     @Override
