@@ -62,7 +62,8 @@ public class SqlServerExtractor extends AbstractExtractor {
         try {
             connectLock.lock();
             if (connected) {
-                throw new IllegalStateException("SqlServerExtractor is already started");
+                logger.error("SqlServerExtractor is already started");
+                return;
             }
 
             connection = connect();
@@ -142,7 +143,7 @@ public class SqlServerExtractor extends AbstractExtractor {
     private void readLastLsn() {
         if (!map.containsKey(LSN_POSITION)) {
             lastLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
-            if (lastLsn.isAvailable()) {
+            if (null != lastLsn && lastLsn.isAvailable()) {
                 map.put(LSN_POSITION, lastLsn.toString());
                 return;
             }
@@ -170,7 +171,9 @@ public class SqlServerExtractor extends AbstractExtractor {
         return queryAndMapList(GET_TABLE_LIST, rs -> {
             Set<String> table = new LinkedHashSet<>();
             while (rs.next()) {
-                table.add(rs.getString(1));
+                if(filterTable.contains(rs.getString(1))){
+                    table.add(rs.getString(1));
+                }
             }
             return table;
         });
@@ -195,7 +198,6 @@ public class SqlServerExtractor extends AbstractExtractor {
                         rs.getBytes(7),
                         // capturedColumns
                         rs.getString(15));
-                logger.info(changeTable.toString());
                 tables.add(changeTable);
             }
             return tables;
@@ -203,21 +205,22 @@ public class SqlServerExtractor extends AbstractExtractor {
     }
 
     private void disableTableCDC() {
-        if (CollectionUtils.isEmpty(tables)) {
+        if (!CollectionUtils.isEmpty(tables)) {
             tables.forEach(table -> execute(DISABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table)));
         }
     }
 
     private void enableTableCDC() {
-        tables.forEach(table -> {
-            boolean enabledTableCDC = queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs -> rs.getInt(1) > 0);
-            logger.info("是否启用CDC表[{}]:{}", table, enabledTableCDC);
-            if (!enabledTableCDC) {
-                execute(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table));
-                Lsn minLsn = queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, table), rs -> new Lsn(rs.getBytes(1)));
-                logger.info("启用CDC表[{}]:{}", table, minLsn.isAvailable());
-            }
-        });
+        if (!CollectionUtils.isEmpty(tables)) {
+            tables.forEach(table -> {
+                boolean enabledTableCDC = queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs -> rs.getInt(1) > 0);
+                if (!enabledTableCDC) {
+                    execute(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table));
+                    Lsn minLsn = queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, table), rs -> new Lsn(rs.getBytes(1)));
+                    logger.info("启用CDC表[{}]:{}", table, minLsn.isAvailable());
+                }
+            });
+        }
     }
 
     private void enableDBCDC() throws InterruptedException {
