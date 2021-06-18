@@ -1,5 +1,6 @@
 package org.dbsyncer.listener.sqlserver;
 
+import com.microsoft.sqlserver.jdbc.SQLServerConnection;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.apache.commons.lang.math.RandomUtils;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -10,9 +11,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 
 /**
@@ -42,6 +47,9 @@ public class SqlServerExtractor extends AbstractExtractor {
     private static final String GET_MIN_LSN = "SELECT sys.fn_cdc_get_min_lsn('#')";
     private static final String GET_INCREMENT_LSN = "SELECT sys.fn_cdc_increment_lsn(?)";
 
+    private static final String LSN_POSITION = "position";
+    private final Lock connectLock = new ReentrantLock();
+    private volatile boolean connected;
     private static String getAllChangesForTable;
     private static Set<String> tables;
     private static Set<SqlServerChangeTable> changeTables;
@@ -52,6 +60,11 @@ public class SqlServerExtractor extends AbstractExtractor {
     @Override
     public void start() {
         try {
+            connectLock.lock();
+            if (connected) {
+                throw new IllegalStateException("SqlServerExtractor is already started");
+            }
+
             connection = connect();
             tables = readTables();
             Assert.isTrue(!CollectionUtils.isEmpty(tables), "No tables available");
@@ -63,34 +76,40 @@ public class SqlServerExtractor extends AbstractExtractor {
             enableTableCDC();
             changeTables = readChangeTables();
             getAllChangesForTable = getAllChangesForTableSql();
+            readLastLsn();
 
-            if (null == lastLsn) {
-                lastLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
-            }
-
-            // 启动消费线程
             worker = new Worker();
-            // FIXME 解析host名称
-            worker.setName(new StringBuilder("cdc-parser-").append("127.0.0.1").append(":").append("1443").append("_").append(RandomUtils.nextInt(100)).toString());
+            worker.setName(new StringBuilder("cdc-parser-").append(getTrustedServerNameAE()).append("_").append(RandomUtils.nextInt(100)).toString());
             worker.setDaemon(false);
             worker.start();
 
+            connected = true;
         } catch (Exception e) {
             close();
             logger.error("启动失败:{}", e.getMessage());
             throw new ListenerException(e);
+        } finally {
+            connectLock.unlock();
         }
     }
 
     @Override
     public void close() {
-        if (null != worker && !worker.isInterrupted()) {
-            worker.interrupt();
-            worker = null;
-        }
-        disableTableCDC();
-        if (null != connection) {
-            close(connection);
+        if (connected) {
+            try {
+                connectLock.lock();
+                if (null != worker && !worker.isInterrupted()) {
+                    worker.interrupt();
+                    worker = null;
+                }
+                disableTableCDC();
+                if (null != connection) {
+                    close(connection);
+                }
+                connected = false;
+            } finally {
+                connectLock.unlock();
+            }
         }
     }
 
@@ -110,6 +129,27 @@ public class SqlServerExtractor extends AbstractExtractor {
         String password = config.getPassword();
         String url = config.getUrl();
         return DriverManager.getConnection(url, username, password);
+    }
+
+    private String getTrustedServerNameAE() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        SQLServerConnection conn = (SQLServerConnection) connection;
+        Class clazz = conn.getClass();
+        Method method = clazz.getDeclaredMethod("getTrustedServerNameAE");
+        method.setAccessible(true);
+        return (String) method.invoke(conn, new Object[]{});
+    }
+
+    private void readLastLsn() {
+        if (!map.containsKey(LSN_POSITION)) {
+            lastLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
+            if (lastLsn.isAvailable()) {
+                map.put(LSN_POSITION, lastLsn.toString());
+                return;
+            }
+            // Shouldn't happen if the agent is running, but it is better to guard against such situation
+            throw new ListenerException("No maximum LSN recorded in the database");
+        }
+        lastLsn = Lsn.valueOf(map.get(LSN_POSITION));
     }
 
     private Lsn getIncrementLsn(Lsn lastLsn) {
@@ -292,6 +332,7 @@ public class SqlServerExtractor extends AbstractExtractor {
                                     row.add(rs.getObject(i));
                                 }
                                 // FIXME 解析增量数据
+                                logger.info(row.toString());
                                 data.add(row);
                             }
                             return data;
@@ -299,7 +340,7 @@ public class SqlServerExtractor extends AbstractExtractor {
                     });
 
                     lastLsn = stopLsn;
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     break;
                 }
             }
