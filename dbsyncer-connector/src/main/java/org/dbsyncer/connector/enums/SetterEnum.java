@@ -27,10 +27,12 @@ public enum SetterEnum {
     NCHAR(Types.NCHAR, new NCharSetter()),
     LONGVARCHAR(Types.LONGVARCHAR, new LongVarcharSetter()),
     NUMERIC(Types.NUMERIC, new NumericSetter()),
+    BINARY(Types.BINARY, new BinarySetter()),
 
     // 很少使用
     SMALLINT(Types.SMALLINT, new SmallintSetter()),
     TINYINT(Types.TINYINT, new TinyintSetter()),
+    TIME(Types.TIME, new TimeSetter()),
     DECIMAL(Types.DECIMAL, new DecimalSetter()),
     DOUBLE(Types.DOUBLE, new DoubleSetter()),
     FLOAT(Types.FLOAT, new FloatSetter()),

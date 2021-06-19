@@ -32,7 +32,6 @@ public class SqlServerExtractor extends AbstractExtractor {
 
     private static final String STATEMENTS_PLACEHOLDER = "#";
     private static final String GET_DATABASE_NAME = "SELECT db_name()";
-    private static final String GET_DATABASE_VERSION = "SELECT @@VERSION AS 'SQL Server Version'";
     private static final String GET_TABLE_LIST = "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('DBO') AND IS_MS_SHIPPED = 0";
     private static final String IS_SERVER_AGENT_RUNNING = "EXEC master.dbo.xp_servicecontrol N'QUERYSTATE', N'SQLSERVERAGENT'";
     private static final String IS_DB_CDC_ENABLED = "SELECT is_cdc_enabled FROM sys.databases WHERE name = '#'";
@@ -259,32 +258,44 @@ public class SqlServerExtractor extends AbstractExtractor {
                 return data;
             });
 
-            parseEvent(changeTable, list);
+            parseEvent(changeTable.getTableName(), list);
         });
     }
 
-    private void parseEvent(SqlServerChangeTable changeTable, List<List<Object>> list) {
+    private void parseEvent(String table, List<List<Object>> list) {
         if (CollectionUtils.isEmpty(list)) {
             return;
         }
-        list.forEach(row -> {
+        for (List<Object> row : list) {
             if (!CollectionUtils.isEmpty(row) && row.size() > OFFSET_COLUMNS) {
                 final int operation = (int) row.get(2);
-                List<Object> data = new ArrayList<>(row.subList(OFFSET_COLUMNS, row.size()));
                 if (TableOperation.isUpdate(operation)) {
-                    asynSendRowChangedEvent(new RowChangedEvent(changeTable.getTableName(), ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, data));
-                } else if (TableOperation.isInsert(operation)) {
-                    asynSendRowChangedEvent(new RowChangedEvent(changeTable.getTableName(), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, data));
-                } else if (TableOperation.isDelete(operation)) {
-                    asynSendRowChangedEvent(new RowChangedEvent(changeTable.getTableName(), ConnectorConstant.OPERTION_DELETE, data, Collections.EMPTY_LIST));
+                    asynSendRowChangedEvent(new RowChangedEvent(table, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, getData(row)));
+                    continue;
                 }
 
+                if (TableOperation.isInsert(operation)) {
+                    asynSendRowChangedEvent(new RowChangedEvent(table, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, getData(row)));
+                    continue;
+                }
+
+                if (TableOperation.isDelete(operation)) {
+                    asynSendRowChangedEvent(new RowChangedEvent(table, ConnectorConstant.OPERTION_DELETE, getData(row), Collections.EMPTY_LIST));
+                }
             }
-        });
+        }
+    }
+
+    private List<Object> getData(List<Object> row) {
+        return new ArrayList<>(row.subList(OFFSET_COLUMNS, row.size()));
     }
 
     private interface ResultSetMapper<T> {
         T apply(ResultSet rs) throws SQLException;
+    }
+
+    private interface ResultSetObjectMapper<T> {
+        T apply(ResultSet rs, int columnIndex, String columnTypeName) throws SQLException;
     }
 
     private interface StatementPreparer {
@@ -352,8 +363,11 @@ public class SqlServerExtractor extends AbstractExtractor {
                     pull(stopLsn);
 
                     lastLsn = stopLsn;
+                    map.put(LSN_POSITION, lastLsn.toString());
                 } catch (InterruptedException e) {
                     break;
+                } catch (Exception e) {
+                    logger.error(e.getMessage());
                 }
             }
         }
