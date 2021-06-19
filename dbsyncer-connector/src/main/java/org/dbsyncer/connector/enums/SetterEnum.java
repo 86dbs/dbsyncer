@@ -29,6 +29,7 @@ public enum SetterEnum {
     NUMERIC(Types.NUMERIC, new NumericSetter()),
 
     // 很少使用
+    SMALLINT(Types.SMALLINT, new SmallintSetter()),
     TINYINT(Types.TINYINT, new TinyintSetter()),
     DECIMAL(Types.DECIMAL, new DecimalSetter()),
     DOUBLE(Types.DOUBLE, new DoubleSetter()),
@@ -53,7 +54,7 @@ public enum SetterEnum {
                 return e.getSetter();
             }
         }
-        throw new ConnectorException(String.format("Setter type \"%s\" does not exist.", type));
+        throw new ConnectorException(String.format("Setter type \"%s\" is not supported.", type));
     }
 
     public int getType() {
