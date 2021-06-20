@@ -25,6 +25,7 @@ public enum SetterEnum {
     // 较少使用
     CHAR(Types.CHAR, new CharSetter()),
     NCHAR(Types.NCHAR, new NCharSetter()),
+    NVARCHAR(Types.NCHAR, new NVarcharSetter()),
     LONGVARCHAR(Types.LONGVARCHAR, new LongVarcharSetter()),
     NUMERIC(Types.NUMERIC, new NumericSetter()),
     BINARY(Types.BINARY, new BinarySetter()),
