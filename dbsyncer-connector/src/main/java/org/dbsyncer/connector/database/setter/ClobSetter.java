@@ -15,7 +15,7 @@ public class ClobSetter extends AbstractSetter<Clob> {
     }
 
     @Override
-    protected void setIfValueTypeNotMatch(PreparedStatement ps, int i, int type, Object val) throws SQLException {
+    protected void setIfValueTypeNotMatch(PreparedFieldMapper mapper, PreparedStatement ps, int i, int type, Object val) throws SQLException {
         if(val instanceof Clob) {
             Clob clob = (Clob) val;
             ps.setClob(i, clob);

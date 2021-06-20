@@ -39,6 +39,7 @@ public enum SetterEnum {
     FLOAT(Types.FLOAT, new FloatSetter()),
     BLOB(Types.BLOB, new BlobSetter()),
     CLOB(Types.CLOB, new ClobSetter()),
+    NCLOB(Types.NCLOB, new NClobSetter()),
     ROWID(Types.ROWID, new RowIdSetter()),
     REAL(Types.REAL, new RealSetter());
 

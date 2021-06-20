@@ -15,7 +15,7 @@ public class TimestampSetter extends AbstractSetter<Timestamp> {
     }
 
     @Override
-    protected void setIfValueTypeNotMatch(PreparedStatement ps, int i, int type, Object val) throws SQLException {
+    protected void setIfValueTypeNotMatch(PreparedFieldMapper mapper, PreparedStatement ps, int i, int type, Object val) throws SQLException {
         if(val instanceof Date){
             Date date = (Date) val;
             ps.setTimestamp(i, new Timestamp(date.getTime()));

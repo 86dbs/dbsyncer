@@ -294,10 +294,6 @@ public class SqlServerExtractor extends AbstractExtractor {
         T apply(ResultSet rs) throws SQLException;
     }
 
-    private interface ResultSetObjectMapper<T> {
-        T apply(ResultSet rs, int columnIndex, String columnTypeName) throws SQLException;
-    }
-
     private interface StatementPreparer {
         void accept(PreparedStatement statement) throws SQLException;
     }

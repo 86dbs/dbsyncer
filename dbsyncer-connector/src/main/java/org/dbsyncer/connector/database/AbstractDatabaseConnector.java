@@ -211,10 +211,11 @@ public abstract class AbstractDatabaseConnector implements Database {
             jdbcTemplate = getJdbcTemplate(cfg);
 
             // 3、设置参数
+            final JdbcTemplate template = jdbcTemplate;
             jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
                 @Override
                 public void setValues(PreparedStatement preparedStatement, int i) {
-                    batchRowsSetter(preparedStatement, fields, fSize, data.get(i));
+                    batchRowsSetter(template, preparedStatement, fields, fSize, data.get(i));
                 }
 
                 @Override
@@ -267,13 +268,13 @@ public abstract class AbstractDatabaseConnector implements Database {
         try {
             // 2、获取连接
             jdbcTemplate = getJdbcTemplate(cfg);
-
             // 3、设置参数
+            final JdbcTemplate template = jdbcTemplate;
             update = jdbcTemplate.update(sql, (ps) -> {
                 Field f = null;
                 for (int i = 0; i < size; i++) {
                     f = fields.get(i);
-                    SetterEnum.getSetter(f.getType()).set(ps, i + 1, f.getType(), data.get(f.getName()));
+                    SetterEnum.getSetter(f.getType()).set(template, ps, i + 1, f.getType(), data.get(f.getName()));
                 }
             });
         } catch (Exception e) {
@@ -526,12 +527,13 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     /**
-     * @param ps     参数构造器
-     * @param fields 同步字段，例如[{name=ID, type=4}, {name=NAME, type=12}]
-     * @param fSize  同步字段个数
-     * @param row    同步字段对应的值，例如{ID=123, NAME=张三11}
+     * @param jdbcTemplate 参数构造器
+     * @param ps           参数构造器
+     * @param fields       同步字段，例如[{name=ID, type=4}, {name=NAME, type=12}]
+     * @param fSize        同步字段个数
+     * @param row          同步字段对应的值，例如{ID=123, NAME=张三11}
      */
-    private void batchRowsSetter(PreparedStatement ps, List<Field> fields, int fSize, Map row) {
+    private void batchRowsSetter(JdbcTemplate jdbcTemplate, PreparedStatement ps, List<Field> fields, int fSize, Map row) {
         Field f = null;
         int type;
         Object val = null;
@@ -540,7 +542,7 @@ public abstract class AbstractDatabaseConnector implements Database {
             f = fields.get(i);
             type = f.getType();
             val = row.get(f.getName());
-            SetterEnum.getSetter(type).set(ps, i + 1, type, val);
+            SetterEnum.getSetter(type).set(jdbcTemplate, ps, i + 1, type, val);
         }
     }
 
@@ -549,7 +551,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         Integer rowNum = null;
         try {
             jdbcTemplate = getJdbcTemplate(config);
-            rowNum = jdbcTemplate.queryForObject(sql, new Object[] {value}, Integer.class);
+            rowNum = jdbcTemplate.queryForObject(sql, new Object[]{value}, Integer.class);
         } catch (Exception e) {
             logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
         } finally {

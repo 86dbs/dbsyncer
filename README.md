@@ -99,11 +99,7 @@
             </tr>
             <tr>
                 <td>最近计划</td>
-                <td colspan="7">半结构化类型：（redis、kafka、es、postgrep）</td>
-            </tr>
-            <tr>
-                <td>长期计划</td>
-                <td colspan="7">半结构化类型：（网页、日志、JSON、XML、Word）</td>
+                <td colspan="7">redis、kafka、es、postgrep</td>
             </tr>
         </tbody>
     </table>
