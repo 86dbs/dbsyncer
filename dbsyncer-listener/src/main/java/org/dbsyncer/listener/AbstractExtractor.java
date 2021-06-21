@@ -5,6 +5,7 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.listener.config.ListenerConfig;
+import org.dbsyncer.listener.quartz.ScheduledTaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,7 @@ public abstract class AbstractExtractor implements Extractor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     protected BlockingQueue queue = new LinkedBlockingQueue<>(100);
     protected Executor taskExecutor;
+    protected ScheduledTaskService scheduledTaskService;
     protected ConnectorConfig connectorConfig;
     protected ListenerConfig listenerConfig;
     protected Map<String, String> map;
@@ -99,6 +101,10 @@ public abstract class AbstractExtractor implements Extractor {
 
     public void setTaskExecutor(Executor taskExecutor) {
         this.taskExecutor = taskExecutor;
+    }
+
+    public void setScheduledTaskService(ScheduledTaskService scheduledTaskService) {
+        this.scheduledTaskService = scheduledTaskService;
     }
 
     public void setConnectorConfig(ConnectorConfig connectorConfig) {

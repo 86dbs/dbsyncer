@@ -32,7 +32,6 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private ConnectorFactory connectorFactory;
-    private ScheduledTaskService scheduledTaskService;
     private List<Map<String, String>> commands;
     private int commandSize;
 
@@ -62,8 +61,8 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
                 for (int i = 0; i < commandSize; i++) {
                     execute(commands.get(i), i);
                 }
+                running.compareAndSet(true, false);
             }
-            running.compareAndSet(true, false);
         } catch (Exception e) {
             running.compareAndSet(true, false);
             errorEvent(e);
@@ -187,10 +186,6 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
 
     public void setConnectorFactory(ConnectorFactory connectorFactory) {
         this.connectorFactory = connectorFactory;
-    }
-
-    public void setScheduledTaskService(ScheduledTaskService scheduledTaskService) {
-        this.scheduledTaskService = scheduledTaskService;
     }
 
     public void setCommands(List<Map<String, String>> commands) {
