@@ -1,6 +1,8 @@
 package org.dbsyncer.connector.oracle;
 
 import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.config.PageArgConfig;
+import org.dbsyncer.connector.config.PageSqlBuilderConfig;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 
@@ -12,17 +14,17 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getPageSql(String querySQL, String pk) {
-        return DatabaseConstant.ORACLE_PAGE_SQL_START + querySQL + DatabaseConstant.ORACLE_PAGE_SQL_END;
+    public String getPageSql(PageSqlBuilderConfig config) {
+        return DatabaseConstant.ORACLE_PAGE_SQL_START + config.getQuerySql() + DatabaseConstant.ORACLE_PAGE_SQL_END;
     }
 
     @Override
-    public Object[] getPageArgs(int pageIndex, int pageSize) {
-        return new Object[]{pageIndex * pageSize, (pageIndex - 1) * pageSize};
+    public PageArgConfig prepareSetArgs(String sql, int pageIndex, int pageSize) {
+        return new PageArgConfig(sql, new Object[] {pageIndex * pageSize, (pageIndex - 1) * pageSize});
     }
 
     @Override
-    protected String buildSqlWithQuotation(){
+    protected String buildSqlWithQuotation() {
         return "\"";
     }
 }

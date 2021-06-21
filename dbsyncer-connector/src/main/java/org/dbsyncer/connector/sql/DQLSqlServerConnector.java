@@ -2,10 +2,7 @@ package org.dbsyncer.connector.sql;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.slf4j.Logger;
@@ -24,17 +21,21 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getPageSql(String querySQL, String pk) {
-        if(StringUtils.isBlank(pk)){
-            logger.error("Table primary key can not be empty.");
-            throw new ConnectorException("Table primary key can not be empty.");
+    public String getPageSql(PageSqlBuilderConfig config) {
+        String pk = config.getConfig().getPk();
+        String tableName = config.getConfig().getTableName();
+        if (StringUtils.isBlank(pk) || StringUtils.isBlank(tableName)) {
+            logger.error("Table primary key and name can not be empty.");
+            throw new ConnectorException("Table primary key and name can not be empty.");
         }
-        return new StringBuilder(querySQL).append(DatabaseConstant.SQLSERVER_PAGE_SQL_START).append(pk).append(DatabaseConstant.SQLSERVER_PAGE_SQL_END).toString();
+        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, tableName, tableName, pk, pk, pk, pk);
     }
 
     @Override
-    public Object[] getPageArgs(int pageIndex, int pageSize) {
-        return new Object[]{(pageIndex - 1) * pageSize, pageSize};
+    public PageArgConfig prepareSetArgs(String sql, int pageIndex, int pageSize) {
+        sql = sql.replaceFirst("\\?", String.valueOf(pageSize));
+        sql = sql.replaceFirst("\\?", String.valueOf((pageIndex - 1) * pageSize + 1));
+        return new PageArgConfig(sql, new Object[] {});
     }
 
     @Override
@@ -49,7 +50,7 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        return super.getDqlSourceCommand(commandConfig,false);
+        return super.getDqlSourceCommand(commandConfig, false);
     }
 
 }

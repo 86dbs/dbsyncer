@@ -2,9 +2,7 @@ package org.dbsyncer.connector.sqlserver;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.Table;
+import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
@@ -24,17 +22,22 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
     }
 
     @Override
-    public String getPageSql(String querySQL, String pk) {
-        if(StringUtils.isBlank(pk)){
-            logger.error("Table primary key can not be empty.");
-            throw new ConnectorException("Table primary key can not be empty.");
+    public String getPageSql(PageSqlBuilderConfig config) {
+        String pk = config.getConfig().getPk();
+        String tableName = config.getConfig().getTableName();
+        if (StringUtils.isBlank(pk) || StringUtils.isBlank(tableName)) {
+            logger.error("Table primary key and name can not be empty.");
+            throw new ConnectorException("Table primary key and name can not be empty.");
         }
-        return new StringBuilder(querySQL).append(DatabaseConstant.SQLSERVER_PAGE_SQL_START).append(pk).append(DatabaseConstant.SQLSERVER_PAGE_SQL_END).toString();
+        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, tableName, tableName, pk, pk, pk, pk);
     }
 
     @Override
-    public Object[] getPageArgs(int pageIndex, int pageSize) {
-        return new Object[]{(pageIndex - 1) * pageSize, pageSize};
+    public PageArgConfig prepareSetArgs(String sql, int pageIndex, int pageSize) {
+        // FIXME 分页有问题
+        sql = sql.replaceFirst("\\?", String.valueOf(pageSize));
+        sql = sql.replaceFirst("\\?", String.valueOf((pageIndex - 1) * pageSize + 1));
+        return new PageArgConfig(sql, new Object[] {});
     }
 
     @Override
@@ -53,9 +56,10 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
         StringBuilder queryCount = new StringBuilder();
         if (StringUtils.isNotBlank(queryFilterSql)) {
             queryCount.append("SELECT COUNT(*) FROM ").append(table.getName()).append(queryFilterSql);
-        }else{
+        } else {
             // 从存储过程查询（定时更新总数，可能存在误差）
-            queryCount.append("SELECT ROWS FROM SYSINDEXES WHERE ID = OBJECT_ID('").append("DBO.").append(table.getName()).append("') AND INDID IN (0, 1)");
+            queryCount.append("SELECT ROWS FROM SYSINDEXES WHERE ID = OBJECT_ID('").append("DBO.").append(table.getName()).append(
+                    "') AND INDID IN (0, 1)");
         }
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
         return map;

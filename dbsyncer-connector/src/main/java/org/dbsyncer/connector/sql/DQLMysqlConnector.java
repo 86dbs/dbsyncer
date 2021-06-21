@@ -1,9 +1,6 @@
 package org.dbsyncer.connector.sql;
 
-import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 
@@ -18,13 +15,13 @@ public final class DQLMysqlConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getPageSql(String querySQL, String pk) {
-        return querySQL + DatabaseConstant.MYSQL_PAGE_SQL;
+    public String getPageSql(PageSqlBuilderConfig config) {
+        return config.getQuerySql() + DatabaseConstant.MYSQL_PAGE_SQL;
     }
 
     @Override
-    public Object[] getPageArgs(int pageIndex, int pageSize) {
-        return new Object[] {(pageIndex - 1) * pageSize, pageSize};
+    public PageArgConfig prepareSetArgs(String sql, int pageIndex, int pageSize) {
+        return new PageArgConfig(sql, new Object[] {(pageIndex - 1) * pageSize, pageSize});
     }
 
     @Override
