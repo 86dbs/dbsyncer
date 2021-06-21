@@ -21,21 +21,17 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getPageSql(PageSqlBuilderConfig config) {
-        String pk = config.getConfig().getPk();
-        String tableName = config.getConfig().getTableName();
-        if (StringUtils.isBlank(pk) || StringUtils.isBlank(tableName)) {
-            logger.error("Table primary key and name can not be empty.");
-            throw new ConnectorException("Table primary key and name can not be empty.");
+    public String getPageSql(PageSqlConfig config) {
+        if (StringUtils.isBlank(config.getPk())) {
+            logger.error("Table primary key can not be empty.");
+            throw new ConnectorException("Table primary key can not be empty.");
         }
-        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, tableName, tableName, pk, pk, pk, pk);
+        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, config.getPk(), config.getQuerySql());
     }
 
     @Override
-    public PageArgConfig prepareSetArgs(String sql, int pageIndex, int pageSize) {
-        sql = sql.replaceFirst("\\?", String.valueOf(pageSize));
-        sql = sql.replaceFirst("\\?", String.valueOf((pageIndex - 1) * pageSize + 1));
-        return new PageArgConfig(sql, new Object[] {});
+    public Object[] getPageArgs(int pageIndex, int pageSize) {
+        return new Object[]{(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
     }
 
     @Override

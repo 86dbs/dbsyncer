@@ -168,11 +168,10 @@ public abstract class AbstractDatabaseConnector implements Database {
             jdbcTemplate = getJdbcTemplate(cfg);
 
             // 3、设置参数
-            PageArgConfig pageArgConfig = prepareSetArgs(querySql, config.getPageIndex(), config.getPageSize());
-            Collections.addAll(config.getArgs(), pageArgConfig.getArgs());
+            Collections.addAll(config.getArgs(), getPageArgs(config.getPageIndex(), config.getPageSize()));
 
             // 4、执行SQL
-            List<Map<String, Object>> list = jdbcTemplate.queryForList(pageArgConfig.getQuerySql(), config.getArgs().toArray());
+            List<Map<String, Object>> list = jdbcTemplate.queryForList(querySql, config.getArgs().toArray());
 
             // 5、返回结果集
             return new Result(new ArrayList<>(list));
@@ -382,9 +381,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         }
         String quotation = buildSqlWithQuotation();
         String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
-        SqlBuilderConfig sqlBuilderConfig = new SqlBuilderConfig(table.getName(), pk);
-        PageSqlBuilderConfig config = new PageSqlBuilderConfig(sqlBuilderConfig, querySql);
-        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(config));
+        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(new PageSqlConfig(querySql, pk)));
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();

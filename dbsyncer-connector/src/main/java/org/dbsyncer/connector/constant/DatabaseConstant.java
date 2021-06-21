@@ -21,27 +21,13 @@ public class DatabaseConstant {
 
     //*********************************** SqlServer **************************************//
     /**
-     * SqlServer分页语句
-     *
-     * <pre>select w.* from my_org a,
-     * (
-     *     select top 4 t.* from
-     * 		(
-     * 			select top 10 s.* from my_org s order by id
-     * 		) t
-     * ) w where a.id = w.id order by a.id
+     * SqlServer分页语句(2008版本支持)
+     * <pre>
+     *  select * from (
+     *      select row_number() over(order by id) as sqlserver_row_id, * from (select * from my_user) s
+     *  ) as a where a.sqlserver_row_id between 1 and 10
      * </pre>
      */
-    public static final String SQLSERVER_PAGE_SQL = "SELECT W.* FROM %s A, (SELECT TOP ? T.* FROM (SELECT TOP ? S.* FROM %s S ORDER BY %s) T) W WHERE A.%s = W.%s ORDER BY A.%s";
-
-    /**
-     * SqlServer分页语句开始(2012版本支持)
-     */
-    public static final String SQLSERVER_PAGE_SQL_START = " ORDER BY ";
-
-    /**
-     * SqlServer分页语句结束(2012版本支持)
-     */
-    public static final String SQLSERVER_PAGE_SQL_END = " OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+    public static final String SQLSERVER_PAGE_SQL = "SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY %s) AS SQLSERVER_ROW_ID, * FROM (%s) S) A WHERE A.SQLSERVER_ROW_ID BETWEEN ? AND ?";
 
 }

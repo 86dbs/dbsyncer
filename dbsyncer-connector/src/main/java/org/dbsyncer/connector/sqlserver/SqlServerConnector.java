@@ -2,7 +2,10 @@ package org.dbsyncer.connector.sqlserver;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.config.PageSqlConfig;
+import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
@@ -22,22 +25,17 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
     }
 
     @Override
-    public String getPageSql(PageSqlBuilderConfig config) {
-        String pk = config.getConfig().getPk();
-        String tableName = config.getConfig().getTableName();
-        if (StringUtils.isBlank(pk) || StringUtils.isBlank(tableName)) {
-            logger.error("Table primary key and name can not be empty.");
-            throw new ConnectorException("Table primary key and name can not be empty.");
+    public String getPageSql(PageSqlConfig config) {
+        if (StringUtils.isBlank(config.getPk())) {
+            logger.error("Table primary key can not be empty.");
+            throw new ConnectorException("Table primary key can not be empty.");
         }
-        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, tableName, tableName, pk, pk, pk, pk);
+        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, config.getPk(), config.getQuerySql());
     }
 
     @Override
-    public PageArgConfig prepareSetArgs(String sql, int pageIndex, int pageSize) {
-        // FIXME 分页有问题
-        sql = sql.replaceFirst("\\?", String.valueOf(pageSize));
-        sql = sql.replaceFirst("\\?", String.valueOf((pageIndex - 1) * pageSize + 1));
-        return new PageArgConfig(sql, new Object[] {});
+    public Object[] getPageArgs(int pageIndex, int pageSize) {
+        return new Object[]{(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
     }
 
     @Override

@@ -2,8 +2,7 @@ package org.dbsyncer.connector.database;
 
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.PageArgConfig;
-import org.dbsyncer.connector.config.PageSqlBuilderConfig;
+import org.dbsyncer.connector.config.PageSqlConfig;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 public interface Database extends Connector {
@@ -18,16 +17,15 @@ public interface Database extends Connector {
      * @param config
      * @return
      */
-    String getPageSql(PageSqlBuilderConfig config);
+    String getPageSql(PageSqlConfig config);
 
     /**
-     * 预设置分页参数
+     * 获取分页SQL
      *
-     * @param sql
      * @param pageIndex
      * @param pageSize
      * @return
      */
-    PageArgConfig prepareSetArgs(String sql, int pageIndex, int pageSize);
+    Object[] getPageArgs(int pageIndex, int pageSize);
 
 }
