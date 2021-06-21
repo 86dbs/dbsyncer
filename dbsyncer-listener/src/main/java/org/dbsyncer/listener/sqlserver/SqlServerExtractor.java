@@ -55,7 +55,6 @@ public class SqlServerExtractor extends AbstractExtractor implements ScheduledTa
     private static Set<SqlServerChangeTable> changeTables;
     private Connection connection;
     private String taskKey;
-    private String cron = "*/1 * * * * ?";
     private Worker worker;
     private Lsn lastLsn;
 
@@ -86,7 +85,7 @@ public class SqlServerExtractor extends AbstractExtractor implements ScheduledTa
             worker.start();
 
             taskKey = UUIDUtil.getUUID();
-            scheduledTaskService.start(taskKey, cron, this);
+            scheduledTaskService.start(taskKey, 300, this);
             connected = true;
         } catch (Exception e) {
             close();

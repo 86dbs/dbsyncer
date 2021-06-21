@@ -42,6 +42,18 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
     }
 
     @Override
+    public void start(String key, long period, ScheduledTaskJob job) {
+        //校验任务key是否已经启动
+        final ScheduledFuture scheduledFuture = map.get(key);
+        if (null != scheduledFuture && !scheduledFuture.isCancelled()) {
+            logger.warn(">>>>>> 当前任务已经启动，无需重复启动！");
+            return;
+        }
+        //获取需要定时调度的接口
+        map.putIfAbsent(key, taskScheduler.scheduleAtFixedRate(job, period));
+    }
+
+    @Override
     public void stop(String key) {
         ScheduledFuture job = map.get(key);
         if (null != job) {
