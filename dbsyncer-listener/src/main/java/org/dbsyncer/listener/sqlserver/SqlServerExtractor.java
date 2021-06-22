@@ -5,12 +5,10 @@ import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.apache.commons.lang.math.RandomUtils;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.ListenerException;
-import org.dbsyncer.listener.quartz.ScheduledTaskJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -28,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @Author AE86
  * @Date 2021-06-18 01:20
  */
-public class SqlServerExtractor extends AbstractExtractor implements ScheduledTaskJob {
+public class SqlServerExtractor extends AbstractExtractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -48,13 +46,13 @@ public class SqlServerExtractor extends AbstractExtractor implements ScheduledTa
     private static final String GET_ALL_CHANGES_FOR_TABLE = "SELECT * FROM cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC, [__$operation] ASC";
 
     private static final String LSN_POSITION = "position";
+    private static final long DEFAULT_POLL_INTERVAL_MILLIS = 360;
     private static final int OFFSET_COLUMNS = 4;
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
     private static Set<String> tables;
     private static Set<SqlServerChangeTable> changeTables;
     private Connection connection;
-    private String taskKey;
     private Worker worker;
     private Lsn lastLsn;
 
@@ -84,8 +82,6 @@ public class SqlServerExtractor extends AbstractExtractor implements ScheduledTa
             worker.setDaemon(false);
             worker.start();
 
-            taskKey = UUIDUtil.getUUID();
-            scheduledTaskService.start(taskKey, 300, this);
             connected = true;
         } catch (Exception e) {
             close();
@@ -101,7 +97,6 @@ public class SqlServerExtractor extends AbstractExtractor implements ScheduledTa
         if (connected) {
             try {
                 connectLock.lock();
-                scheduledTaskService.stop(taskKey);
                 if (null != worker && !worker.isInterrupted()) {
                     worker.interrupt();
                     worker = null;
@@ -113,29 +108,6 @@ public class SqlServerExtractor extends AbstractExtractor implements ScheduledTa
                 connected = false;
             } finally {
                 connectLock.unlock();
-            }
-        }
-    }
-
-    @Override
-    public void run() {
-        if (connected) {
-            try {
-                Lsn stopLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
-                if (!stopLsn.isAvailable()) {
-                    return;
-                }
-
-                if (stopLsn.compareTo(lastLsn) <= 0) {
-                    return;
-                }
-
-                pull(stopLsn);
-
-                lastLsn = stopLsn;
-                map.put(LSN_POSITION, lastLsn.toString());
-            } catch (Exception e) {
-                logger.error(e.getMessage());
             }
         }
     }
@@ -269,12 +241,13 @@ public class SqlServerExtractor extends AbstractExtractor implements ScheduledTa
         Lsn startLsn = queryAndMap(GET_INCREMENT_LSN, statement -> statement.setBytes(1, lastLsn.getBinary()), rs -> Lsn.valueOf(rs.getBytes(1)));
         changeTables.forEach(changeTable -> {
             final String query = GET_ALL_CHANGES_FOR_TABLE.replace(STATEMENTS_PLACEHOLDER, changeTable.getCaptureInstance());
-            queryAndMapList(query, statement -> {
+            List<CDCEvent> list = queryAndMapList(query, statement -> {
                 statement.setBytes(1, startLsn.getBinary());
                 statement.setBytes(2, stopLsn.getBinary());
             }, rs -> {
                 int columnCount = rs.getMetaData().getColumnCount();
                 List<Object> row = null;
+                List<CDCEvent> data = new ArrayList<>();
                 while (rs.next()) {
                     // skip update before
                     final int operation = rs.getInt(3);
@@ -285,17 +258,34 @@ public class SqlServerExtractor extends AbstractExtractor implements ScheduledTa
                     for (int i = OFFSET_COLUMNS + 1; i <= columnCount; i++) {
                         row.add(rs.getObject(i));
                     }
-                    try {
-                        // 如果BlockQueue没有空间,则调用此方法的线程被阻断直到BlockingQueue里面有空间再继续
-                        queue.put(new CDCEvent(changeTable.getTableName(), operation, row));
-                    } catch (InterruptedException ex) {
-                        logger.error("Table[{}], Data:{}, Error:{}", changeTable.getTableName(), row, ex.getMessage());
-                    }
+                    data.add(new CDCEvent(changeTable.getTableName(), operation, row));
                 }
-                return null;
+                return data;
             });
 
+            if(!CollectionUtils.isEmpty(list)){
+                parseEvent(list);
+            }
         });
+    }
+
+    private void parseEvent(List<CDCEvent> list) {
+        for (CDCEvent event : list) {
+            int code = event.getCode();
+            if (TableOperation.isUpdateAfter(code)) {
+                asynSendRowChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, event.getRow()));
+                continue;
+            }
+
+            if (TableOperation.isInsert(code)) {
+                asynSendRowChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, event.getRow()));
+                continue;
+            }
+
+            if (TableOperation.isDelete(code)) {
+                asynSendRowChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), Collections.EMPTY_LIST));
+            }
+        }
     }
 
     private interface ResultSetMapper<T> {
@@ -396,38 +386,31 @@ public class SqlServerExtractor extends AbstractExtractor implements ScheduledTa
 
         @Override
         public void run() {
-            while (!isInterrupted()) {
+            while (!isInterrupted() && connected) {
                 try {
-                    // 取走BlockingQueue里排在首位的对象,若BlockingQueue为空,阻断进入等待状态直到Blocking有新的对象被加入为止
-                    CDCEvent event = (CDCEvent) queue.take();
-                    if (null != event) {
-                        parseEvent(event);
+                    Lsn stopLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
+                    if (!stopLsn.isAvailable()) {
+                        TimeUnit.MICROSECONDS.sleep(DEFAULT_POLL_INTERVAL_MILLIS);
+                        continue;
                     }
+
+                    if (stopLsn.compareTo(lastLsn) <= 0) {
+                        TimeUnit.MICROSECONDS.sleep(DEFAULT_POLL_INTERVAL_MILLIS);
+                        continue;
+                    }
+
+                    pull(stopLsn);
+
+                    lastLsn = stopLsn;
+                    map.put(LSN_POSITION, lastLsn.toString());
                 } catch (InterruptedException e) {
                     break;
+                } catch (Exception e) {
+                    logger.error(e.getMessage());
                 }
             }
         }
 
-        private void parseEvent(CDCEvent event) {
-            final List<Object> row = event.getRow();
-            if (!CollectionUtils.isEmpty(row)) {
-                int code = event.getCode();
-                if (TableOperation.isUpdateAfter(code)) {
-                    asynSendRowChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, event.getRow()));
-                    return;
-                }
-
-                if (TableOperation.isInsert(code)) {
-                    asynSendRowChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, event.getRow()));
-                    return;
-                }
-
-                if (TableOperation.isDelete(code)) {
-                    asynSendRowChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), Collections.EMPTY_LIST));
-                }
-            }
-        }
     }
 
 }

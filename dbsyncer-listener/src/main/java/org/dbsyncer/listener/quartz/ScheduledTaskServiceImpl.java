@@ -59,6 +59,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
         if (null != job) {
             logger.info(">>>>>> 进入停止任务 {}  >>>>>>", key);
             job.cancel(true);
+            map.remove(key);
         }
     }
 
