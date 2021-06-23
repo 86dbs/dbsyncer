@@ -13,8 +13,11 @@ public abstract class JDBCUtil {
     private final static Logger logger = LoggerFactory.getLogger(JDBCUtil.class);
 
     public static Connection getConnection(String driver, String url, String username, String password) throws SQLException {
-        // com.mysql.jdbc.JDBC4Connection 
-        // 不需要显式调用 Class.forName(driver), DriverManager.getConnection会自动加载合适的驱动
+        try {
+            Class.forName(driver);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
         return DriverManager.getConnection(url, username, password);
     }
 
