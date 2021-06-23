@@ -16,7 +16,7 @@ public abstract class JDBCUtil {
         try {
             Class.forName(driver);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage());
         }
         return DriverManager.getConnection(url, username, password);
     }

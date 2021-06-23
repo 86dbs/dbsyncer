@@ -7,7 +7,6 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.connector.util.JDBCUtil;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.ListenerException;
@@ -107,10 +106,8 @@ public class SqlServerExtractor extends AbstractExtractor {
                 disableTableCDC();
                 preparedStatementCache.values().forEach(this::close);
                 preparedStatementCache.clear();
-                DatabaseUtil.close(connection);
+                JDBCUtil.close(connection);
                 connected = false;
-            } catch (SQLException e) {
-                logger.error(e.getMessage());
             } finally {
                 connectLock.unlock();
             }
