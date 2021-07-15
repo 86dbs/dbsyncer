@@ -32,11 +32,11 @@ import org.dbsyncer.parser.util.PickerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
  * @date 2020/04/26 15:28
  */
 @Component
-public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob, InitializingBean, DisposableBean {
+public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob, DisposableBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -81,6 +81,12 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
     private String key;
 
     private Map<String, Extractor> map = new ConcurrentHashMap<>();
+
+    @PostConstruct
+    private void init() {
+        key = UUIDUtil.getUUID();
+        scheduledTaskService.start(key, "*/10 * * * * ?", this);
+    }
 
     @Override
     public void asyncStart(Mapping mapping) {
@@ -128,12 +134,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
     public void run() {
         // 定时同步增量信息
         map.forEach((k, v) -> v.flushEvent());
-    }
-
-    @Override
-    public void afterPropertiesSet() {
-        key = UUIDUtil.getUUID();
-        scheduledTaskService.start(key, "*/10 * * * * ?", this);
     }
 
     @Override

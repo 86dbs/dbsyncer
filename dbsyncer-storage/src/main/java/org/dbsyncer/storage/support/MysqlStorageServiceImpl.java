@@ -358,7 +358,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         this.config = config;
     }
 
-    class FieldPair {
+    final class FieldPair {
         String columnName;
         String labelName;
 
@@ -373,7 +373,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         }
     }
 
-    class FieldBuilder {
+    final class FieldBuilder {
         Map<String, FieldPair> fieldPairMap = new ConcurrentHashMap<>();
         Map<String, Field> fieldMap = new ConcurrentHashMap<>();
         List<FieldPair> fieldPairs;
@@ -419,7 +419,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         }
     }
 
-    class Executor {
+    final class Executor {
         private String table;
         private String query;
         private String insert;

@@ -175,5 +175,6 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         for (Map.Entry<String, Shard> m : map.entrySet()) {
             m.getValue().close();
         }
+        map.clear();
     }
 }
