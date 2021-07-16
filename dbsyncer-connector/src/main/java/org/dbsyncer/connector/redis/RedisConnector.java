@@ -2,6 +2,7 @@ package org.dbsyncer.connector.redis;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.util.RedisUtil;
 import org.slf4j.Logger;
@@ -18,8 +19,18 @@ public final class RedisConnector implements Redis {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public boolean isAlive(ConnectorConfig config) {
-        RedisConfig cfg = (RedisConfig) config;
+    public ConnectorMapper connect(ConnectorConfig config) {
+        return null;
+    }
+
+    @Override
+    public void disconnect(ConnectorMapper connectorMapper) {
+
+    }
+
+    @Override
+    public boolean isAlive(ConnectorMapper connectorMapper) {
+        RedisConfig cfg = (RedisConfig) connectorMapper.getConfig();
         RedisTemplate template = null;
         boolean r = false;
         try {
@@ -35,6 +46,11 @@ public final class RedisConnector implements Redis {
             }
         }
         return r;
+    }
+
+    @Override
+    public String getConnectorMapperCacheKey(ConnectorConfig config) {
+        return null;
     }
 
     @Override

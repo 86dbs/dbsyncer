@@ -3,6 +3,7 @@ package org.dbsyncer.listener;
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.quartz.ScheduledTaskService;
@@ -27,10 +28,11 @@ public abstract class AbstractExtractor implements Extractor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     protected BlockingQueue queue = new LinkedBlockingQueue<>(100);
     protected Executor taskExecutor;
+    protected ConnectorFactory connectorFactory;
     protected ScheduledTaskService scheduledTaskService;
     protected ConnectorConfig connectorConfig;
     protected ListenerConfig listenerConfig;
-    protected Map<String, String> map;
+    protected Map<String, String> snapshot;
     protected Set<String> filterTable;
     private List<Event> watcher;
 
@@ -69,15 +71,15 @@ public abstract class AbstractExtractor implements Extractor {
     @Override
     public void flushEvent() {
         if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.flushEvent(map));
+            watcher.forEach(w -> w.flushEvent(snapshot));
         }
     }
 
     @Override
     public void forceFlushEvent() {
         if (!CollectionUtils.isEmpty(watcher)) {
-            logger.info("Force flush:{}", map);
-            watcher.forEach(w -> w.forceFlushEvent(map));
+            logger.info("Force flush:{}", snapshot);
+            watcher.forEach(w -> w.forceFlushEvent(snapshot));
         }
     }
 
@@ -103,6 +105,10 @@ public abstract class AbstractExtractor implements Extractor {
         this.taskExecutor = taskExecutor;
     }
 
+    public void setConnectorFactory(ConnectorFactory connectorFactory) {
+        this.connectorFactory = connectorFactory;
+    }
+
     public void setScheduledTaskService(ScheduledTaskService scheduledTaskService) {
         this.scheduledTaskService = scheduledTaskService;
     }
@@ -115,8 +121,8 @@ public abstract class AbstractExtractor implements Extractor {
         this.listenerConfig = listenerConfig;
     }
 
-    public void setMap(Map<String, String> map) {
-        this.map = map;
+    public void setSnapshot(Map<String, String> snapshot) {
+        this.snapshot = snapshot;
     }
 
     public void setFilterTable(Set<String> filterTable) {

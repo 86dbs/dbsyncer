@@ -16,12 +16,35 @@ import java.util.Map;
 public interface Connector {
 
     /**
-     * 检查连接器是否连接正常
+     * 建立连接
      *
-     * @param config 连接器配置
+     * @param config
      * @return
      */
-    boolean isAlive(ConnectorConfig config);
+    ConnectorMapper connect(ConnectorConfig config);
+
+    /**
+     * 断开连接
+     *
+     * @param connectorMapper
+     */
+    void disconnect(ConnectorMapper connectorMapper);
+
+    /**
+     * 检查连接器是否连接正常
+     *
+     * @param connectorMapper
+     * @return
+     */
+    boolean isAlive(ConnectorMapper connectorMapper);
+
+    /**
+     * 获取连接缓存key
+     *
+     * @param config
+     * @return
+     */
+    String getConnectorMapperCacheKey(ConnectorConfig config);
 
     /**
      * 获取所有表名
@@ -88,4 +111,5 @@ public interface Connector {
      * @return
      */
     Result writer(WriterSingleConfig config);
+
 }

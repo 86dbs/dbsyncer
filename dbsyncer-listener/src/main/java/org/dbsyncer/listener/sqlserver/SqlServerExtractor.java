@@ -7,7 +7,6 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.connector.util.JDBCUtil;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.slf4j.Logger;
@@ -18,6 +17,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -48,7 +48,9 @@ public class SqlServerExtractor extends AbstractExtractor {
 
     private static final String LSN_POSITION = "position";
     private static final long DEFAULT_POLL_INTERVAL_MILLIS = 36000;
+    private static final int PREPARED_STATEMENT_CACHE_CAPACITY = 500;
     private static final int OFFSET_COLUMNS = 4;
+    private final Map<String, PreparedStatement> preparedStatementCache = new ConcurrentHashMap<>(PREPARED_STATEMENT_CACHE_CAPACITY);
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
     private static Set<String> tables;
@@ -56,6 +58,7 @@ public class SqlServerExtractor extends AbstractExtractor {
     private Connection connection;
     private Worker worker;
     private Lsn lastLsn;
+    private String serverName;
 
     @Override
     public void start() {
@@ -77,10 +80,10 @@ public class SqlServerExtractor extends AbstractExtractor {
             enableTableCDC();
             readChangeTables();
             readLastLsn();
-            JDBCUtil.close(connection);
+            getTrustedServerNameAE();
 
             worker = new Worker();
-            worker.setName(new StringBuilder("cdc-parser-").append(getTrustedServerNameAE()).append("_").append(RandomUtils.nextInt(100)).toString());
+            worker.setName(new StringBuilder("cdc-parser-").append(serverName).append("_").append(RandomUtils.nextInt(100)).toString());
             worker.setDaemon(false);
             worker.start();
         } catch (Exception e) {
@@ -95,18 +98,14 @@ public class SqlServerExtractor extends AbstractExtractor {
     @Override
     public void close() {
         if (connected) {
-            try {
-                connectLock.lock();
-                if (null != worker && !worker.isInterrupted()) {
-                    worker.interrupt();
-                    worker = null;
-                }
-                disableTableCDC();
-                JDBCUtil.close(connection);
-                connected = false;
-            } finally {
-                connectLock.unlock();
+            if (null != worker && !worker.isInterrupted()) {
+                worker.interrupt();
+                worker = null;
             }
+            disableTableCDC();
+            preparedStatementCache.values().forEach(this::close);
+            preparedStatementCache.clear();
+            connected = false;
         }
     }
 
@@ -120,34 +119,29 @@ public class SqlServerExtractor extends AbstractExtractor {
         }
     }
 
-    private void connect() throws SQLException {
-        final DatabaseConfig config = (DatabaseConfig) connectorConfig;
-        String driverClassName = config.getDriverClassName();
-        String username = config.getUsername();
-        String password = config.getPassword();
-        String url = config.getUrl();
-        connection = JDBCUtil.getConnection(driverClassName, url, username, password);
+    private void connect() {
+        connection = connectorFactory.connect((DatabaseConfig) connectorConfig);
     }
 
-    private String getTrustedServerNameAE() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    private void getTrustedServerNameAE() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         SQLServerConnection conn = (SQLServerConnection) connection;
         Class clazz = conn.getClass();
         Method method = clazz.getDeclaredMethod("getTrustedServerNameAE");
         method.setAccessible(true);
-        return (String) method.invoke(conn, new Object[]{});
+        serverName = (String) method.invoke(conn, new Object[]{});
     }
 
     private void readLastLsn() {
-        if (!map.containsKey(LSN_POSITION)) {
+        if (!snapshot.containsKey(LSN_POSITION)) {
             lastLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
             if (null != lastLsn && lastLsn.isAvailable()) {
-                map.put(LSN_POSITION, lastLsn.toString());
+                snapshot.put(LSN_POSITION, lastLsn.toString());
                 return;
             }
             // Shouldn't happen if the agent is running, but it is better to guard against such situation
             throw new ListenerException("No maximum LSN recorded in the database");
         }
-        lastLsn = Lsn.valueOf(map.get(LSN_POSITION));
+        lastLsn = Lsn.valueOf(snapshot.get(LSN_POSITION));
     }
 
     private void readTables() {
@@ -315,11 +309,10 @@ public class SqlServerExtractor extends AbstractExtractor {
     }
 
     private <T> T query(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
-        PreparedStatement ps = null;
         ResultSet rs = null;
         T apply = null;
         try {
-            ps = connection.prepareStatement(sql);
+            final PreparedStatement ps = createPreparedStatement(sql);
             if (null != statementPreparer) {
                 statementPreparer.accept(ps);
             }
@@ -330,10 +323,27 @@ public class SqlServerExtractor extends AbstractExtractor {
         } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
-            close(ps);
             close(rs);
         }
         return apply;
+    }
+
+    private PreparedStatement createPreparedStatement(String preparedQueryString) {
+        try {
+            if(connection.isClosed()){
+                connect();
+            }
+            return preparedStatementCache.computeIfAbsent(preparedQueryString, query -> {
+                try {
+                    return connection.prepareStatement(query);
+                } catch (SQLException e) {
+                    throw new ListenerException(e);
+                }
+            });
+        } catch (SQLException e) {
+            logger.error(e.getMessage());
+            throw new ListenerException(e.getCause());
+        }
     }
 
     enum TableOperation {
@@ -387,7 +397,6 @@ public class SqlServerExtractor extends AbstractExtractor {
         public void run() {
             while (!isInterrupted() && connected) {
                 try {
-                    connect();
                     Lsn stopLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
                     if (!stopLsn.isAvailable()) {
                         TimeUnit.MICROSECONDS.sleep(DEFAULT_POLL_INTERVAL_MILLIS);
@@ -402,13 +411,9 @@ public class SqlServerExtractor extends AbstractExtractor {
                     pull(stopLsn);
 
                     lastLsn = stopLsn;
-                    map.put(LSN_POSITION, lastLsn.toString());
+                    snapshot.put(LSN_POSITION, lastLsn.toString());
                 } catch (InterruptedException e) {
                     break;
-                } catch (Exception e) {
-                    logger.error(e.getMessage());
-                } finally {
-                    JDBCUtil.close(connection);
                 }
             }
         }

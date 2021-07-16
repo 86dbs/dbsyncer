@@ -83,9 +83,9 @@ public class MysqlExtractor extends AbstractExtractor {
         final Host host = cluster.get(MASTER);
         final String username = config.getUsername();
         final String password = config.getPassword();
-        final String pos = map.get(BINLOG_POSITION);
+        final String pos = snapshot.get(BINLOG_POSITION);
         client = new BinaryLogRemoteClient(host.getIp(), host.getPort(), username, password);
-        client.setBinlogFilename(map.get(BINLOG_FILENAME));
+        client.setBinlogFilename(snapshot.get(BINLOG_FILENAME));
         client.setBinlogPosition(StringUtils.isBlank(pos) ? 0 : Long.parseLong(pos));
         client.setTableMapEventByTableId(tables);
         client.registerEventListener(new MysqlEventListener());
@@ -151,11 +151,11 @@ public class MysqlExtractor extends AbstractExtractor {
     private void refresh(String binlogFilename, long nextPosition) {
         if (StringUtils.isNotBlank(binlogFilename)) {
             client.setBinlogFilename(binlogFilename);
-            map.put(BINLOG_FILENAME, binlogFilename);
+            snapshot.put(BINLOG_FILENAME, binlogFilename);
         }
         if (0 < nextPosition) {
             client.setBinlogPosition(nextPosition);
-            map.put(BINLOG_POSITION, String.valueOf(nextPosition));
+            snapshot.put(BINLOG_POSITION, String.valueOf(nextPosition));
         }
     }
 

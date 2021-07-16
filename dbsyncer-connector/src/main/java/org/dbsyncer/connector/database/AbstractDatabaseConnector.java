@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.OperationEnum;
@@ -30,17 +31,37 @@ public abstract class AbstractDatabaseConnector implements Database {
     protected abstract String getTablesSql(DatabaseConfig config);
 
     @Override
-    public boolean isAlive(ConnectorConfig config) {
+    public ConnectorMapper connect(ConnectorConfig config) {
         DatabaseConfig cfg = (DatabaseConfig) config;
-        Connection connection = null;
         try {
-            connection = JDBCUtil.getConnection(cfg.getDriverClassName(), cfg.getUrl(), cfg.getUsername(), cfg.getPassword());
+            String cacheKey = getConnectorMapperCacheKey(config);
+            return new ConnectorMapper(config, cacheKey, JDBCUtil.getConnection(cfg.getDriverClassName(), cfg.getUrl(), cfg.getUsername(), cfg.getPassword()));
         } catch (Exception e) {
             logger.error("Failed to connect:{}, message:{}", cfg.getUrl(), e.getMessage());
-        } finally {
-            JDBCUtil.close(connection);
         }
-        return null != connection;
+        throw new ConnectorException(String.format("Failed to connect:%s", cfg.getUrl()));
+    }
+
+    @Override
+    public void disconnect(ConnectorMapper connectorMapper) {
+        JDBCUtil.close((Connection) connectorMapper.getConnection());
+    }
+
+    @Override
+    public boolean isAlive(ConnectorMapper connectorMapper) {
+        try {
+            Connection connection = (Connection) connectorMapper.getConnection();
+            return null != connection && !connection.isClosed();
+        } catch (SQLException e) {
+            logger.error(e.getMessage());
+        }
+        return false;
+    }
+
+    @Override
+    public String getConnectorMapperCacheKey(ConnectorConfig config) {
+        DatabaseConfig cfg = (DatabaseConfig) config;
+        return String.format("%s-%s", cfg.getUrl(), cfg.getUsername());
     }
 
     @Override
