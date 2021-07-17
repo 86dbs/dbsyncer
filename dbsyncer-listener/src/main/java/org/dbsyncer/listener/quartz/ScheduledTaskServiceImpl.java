@@ -44,7 +44,6 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
     public void stop(String key) {
         ScheduledFuture job = map.get(key);
         if (null != job) {
-            logger.info(">>>>>> 进入停止任务 {}  >>>>>>", key);
             job.cancel(true);
             map.remove(key);
         }

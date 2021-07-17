@@ -26,8 +26,6 @@ import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
@@ -44,8 +42,6 @@ import java.util.Map;
  */
 @Component
 public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent> {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private Parser parser;

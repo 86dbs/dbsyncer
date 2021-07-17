@@ -51,12 +51,12 @@ public abstract class AbstractDatabaseConnector implements Database {
 
     @Override
     public boolean isAlive(ConnectorMapper connectorMapper) {
-        try {
-            JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
-            return null != jdbcTemplate && !jdbcTemplate.getDataSource().getConnection().isClosed();
-        } catch (SQLException e) {
-            throw new ConnectorException(e.getMessage(), e.getCause());
+        JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
+        if(null != jdbcTemplate){
+            Integer count = jdbcTemplate.queryForObject("select 1", Integer.class);
+            return count > 0;
         }
+        return false;
     }
 
     @Override

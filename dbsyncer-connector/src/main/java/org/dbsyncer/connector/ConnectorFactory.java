@@ -38,12 +38,10 @@ public class ConnectorFactory implements DisposableBean {
         String type = config.getConnectorType();
         Connector connector = getConnector(type);
         String cacheKey = connector.getConnectorMapperCacheKey(config);
-        ConnectorMapper mapper = connectorCache.get(cacheKey);
-        if (null == mapper) {
-            mapper = connector.connect(config);
-            connectorCache.putIfAbsent(mapper.getCacheKey(), mapper);
+        if (!connectorCache.containsKey(cacheKey)) {
+            connectorCache.putIfAbsent(cacheKey, connector.connect(config));
         }
-        return mapper;
+        return connectorCache.get(cacheKey);
     }
 
     /**

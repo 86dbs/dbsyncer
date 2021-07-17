@@ -86,7 +86,9 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
     @PostConstruct
     private void init() {
         key = UUIDUtil.getUUID();
-        scheduledTaskService.start(key, "*/10 * * * * ?", this);
+        String cron = "*/10 * * * * ?";
+        scheduledTaskService.start(key, cron, this);
+        logger.info("[{}], Started persistence task {}", cron, key);
     }
 
     @Override
@@ -139,6 +141,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
     @Override
     public void destroy() {
         scheduledTaskService.stop(key);
+        logger.info("Stopped persistence task {}", key);
     }
 
     private AbstractExtractor getExtractor(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta)

@@ -9,6 +9,7 @@ import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.ListenerException;
+import org.dbsyncer.listener.enums.TableOperationEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -46,12 +47,13 @@ public class SqlServerExtractor extends AbstractExtractor {
     private static final String GET_ALL_CHANGES_FOR_TABLE = "SELECT * FROM cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC, [__$operation] ASC";
 
     private static final String LSN_POSITION = "position";
-    private static final long DEFAULT_POLL_INTERVAL_MILLIS = 36000;
+    private static final long DEFAULT_POLL_INTERVAL_MILLIS = 3000;
     private static final int PREPARED_STATEMENT_CACHE_CAPACITY = 500;
     private static final int OFFSET_COLUMNS = 4;
     private final Map<String, PreparedStatement> preparedStatementCache = new ConcurrentHashMap<>(PREPARED_STATEMENT_CACHE_CAPACITY);
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
+    private volatile boolean connectionClosed;
     private static Set<String> tables;
     private static Set<SqlServerChangeTable> changeTables;
     private Connection connection;
@@ -119,10 +121,13 @@ public class SqlServerExtractor extends AbstractExtractor {
 
     private void connect() throws SQLException {
         DatabaseConfig cfg = (DatabaseConfig) connectorConfig;
-        final ConnectorMapper connectorMapper = connectorFactory.connect(cfg);
-        JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
-        connection = jdbcTemplate.getDataSource().getConnection();
-        serverName = cfg.getUrl();
+        if(connectorFactory.isAlive(cfg)){
+            final ConnectorMapper connectorMapper = connectorFactory.connect(cfg);
+            JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
+            connection = jdbcTemplate.getDataSource().getConnection();
+            serverName = cfg.getUrl();
+            connectionClosed = false;
+        }
     }
 
     private void readLastLsn() {
@@ -238,7 +243,7 @@ public class SqlServerExtractor extends AbstractExtractor {
                 while (rs.next()) {
                     // skip update before
                     final int operation = rs.getInt(3);
-                    if (TableOperation.isUpdateBefore(operation)) {
+                    if (TableOperationEnum.isUpdateBefore(operation)) {
                         continue;
                     }
                     row = new ArrayList<>(columnCount - OFFSET_COLUMNS);
@@ -259,17 +264,17 @@ public class SqlServerExtractor extends AbstractExtractor {
     private void parseEvent(List<CDCEvent> list) {
         for (CDCEvent event : list) {
             int code = event.getCode();
-            if (TableOperation.isUpdateAfter(code)) {
+            if (TableOperationEnum.isUpdateAfter(code)) {
                 asynSendRowChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, event.getRow()));
                 continue;
             }
 
-            if (TableOperation.isInsert(code)) {
+            if (TableOperationEnum.isInsert(code)) {
                 asynSendRowChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, event.getRow()));
                 continue;
             }
 
-            if (TableOperation.isDelete(code)) {
+            if (TableOperationEnum.isDelete(code)) {
                 asynSendRowChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), Collections.EMPTY_LIST));
             }
         }
@@ -306,7 +311,16 @@ public class SqlServerExtractor extends AbstractExtractor {
         ResultSet rs = null;
         T apply = null;
         try {
-            final PreparedStatement ps = createPreparedStatement(sql);
+            if(connectionClosed){
+                connect();
+                return null;
+            }
+            PreparedStatement ps = createPreparedStatement(sql);
+            if(ps.getConnection().isClosed() || ps.isClosed()){
+                preparedStatementCache.clear();
+                connectionClosed = true;
+                return null;
+            }
             if (null != statementPreparer) {
                 statementPreparer.accept(ps);
             }
@@ -323,66 +337,13 @@ public class SqlServerExtractor extends AbstractExtractor {
     }
 
     private PreparedStatement createPreparedStatement(String preparedQueryString) {
-        try {
-            if(connection.isClosed()){
-                connect();
+        return preparedStatementCache.computeIfAbsent(preparedQueryString, query -> {
+            try {
+                return connection.prepareStatement(query);
+            } catch (SQLException e) {
+                throw new ListenerException(e);
             }
-            return preparedStatementCache.computeIfAbsent(preparedQueryString, query -> {
-                try {
-                    return connection.prepareStatement(query);
-                } catch (SQLException e) {
-                    throw new ListenerException(e);
-                }
-            });
-        } catch (SQLException e) {
-            logger.error(e.getMessage());
-            throw new ListenerException(e.getCause());
-        }
-    }
-
-    enum TableOperation {
-        /**
-         * 插入
-         */
-        INSERT(2),
-        /**
-         * 更新（旧值）
-         */
-        UPDATE_BEFORE(3),
-        /**
-         * 更新（新值）
-         */
-        UPDATE_AFTER(4),
-        /**
-         * 删除
-         */
-        DELETE(1);
-
-        private final int code;
-
-        TableOperation(int code) {
-            this.code = code;
-        }
-
-        public static boolean isInsert(int code) {
-            return INSERT.getCode() == code;
-        }
-
-        public static boolean isUpdateBefore(int code) {
-            return UPDATE_BEFORE.getCode() == code;
-        }
-
-        public static boolean isUpdateAfter(int code) {
-            return UPDATE_AFTER.getCode() == code;
-        }
-
-        public static boolean isDelete(int code) {
-            return DELETE.getCode() == code;
-        }
-
-        public int getCode() {
-            return code;
-        }
+        });
     }
 
     final class Worker extends Thread {
@@ -392,11 +353,10 @@ public class SqlServerExtractor extends AbstractExtractor {
             while (!isInterrupted() && connected) {
                 try {
                     Lsn stopLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
-                    if (null == stopLsn || !stopLsn.isAvailable()) {
-                        TimeUnit.MICROSECONDS.sleep(DEFAULT_POLL_INTERVAL_MILLIS);
+                    if (null == stopLsn) {
                         continue;
                     }
-                    if (stopLsn.compareTo(lastLsn) <= 0) {
+                    if (!stopLsn.isAvailable() || stopLsn.compareTo(lastLsn) <= 0) {
                         TimeUnit.MICROSECONDS.sleep(DEFAULT_POLL_INTERVAL_MILLIS);
                         continue;
                     }
