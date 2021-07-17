@@ -52,7 +52,7 @@ public interface Connector {
      * @param config
      * @return
      */
-    List<String> getTable(ConnectorConfig config);
+    List<String> getTable(ConnectorMapper config);
 
     /**
      * 获取表元信息
@@ -61,7 +61,7 @@ public interface Connector {
      * @param tableName
      * @return
      */
-    MetaInfo getMetaInfo(ConnectorConfig config, String tableName);
+    MetaInfo getMetaInfo(ConnectorMapper config, String tableName);
 
     /**
      * 获取数据源同步参数
@@ -86,7 +86,7 @@ public interface Connector {
      * @param command
      * @return
      */
-    long getCount(ConnectorConfig config, Map<String, String> command);
+    long getCount(ConnectorMapper config, Map<String, String> command);
 
     /**
      * 分页获取数据源数据

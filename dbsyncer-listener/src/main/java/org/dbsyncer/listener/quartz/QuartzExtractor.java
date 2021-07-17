@@ -5,6 +5,7 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.UUIDUtil;
+import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.AbstractExtractor;
@@ -75,10 +76,11 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
 
     private void execute(Map<String, String> command, int index) {
         // 检查增量点
+        ConnectorMapper connectionMapper = connectorFactory.connect(connectorConfig);
         Point point = checkLastPoint(command, index);
         int pageIndex = 1;
         for (; ; ) {
-            Result reader = connectorFactory.reader(new ReaderConfig(connectorConfig, point.getCommand(), point.getArgs(), pageIndex++, readNum));
+            Result reader = connectorFactory.reader(new ReaderConfig(connectionMapper, point.getCommand(), point.getArgs(), pageIndex++, readNum));
             List<Map> data = reader.getData();
             if (CollectionUtils.isEmpty(data)) {
                 break;

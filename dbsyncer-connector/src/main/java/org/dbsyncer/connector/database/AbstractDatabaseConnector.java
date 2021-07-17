@@ -11,14 +11,12 @@ import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
 import org.dbsyncer.connector.util.DatabaseUtil;
-import org.dbsyncer.connector.util.JDBCUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.Assert;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
@@ -35,7 +33,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         DatabaseConfig cfg = (DatabaseConfig) config;
         try {
             String cacheKey = getConnectorMapperCacheKey(config);
-            return new ConnectorMapper(config, cacheKey, JDBCUtil.getConnection(cfg.getDriverClassName(), cfg.getUrl(), cfg.getUsername(), cfg.getPassword()));
+            return new ConnectorMapper(config, cacheKey, DatabaseUtil.getJdbcTemplate(cfg));
         } catch (Exception e) {
             logger.error("Failed to connect:{}, message:{}", cfg.getUrl(), e.getMessage());
         }
@@ -44,18 +42,21 @@ public abstract class AbstractDatabaseConnector implements Database {
 
     @Override
     public void disconnect(ConnectorMapper connectorMapper) {
-        JDBCUtil.close((Connection) connectorMapper.getConnection());
+        try {
+            DatabaseUtil.close((JdbcTemplate) connectorMapper.getConnection());
+        } catch (SQLException e) {
+            logger.error("Close jdbcTemplate failed: {}", e.getMessage());
+        }
     }
 
     @Override
     public boolean isAlive(ConnectorMapper connectorMapper) {
         try {
-            Connection connection = (Connection) connectorMapper.getConnection();
-            return null != connection && !connection.isClosed();
+            JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
+            return null != jdbcTemplate && !jdbcTemplate.getDataSource().getConnection().isClosed();
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            throw new ConnectorException(e.getMessage(), e.getCause());
         }
-        return false;
     }
 
     @Override
@@ -65,40 +66,26 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
-    public List<String> getTable(ConnectorConfig config) {
-        List<String> tables = new ArrayList<>();
-        DatabaseConfig databaseConfig = (DatabaseConfig) config;
-        JdbcTemplate jdbcTemplate = null;
+    public List<String> getTable(ConnectorMapper config) {
         try {
-            jdbcTemplate = getJdbcTemplate(databaseConfig);
-            String sql = getTablesSql(databaseConfig);
-            tables = jdbcTemplate.queryForList(sql, String.class);
+            JdbcTemplate jdbcTemplate = (JdbcTemplate) config.getConnection();
+            String sql = getTablesSql((DatabaseConfig) config.getConfig());
+            return jdbcTemplate.queryForList(sql, String.class);
         } catch (Exception e) {
             throw new ConnectorException(e.getMessage(), e.getCause());
-        } finally {
-            // 释放连接
-            this.close(jdbcTemplate);
         }
-        return tables;
     }
 
     @Override
-    public MetaInfo getMetaInfo(ConnectorConfig config, String tableName) {
-        DatabaseConfig cfg = (DatabaseConfig) config;
-        JdbcTemplate jdbcTemplate = null;
-        MetaInfo metaInfo = null;
+    public MetaInfo getMetaInfo(ConnectorMapper config, String tableName) {
         try {
-            jdbcTemplate = getJdbcTemplate(cfg);
+            JdbcTemplate jdbcTemplate = (JdbcTemplate) config.getConnection();
             String quotation = buildSqlWithQuotation();
             StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).append(" WHERE 1 != 1");
-            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql.toString(), tableName);
+            return DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql.toString(), tableName);
         } catch (Exception e) {
-            logger.error(e.getMessage());
-        } finally {
-            // 释放连接
-            this.close(jdbcTemplate);
+            throw new ConnectorException(e.getMessage(), e.getCause());
         }
-        return metaInfo;
     }
 
     @Override
@@ -154,25 +141,20 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
-    public long getCount(ConnectorConfig config, Map<String, String> command) {
+    public long getCount(ConnectorMapper config, Map<String, String> command) {
         // 1、获取select SQL
         String queryCountSql = command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
         Assert.hasText(queryCountSql, "查询总数语句不能为空.");
 
-        DatabaseConfig cfg = (DatabaseConfig) config;
-        JdbcTemplate jdbcTemplate = null;
         try {
             // 2、获取连接
-            jdbcTemplate = getJdbcTemplate(cfg);
+            JdbcTemplate jdbcTemplate = (JdbcTemplate) config.getConnection();
 
             // 3、返回结果集
             return jdbcTemplate.queryForObject(queryCountSql, Long.class);
         } catch (Exception e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e.getMessage());
-        } finally {
-            // 释放连接
-            this.close(jdbcTemplate);
         }
     }
 
@@ -182,11 +164,10 @@ public abstract class AbstractDatabaseConnector implements Database {
         String querySql = config.getCommand().get(SqlBuilderEnum.QUERY.getName());
         Assert.hasText(querySql, "查询语句不能为空.");
 
-        DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
-        JdbcTemplate jdbcTemplate = null;
         try {
             // 2、获取连接
-            jdbcTemplate = getJdbcTemplate(cfg);
+            ConnectorMapper connectorMapper = config.getConnectorMapper();
+            JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
 
             // 3、设置参数
             Collections.addAll(config.getArgs(), getPageArgs(config.getPageIndex(), config.getPageSize()));
@@ -199,9 +180,6 @@ public abstract class AbstractDatabaseConnector implements Database {
         } catch (Exception e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e.getMessage());
-        } finally {
-            // 释放连接
-            this.close(jdbcTemplate);
         }
     }
 
@@ -224,12 +202,11 @@ public abstract class AbstractDatabaseConnector implements Database {
         final int size = data.size();
         final int fSize = fields.size();
 
-        DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
-        JdbcTemplate jdbcTemplate = null;
         Result result = new Result();
         try {
             // 2、获取连接
-            jdbcTemplate = getJdbcTemplate(cfg);
+            ConnectorMapper connectorMapper = config.getConnectorMapper();
+            JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
 
             // 3、设置参数
             final JdbcTemplate template = jdbcTemplate;
@@ -251,9 +228,6 @@ public abstract class AbstractDatabaseConnector implements Database {
             result.getFail().set(size);
             result.getError().append(e.getMessage()).append(System.lineSeparator());
             logger.error(e.getMessage());
-        } finally {
-            // 释放连接
-            this.close(jdbcTemplate);
         }
         return result;
     }
@@ -282,20 +256,19 @@ public abstract class AbstractDatabaseConnector implements Database {
         }
 
         int size = fields.size();
-        DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
-        JdbcTemplate jdbcTemplate = null;
         Result result = new Result();
+        // 2、获取连接
+        ConnectorMapper connectorMapper = config.getConnectorMapper();
+        JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
+
         int update = 0;
         try {
-            // 2、获取连接
-            jdbcTemplate = getJdbcTemplate(cfg);
             // 3、设置参数
-            final JdbcTemplate template = jdbcTemplate;
             update = jdbcTemplate.update(sql, (ps) -> {
                 Field f = null;
                 for (int i = 0; i < size; i++) {
                     f = fields.get(i);
-                    SetterEnum.getSetter(f.getType()).set(template, ps, i + 1, f.getType(), data.get(f.getName()));
+                    SetterEnum.getSetter(f.getType()).set(jdbcTemplate, ps, i + 1, f.getType(), data.get(f.getName()));
                 }
             });
         } catch (Exception e) {
@@ -306,16 +279,13 @@ public abstract class AbstractDatabaseConnector implements Database {
                     .append("DATA:").append(data).append(System.lineSeparator())
                     .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
             logger.error("SQL:{}, DATA:{}, ERROR:{}", sql, data, e.getMessage());
-        } finally {
-            // 释放连接
-            this.close(jdbcTemplate);
         }
 
         // 更新失败尝试插入
         if (0 == update && isUpdate(event) && null != pkField && !config.isRetry()) {
             // 插入前检查有无数据
             String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
-            if (!existRow(cfg, queryCount, data.get(pkField.getName()))) {
+            if (!existRow(jdbcTemplate, queryCount, data.get(pkField.getName()))) {
                 fields.remove(fields.size() - 1);
                 config.setEvent(ConnectorConstant.OPERTION_INSERT);
                 config.setRetry(true);
@@ -326,30 +296,16 @@ public abstract class AbstractDatabaseConnector implements Database {
         return result;
     }
 
-    @Override
-    public JdbcTemplate getJdbcTemplate(DatabaseConfig config) {
-        return DatabaseUtil.getJdbcTemplate(config);
-    }
-
-    @Override
-    public void close(JdbcTemplate jdbcTemplate) {
-        try {
-            DatabaseUtil.close(jdbcTemplate);
-        } catch (SQLException e) {
-            logger.error("Close jdbcTemplate failed: {}", e.getMessage());
-        }
-    }
-
     /**
      * 获取DQL表信息
      *
      * @param config
      * @return
      */
-    protected List<String> getDqlTable(ConnectorConfig config) {
+    protected List<String> getDqlTable(ConnectorMapper config) {
         MetaInfo metaInfo = getDqlMetaInfo(config);
         Assert.notNull(metaInfo, "SQL解析异常.");
-        DatabaseConfig cfg = (DatabaseConfig) config;
+        DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
         List<String> tables = new ArrayList<>();
         tables.add(cfg.getSql());
         return tables;
@@ -361,22 +317,17 @@ public abstract class AbstractDatabaseConnector implements Database {
      * @param config
      * @return
      */
-    protected MetaInfo getDqlMetaInfo(ConnectorConfig config) {
-        DatabaseConfig cfg = (DatabaseConfig) config;
-        JdbcTemplate jdbcTemplate = null;
-        MetaInfo metaInfo = null;
+    protected MetaInfo getDqlMetaInfo(ConnectorMapper config) {
         try {
-            jdbcTemplate = getJdbcTemplate(cfg);
+            DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
+            JdbcTemplate jdbcTemplate = (JdbcTemplate) config.getConnection();
             String sql = cfg.getSql().toUpperCase();
             String queryMetaSql = StringUtils.contains(sql, " WHERE ") ? sql + " AND 1!=1 " : sql + " WHERE 1!=1 ";
-            metaInfo = DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql, cfg.getTable());
+            return DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql, cfg.getTable());
         } catch (Exception e) {
             logger.error(e.getMessage());
-        } finally {
-            // 释放连接
-            this.close(jdbcTemplate);
+            throw new ConnectorException(e.getMessage());
         }
-        return metaInfo;
     }
 
     /**
@@ -567,18 +518,14 @@ public abstract class AbstractDatabaseConnector implements Database {
         }
     }
 
-    private boolean existRow(DatabaseConfig config, String sql, Object value) {
-        JdbcTemplate jdbcTemplate = null;
-        Integer rowNum = null;
+    private boolean existRow(JdbcTemplate jdbcTemplate, String sql, Object value) {
+        int rowNum = 0;
         try {
-            jdbcTemplate = getJdbcTemplate(config);
             rowNum = jdbcTemplate.queryForObject(sql, new Object[]{value}, Integer.class);
         } catch (Exception e) {
             logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
-        } finally {
-            this.close(jdbcTemplate);
         }
-        return null != rowNum && rowNum > 0;
+        return rowNum > 0;
     }
 
     private Field getPrimaryKeyField(List<Field> fields) {

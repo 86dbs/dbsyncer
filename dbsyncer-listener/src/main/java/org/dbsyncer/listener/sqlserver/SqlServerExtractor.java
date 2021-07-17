@@ -1,20 +1,19 @@
 package org.dbsyncer.listener.sqlserver;
 
-import com.microsoft.sqlserver.jdbc.SQLServerConnection;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.apache.commons.lang.math.RandomUtils;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.Assert;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -80,7 +79,6 @@ public class SqlServerExtractor extends AbstractExtractor {
             enableTableCDC();
             readChangeTables();
             readLastLsn();
-            getTrustedServerNameAE();
 
             worker = new Worker();
             worker.setName(new StringBuilder("cdc-parser-").append(serverName).append("_").append(RandomUtils.nextInt(100)).toString());
@@ -119,16 +117,12 @@ public class SqlServerExtractor extends AbstractExtractor {
         }
     }
 
-    private void connect() {
-        connection = connectorFactory.connect((DatabaseConfig) connectorConfig);
-    }
-
-    private void getTrustedServerNameAE() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        SQLServerConnection conn = (SQLServerConnection) connection;
-        Class clazz = conn.getClass();
-        Method method = clazz.getDeclaredMethod("getTrustedServerNameAE");
-        method.setAccessible(true);
-        serverName = (String) method.invoke(conn, new Object[]{});
+    private void connect() throws SQLException {
+        DatabaseConfig cfg = (DatabaseConfig) connectorConfig;
+        final ConnectorMapper connectorMapper = connectorFactory.connect(cfg);
+        JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
+        connection = jdbcTemplate.getDataSource().getConnection();
+        serverName = cfg.getUrl();
     }
 
     private void readLastLsn() {
@@ -398,11 +392,10 @@ public class SqlServerExtractor extends AbstractExtractor {
             while (!isInterrupted() && connected) {
                 try {
                     Lsn stopLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
-                    if (!stopLsn.isAvailable()) {
+                    if (null == stopLsn || !stopLsn.isAvailable()) {
                         TimeUnit.MICROSECONDS.sleep(DEFAULT_POLL_INTERVAL_MILLIS);
                         continue;
                     }
-
                     if (stopLsn.compareTo(lastLsn) <= 0) {
                         TimeUnit.MICROSECONDS.sleep(DEFAULT_POLL_INTERVAL_MILLIS);
                         continue;

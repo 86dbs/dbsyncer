@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.Database;
@@ -12,7 +13,6 @@ import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
 import org.dbsyncer.connector.mysql.MysqlConnector;
 import org.dbsyncer.connector.util.DatabaseUtil;
-import org.dbsyncer.connector.util.JDBCUtil;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -32,7 +32,11 @@ import org.springframework.util.Assert;
 import javax.annotation.PostConstruct;
 import java.io.*;
 import java.sql.Connection;
-import java.util.*;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -88,7 +92,11 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             logger.error("无法连接Mysql,URL:{}", config.getUrl());
             throw new StorageException(e.getMessage());
         } finally {
-            JDBCUtil.close(conn);
+            try {
+                DatabaseUtil.close(conn);
+            } catch (SQLException e) {
+                logger.error("关闭连接Mysql,URL:{}", config.getUrl());
+            }
         }
 
         // 初始化表
@@ -163,7 +171,8 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             Executor executor = getExecutor(type, table);
             Map<String, String> command = new HashMap<>();
             command.put(SqlBuilderEnum.INSERT.getName(), executor.getInsert());
-            connectorFactory.writer(new WriterBatchConfig(config, command, executor.getFields(), list));
+            ConnectorMapper connectorMapper = connectorFactory.connect(config);
+            connectorFactory.writer(new WriterBatchConfig(connectorMapper, command, executor.getFields(), list));
         }
 
     }

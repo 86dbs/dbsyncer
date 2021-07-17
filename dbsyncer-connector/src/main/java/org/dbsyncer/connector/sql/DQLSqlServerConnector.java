@@ -2,6 +2,7 @@ package org.dbsyncer.connector.sql;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
@@ -35,12 +36,12 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public List<String> getTable(ConnectorConfig config) {
+    public List<String> getTable(ConnectorMapper config) {
         return super.getDqlTable(config);
     }
 
     @Override
-    public MetaInfo getMetaInfo(ConnectorConfig config, String tableName) {
+    public MetaInfo getMetaInfo(ConnectorMapper config, String tableName) {
         return super.getDqlMetaInfo(config);
     }
 

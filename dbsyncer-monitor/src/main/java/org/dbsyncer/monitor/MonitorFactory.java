@@ -1,6 +1,5 @@
 package org.dbsyncer.monitor;
 
-import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.model.Connector;
 import org.slf4j.Logger;
@@ -33,9 +32,9 @@ public class MonitorFactory implements Monitor {
 
     @Override
     @Cacheable(value = "connector", keyGenerator = "cacheKeyGenerator")
-    public boolean alive(String id) {
+    public boolean isAlive(String id) {
         Connector connector = manager.getConnector(id);
-        return null != connector ? manager.alive(connector.getConfig()) : false;
+        return null != connector ? manager.isAliveConnectorConfig(connector.getConfig()) : false;
     }
 
     @Override

@@ -1,5 +1,7 @@
 package org.dbsyncer.connector.config;
 
+import org.dbsyncer.connector.ConnectorMapper;
+
 import java.util.List;
 import java.util.Map;
 
@@ -10,8 +12,8 @@ public class WriterBatchConfig extends WriterConfig {
      */
     private List<Map> data;
 
-    public WriterBatchConfig(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map> data) {
-        setConfig(config);
+    public WriterBatchConfig(ConnectorMapper connectorMapper, Map<String, String> command, List<Field> fields, List<Map> data) {
+        setConnectorMapper(connectorMapper);
         setCommand(command);
         setFields(fields);
         setData(data);

@@ -2,6 +2,7 @@ package org.dbsyncer.manager;
 
 import org.dbsyncer.common.event.ClosedEvent;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -62,12 +63,22 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     private Map<String, Puller> map;
 
     @Override
-    public boolean alive(ConnectorConfig config) {
-        return parser.alive(config);
+    public ConnectorMapper connect(ConnectorConfig config) {
+        return parser.connect(config);
     }
 
     @Override
-    public List<String> getTable(ConnectorConfig config) {
+    public boolean refreshConnectorConfig(ConnectorConfig config) {
+        return parser.refreshConnectorConfig(config);
+    }
+
+    @Override
+    public boolean isAliveConnectorConfig(ConnectorConfig config) {
+        return parser.isAliveConnectorConfig(config);
+    }
+
+    @Override
+    public List<String> getTable(ConnectorMapper config) {
         return parser.getTable(config);
     }
 

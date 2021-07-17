@@ -53,12 +53,6 @@
             <artifactId>mssql-jdbc</artifactId>
         </dependency>
 
-        <!-- redis客户端连接工具 -->
-        <dependency>
-            <groupId>redis.clients</groupId>
-            <artifactId>jedis</artifactId>
-        </dependency>
-
     </dependencies>
 
 </project>

@@ -9,6 +9,7 @@ import org.dbsyncer.common.model.Task;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -66,19 +67,29 @@ public class ParserFactory implements Parser {
     private ApplicationContext applicationContext;
 
     @Override
-    public boolean alive(ConnectorConfig config) {
+    public ConnectorMapper connect(ConnectorConfig config) {
+        return connectorFactory.connect(config);
+    }
+
+    @Override
+    public boolean refreshConnectorConfig(ConnectorConfig config) {
+        return connectorFactory.refresh(config);
+    }
+
+    @Override
+    public boolean isAliveConnectorConfig(ConnectorConfig config) {
         return connectorFactory.isAlive(config);
     }
 
     @Override
-    public List<String> getTable(ConnectorConfig config) {
+    public List<String> getTable(ConnectorMapper config) {
         return connectorFactory.getTable(config);
     }
 
     @Override
     public MetaInfo getMetaInfo(String connectorId, String tableName) {
-        ConnectorConfig config = getConnectorConfig(connectorId);
-        return connectorFactory.getMetaInfo(config, tableName);
+        ConnectorMapper connectorMapper = connectorFactory.connect(getConnectorConfig(connectorId));
+        return connectorFactory.getMetaInfo(connectorMapper, tableName);
     }
 
     @Override
@@ -109,8 +120,8 @@ public class ParserFactory implements Parser {
 
     @Override
     public long getCount(String connectorId, Map<String, String> command) {
-        ConnectorConfig config = getConnectorConfig(connectorId);
-        return connectorFactory.getCount(config, command);
+        ConnectorMapper connectorMapper = connectorFactory.connect(getConnectorConfig(connectorId));
+        return connectorFactory.getCount(connectorMapper, command);
     }
 
     @Override
@@ -201,6 +212,8 @@ public class ParserFactory implements Parser {
         int pageSize = mapping.getReadNum();
         int threadSize = mapping.getThreadNum();
         int batchSize = mapping.getBatchNum();
+        ConnectorMapper sConnectionMapper = connectorFactory.connect(sConfig);
+        ConnectorMapper tConnectionMapper = connectorFactory.connect(tConfig);
 
         for (; ; ) {
             if (!task.isRunning()) {
@@ -210,7 +223,7 @@ public class ParserFactory implements Parser {
 
             // 1、获取数据源数据
             int pageIndex = Integer.parseInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
-            Result reader = connectorFactory.reader(new ReaderConfig(sConfig, command, new ArrayList<>(), pageIndex, pageSize));
+            Result reader = connectorFactory.reader(new ReaderConfig(sConnectionMapper, command, new ArrayList<>(), pageIndex, pageSize));
             List<Map> data = reader.getData();
             if (CollectionUtils.isEmpty(data)) {
                 params.clear();
@@ -228,7 +241,7 @@ public class ParserFactory implements Parser {
             pluginFactory.convert(group.getPlugin(), data, target);
 
             // 5、写入目标源
-            Result writer = writeBatch(tConfig, command, picker.getTargetFields(), target, threadSize, batchSize);
+            Result writer = writeBatch(tConnectionMapper, command, picker.getTargetFields(), target, threadSize, batchSize);
 
             // 6、更新结果
             flush(task, writer, target);
@@ -244,7 +257,7 @@ public class ParserFactory implements Parser {
                 rowChangedEvent.getBefore(), rowChangedEvent.getAfter());
         final String metaId = mapping.getMetaId();
 
-        ConnectorConfig tConfig = getConnectorConfig(mapping.getTargetConnectorId());
+        ConnectorMapper tConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
         // 1、获取映射字段
         final String event = rowChangedEvent.getEvent();
         Map<String, Object> data = StringUtils.equals(ConnectorConstant.OPERTION_DELETE, event) ? rowChangedEvent.getBefore() : rowChangedEvent.getAfter();
@@ -258,7 +271,7 @@ public class ParserFactory implements Parser {
         pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
 
         // 4、写入目标源
-        Result writer = connectorFactory.writer(new WriterSingleConfig(tConfig, picker.getTargetFields(), tableGroup.getCommand(), event, target, rowChangedEvent.getTableName()));
+        Result writer = connectorFactory.writer(new WriterSingleConfig(tConnectorMapper, picker.getTargetFields(), tableGroup.getCommand(), event, target, rowChangedEvent.getTableName()));
 
         // 5、更新结果
         flush(metaId, writer, event, picker.getTargetMapList());
@@ -329,7 +342,7 @@ public class ParserFactory implements Parser {
     /**
      * 批量写入
      *
-     * @param config
+     * @param connectorMapper
      * @param command
      * @param fields
      * @param target
@@ -337,13 +350,13 @@ public class ParserFactory implements Parser {
      * @param batchSize
      * @return
      */
-    private Result writeBatch(ConnectorConfig config, Map<String, String> command, List<Field> fields, List<Map> target,
+    private Result writeBatch(ConnectorMapper connectorMapper, Map<String, String> command, List<Field> fields, List<Map> target,
                               int threadSize, int batchSize) {
         // 总数
         int total = target.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(new WriterBatchConfig(config, command, fields, target));
+            return connectorFactory.writer(new WriterBatchConfig(connectorMapper, command, fields, target));
         }
 
         // 批量任务, 拆分
@@ -365,7 +378,7 @@ public class ParserFactory implements Parser {
             for (int i = 0; i < threadSize; i++) {
                 executor.execute(() -> {
                     try {
-                        Result w = parallelTask(batchSize, queue, config, command, fields);
+                        Result w = parallelTask(batchSize, queue, connectorMapper, command, fields);
                         // CAS
                         result.getFailData().addAll(w.getFailData());
                         result.getFail().getAndAdd(w.getFail().get());
@@ -390,7 +403,7 @@ public class ParserFactory implements Parser {
         return result;
     }
 
-    private Result parallelTask(int batchSize, Queue<Map> queue, ConnectorConfig config, Map<String, String> command,
+    private Result parallelTask(int batchSize, Queue<Map> queue, ConnectorMapper connectorMapper, Map<String, String> command,
                                 List<Field> fields) {
         List<Map> data = new ArrayList<>();
         for (int j = 0; j < batchSize; j++) {
@@ -400,7 +413,7 @@ public class ParserFactory implements Parser {
             }
             data.add(poll);
         }
-        return connectorFactory.writer(new WriterBatchConfig(config, command, fields, data));
+        return connectorFactory.writer(new WriterBatchConfig(connectorMapper, command, fields, data));
     }
 
     private ThreadPoolTaskExecutor getThreadPoolTaskExecutor(int threadSize, int queueCapacity) {
