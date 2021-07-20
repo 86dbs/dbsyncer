@@ -18,6 +18,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.Assert;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -51,12 +52,22 @@ public abstract class AbstractDatabaseConnector implements Database {
 
     @Override
     public boolean isAlive(ConnectorMapper connectorMapper) {
-        JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
-        if(null != jdbcTemplate){
-            Integer count = jdbcTemplate.queryForObject("select 1", Integer.class);
-            return count > 0;
-        }
-        return false;
+        Integer count = (Integer) connectorMapper.execute((conn)  -> {
+            PreparedStatement ps = null;
+            ResultSet rs = null;
+            int c;
+            try {
+                ps = conn.prepareStatement(getValidationQuery());
+                rs = ps.executeQuery();
+                rs.next();
+                c = rs.getInt(1);
+            } finally {
+                close(rs);
+                close(ps);
+            }
+            return c;
+        });
+        return null != count && count > 0;
     }
 
     @Override
@@ -468,6 +479,15 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     /**
+     * 健康检查
+     *
+     * @return
+     */
+    protected String getValidationQuery(){
+        return "select 1";
+    }
+
+    /**
      * 根据过滤条件获取查询SQL
      *
      * @param queryOperator and/or
@@ -543,5 +563,15 @@ public abstract class AbstractDatabaseConnector implements Database {
 
     private boolean isDelete(String event) {
         return StringUtils.equals(ConnectorConstant.OPERTION_DELETE, event);
+    }
+
+    private void close(AutoCloseable closeable) {
+        if (null != closeable) {
+            try {
+                closeable.close();
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+            }
+        }
     }
 }

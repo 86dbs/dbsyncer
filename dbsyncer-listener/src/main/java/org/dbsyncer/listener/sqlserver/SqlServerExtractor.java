@@ -12,7 +12,6 @@ import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.enums.TableOperationEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.Assert;
 
 import java.sql.*;
@@ -47,7 +46,7 @@ public class SqlServerExtractor extends AbstractExtractor {
     private static final String GET_ALL_CHANGES_FOR_TABLE = "SELECT * FROM cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC, [__$operation] ASC";
 
     private static final String LSN_POSITION = "position";
-    private static final long DEFAULT_POLL_INTERVAL_MILLIS = 3000;
+    private static final long DEFAULT_POLL_INTERVAL_MILLIS = 3_000_000;
     private static final int PREPARED_STATEMENT_CACHE_CAPACITY = 500;
     private static final int OFFSET_COLUMNS = 4;
     private final Map<String, PreparedStatement> preparedStatementCache = new ConcurrentHashMap<>(PREPARED_STATEMENT_CACHE_CAPACITY);
@@ -56,7 +55,7 @@ public class SqlServerExtractor extends AbstractExtractor {
     private volatile boolean connectionClosed;
     private static Set<String> tables;
     private static Set<SqlServerChangeTable> changeTables;
-    private Connection connection;
+    private ConnectorMapper connectorMapper;
     private Worker worker;
     private Lsn lastLsn;
     private String serverName;
@@ -119,12 +118,10 @@ public class SqlServerExtractor extends AbstractExtractor {
         }
     }
 
-    private void connect() throws SQLException {
+    private void connect() {
         DatabaseConfig cfg = (DatabaseConfig) connectorConfig;
-        if(connectorFactory.isAlive(cfg)){
-            final ConnectorMapper connectorMapper = connectorFactory.connect(cfg);
-            JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
-            connection = jdbcTemplate.getDataSource().getConnection();
+        if (connectorFactory.isAlive(cfg)) {
+            connectorMapper = connectorFactory.connect(cfg);
             serverName = cfg.getUrl();
             connectionClosed = false;
         }
@@ -213,20 +210,23 @@ public class SqlServerExtractor extends AbstractExtractor {
     }
 
     private void execute(String... sqlStatements) {
-        Statement statement = null;
-        try {
-            statement = connection.createStatement();
-            for (String sqlStatement : sqlStatements) {
-                if (sqlStatement != null) {
-                    logger.info("executing '{}'", sqlStatement);
-                    statement.execute(sqlStatement);
+        connectorMapper.execute((conn)  -> {
+            Statement statement = null;
+            try {
+                statement = conn.createStatement();
+                for (String sqlStatement : sqlStatements) {
+                    if (sqlStatement != null) {
+                        logger.info("executing '{}'", sqlStatement);
+                        statement.execute(sqlStatement);
+                    }
                 }
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+            } finally {
+                close(statement);
             }
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-        } finally {
-            close(statement);
-        }
+            return true;
+        });
     }
 
     private void pull(Lsn stopLsn) {
@@ -307,16 +307,17 @@ public class SqlServerExtractor extends AbstractExtractor {
         return query(sql, statementPreparer, mapper);
     }
 
-    private <T> T query(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
-        ResultSet rs = null;
-        T apply = null;
-        try {
-            if(connectionClosed){
-                connect();
-                return null;
+    private <T> T query(String preparedQuerySql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
+        if(connectionClosed){
+            connect();
+            return null;
+        }
+        Object execute = connectorMapper.execute((conn)  -> {
+            if (!preparedStatementCache.containsKey(preparedQuerySql)) {
+                preparedStatementCache.putIfAbsent(preparedQuerySql, conn.prepareStatement(preparedQuerySql));
             }
-            PreparedStatement ps = createPreparedStatement(sql);
-            if(ps.getConnection().isClosed() || ps.isClosed()){
+            PreparedStatement ps = preparedStatementCache.get(preparedQuerySql);
+            if (ps.getConnection().isClosed() || ps.isClosed()) {
                 preparedStatementCache.clear();
                 connectionClosed = true;
                 return null;
@@ -324,26 +325,20 @@ public class SqlServerExtractor extends AbstractExtractor {
             if (null != statementPreparer) {
                 statementPreparer.accept(ps);
             }
-            rs = ps.executeQuery();
-            apply = mapper.apply(rs);
-        } catch (SQLServerException e) {
-            // 为过程或函数 cdc.fn_cdc_get_all_changes_ ...  提供的参数数目不足。
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-        } finally {
-            close(rs);
-        }
-        return apply;
-    }
-
-    private PreparedStatement createPreparedStatement(String preparedQueryString) {
-        return preparedStatementCache.computeIfAbsent(preparedQueryString, query -> {
+            ResultSet rs = null;
             try {
-                return connection.prepareStatement(query);
-            } catch (SQLException e) {
-                throw new ListenerException(e);
+                rs = ps.executeQuery();
+                return mapper.apply(rs);
+            } catch (SQLServerException e) {
+                // 为过程或函数 cdc.fn_cdc_get_all_changes_ ...  提供的参数数目不足。
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+            } finally {
+                close(rs);
             }
+            return null;
         });
+        return (T) execute;
     }
 
     final class Worker extends Thread {
@@ -354,6 +349,7 @@ public class SqlServerExtractor extends AbstractExtractor {
                 try {
                     Lsn stopLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
                     if (null == stopLsn) {
+                        TimeUnit.MICROSECONDS.sleep(DEFAULT_POLL_INTERVAL_MILLIS * 2);
                         continue;
                     }
                     if (!stopLsn.isAvailable() || stopLsn.compareTo(lastLsn) <= 0) {
