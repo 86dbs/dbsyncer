@@ -1,9 +1,9 @@
 package org.dbsyncer.connector;
 
-import java.sql.Connection;
+import org.dbsyncer.connector.database.DatabaseTemplate;
 
 public interface HandleCallback {
 
-    Object apply(Connection connection) throws Exception;
+    Object apply(DatabaseTemplate databaseTemplate) throws Exception;
 
 }

@@ -9,6 +9,7 @@ import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.Table;
+import org.dbsyncer.connector.database.DatabaseTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
@@ -46,34 +47,32 @@ public abstract class DatabaseUtil {
 
     public static Connection getConnection(DatabaseConfig config)
             throws SQLException, ClassNotFoundException {
-        if(null != config.getDriverClassName()){
+        if (null != config.getDriverClassName()) {
             Class.forName(config.getDriverClassName());
         }
         return DriverManager.getConnection(config.getUrl(), config.getUsername(), config.getPassword());
     }
 
-    public static void close(Connection connection) throws SQLException {
-        if (null != connection) {
-            connection.close();
-        }
-    }
-
-    public static void close(ResultSet rs) throws SQLException {
+    public static void close(AutoCloseable rs) {
         if (null != rs) {
-            rs.close();
+            try {
+                rs.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
     /**
      * 获取数据库表元数据信息
      *
-     * @param jdbcTemplate
+     * @param databaseTemplate
      * @param metaSql      查询元数据
      * @param tableName    表名
      * @return
      */
-    public static MetaInfo getMetaInfo(JdbcTemplate jdbcTemplate, String metaSql, String tableName) throws SQLException {
-        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(metaSql);
+    public static MetaInfo getMetaInfo(DatabaseTemplate databaseTemplate, String metaSql, String tableName) throws SQLException {
+        SqlRowSet sqlRowSet = databaseTemplate.queryForRowSet(metaSql);
         ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
         SqlRowSetMetaData metaData = rowSet.getMetaData();
 
@@ -82,13 +81,11 @@ public abstract class DatabaseUtil {
         if (1 > columnCount) {
             throw new ConnectorException("查询表字段不能为空.");
         }
-        Connection connection = null;
         List<Field> fields = new ArrayList<>(columnCount);
         // <表名,[主键, ...]>
         Map<String, List<String>> tables = new HashMap<>();
         try {
-            connection = jdbcTemplate.getDataSource().getConnection();
-            DatabaseMetaData md = connection.getMetaData();
+            DatabaseMetaData md = databaseTemplate.getConnection().getMetaData();
             String name = null;
             String label = null;
             String typeName = null;
@@ -109,13 +106,13 @@ public abstract class DatabaseUtil {
             }
         } finally {
             tables.clear();
-            close(connection);
         }
         return new MetaInfo().setColumn(fields);
     }
 
     /**
      * 获取数据库名称
+     *
      * @param conn
      * @return
      * @throws NoSuchFieldException
@@ -149,7 +146,7 @@ public abstract class DatabaseUtil {
             List<Field> column = table.getColumn();
             if (!CollectionUtils.isEmpty(column)) {
                 for (Field c : column) {
-                    if(c.isPk()){
+                    if (c.isPk()) {
                         return new StringBuilder(quotation).append(c.getName()).append(quotation).toString();
                     }
                 }
@@ -162,6 +159,7 @@ public abstract class DatabaseUtil {
      * Mysql 8.0
      * <p>mysql-connector-java-8.0.11</p>
      * <p>mysql-connector-java-5.1.40</p>
+     *
      * @param driverVersion
      * @return
      */
@@ -173,11 +171,12 @@ public abstract class DatabaseUtil {
      * Mysql 8.0
      * <p>8.0.0-log</p>
      * <p>5.7.26-log</p>
+     *
      * @param databaseProductVersion
      * @return
      */
     private static boolean isDatabaseProductVersionMoreThanMysql8(String databaseProductVersion) {
-        return StringUtils.startsWith(databaseProductVersion,"8");
+        return StringUtils.startsWith(databaseProductVersion, "8");
     }
 
     private static boolean isPk(Map<String, List<String>> tables, String tableName, String name) {

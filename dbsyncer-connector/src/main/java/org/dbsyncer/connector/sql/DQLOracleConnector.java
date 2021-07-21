@@ -11,7 +11,7 @@ import java.util.Map;
 public final class DQLOracleConnector extends AbstractDatabaseConnector {
 
     @Override
-    protected String getTablesSql(DatabaseConfig config) {
+    protected String getTableSql(DatabaseConfig config) {
         return String.format("SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER='%s'", config.getUsername()).toUpperCase();
     }
 
@@ -31,8 +31,8 @@ public final class DQLOracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public MetaInfo getMetaInfo(ConnectorMapper config, String tableName) {
-        return super.getDqlMetaInfo(config);
+    public MetaInfo getMetaInfo(ConnectorMapper connectorMapper, String tableName) {
+        return super.getDqlMetaInfo(connectorMapper);
     }
 
     @Override

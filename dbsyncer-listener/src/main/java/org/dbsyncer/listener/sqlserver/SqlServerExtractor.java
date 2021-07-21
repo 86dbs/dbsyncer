@@ -210,20 +210,12 @@ public class SqlServerExtractor extends AbstractExtractor {
     }
 
     private void execute(String... sqlStatements) {
-        connectorMapper.execute((conn)  -> {
-            Statement statement = null;
-            try {
-                statement = conn.createStatement();
-                for (String sqlStatement : sqlStatements) {
-                    if (sqlStatement != null) {
-                        logger.info("executing '{}'", sqlStatement);
-                        statement.execute(sqlStatement);
-                    }
+        connectorMapper.execute((databaseTemplate) -> {
+            for (String sqlStatement : sqlStatements) {
+                if (sqlStatement != null) {
+                    logger.info("executing '{}'", sqlStatement);
+                    databaseTemplate.execute(sqlStatement);
                 }
-            } catch (Exception e) {
-                logger.error(e.getMessage());
-            } finally {
-                close(statement);
             }
             return true;
         });
@@ -255,7 +247,7 @@ public class SqlServerExtractor extends AbstractExtractor {
                 return data;
             });
 
-            if(!CollectionUtils.isEmpty(list)){
+            if (!CollectionUtils.isEmpty(list)) {
                 parseEvent(list);
             }
         });
@@ -308,13 +300,13 @@ public class SqlServerExtractor extends AbstractExtractor {
     }
 
     private <T> T query(String preparedQuerySql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
-        if(connectionClosed){
+        if (connectionClosed) {
             connect();
             return null;
         }
-        Object execute = connectorMapper.execute((conn)  -> {
+        Object execute = connectorMapper.execute((databaseTemplate) -> {
             if (!preparedStatementCache.containsKey(preparedQuerySql)) {
-                preparedStatementCache.putIfAbsent(preparedQuerySql, conn.prepareStatement(preparedQuerySql));
+                preparedStatementCache.putIfAbsent(preparedQuerySql, databaseTemplate.getConnection().prepareStatement(preparedQuerySql));
             }
             PreparedStatement ps = preparedStatementCache.get(preparedQuerySql);
             if (ps.getConnection().isClosed() || ps.isClosed()) {

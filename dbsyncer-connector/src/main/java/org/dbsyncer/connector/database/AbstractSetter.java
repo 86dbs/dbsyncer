@@ -3,9 +3,9 @@ package org.dbsyncer.connector.database;
 import org.dbsyncer.connector.database.setter.PreparedFieldMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.lang.reflect.ParameterizedType;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
@@ -38,7 +38,7 @@ public abstract class AbstractSetter<T> implements Setter {
     }
 
     @Override
-    public void set(JdbcTemplate jdbcTemplate, PreparedStatement ps, int i, int type, Object val) {
+    public void set(Connection connection, PreparedStatement ps, int i, int type, Object val) {
         try {
             if (null == val) {
                 ps.setNull(i, type);
@@ -50,7 +50,7 @@ public abstract class AbstractSetter<T> implements Setter {
                 return;
             }
 
-            setIfValueTypeNotMatch(new PreparedFieldMapper(jdbcTemplate), ps, i, type, val);
+            setIfValueTypeNotMatch(new PreparedFieldMapper(connection), ps, i, type, val);
         } catch (Exception e) {
             logger.error("Set preparedStatement error: {}", e.getMessage());
             try {

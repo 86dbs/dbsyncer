@@ -49,19 +49,19 @@ public interface Connector {
     /**
      * 获取所有表名
      *
-     * @param config
+     * @param connectorMapper
      * @return
      */
-    List<String> getTable(ConnectorMapper config);
+    List<String> getTable(ConnectorMapper connectorMapper);
 
     /**
      * 获取表元信息
      *
-     * @param config
+     * @param connectorMapper
      * @param tableName
      * @return
      */
-    MetaInfo getMetaInfo(ConnectorMapper config, String tableName);
+    MetaInfo getMetaInfo(ConnectorMapper connectorMapper, String tableName);
 
     /**
      * 获取数据源同步参数

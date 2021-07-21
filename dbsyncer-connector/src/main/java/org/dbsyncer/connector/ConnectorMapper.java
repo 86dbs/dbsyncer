@@ -1,6 +1,7 @@
 package org.dbsyncer.connector;
 
 import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.database.DatabaseTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,23 +34,24 @@ public class ConnectorMapper {
      * @param callback
      * @return
      */
-    public Object execute(HandleCallback callback) {
+    public <T> T execute(HandleCallback callback) {
         final Lock connectionLock = lock;
         boolean locked = false;
         Object apply = null;
         try {
             locked = connectionLock.tryLock();
             if (locked) {
-                apply = callback.apply(connection);
+                apply = callback.apply(new DatabaseTemplate(connection));
             }
         } catch (Exception e) {
             logger.error(e.getMessage());
+            throw new ConnectorException(e.getMessage());
         } finally {
             if (locked) {
                 connectionLock.unlock();
             }
         }
-        return apply;
+        return (T) apply;
     }
 
 }

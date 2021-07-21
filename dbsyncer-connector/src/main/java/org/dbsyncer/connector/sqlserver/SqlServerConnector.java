@@ -20,7 +20,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    protected String getTablesSql(DatabaseConfig config) {
+    protected String getTableSql(DatabaseConfig config) {
         return "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('DBO') AND IS_MS_SHIPPED = 0";
     }
 

@@ -14,12 +14,10 @@ import org.dbsyncer.connector.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.Assert;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,7 +25,7 @@ public abstract class AbstractDatabaseConnector implements Database {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected abstract String getTablesSql(DatabaseConfig config);
+    protected abstract String getTableSql(DatabaseConfig config);
 
     @Override
     public ConnectorMapper connect(ConnectorConfig config) {
@@ -42,30 +40,12 @@ public abstract class AbstractDatabaseConnector implements Database {
 
     @Override
     public void disconnect(ConnectorMapper connectorMapper) {
-        try {
-            DatabaseUtil.close((JdbcTemplate) connectorMapper.getConnection());
-        } catch (SQLException e) {
-            logger.error("Close jdbcTemplate failed: {}", e.getMessage());
-        }
+        DatabaseUtil.close(connectorMapper.getConnection());
     }
 
     @Override
     public boolean isAlive(ConnectorMapper connectorMapper) {
-        Integer count = (Integer) connectorMapper.execute((conn)  -> {
-            PreparedStatement ps = null;
-            ResultSet rs = null;
-            int c;
-            try {
-                ps = conn.prepareStatement(getValidationQuery());
-                rs = ps.executeQuery();
-                rs.next();
-                c = rs.getInt(1);
-            } finally {
-                close(rs);
-                close(ps);
-            }
-            return c;
-        });
+        Integer count = connectorMapper.execute((databaseTemplate) -> databaseTemplate.queryForObject(getValidationQuery(), Integer.class));
         return null != count && count > 0;
     }
 
@@ -76,26 +56,16 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     @Override
-    public List<String> getTable(ConnectorMapper config) {
-        try {
-            JdbcTemplate jdbcTemplate = (JdbcTemplate) config.getConnection();
-            String sql = getTablesSql((DatabaseConfig) config.getConfig());
-            return jdbcTemplate.queryForList(sql, String.class);
-        } catch (Exception e) {
-            throw new ConnectorException(e.getMessage(), e.getCause());
-        }
+    public List<String> getTable(ConnectorMapper connectorMapper) {
+        String sql = getTableSql((DatabaseConfig) connectorMapper.getConfig());
+        return connectorMapper.execute((databaseTemplate) -> databaseTemplate.queryForList(sql, String.class));
     }
 
     @Override
-    public MetaInfo getMetaInfo(ConnectorMapper config, String tableName) {
-        try {
-            JdbcTemplate jdbcTemplate = (JdbcTemplate) config.getConnection();
-            String quotation = buildSqlWithQuotation();
-            StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).append(" WHERE 1 != 1");
-            return DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql.toString(), tableName);
-        } catch (Exception e) {
-            throw new ConnectorException(e.getMessage(), e.getCause());
-        }
+    public MetaInfo getMetaInfo(ConnectorMapper connectorMapper, String tableName) {
+        String quotation = buildSqlWithQuotation();
+        StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).append(" WHERE 1 != 1");
+        return connectorMapper.execute((databaseTemplate) -> DatabaseUtil.getMetaInfo(databaseTemplate, queryMetaSql.toString(), tableName));
     }
 
     @Override
@@ -156,16 +126,8 @@ public abstract class AbstractDatabaseConnector implements Database {
         String queryCountSql = command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
         Assert.hasText(queryCountSql, "查询总数语句不能为空.");
 
-        try {
-            // 2、获取连接
-            JdbcTemplate jdbcTemplate = (JdbcTemplate) config.getConnection();
-
-            // 3、返回结果集
-            return jdbcTemplate.queryForObject(queryCountSql, Long.class);
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-            throw new ConnectorException(e.getMessage());
-        }
+        // 2、返回结果集
+        return config.execute((databaseTemplate) -> databaseTemplate.queryForObject(queryCountSql, Long.class));
     }
 
     @Override
@@ -174,23 +136,15 @@ public abstract class AbstractDatabaseConnector implements Database {
         String querySql = config.getCommand().get(SqlBuilderEnum.QUERY.getName());
         Assert.hasText(querySql, "查询语句不能为空.");
 
-        try {
-            // 2、获取连接
-            ConnectorMapper connectorMapper = config.getConnectorMapper();
-            JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
+        // 2、设置参数
+        Collections.addAll(config.getArgs(), getPageArgs(config.getPageIndex(), config.getPageSize()));
 
-            // 3、设置参数
-            Collections.addAll(config.getArgs(), getPageArgs(config.getPageIndex(), config.getPageSize()));
+        // 3、执行SQL
+        ConnectorMapper connectorMapper = config.getConnectorMapper();
+        List<Map<String, Object>> list = connectorMapper.execute((databaseTemplate) -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
 
-            // 4、执行SQL
-            List<Map<String, Object>> list = jdbcTemplate.queryForList(querySql, config.getArgs().toArray());
-
-            // 5、返回结果集
-            return new Result(new ArrayList<>(list));
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-            throw new ConnectorException(e.getMessage());
-        }
+        // 4、返回结果集
+        return new Result(new ArrayList<>(list));
     }
 
     @Override
@@ -216,22 +170,22 @@ public abstract class AbstractDatabaseConnector implements Database {
         try {
             // 2、获取连接
             ConnectorMapper connectorMapper = config.getConnectorMapper();
-            JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
 
             // 3、设置参数
-            final JdbcTemplate template = jdbcTemplate;
-            jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
-                @Override
-                public void setValues(PreparedStatement preparedStatement, int i) {
-                    batchRowsSetter(template, preparedStatement, fields, fSize, data.get(i));
-                }
+            connectorMapper.execute((databaseTemplate) -> {
+                databaseTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+                    @Override
+                    public void setValues(PreparedStatement preparedStatement, int i) {
+                        batchRowsSetter(databaseTemplate.getConnection(), preparedStatement, fields, fSize, data.get(i));
+                    }
 
-                @Override
-                public int getBatchSize() {
-                    return size;
-                }
+                    @Override
+                    public int getBatchSize() {
+                        return size;
+                    }
+                });
+                return true;
             });
-
         } catch (Exception e) {
             // 记录错误数据
             result.getFailData().addAll(data);
@@ -269,18 +223,18 @@ public abstract class AbstractDatabaseConnector implements Database {
         Result result = new Result();
         // 2、获取连接
         ConnectorMapper connectorMapper = config.getConnectorMapper();
-        JdbcTemplate jdbcTemplate = (JdbcTemplate) connectorMapper.getConnection();
-
         int update = 0;
         try {
             // 3、设置参数
-            update = jdbcTemplate.update(sql, (ps) -> {
-                Field f = null;
-                for (int i = 0; i < size; i++) {
-                    f = fields.get(i);
-                    SetterEnum.getSetter(f.getType()).set(jdbcTemplate, ps, i + 1, f.getType(), data.get(f.getName()));
-                }
-            });
+            update = connectorMapper.execute((databaseTemplate) ->
+                    databaseTemplate.update(sql, (ps) -> {
+                        Field f = null;
+                        for (int i = 0; i < size; i++) {
+                            f = fields.get(i);
+                            SetterEnum.getSetter(f.getType()).set(databaseTemplate.getConnection(), ps, i + 1, f.getType(), data.get(f.getName()));
+                        }
+                    })
+            );
         } catch (Exception e) {
             // 记录错误数据
             result.getFailData().add(data);
@@ -295,7 +249,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         if (0 == update && isUpdate(event) && null != pkField && !config.isRetry()) {
             // 插入前检查有无数据
             String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
-            if (!existRow(jdbcTemplate, queryCount, data.get(pkField.getName()))) {
+            if (!existRow(connectorMapper, queryCount, data.get(pkField.getName()))) {
                 fields.remove(fields.size() - 1);
                 config.setEvent(ConnectorConstant.OPERTION_INSERT);
                 config.setRetry(true);
@@ -328,16 +282,10 @@ public abstract class AbstractDatabaseConnector implements Database {
      * @return
      */
     protected MetaInfo getDqlMetaInfo(ConnectorMapper config) {
-        try {
-            DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
-            JdbcTemplate jdbcTemplate = (JdbcTemplate) config.getConnection();
-            String sql = cfg.getSql().toUpperCase();
-            String queryMetaSql = StringUtils.contains(sql, " WHERE ") ? sql + " AND 1!=1 " : sql + " WHERE 1!=1 ";
-            return DatabaseUtil.getMetaInfo(jdbcTemplate, queryMetaSql, cfg.getTable());
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-            throw new ConnectorException(e.getMessage());
-        }
+        DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
+        String sql = cfg.getSql().toUpperCase();
+        String queryMetaSql = StringUtils.contains(sql, " WHERE ") ? sql + " AND 1!=1 " : sql + " WHERE 1!=1 ";
+        return config.execute((databaseTemplate) -> DatabaseUtil.getMetaInfo(databaseTemplate, queryMetaSql, cfg.getTable()));
     }
 
     /**
@@ -482,7 +430,7 @@ public abstract class AbstractDatabaseConnector implements Database {
      *
      * @return
      */
-    protected String getValidationQuery(){
+    protected String getValidationQuery() {
         return "select 1";
     }
 
@@ -518,13 +466,13 @@ public abstract class AbstractDatabaseConnector implements Database {
     }
 
     /**
-     * @param jdbcTemplate 参数构造器
-     * @param ps           参数构造器
-     * @param fields       同步字段，例如[{name=ID, type=4}, {name=NAME, type=12}]
-     * @param fSize        同步字段个数
-     * @param row          同步字段对应的值，例如{ID=123, NAME=张三11}
+     * @param connection 连接
+     * @param ps         参数构造器
+     * @param fields     同步字段，例如[{name=ID, type=4}, {name=NAME, type=12}]
+     * @param fSize      同步字段个数
+     * @param row        同步字段对应的值，例如{ID=123, NAME=张三11}
      */
-    private void batchRowsSetter(JdbcTemplate jdbcTemplate, PreparedStatement ps, List<Field> fields, int fSize, Map row) {
+    private void batchRowsSetter(Connection connection, PreparedStatement ps, List<Field> fields, int fSize, Map row) {
         Field f = null;
         int type;
         Object val = null;
@@ -533,14 +481,14 @@ public abstract class AbstractDatabaseConnector implements Database {
             f = fields.get(i);
             type = f.getType();
             val = row.get(f.getName());
-            SetterEnum.getSetter(type).set(jdbcTemplate, ps, i + 1, type, val);
+            SetterEnum.getSetter(type).set(connection, ps, i + 1, type, val);
         }
     }
 
-    private boolean existRow(JdbcTemplate jdbcTemplate, String sql, Object value) {
+    private boolean existRow(ConnectorMapper connectorMapper, String sql, Object value) {
         int rowNum = 0;
         try {
-            rowNum = jdbcTemplate.queryForObject(sql, new Object[]{value}, Integer.class);
+            rowNum = connectorMapper.execute((databaseTemplate) -> databaseTemplate.queryForObject(sql, new Object[]{value}, Integer.class));
         } catch (Exception e) {
             logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
         }

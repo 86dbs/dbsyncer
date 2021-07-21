@@ -17,7 +17,7 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    protected String getTablesSql(DatabaseConfig config) {
+    protected String getTableSql(DatabaseConfig config) {
         return "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('DBO')";
     }
 
@@ -41,8 +41,8 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public MetaInfo getMetaInfo(ConnectorMapper config, String tableName) {
-        return super.getDqlMetaInfo(config);
+    public MetaInfo getMetaInfo(ConnectorMapper connectorMapper, String tableName) {
+        return super.getDqlMetaInfo(connectorMapper);
     }
 
     @Override

@@ -8,7 +8,7 @@ import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 public final class MysqlConnector extends AbstractDatabaseConnector {
 
     @Override
-    protected String getTablesSql(DatabaseConfig config) {
+    protected String getTableSql(DatabaseConfig config) {
         return "show tables";
     }
 

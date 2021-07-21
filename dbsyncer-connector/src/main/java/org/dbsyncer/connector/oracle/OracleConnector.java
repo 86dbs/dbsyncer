@@ -8,7 +8,7 @@ import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 public final class OracleConnector extends AbstractDatabaseConnector {
 
     @Override
-    protected String getTablesSql(DatabaseConfig config) {
+    protected String getTableSql(DatabaseConfig config) {
         return String.format("SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER='%s'", config.getUsername()).toUpperCase();
     }
 

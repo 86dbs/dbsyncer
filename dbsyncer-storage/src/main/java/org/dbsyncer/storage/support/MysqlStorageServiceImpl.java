@@ -77,8 +77,6 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     @PostConstruct
     private void init() {
         logger.info("url:{}", config.getUrl());
-        logger.info("username:{}", config.getUsername());
-        logger.info("password:{}", config.getPassword());
         ConnectorConfig cfg = config;
         cfg.setConnectorType(ConnectorEnum.MYSQL.getType());
         jdbcTemplate = DatabaseUtil.getJdbcTemplate(config);
@@ -92,11 +90,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             logger.error("无法连接Mysql,URL:{}", config.getUrl());
             throw new StorageException(e.getMessage());
         } finally {
-            try {
-                DatabaseUtil.close(conn);
-            } catch (SQLException e) {
-                logger.error("关闭连接Mysql,URL:{}", config.getUrl());
-            }
+            DatabaseUtil.close(conn);
         }
 
         // 初始化表
