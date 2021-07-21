@@ -33,8 +33,7 @@ public abstract class AbstractDatabaseConnector implements Database {
     public ConnectorMapper connect(ConnectorConfig config) {
         DatabaseConfig cfg = (DatabaseConfig) config;
         try {
-            String cacheKey = getConnectorMapperCacheKey(config);
-            return new ConnectorMapper(config, cacheKey, DatabaseUtil.getJdbcTemplate(cfg));
+            return new ConnectorMapper(config, DatabaseUtil.getConnection(cfg));
         } catch (Exception e) {
             logger.error("Failed to connect:{}, message:{}", cfg.getUrl(), e.getMessage());
         }

@@ -16,10 +16,7 @@ import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
 import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +42,14 @@ public abstract class DatabaseUtil {
             BasicDataSource ds = (BasicDataSource) dataSource;
             ds.close();
         }
+    }
+
+    public static Connection getConnection(DatabaseConfig config)
+            throws SQLException, ClassNotFoundException {
+        if(null != config.getDriverClassName()){
+            Class.forName(config.getDriverClassName());
+        }
+        return DriverManager.getConnection(config.getUrl(), config.getUsername(), config.getPassword());
     }
 
     public static void close(Connection connection) throws SQLException {

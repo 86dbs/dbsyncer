@@ -46,7 +46,7 @@ public class SqlServerExtractor extends AbstractExtractor {
     private static final String GET_ALL_CHANGES_FOR_TABLE = "SELECT * FROM cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC, [__$operation] ASC";
 
     private static final String LSN_POSITION = "position";
-    private static final long DEFAULT_POLL_INTERVAL_MILLIS = 3_000_000;
+    private static final long DEFAULT_POLL_INTERVAL_MILLIS = 3000;
     private static final int PREPARED_STATEMENT_CACHE_CAPACITY = 500;
     private static final int OFFSET_COLUMNS = 4;
     private final Map<String, PreparedStatement> preparedStatementCache = new ConcurrentHashMap<>(PREPARED_STATEMENT_CACHE_CAPACITY);
@@ -348,12 +348,8 @@ public class SqlServerExtractor extends AbstractExtractor {
             while (!isInterrupted() && connected) {
                 try {
                     Lsn stopLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
-                    if (null == stopLsn) {
-                        TimeUnit.MICROSECONDS.sleep(DEFAULT_POLL_INTERVAL_MILLIS * 2);
-                        continue;
-                    }
-                    if (!stopLsn.isAvailable() || stopLsn.compareTo(lastLsn) <= 0) {
-                        TimeUnit.MICROSECONDS.sleep(DEFAULT_POLL_INTERVAL_MILLIS);
+                    if (null == stopLsn || !stopLsn.isAvailable() || stopLsn.compareTo(lastLsn) <= 0) {
+                        TimeUnit.MILLISECONDS.sleep(DEFAULT_POLL_INTERVAL_MILLIS);
                         continue;
                     }
 
