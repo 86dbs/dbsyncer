@@ -10,10 +10,10 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ConnectorMapper {
-    private final Logger          logger = LoggerFactory.getLogger(getClass());
-    private final Lock            lock   = new ReentrantLock(true);
-    private       ConnectorConfig config;
-    private       Connection      connection;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Lock lock = new ReentrantLock(true);
+    protected ConnectorConfig config;
+    protected Connection connection;
 
     public ConnectorMapper(ConnectorConfig config, Connection connection) {
         this.config = config;

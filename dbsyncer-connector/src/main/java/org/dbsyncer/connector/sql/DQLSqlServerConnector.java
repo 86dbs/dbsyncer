@@ -6,6 +6,8 @@ import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.connector.sqlserver.SqlServerConnectorMapper;
+import org.dbsyncer.connector.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +17,16 @@ import java.util.Map;
 public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Override
+    public ConnectorMapper connect(ConnectorConfig config) {
+        try {
+            return new SqlServerConnectorMapper(config, DatabaseUtil.getConnection((DatabaseConfig) config));
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            throw new ConnectorException(e.getMessage());
+        }
+    }
 
     @Override
     protected String getTableSql(DatabaseConfig config) {
