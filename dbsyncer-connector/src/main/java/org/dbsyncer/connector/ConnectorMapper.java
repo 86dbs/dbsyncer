@@ -22,12 +22,6 @@ public class ConnectorMapper {
         return connection;
     }
 
-    /**
-     * 使用连接时加锁
-     *
-     * @param callback
-     * @return
-     */
     public <T> T execute(HandleCallback callback) {
         try {
             return (T) callback.apply(new DatabaseTemplate(connection));

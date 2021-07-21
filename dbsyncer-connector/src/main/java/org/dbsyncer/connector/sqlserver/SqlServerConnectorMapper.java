@@ -21,6 +21,13 @@ public final class SqlServerConnectorMapper extends ConnectorMapper {
         super(config, connection);
     }
 
+    /**
+     * 使用连接时加锁(SqlServer 2008以下版本连接未释放问题)
+     * TODO 判断版本，是否加锁
+     *
+     * @param callback
+     * @return
+     */
     @Override
     public <T> T execute(HandleCallback callback) {
         final Lock connectionLock = lock;
