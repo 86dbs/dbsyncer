@@ -1,6 +1,5 @@
 package org.dbsyncer.connector.util;
 
-import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.dbcp.DelegatingDatabaseMetaData;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -10,13 +9,11 @@ import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.database.DatabaseTemplate;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
 import org.springframework.util.Assert;
 
-import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,27 +23,6 @@ import java.util.Map;
 public abstract class DatabaseUtil {
 
     private DatabaseUtil() {
-    }
-
-    public static JdbcTemplate getJdbcTemplate(DatabaseConfig config) {
-        BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName(config.getDriverClassName());
-        dataSource.setUrl(config.getUrl());
-        dataSource.setUsername(config.getUsername());
-        dataSource.setPassword(config.getPassword());
-        // 是否自动回收超时连接
-        dataSource.setRemoveAbandoned(true);
-        // 超时时间(以秒数为单位)
-        dataSource.setRemoveAbandonedTimeout(60);
-        return new JdbcTemplate(dataSource);
-    }
-
-    public static void close(JdbcTemplate jdbcTemplate) throws SQLException {
-        if (null != jdbcTemplate) {
-            DataSource dataSource = jdbcTemplate.getDataSource();
-            BasicDataSource ds = (BasicDataSource) dataSource;
-            ds.close();
-        }
     }
 
     public static Connection getConnection(DatabaseConfig config)
@@ -71,8 +47,8 @@ public abstract class DatabaseUtil {
      * 获取数据库表元数据信息
      *
      * @param databaseTemplate
-     * @param metaSql      查询元数据
-     * @param tableName    表名
+     * @param metaSql          查询元数据
+     * @param tableName        表名
      * @return
      */
     public static MetaInfo getMetaInfo(DatabaseTemplate databaseTemplate, String metaSql, String tableName) throws SQLException {
