@@ -99,7 +99,7 @@
             </tr>
             <tr>
                 <td>最近计划</td>
-                <td colspan="7">redis、kafka、es、postgrep</td>
+                <td colspan="7">kafka、es、postgrep</td>
             </tr>
         </tbody>
     </table>
