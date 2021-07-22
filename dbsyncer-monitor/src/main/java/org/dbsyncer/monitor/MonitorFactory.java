@@ -1,6 +1,7 @@
 package org.dbsyncer.monitor;
 
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +10,9 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -35,6 +38,11 @@ public class MonitorFactory implements Monitor {
     public boolean isAlive(String id) {
         Connector connector = manager.getConnector(id);
         return null != connector ? manager.isAliveConnectorConfig(connector.getConfig()) : false;
+    }
+
+    @Override
+    public List<MetricEnum> getMetricEnumAll() {
+        return Arrays.asList(MetricEnum.values());
     }
 
     @Override

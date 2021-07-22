@@ -2,15 +2,22 @@ package org.dbsyncer.web.controller.monitor;
 
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.monitor.enums.MetricEnum;
+import org.dbsyncer.monitor.model.MetricResponse;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.metrics.MetricsEndpoint;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -21,6 +28,25 @@ public class MonitorController extends BaseController {
 
     @Autowired
     private MonitorService monitorService;
+
+    @Autowired
+    private MetricsEndpoint metricsEndpoint;
+
+    @ResponseBody
+    @RequestMapping("/get")
+    public Object get(ModelMap modelMap) {
+        List<MetricEnum> metricEnumList = monitorService.getMetricEnumAll();
+        List<MetricResponse> list = new ArrayList<>();
+        if(!CollectionUtils.isEmpty(metricEnumList)){
+            metricEnumList.forEach(m -> {
+                MetricsEndpoint.MetricResponse metric = metricsEndpoint.metric(m.getCode(), null);
+                MetricResponse metricResponse = new MetricResponse();
+                BeanUtils.copyProperties(metric, metricResponse);
+                list.add(metricResponse);
+            });
+        }
+        return list;
+    }
 
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {

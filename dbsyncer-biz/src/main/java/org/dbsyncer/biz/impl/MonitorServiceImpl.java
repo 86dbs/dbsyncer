@@ -11,6 +11,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.monitor.Monitor;
+import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -136,6 +137,11 @@ public class MonitorServiceImpl implements MonitorService {
     @Override
     public List<StorageDataStatusEnum> getStorageDataStatusEnumAll() {
         return manager.getStorageDataStatusEnumAll();
+    }
+
+    @Override
+    public List<MetricEnum> getMetricEnumAll() {
+        return monitor.getMetricEnumAll();
     }
 
     private MetaVo convertMeta2Vo(Meta meta) {

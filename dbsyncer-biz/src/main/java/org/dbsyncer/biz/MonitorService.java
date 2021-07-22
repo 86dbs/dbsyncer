@@ -2,6 +2,7 @@ package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
 import java.util.List;
@@ -72,4 +73,11 @@ public interface MonitorService {
      * @return
      */
     List<StorageDataStatusEnum> getStorageDataStatusEnumAll();
+
+    /**
+     * 获取监控系统指标
+     *
+     * @return
+     */
+    List<MetricEnum> getMetricEnumAll();
 }
