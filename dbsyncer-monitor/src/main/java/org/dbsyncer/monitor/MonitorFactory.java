@@ -52,8 +52,8 @@ public class MonitorFactory implements Monitor {
         ThreadPoolExecutor pool = threadTask.getThreadPoolExecutor();
 
         List<MetricResponse> list = new ArrayList<>();
+        list.add(createMetricResponse(ThreadPoolMetricEnum.TASK_SUBMITTED, pool.getTaskCount()));
         list.add(createMetricResponse(ThreadPoolMetricEnum.QUEUE_UP, pool.getQueue().size()));
-        list.add(createMetricResponse(ThreadPoolMetricEnum.TASK, pool.getTaskCount()));
         list.add(createMetricResponse(ThreadPoolMetricEnum.ACTIVE, pool.getActiveCount()));
         list.add(createMetricResponse(ThreadPoolMetricEnum.COMPLETED, pool.getCompletedTaskCount()));
         list.add(createMetricResponse(ThreadPoolMetricEnum.REMAINING_CAPACITY, pool.getQueue().remainingCapacity()));

@@ -101,14 +101,16 @@
                         <thead>
                         <tr>
                             <th style="width:3%;"></th>
-                            <th style="width:70%;">类型</th>
-                            <th style="width:27%;">指标</th>
+                            <th style="width:27%;">分组</th>
+                            <th style="width:60%;">名称</th>
+                            <th style="width:10%;">值</th>
                         </tr>
                         </thead>
                         <tr th:each="m,s : ${metrics}">
                             <td th:text="${s.index}+1"></td>
-                            <td th:text="${m?.group}"></td><!-- key-->
-                            <td th:text="${m?.metricName}"></td><!-- value-->
+                            <td th:text="${m?.group}"></td>
+                            <td th:text="${m?.metricName}"></td>
+                            <td th:text="${m?.measurements?.get(0)?.value}"></td><!-- value-->
                         </tr>
                     </table>
                 </div>

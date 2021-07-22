@@ -10,13 +10,13 @@ package org.dbsyncer.monitor.enums;
 public enum ThreadPoolMetricEnum {
 
     /**
+     * 已提交
+     */
+    TASK_SUBMITTED("thread.pool.task.submitted", "线程池", "已提交"),
+    /**
      * 排队中
      */
     QUEUE_UP("thread.pool.queue.up", "线程池", "排队中"),
-    /**
-     * 已提交
-     */
-    TASK("thread.pool.task", "线程池", "已提交"),
     /**
      * 处理中
      */
