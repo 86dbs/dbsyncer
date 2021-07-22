@@ -45,7 +45,10 @@ public class MonitorController extends BaseController {
             metricEnumList.forEach(m -> {
                 MetricsEndpoint.MetricResponse metric = metricsEndpoint.metric(m.getCode(), null);
                 MetricResponse metricResponse = new MetricResponse();
-                metricResponse.setName(metric.getName());
+                MetricEnum metricEnum = MetricEnum.getMetric(metric.getName());
+                metricResponse.setCode(metricEnum.getCode());
+                metricResponse.setGroup(metricEnum.getGroup());
+                metricResponse.setMetricName(metricEnum.getMetricName());
                 if (!CollectionUtils.isEmpty(metric.getMeasurements())) {
                     List<Sample> measurements = new ArrayList<>();
                     metric.getMeasurements().forEach(s -> measurements.add(new Sample(s.getStatistic().getTagValueRepresentation(), s.getValue())));
@@ -63,7 +66,7 @@ public class MonitorController extends BaseController {
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
         Map<String, String> params = getParams(request);
-        model.put("threadInfo", monitorService.getThreadInfo());
+        model.put("metrics", get().getResultValue());
         model.put("metaId", monitorService.getDefaultMetaId(params));
         model.put("meta", monitorService.getMetaAll());
         model.put("storageDataStatus", monitorService.getStorageDataStatusEnumAll());

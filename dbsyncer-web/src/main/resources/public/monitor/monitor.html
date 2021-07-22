@@ -93,11 +93,11 @@
                 </div>
             </div>
 
-            <!-- 线程任务 -->
+            <!-- 系统指标 -->
             <div class="col-md-12">
                 <div class="col-md-6">
                     <table class="table table-hover">
-                        <caption>线程任务</caption>
+                        <caption>系统指标</caption>
                         <thead>
                         <tr>
                             <th style="width:3%;"></th>
@@ -105,10 +105,10 @@
                             <th style="width:27%;">指标</th>
                         </tr>
                         </thead>
-                        <tr th:each="item,userStat:${threadInfo}">
-                            <td th:text="${userStat.index}+1"></td>
-                            <td th:text="${userStat.current.key}"></td><!-- key-->
-                            <td th:text="${userStat.current.value}"></td><!-- value-->
+                        <tr th:each="m,s : ${metrics}">
+                            <td th:text="${s.index}+1"></td>
+                            <td th:text="${m?.group}"></td><!-- key-->
+                            <td th:text="${m?.metricName}"></td><!-- value-->
                         </tr>
                     </table>
                 </div>

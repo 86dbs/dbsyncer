@@ -2,6 +2,10 @@ package org.dbsyncer.monitor;
 
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.monitor.enums.MetricEnum;
+import org.dbsyncer.monitor.enums.StatisticEnum;
+import org.dbsyncer.monitor.enums.ThreadPoolMetricEnum;
+import org.dbsyncer.monitor.model.MetricResponse;
+import org.dbsyncer.monitor.model.Sample;
 import org.dbsyncer.parser.model.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,10 +14,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -46,19 +47,20 @@ public class MonitorFactory implements Monitor {
     }
 
     @Override
-    public Map getThreadInfo() {
-        Map map = new HashMap();
-        if (taskExecutor instanceof ThreadPoolTaskExecutor) {
-            ThreadPoolTaskExecutor threadTask = (ThreadPoolTaskExecutor) taskExecutor;
-            ThreadPoolExecutor threadPoolExecutor = threadTask.getThreadPoolExecutor();
+    public List<MetricResponse> getThreadPoolInfo() {
+        ThreadPoolTaskExecutor threadTask = (ThreadPoolTaskExecutor) taskExecutor;
+        ThreadPoolExecutor pool = threadTask.getThreadPoolExecutor();
 
-            map.put("已提交", threadPoolExecutor.getTaskCount());
-            map.put("已完成", threadPoolExecutor.getCompletedTaskCount());
-            map.put("处理中", threadPoolExecutor.getActiveCount());
-            map.put("排队中", threadPoolExecutor.getQueue().size());
-            map.put("队列长度", threadPoolExecutor.getQueue().remainingCapacity());
-        }
-        return map;
+        List<MetricResponse> list = new ArrayList<>();
+        list.add(createMetricResponse(ThreadPoolMetricEnum.QUEUE_UP, pool.getQueue().size()));
+        list.add(createMetricResponse(ThreadPoolMetricEnum.TASK, pool.getTaskCount()));
+        list.add(createMetricResponse(ThreadPoolMetricEnum.ACTIVE, pool.getActiveCount()));
+        list.add(createMetricResponse(ThreadPoolMetricEnum.COMPLETED, pool.getCompletedTaskCount()));
+        list.add(createMetricResponse(ThreadPoolMetricEnum.REMAINING_CAPACITY, pool.getQueue().remainingCapacity()));
+        return list;
     }
 
+    private MetricResponse createMetricResponse(ThreadPoolMetricEnum metricEnum, Object value) {
+        return new MetricResponse(metricEnum.getCode(), metricEnum.getGroup(), metricEnum.getMetricName(), Arrays.asList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), value)));
+    }
 }

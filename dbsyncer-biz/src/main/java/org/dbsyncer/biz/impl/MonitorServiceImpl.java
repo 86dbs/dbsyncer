@@ -50,11 +50,6 @@ public class MonitorServiceImpl implements MonitorService {
     private Manager manager;
 
     @Override
-    public Map getThreadInfo() {
-        return monitor.getThreadInfo();
-    }
-
-    @Override
     public List<MetaVo> getMetaAll() {
         List<MetaVo> list = manager.getMetaAll()
                 .stream()
@@ -149,10 +144,13 @@ public class MonitorServiceImpl implements MonitorService {
 
     @Override
     public List<MetricResponseVo> queryMetric(List<MetricResponse> metrics) {
-        if (CollectionUtils.isEmpty(metrics)) {
-            return Collections.EMPTY_LIST;
-        }
-        return metrics.stream().map(metric -> {
+        // 线程池状态
+        List<MetricResponse> metricList = monitor.getThreadPoolInfo();
+        // 系统指标
+        metricList.addAll(metrics);
+
+        // TODO 转换显示
+        return metricList.stream().map(metric -> {
             MetricResponseVo vo = new MetricResponseVo();
             BeanUtils.copyProperties(metric, vo);
             return vo;

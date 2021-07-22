@@ -18,13 +18,6 @@ import java.util.Map;
 public interface MonitorService {
 
     /**
-     * 获取线程信息
-     *
-     * @return
-     */
-    Map getThreadInfo();
-
-    /**
      * 获取驱动元信息列表
      *
      * @return

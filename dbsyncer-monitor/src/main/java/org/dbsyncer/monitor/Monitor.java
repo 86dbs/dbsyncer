@@ -1,9 +1,9 @@
 package org.dbsyncer.monitor;
 
 import org.dbsyncer.monitor.enums.MetricEnum;
+import org.dbsyncer.monitor.model.MetricResponse;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author AE86
@@ -16,5 +16,5 @@ public interface Monitor {
 
     List<MetricEnum> getMetricEnumAll();
 
-    Map getThreadInfo();
+    List<MetricResponse> getThreadPoolInfo();
 }

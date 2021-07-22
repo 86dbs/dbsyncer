@@ -1,5 +1,9 @@
 package org.dbsyncer.monitor.enums;
 
+import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.monitor.MonitorException;
+
 /**
  * 系统指标
  *
@@ -17,7 +21,7 @@ public enum MetricEnum {
     /**
      * 线程峰值
      */
-    THREADS_PEAK("jvm.threads.peak", "线程", "峰值"),
+    THREADS_PEAK("jvm.threads.peak", "线程", "峰值数"),
 
     /**
      * 内存已用
@@ -46,20 +50,29 @@ public enum MetricEnum {
 
     private String code;
     private String group;
-    private String name;
+    private String metricName;
     private String baseUnit;
 
-    MetricEnum(String code, String group, String name) {
+    MetricEnum(String code, String group, String metricName) {
         this.code = code;
         this.group = group;
-        this.name = name;
+        this.metricName = metricName;
     }
 
-    MetricEnum(String code, String group, String name, String baseUnit) {
+    MetricEnum(String code, String group, String metricName, String baseUnit) {
         this.code = code;
         this.group = group;
-        this.name = name;
+        this.metricName = metricName;
         this.baseUnit = baseUnit;
+    }
+
+    public static MetricEnum getMetric(String code) throws ConnectorException {
+        for (MetricEnum e : MetricEnum.values()) {
+            if (StringUtils.equals(code, e.getCode())) {
+                return e;
+            }
+        }
+        throw new MonitorException(String.format("Metric code \"%s\" does not exist.", code));
     }
 
     public String getCode() {
@@ -70,8 +83,8 @@ public enum MetricEnum {
         return group;
     }
 
-    public String getName() {
-        return name;
+    public String getMetricName() {
+        return metricName;
     }
 
     public String getBaseUnit() {

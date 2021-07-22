@@ -4,9 +4,9 @@ public final class Sample {
 
     private String statistic;
 
-    private Double value;
+    private Object value;
 
-    public Sample(String statistic, Double value) {
+    public Sample(String statistic, Object value) {
         this.statistic = statistic;
         this.value = value;
     }
@@ -19,11 +19,11 @@ public final class Sample {
         this.statistic = statistic;
     }
 
-    public Double getValue() {
+    public Object getValue() {
         return value;
     }
 
-    public void setValue(Double value) {
+    public void setValue(Object value) {
         this.value = value;
     }
 }
