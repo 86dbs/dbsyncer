@@ -151,9 +151,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Assert.notNull(mapping, "Mapping can not be null.");
         Connector s = manager.getConnector(mapping.getSourceConnectorId());
         Connector t = manager.getConnector(mapping.getTargetConnectorId());
-        ConnectorVo sConn = new ConnectorVo(monitor.alive(s.getId()));
+        ConnectorVo sConn = new ConnectorVo(monitor.isAlive(s.getId()));
         BeanUtils.copyProperties(s, sConn);
-        ConnectorVo tConn = new ConnectorVo(monitor.alive(t.getId()));
+        ConnectorVo tConn = new ConnectorVo(monitor.isAlive(t.getId()));
         BeanUtils.copyProperties(t, tConn);
 
         // 元信息

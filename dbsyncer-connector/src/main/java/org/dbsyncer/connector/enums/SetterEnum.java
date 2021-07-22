@@ -25,16 +25,21 @@ public enum SetterEnum {
     // 较少使用
     CHAR(Types.CHAR, new CharSetter()),
     NCHAR(Types.NCHAR, new NCharSetter()),
+    NVARCHAR(Types.NVARCHAR, new NVarcharSetter()),
     LONGVARCHAR(Types.LONGVARCHAR, new LongVarcharSetter()),
     NUMERIC(Types.NUMERIC, new NumericSetter()),
+    BINARY(Types.BINARY, new BinarySetter()),
 
     // 很少使用
+    SMALLINT(Types.SMALLINT, new SmallintSetter()),
     TINYINT(Types.TINYINT, new TinyintSetter()),
+    TIME(Types.TIME, new TimeSetter()),
     DECIMAL(Types.DECIMAL, new DecimalSetter()),
     DOUBLE(Types.DOUBLE, new DoubleSetter()),
     FLOAT(Types.FLOAT, new FloatSetter()),
     BLOB(Types.BLOB, new BlobSetter()),
     CLOB(Types.CLOB, new ClobSetter()),
+    NCLOB(Types.NCLOB, new NClobSetter()),
     ROWID(Types.ROWID, new RowIdSetter()),
     REAL(Types.REAL, new RealSetter());
 
@@ -53,7 +58,7 @@ public enum SetterEnum {
                 return e.getSetter();
             }
         }
-        throw new ConnectorException(String.format("Setter type \"%s\" does not exist.", type));
+        throw new ConnectorException(String.format("Setter type \"%s\" is not supported.", type));
     }
 
     public int getType() {

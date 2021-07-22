@@ -2,6 +2,7 @@ package org.dbsyncer.manager;
 
 import org.dbsyncer.common.event.ClosedEvent;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -25,12 +26,7 @@ import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -46,8 +42,6 @@ import java.util.Map;
  */
 @Component
 public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent> {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private Parser parser;
@@ -65,12 +59,22 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     private Map<String, Puller> map;
 
     @Override
-    public boolean alive(ConnectorConfig config) {
-        return parser.alive(config);
+    public ConnectorMapper connect(ConnectorConfig config) {
+        return parser.connect(config);
     }
 
     @Override
-    public List<String> getTable(ConnectorConfig config) {
+    public boolean refreshConnectorConfig(ConnectorConfig config) {
+        return parser.refreshConnectorConfig(config);
+    }
+
+    @Override
+    public boolean isAliveConnectorConfig(ConnectorConfig config) {
+        return parser.isAliveConnectorConfig(config);
+    }
+
+    @Override
+    public List<String> getTable(ConnectorMapper config) {
         return parser.getTable(config);
     }
 

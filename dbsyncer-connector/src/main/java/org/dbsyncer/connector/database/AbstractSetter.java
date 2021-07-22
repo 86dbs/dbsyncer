@@ -1,15 +1,17 @@
 package org.dbsyncer.connector.database;
 
+import org.dbsyncer.connector.database.setter.PreparedFieldMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.ParameterizedType;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public abstract class AbstractSetter<T> implements Setter {
 
-    private final Logger   logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Class<T> parameterClazz;
 
     public AbstractSetter() {
@@ -31,12 +33,12 @@ public abstract class AbstractSetter<T> implements Setter {
      * @param val
      * @return
      */
-    protected void setIfValueTypeNotMatch(PreparedStatement ps, int i, int type, Object val) throws SQLException {
+    protected void setIfValueTypeNotMatch(PreparedFieldMapper mapper, PreparedStatement ps, int i, int type, Object val) throws SQLException {
         ps.setNull(i, type);
     }
 
     @Override
-    public void set(PreparedStatement ps, int i, int type, Object val) {
+    public void set(Connection connection, PreparedStatement ps, int i, int type, Object val) {
         try {
             if (null == val) {
                 ps.setNull(i, type);
@@ -48,7 +50,7 @@ public abstract class AbstractSetter<T> implements Setter {
                 return;
             }
 
-            setIfValueTypeNotMatch(ps, i, type, val);
+            setIfValueTypeNotMatch(new PreparedFieldMapper(connection), ps, i, type, val);
         } catch (Exception e) {
             logger.error("Set preparedStatement error: {}", e.getMessage());
             try {

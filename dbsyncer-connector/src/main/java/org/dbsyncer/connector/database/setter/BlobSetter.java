@@ -15,7 +15,7 @@ public class BlobSetter extends AbstractSetter<Blob> {
     }
 
     @Override
-    protected void setIfValueTypeNotMatch(PreparedStatement ps, int i, int type, Object val) throws SQLException {
+    protected void setIfValueTypeNotMatch(PreparedFieldMapper mapper, PreparedStatement ps, int i, int type, Object val) throws SQLException {
         // 存放jpg等文件
         if (val instanceof Blob) {
             Blob blob = (Blob) val;

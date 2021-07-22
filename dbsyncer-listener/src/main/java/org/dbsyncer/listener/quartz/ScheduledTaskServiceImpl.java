@@ -1,5 +1,6 @@
 package org.dbsyncer.listener.quartz;
 
+import org.dbsyncer.listener.ListenerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,23 +32,40 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
 
     @Override
     public void start(String key, String cron, ScheduledTaskJob job) {
-        //校验任务key是否已经启动
-        final ScheduledFuture scheduledFuture = map.get(key);
-        if (null != scheduledFuture && !scheduledFuture.isCancelled()) {
-            logger.warn(">>>>>> 当前任务已经启动，无需重复启动！");
-            return;
-        }
-        //获取需要定时调度的接口
-        map.putIfAbsent(key, taskScheduler.schedule(job, (trigger) -> new CronTrigger(cron).nextExecutionTime(trigger) ));
+        apply(key, () -> taskScheduler.schedule(job, (trigger) -> new CronTrigger(cron).nextExecutionTime(trigger)));
+    }
+
+    @Override
+    public void start(String key, long period, ScheduledTaskJob job) {
+        apply(key, () -> taskScheduler.scheduleAtFixedRate(job, period));
     }
 
     @Override
     public void stop(String key) {
         ScheduledFuture job = map.get(key);
         if (null != job) {
-            logger.info(">>>>>> 进入停止任务 {}  >>>>>>", key);
             job.cancel(true);
+            map.remove(key);
         }
+    }
+
+    private void apply(String key, ScheduledFutureMapper scheduledFutureMapper) {
+        final ScheduledFuture scheduledFuture = map.get(key);
+        if (null != scheduledFuture && !scheduledFuture.isCancelled()) {
+            String msg = String.format(">>>>>> 任务已启动 %s  >>>>>>", key);
+            logger.error(msg);
+            throw new ListenerException(msg);
+        }
+        map.putIfAbsent(key, scheduledFutureMapper.apply());
+    }
+
+    private interface ScheduledFutureMapper {
+        /**
+         * 返回定时任务
+         *
+         * @return
+         */
+        ScheduledFuture apply();
     }
 
 }

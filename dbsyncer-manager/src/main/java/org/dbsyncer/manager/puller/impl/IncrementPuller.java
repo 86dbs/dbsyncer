@@ -19,6 +19,7 @@ import org.dbsyncer.listener.quartz.QuartzExtractor;
 import org.dbsyncer.listener.quartz.ScheduledTaskJob;
 import org.dbsyncer.listener.quartz.ScheduledTaskService;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.manager.config.FieldPicker;
 import org.dbsyncer.manager.puller.AbstractPuller;
 import org.dbsyncer.parser.Parser;
@@ -32,11 +33,11 @@ import org.dbsyncer.parser.util.PickerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,7 +54,7 @@ import java.util.stream.Collectors;
  * @date 2020/04/26 15:28
  */
 @Component
-public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob, InitializingBean, DisposableBean {
+public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob, DisposableBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -82,6 +83,14 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
     private Map<String, Extractor> map = new ConcurrentHashMap<>();
 
+    @PostConstruct
+    private void init() {
+        key = UUIDUtil.getUUID();
+        String cron = "*/10 * * * * ?";
+        scheduledTaskService.start(key, cron, this);
+        logger.info("[{}], Started persistence task {}", cron, key);
+    }
+
     @Override
     public void asyncStart(Mapping mapping) {
         final String mappingId = mapping.getId();
@@ -94,7 +103,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             Meta meta = manager.getMeta(metaId);
             Assert.notNull(meta, "Meta不能为空.");
             AbstractExtractor extractor = getExtractor(mapping, connector, list, meta);
-            Assert.notNull(extractor, "未知的监听配置.");
 
             long now = Instant.now().toEpochMilli();
             meta.setBeginTime(now);
@@ -131,14 +139,9 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
     }
 
     @Override
-    public void afterPropertiesSet() {
-        key = UUIDUtil.getUUID();
-        scheduledTaskService.start(key, "*/10 * * * * ?", this);
-    }
-
-    @Override
     public void destroy() {
         scheduledTaskService.stop(key);
+        logger.info("Stopped persistence task {}", key);
     }
 
     private AbstractExtractor getExtractor(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta)
@@ -153,19 +156,14 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         if (ListenerTypeEnum.isTiming(listenerType)) {
             QuartzExtractor extractor = listener.getExtractor(listenerType, QuartzExtractor.class);
             List<Map<String, String>> commands = list.stream().map(t -> t.getCommand()).collect(Collectors.toList());
-
-            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new QuartzListener(mapping, list));
-            extractor.setConnectorFactory(connectorFactory);
-            extractor.setScheduledTaskService(scheduledTaskService);
             extractor.setCommands(commands);
+            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new QuartzListener(mapping, list));
             return extractor;
         }
 
         // 基于日志抽取
         if (ListenerTypeEnum.isLog(listenerType)) {
-            final String connectorType = connectorConfig.getConnectorType();
-            AbstractExtractor extractor = listener.getExtractor(connectorType, AbstractExtractor.class);
-
+            AbstractExtractor extractor = listener.getExtractor(connectorConfig.getConnectorType(), AbstractExtractor.class);
             LogListener logListener = new LogListener(mapping, list, extractor);
             Set<String> filterTable = new HashSet<>();
             logListener.getTablePicker().forEach((k, fieldPickers) -> filterTable.add(k));
@@ -173,15 +171,18 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
             setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), logListener);
             return extractor;
         }
-        return null;
+
+        throw new ManagerException("未知的监听配置.");
     }
 
     private void setExtractorConfig(AbstractExtractor extractor, ConnectorConfig connector, ListenerConfig listener,
-                                    Map<String, String> map, Event event) {
+                                    Map<String, String> snapshot, Event event) {
         extractor.setTaskExecutor(taskExecutor);
+        extractor.setConnectorFactory(connectorFactory);
+        extractor.setScheduledTaskService(scheduledTaskService);
         extractor.setConnectorConfig(connector);
         extractor.setListenerConfig(listener);
-        extractor.setMap(map);
+        extractor.setSnapshot(snapshot);
         extractor.addListener(event);
     }
 

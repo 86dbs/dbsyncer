@@ -151,8 +151,10 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
      * @throws IOException
      */
     private void createShardIfNotExist(String collectionId) throws IOException {
-        if (null == map.get(collectionId)) {
-            map.putIfAbsent(collectionId, new Shard(PATH + collectionId));
+        synchronized (this) {
+            if (null == map.get(collectionId)) {
+                map.putIfAbsent(collectionId, new Shard(PATH + collectionId));
+            }
         }
     }
 
@@ -173,5 +175,6 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         for (Map.Entry<String, Shard> m : map.entrySet()) {
             m.getValue().close();
         }
+        map.clear();
     }
 }

@@ -4,15 +4,14 @@ import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.Database;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
-import org.dbsyncer.connector.mysql.MysqlConnector;
 import org.dbsyncer.connector.util.DatabaseUtil;
-import org.dbsyncer.connector.util.JDBCUtil;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -25,14 +24,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
 import java.sql.Connection;
-import java.util.*;
+import java.sql.DatabaseMetaData;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -62,9 +64,9 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     private Map<String, Executor> tables = new ConcurrentHashMap<>();
 
-    private Database connector = new MysqlConnector();
+    private Database connector;
 
-    private JdbcTemplate jdbcTemplate;
+    private ConnectorMapper connectorMapper;
 
     private DatabaseConfig config;
 
@@ -73,23 +75,26 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     @PostConstruct
     private void init() {
         logger.info("url:{}", config.getUrl());
-        logger.info("username:{}", config.getUsername());
-        logger.info("password:{}", config.getPassword());
-        ConnectorConfig cfg = config;
-        cfg.setConnectorType(ConnectorEnum.MYSQL.getType());
-        jdbcTemplate = DatabaseUtil.getJdbcTemplate(config);
+        config.setConnectorType(ConnectorEnum.MYSQL.getType());
+        connectorMapper = connectorFactory.connect(config);
+        connector = (Database) connectorFactory.getConnector(connectorMapper);
 
         // 获取数据库名称
-        Connection conn = null;
-        try {
-            conn = jdbcTemplate.getDataSource().getConnection();
-            database = DatabaseUtil.getDataBaseName(conn);
-        } catch (Exception e) {
-            logger.error("无法连接Mysql,URL:{}", config.getUrl());
-            throw new StorageException(e.getMessage());
-        } finally {
-            JDBCUtil.close(conn);
-        }
+        database = connectorMapper.execute((databaseTemplate) -> {
+            Connection conn = databaseTemplate.getConnection();
+            DatabaseMetaData metaData = conn.getMetaData();
+            String driverVersion = metaData.getDriverVersion();
+            String databaseProductVersion = metaData.getDatabaseProductVersion();
+            boolean driverThanMysql8 = StringUtils.startsWith(driverVersion, "mysql-connector-java-8");
+            boolean dbThanMysql8 = StringUtils.startsWith(databaseProductVersion, "8");
+            Assert.isTrue(driverThanMysql8 == dbThanMysql8, String.format("当前驱动%s和数据库%s版本不一致.", driverVersion, databaseProductVersion));
+
+            Class clazz = conn.getClass();
+            java.lang.reflect.Field field = clazz.getDeclaredField("database");
+            field.setAccessible(true);
+            Object value = field.get(conn);
+            return String.valueOf(value);
+        });
 
         // 初始化表
         initTable();
@@ -103,9 +108,9 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         String querySql = buildQuerySql(query, executor, queryArgs);
         String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
 
-        List<Map<String, Object>> data = jdbcTemplate.queryForList(querySql, queryArgs.toArray());
+        List<Map<String, Object>> data = connectorMapper.execute((databaseTemplate) -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
         replaceHighLight(query, data);
-        Long total = jdbcTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class);
+        Long total = connectorMapper.execute((databaseTemplate) -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
 
         Paging paging = new Paging(query.getPageNum(), query.getPageSize());
         paging.setData(data);
@@ -124,7 +129,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         String sql = executor.getUpdate();
         List<Object> args = getParams(executor, params);
         args.add(params.get(ConfigConstant.CONFIG_MODEL_ID));
-        int update = jdbcTemplate.update(sql, args.toArray());
+        int update = connectorMapper.execute((databaseTemplate) -> databaseTemplate.update(sql, args.toArray()));
         Assert.isTrue(update > 0, "update failed");
     }
 
@@ -132,7 +137,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     public void delete(StorageEnum type, String table, String id) {
         Executor executor = getExecutor(type, table);
         String sql = executor.getDelete();
-        int delete = jdbcTemplate.update(sql, new Object[]{id});
+        int delete = connectorMapper.execute((databaseTemplate) -> databaseTemplate.update(sql, new Object[]{id}));
         Assert.isTrue(delete > 0, "delete failed");
     }
 
@@ -141,14 +146,14 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         Executor executor = getExecutor(type, table);
         if (executor.isSystemType()) {
             String sql = String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(table));
-            jdbcTemplate.execute(sql);
+            executeSql(sql);
             return;
         }
 
         if (tables.containsKey(table)) {
             tables.remove(table);
             String sql = String.format(DROP_TABLE, PREFIX_TABLE.concat(table));
-            jdbcTemplate.execute(sql);
+            executeSql(sql);
         }
     }
 
@@ -163,14 +168,15 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             Executor executor = getExecutor(type, table);
             Map<String, String> command = new HashMap<>();
             command.put(SqlBuilderEnum.INSERT.getName(), executor.getInsert());
-            connectorFactory.writer(new WriterBatchConfig(config, command, executor.getFields(), list));
+            ConnectorMapper connectorMapper = connectorFactory.connect(config);
+            connectorFactory.writer(new WriterBatchConfig(connectorMapper, command, executor.getFields(), list));
         }
 
     }
 
     @Override
-    public void destroy() throws Exception {
-        DatabaseUtil.close(jdbcTemplate);
+    public void destroy() {
+        DatabaseUtil.close(connectorMapper.getConnection());
     }
 
     @Override
@@ -182,7 +188,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         Executor executor = getExecutor(type, table);
         String sql = executor.getInsert();
         List<Object> args = getParams(executor, params);
-        int insert = jdbcTemplate.update(sql, args.toArray());
+        int insert = connectorMapper.execute((databaseTemplate) -> databaseTemplate.update(sql, args.toArray()));
         if (insert < 1) {
             logger.error("table:{}, params:{}");
             throw new StorageException("insert failed");
@@ -285,7 +291,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         // show tables where Tables_in_dbsyncer = "dbsyncer_config"
         String sql = String.format(SHOW_TABLE, database, table);
         try {
-            jdbcTemplate.queryForMap(sql);
+            connectorMapper.execute((databaseTemplate) -> databaseTemplate.queryForMap(sql));
         } catch (EmptyResultDataAccessException e) {
             // 不存在表
             String type = executor.getGroup().getType();
@@ -294,11 +300,11 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             // 动态替换表名
             ddl = executor.isDynamicTableName() ? StringUtils.replaceOnce(ddl, template, table) : ddl;
             logger.info(ddl);
-            jdbcTemplate.execute(ddl);
+            executeSql(ddl);
         }
 
         List<Field> fields = executor.getFieldPairs().stream().map(p -> new Field(p.columnName, p.labelName)).collect(Collectors.toList());
-        final SqlBuilderConfig config = new SqlBuilderConfig(connector, table, ConfigConstant.CONFIG_MODEL_ID, fields, "","");
+        final SqlBuilderConfig config = new SqlBuilderConfig(connector, table, ConfigConstant.CONFIG_MODEL_ID, fields, "", "");
 
         String query = SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config);
         String insert = SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(config);
@@ -340,6 +346,13 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         }
     }
 
+    private void executeSql(String ddl) {
+        connectorMapper.execute((databaseTemplate) -> {
+            databaseTemplate.execute(ddl);
+            return true;
+        });
+    }
+
     private void replaceHighLight(Query query, List<Map<String, Object>> list) {
         // 开启高亮
         if (!CollectionUtils.isEmpty(list) && query.isEnableHighLightSearch()) {
@@ -358,7 +371,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         this.config = config;
     }
 
-    class FieldPair {
+    final class FieldPair {
         String columnName;
         String labelName;
 
@@ -373,7 +386,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         }
     }
 
-    class FieldBuilder {
+    final class FieldBuilder {
         Map<String, FieldPair> fieldPairMap = new ConcurrentHashMap<>();
         Map<String, Field> fieldMap = new ConcurrentHashMap<>();
         List<FieldPair> fieldPairs;
@@ -419,7 +432,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         }
     }
 
-    class Executor {
+    final class Executor {
         private String table;
         private String query;
         private String insert;

@@ -1,6 +1,6 @@
 <div>
     <h3>介绍</h3>
-    <p>DBSyncer是一款开源的数据同步软件，提供Mysql、Oracle、SqlServer、Redis、SQL结果集等场景，支持自定义同步转换业务。</p>
+    <p>DBSyncer是一款开源的数据同步软件，提供Mysql、Oracle、SqlServer、SQL结果集等场景，支持自定义同步转换业务。</p>
     <p>特点</p>
     <ol>
         <li>组合驱动，自定义库同步到库组合，关系型数据库与非关系型之间组合，任意搭配表同步映射关系</li>
@@ -99,11 +99,7 @@
             </tr>
             <tr>
                 <td>最近计划</td>
-                <td colspan="7">半结构化类型：（redis、kafka、es、postgrep）</td>
-            </tr>
-            <tr>
-                <td>长期计划</td>
-                <td colspan="7">半结构化类型：（网页、日志、JSON、XML、Word）</td>
+                <td colspan="7">kafka、es、postgrep</td>
             </tr>
         </tbody>
     </table>
@@ -164,9 +160,7 @@
                     <p>开启CDC:</p>
                 </td>
                 <td>
-                    <p>要求2008版本以上, 启动代理服务（Agent服务）</p>
-                    <p>EXEC sys.sp_cdc_enable_db</p>
-                    <p>EXEC sys.sp_cdc_enable_table</p>
+                    <p>要求2008版本以上, 启动代理服务（Agent服务）, 连接账号具有 sysadmin 固定服务器角色或 db_owner 固定数据库角色的成员身份。对于所有其他用户，具有源表SELECT 权限；如果已定义捕获实例的访问控制角色，则还要求具有该数据库角色的成员身份。</p>
                 </td>
                 <td>SQL Server 2008提供了内建的方法变更数据捕获（Change Data Capture 即CDC）以实现异步跟踪用户表的数据修改</td>
             </tr>

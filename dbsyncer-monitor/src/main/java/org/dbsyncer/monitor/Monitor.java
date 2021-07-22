@@ -9,7 +9,7 @@ import java.util.Map;
  */
 public interface Monitor {
 
-    boolean alive(String id);
+    boolean isAlive(String id);
 
     Map getThreadInfo();
 }

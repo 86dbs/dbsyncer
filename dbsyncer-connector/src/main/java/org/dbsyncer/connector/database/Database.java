@@ -1,26 +1,20 @@
 package org.dbsyncer.connector.database;
 
 import org.dbsyncer.connector.Connector;
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.dbsyncer.connector.config.PageSqlConfig;
 
 public interface Database extends Connector {
-
-    JdbcTemplate getJdbcTemplate(DatabaseConfig config);
-
-    void close(JdbcTemplate jdbcTemplate);
 
     /**
      * 获取分页SQL
      *
-     * @param querySQL
-     * @param pk
+     * @param config
      * @return
      */
-    String getPageSql(String querySQL, String pk);
+    String getPageSql(PageSqlConfig config);
 
     /**
-     * 获取分页参数
+     * 获取分页SQL
      *
      * @param pageIndex
      * @param pageSize

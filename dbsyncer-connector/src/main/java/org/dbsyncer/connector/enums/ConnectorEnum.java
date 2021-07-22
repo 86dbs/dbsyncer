@@ -4,10 +4,8 @@ import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.RedisConfig;
 import org.dbsyncer.connector.mysql.MysqlConnector;
 import org.dbsyncer.connector.oracle.OracleConnector;
-import org.dbsyncer.connector.redis.RedisConnector;
 import org.dbsyncer.connector.sql.DQLMysqlConnector;
 import org.dbsyncer.connector.sql.DQLOracleConnector;
 import org.dbsyncer.connector.sql.DQLSqlServerConnector;
@@ -45,11 +43,7 @@ public enum ConnectorEnum {
     /**
      * DqlSqlServer 连接器
      */
-    DQL_SQL_SERVER("DqlSqlServer", new DQLSqlServerConnector(), DatabaseConfig.class),
-    /**
-     * Redis 连接器
-     */
-    REDIS("Redis", new RedisConnector(), RedisConfig.class);
+    DQL_SQL_SERVER("DqlSqlServer", new DQLSqlServerConnector(), DatabaseConfig.class);
 
     // 连接器名称
     private String type;

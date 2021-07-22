@@ -5,7 +5,7 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.UUIDUtil;
-import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.AbstractExtractor;
@@ -31,8 +31,6 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private ConnectorFactory connectorFactory;
-    private ScheduledTaskService scheduledTaskService;
     private List<Map<String, String>> commands;
     private int commandSize;
 
@@ -62,8 +60,8 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
                 for (int i = 0; i < commandSize; i++) {
                     execute(commands.get(i), i);
                 }
+                running.compareAndSet(true, false);
             }
-            running.compareAndSet(true, false);
         } catch (Exception e) {
             running.compareAndSet(true, false);
             errorEvent(e);
@@ -78,10 +76,11 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
 
     private void execute(Map<String, String> command, int index) {
         // 检查增量点
+        ConnectorMapper connectionMapper = connectorFactory.connect(connectorConfig);
         Point point = checkLastPoint(command, index);
         int pageIndex = 1;
         for (; ; ) {
-            Result reader = connectorFactory.reader(new ReaderConfig(connectorConfig, point.getCommand(), point.getArgs(), pageIndex++, readNum));
+            Result reader = connectorFactory.reader(new ReaderConfig(connectionMapper, point.getCommand(), point.getArgs(), pageIndex++, readNum));
             List<Map> data = reader.getData();
             if (CollectionUtils.isEmpty(data)) {
                 break;
@@ -111,8 +110,7 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
 
         // 持久化
         if (point.refreshed()) {
-            map.putAll(point.getPosition());
-            logger.info("增量点：{}", map);
+            snapshot.putAll(point.getPosition());
         }
 
     }
@@ -143,15 +141,15 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
 
             // 开始位置
             if(f.begin()){
-                if (!map.containsKey(key)) {
+                if (!snapshot.containsKey(key)) {
                     final Object val = f.getObject();
                     point.addArg(val);
-                    map.put(key, f.toString(val));
+                    snapshot.put(key, f.toString(val));
                     continue;
                 }
 
                 // 读取历史增量点
-                Object val = f.getObject(map.get(key));
+                Object val = f.getObject(snapshot.get(key));
                 point.addArg(val);
                 point.setBeginKey(key);
                 point.setBeginValue(f.toString(f.getObject()));
@@ -183,14 +181,6 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
 
     private boolean appearNotMoreThanOnce(String str, String searchStr) {
         return StringUtils.indexOf(str, searchStr) == StringUtils.lastIndexOf(str, searchStr);
-    }
-
-    public void setConnectorFactory(ConnectorFactory connectorFactory) {
-        this.connectorFactory = connectorFactory;
-    }
-
-    public void setScheduledTaskService(ScheduledTaskService scheduledTaskService) {
-        this.scheduledTaskService = scheduledTaskService;
     }
 
     public void setCommands(List<Map<String, String>> commands) {

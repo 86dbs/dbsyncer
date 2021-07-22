@@ -15,6 +15,8 @@ import org.springframework.util.Assert;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -37,25 +39,39 @@ public class MysqlExtractor extends AbstractExtractor {
     private Map<Long, TableMapEventData> tables          = new HashMap<>();
     private BinaryLogClient              client;
     private List<Host>                   cluster;
+    private final Lock connectLock = new ReentrantLock();
+    private volatile boolean connected;
 
     @Override
     public void start() {
         try {
+            connectLock.lock();
+            if(connected){
+                logger.error("MysqlExtractor is already started");
+                return;
+            }
             run();
+            connected = true;
         } catch (Exception e) {
             logger.error("启动失败:{}", e.getMessage());
             throw new ListenerException(e);
+        } finally {
+            connectLock.unlock();
         }
     }
 
     @Override
     public void close() {
         try {
+            connectLock.lock();
+            connected = false;
             if (null != client) {
                 client.disconnect();
             }
         } catch (Exception e) {
             logger.error("关闭失败:{}", e.getMessage());
+        } finally {
+            connectLock.unlock();
         }
     }
 
@@ -67,9 +83,9 @@ public class MysqlExtractor extends AbstractExtractor {
         final Host host = cluster.get(MASTER);
         final String username = config.getUsername();
         final String password = config.getPassword();
-        final String pos = map.get(BINLOG_POSITION);
+        final String pos = snapshot.get(BINLOG_POSITION);
         client = new BinaryLogRemoteClient(host.getIp(), host.getPort(), username, password);
-        client.setBinlogFilename(map.get(BINLOG_FILENAME));
+        client.setBinlogFilename(snapshot.get(BINLOG_FILENAME));
         client.setBinlogPosition(StringUtils.isBlank(pos) ? 0 : Long.parseLong(pos));
         client.setTableMapEventByTableId(tables);
         client.registerEventListener(new MysqlEventListener());
@@ -135,11 +151,11 @@ public class MysqlExtractor extends AbstractExtractor {
     private void refresh(String binlogFilename, long nextPosition) {
         if (StringUtils.isNotBlank(binlogFilename)) {
             client.setBinlogFilename(binlogFilename);
-            map.put(BINLOG_FILENAME, binlogFilename);
+            snapshot.put(BINLOG_FILENAME, binlogFilename);
         }
         if (0 < nextPosition) {
             client.setBinlogPosition(nextPosition);
-            map.put(BINLOG_POSITION, String.valueOf(nextPosition));
+            snapshot.put(BINLOG_POSITION, String.valueOf(nextPosition));
         }
     }
 
@@ -153,6 +169,9 @@ public class MysqlExtractor extends AbstractExtractor {
 
         @Override
         public void onCommunicationFailure(BinaryLogRemoteClient client, Exception e) {
+            if(!connected){
+                return;
+            }
             logger.error(e.getMessage());
             /**
              * e:

@@ -3,11 +3,13 @@ package org.dbsyncer.connector;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.enums.ConnectorEnum;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 连接器工厂
@@ -16,7 +18,49 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2019/9/18 23:30
  */
-public class ConnectorFactory {
+public class ConnectorFactory implements DisposableBean {
+
+    private final Map<String, ConnectorMapper> connectorCache = new ConcurrentHashMap<>();
+
+    @Override
+    public void destroy() {
+        connectorCache.values().forEach(this::disconnect);
+        connectorCache.clear();
+    }
+
+    /**
+     * 建立连接，返回缓存连接对象
+     *
+     * @param config
+     */
+    public ConnectorMapper connect(ConnectorConfig config) {
+        Assert.notNull(config, "ConnectorConfig can not be null.");
+        Connector connector = getConnector(config.getConnectorType());
+        String cacheKey = connector.getConnectorMapperCacheKey(config);
+        if (!connectorCache.containsKey(cacheKey)) {
+            connectorCache.putIfAbsent(cacheKey, connector.connect(config));
+        }
+        return connectorCache.get(cacheKey);
+    }
+
+    /**
+     * 刷新连接配置
+     *
+     * @param config
+     * @return
+     */
+    public boolean refresh(ConnectorConfig config) {
+        Assert.notNull(config, "ConnectorConfig can not be null.");
+        Connector connector = getConnector(config.getConnectorType());
+        String cacheKey = connector.getConnectorMapperCacheKey(config);
+        if (connectorCache.containsKey(cacheKey)) {
+            ConnectorMapper mapper = connectorCache.get(cacheKey);
+            connector.disconnect(mapper);
+            connectorCache.remove(cacheKey);
+        }
+        connect(config);
+        return isAlive(config);
+    }
 
     /**
      * 检查连接配置是否可用
@@ -27,7 +71,12 @@ public class ConnectorFactory {
     public boolean isAlive(ConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
         String type = config.getConnectorType();
-        return getConnector(type).isAlive(config);
+        Connector connector = getConnector(type);
+        String cacheKey = connector.getConnectorMapperCacheKey(config);
+        if (!connectorCache.containsKey(cacheKey)) {
+            connect(config);
+        }
+        return connector.isAlive(connectorCache.get(cacheKey));
     }
 
     /**
@@ -35,9 +84,9 @@ public class ConnectorFactory {
      *
      * @return
      */
-    public List<String> getTable(ConnectorConfig config) {
-        Assert.notNull(config, "ConnectorConfig can not be null.");
-        String type = config.getConnectorType();
+    public List<String> getTable(ConnectorMapper config) {
+        Assert.notNull(config, "ConnectorMapper can not be null.");
+        String type = config.getConfig().getConnectorType();
         return getConnector(type).getTable(config);
     }
 
@@ -46,11 +95,10 @@ public class ConnectorFactory {
      *
      * @return
      */
-    public MetaInfo getMetaInfo(ConnectorConfig config, String tableName) {
-        Assert.notNull(config, "ConnectorConfig can not be null.");
+    public MetaInfo getMetaInfo(ConnectorMapper config, String tableName) {
+        Assert.notNull(config, "ConnectorMapper can not be null.");
         Assert.hasText(tableName, "tableName can not be empty.");
-        String type = config.getConnectorType();
-        return getConnector(type).getMetaInfo(config, tableName);
+        return getConnector(config).getMetaInfo(config, tableName);
     }
 
     /**
@@ -78,30 +126,33 @@ public class ConnectorFactory {
      * @param command
      * @return
      */
-    public long getCount(ConnectorConfig config, Map<String, String> command){
-        Connector connector = getConnector(config.getConnectorType());
-        return connector.getCount(config, command);
+    public long getCount(ConnectorMapper config, Map<String, String> command) {
+        return getConnector(config).getCount(config, command);
     }
 
     public Result reader(ReaderConfig config) {
-        Connector connector = getConnector(config.getConfig().getConnectorType());
+        Connector connector = getConnector(config.getConnectorMapper());
         Result result = connector.reader(config);
         Assert.notNull(result, "Connector reader result can not null");
         return result;
     }
 
     public Result writer(WriterBatchConfig config) {
-        Connector connector = getConnector(config.getConfig().getConnectorType());
+        Connector connector = getConnector(config.getConnectorMapper());
         Result result = connector.writer(config);
         Assert.notNull(result, "Connector writer result can not null");
         return result;
     }
 
     public Result writer(WriterSingleConfig config) {
-        Connector connector = getConnector(config.getConfig().getConnectorType());
+        Connector connector = getConnector(config.getConnectorMapper());
         Result result = connector.writer(config);
         Assert.notNull(result, "Connector writer result can not null");
         return result;
+    }
+
+    public Connector getConnector(ConnectorMapper connectorMapper) {
+        return getConnector(connectorMapper.getConfig().getConnectorType());
     }
 
     /**
@@ -114,6 +165,17 @@ public class ConnectorFactory {
         // 获取连接器类型
         Assert.hasText(connectorType, "ConnectorType can not be empty.");
         return ConnectorEnum.getConnector(connectorType);
+    }
+
+    /**
+     * 断开连接
+     *
+     * @param connectorMapper
+     */
+    private void disconnect(ConnectorMapper connectorMapper) {
+        Assert.notNull(connectorMapper, "ConnectorMapper can not be null.");
+        String type = connectorMapper.getConfig().getConnectorType();
+        getConnector(type).disconnect(connectorMapper);
     }
 
 }

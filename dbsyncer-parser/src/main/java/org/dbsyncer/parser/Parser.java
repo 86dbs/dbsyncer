@@ -2,6 +2,7 @@ package org.dbsyncer.parser;
 
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Task;
+import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -25,12 +26,27 @@ import java.util.Map;
 public interface Parser {
 
     /**
-     * 解析连接器配置是否可用
+     * 获取连接配置
      *
      * @param config
      * @return
      */
-    boolean alive(ConnectorConfig config);
+    ConnectorMapper connect(ConnectorConfig config);
+
+    /**
+     * 刷新连接配置
+     *
+     * @param config
+     */
+    boolean refreshConnectorConfig(ConnectorConfig config);
+
+    /**
+     * 连接配置是否可用
+     *
+     * @param config
+     * @return
+     */
+    boolean isAliveConnectorConfig(ConnectorConfig config);
 
     /**
      * 获取连接器表
@@ -38,7 +54,7 @@ public interface Parser {
      * @param config
      * @return
      */
-    List<String> getTable(ConnectorConfig config);
+    List<String> getTable(ConnectorMapper config);
 
     /**
      * 获取表元信息

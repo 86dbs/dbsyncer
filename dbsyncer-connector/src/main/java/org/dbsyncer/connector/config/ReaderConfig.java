@@ -1,30 +1,32 @@
 package org.dbsyncer.connector.config;
 
+import org.dbsyncer.connector.ConnectorMapper;
+
 import java.util.List;
 import java.util.Map;
 
 public class ReaderConfig {
 
-    private ConnectorConfig config;
+    private ConnectorMapper connectorMapper;
     private Map<String, String> command;
     private List<Object> args;
     private int pageIndex;
     private int pageSize;
 
-    public ReaderConfig(ConnectorConfig config, Map<String,String> command, List<Object> args, int pageIndex, int pageSize) {
-        this.config = config;
+    public ReaderConfig(ConnectorMapper connectorMapper, Map<String,String> command, List<Object> args, int pageIndex, int pageSize) {
+        this.connectorMapper = connectorMapper;
         this.command = command;
         this.args = args;
         this.pageIndex = pageIndex;
         this.pageSize = pageSize;
     }
 
-    public ConnectorConfig getConfig() {
-        return config;
+    public ConnectorMapper getConnectorMapper() {
+        return connectorMapper;
     }
 
-    public ReaderConfig setConfig(ConnectorConfig config) {
-        this.config = config;
+    public ReaderConfig setConnectorMapper(ConnectorMapper connectorMapper) {
+        this.connectorMapper = connectorMapper;
         return this;
     }
 

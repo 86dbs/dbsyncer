@@ -1,6 +1,7 @@
 package org.dbsyncer.manager;
 
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -25,13 +26,17 @@ import java.util.Map;
  */
 public interface Manager extends Executor {
 
-    boolean alive(ConnectorConfig config);
+    // Connector
+    ConnectorMapper connect(ConnectorConfig config);
 
-    List<String> getTable(ConnectorConfig config);
+    boolean refreshConnectorConfig(ConnectorConfig config);
+
+    boolean isAliveConnectorConfig(ConnectorConfig config);
+
+    List<String> getTable(ConnectorMapper config);
 
     MetaInfo getMetaInfo(String connectorId, String tableName);
 
-    // Connector
     String addConnector(ConfigModel model);
 
     String editConnector(ConfigModel model);
