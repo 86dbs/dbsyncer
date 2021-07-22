@@ -526,7 +526,6 @@ public class DatabaseTemplate extends JdbcAccessor implements JdbcOperations {
             psc = null;
             JdbcUtils.closeStatement(ps);
             ps = null;
-            DataSourceUtils.releaseConnection(con, getDataSource());
             con = null;
             throw translateException("PreparedStatementCallback", sql, ex);
         } finally {
