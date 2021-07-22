@@ -5,10 +5,10 @@ import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.monitor.model.MetricResponse;
+import org.dbsyncer.monitor.model.Sample;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.MetricsEndpoint;
 import org.springframework.stereotype.Controller;
@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -34,18 +35,29 @@ public class MonitorController extends BaseController {
 
     @ResponseBody
     @RequestMapping("/get")
-    public Object get(ModelMap modelMap) {
-        List<MetricEnum> metricEnumList = monitorService.getMetricEnumAll();
-        List<MetricResponse> list = new ArrayList<>();
-        if(!CollectionUtils.isEmpty(metricEnumList)){
+    public RestResult get() {
+        try {
+            List<MetricEnum> metricEnumList = monitorService.getMetricEnumAll();
+            if (CollectionUtils.isEmpty(metricEnumList)) {
+                return RestResult.restSuccess(Collections.EMPTY_LIST);
+            }
+            List<MetricResponse> list = new ArrayList<>();
             metricEnumList.forEach(m -> {
                 MetricsEndpoint.MetricResponse metric = metricsEndpoint.metric(m.getCode(), null);
                 MetricResponse metricResponse = new MetricResponse();
-                BeanUtils.copyProperties(metric, metricResponse);
+                metricResponse.setName(metric.getName());
+                if (!CollectionUtils.isEmpty(metric.getMeasurements())) {
+                    List<Sample> measurements = new ArrayList<>();
+                    metric.getMeasurements().forEach(s -> measurements.add(new Sample(s.getStatistic().getTagValueRepresentation(), s.getValue())));
+                    metricResponse.setMeasurements(measurements);
+                }
                 list.add(metricResponse);
             });
+            return RestResult.restSuccess(monitorService.queryMetric(list));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e.getClass());
+            return RestResult.restFail(e.getMessage());
         }
-        return list;
     }
 
     @RequestMapping("")

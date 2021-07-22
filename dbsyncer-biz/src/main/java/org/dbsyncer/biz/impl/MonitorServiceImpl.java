@@ -6,12 +6,14 @@ import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.vo.DataVo;
 import org.dbsyncer.biz.vo.LogVo;
 import org.dbsyncer.biz.vo.MetaVo;
+import org.dbsyncer.biz.vo.MetricResponseVo;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.monitor.Monitor;
 import org.dbsyncer.monitor.enums.MetricEnum;
+import org.dbsyncer.monitor.model.MetricResponse;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -25,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -142,6 +145,18 @@ public class MonitorServiceImpl implements MonitorService {
     @Override
     public List<MetricEnum> getMetricEnumAll() {
         return monitor.getMetricEnumAll();
+    }
+
+    @Override
+    public List<MetricResponseVo> queryMetric(List<MetricResponse> metrics) {
+        if (CollectionUtils.isEmpty(metrics)) {
+            return Collections.EMPTY_LIST;
+        }
+        return metrics.stream().map(metric -> {
+            MetricResponseVo vo = new MetricResponseVo();
+            BeanUtils.copyProperties(metric, vo);
+            return vo;
+        }).collect(Collectors.toList());
     }
 
     private MetaVo convertMeta2Vo(Meta meta) {

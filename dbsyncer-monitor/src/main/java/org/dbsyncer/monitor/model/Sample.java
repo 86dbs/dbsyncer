@@ -1,18 +1,21 @@
 package org.dbsyncer.monitor.model;
 
-import org.dbsyncer.monitor.enums.StatisticEnum;
-
 public final class Sample {
 
-    private StatisticEnum statistic;
+    private String statistic;
 
     private Double value;
 
-    public StatisticEnum getStatistic() {
+    public Sample(String statistic, Double value) {
+        this.statistic = statistic;
+        this.value = value;
+    }
+
+    public String getStatistic() {
         return statistic;
     }
 
-    public void setStatistic(StatisticEnum statistic) {
+    public void setStatistic(String statistic) {
         this.statistic = statistic;
     }
 
