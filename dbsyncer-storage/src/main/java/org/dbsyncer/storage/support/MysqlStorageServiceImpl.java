@@ -11,7 +11,6 @@ import org.dbsyncer.connector.database.Database;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
-import org.dbsyncer.connector.mysql.MysqlConnector;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
@@ -30,6 +29,8 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -74,13 +75,26 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     @PostConstruct
     private void init() {
         logger.info("url:{}", config.getUrl());
-        ConnectorConfig cfg = config;
-        cfg.setConnectorType(ConnectorEnum.MYSQL.getType());
-        connector = new MysqlConnector();
+        config.setConnectorType(ConnectorEnum.MYSQL.getType());
         connectorMapper = connectorFactory.connect(config);
+        connector = (Database) connectorFactory.getConnector(connectorMapper);
 
         // 获取数据库名称
-        database = connectorMapper.execute((databaseTemplate) -> DatabaseUtil.getDataBaseName(databaseTemplate.getConnection()));
+        database = connectorMapper.execute((databaseTemplate) -> {
+            Connection conn = databaseTemplate.getConnection();
+            DatabaseMetaData metaData = conn.getMetaData();
+            String driverVersion = metaData.getDriverVersion();
+            String databaseProductVersion = metaData.getDatabaseProductVersion();
+            boolean driverThanMysql8 = StringUtils.startsWith(driverVersion, "mysql-connector-java-8");
+            boolean dbThanMysql8 = StringUtils.startsWith(databaseProductVersion, "8");
+            Assert.isTrue(driverThanMysql8 == dbThanMysql8, String.format("当前驱动%s和数据库%s版本不一致.", driverVersion, databaseProductVersion));
+
+            Class clazz = conn.getClass();
+            java.lang.reflect.Field field = clazz.getDeclaredField("database");
+            field.setAccessible(true);
+            Object value = field.get(conn);
+            return String.valueOf(value);
+        });
 
         // 初始化表
         initTable();

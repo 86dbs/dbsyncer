@@ -41,8 +41,6 @@
         <commons-lang.version>2.6</commons-lang.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <commons-io.version>2.5</commons-io.version>
-        <commons-dbcp.version>1.4</commons-dbcp.version>
-        <commons-pool.version>1.6</commons-pool.version>
         <lucene.version>7.6.0</lucene.version>
         <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
         <mysql.version>5.1.40</mysql.version>
@@ -155,19 +153,6 @@
                 <groupId>org.apache.lucene</groupId>
                 <artifactId>lucene-analyzers-smartcn</artifactId>
                 <version>${lucene.version}</version>
-            </dependency>
-
-            <!-- 连接池 -->
-            <dependency>
-                <groupId>commons-pool</groupId>
-                <artifactId>commons-pool</artifactId>
-                <version>${commons-pool.version}</version>
-            </dependency>
-            <!-- 数据源 -->
-            <dependency>
-                <groupId>commons-dbcp</groupId>
-                <artifactId>commons-dbcp</artifactId>
-                <version>${commons-dbcp.version}</version>
             </dependency>
 
             <!-- mysql-driver -->

@@ -33,10 +33,9 @@ public class ConnectorFactory implements DisposableBean {
      *
      * @param config
      */
-    public synchronized ConnectorMapper connect(ConnectorConfig config) {
+    public ConnectorMapper connect(ConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
-        String type = config.getConnectorType();
-        Connector connector = getConnector(type);
+        Connector connector = getConnector(config.getConnectorType());
         String cacheKey = connector.getConnectorMapperCacheKey(config);
         if (!connectorCache.containsKey(cacheKey)) {
             connectorCache.putIfAbsent(cacheKey, connector.connect(config));
@@ -50,10 +49,9 @@ public class ConnectorFactory implements DisposableBean {
      * @param config
      * @return
      */
-    public synchronized boolean refresh(ConnectorConfig config) {
+    public boolean refresh(ConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
-        String type = config.getConnectorType();
-        Connector connector = getConnector(type);
+        Connector connector = getConnector(config.getConnectorType());
         String cacheKey = connector.getConnectorMapperCacheKey(config);
         if (connectorCache.containsKey(cacheKey)) {
             ConnectorMapper mapper = connectorCache.get(cacheKey);
@@ -153,7 +151,7 @@ public class ConnectorFactory implements DisposableBean {
         return result;
     }
 
-    private Connector getConnector(ConnectorMapper connectorMapper) {
+    public Connector getConnector(ConnectorMapper connectorMapper) {
         return getConnector(connectorMapper.getConfig().getConnectorType());
     }
 

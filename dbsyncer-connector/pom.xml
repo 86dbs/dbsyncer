@@ -25,16 +25,6 @@
             <artifactId>spring-jdbc</artifactId>
         </dependency>
 
-        <!-- 数据源 -->
-        <dependency>
-            <groupId>commons-dbcp</groupId>
-            <artifactId>commons-dbcp</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>commons-pool</groupId>
-            <artifactId>commons-pool</artifactId>
-        </dependency>
-
         <!-- mysql-driver -->
         <dependency>
             <groupId>mysql</groupId>
