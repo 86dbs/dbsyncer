@@ -27,8 +27,8 @@ public class TaskPoolConfig {
         //最大线程数128：线程池最大的线程数，只有在缓冲队列满了之后才会申请超过核心线程数的线程
         //maxPoolSize 当系统负载大道最大值时,核心线程数已无法按时处理完所有任务,这是就需要增加线程.每秒200个任务需要20个线程,那么当每秒1000个任务时,则需要(1000-queueCapacity)*(20/200),即60个线程,可将maxPoolSize设置为60;
         executor.setMaxPoolSize(128);
-        //缓冲队列360：用来缓冲执行任务的队列
-        executor.setQueueCapacity(360);
+        //缓冲队列1000：用来缓冲执行任务的队列
+        executor.setQueueCapacity(1000);
         //允许线程的空闲时间30秒：当超过了核心线程出之外的线程在空闲时间到达之后会被销毁
         executor.setKeepAliveSeconds(30);
         //线程池名的前缀：设置好了之后可以方便我们定位处理任务所在的线程池
@@ -59,6 +59,5 @@ public class TaskPoolConfig {
         taskScheduler.setAwaitTerminationSeconds(60);
         return taskScheduler;
     }
-
 
 }

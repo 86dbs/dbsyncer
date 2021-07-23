@@ -3,6 +3,8 @@ package org.dbsyncer.biz.impl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.MonitorService;
+import org.dbsyncer.biz.metric.MetricDetailFormatter;
+import org.dbsyncer.biz.metric.impl.*;
 import org.dbsyncer.biz.vo.DataVo;
 import org.dbsyncer.biz.vo.LogVo;
 import org.dbsyncer.biz.vo.MetaVo;
@@ -12,7 +14,9 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.monitor.Monitor;
+import org.dbsyncer.monitor.enums.DiskMetricEnum;
 import org.dbsyncer.monitor.enums.MetricEnum;
+import org.dbsyncer.monitor.enums.ThreadPoolMetricEnum;
 import org.dbsyncer.monitor.model.MetricResponse;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.Mapping;
@@ -27,10 +31,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import javax.annotation.PostConstruct;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -48,6 +50,27 @@ public class MonitorServiceImpl implements MonitorService {
 
     @Autowired
     private Manager manager;
+
+    private Map<String, MetricDetailFormatter> metricDetailFormatterMap = new LinkedHashMap<>();
+
+    @PostConstruct
+    private void init() {
+        metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.TASK_SUBMITTED.getCode(), new ValueMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.QUEUE_UP.getCode(), new ValueMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.ACTIVE.getCode(), new ValueMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.COMPLETED.getCode(), new ValueMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.REMAINING_CAPACITY.getCode(), new ValueMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(MetricEnum.THREADS_LIVE.getCode(), new DoubleRoundMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(MetricEnum.THREADS_PEAK.getCode(), new DoubleRoundMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(MetricEnum.MEMORY_USED.getCode(), new MemoryMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(MetricEnum.MEMORY_COMMITTED.getCode(), new MemoryMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(MetricEnum.MEMORY_MAX.getCode(), new MemoryMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(MetricEnum.CPU_USAGE.getCode(), new CpuMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(MetricEnum.GC_PAUSE.getCode(), new GCMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(DiskMetricEnum.THRESHOLD.getCode(), new DiskMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(DiskMetricEnum.FREE.getCode(), new DiskMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(DiskMetricEnum.TOTAL.getCode(), new DiskMetricDetailFormatter());
+    }
 
     @Override
     public List<MetaVo> getMetaAll() {
@@ -149,10 +172,14 @@ public class MonitorServiceImpl implements MonitorService {
         // 系统指标
         metricList.addAll(metrics);
 
-        // TODO 转换显示
+        // 转换显示
         return metricList.stream().map(metric -> {
             MetricResponseVo vo = new MetricResponseVo();
             BeanUtils.copyProperties(metric, vo);
+            MetricDetailFormatter detailFormatter = metricDetailFormatterMap.get(vo.getCode());
+            if(null != detailFormatter){
+                detailFormatter.format(vo);
+            }
             return vo;
         }).collect(Collectors.toList());
     }

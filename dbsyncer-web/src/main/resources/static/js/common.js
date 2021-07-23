@@ -78,10 +78,8 @@ function doPoster(url, params, action) {
 }
 
 // 全局Ajax get
-function doGetter(url, params, action, loading) {
-    if(loading == undefined || loading == true){
-        $.loadingT(true);
-    }
+function doGetter(url, params, action) {
+    $.loadingT(true);
     $.get($basePath + url, params, function (data) {
         $.loadingT(false);
         action(data);
@@ -89,9 +87,4 @@ function doGetter(url, params, action, loading) {
         $.loadingT(false);
         bootGrowl("访问异常，请刷新或重试.", "danger");
     });
-}
-
-// 全局Ajax get, 不显示加载动画
-function doGetWithoutLoading(url, params, action) {
-    doGetter(url, params, action, false);
 }

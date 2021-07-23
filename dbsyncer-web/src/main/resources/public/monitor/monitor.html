@@ -68,90 +68,111 @@
 
             </div>
 
-            <!-- 性能指标 -->
+            <!-- 应用性能 -->
             <div class="col-md-12">
-                <div class="col-md-6">
-                    <table class="table table-hover">
-                        <caption>系统性能</caption>
-                        <thead>
-                        <tr>
-                            <th style="width:10%;">类型</th>
-                            <th style="width:10%;">状态</th>
-                            <th style="width:80%;">指标</th>
-                        </tr>
-                        </thead>
-                        <tbody id="systemList"></tbody>
-                    </table>
-                </div>
+                <div class="panel-group">
+                    <div class="panel panel-success">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#systemMetrics">应用性能</u>
+                            </h4>
+                        </div>
+                        <div id="systemMetrics" class="panel-body panel-collapse collapse in">
+                            <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div id="totalChart" style="height: 260px; max-width: 260px; margin: 0px auto;"></div>
+                                    </div>
 
-                <div class="col-md-3">
-                    <div id="cpuChart" style="height: 260px; max-width: 260px; margin: 0px auto;"></div>
-                </div>
+                                    <div class="col-md-6">
+                                        <div id="eventChart" style="height: 260px; max-width: 260px; margin: 0px auto;"></div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div id="queueChart" style="height: 260px; max-width: 260px; margin: 0px auto;"></div>
+                                    </div>
 
-                <div class="col-md-3">
-                    <div id="memChart" style="height: 260px; max-width: 260px; margin: 0px auto;"></div>
-                </div>
-            </div>
+                                    <div class="col-md-6"></div>
+                                </div>
+                            </div>
 
-            <!-- 系统指标 -->
-            <div class="col-md-12">
-                <div class="col-md-6">
-                    <table class="table table-hover">
-                        <caption>系统指标</caption>
-                        <thead>
-                        <tr>
-                            <th style="width:3%;"></th>
-                            <th style="width:27%;">分组</th>
-                            <th style="width:60%;">名称</th>
-                            <th style="width:10%;">值</th>
-                        </tr>
-                        </thead>
-                        <tr th:each="m,s : ${metrics}">
-                            <td th:text="${s.index}+1"></td>
-                            <td th:text="${m?.group}"></td>
-                            <td th:text="${m?.metricName}"></td>
-                            <td th:text="${m?.measurements?.get(0)?.value}"></td><!-- value-->
-                        </tr>
-                    </table>
+                            <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <table class="table table-hover">
+                                            <thead>
+                                            <tr>
+                                                <th style="width:3%;"></th>
+                                                <th style="width:30%;">名称</th>
+                                                <th style="width:42%;">详细</th>
+                                                <th style="width:25%;">类型</th>
+                                            </tr>
+                                            </thead>
+                                            <tr th:each="m,s : ${metrics}">
+                                                <td th:text="${s.index}+1"></td>
+                                                <td th:text="${'['+ m?.group + '] ' + m?.metricName}"></td>
+                                                <td th:text="${m?.detail}"></td>
+                                                <td th:text="${m?.code}"></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
 
             <!-- 日志 -->
             <div class="col-md-12">
-                <div class="form-group">
-                    <div class="col-sm-4">
-                        <input id="searchLogKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)." />
-                    </div>
-                    <div class="col-md-1">
-                        <button id="queryLogBtn" type="button" class="btn btn-primary">查询日志</button>
-                    </div>
-                    <div class="col-md-4"></div>
-                    <div class="col-md-3 text-right">
-                        <button th:id="${metaId}" type="button" class="btn btn-default clearLogBtn">清空日志</button>
-                    </div>
-                </div>
+                <div class="panel-group">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#queryLogPanel">查询日志</u>
+                            </h4>
+                        </div>
+                        <div id="queryLogPanel" class="panel-body panel-collapse collapse">
+                            <div class="form-group">
+                                <div class="col-sm-4">
+                                    <input id="searchLogKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)." />
+                                </div>
+                                <div class="col-md-1">
+                                    <button id="queryLogBtn" type="button" class="btn btn-primary">查询日志</button>
+                                </div>
+                                <div class="col-md-4"></div>
+                                <div class="col-md-3 text-right">
+                                    <button th:id="${metaId}" type="button" class="btn btn-default clearLogBtn">清空日志</button>
+                                </div>
+                            </div>
 
-                <table class="table table-hover">
-                    <thead>
-                    <tr>
-                        <th style="width:3%;"></th>
-                        <th style="width:70%;">内容</th>
-                        <th style="width:27%;">时间</th>
-                    </tr>
-                    </thead>
-                    <tbody id="logList">
-                    <tr th:each="l,s : ${pagingLog?.data}">
-                        <td th:text="${s.index}+1"></td>
-                        <td th:text="${l?.json}"></td>
-                        <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
-                    </tr>
-                    </tbody>
-                </table>
+                            <table class="table table-hover">
+                                <thead>
+                                <tr>
+                                    <th style="width:3%;"></th>
+                                    <th style="width:70%;">内容</th>
+                                    <th style="width:27%;">时间</th>
+                                </tr>
+                                </thead>
+                                <tbody id="logList">
+                                <tr th:each="l,s : ${pagingLog?.data}">
+                                    <td th:text="${s.index}+1"></td>
+                                    <td th:text="${l?.json}"></td>
+                                    <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
 
-                <div class="form-group">
-                    <div class="col-md-5">共计: <span id="logTotal">[[${pagingLog?.total}]]</span>条</div>
-                    <div class="col-md-7">
-                        <a href="javascript:void(0);" id="queryLogMore" num="1">显示更多<i class="fa fa-angle-double-down" aria-hidden="true"></i></a>
+                            <div class="form-group">
+                                <div class="col-md-5">共计: <span id="logTotal">[[${pagingLog?.total}]]</span>条</div>
+                                <div class="col-md-7">
+                                    <a href="javascript:void(0);" id="queryLogMore" num="1">显示更多<i class="fa fa-angle-double-down" aria-hidden="true"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
