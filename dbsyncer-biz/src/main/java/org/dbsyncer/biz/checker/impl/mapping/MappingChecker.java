@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,6 +125,7 @@ public class MappingChecker extends AbstractChecker {
 
         getMetaTotal(meta, mapping.getModel());
 
+        meta.setUpdateTime(Instant.now().toEpochMilli());
         manager.editMeta(meta);
     }
 

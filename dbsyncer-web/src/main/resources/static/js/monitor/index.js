@@ -211,13 +211,8 @@ function showLog($logList, arr, append){
     return html;
 }
 
-function random(min, max) {
-    return Math.floor(Math.random() * (max - min)) + min;
-}
-
 // 堆积数据
-function showQueueChart(){
-    var value = random(1,1000);
+function showQueueChart(taskNumber){
     var option={
         title:{
             text:"堆积数据",
@@ -255,7 +250,7 @@ function showQueueChart(){
                     }
                 },
                 detail: {fontSize:12, offsetCenter:[0,'65%']},
-                data: [{value: value, name: ''}]
+                data: [{value: taskNumber, name: ''}]
             }
         ]
     };
@@ -263,11 +258,7 @@ function showQueueChart(){
 }
 
 // 事件分类
-function showEventChart(){
-    var del = 2;
-    var upd = 10;
-    var ins = 3;
-
+function showEventChart(ins, upd, del){
     var option = {
         title : {
             show:true,
@@ -308,10 +299,7 @@ function showEventChart(){
 }
 
 // 统计成功失败
-function showTotalChart(){
-    var success = 10;
-    var fail = 5;
-
+function showTotalChart(success, fail){
     var option = {
         title : {
             show:true,
@@ -376,9 +364,16 @@ $(function () {
     bindClearEvent($(".clearDataBtn"), "确认清空数据？", "清空数据成功!", "/monitor/clearData");
     bindClearEvent($(".clearLogBtn"), "确认清空日志？", "清空日志成功!", "/monitor/clearLog");
 
-    showTotalChart();
-    showEventChart();
-    showQueueChart();
+    doGetWithoutLoading("/monitor/queryAppReportMetric",{}, function (data) {
+        if (data.success == true) {
+            var report = data.resultValue;
+            showTotalChart(report.success, report.fail);
+            showEventChart(report.insert, report.update, report.delete);
+            showQueueChart(report.taskNumber);
+        } else {
+            bootGrowl(data.resultValue, "danger");
+        }
+    });
 
     // 绑定回车事件
     $("#searchDataKeyword").keydown(function (e) {

@@ -9,20 +9,17 @@ import org.dbsyncer.biz.vo.*;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.manager.Manager;
 import org.dbsyncer.monitor.Monitor;
 import org.dbsyncer.monitor.enums.DiskMetricEnum;
 import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.monitor.enums.ThreadPoolMetricEnum;
+import org.dbsyncer.monitor.model.AppReportMetric;
 import org.dbsyncer.monitor.model.MetricResponse;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-import org.dbsyncer.storage.query.Query;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -40,13 +37,8 @@ import java.util.stream.Collectors;
 @Service
 public class MonitorServiceImpl implements MonitorService {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     @Autowired
     private Monitor monitor;
-
-    @Autowired
-    private Manager manager;
 
     private Map<String, MetricDetailFormatter> metricDetailFormatterMap = new LinkedHashMap<>();
 
@@ -71,7 +63,7 @@ public class MonitorServiceImpl implements MonitorService {
 
     @Override
     public List<MetaVo> getMetaAll() {
-        List<MetaVo> list = manager.getMetaAll()
+        List<MetaVo> list = monitor.getMetaAll()
                 .stream()
                 .map(m -> convertMeta2Vo(m))
                 .sorted(Comparator.comparing(MetaVo::getUpdateTime).reversed())
@@ -82,38 +74,18 @@ public class MonitorServiceImpl implements MonitorService {
     @Override
     public String getDefaultMetaId(Map<String, String> params) {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        if (StringUtils.isNotBlank(id)) {
-            return id;
-        }
-        return getDefaultMetaId();
+        return getDefaultMetaId(id);
     }
 
     @Override
     public Paging queryData(Map<String, String> params) {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        // 获取默认驱动元信息
-        if (StringUtils.isBlank(id)) {
-            id = getDefaultMetaId();
-        }
-
         int pageNum = NumberUtils.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtils.toInt(params.get("pageSize"), 10);
-        // 没有驱动
-        if (StringUtils.isBlank(id)) {
-            return new Paging(pageNum, pageSize);
-        }
-
-        Query query = new Query(pageNum, pageSize);
-        // 查询异常信息
         String error = params.get(ConfigConstant.DATA_ERROR);
-        if (StringUtils.isNotBlank(error)) {
-            query.put(ConfigConstant.DATA_ERROR, error, true);
-        }
-        // 查询是否成功, 默认查询失败
         String success = params.get(ConfigConstant.DATA_SUCCESS);
-        query.put(ConfigConstant.DATA_SUCCESS, StringUtils.isNotBlank(success) ? success : StorageDataStatusEnum.FAIL.getCode(), false, true);
 
-        Paging paging = manager.queryData(query, id);
+        Paging paging = monitor.queryData(getDefaultMetaId(id), pageNum, pageSize, error, success);
         List<Map> data = (List<Map>) paging.getData();
         paging.setData(data.stream()
                 .map(m -> convert2Vo(m, DataVo.class))
@@ -124,7 +96,7 @@ public class MonitorServiceImpl implements MonitorService {
     @Override
     public String clearData(String id) {
         Assert.hasText(id, "驱动不存在.");
-        manager.clearData(id);
+        monitor.clearData(id);
         return "清空同步数据成功";
     }
 
@@ -132,13 +104,8 @@ public class MonitorServiceImpl implements MonitorService {
     public Paging queryLog(Map<String, String> params) {
         int pageNum = NumberUtils.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtils.toInt(params.get("pageSize"), 10);
-        Query query = new Query(pageNum, pageSize);
-        // 查询日志内容
         String json = params.get(ConfigConstant.CONFIG_MODEL_JSON);
-        if (StringUtils.isNotBlank(json)) {
-            query.put(ConfigConstant.CONFIG_MODEL_JSON, json, true);
-        }
-        Paging paging = manager.queryLog(query);
+        Paging paging = monitor.queryLog(pageNum, pageSize, json);
         List<Map> data = (List<Map>) paging.getData();
         paging.setData(data.stream()
                 .map(m -> convert2Vo(m, LogVo.class))
@@ -148,13 +115,13 @@ public class MonitorServiceImpl implements MonitorService {
 
     @Override
     public String clearLog() {
-        manager.clearLog();
+        monitor.clearLog();
         return "清空日志成功";
     }
 
     @Override
     public List<StorageDataStatusEnum> getStorageDataStatusEnumAll() {
-        return manager.getStorageDataStatusEnumAll();
+        return monitor.getStorageDataStatusEnumAll();
     }
 
     @Override
@@ -174,7 +141,7 @@ public class MonitorServiceImpl implements MonitorService {
             MetricResponseVo vo = new MetricResponseVo();
             BeanUtils.copyProperties(metric, vo);
             MetricDetailFormatter detailFormatter = metricDetailFormatterMap.get(vo.getCode());
-            if(null != detailFormatter){
+            if (null != detailFormatter) {
                 detailFormatter.format(vo);
             }
             return vo;
@@ -183,11 +150,14 @@ public class MonitorServiceImpl implements MonitorService {
 
     @Override
     public AppReportMetricVo queryAppReportMetric() {
-        return new AppReportMetricVo();
+        AppReportMetric appReportMetric = monitor.getAppReportMetric();
+        AppReportMetricVo vo = new AppReportMetricVo();
+        BeanUtils.copyProperties(appReportMetric, vo);
+        return vo;
     }
 
     private MetaVo convertMeta2Vo(Meta meta) {
-        Mapping mapping = manager.getMapping(meta.getMappingId());
+        Mapping mapping = monitor.getMapping(meta.getMappingId());
         Assert.notNull(mapping, "驱动不存在.");
         ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
         MetaVo metaVo = new MetaVo(modelEnum.getName(), mapping.getName());
@@ -197,15 +167,16 @@ public class MonitorServiceImpl implements MonitorService {
     }
 
     private <T> T convert2Vo(Map map, Class<T> clazz) {
-        String json = JsonUtil.objToJson(map);
-        return JsonUtil.jsonToObj(json, clazz);
+        return JsonUtil.jsonToObj(JsonUtil.objToJson(map), clazz);
     }
 
-    private String getDefaultMetaId() {
-        List<MetaVo> list = getMetaAll();
-        if (!CollectionUtils.isEmpty(list)) {
-            return list.get(0).getId();
+    private String getDefaultMetaId(String id) {
+        if (StringUtils.isBlank(id)) {
+            List<MetaVo> list = getMetaAll();
+            if (!CollectionUtils.isEmpty(list)) {
+                return list.get(0).getId();
+            }
         }
-        return "";
+        return id;
     }
 }

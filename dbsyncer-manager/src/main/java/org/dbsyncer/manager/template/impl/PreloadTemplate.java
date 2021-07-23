@@ -57,7 +57,7 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
         Query query = new Query();
         query.setType(StorageEnum.CONFIG);
         String filterType = config.getFilterType();
-        query.put(ConfigConstant.CONFIG_MODEL_TYPE, filterType);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, filterType);
 
         int pageNum = 1;
         int pageSize = 20;
