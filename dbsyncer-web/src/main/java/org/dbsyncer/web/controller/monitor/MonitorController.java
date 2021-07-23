@@ -43,59 +43,6 @@ public class MonitorController extends BaseController {
     @Autowired
     private HealthEndpoint healthEndpoint;
 
-    @ResponseBody
-    @RequestMapping("/get")
-    public RestResult get() {
-        try {
-            List<MetricResponse> list = new ArrayList<>();
-            // 系统指标
-            List<MetricEnum> metricEnumList = monitorService.getMetricEnumAll();
-            if (!CollectionUtils.isEmpty(metricEnumList)) {
-                metricEnumList.forEach(m -> {
-                    MetricsEndpoint.MetricResponse metric = metricsEndpoint.metric(m.getCode(), null);
-                    MetricResponse metricResponse = new MetricResponse();
-                    MetricEnum metricEnum = MetricEnum.getMetric(metric.getName());
-                    metricResponse.setCode(metricEnum.getCode());
-                    metricResponse.setGroup(metricEnum.getGroup());
-                    metricResponse.setMetricName(metricEnum.getMetricName());
-                    if (!CollectionUtils.isEmpty(metric.getMeasurements())) {
-                        List<Sample> measurements = new ArrayList<>();
-                        metric.getMeasurements().forEach(s -> measurements.add(new Sample(s.getStatistic().getTagValueRepresentation(), s.getValue())));
-                        metricResponse.setMeasurements(measurements);
-                    }
-                    list.add(metricResponse);
-                });
-            }
-            list.addAll(getDiskHealth());
-            return RestResult.restSuccess(monitorService.queryMetric(list));
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
-    /**
-     * 硬盘状态
-     *
-     * @return
-     */
-    private List<MetricResponse> getDiskHealth() {
-        List<MetricResponse> list = new ArrayList<>();
-        Health health = healthEndpoint.health();
-        Map<String, Object> details = health.getDetails();
-        Health diskSpace = (Health) details.get("diskSpace");
-        Map<String, Object> diskSpaceDetails = diskSpace.getDetails();
-        list.add(createDiskMetricResponse(DiskMetricEnum.THRESHOLD, diskSpaceDetails.get("threshold")));
-        list.add(createDiskMetricResponse(DiskMetricEnum.FREE, diskSpaceDetails.get("free")));
-        list.add(createDiskMetricResponse(DiskMetricEnum.TOTAL, diskSpaceDetails.get("total")));
-        return list;
-    }
-
-    private MetricResponse createDiskMetricResponse(DiskMetricEnum metricEnum, Object value) {
-        return new MetricResponse(metricEnum.getCode(), metricEnum.getGroup(), metricEnum.getMetricName(),
-                Arrays.asList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), value)));
-    }
-
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
         Map<String, String> params = getParams(request);
@@ -154,4 +101,67 @@ public class MonitorController extends BaseController {
         }
     }
 
+    @ResponseBody
+    @RequestMapping("/get")
+    public RestResult get() {
+        try {
+            List<MetricResponse> list = new ArrayList<>();
+            // 系统指标
+            List<MetricEnum> metricEnumList = monitorService.getMetricEnumAll();
+            if (!CollectionUtils.isEmpty(metricEnumList)) {
+                metricEnumList.forEach(m -> {
+                    MetricsEndpoint.MetricResponse metric = metricsEndpoint.metric(m.getCode(), null);
+                    MetricResponse metricResponse = new MetricResponse();
+                    MetricEnum metricEnum = MetricEnum.getMetric(metric.getName());
+                    metricResponse.setCode(metricEnum.getCode());
+                    metricResponse.setGroup(metricEnum.getGroup());
+                    metricResponse.setMetricName(metricEnum.getMetricName());
+                    if (!CollectionUtils.isEmpty(metric.getMeasurements())) {
+                        List<Sample> measurements = new ArrayList<>();
+                        metric.getMeasurements().forEach(s -> measurements.add(new Sample(s.getStatistic().getTagValueRepresentation(), s.getValue())));
+                        metricResponse.setMeasurements(measurements);
+                    }
+                    list.add(metricResponse);
+                });
+            }
+            list.addAll(getDiskHealth());
+            return RestResult.restSuccess(monitorService.queryMetric(list));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e.getClass());
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @ResponseBody
+    @RequestMapping("/queryAppReportMetric")
+    public RestResult queryAppReportMetric() {
+        try {
+            return RestResult.restSuccess(monitorService.queryAppReportMetric());
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e.getClass());
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 硬盘状态
+     *
+     * @return
+     */
+    private List<MetricResponse> getDiskHealth() {
+        List<MetricResponse> list = new ArrayList<>();
+        Health health = healthEndpoint.health();
+        Map<String, Object> details = health.getDetails();
+        Health diskSpace = (Health) details.get("diskSpace");
+        Map<String, Object> diskSpaceDetails = diskSpace.getDetails();
+        list.add(createDiskMetricResponse(DiskMetricEnum.THRESHOLD, diskSpaceDetails.get("threshold")));
+        list.add(createDiskMetricResponse(DiskMetricEnum.FREE, diskSpaceDetails.get("free")));
+        list.add(createDiskMetricResponse(DiskMetricEnum.TOTAL, diskSpaceDetails.get("total")));
+        return list;
+    }
+
+    private MetricResponse createDiskMetricResponse(DiskMetricEnum metricEnum, Object value) {
+        return new MetricResponse(metricEnum.getCode(), metricEnum.getGroup(), metricEnum.getMetricName(),
+                Arrays.asList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), value)));
+    }
 }

@@ -5,10 +5,7 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.metric.MetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.*;
-import org.dbsyncer.biz.vo.DataVo;
-import org.dbsyncer.biz.vo.LogVo;
-import org.dbsyncer.biz.vo.MetaVo;
-import org.dbsyncer.biz.vo.MetricResponseVo;
+import org.dbsyncer.biz.vo.*;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -182,6 +179,11 @@ public class MonitorServiceImpl implements MonitorService {
             }
             return vo;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    public AppReportMetricVo queryAppReportMetric() {
+        return new AppReportMetricVo();
     }
 
     private MetaVo convertMeta2Vo(Meta meta) {

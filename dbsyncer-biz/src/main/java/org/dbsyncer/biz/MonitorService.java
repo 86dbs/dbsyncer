@@ -1,5 +1,6 @@
 package org.dbsyncer.biz;
 
+import org.dbsyncer.biz.vo.AppReportMetricVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.biz.vo.MetricResponseVo;
 import org.dbsyncer.common.model.Paging;
@@ -83,4 +84,11 @@ public interface MonitorService {
      * @return
      */
     List<MetricResponseVo> queryMetric(List<MetricResponse> metrics);
+
+    /**
+     * 获取应用报告
+     *
+     * @return
+     */
+    AppReportMetricVo queryAppReportMetric();
 }
