@@ -1,12 +1,12 @@
-// 添加连接器
+// 添加连接
 function bindAddConnector() {
-    // 绑定添加连接器按钮点击事件
+    // 绑定添加连接按钮点击事件
     $("#indexAddConnectorBtn").click(function () {
         doLoader('/connector/page/add');
     });
 }
 
-// 编辑连接器
+// 编辑连接
 function bindEditConnector() {
     $(".connectorList .dbsyncer_block").click(function () {
         var $id = $(this).attr("id");

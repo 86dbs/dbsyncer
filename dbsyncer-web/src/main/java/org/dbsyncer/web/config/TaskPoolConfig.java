@@ -2,16 +2,14 @@ package org.dbsyncer.web.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * @version 1.0.0
  * @author AE86
+ * @version 1.0.0
  * @date 2020-04-26 23:40
  */
 @Configuration
@@ -47,17 +45,6 @@ public class TaskPoolConfig {
         executor.setAwaitTerminationSeconds(30);
         executor.initialize();
         return executor;
-    }
-
-    @Bean
-    public TaskScheduler taskScheduler() {
-        ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
-        taskScheduler.setPoolSize(5);
-        taskScheduler.setRemoveOnCancelPolicy(true);
-        taskScheduler.setThreadNamePrefix("taskScheduler");
-        taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
-        taskScheduler.setAwaitTerminationSeconds(60);
-        return taskScheduler;
     }
 
 }

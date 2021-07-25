@@ -345,7 +345,7 @@ $(function () {
         theme: "classic"
     });
 
-    // 连接器类型切换事件
+    // 连接类型切换事件
     $("#searchMetaData").change(function () {
         var $id = $(this).val();
         doLoader('/monitor?id=' + $id);

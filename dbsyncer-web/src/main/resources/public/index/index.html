@@ -7,9 +7,9 @@
     <div class="row">
         <form class="form-horizontal" role="form" method="post">
 
-            <!-- 连接器管理 -->
+            <!-- 连接管理 -->
             <div class="col-md-12">
-                <!-- 连接器开始位置 -->
+                <!-- 连接开始位置 -->
                 <div class="form-group">
                     <div class="col-md-12">
                         <button type="button" class="btn btn-primary" id="indexAddConnectorBtn">
@@ -17,14 +17,14 @@
                         </button>
                     </div>
                 </div>
-                <!-- 显示连接器列表 -->
+                <!-- 显示连接列表 -->
                 <div class="row" th:if="${connectors?.size() gt 0}">
                     <div class="col-md-12">
                         <div class="panel panel-default">
-                            <!-- 连接器 -->
+                            <!-- 连接 -->
                             <div class="panel-body text-center">
                                 <div class="row connectorList">
-                                    <!-- 连接器__开始 -->
+                                    <!-- 连接__开始 -->
                                     <div class="col-md-1" th:each="c,state : ${connectors}">
                                         <div th:id="${c?.id}" class="jumbotron dbsyncer_block">
                                             <div class="row">
@@ -42,7 +42,7 @@
                                             </ul>
                                         </div>
                                     </div>
-                                    <!-- 连接器__结束 -->
+                                    <!-- 连接__结束 -->
 
                                 </div>
                             </div>
@@ -50,7 +50,7 @@
                         </div>
                     </div>
                 </div>
-                <!-- 连接器开结束位置 -->
+                <!-- 连接开结束位置 -->
             </div>
 
             <!-- 驱动管理 -->
@@ -88,8 +88,8 @@
                                                         </div>
                                                         <div class="col-md-1"></div>
                                                     </div>
-                                                    <span th:if="${m?.sourceConnector?.running}" th:title="连接器正常" class="well-sign-left"><i class="fa fa-2x fa-circle well-sign-green"></i></span>
-                                                    <span th:unless="${m?.sourceConnector?.running}" th:title="连接器异常" class="well-sign-left"><i class="fa fa-2x fa-times-circle-o well-sign-red"></i></span>
+                                                    <span th:if="${m?.sourceConnector?.running}" th:title="连接正常" class="well-sign-left"><i class="fa fa-2x fa-circle well-sign-green"></i></span>
+                                                    <span th:unless="${m?.sourceConnector?.running}" th:title="连接异常" class="well-sign-left"><i class="fa fa-2x fa-times-circle-o well-sign-red"></i></span>
                                                 </div>
 
                                                 <!--中间图标 -->
@@ -112,8 +112,8 @@
                                                             <span th:text="${m?.targetConnector?.name}" th:title="${m?.targetConnector?.name}"></span>
                                                         </div>
                                                         <div class="col-md-1"></div>
-                                                        <span th:if="${m?.targetConnector?.running}" th:title="连接器正常" class="well-sign-right"><i class="fa fa-2x fa-circle well-sign-green"></i></span>
-                                                        <span th:unless="${m?.targetConnector?.running}" th:title="连接器异常" class="well-sign-right"><i class="fa fa-2x fa-times-circle-o well-sign-red"></i></span>
+                                                        <span th:if="${m?.targetConnector?.running}" th:title="连接正常" class="well-sign-right"><i class="fa fa-2x fa-circle well-sign-green"></i></span>
+                                                        <span th:unless="${m?.targetConnector?.running}" th:title="连接异常" class="well-sign-right"><i class="fa fa-2x fa-times-circle-o well-sign-red"></i></span>
                                                     </div>
                                                 </div>
                                             </div>
