@@ -133,6 +133,13 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
     }
 
     @Override
+    public int getStackingSize() {
+        AtomicInteger counter = new AtomicInteger();
+        map.values().forEach(extractor -> counter.getAndAdd(extractor.getStackingSize()));
+        return counter.get();
+    }
+
+    @Override
     public void run() {
         // 定时同步增量信息
         map.forEach((k, v) -> v.flushEvent());
@@ -187,9 +194,9 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
     }
 
     abstract class AbstractListener implements Event {
-        protected Mapping                   mapping;
-        protected String                    metaId;
-        protected AtomicBoolean             changed = new AtomicBoolean();
+        protected Mapping mapping;
+        protected String metaId;
+        protected AtomicBoolean changed = new AtomicBoolean();
 
         @Override
         public void flushEvent(Map<String, String> map) {
@@ -252,7 +259,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         }
 
         @Override
-        public void changedQuartzEvent(RowChangedEvent rowChangedEvent) {
+        public void changedEvent(RowChangedEvent rowChangedEvent) {
             final FieldPicker picker = tablePicker.get(rowChangedEvent.getTableGroupIndex());
             logger.info("监听数据=> tableName:{}, event:{}, before:{}, after:{}", picker.getTableGroup().getSourceTable().getName(),
                     rowChangedEvent.getEvent(),
@@ -311,7 +318,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         }
 
         @Override
-        public void changedLogEvent(RowChangedEvent rowChangedEvent) {
+        public void changedEvent(RowChangedEvent rowChangedEvent) {
             // 处理过程有异常向上抛
             List<FieldPicker> pickers = tablePicker.get(rowChangedEvent.getTableName());
             if (!CollectionUtils.isEmpty(pickers)) {

@@ -6,68 +6,6 @@
 <div class="container-fluid">
     <div class="row">
         <form class="form-horizontal" role="form" method="post">
-
-            <!-- 数据 -->
-            <div class="col-md-12">
-                <div class="form-group">
-                    <div class="col-md-3">
-                        <!-- 驱动下拉 -->
-                        <select id="searchMetaData" class="form-control select-control">
-                            <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
-                        </select>
-                    </div>
-                    <div class="col-md-1">
-                        <!-- 是否包含成功 -->
-                        <select id="searchDataSuccess" class="form-control select-control">
-                            <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}"/>
-                        </select>
-                    </div>
-                    <div class="col-sm-4">
-                        <input id="searchDataKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入异常关键字(最多32个字)." />
-                    </div>
-                    <div class="col-md-1">
-                        <button id="queryDataBtn" type="button" class="btn btn-primary">查询数据</button>
-                    </div>
-                    <div class="col-md-3 text-right">
-                        <button th:id="${metaId}" type="button" class="btn btn-default clearDataBtn">清空数据</button>
-                    </div>
-                </div>
-
-                <table class="table table-hover metaDataList">
-                    <thead>
-                    <tr>
-                        <th style="width:3%;"></th>
-                        <th style="width:5%;">事件</th>
-                        <th style="width:5%;">结果</th>
-                        <th style="width:60%;">异常</th>
-                        <th style="width:17%;">时间</th>
-                        <th style="width:10%;">详情</th>
-                    </tr>
-                    </thead>
-                    <tbody id="dataList">
-                        <tr th:each="d,s : ${pagingData?.data}">
-                            <td th:text="${s.index}+1"></td>
-                            <td th:text="${d?.event}"></td>
-                            <td>
-                                <span th:if="${d?.success == 1}" class="label label-success">成功</span>
-                                <span th:if="${d?.success == 0}" class="label label-warning">失败</span>
-                            </td>
-                            <td style="max-width:100px;" class="dbsyncer_over_hidden"><a href="javascript:;" class="dbsyncer_pointer queryError">[[${d?.error}]]</a></td>
-                            <td th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
-                            <td><a th:json="${d?.json}" href="javascript:;" class="label label-info queryData">查看数据</a><div class="hidden" th:text="${d?.json}"></div></td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="form-group">
-                    <div class="col-md-5">共计: <span id="dataTotal">[[${pagingData?.total}]]</span>条</div>
-                    <div class="col-md-7">
-                        <a href="javascript:void(0);" id="queryDataMore" num="1">显示更多<i class="fa fa-angle-double-down" aria-hidden="true"></i></a>
-                    </div>
-                </div>
-
-            </div>
-
             <!-- 应用性能 -->
             <div class="col-md-12">
                 <div class="panel-group">
@@ -117,6 +55,78 @@
                                             </tr>
                                         </table>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据 -->
+            <div class="col-md-12">
+                <div class="panel-group">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#queryDataPanel">查询数据</u>
+                            </h4>
+                        </div>
+                        <div id="queryDataPanel" class="panel-body panel-collapse collapse in">
+                            <div class="form-group">
+                                <div class="col-md-3">
+                                    <!-- 驱动下拉 -->
+                                    <select id="searchMetaData" class="form-control select-control">
+                                        <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <!-- 是否包含成功 -->
+                                    <select id="searchDataSuccess" class="form-control select-control">
+                                        <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}"/>
+                                    </select>
+                                </div>
+                                <div class="col-sm-4">
+                                    <input id="searchDataKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入异常关键字(最多32个字)." />
+                                </div>
+                                <div class="col-md-1">
+                                    <button id="queryDataBtn" type="button" class="btn btn-primary">查询数据</button>
+                                </div>
+                                <div class="col-md-3 text-right">
+                                    <button th:id="${metaId}" type="button" class="btn btn-default clearDataBtn">清空数据</button>
+                                </div>
+                            </div>
+
+                            <table class="table table-hover metaDataList">
+                                <thead>
+                                <tr>
+                                    <th style="width:3%;"></th>
+                                    <th style="width:5%;">事件</th>
+                                    <th style="width:5%;">结果</th>
+                                    <th style="width:60%;">异常</th>
+                                    <th style="width:17%;">时间</th>
+                                    <th style="width:10%;">详情</th>
+                                </tr>
+                                </thead>
+                                <tbody id="dataList">
+                                <tr th:each="d,s : ${pagingData?.data}">
+                                    <td th:text="${s.index}+1"></td>
+                                    <td th:text="${d?.event}"></td>
+                                    <td>
+                                        <span th:if="${d?.success == 1}" class="label label-success">成功</span>
+                                        <span th:if="${d?.success == 0}" class="label label-warning">失败</span>
+                                    </td>
+                                    <td style="max-width:100px;" class="dbsyncer_over_hidden"><a href="javascript:;" class="dbsyncer_pointer queryError">[[${d?.error}]]</a></td>
+                                    <td th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                                    <td><a th:json="${d?.json}" href="javascript:;" class="label label-info queryData">查看数据</a><div class="hidden" th:text="${d?.json}"></div></td>
+                                </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="form-group">
+                                <div class="col-md-5">共计: <span id="dataTotal">[[${pagingData?.total}]]</span>条</div>
+                                <div class="col-md-7">
+                                    <a href="javascript:void(0);" id="queryDataMore" num="1">显示更多<i class="fa fa-angle-double-down" aria-hidden="true"></i></a>
                                 </div>
                             </div>
                         </div>

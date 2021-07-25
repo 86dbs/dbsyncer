@@ -118,6 +118,7 @@ public class MysqlExtractor extends AbstractExtractor {
     }
 
     private void reStart() {
+        taskCounter.set(0);
         for (int i = 1; i <= RETRY_TIMES; i++) {
             try {
                 if (null != client) {

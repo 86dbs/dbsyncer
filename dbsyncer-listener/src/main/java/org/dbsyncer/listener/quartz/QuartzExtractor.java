@@ -90,15 +90,15 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
             for (Map<String, Object> row : data) {
                 event = row.get(eventFieldName);
                 if (update.contains(event)) {
-                    changedQuartzEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_MAP, row));
+                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_MAP, row));
                     continue;
                 }
                 if (insert.contains(event)) {
-                    changedQuartzEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_MAP, row));
+                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_MAP, row));
                     continue;
                 }
                 if (delete.contains(event)) {
-                    changedQuartzEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_DELETE, row, Collections.EMPTY_MAP));
+                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_DELETE, row, Collections.EMPTY_MAP));
                     continue;
                 }
 

@@ -5,6 +5,7 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.manager.puller.Puller;
 import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.monitor.enums.StatisticEnum;
 import org.dbsyncer.monitor.enums.ThreadPoolMetricEnum;
@@ -43,6 +44,9 @@ public class MonitorFactory implements Monitor {
 
     @Autowired
     private Manager manager;
+
+    @Autowired
+    private Puller incrementPuller;
 
     @Autowired
     private Executor taskExecutor;
@@ -193,7 +197,7 @@ public class MonitorFactory implements Monitor {
      * @return
      */
     private long getTaskNumber() {
-        return 0;
+        return incrementPuller.getStackingSize();
     }
 
     private MetricResponse createMetricResponse(ThreadPoolMetricEnum metricEnum, Object value) {
