@@ -70,12 +70,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
      */
     @Bean
     public AuthenticationFailureHandler loginFailHandler() {
-        return new AuthenticationFailureHandler() {
-            @Override
-            public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException e) {
-                write(response, RestResult.restFail(e.getMessage(), 401));
-            }
-        };
+        return (request, response, e) -> write(response, RestResult.restFail(e.getMessage(), 401));
     }
 
     /**
@@ -97,17 +92,14 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
     @Bean
     public LogoutSuccessHandler logoutHandler() {
-        return new LogoutSuccessHandler() {
-            @Override
-            public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-                try {
-                    Object principal = authentication.getPrincipal();
-                    logger.info("USER : {} LOGOUT SUCCESS ! ", principal);
-                    write(response, RestResult.restSuccess("注销成功!"));
-                } catch (Exception e) {
-                    logger.info("LOGOUT EXCEPTION , e : {}", e.getMessage());
-                    write(response, RestResult.restFail(e.getMessage(), 403));
-                }
+        return (request, response, authentication) -> {
+            try {
+                Object principal = authentication.getPrincipal();
+                logger.info("USER : {} LOGOUT SUCCESS ! ", principal);
+                write(response, RestResult.restSuccess("注销成功!"));
+            } catch (Exception e) {
+                logger.info("LOGOUT EXCEPTION , e : {}", e.getMessage());
+                write(response, RestResult.restFail(e.getMessage(), 403));
             }
         };
     }

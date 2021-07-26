@@ -91,7 +91,6 @@ public class MappingChecker extends AbstractChecker {
 
         // 全量配置
         mapping.setReadNum(NumberUtils.toInt(params.get("readNum"), mapping.getReadNum()));
-        mapping.setThreadNum(NumberUtils.toInt(params.get("threadNum"), mapping.getThreadNum()));
         mapping.setBatchNum(NumberUtils.toInt(params.get("batchNum"), mapping.getBatchNum()));
 
         // 增量配置(日志/定时)

@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -39,7 +38,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.Executor;
 
 /**
  * @author AE86
@@ -62,6 +61,9 @@ public class ParserFactory implements Parser {
 
     @Autowired
     private FlushService flushService;
+
+    @Autowired
+    private Executor taskExecutor;
 
     @Autowired
     private ApplicationContext applicationContext;
@@ -210,7 +212,6 @@ public class ParserFactory implements Parser {
         Map<String, String> params = getMeta(metaId).getMap();
         params.putIfAbsent(ParserEnum.PAGE_INDEX.getCode(), ParserEnum.PAGE_INDEX.getDefaultValue());
         int pageSize = mapping.getReadNum();
-        int threadSize = mapping.getThreadNum();
         int batchSize = mapping.getBatchNum();
         ConnectorMapper sConnectionMapper = connectorFactory.connect(sConfig);
         ConnectorMapper tConnectionMapper = connectorFactory.connect(tConfig);
@@ -241,7 +242,7 @@ public class ParserFactory implements Parser {
             pluginFactory.convert(group.getPlugin(), data, target);
 
             // 5、写入目标源
-            Result writer = writeBatch(tConnectionMapper, command, picker.getTargetFields(), target, threadSize, batchSize);
+            Result writer = writeBatch(tConnectionMapper, command, picker.getTargetFields(), target, batchSize);
 
             // 6、更新结果
             flush(task, writer, target);
@@ -346,12 +347,10 @@ public class ParserFactory implements Parser {
      * @param command
      * @param fields
      * @param target
-     * @param threadSize
      * @param batchSize
      * @return
      */
-    private Result writeBatch(ConnectorMapper connectorMapper, Map<String, String> command, List<Field> fields, List<Map> target,
-                              int threadSize, int batchSize) {
+    private Result writeBatch(ConnectorMapper connectorMapper, Map<String, String> command, List<Field> fields, List<Map> target, int batchSize) {
         // 总数
         int total = target.size();
         // 单次任务
@@ -361,45 +360,32 @@ public class ParserFactory implements Parser {
 
         // 批量任务, 拆分
         int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
-        threadSize = taskSize <= threadSize ? taskSize : threadSize;
 
-        // 转换为消息队列，根据batchSize获取数据，并发写入
+        // 转换为消息队列，并发写入
         Queue<Map> queue = new ConcurrentLinkedQueue<>(target);
 
-        // 创建线程池
-        final ThreadPoolTaskExecutor executor = getThreadPoolTaskExecutor(threadSize, taskSize - threadSize);
         final Result result = new Result();
-        for (; ; ) {
-            if (taskSize <= 0) {
-                break;
-            }
-            // TODO 优化 CountDownLatch
-            final CountDownLatch latch = new CountDownLatch(threadSize);
-            for (int i = 0; i < threadSize; i++) {
-                executor.execute(() -> {
-                    try {
-                        Result w = parallelTask(batchSize, queue, connectorMapper, command, fields);
-                        // CAS
-                        result.getFailData().addAll(w.getFailData());
-                        result.getFail().getAndAdd(w.getFail().get());
-                        result.getError().append(w.getError());
-                    } catch (Exception e) {
-                        result.getError().append(e.getMessage()).append(System.lineSeparator());
-                    } finally {
-                        latch.countDown();
-                    }
-                });
-            }
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                logger.error(e.getMessage());
-            }
-
-            taskSize -= threadSize;
+        final CountDownLatch latch = new CountDownLatch(taskSize);
+        for (int i = 0; i < taskSize; i++) {
+            taskExecutor.execute(() -> {
+                try {
+                    Result w = parallelTask(batchSize, queue, connectorMapper, command, fields);
+                    // CAS
+                    result.getFailData().addAll(w.getFailData());
+                    result.getFail().getAndAdd(w.getFail().get());
+                    result.getError().append(w.getError());
+                } catch (Exception e) {
+                    result.getError().append(e.getMessage()).append(System.lineSeparator());
+                } finally {
+                    latch.countDown();
+                }
+            });
         }
-
-        executor.shutdown();
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage());
+        }
         return result;
     }
 
@@ -414,20 +400,6 @@ public class ParserFactory implements Parser {
             data.add(poll);
         }
         return connectorFactory.writer(new WriterBatchConfig(connectorMapper, command, fields, data));
-    }
-
-    private ThreadPoolTaskExecutor getThreadPoolTaskExecutor(int threadSize, int queueCapacity) {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(threadSize);
-        executor.setMaxPoolSize(threadSize);
-        executor.setQueueCapacity(queueCapacity);
-        executor.setKeepAliveSeconds(30);
-        executor.setAwaitTerminationSeconds(30);
-        executor.setThreadNamePrefix("ParserExecutor");
-        executor.setWaitForTasksToCompleteOnShutdown(true);
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
-        executor.initialize();
-        return executor;
     }
 
 }

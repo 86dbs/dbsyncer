@@ -8,23 +8,18 @@
     <div class="form-group">
         <div class="row">
             <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">读取<strong class="driverVerifcateRequired">*</strong></label>
+                <label class="col-sm-3 control-label text-right">批量读取<strong class="driverVerifcateRequired">*</strong></label>
                 <div class="col-sm-9">
                     <input type="number" name="readNum" class="form-control" min="1" dbsyncer-valid="require" th:value="${mapping?.readNum}">
                 </div>
             </div>
             <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">线程<strong class="driverVerifcateRequired">*</strong></label>
-                <div class="col-sm-9">
-                    <input type="number" name="threadNum" class="form-control" min="1" dbsyncer-valid="require" th:value="${mapping?.threadNum}">
-                </div>
-            </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">写入<strong class="driverVerifcateRequired">*</strong></label>
+                <label class="col-sm-3 control-label text-right">单次写入<strong class="driverVerifcateRequired">*</strong></label>
                 <div class="col-sm-9">
                     <input type="number" name="batchNum" class="form-control" min="1" dbsyncer-valid="require" th:value="${mapping?.batchNum}">
                 </div>
             </div>
+            <div class="col-md-4"></div>
         </div>
     </div>
 </div>

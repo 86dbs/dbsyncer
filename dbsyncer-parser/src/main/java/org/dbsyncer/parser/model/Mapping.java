@@ -40,14 +40,11 @@ public class Mapping extends AbstractConfigModel {
     // 元信息ID
     private String metaId;
 
-    // 每次读取数
+    // 批量读取
     private int readNum = 10000;
 
-    // 每次写入数
+    // 单次写入
     private int batchNum = 200;
-
-    // 线程数
-    private int threadNum = 5;
 
     public String getSourceConnectorId() {
         return sourceConnectorId;
@@ -123,15 +120,6 @@ public class Mapping extends AbstractConfigModel {
 
     public Mapping setBatchNum(int batchNum) {
         this.batchNum = batchNum;
-        return this;
-    }
-
-    public int getThreadNum() {
-        return threadNum;
-    }
-
-    public Mapping setThreadNum(int threadNum) {
-        this.threadNum = threadNum;
         return this;
     }
 
