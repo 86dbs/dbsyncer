@@ -10,13 +10,4 @@ public interface Puller {
 
     void close(String metaId);
 
-    /**
-     * 获取堆积任务数
-     *
-     * @return
-     */
-    default int getStackingSize() {
-        return 0;
-    }
-
 }

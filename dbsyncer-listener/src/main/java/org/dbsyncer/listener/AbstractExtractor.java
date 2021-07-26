@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @version 1.0.0
@@ -32,13 +31,7 @@ public abstract class AbstractExtractor implements Extractor {
     protected ListenerConfig listenerConfig;
     protected Map<String, String> snapshot;
     protected Set<String> filterTable;
-    protected AtomicInteger taskCounter = new AtomicInteger();
     private List<Event> watcher;
-
-    @Override
-    public int getStackingSize() {
-        return taskCounter.get();
-    }
 
     @Override
     public void addListener(Event event) {
@@ -61,16 +54,7 @@ public abstract class AbstractExtractor implements Extractor {
     @Override
     public void changedEvent(RowChangedEvent event) {
         if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> {
-                try {
-                    taskCounter.incrementAndGet();
-                    w.changedEvent(event);
-                } catch (Exception e) {
-                    logger.error(e.getMessage());
-                } finally {
-                    taskCounter.decrementAndGet();
-                }
-            });
+            watcher.forEach(w -> w.changedEvent(event));
         }
     }
 

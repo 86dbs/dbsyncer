@@ -30,7 +30,12 @@ public class AppReportMetric {
     /**
      * 待处理数
      */
-    private long taskNumber;
+    private long queueUp;
+
+    /**
+     * 队列长度
+     */
+    private long queueCapacity;
 
     public long getSuccess() {
         return success;
@@ -72,11 +77,19 @@ public class AppReportMetric {
         this.delete = delete;
     }
 
-    public long getTaskNumber() {
-        return taskNumber;
+    public long getQueueUp() {
+        return queueUp;
     }
 
-    public void setTaskNumber(long taskNumber) {
-        this.taskNumber = taskNumber;
+    public void setQueueUp(long queueUp) {
+        this.queueUp = queueUp;
+    }
+
+    public long getQueueCapacity() {
+        return queueCapacity;
+    }
+
+    public void setQueueCapacity(long queueCapacity) {
+        this.queueCapacity = queueCapacity;
     }
 }

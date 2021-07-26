@@ -212,7 +212,7 @@ function showLog($logList, arr, append){
 }
 
 // 堆积数据
-function showQueueChart(taskNumber){
+function showQueueChart(queueUp, queueCapacity){
     var option={
         title:{
             text:"堆积数据",
@@ -229,11 +229,11 @@ function showQueueChart(taskNumber){
                 animation: true,
                 type: 'gauge',
                 min: 0,
-                max: 1000,
+                max: queueCapacity,
                 splitNumber: 5,
                 axisLine: {            // 坐标轴线
                     lineStyle: {       // 属性lineStyle控制线条样式
-                        color: [[0.1, '#d9534f'], [0.3, '#f0ad4e'],[0.8, '#5bc0de'],[1, '#5cb85c']],
+                        color: [[0.1, '#5cb85c'], [0.3, '#5bc0de'],[0.8, '#f0ad4e'],[1, '#d9534f']],
                         width: 10
                     }
                 },
@@ -250,7 +250,7 @@ function showQueueChart(taskNumber){
                     }
                 },
                 detail: {fontSize:12, offsetCenter:[0,'65%']},
-                data: [{value: taskNumber, name: ''}]
+                data: [{value: queueUp, name: ''}]
             }
         ]
     };
@@ -296,6 +296,10 @@ function showEventChart(ins, upd, del){
         ]
     };
     echarts.init(document.getElementById('eventChart')).setOption(option);
+
+    $("#insertSpan").html(ins);
+    $("#updateSpan").html(upd);
+    $("#deleteSpan").html(del);
 }
 
 // 统计成功失败
@@ -336,6 +340,10 @@ function showTotalChart(success, fail){
         ]
     };
     echarts.init(document.getElementById('totalChart')).setOption(option);
+
+    $("#totalSpan").html(success + fail);
+    $("#successSpan").html(success);
+    $("#failSpan").html(fail);
 }
 
 $(function () {
@@ -347,8 +355,7 @@ $(function () {
 
     // 连接类型切换事件
     $("#searchMetaData").change(function () {
-        var $id = $(this).val();
-        doLoader('/monitor?id=' + $id);
+        $("#queryDataBtn").click();
     });
     // 数据状态切换事件
     $("#searchDataSuccess").change(function () {
@@ -369,7 +376,7 @@ $(function () {
             var report = data.resultValue;
             showTotalChart(report.success, report.fail);
             showEventChart(report.insert, report.update, report.delete);
-            showQueueChart(report.taskNumber);
+            showQueueChart(report.queueUp, report.queueCapacity);
         } else {
             bootGrowl(data.resultValue, "danger");
         }

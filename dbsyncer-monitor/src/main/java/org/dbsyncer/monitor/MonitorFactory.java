@@ -5,7 +5,6 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.manager.Manager;
-import org.dbsyncer.manager.puller.Puller;
 import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.monitor.enums.StatisticEnum;
 import org.dbsyncer.monitor.enums.ThreadPoolMetricEnum;
@@ -21,6 +20,7 @@ import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
@@ -28,6 +28,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,10 +47,13 @@ public class MonitorFactory implements Monitor {
     private Manager manager;
 
     @Autowired
-    private Puller incrementPuller;
-
-    @Autowired
     private Executor taskExecutor;
+
+    /**
+     * 工作线程池队列容量
+     */
+    @Value(value = "${dbsyncer.web.thread.pool.queue.capacity}")
+    private int queueCapacity;
 
     @Override
     @Cacheable(value = "connector", keyGenerator = "cacheKeyGenerator")
@@ -137,7 +141,13 @@ public class MonitorFactory implements Monitor {
         report.setInsert(getMappingInsert(metaAll));
         report.setUpdate(getMappingUpdate(metaAll));
         report.setDelete(getMappingDelete(metaAll));
-        report.setTaskNumber(getTaskNumber());
+
+        // 线程池使用情况
+        ThreadPoolTaskExecutor threadTask = (ThreadPoolTaskExecutor) taskExecutor;
+        ThreadPoolExecutor pool = threadTask.getThreadPoolExecutor();
+        BlockingQueue<Runnable> queue = pool.getQueue();
+        report.setQueueUp(queue.size());
+        report.setQueueCapacity(queueCapacity);
         return report;
     }
 
@@ -189,15 +199,6 @@ public class MonitorFactory implements Monitor {
      */
     private long getMappingDelete(List<Meta> metaAll) {
         return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DATA_EVENT, ConnectorConstant.OPERTION_DELETE));
-    }
-
-    /**
-     * 获取所有监听器队列待处理数
-     *
-     * @return
-     */
-    private long getTaskNumber() {
-        return incrementPuller.getStackingSize();
     }
 
     private MetricResponse createMetricResponse(ThreadPoolMetricEnum metricEnum, Object value) {

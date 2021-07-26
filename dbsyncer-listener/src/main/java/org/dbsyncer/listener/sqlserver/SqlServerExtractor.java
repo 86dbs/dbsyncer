@@ -119,7 +119,6 @@ public class SqlServerExtractor extends AbstractExtractor {
     }
 
     private void connect() {
-        taskCounter.set(0);
         DatabaseConfig cfg = (DatabaseConfig) connectorConfig;
         if (connectorFactory.isAlive(cfg)) {
             connectorMapper = connectorFactory.connect(cfg);

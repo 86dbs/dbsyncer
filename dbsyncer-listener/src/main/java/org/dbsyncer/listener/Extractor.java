@@ -58,11 +58,4 @@ public interface Extractor {
      */
     void interruptException(Exception e);
 
-    /**
-     * 获取堆积任务数
-     *
-     * @return
-     */
-    int getStackingSize();
-
 }

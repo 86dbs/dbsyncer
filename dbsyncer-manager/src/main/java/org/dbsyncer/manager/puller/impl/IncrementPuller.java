@@ -133,13 +133,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
     }
 
     @Override
-    public int getStackingSize() {
-        AtomicInteger counter = new AtomicInteger();
-        map.values().forEach(extractor -> counter.getAndAdd(extractor.getStackingSize()));
-        return counter.get();
-    }
-
-    @Override
     public void run() {
         // 定时同步增量信息
         map.forEach((k, v) -> v.flushEvent());

@@ -26,9 +26,9 @@ public enum ThreadPoolMetricEnum {
      */
     COMPLETED("thread.pool.completed", "线程池", "已完成"),
     /**
-     * 队列长度
+     * 空闲队列
      */
-    REMAINING_CAPACITY("thread.pool.remaining.capacity", "线程池", "队列长度");
+    REMAINING_CAPACITY("thread.pool.remaining.capacity", "线程池", "空闲队列");
 
     private String code;
     private String group;
