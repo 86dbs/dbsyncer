@@ -39,6 +39,7 @@ $(function () {
 
     // 绑定所有的菜单链接点击事件，根据不同的URL加载页面
     $("#menu li a[url]").click(function () {
+        clearInterval(timer);
         // 加载页面
         doLoader($(this).attr("url"));
     });

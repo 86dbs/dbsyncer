@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.actuate.metrics.MetricsEndpoint;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,10 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Controller
 @RequestMapping("/monitor")
@@ -46,13 +44,21 @@ public class MonitorController extends BaseController {
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
         Map<String, String> params = getParams(request);
-        model.put("metrics", get().getResultValue());
         model.put("metaId", monitorService.getDefaultMetaId(params));
         model.put("meta", monitorService.getMetaAll());
         model.put("storageDataStatus", monitorService.getStorageDataStatusEnumAll());
         model.put("pagingData", monitorService.queryData(params));
         model.put("pagingLog", monitorService.queryLog(params));
         return "monitor/monitor.html";
+    }
+
+    private final static int COUNT = 3;
+    private Deque<Double> cpu = new ArrayDeque<>(COUNT);
+    private Deque<Double> memory = new ArrayDeque<>(COUNT);
+
+    @Scheduled(fixedRate = 5000)
+    public void recordHistoryStackMertic() {
+        // TODO 统计最近记录
     }
 
     @GetMapping("/queryData")
@@ -102,41 +108,16 @@ public class MonitorController extends BaseController {
     }
 
     @ResponseBody
-    @RequestMapping("/get")
-    public RestResult get() {
-        try {
-            List<MetricResponse> list = new ArrayList<>();
-            // 系统指标
-            List<MetricEnum> metricEnumList = monitorService.getMetricEnumAll();
-            if (!CollectionUtils.isEmpty(metricEnumList)) {
-                metricEnumList.forEach(m -> {
-                    MetricsEndpoint.MetricResponse metric = metricsEndpoint.metric(m.getCode(), null);
-                    MetricResponse metricResponse = new MetricResponse();
-                    MetricEnum metricEnum = MetricEnum.getMetric(metric.getName());
-                    metricResponse.setCode(metricEnum.getCode());
-                    metricResponse.setGroup(metricEnum.getGroup());
-                    metricResponse.setMetricName(metricEnum.getMetricName());
-                    if (!CollectionUtils.isEmpty(metric.getMeasurements())) {
-                        List<Sample> measurements = new ArrayList<>();
-                        metric.getMeasurements().forEach(s -> measurements.add(new Sample(s.getStatistic().getTagValueRepresentation(), s.getValue())));
-                        metricResponse.setMeasurements(measurements);
-                    }
-                    list.add(metricResponse);
-                });
-            }
-            list.addAll(getDiskHealth());
-            return RestResult.restSuccess(monitorService.queryMetric(list));
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
-    @ResponseBody
     @RequestMapping("/queryAppReportMetric")
     public RestResult queryAppReportMetric() {
         try {
-            return RestResult.restSuccess(monitorService.queryAppReportMetric());
+            List<MetricResponse> list = new ArrayList<>();
+            List<MetricEnum> metricEnumList = monitorService.getMetricEnumAll();
+            if (!CollectionUtils.isEmpty(metricEnumList)) {
+                metricEnumList.forEach(m -> list.add(getMetricResponse(m.getCode())));
+            }
+            list.addAll(getDiskHealth());
+            return RestResult.restSuccess(monitorService.queryAppReportMetric(list));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());
@@ -164,4 +145,20 @@ public class MonitorController extends BaseController {
         return new MetricResponse(metricEnum.getCode(), metricEnum.getGroup(), metricEnum.getMetricName(),
                 Arrays.asList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), value)));
     }
+
+    private MetricResponse getMetricResponse(String code) {
+        MetricsEndpoint.MetricResponse metric = metricsEndpoint.metric(code, null);
+        MetricResponse metricResponse = new MetricResponse();
+        MetricEnum metricEnum = MetricEnum.getMetric(metric.getName());
+        metricResponse.setCode(metricEnum.getCode());
+        metricResponse.setGroup(metricEnum.getGroup());
+        metricResponse.setMetricName(metricEnum.getMetricName());
+        if (!CollectionUtils.isEmpty(metric.getMeasurements())) {
+            List<Sample> measurements = new ArrayList<>();
+            metric.getMeasurements().forEach(s -> measurements.add(new Sample(s.getStatistic().getTagValueRepresentation(), s.getValue())));
+            metricResponse.setMeasurements(measurements);
+        }
+        return metricResponse;
+    }
+
 }

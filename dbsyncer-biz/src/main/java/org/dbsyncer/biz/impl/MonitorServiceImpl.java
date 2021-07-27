@@ -130,29 +130,11 @@ public class MonitorServiceImpl implements MonitorService {
     }
 
     @Override
-    public List<MetricResponseVo> queryMetric(List<MetricResponse> metrics) {
-        // 线程池状态
-        List<MetricResponse> metricList = monitor.getThreadPoolInfo();
-        // 系统指标
-        metricList.addAll(metrics);
-
-        // 转换显示
-        return metricList.stream().map(metric -> {
-            MetricResponseVo vo = new MetricResponseVo();
-            BeanUtils.copyProperties(metric, vo);
-            MetricDetailFormatter detailFormatter = metricDetailFormatterMap.get(vo.getCode());
-            if (null != detailFormatter) {
-                detailFormatter.format(vo);
-            }
-            return vo;
-        }).collect(Collectors.toList());
-    }
-
-    @Override
-    public AppReportMetricVo queryAppReportMetric() {
+    public AppReportMetricVo queryAppReportMetric(List<MetricResponse> metrics) {
         AppReportMetric appReportMetric = monitor.getAppReportMetric();
         AppReportMetricVo vo = new AppReportMetricVo();
         BeanUtils.copyProperties(appReportMetric, vo);
+        vo.setMetrics(getMetrics(metrics));
         return vo;
     }
 
@@ -178,5 +160,23 @@ public class MonitorServiceImpl implements MonitorService {
             }
         }
         return id;
+    }
+
+    private List<MetricResponseVo> getMetrics(List<MetricResponse> metrics) {
+        // 线程池状态
+        List<MetricResponse> metricList = monitor.getThreadPoolInfo();
+        // 系统指标
+        metricList.addAll(metrics);
+
+        // 转换显示
+        return metricList.stream().map(metric -> {
+            MetricResponseVo vo = new MetricResponseVo();
+            BeanUtils.copyProperties(metric, vo);
+            MetricDetailFormatter detailFormatter = metricDetailFormatterMap.get(vo.getCode());
+            if (null != detailFormatter) {
+                detailFormatter.format(vo);
+            }
+            return vo;
+        }).collect(Collectors.toList());
     }
 }

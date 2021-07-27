@@ -256,7 +256,6 @@ function showQueueChart(queueUp, queueCapacity){
     };
     echarts.init(document.getElementById('queueChart')).setOption(option);
 }
-
 // 事件分类
 function showEventChart(ins, upd, del){
     var option = {
@@ -301,7 +300,6 @@ function showEventChart(ins, upd, del){
     $("#updateSpan").html(upd);
     $("#deleteSpan").html(del);
 }
-
 // 统计成功失败
 function showTotalChart(success, fail){
     var option = {
@@ -345,6 +343,40 @@ function showTotalChart(success, fail){
     $("#successSpan").html(success);
     $("#failSpan").html(fail);
 }
+// 指标列表
+function showMetricTable(metrics){
+    var html = '';
+    $.each(metrics, function(i) {
+        html += '<tr>';
+        html += '   <td style="width:5%;">'+ i +'</td>';
+        html += '   <td>'+ metrics[i].metricName +'</td>';
+        html += '   <td>'+ metrics[i].detail +'</td>';
+        html += '</tr>';
+    });
+    $("#metricTable").html(html);
+}
+// 显示图表信息
+function showChartTable(){
+    doGetWithoutLoading("/monitor/queryAppReportMetric",{}, function (data) {
+        if (data.success == true) {
+            var report = data.resultValue;
+            showTotalChart(report.success, report.fail);
+            showEventChart(report.insert, report.update, report.delete);
+            showQueueChart(report.queueUp, report.queueCapacity);
+            showMetricTable(report.metrics);
+        } else {
+            bootGrowl(data.resultValue, "danger");
+        }
+    });
+}
+// 创建定时器
+function createTimer(){
+    clearInterval(timer);
+    showChartTable();
+    timer = setInterval(function(){
+        showChartTable();
+    }, 5000);
+}
 
 $(function () {
     // 初始化select2插件
@@ -371,16 +403,7 @@ $(function () {
     bindClearEvent($(".clearDataBtn"), "确认清空数据？", "清空数据成功!", "/monitor/clearData");
     bindClearEvent($(".clearLogBtn"), "确认清空日志？", "清空日志成功!", "/monitor/clearLog");
 
-    doGetWithoutLoading("/monitor/queryAppReportMetric",{}, function (data) {
-        if (data.success == true) {
-            var report = data.resultValue;
-            showTotalChart(report.success, report.fail);
-            showEventChart(report.insert, report.update, report.delete);
-            showQueueChart(report.queueUp, report.queueCapacity);
-        } else {
-            bootGrowl(data.resultValue, "danger");
-        }
-    });
+    createTimer();
 
     // 绑定回车事件
     $("#searchDataKeyword").keydown(function (e) {

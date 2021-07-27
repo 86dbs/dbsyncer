@@ -2,7 +2,6 @@ package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.AppReportMetricVo;
 import org.dbsyncer.biz.vo.MetaVo;
-import org.dbsyncer.biz.vo.MetricResponseVo;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.monitor.model.MetricResponse;
@@ -78,17 +77,9 @@ public interface MonitorService {
     List<MetricEnum> getMetricEnumAll();
 
     /**
-     * 获取监控系统指标
-     *
-     * @param metrics
-     * @return
-     */
-    List<MetricResponseVo> queryMetric(List<MetricResponse> metrics);
-
-    /**
      * 获取应用报告
      *
      * @return
      */
-    AppReportMetricVo queryAppReportMetric();
+    AppReportMetricVo queryAppReportMetric(List<MetricResponse> metrics);
 }
