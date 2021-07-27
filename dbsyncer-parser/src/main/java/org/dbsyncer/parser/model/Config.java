@@ -9,7 +9,7 @@ public class Config extends ConfigModel {
 
     private String password;
 
-    private int refreshInterval = 10;
+    private int refreshInterval = 5;
 
     public String getPassword() {
         return password;

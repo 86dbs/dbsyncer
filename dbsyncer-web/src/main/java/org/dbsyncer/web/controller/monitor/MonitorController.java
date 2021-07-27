@@ -1,7 +1,9 @@
 package org.dbsyncer.web.controller.monitor;
 
+import org.dbsyncer.biz.ConfigService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.vo.AppReportMetricVo;
+import org.dbsyncer.biz.vo.ConfigVo;
 import org.dbsyncer.biz.vo.HistoryStackVo;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -41,6 +43,9 @@ public class MonitorController extends BaseController {
 
     @Autowired
     private MonitorService monitorService;
+
+    @Autowired
+    private ConfigService configService;
 
     @Autowired
     private MetricsEndpoint metricsEndpoint;
@@ -118,7 +123,7 @@ public class MonitorController extends BaseController {
     }
 
     @ResponseBody
-    @RequestMapping("/queryAppReportMetric")
+    @GetMapping("/queryAppReportMetric")
     public RestResult queryAppReportMetric() {
         try {
             List<MetricResponse> list = new ArrayList<>();
@@ -131,6 +136,18 @@ public class MonitorController extends BaseController {
             reportMetric.setCpu(cpu);
             reportMetric.setMemory(memory);
             return RestResult.restSuccess(reportMetric);
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e.getClass());
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @ResponseBody
+    @GetMapping("/getRefreshInterval")
+    public RestResult getRefreshInterval() {
+        try {
+            ConfigVo config = configService.getConfig();
+            return RestResult.restSuccess(config.getRefreshInterval());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());

@@ -423,9 +423,15 @@ function showChartTable(){
 function createTimer(){
     clearInterval(timer);
     showChartTable();
-    timer = setInterval(function(){
-        showChartTable();
-    }, 5000);
+    doGetWithoutLoading("/monitor/getRefreshInterval",{}, function (data) {
+        if (data.success == true) {
+            timer = setInterval(function(){
+                showChartTable();
+            }, data.resultValue * 1000);
+        } else {
+            bootGrowl(data.resultValue, "danger");
+        }
+    });
 }
 
 $(function () {
