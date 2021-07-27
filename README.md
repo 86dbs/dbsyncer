@@ -185,23 +185,21 @@
     <p align="center">
         <img src="https://images.gitee.com/uploads/images/2020/0519/000443_b52b4a8c_376718.png" />
     </p>
+    <p>驱动关系配置</p>
     <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2020/0602/221008_64dbb479_376718.png" />
+        <img src="https://images.gitee.com/uploads/images/2021/0728/000933_477eb06d_376718.png" />
     </p>
+    <p>驱动表关系配置</p>
     <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2020/0602/221018_20d0ef67_376718.png" />
+        <img src="https://images.gitee.com/uploads/images/2021/0727/235329_54f0fbc6_376718.png" />
     </p>
+    <p>监控</p>
     <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2020/0602/221029_c4f5d804_376718.png" />
+        <img src="https://images.gitee.com/uploads/images/2021/0728/000645_35a544b3_376718.png" />
     </p>
+    <p>上传插件</p>
     <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2021/0518/004836_3b4b9e49_376718.png" />
-    </p>
-    <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2021/0518/004947_6883e6c8_376718.png" />
-    </p>
-    <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2021/0518/005017_31e6697b_376718.png" />
+        <img src="https://images.gitee.com/uploads/images/2021/0727/235455_1ebda1f0_376718.png.png" />
     </p>
     <h3>流程图</h3>
     <p align="center">
