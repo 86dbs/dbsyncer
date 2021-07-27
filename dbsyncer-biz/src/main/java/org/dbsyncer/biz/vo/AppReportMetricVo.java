@@ -10,7 +10,7 @@ public class AppReportMetricVo extends AppReportMetric {
 
     private HistoryStackVo cpu;
 
-    private HistoryStackVo memery;
+    private HistoryStackVo memory;
 
     public List<MetricResponseVo> getMetrics() {
         return metrics;
@@ -28,11 +28,11 @@ public class AppReportMetricVo extends AppReportMetric {
         this.cpu = cpu;
     }
 
-    public HistoryStackVo getMemery() {
-        return memery;
+    public HistoryStackVo getMemory() {
+        return memory;
     }
 
-    public void setMemery(HistoryStackVo memery) {
-        this.memery = memery;
+    public void setMemory(HistoryStackVo memory) {
+        this.memory = memory;
     }
 }

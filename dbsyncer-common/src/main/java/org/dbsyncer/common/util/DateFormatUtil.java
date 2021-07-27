@@ -9,20 +9,19 @@ import java.util.Date;
 
 public abstract class DateFormatUtil {
 
-    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static ZoneId zoneId = ZoneId.systemDefault();
 
     public DateFormatUtil() {
     }
 
-    public static String getCurrentDateTime() {
-        return LocalDateTime.now().format(dateTimeFormatter);
+    public static String getCurrentTime() {
+        return LocalDateTime.now().format(timeFormatter);
     }
 
     public static String dateToString(Date date){
-        String format = date.toInstant().atZone(zoneId).toLocalDate().format(dateFormatter);
-        return format;
+        return date.toInstant().atZone(zoneId).toLocalDate().format(dateFormatter);
     }
 
     public static Date stringToDate(String s){

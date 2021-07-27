@@ -259,38 +259,34 @@ function showQueueChart(queueUp, queueCapacity){
 // 事件分类
 function showEventChart(ins, upd, del){
     var option = {
-        title : {
-            show:true,
+        title: {
             text: '事件分类',
-            x:'center',
-            y: 'top'
+            left: 'center'
         },
-        tooltip : {
-            trigger: 'item',
-            formatter: "{b} : {c}"
+        tooltip: {
+            trigger: 'item'
         },
-        series : [
+        legend: {
+            orient: 'vertical',
+            left: 'left',
+        },
+        series: [
             {
-                type:'pie',
-                color: function(params) {
-                    // build a color map as your need.
-                    var colorList = [
-                        '#60C0DD','#F0805A','#89DFAA'
-                    ];
-                    return colorList[params.dataIndex]
-                },
-                label:{
-                    normal:{
-                        show:true,
-                        position:'inner',
-                        formatter:'{d}%'
-                    }
-                },
-                data:[
+                name: '事件',
+                type: 'pie',
+                radius: '50%',
+                data: [
                     {value:upd, name:'更新'},
-                    {value:del, name:'删除'},
-                    {value:ins, name:'插入'}
-                ]
+                    {value:ins, name:'插入'},
+                    {value:del, name:'删除'}
+                ],
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
             }
         ]
     };
@@ -303,37 +299,33 @@ function showEventChart(ins, upd, del){
 // 统计成功失败
 function showTotalChart(success, fail){
     var option = {
-        title : {
-            show:true,
+        title: {
             text: '已完成数据',
-            x:'center',
-            y: 'top'
+            left: 'center'
         },
-        tooltip : {
-            trigger: 'item',
-            formatter: "{b} : {c}"
+        tooltip: {
+            trigger: 'item'
         },
-        series : [
+        legend: {
+            orient: 'vertical',
+            left: 'left',
+        },
+        series: [
             {
-                type:'pie',
-                color: function(params) {
-                    // build a color map as your need.
-                    var colorList = [
-                        '#60C0DD','#F0805A'
-                    ];
-                    return colorList[params.dataIndex]
-                },
-                label:{
-                    normal:{
-                        show:true,
-                        position:'inner',
-                        formatter:'{d}%'
-                    }
-                },
-                data:[
+                name: '已完成',
+                type: 'pie',
+                radius: '50%',
+                data: [
                     {value:success, name:'成功'},
                     {value:fail, name:'失败'}
-                ]
+                ],
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
             }
         ]
     };
@@ -343,12 +335,68 @@ function showTotalChart(success, fail){
     $("#successSpan").html(success);
     $("#failSpan").html(fail);
 }
+// CPU历史
+function showCpuChart(cpu){
+    var option = {
+        title : {
+            show:true,
+            text: 'CPU(%)',
+            x:'center',
+            y: 'bottom'
+        },
+        tooltip : {
+            trigger: 'item',
+            formatter: "{b} : {c}%"
+        },
+        xAxis: {
+            type: 'category',
+            data: cpu.name
+        },
+        yAxis: {
+            type: 'value'
+        },
+        series: [{
+            data: cpu.value,
+            type: 'line'
+        }]
+    };
+    echarts.init(document.getElementById('cpuChart')).setOption(option);
+}
+// 内存历史
+function showMemoryChart(memory){
+    var option = {
+        title : {
+            show:true,
+            text: '内存(MB)',
+            x:'center',
+            y: 'bottom'
+        },
+        tooltip : {
+            trigger: 'item',
+            formatter: "{b} : {c}MB"
+        },
+        xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: memory.name
+        },
+        yAxis: {
+            type: 'value'
+        },
+        series: [{
+            data: memory.value,
+            type: 'line',
+            areaStyle: {}
+        }]
+    };
+    echarts.init(document.getElementById('memoryChart')).setOption(option);
+}
 // 指标列表
 function showMetricTable(metrics){
     var html = '';
     $.each(metrics, function(i) {
         html += '<tr>';
-        html += '   <td style="width:5%;">'+ i +'</td>';
+        html += '   <td style="width:5%;">'+ (i + 1) +'</td>';
         html += '   <td>'+ metrics[i].metricName +'</td>';
         html += '   <td>'+ metrics[i].detail +'</td>';
         html += '</tr>';
@@ -363,6 +411,8 @@ function showChartTable(){
             showTotalChart(report.success, report.fail);
             showEventChart(report.insert, report.update, report.delete);
             showQueueChart(report.queueUp, report.queueCapacity);
+            showCpuChart(report.cpu);
+            showMemoryChart(report.memory);
             showMetricTable(report.metrics);
         } else {
             bootGrowl(data.resultValue, "danger");

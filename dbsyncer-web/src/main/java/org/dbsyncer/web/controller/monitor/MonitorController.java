@@ -1,8 +1,11 @@
 package org.dbsyncer.web.controller.monitor;
 
 import org.dbsyncer.biz.MonitorService;
+import org.dbsyncer.biz.vo.AppReportMetricVo;
+import org.dbsyncer.biz.vo.HistoryStackVo;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.monitor.enums.DiskMetricEnum;
 import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.monitor.enums.StatisticEnum;
@@ -32,6 +35,10 @@ public class MonitorController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    private final static int COUNT = 24;
+    private HistoryStackVo cpu = new HistoryStackVo();
+    private HistoryStackVo memory = new HistoryStackVo();
+
     @Autowired
     private MonitorService monitorService;
 
@@ -40,6 +47,12 @@ public class MonitorController extends BaseController {
 
     @Autowired
     private HealthEndpoint healthEndpoint;
+
+    @Autowired
+    private HistoryStackValueFormatter cpuHistoryStackValueFormatterImpl;
+
+    @Autowired
+    private HistoryStackValueFormatter memoryHistoryStackValueFormatterImpl;
 
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
@@ -52,13 +65,10 @@ public class MonitorController extends BaseController {
         return "monitor/monitor.html";
     }
 
-    private final static int COUNT = 3;
-    private Deque<Double> cpu = new ArrayDeque<>(COUNT);
-    private Deque<Double> memory = new ArrayDeque<>(COUNT);
-
     @Scheduled(fixedRate = 5000)
-    public void recordHistoryStackMertic() {
-        // TODO 统计最近记录
+    public void recordHistoryStackMetric() {
+        recordHistoryStackMetric(MetricEnum.CPU_USAGE, cpu, cpuHistoryStackValueFormatterImpl);
+        recordHistoryStackMetric(MetricEnum.MEMORY_USED, memory, memoryHistoryStackValueFormatterImpl);
     }
 
     @GetMapping("/queryData")
@@ -117,7 +127,10 @@ public class MonitorController extends BaseController {
                 metricEnumList.forEach(m -> list.add(getMetricResponse(m.getCode())));
             }
             list.addAll(getDiskHealth());
-            return RestResult.restSuccess(monitorService.queryAppReportMetric(list));
+            AppReportMetricVo reportMetric = monitorService.queryAppReportMetric(list);
+            reportMetric.setCpu(cpu);
+            reportMetric.setMemory(memory);
+            return RestResult.restSuccess(reportMetric);
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());
@@ -159,6 +172,22 @@ public class MonitorController extends BaseController {
             metricResponse.setMeasurements(measurements);
         }
         return metricResponse;
+    }
+
+    private void recordHistoryStackMetric(MetricEnum metricEnum, HistoryStackVo stackVo, HistoryStackValueFormatter formatter) {
+        MetricResponse metricResponse = getMetricResponse(metricEnum.getCode());
+        List<Sample> measurements = metricResponse.getMeasurements();
+        if (!CollectionUtils.isEmpty(measurements)) {
+            addHistoryStack(stackVo.getValue(), formatter.formatValue(measurements.get(0).getValue()));
+            addHistoryStack(stackVo.getName(), DateFormatUtil.getCurrentTime());
+        }
+    }
+
+    private void addHistoryStack(List<Object> stack, Object value) {
+        if (stack.size() >= COUNT) {
+            stack.remove(0);
+        }
+        stack.add(value);
     }
 
 }
