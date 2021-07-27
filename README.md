@@ -199,7 +199,7 @@
     </p>
     <p>上传插件</p>
     <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2021/0727/235455_1ebda1f0_376718.png.png" />
+        <img src="https://images.gitee.com/uploads/images/2021/0727/235455_1ebda1f0_376718.png" />
     </p>
     <h3>流程图</h3>
     <p align="center">
