@@ -55,11 +55,8 @@ $.fn.serializeJson = function () {
 
 // 全局加载页面
 function doLoader(url){
-    $.loadingT(true);
     // 加载页面
-    $initContainer.load($basePath + url, function() {
-        $.loadingT(false);
-    });
+    $initContainer.load($basePath + url);
 }
 
 // 全局Ajax post
