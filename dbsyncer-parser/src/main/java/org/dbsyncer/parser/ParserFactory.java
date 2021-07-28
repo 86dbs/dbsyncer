@@ -19,6 +19,7 @@ import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.flush.FlushService;
+import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -80,7 +81,13 @@ public class ParserFactory implements Parser {
 
     @Override
     public boolean isAliveConnectorConfig(ConnectorConfig config) {
-        return connectorFactory.isAlive(config);
+        try {
+            return connectorFactory.isAlive(config);
+        } catch (Exception e) {
+            LogType.ConnectorLog logType = LogType.ConnectorLog.FAILED;
+            flushService.asyncWrite(logType.getType(), String.format("%s%s", logType.getName(), e.getMessage()));
+        }
+        return false;
     }
 
     @Override
