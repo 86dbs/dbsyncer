@@ -24,10 +24,10 @@
             <tr>
                 <td>Mysql</td>
                 <td>Oracle</td>
-                <td>SQLServer</td>
+                <td>SqlServer</td>
                 <td>Mysql</td>
                 <td>Oracle</td>
-                <td>SQLServer</td>
+                <td>SqlServer</td>
             </tr>
             <tr>
                 <td rowspan="6">数据源</td>
@@ -49,7 +49,7 @@
                 <td>√</td>
             </tr>
             <tr>
-                <td>SQLServer</td>
+                <td>SqlServer</td>
                 <td>√</td>
                 <td>√</td>
                 <td>√</td>
@@ -76,7 +76,7 @@
                 <td>√</td>
             </tr>
             <tr>
-                <td>DQLSQLServer</td>
+                <td>DQLSqlServer</td>
                 <td>√</td>
                 <td>√</td>
                 <td>√</td>
@@ -94,7 +94,7 @@
                 <td colspan="7">10g以上（Oracle-9i未测试）</td>
             </tr>
             <tr>
-                <td>SQLServer</td>
+                <td>SqlServer</td>
                 <td colspan="7">2008以上</td>
             </tr>
             <tr>
@@ -127,10 +127,10 @@
             </tr>
             <tr>
                 <td>
-                    <p>Mysql</p>
-                    <p>开启Binlog功能，my.ini配置:</p>
+                    <h5>Mysql</h5>
                 </td>
                 <td>
+                    <p>修改my.ini文件配置:</p>
                     <p># 服务唯一ID</p>
                     <p>server_id=1</p>
                     <p>log-bin=mysql_bin</p>
@@ -145,10 +145,10 @@
             </tr>
             <tr>
                 <td>
-                    <p>Oracle</p>
-                    <p>授予账号监听权限:</p>
+                    <h5>Oracle</h5>
                 </td>
                 <td>
+                    <p>授予账号监听权限:</p>
                     <p>grant change notification to AE86</p>
                     <p>要求目标源表必须定义一个长度为18的varchar字段，用于接收rowid值，来实现增删改操作</p>
                 </td>
@@ -156,10 +156,10 @@
             </tr>
             <tr>
                 <td>
-                    <p>SQLServer</p>
-                    <p>开启CDC:</p>
+                    <h5>SqlServer</h5>
                 </td>
                 <td>
+                    <p>开启CDC:</p>
                     <p>要求2008版本以上, 启动代理服务（Agent服务）, 连接账号具有 sysadmin 固定服务器角色或 db_owner 固定数据库角色的成员身份。对于所有其他用户，具有源表SELECT 权限；如果已定义捕获实例的访问控制角色，则还要求具有该数据库角色的成员身份。</p>
                 </td>
                 <td>SQL Server 2008提供了内建的方法变更数据捕获（Change Data Capture 即CDC）以实现异步跟踪用户表的数据修改</td>
