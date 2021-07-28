@@ -257,17 +257,17 @@ public class SqlServerExtractor extends AbstractExtractor {
         for (CDCEvent event : list) {
             int code = event.getCode();
             if (TableOperationEnum.isUpdateAfter(code)) {
-                changedLogEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, event.getRow()));
+                changedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, event.getRow()));
                 continue;
             }
 
             if (TableOperationEnum.isInsert(code)) {
-                changedLogEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, event.getRow()));
+                changedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, event.getRow()));
                 continue;
             }
 
             if (TableOperationEnum.isDelete(code)) {
-                changedLogEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), Collections.EMPTY_LIST));
+                changedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), Collections.EMPTY_LIST));
             }
         }
     }

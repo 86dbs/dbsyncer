@@ -211,176 +211,227 @@ function showLog($logList, arr, append){
     return html;
 }
 
-// 查看系统指标
-function showSystemInfo(){
-    doGetWithoutLoading("/app/health",{}, function (data) {
-        var details = data.details;
-        var html = showPoint("硬盘", details.diskSpace);
-
-        doGetWithoutLoading("/app/metrics/jvm.threads.live",{}, function (data) {
-            html += showSystemItem("线程活跃", data.measurements[0].value);
-            doGetWithoutLoading("/app/metrics/jvm.threads.peak",{}, function (data) {
-                html += showSystemItem("线程峰值", data.measurements[0].value);
-                doGetWithoutLoading("/app/metrics/jvm.gc.pause",{}, function (data) {
-                    var count =  data.measurements[0].value;
-                    var time =  data.measurements[1].value;
-                    time = time.toFixed(2);
-                    var text = count+"次";
-                    text += "，耗时:"+time + "秒";
-                    html += showSystemItem("GC", text);
-                    $("#systemList").html(html);
-                });
-            });
-        });
-    });
-
+// 堆积数据
+function showQueueChart(queueUp, queueCapacity){
+    var option={
+        title:{
+            text:"堆积数据",
+            x:'center',
+            y: 'top'
+        },
+        tooltip : {
+            formatter: "{a}: {c}",
+            position: 'top'
+        },
+        series: [
+            {
+                name: "待处理",
+                animation: true,
+                type: 'gauge',
+                min: 0,
+                max: queueCapacity,
+                splitNumber: 5,
+                axisLine: {            // 坐标轴线
+                    lineStyle: {       // 属性lineStyle控制线条样式
+                        color: [[0.1, '#5cb85c'], [0.3, '#5bc0de'],[0.8, '#f0ad4e'],[1, '#d9534f']],
+                        width: 10
+                    }
+                },
+                axisTick: {            // 坐标轴小标记
+                    length: 15,        // 属性length控制线长
+                    lineStyle: {       // 属性lineStyle控制线条样式
+                        color: 'auto'
+                    }
+                },
+                splitLine: {           // 分隔线
+                    length: 20,         // 属性length控制线长
+                    lineStyle: {       // 属性lineStyle（详见lineStyle）控制线条样式
+                        color: 'auto'
+                    }
+                },
+                detail: {fontSize:12, offsetCenter:[0,'65%']},
+                data: [{value: queueUp, name: ''}]
+            }
+        ]
+    };
+    echarts.init(document.getElementById('queueChart')).setOption(option);
 }
-
-// CPU
-function showCpu(){
-    doGetWithoutLoading("/app/metrics/system.cpu.usage",{}, function (data) {
-        var value = data.measurements[0].value * 100;
-        value = value.toFixed(2);
-        var option={
-            title:{
-                text:"CPU",
-                x:'center',
-                y: 'top'
-            },
-            tooltip : {
-                formatter: "{a}: {c}%",
-                position: 'top'
-            },
-            series: [
-                {
-                    name: "已用",
-                    animation: true,
-                    type: 'gauge',
-                    min: 0,
-                    max: 100,
-                    splitNumber: 4,
-                    axisLine: {            // 坐标轴线
-                        lineStyle: {       // 属性lineStyle控制线条样式
-                            color: [[0.1, '#d9534f'], [0.3, '#f0ad4e'],[0.8, '#5bc0de'],[1, '#5cb85c']],
-                            width: 10
-                        }
-                    },
-                    axisTick: {            // 坐标轴小标记
-                        length: 15,        // 属性length控制线长
-                        lineStyle: {       // 属性lineStyle控制线条样式
-                            color: 'auto'
-                        }
-                    },
-                    splitLine: {           // 分隔线
-                        length: 20,         // 属性length控制线长
-                        lineStyle: {       // 属性lineStyle（详见lineStyle）控制线条样式
-                            color: 'auto'
-                        }
-                    },
-                    detail: {formatter:'{value}%', fontSize:12, offsetCenter:[0,'65%']},
-                    data: [{value: value, name: ''}]
+// 事件分类
+function showEventChart(ins, upd, del){
+    var option = {
+        title: {
+            text: '事件分类',
+            left: 'center'
+        },
+        tooltip: {
+            trigger: 'item'
+        },
+        legend: {
+            orient: 'vertical',
+            left: 'left',
+        },
+        series: [
+            {
+                name: '事件',
+                type: 'pie',
+                radius: '50%',
+                data: [
+                    {value:upd, name:'更新'},
+                    {value:ins, name:'插入'},
+                    {value:del, name:'删除'}
+                ],
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
                 }
-            ]
-        };
-        echarts.init(document.getElementById('cpuChart')).setOption(option);
+            }
+        ]
+    };
+    echarts.init(document.getElementById('eventChart')).setOption(option);
 
+    $("#insertSpan").html(ins);
+    $("#updateSpan").html(upd);
+    $("#deleteSpan").html(del);
+}
+// 统计成功失败
+function showTotalChart(success, fail){
+    var option = {
+        title: {
+            text: '已完成数据',
+            left: 'center'
+        },
+        tooltip: {
+            trigger: 'item'
+        },
+        legend: {
+            orient: 'vertical',
+            left: 'left',
+        },
+        series: [
+            {
+                name: '已完成',
+                type: 'pie',
+                radius: '50%',
+                data: [
+                    {value:success, name:'成功'},
+                    {value:fail, name:'失败'}
+                ],
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }
+        ]
+    };
+    echarts.init(document.getElementById('totalChart')).setOption(option);
+
+    $("#totalSpan").html(success + fail);
+    $("#successSpan").html(success);
+    $("#failSpan").html(fail);
+}
+// CPU历史
+function showCpuChart(cpu){
+    var option = {
+        title : {
+            show:true,
+            text: 'CPU(%)',
+            x:'center',
+            y: 'bottom'
+        },
+        tooltip : {
+            trigger: 'item',
+            formatter: "{b} : {c}%"
+        },
+        xAxis: {
+            type: 'category',
+            data: cpu.name
+        },
+        yAxis: {
+            type: 'value'
+        },
+        series: [{
+            data: cpu.value,
+            type: 'line'
+        }]
+    };
+    echarts.init(document.getElementById('cpuChart')).setOption(option);
+}
+// 内存历史
+function showMemoryChart(memory){
+    var option = {
+        title : {
+            show:true,
+            text: '内存(MB)',
+            x:'center',
+            y: 'bottom'
+        },
+        tooltip : {
+            trigger: 'item',
+            formatter: "{b} : {c}MB"
+        },
+        xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: memory.name
+        },
+        yAxis: {
+            type: 'value'
+        },
+        series: [{
+            data: memory.value,
+            type: 'line',
+            areaStyle: {}
+        }]
+    };
+    echarts.init(document.getElementById('memoryChart')).setOption(option);
+}
+// 指标列表
+function showMetricTable(metrics){
+    var html = '';
+    $.each(metrics, function(i) {
+        html += '<tr>';
+        html += '   <td style="width:5%;">'+ (i + 1) +'</td>';
+        html += '   <td>'+ metrics[i].metricName +'</td>';
+        html += '   <td>'+ metrics[i].detail +'</td>';
+        html += '</tr>';
+    });
+    $("#metricTable").html(html);
+}
+// 显示图表信息
+function showChartTable(){
+    doGetWithoutLoading("/monitor/queryAppReportMetric",{}, function (data) {
+        if (data.success == true) {
+            var report = data.resultValue;
+            showTotalChart(report.success, report.fail);
+            showEventChart(report.insert, report.update, report.delete);
+            showQueueChart(report.queueUp, report.queueCapacity);
+            showCpuChart(report.cpu);
+            showMemoryChart(report.memory);
+            showMetricTable(report.metrics);
+        } else {
+            bootGrowl(data.resultValue, "danger");
+        }
     });
 }
-
-// 内存
-function showMem(){
-    doGetWithoutLoading("/app/metrics/jvm.memory.max",{}, function (data) {
-        var max = data.measurements[0].value;
-        max = (max / 1024 / 1024 / 1024).toFixed(2);
-        doGetWithoutLoading("/app/metrics/jvm.memory.used",{}, function (data) {
-            var used = data.measurements[0].value;
-            used = (used / 1024 / 1024 / 1024).toFixed(2);
-            doGetWithoutLoading("/app/metrics/jvm.memory.committed",{}, function (data) {
-                var committed = data.measurements[0].value;
-                committed = (committed / 1024 / 1024 / 1024).toFixed(2);
-
-                var option = {
-                    title : {
-                        show:true,
-                        text: '内存'+ max +'GB',
-                        x:'center',
-                        y: 'top'
-                    },
-                    tooltip : {
-                        trigger: 'item',
-                        formatter: "{b} : {c} GB"
-                    },
-                    series : [
-                        {
-                            name:'内存',
-                            type:'pie',
-                            color: function(params) {
-                                // build a color map as your need.
-                                var colorList = [
-                                    '#60C0DD','#F0805A','#89DFAA'
-                                ];
-                                return colorList[params.dataIndex]
-                            },
-                            label:{
-                                normal:{
-                                    show:true,
-                                    position:'inner',
-                                    formatter:'{d}%'
-                                }
-                            },
-                            data:[
-                                {value:max,name:'总共'},
-                                {value:used,name:'已用'},
-                                {value:committed,name:'空闲'}
-                            ]
-                        }
-                    ]
-                };
-                echarts.init(document.getElementById('memChart')).setOption(option);
-
-            });
-        });
+// 创建定时器
+function createTimer(){
+    clearInterval(timer);
+    showChartTable();
+    doGetWithoutLoading("/monitor/getRefreshInterval",{}, function (data) {
+        if (data.success == true) {
+            timer = setInterval(function(){
+                showChartTable();
+            }, data.resultValue * 1000);
+        } else {
+            bootGrowl(data.resultValue, "danger");
+        }
     });
-
-}
-
-function showPoint(title, point){
-    var status = point.status;
-    var d = point.details;
-    var total = (d.total / 1024 / 1024 / 1024).toFixed(2);
-    var threshold = (d.threshold / 1024 / 1024 / 1024).toFixed(2);
-    var free = (d.free / 1024 / 1024 / 1024).toFixed(2);
-
-    // UP/DOWN success/danger
-    var statusColor = status == 'UP' ? 'success' : 'danger';
-
-    // more than 63%/78% waring/danger
-    var precent = (threshold / total).toFixed(2);
-    var barColor = precent >= 63 ? 'waring' : 'success';
-    barColor = precent >= 78 ? 'danger' : barColor;
-
-    var html = "";
-    html += "<tr>";
-    html += "   <td>" + title + "</td>";
-    html += "   <td><span class='label label-" + statusColor + "'>" + status + "</span></td>";
-    html += "   <td>";
-    html += "       <div class='progress' title='总共" + total + "GB,已用" + threshold + "GB,空闲" + free + "GB'>";
-    html += "           <div class='progress-bar progress-bar-" + barColor + " progress-bar-striped active' style='width: " + precent + "%'>" + threshold + "GB</div>";
-    html += "           <div class='progress-bar' style='width: " + (100 - precent) + "%'>" + free + "GB</div>";
-    html += "       </div>";
-    html += "   </td>";
-    html += "</tr>";
-    return html;
-}
-
-function showSystemItem(title, value){
-    var html = "";
-    html += "<tr>";
-    html += "   <td>" + title + "</td>";
-    html += "   <td><span class='label label-success'>UP</span></td>";
-    html += "   <td>"+value+"</td>";
-    html += "</tr>";
-    return html;
 }
 
 $(function () {
@@ -390,10 +441,9 @@ $(function () {
         theme: "classic"
     });
 
-    // 连接器类型切换事件
+    // 连接类型切换事件
     $("#searchMetaData").change(function () {
-        var $id = $(this).val();
-        doLoader('/monitor?id=' + $id);
+        $("#queryDataBtn").click();
     });
     // 数据状态切换事件
     $("#searchDataSuccess").change(function () {
@@ -409,9 +459,7 @@ $(function () {
     bindClearEvent($(".clearDataBtn"), "确认清空数据？", "清空数据成功!", "/monitor/clearData");
     bindClearEvent($(".clearLogBtn"), "确认清空日志？", "清空日志成功!", "/monitor/clearLog");
 
-    showCpu();
-    showMem();
-    showSystemInfo();
+    createTimer();
 
     // 绑定回车事件
     $("#searchDataKeyword").keydown(function (e) {

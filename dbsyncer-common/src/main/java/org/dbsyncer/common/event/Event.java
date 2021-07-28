@@ -10,22 +10,11 @@ import java.util.Map;
 public interface Event {
 
     /**
-     * 日志数据变更事件
+     * 数据变更事件
      *
-     * @param rowChangedEvent
+     * @param event
      */
-    default void changedLogEvent(RowChangedEvent rowChangedEvent) {
-        // nothing to do
-    }
-
-    /**
-     * 定时数据变更事件
-     *
-     * @param rowChangedEvent
-     */
-    default void changedQuartzEvent(RowChangedEvent rowChangedEvent){
-        // nothing to do
-    }
+    void changedEvent(RowChangedEvent event);
 
     /**
      * 写入增量点事件

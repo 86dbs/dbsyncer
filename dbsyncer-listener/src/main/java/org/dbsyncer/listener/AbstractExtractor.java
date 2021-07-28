@@ -13,10 +13,8 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * @version 1.0.0
@@ -26,7 +24,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 public abstract class AbstractExtractor implements Extractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    protected BlockingQueue queue = new LinkedBlockingQueue<>(100);
     protected Executor taskExecutor;
     protected ConnectorFactory connectorFactory;
     protected ScheduledTaskService scheduledTaskService;
@@ -55,16 +52,9 @@ public abstract class AbstractExtractor implements Extractor {
     }
 
     @Override
-    public void changedQuartzEvent(RowChangedEvent rowChangedEvent) {
+    public void changedEvent(RowChangedEvent event) {
         if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.changedQuartzEvent(rowChangedEvent));
-        }
-    }
-
-    @Override
-    public void changedLogEvent(RowChangedEvent rowChangedEvent) {
-        if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.changedLogEvent(rowChangedEvent));
+            watcher.forEach(w -> w.changedEvent(event));
         }
     }
 
@@ -97,8 +87,8 @@ public abstract class AbstractExtractor implements Extractor {
         }
     }
 
-    protected void asynSendRowChangedEvent(RowChangedEvent rowChangedEvent) {
-        taskExecutor.execute(() -> changedLogEvent(rowChangedEvent));
+    protected void asynSendRowChangedEvent(RowChangedEvent event) {
+        taskExecutor.execute(() -> changedEvent(event));
     }
 
     public void setTaskExecutor(Executor taskExecutor) {

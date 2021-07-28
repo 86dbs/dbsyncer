@@ -1,7 +1,7 @@
 function submit(data) {
     doPoster("/connector/add", data, function (data) {
         if (data.success == true) {
-            bootGrowl("新增连接器成功!", "success");
+            bootGrowl("新增连接成功!", "success");
             backIndexPage();
         } else {
             bootGrowl(data.resultValue, "danger");
@@ -17,11 +17,11 @@ var check = function () {
     }
 };
 
-//切换连接器
+//切换连接
 function changeConnectorType($this) {
-    //连接器类型
+    //连接类型
     var connType = $this.val();
-    //获取连接器配置元素
+    //获取连接配置元素
     var connectorConfig = $this.parent().parent().parent().find(".connectorConfig");
     //清空配置
     connectorConfig.html("");
@@ -39,10 +39,10 @@ $(function () {
         width: "100%",
         theme: "classic"
     });
-    // 默认渲染连接器页面
+    // 默认渲染连接页面
     changeConnectorType($connectorTypeSelect);
 
-    //连接器类型切换事件
+    //连接类型切换事件
     $("select[name='connectorType']").change(function () {
         changeConnectorType($(this));
     });

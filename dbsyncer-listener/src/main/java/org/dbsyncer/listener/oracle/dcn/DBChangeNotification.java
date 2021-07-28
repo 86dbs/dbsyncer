@@ -48,23 +48,15 @@ public class DBChangeNotification {
     private OracleStatement            statement;
     private DatabaseChangeRegistration dcr;
     private Map<Integer, String>       tables;
-    private BlockingQueue<DCNEvent>    queue;
     private Worker                     worker;
     private Set<String>                filterTable;
     private List<RowEventListener>     listeners = new ArrayList<>();
+    private BlockingQueue<DCNEvent>    queue = new LinkedBlockingQueue<> (100);
 
     public DBChangeNotification(String username, String password, String url) {
         this.username = username;
         this.password = password;
         this.url = url;
-        this.queue = new LinkedBlockingQueue<> (100);
-    }
-
-    public DBChangeNotification(String username, String password, String url, BlockingQueue queue) {
-        this.username = username;
-        this.password = password;
-        this.url = url;
-        this.queue = queue;
     }
 
     public void addRowEventListener(RowEventListener rowEventListener) {

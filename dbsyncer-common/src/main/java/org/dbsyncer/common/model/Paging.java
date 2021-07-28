@@ -5,9 +5,9 @@ import java.util.Collections;
 
 public class Paging {
 
-    private long          total;
-    private int           pageNum;
-    private int           pageSize;
+    private long total;
+    private int pageNum;
+    private int pageSize;
     private Collection data;
 
     public Paging(int pageNum, int pageSize) {

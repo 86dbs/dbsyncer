@@ -1,7 +1,10 @@
 package org.dbsyncer.biz;
 
+import org.dbsyncer.biz.vo.AppReportMetricVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.monitor.enums.MetricEnum;
+import org.dbsyncer.monitor.model.MetricResponse;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
 import java.util.List;
@@ -13,13 +16,6 @@ import java.util.Map;
  * @date 2020/1/14 0:02
  */
 public interface MonitorService {
-
-    /**
-     * 获取线程信息
-     *
-     * @return
-     */
-    Map getThreadInfo();
 
     /**
      * 获取驱动元信息列表
@@ -72,4 +68,18 @@ public interface MonitorService {
      * @return
      */
     List<StorageDataStatusEnum> getStorageDataStatusEnumAll();
+
+    /**
+     * 获取监控系统指标
+     *
+     * @return
+     */
+    List<MetricEnum> getMetricEnumAll();
+
+    /**
+     * 获取应用报告
+     *
+     * @return
+     */
+    AppReportMetricVo queryAppReportMetric(List<MetricResponse> metrics);
 }

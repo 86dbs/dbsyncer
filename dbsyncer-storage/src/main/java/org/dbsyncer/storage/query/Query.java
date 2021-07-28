@@ -37,15 +37,15 @@ public class Query {
         this.params = new ArrayList<>();
     }
 
-    public void put(String key, String value) {
-        put(key, value, false, false);
+    public void addFilter(String key, String value) {
+        addFilter(key, value, false, false);
     }
 
-    public void put(String key, String value, boolean highlighter) {
-        put(key, value, highlighter, false);
+    public void addFilter(String key, String value, boolean highlighter) {
+        addFilter(key, value, highlighter, false);
     }
 
-    public void put(String key, String value, boolean highlighter, boolean number) {
+    public void addFilter(String key, String value, boolean highlighter, boolean number) {
         params.add(new Param(key, value, highlighter, number));
         if (highlighter) {
             enableHighLightSearch = highlighter;

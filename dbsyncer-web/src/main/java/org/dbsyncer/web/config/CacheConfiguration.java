@@ -35,16 +35,13 @@ public class CacheConfiguration {
 
     @Bean
     public KeyGenerator cacheKeyGenerator() {
-        return new KeyGenerator() {
-            @Override
-            public Object generate(Object target, Method method, Object... params) {
-                String className = method.getDeclaringClass().getSimpleName();
-                String methodName = method.getName();
-                String paramHash = String.valueOf(Arrays.toString(params).hashCode());
-                String cacheKey = new StringJoiner("_").add(className).add(methodName).add(paramHash).toString();
-                logger.debug("generate cache key : {}", cacheKey);
-                return cacheKey;
-            }
+        return (target, method, params) -> {
+            String className = method.getDeclaringClass().getSimpleName();
+            String methodName = method.getName();
+            String paramHash = String.valueOf(Arrays.toString(params).hashCode());
+            String cacheKey = new StringJoiner("_").add(className).add(methodName).add(paramHash).toString();
+            logger.debug("generate cache key : {}", cacheKey);
+            return cacheKey;
         };
     }
 

@@ -68,6 +68,6 @@
     ]
   },
   "metaId":"1",
-  "batchNum": 200,
-  "threadNum": 5
+  "readNum": 10000,
+  "batchNum": 200
 }

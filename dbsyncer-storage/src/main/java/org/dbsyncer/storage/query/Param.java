@@ -11,11 +11,6 @@ public class Param {
     private boolean highlighter;
     private boolean number;
 
-    public Param(String key, String value) {
-        this.key = key;
-        this.value = value;
-    }
-
     public Param(String key, String value, boolean highlighter, boolean number) {
         this.key = key;
         this.value = value;

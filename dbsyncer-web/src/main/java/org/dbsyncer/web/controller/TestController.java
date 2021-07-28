@@ -46,9 +46,10 @@ public class TestController implements InitializingBean {
 
     @ResponseBody
     @RequestMapping("/demo")
-    public void demo(ModelMap modelMap, Long id, String version) {
+    public String demo(ModelMap modelMap, Long id, String version) {
         logger.info("id:{},version:{}", id, version);
         modelMap.put("data", RandomUtils.nextInt(100));
+        return id + version;
     }
 
     @ResponseBody
@@ -78,7 +79,7 @@ public class TestController implements InitializingBean {
             Object invoke = invocableMethod.invokeForRequest(webRequest, mavContainer, providedArgs.toArray());
             return invoke;
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e.getMessage());
         }
         return null;
     }

@@ -1,6 +1,6 @@
 <div>
     <h3>介绍</h3>
-    <p>DBSyncer是一款开源的数据同步软件，提供Mysql、Oracle、SqlServer、SQL结果集等场景，支持自定义同步转换业务。</p>
+    <p>DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServer、SQL结果集等同步场景。支持上传插件自定义同步转换业务，提供监控全量和增量数据统计图、应用性能预警等。</p>
     <p>特点</p>
     <ol>
         <li>组合驱动，自定义库同步到库组合，关系型数据库与非关系型之间组合，任意搭配表同步映射关系</li>
@@ -24,10 +24,10 @@
             <tr>
                 <td>Mysql</td>
                 <td>Oracle</td>
-                <td>SQLServer</td>
+                <td>SqlServer</td>
                 <td>Mysql</td>
                 <td>Oracle</td>
-                <td>SQLServer</td>
+                <td>SqlServer</td>
             </tr>
             <tr>
                 <td rowspan="6">数据源</td>
@@ -49,7 +49,7 @@
                 <td>√</td>
             </tr>
             <tr>
-                <td>SQLServer</td>
+                <td>SqlServer</td>
                 <td>√</td>
                 <td>√</td>
                 <td>√</td>
@@ -76,7 +76,7 @@
                 <td>√</td>
             </tr>
             <tr>
-                <td>DQLSQLServer</td>
+                <td>DQLSqlServer</td>
                 <td>√</td>
                 <td>√</td>
                 <td>√</td>
@@ -94,7 +94,7 @@
                 <td colspan="7">10g以上（Oracle-9i未测试）</td>
             </tr>
             <tr>
-                <td>SQLServer</td>
+                <td>SqlServer</td>
                 <td colspan="7">2008以上</td>
             </tr>
             <tr>
@@ -127,10 +127,10 @@
             </tr>
             <tr>
                 <td>
-                    <p>Mysql</p>
-                    <p>开启Binlog功能，my.ini配置:</p>
+                    <h5>Mysql</h5>
                 </td>
                 <td>
+                    <p>修改my.ini文件配置:</p>
                     <p># 服务唯一ID</p>
                     <p>server_id=1</p>
                     <p>log-bin=mysql_bin</p>
@@ -145,10 +145,10 @@
             </tr>
             <tr>
                 <td>
-                    <p>Oracle</p>
-                    <p>授予账号监听权限:</p>
+                    <h5>Oracle</h5>
                 </td>
                 <td>
+                    <p>授予账号监听权限:</p>
                     <p>grant change notification to AE86</p>
                     <p>要求目标源表必须定义一个长度为18的varchar字段，用于接收rowid值，来实现增删改操作</p>
                 </td>
@@ -156,10 +156,10 @@
             </tr>
             <tr>
                 <td>
-                    <p>SQLServer</p>
-                    <p>开启CDC:</p>
+                    <h5>SqlServer</h5>
                 </td>
                 <td>
+                    <p>开启CDC:</p>
                     <p>要求2008版本以上, 启动代理服务（Agent服务）, 连接账号具有 sysadmin 固定服务器角色或 db_owner 固定数据库角色的成员身份。对于所有其他用户，具有源表SELECT 权限；如果已定义捕获实例的访问控制角色，则还要求具有该数据库角色的成员身份。</p>
                 </td>
                 <td>SQL Server 2008提供了内建的方法变更数据捕获（Change Data Capture 即CDC）以实现异步跟踪用户表的数据修改</td>
@@ -185,23 +185,21 @@
     <p align="center">
         <img src="https://images.gitee.com/uploads/images/2020/0519/000443_b52b4a8c_376718.png" />
     </p>
+    <p>驱动关系配置</p>
     <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2020/0602/221008_64dbb479_376718.png" />
+        <img src="https://images.gitee.com/uploads/images/2021/0728/000933_477eb06d_376718.png" />
     </p>
+    <p>驱动表关系配置</p>
     <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2020/0602/221018_20d0ef67_376718.png" />
+        <img src="https://images.gitee.com/uploads/images/2021/0727/235329_54f0fbc6_376718.png" />
     </p>
+    <p>监控</p>
     <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2020/0602/221029_c4f5d804_376718.png" />
+        <img src="https://images.gitee.com/uploads/images/2021/0728/000645_35a544b3_376718.png" />
     </p>
+    <p>上传插件</p>
     <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2021/0518/004836_3b4b9e49_376718.png" />
-    </p>
-    <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2021/0518/004947_6883e6c8_376718.png" />
-    </p>
-    <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2021/0518/005017_31e6697b_376718.png" />
+        <img src="https://images.gitee.com/uploads/images/2021/0727/235455_1ebda1f0_376718.png" />
     </p>
     <h3>流程图</h3>
     <p align="center">

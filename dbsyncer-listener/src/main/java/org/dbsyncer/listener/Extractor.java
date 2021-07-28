@@ -28,18 +28,11 @@ public interface Extractor {
     void clearAllListener();
 
     /**
-     * 定时模式: 监听增量事件
+     * 数据变更事件
      *
-     * @param rowChangedEvent
+     * @param event
      */
-    void changedQuartzEvent(RowChangedEvent rowChangedEvent);
-
-    /**
-     * 日志模式: 监听增量事件
-     *
-     * @param rowChangedEvent
-     */
-    void changedLogEvent(RowChangedEvent rowChangedEvent);
+    void changedEvent(RowChangedEvent event);
 
     /**
      * 刷新增量点事件

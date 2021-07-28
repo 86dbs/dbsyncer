@@ -3,7 +3,7 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <!-- 针对DQL的连接器配置 -->
+    <!-- 针对DQL的连接配置 -->
     <div class="form-group" th:if="${#strings.startsWith(mapping?.sourceConnector?.config?.connectorType,'Dql')}">
         <div class="row">
             <div class="col-md-4">
