@@ -100,7 +100,7 @@ public class DBChangeNotification {
                 try {
                     statement.executeQuery(sql);
                 } catch (SQLException e) {
-                    logger.warn("配置监听表异常:{}, {}", sql, e.getMessage());
+                    logger.debug("配置监听表异常:{}, {}", sql, e.getMessage());
                 }
             }
         } catch (SQLException ex) {
