@@ -38,6 +38,11 @@ public class PluginServiceImpl implements PluginService {
     }
 
     @Override
+    public String getLibraryPath() {
+        return manager.getLibraryPath();
+    }
+
+    @Override
     public void loadPlugins() {
         manager.loadPlugins();
         logService.log(LogType.PluginLog.UPDATE);

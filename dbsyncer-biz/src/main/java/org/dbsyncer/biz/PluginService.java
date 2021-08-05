@@ -26,6 +26,13 @@ public interface PluginService {
     String getPluginPath();
 
     /**
+     * 获取开发包路径
+     *
+     * @return
+     */
+    String getLibraryPath();
+
+    /**
      * 加载插件
      */
     void loadPlugins();

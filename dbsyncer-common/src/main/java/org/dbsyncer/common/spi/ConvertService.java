@@ -24,7 +24,7 @@ public interface ConvertService {
     /**
      * 增量同步
      *
-     * @param event  事件（新增INSERT/修改UPDATE/删除DELETE）
+     * @param event  事件（INSERT/UPDATE/DELETE）
      * @param source 数据源
      * @param target 目标源
      */

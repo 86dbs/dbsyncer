@@ -32,6 +32,12 @@ public class PluginFactory {
     private final String PLUGIN_PATH = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar).append("plugins")
             .append(File.separatorChar).toString();
 
+    /**
+     * 依赖路径dbsyncer/lib/
+     */
+    private final String LIBRARY_PATH = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar).append("lib")
+            .append(File.separatorChar).toString();
+
     private final List<Plugin> plugins = new LinkedList<>();
 
     private final Map<String, ConvertService> service = new ConcurrentHashMap<>();
@@ -53,6 +59,10 @@ public class PluginFactory {
 
     public String getPluginPath() {
         return PLUGIN_PATH;
+    }
+
+    public String getLibraryPath() {
+        return LIBRARY_PATH;
     }
 
     public List<Plugin> getPluginAll() {

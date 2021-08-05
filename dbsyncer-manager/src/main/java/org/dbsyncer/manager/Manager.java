@@ -128,5 +128,7 @@ public interface Manager extends Executor {
 
     String getPluginPath();
 
+    String getLibraryPath();
+
     void loadPlugins();
 }
