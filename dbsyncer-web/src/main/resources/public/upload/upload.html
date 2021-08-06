@@ -27,6 +27,8 @@
                         <simple>新建一个类，比如MyPlugin，实现接口ConvertService方法</simple>
 <pre>package org.test;
 
+import org.dbsyncer.common.spi.ConvertService;
+
 import java.util.List;
 import java.util.Map;
 
@@ -118,7 +120,7 @@ public class MyPlugin implements ConvertService{
                                 <td th:text="${p?.className}"/>
                                 <td th:text="${p?.version}"/>
                                 <td th:text="${p?.fileName}"/>
-                                <td><a th:id="${p?.name}" class='fa fa-remove fa-2x pluginDelete dbsyncer_pointer' title='暂不支持' aria-disabled="true"></a></td>
+                                <td><a th:if="${not p?.unmodifiable}" th:id="${p?.name}" class='fa fa-remove fa-2x pluginDelete dbsyncer_pointer' title='暂不支持' aria-disabled="true"></a></td>
                             </tr>
                             </tbody>
                         </table>

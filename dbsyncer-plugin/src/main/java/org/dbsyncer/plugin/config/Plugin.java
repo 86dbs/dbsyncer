@@ -19,14 +19,22 @@ public class Plugin {
     // Jar名称
     private String fileName;
 
+    // 是否系统预置
+    private boolean unmodifiable;
+
     public Plugin() {
     }
 
     public Plugin(String name, String className, String version, String fileName) {
+        this(name, className, version, fileName, false);
+    }
+
+    public Plugin(String name, String className, String version, String fileName, boolean unmodifiable) {
         this.name = name;
         this.className = className;
         this.version = version;
         this.fileName = fileName;
+        this.unmodifiable = unmodifiable;
     }
 
     public String getName() {
@@ -62,5 +70,13 @@ public class Plugin {
     public Plugin setFileName(String fileName) {
         this.fileName = fileName;
         return this;
+    }
+
+    public boolean isUnmodifiable() {
+        return unmodifiable;
+    }
+
+    public void setUnmodifiable(boolean unmodifiable) {
+        this.unmodifiable = unmodifiable;
     }
 }
