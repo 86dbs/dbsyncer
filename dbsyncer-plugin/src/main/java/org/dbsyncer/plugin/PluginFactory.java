@@ -115,7 +115,7 @@ public class PluginFactory {
             ServiceLoader<ConvertService> services = ServiceLoader.load(ConvertService.class, loader);
             for (ConvertService s : services) {
                 String className = s.getClass().getName();
-                service.putIfAbsent(className, s);
+                service.put(className, s);
                 plugins.add(new Plugin(s.getName(), className, s.getVersion(), fileName));
             }
         } catch (MalformedURLException e) {
