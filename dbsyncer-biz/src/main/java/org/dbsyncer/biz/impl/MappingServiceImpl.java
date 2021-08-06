@@ -1,5 +1,6 @@
 package org.dbsyncer.biz.impl;
 
+import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
@@ -49,8 +50,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         String id = manager.addMapping(model);
 
-        // 匹配相似表
-        matchSimilarTable(model);
+        // 匹配相似表 on
+        String autoMatchTable = params.get("autoMatchTable");
+        if(StringUtils.isNotBlank(autoMatchTable)){
+            matchSimilarTable(model);
+        }
 
         return id;
     }

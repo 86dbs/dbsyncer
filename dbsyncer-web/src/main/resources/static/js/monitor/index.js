@@ -397,7 +397,7 @@ function showMetricTable(metrics){
     $.each(metrics, function(i) {
         html += '<tr>';
         html += '   <td style="width:5%;">'+ (i + 1) +'</td>';
-        html += '   <td>'+ metrics[i].metricName +'</td>';
+        html += '   <td>'+ '['+ metrics[i].group + ']' + metrics[i].metricName +'</td>';
         html += '   <td>'+ metrics[i].detail +'</td>';
         html += '</tr>';
     });

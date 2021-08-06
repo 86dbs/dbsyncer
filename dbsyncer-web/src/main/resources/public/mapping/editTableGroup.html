@@ -19,7 +19,7 @@
                             <div class="col-md-4">
                                 <div class="row">
                                     <div class="col-md-4 text-right">
-                                        <img class="dbsyncer_img" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}">
+                                        <img draggable="false" class="dbsyncer_img" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}">
                                     </div>
                                     <div class="col-md-8">
                                         <p class="driver_break_word">[[${mapping?.sourceConnector?.name}]]</p>
@@ -37,7 +37,7 @@
                             <div class="col-md-4">
                                 <div class="row">
                                     <div class="col-md-4 text-right">
-                                        <img class="dbsyncer_img" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}">
+                                        <img draggable="false" class="dbsyncer_img" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}">
                                     </div>
                                     <div class="col-md-8">
                                         <p class="driver_break_word">[[${mapping?.targetConnector?.name}]]</p>

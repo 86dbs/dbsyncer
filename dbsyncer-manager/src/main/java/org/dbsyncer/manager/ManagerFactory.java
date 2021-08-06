@@ -301,6 +301,11 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     }
 
     @Override
+    public String getLibraryPath() {
+        return pluginFactory.getLibraryPath();
+    }
+
+    @Override
     public void loadPlugins() {
         pluginFactory.loadPlugins();
     }

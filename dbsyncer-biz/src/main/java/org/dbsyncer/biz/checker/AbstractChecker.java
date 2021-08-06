@@ -2,13 +2,13 @@ package org.dbsyncer.biz.checker;
 
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.BizException;
-import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.config.Filter;
-import org.dbsyncer.parser.model.Convert;
+import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.model.AbstractConfigModel;
 import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.Convert;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.SnowflakeIdWorker;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -29,7 +29,7 @@ import java.util.*;
 public abstract class AbstractChecker implements Checker {
 
     @Autowired
-    private PluginService pluginService;
+    private Manager manager;
 
     @Autowired
     private SnowflakeIdWorker snowflakeIdWorker;
@@ -85,7 +85,7 @@ public abstract class AbstractChecker implements Checker {
         String pluginClassName = params.get("pluginClassName");
         Plugin plugin = null;
         if (StringUtils.isNotBlank(pluginClassName)) {
-            List<Plugin> plugins = pluginService.getPluginAll();
+            List<Plugin> plugins = manager.getPluginAll();
             if (!CollectionUtils.isEmpty(plugins)) {
                 for (Plugin p : plugins) {
                     if (StringUtils.equals(p.getClassName(), pluginClassName)) {
@@ -98,10 +98,10 @@ public abstract class AbstractChecker implements Checker {
         model.setPlugin(plugin);
     }
 
-    private <T> List<T> jsonToList(String json, Class<T> valueType){
+    private <T> List<T> jsonToList(String json, Class<T> valueType) {
         try {
             JSONArray array = new JSONArray(json);
-            if(null != array){
+            if (null != array) {
                 List<T> list = new ArrayList<>();
                 int length = array.length();
                 for (int i = 0; i < length; i++) {

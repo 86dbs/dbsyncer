@@ -1,6 +1,6 @@
 package org.dbsyncer.biz;
 
-import org.dbsyncer.plugin.config.Plugin;
+import org.dbsyncer.biz.vo.PluginVo;
 
 import java.util.List;
 
@@ -16,7 +16,7 @@ public interface PluginService {
      *
      * @return
      */
-    List<Plugin> getPluginAll();
+    List<PluginVo> getPluginAll();
 
     /**
      * 获取插件上传路径
@@ -24,6 +24,13 @@ public interface PluginService {
      * @return
      */
     String getPluginPath();
+
+    /**
+     * 获取开发包路径
+     *
+     * @return
+     */
+    String getLibraryPath();
 
     /**
      * 加载插件

@@ -3,15 +3,23 @@ package org.dbsyncer.biz.impl;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.PluginService;
+import org.dbsyncer.biz.vo.PluginVo;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.plugin.enums.FileSuffixEnum;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author AE86
@@ -28,13 +36,40 @@ public class PluginServiceImpl implements PluginService {
     private LogService logService;
 
     @Override
-    public List<Plugin> getPluginAll() {
-        return manager.getPluginAll();
+    public List<PluginVo> getPluginAll() {
+        List<Plugin> pluginAll = manager.getPluginAll();
+        List<PluginVo> vos = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(pluginAll)) {
+            Map<String, List<String>> pluginClassNameMap = new HashMap<>();
+            List<Mapping> mappingAll = manager.getMappingAll();
+            if (!CollectionUtils.isEmpty(mappingAll)) {
+                mappingAll.forEach(mapping -> {
+                    Plugin plugin = mapping.getPlugin();
+                    if(null != plugin){
+                        pluginClassNameMap.putIfAbsent(plugin.getClassName(), new ArrayList<>());
+                        pluginClassNameMap.get(plugin.getClassName()).add(mapping.getName());
+                    }
+                });
+            }
+
+            vos.addAll(pluginAll.stream().map(plugin -> {
+                PluginVo vo = new PluginVo();
+                BeanUtils.copyProperties(plugin, vo);
+                vo.setMappingName(StringUtils.join(pluginClassNameMap.get(plugin.getClassName()), "|"));
+                return vo;
+            }).collect(Collectors.toList()));
+        }
+        return vos;
     }
 
     @Override
     public String getPluginPath() {
         return manager.getPluginPath();
+    }
+
+    @Override
+    public String getLibraryPath() {
+        return manager.getLibraryPath();
     }
 
     @Override

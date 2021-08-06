@@ -96,7 +96,12 @@ public class DBChangeNotification {
 
             // 配置监听表
             for (Map.Entry<Integer, String> m : tables.entrySet()) {
-                statement.executeQuery(String.format(QUERY_TABLE_SQL, m.getValue()));
+                String sql = String.format(QUERY_TABLE_SQL, m.getValue());
+                try {
+                    statement.executeQuery(sql);
+                } catch (SQLException e) {
+                    logger.debug("配置监听表异常:{}, {}", sql, e.getMessage());
+                }
             }
         } catch (SQLException ex) {
             // if an exception occurs, we need to close the registration in order

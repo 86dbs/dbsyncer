@@ -28,7 +28,7 @@
                                     <div class="col-md-1" th:each="c,state : ${connectors}">
                                         <div th:id="${c?.id}" class="jumbotron dbsyncer_block">
                                             <div class="row">
-                                                <img th:src="@{'/img/'+ ${c?.config?.connectorType} + '.png'}">
+                                                <img draggable="false" th:src="@{'/img/'+ ${c?.config?.connectorType} + '.png'}">
                                             </div>
                                             <div class="row dbsyncer_over_hidden">
                                                 <span th:text="${c?.name}" th:title="${c?.name}" />
@@ -81,7 +81,7 @@
                                                 <div class="col-md-5">
                                                     <div class="well well-lg">
                                                         <div class="col-md-4">
-                                                            <img th:src="@{'/img/'+ ${m?.sourceConnector?.config?.connectorType} + '.png'}">
+                                                            <img draggable="false" th:src="@{'/img/'+ ${m?.sourceConnector?.config?.connectorType} + '.png'}">
                                                         </div>
                                                         <div class="col-md-7 dbsyncer_over_hidden">
                                                             <span th:text="${m?.sourceConnector?.name}" th:title="${m?.sourceConnector?.name}"></span>
@@ -106,7 +106,7 @@
                                                 <div class="col-md-5">
                                                     <div class="well well-lg">
                                                         <div class="col-md-4">
-                                                            <img th:src="@{'/img/'+ ${m?.targetConnector?.config?.connectorType} + '.png'}">
+                                                            <img draggable="false" th:src="@{'/img/'+ ${m?.targetConnector?.config?.connectorType} + '.png'}">
                                                         </div>
                                                         <div class="col-md-7 dbsyncer_over_hidden">
                                                             <span th:text="${m?.targetConnector?.name}" th:title="${m?.targetConnector?.name}"></span>
