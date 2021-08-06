@@ -25,8 +25,7 @@
                     </li>
                     <li>
                         <simple>新建一个类，比如MyPlugin，实现接口ConvertService方法</simple>
-                        <pre>
-package org.test;
+<pre>package org.test;
 
 import java.util.List;
 import java.util.Map;
@@ -75,16 +74,15 @@ public class MyPlugin implements ConvertService{
     public String getName() {
         return "MyPlugin";
     }
-}
-                        </pre>
+}</pre>
                     </li>
                     <li>
                         <simple>/META-INF/新建services文件夹，并在services下新建一个文件，命名为org.dbsyncer.common.spi.ConvertService，文件写入实现类路径org.test.MyPlugin，如果有多个实现就换行再写入</simple>
-                        <p><img th:src="@{'/img/plugin/spi.png'}"></p>
+                        <p><img draggable="false" th:src="@{'/img/plugin/spi.png'}"></p>
                     </li>
                     <li>
                         <simple>打包jar</simple>
-                        <p><img th:src="@{'/img/plugin/jar.png'}"></p>
+                        <p><img draggable="false" th:src="@{'/img/plugin/jar.png'}"></p>
                     </li>
                 </ol>
             </div>
