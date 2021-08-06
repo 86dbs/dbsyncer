@@ -116,8 +116,8 @@ public class MyPlugin implements ConvertService{
                             </thead>
                             <tbody id="pluginList">
                             <tr th:id="${p?.name}" th:each="p,state : ${plugins}">
-                                <td th:if="${p?.unmodifiable}"><i class="fa fa-plug" aria-hidden="true" th:title="内置插件"></i> [[${p?.name}]]</td>
-                                <td th:if="${not p?.unmodifiable}"><i class="fa fa-star" aria-hidden="true" th:title="普通插件"></i> [[${p?.name}]]</td>
+                                <td th:title="内置插件" th:if="${p?.unmodifiable}"><i class="fa fa-plug fa_gray" aria-hidden="true"></i> [[${p?.name}]]</td>
+                                <td th:title="普通插件" th:if="${not p?.unmodifiable}"><i class="fa fa-star fa_blueviolet" aria-hidden="true"></i> [[${p?.name}]]</td>
                                 <td th:text="${p?.mappingName}"/>
                                 <td th:text="${p?.className}"/>
                                 <td th:text="${p?.version}"/>
