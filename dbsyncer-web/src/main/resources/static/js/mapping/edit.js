@@ -32,7 +32,7 @@ function bindMappingModelChange() {
                 if (response.success == true) {
                     refresh($("#mappingId").val());
                 } else {
-                    bootGrowl(data.resultValue, "danger");
+                    bootGrowl(response.resultValue, "danger");
                 }
             });
         }
