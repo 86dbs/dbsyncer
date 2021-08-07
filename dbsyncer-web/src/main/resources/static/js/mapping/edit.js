@@ -25,12 +25,31 @@ function bindMappingModelChange() {
         cursor: true,
         radioClass: 'iradio_flat-blue',
     }).on('ifChecked', function (event) {
-        showMappingEditConfig($(this).val());
+        var $form = $("#mappingModifyForm");
+        if ($form.formValidate() == true) {
+            var data = $form.serializeJson();
+            doPoster("/mapping/edit", data, function (response) {
+                if (response.success == true) {
+                    refresh($("#mappingId").val());
+                } else {
+                    bootGrowl(data.resultValue, "danger");
+                }
+            });
+        }
     });
 
     // 渲染选择radio配置
-    var value = $mappingModelChange.find('input[type="radio"]:checked').val();
-    showMappingEditConfig(value);
+    var $value = $mappingModelChange.find('input[type="radio"]:checked').val();
+    // 显示驱动编辑配置（全量/增量）
+    var $full = $("#mappingFullConfig");
+    var $increment = $("#mappingIncrementConfig");
+    if ('full' == $value) {
+        $increment.addClass("hidden");
+        $full.removeClass("hidden");
+    } else {
+        $full.addClass("hidden");
+        $increment.removeClass("hidden");
+    }
 }
 
 // 绑定删除表关系复选框事件
@@ -68,20 +87,6 @@ function getCheckedBoxSize($checkbox){
         }
     });
     return checked;
-}
-
-// 显示驱动编辑配置（全量/增量）
-function showMappingEditConfig($value) {
-    var $full = $("#mappingFullConfig");
-    var $increment = $("#mappingIncrementConfig");
-
-    if ('full' == $value) {
-        $increment.addClass("hidden");
-        $full.removeClass("hidden");
-    } else {
-        $full.addClass("hidden");
-        $increment.removeClass("hidden");
-    }
 }
 
 // 绑定表关系点击事件

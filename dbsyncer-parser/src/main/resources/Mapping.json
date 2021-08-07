@@ -54,7 +54,7 @@
   "model":"full",
   "listener": {
     "listenerType": "Polling",
-    "cronExpression": "*/30 * * * * ?",
+    "period": 30,
     "eventFieldName": "MyEvent",
     "update": [
       "U",

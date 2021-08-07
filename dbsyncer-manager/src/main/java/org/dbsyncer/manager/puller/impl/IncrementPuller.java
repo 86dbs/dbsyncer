@@ -254,10 +254,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         @Override
         public void changedEvent(RowChangedEvent rowChangedEvent) {
             final FieldPicker picker = tablePicker.get(rowChangedEvent.getTableGroupIndex());
-            logger.info("监听数据=> tableName:{}, event:{}, before:{}, after:{}", picker.getTableGroup().getSourceTable().getName(),
-                    rowChangedEvent.getEvent(),
-                    rowChangedEvent.getBefore(),
-                    rowChangedEvent.getAfter());
+            rowChangedEvent.setTableName(picker.getTableGroup().getSourceTable().getName());
 
             // 处理过程有异常向上抛
             parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);

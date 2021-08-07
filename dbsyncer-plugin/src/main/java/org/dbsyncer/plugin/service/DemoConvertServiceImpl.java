@@ -26,7 +26,7 @@ public class DemoConvertServiceImpl implements ConvertService {
 
     @Override
     public void convert(String event, Map source, Map target) {
-        logger.info(String.format("插件正在处理同步数据，事件:%s，数据:%s", event, source));
+        logger.info("插件正在处理同步数据，事件:{}，数据:{}", event, source);
     }
 
     @Override

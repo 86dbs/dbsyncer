@@ -20,8 +20,8 @@ public class ListenerConfig {
      */
     private int readNum = 200;
 
-    // 定时表达式, 格式: [秒] [分] [小时] [日] [月] [周]
-    private String cronExpression = "*/30 * * * * ?";
+    // 定时(秒)
+    private long period = 30;
 
     // 事件字段
     private String eventFieldName = "";
@@ -61,12 +61,12 @@ public class ListenerConfig {
         this.readNum = readNum;
     }
 
-    public String getCronExpression() {
-        return cronExpression;
+    public long getPeriod() {
+        return period;
     }
 
-    public void setCronExpression(String cronExpression) {
-        this.cronExpression = cronExpression;
+    public void setPeriod(long period) {
+        this.period = period;
     }
 
     public String getEventFieldName() {
