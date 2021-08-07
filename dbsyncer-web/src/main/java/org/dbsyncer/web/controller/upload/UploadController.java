@@ -55,7 +55,7 @@ public class UploadController {
                         String filename = file.getOriginalFilename();
                         pluginService.checkFileSuffix(filename);
                         File dest = new File(filePath + filename);
-                        FileUtils.forceDelete(dest);
+                        FileUtils.deleteQuietly(dest);
                         FileUtils.copyInputStreamToFile(file.getInputStream(), dest);
                     }
                 }
