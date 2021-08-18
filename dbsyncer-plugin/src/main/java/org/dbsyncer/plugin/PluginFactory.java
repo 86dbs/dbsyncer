@@ -117,6 +117,7 @@ public class PluginFactory {
                 String className = s.getClass().getName();
                 service.put(className, s);
                 plugins.add(new Plugin(s.getName(), className, s.getVersion(), fileName));
+                logger.info("{}, {}_{} {}", fileName, s.getName(), s.getVersion(), className);
             }
         } catch (MalformedURLException e) {
             logger.error(e.getMessage());

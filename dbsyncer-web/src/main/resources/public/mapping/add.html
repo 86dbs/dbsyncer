@@ -37,14 +37,14 @@
                                 <label class="col-sm-2 control-label">数据源</label>
                                 <div class="col-sm-4">
                                     <select name="sourceConnectorId" class="form-control select-control">
-                                        <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name}" />
+                                        <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
                                     </select>
                                 </div>
                                 <!-- 目标源 -->
                                 <label class="col-sm-2 control-label">目标源</label>
                                 <div class="col-sm-4">
                                     <select name="targetConnectorId" class="form-control select-control">
-                                        <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name}" />
+                                        <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
                                     </select>
                                 </div>
                             </div>
