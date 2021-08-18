@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
 
 import java.sql.Connection;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -34,7 +35,7 @@ public final class SqlServerConnectorMapper extends ConnectorMapper {
         boolean locked = false;
         Object apply = null;
         try {
-            locked = connectionLock.tryLock();
+            locked = connectionLock.tryLock(60, TimeUnit.SECONDS);
             if (locked) {
                 apply = callback.apply(new DatabaseTemplate(connection));
             }
