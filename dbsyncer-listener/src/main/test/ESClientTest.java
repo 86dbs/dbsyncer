@@ -1,0 +1,229 @@
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.dbsyncer.common.util.JsonUtil;
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
+import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
+import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
+import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class ESClientTest {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private RestHighLevelClient client;
+    private String indexName = "test_index";
+    private String type = "_doc";
+    private String properties = "properties";
+
+    @Before
+    public void init() {
+        RestClientBuilder builder = RestClient.builder(new HttpHost("192.168.1.100", 9200));
+        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        Credentials credentials = new UsernamePasswordCredentials("ae86", "123456");
+        credentialsProvider.setCredentials(AuthScope.ANY, credentials);
+        builder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+        client = new RestHighLevelClient(builder);
+        try {
+            boolean ret = client.ping(RequestOptions.DEFAULT);
+            logger.info("es ping ret:{}", ret);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        }
+    }
+
+    @After
+    public void close() {
+        if (null != client) {
+            try {
+                client.close();
+                logger.info("close success");
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+            }
+        }
+    }
+
+    @Test
+    public void isExistsIndexTest() {
+        GetIndexRequest request = new GetIndexRequest();
+        request.indices(indexName);
+        try {
+            boolean exists = client.indices().exists(request, RequestOptions.DEFAULT);
+            logger.info("es exist index:{}", exists);
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+        }
+    }
+
+    @Test
+    public void createIndex() throws IOException {
+        CreateIndexRequest request = new CreateIndexRequest(indexName);
+        request.settings(Settings.builder()
+                .put("index.number_of_shards", 1)
+                .put("index.number_of_replicas", 0)
+        );
+        // 构建索引字段
+        XContentBuilder builder = XContentFactory.jsonBuilder();
+        builder.startObject();
+        {
+            builder.startObject("properties");
+            {
+                builder.startObject("id");
+                {
+                    builder.field("type", "integer");
+                }
+                builder.endObject();
+            }
+            {
+                builder.startObject("name");
+                {
+                    builder.field("type", "text");
+                }
+                builder.endObject();
+            }
+            {
+                builder.startObject("content");
+                {
+                    builder.field("type", "keyword");
+                }
+                builder.endObject();
+            }
+            {
+                builder.startObject("tags");
+                {
+                    builder.field("type", "long");
+                }
+                builder.endObject();
+            }
+            builder.endObject();
+        }
+        builder.endObject();
+        request.mapping(type, builder);
+        // 这里创建索引结构
+        CreateIndexResponse response = client.indices().create(request, RequestOptions.DEFAULT);
+        // 指示是否所有节点都已确认请求
+        boolean acknowledged = response.isAcknowledged();
+        // 指示是否在超时之前为索引中的每个分片启动了必需的分片副本数
+        boolean shardsAcknowledged = response.isShardsAcknowledged();
+        if (acknowledged || shardsAcknowledged) {
+            logger.info("创建索引成功！索引名称为{}", indexName);
+        }
+    }
+
+    @Test
+    public void getIndexTest() throws IOException {
+        GetIndexRequest request = new GetIndexRequest();
+        request.indices(indexName);
+        GetIndexResponse indexResponse = client.indices().get(request, RequestOptions.DEFAULT);
+        // 获取索引
+        String[] indices = indexResponse.getIndices();
+        for (String index : indices) {
+            logger.info(index);
+        }
+
+        // 字段信息
+        ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetaData>> mappings = indexResponse.getMappings();
+        ImmutableOpenMap<String, MappingMetaData> indexMap = mappings.get(indexName);
+        MappingMetaData mappingMetaData = indexMap.get(type);
+        Map<String, Object> propertiesMap = mappingMetaData.getSourceAsMap();
+        Object o = propertiesMap.get(properties);
+        logger.info(JsonUtil.objToJson(o));
+    }
+
+    @Test
+    public void deleteIndexTest() throws IOException {
+        DeleteIndexRequest request = new DeleteIndexRequest();
+        request.indices(indexName);
+        DeleteIndexResponse indexResponse = client.indices().delete(request, RequestOptions.DEFAULT);
+        logger.info(indexResponse.toString());
+    }
+
+    @Test
+    public void pushTest() throws IOException {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", 2);
+        map.put("name", "刘备关羽张飞");
+        map.put("content", "桃园结义");
+        map.put("tags", new Long[]{200L});
+        IndexRequest request = new IndexRequest(indexName, "_doc", "2");
+        request.source(map, XContentType.JSON);
+
+        IndexResponse indexResponse = client.index(request, RequestOptions.DEFAULT);
+        RestStatus status = indexResponse.status();
+        logger.info(status.name());
+    }
+
+    @Test
+    public void searchTest() throws IOException {
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        List<Long> list = new ArrayList<>();
+        list.add(200L);
+        list.add(300L);
+        boolQueryBuilder.filter(QueryBuilders.termsQuery("tags", list));
+        sourceBuilder.query(boolQueryBuilder);
+
+        SearchRequest rq = new SearchRequest();
+        rq.indices(indexName);
+        rq.source(sourceBuilder);
+        SearchResponse searchResponse = client.search(rq, RequestOptions.DEFAULT);
+        SearchHits hits = searchResponse.getHits();
+        long totalHits = hits.getTotalHits();
+        logger.info("result:{}", totalHits);
+        SearchHit[] searchHits = hits.getHits();
+        for (SearchHit hit : searchHits) {
+            logger.info(hit.getSourceAsMap().toString());
+        }
+    }
+
+    @Test
+    public void getCountTest() throws IOException {
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        // 取消限制返回查询条数10000
+        sourceBuilder.trackTotalHits(true);
+        SearchRequest request = new SearchRequest();
+        request.indices(indexName);
+        request.source(sourceBuilder);
+        SearchResponse searchResponse = client.search(request, RequestOptions.DEFAULT);
+        SearchHits hits = searchResponse.getHits();
+        long totalHits = hits.getTotalHits();
+        logger.info("result:{}", totalHits);
+    }
+}
