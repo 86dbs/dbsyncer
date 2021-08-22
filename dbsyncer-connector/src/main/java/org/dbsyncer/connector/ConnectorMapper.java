@@ -8,9 +8,9 @@ import java.sql.Connection;
 
 public class ConnectorMapper {
     protected ConnectorConfig config;
-    protected Connection connection;
+    protected Object connection;
 
-    public ConnectorMapper(ConnectorConfig config, Connection connection) {
+    public ConnectorMapper(ConnectorConfig config, Object connection) {
         this.config = config;
         this.connection = connection;
     }
@@ -19,7 +19,7 @@ public class ConnectorMapper {
         return config;
     }
 
-    public Connection getConnection() {
+    public Object getConnection() {
         return connection;
     }
 

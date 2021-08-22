@@ -176,7 +176,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void destroy() {
-        DatabaseUtil.close(connectorMapper.getConnection());
+        DatabaseUtil.close((Connection) connectorMapper.getConnection());
     }
 
     @Override

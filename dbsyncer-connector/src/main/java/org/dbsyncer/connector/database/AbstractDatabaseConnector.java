@@ -40,7 +40,7 @@ public abstract class AbstractDatabaseConnector implements Database {
 
     @Override
     public void disconnect(ConnectorMapper connectorMapper) {
-        DatabaseUtil.close(connectorMapper.getConnection());
+        DatabaseUtil.close((Connection) connectorMapper.getConnection());
     }
 
     @Override
