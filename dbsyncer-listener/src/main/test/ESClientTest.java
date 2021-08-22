@@ -11,8 +11,11 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
+import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -188,6 +191,56 @@ public class ESClientTest {
         IndexResponse indexResponse = client.index(request, RequestOptions.DEFAULT);
         RestStatus status = indexResponse.status();
         logger.info(status.name());
+    }
+
+    @Test
+    public void bulkPushTest() throws IOException {
+        BulkRequest request = new BulkRequest();
+        Map<String, Object> m1 = new HashMap<>();
+        m1.put("id", 1);
+        m1.put("name", "刘备关羽张飞");
+        m1.put("content", "桃园结义");
+        m1.put("tags", new Long[]{200L});
+        IndexRequest r1 = new IndexRequest(indexName, "_doc", "1");
+        r1.source(m1, XContentType.JSON);
+        request.add(r1);
+
+        Map<String, Object> m2 = new HashMap<>();
+        m2.put("id", 2);
+        m2.put("name", "曹阿瞒");
+        m2.put("content", "火烧");
+        m2.put("tags", new Long[]{200L, 300L});
+        IndexRequest r2 = new IndexRequest(indexName, "_doc", "2");
+        r2.source(m2, XContentType.JSON);
+        request.add(r2);
+
+        BulkResponse response = client.bulk(request, RequestOptions.DEFAULT);
+        BulkItemResponse[] items = response.getItems();
+        for (BulkItemResponse r: items) {
+            logger.info(r.status().name());
+        }
+        logger.info(response.toString());
+    }
+
+    @Test
+    public void deleteTest() throws IOException {
+        DeleteRequest request = new DeleteRequest(indexName, "_doc", "2");
+        DeleteResponse delete = client.delete(request, RequestOptions.DEFAULT);
+        logger.info(delete.toString());
+    }
+
+    @Test
+    public void bulkDeleteTest() throws IOException {
+        BulkRequest request = new BulkRequest();
+        request.add(new DeleteRequest(indexName, "_doc", "1"));
+        request.add(new DeleteRequest(indexName, "_doc", "2"));
+
+        BulkResponse response = client.bulk(request, RequestOptions.DEFAULT);
+        BulkItemResponse[] items = response.getItems();
+        for (BulkItemResponse r: items) {
+            logger.info(r.status().name());
+        }
+        logger.info(response.toString());
     }
 
     @Test
