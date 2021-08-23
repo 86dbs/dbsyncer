@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <div class="form-group">
+        <label class="col-sm-2 control-label">帐号 <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-4">
+            <input class="form-control" name="username" type="text" maxlength="32" dbsyncer-valid="require" placeholder="root" th:value="${connector?.config?.username}"/>
+        </div>
+        <label class="col-sm-2 control-label">密码 <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-4 ">
+            <input class="form-control" name="password" type="password" maxlength="32" dbsyncer-valid="require" th:value="${connector?.config?.password}"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label">协议 <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-4">
+            <select class="form-control select-control" name="schema">
+                <option value="http" th:selected="${connector?.config?.schema eq 'http'}">http</option>
+                <option value="tcp" th:selected="${connector?.config?.schema eq 'tcp'}">tcp</option>
+            </select>
+        </div>
+        <div class="col-sm-6 "></div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label">地址(多个使用英文","拼接) <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-10">
+            <textarea id="sql" name="clusterNodes" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="5" th:text="${connector?.config?.clusterNodes}?:'127.0.0.1:9200'"></textarea>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label">index <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-4">
+            <input class="form-control" name="index" type="text" maxlength="32" dbsyncer-valid="require" placeholder="test" th:value="${connector?.config?.index}?:'test'"/>
+        </div>
+        <label class="col-sm-2 control-label">type <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-4 ">
+            <input class="form-control" name="type" type="text" maxlength="32" dbsyncer-valid="require" placeholder="_doc" th:value="${connector?.config?.type}?:'_doc'"/>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+$(function () {
+    // 初始化select2插件
+    var $connectorTypeSelect = $(".select-control").select2({
+        width: "100%",
+        theme: "classic"
+    });
+})
+</script>
+</html>

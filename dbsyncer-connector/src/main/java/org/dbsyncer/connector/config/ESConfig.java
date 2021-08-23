@@ -16,7 +16,7 @@ public class ESConfig extends ConnectorConfig {
     /**
      * 协议9200(http),9300(tcp)
      */
-    private String scheme;
+    private String schema;
 
     /**
      * 帐号
@@ -46,12 +46,12 @@ public class ESConfig extends ConnectorConfig {
         this.clusterNodes = clusterNodes;
     }
 
-    public String getScheme() {
-        return scheme;
+    public String getSchema() {
+        return schema;
     }
 
-    public void setScheme(String scheme) {
-        this.scheme = scheme;
+    public void setSchema(String schema) {
+        this.schema = schema;
     }
 
     public String getUsername() {

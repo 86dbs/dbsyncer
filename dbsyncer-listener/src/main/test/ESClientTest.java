@@ -51,7 +51,7 @@ public class ESClientTest {
     public void init() {
         ESConfig config = new ESConfig();
         config.setClusterNodes("127.0.0.1:9200");
-        config.setScheme("http");
+        config.setSchema("http");
         config.setUsername("ae86");
         config.setPassword("123456");
         client = ESUtil.getConnection(config);
