@@ -14,13 +14,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public final class SqlServerConnectorMapper extends ConnectorMapper {
+public final class SqlServerConnectorMapper implements ConnectorMapper<Connection> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Lock   lock   = new ReentrantLock(true);
 
+    private ConnectorConfig config;
+    private Connection connection;
+
     public SqlServerConnectorMapper(ConnectorConfig config, Connection connection) {
-        super(config, connection);
+        this.config = config;
+        this.connection = connection;
     }
 
     /**
@@ -29,7 +33,6 @@ public final class SqlServerConnectorMapper extends ConnectorMapper {
      * @param callback
      * @return
      */
-    @Override
     public <T> T execute(HandleCallback callback) {
         final Lock connectionLock = lock;
         boolean locked = false;
@@ -50,5 +53,15 @@ public final class SqlServerConnectorMapper extends ConnectorMapper {
             }
         }
         return (T) apply;
+    }
+
+    @Override
+    public ConnectorConfig getConfig() {
+        return config;
+    }
+
+    @Override
+    public Connection getConnection() {
+        return connection;
     }
 }

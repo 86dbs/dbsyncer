@@ -12,8 +12,10 @@ import java.util.Map;
  * @author AE86
  * @version 1.0.0
  * @date 2019/9/18 23:30
+ * @param <M> ConnectorMapper
+ * @param <C> ConnectorConfig
  */
-public interface Connector {
+public interface Connector<M, C> {
 
     /**
      * 建立连接
@@ -21,14 +23,14 @@ public interface Connector {
      * @param config
      * @return
      */
-    ConnectorMapper connect(ConnectorConfig config);
+    ConnectorMapper connect(C config);
 
     /**
      * 断开连接
      *
      * @param connectorMapper
      */
-    void disconnect(ConnectorMapper connectorMapper);
+    void disconnect(M connectorMapper);
 
     /**
      * 检查连接器是否连接正常
@@ -36,7 +38,7 @@ public interface Connector {
      * @param connectorMapper
      * @return
      */
-    boolean isAlive(ConnectorMapper connectorMapper);
+    boolean isAlive(M connectorMapper);
 
     /**
      * 获取连接缓存key
@@ -44,7 +46,7 @@ public interface Connector {
      * @param config
      * @return
      */
-    String getConnectorMapperCacheKey(ConnectorConfig config);
+    String getConnectorMapperCacheKey(C config);
 
     /**
      * 获取所有表名
@@ -52,7 +54,7 @@ public interface Connector {
      * @param connectorMapper
      * @return
      */
-    List<String> getTable(ConnectorMapper connectorMapper);
+    List<String> getTable(M connectorMapper);
 
     /**
      * 获取表元信息
@@ -61,7 +63,7 @@ public interface Connector {
      * @param tableName
      * @return
      */
-    MetaInfo getMetaInfo(ConnectorMapper connectorMapper, String tableName);
+    MetaInfo getMetaInfo(M connectorMapper, String tableName);
 
     /**
      * 获取数据源同步参数
@@ -82,11 +84,11 @@ public interface Connector {
     /**
      * 获取总数
      *
-     * @param config
+     * @param connectorMapper
      * @param command
      * @return
      */
-    long getCount(ConnectorMapper config, Map<String, String> command);
+    long getCount(M connectorMapper, Map<String, String> command);
 
     /**
      * 分页获取数据源数据

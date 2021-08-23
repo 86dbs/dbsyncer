@@ -1,10 +1,6 @@
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.Credentials;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.connector.config.ESConfig;
+import org.dbsyncer.connector.util.ESUtil;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -21,16 +17,14 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
@@ -43,9 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class ESClientTest {
@@ -53,16 +46,15 @@ public class ESClientTest {
     private RestHighLevelClient client;
     private String indexName = "test_index";
     private String type = "_doc";
-    private String properties = "properties";
 
     @Before
     public void init() {
-        RestClientBuilder builder = RestClient.builder(new HttpHost("192.168.1.100", 9200));
-        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        Credentials credentials = new UsernamePasswordCredentials("ae86", "123456");
-        credentialsProvider.setCredentials(AuthScope.ANY, credentials);
-        builder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
-        client = new RestHighLevelClient(builder);
+        ESConfig config = new ESConfig();
+        config.setClusterNodes("127.0.0.1:9200");
+        config.setScheme("http");
+        config.setUsername("ae86");
+        config.setPassword("123456");
+        client = ESUtil.getConnection(config);
         try {
             boolean ret = client.ping(RequestOptions.DEFAULT);
             logger.info("es ping ret:{}", ret);
@@ -73,14 +65,7 @@ public class ESClientTest {
 
     @After
     public void close() {
-        if (null != client) {
-            try {
-                client.close();
-                logger.info("close success");
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-            }
-        }
+        ESUtil.close(client);
     }
 
     @Test
@@ -96,7 +81,7 @@ public class ESClientTest {
     }
 
     @Test
-    public void createIndex() throws IOException {
+    public void createIndexTest() throws IOException {
         CreateIndexRequest request = new CreateIndexRequest(indexName);
         request.settings(Settings.builder()
                 .put("index.number_of_shards", 1)
@@ -106,6 +91,8 @@ public class ESClientTest {
         XContentBuilder builder = XContentFactory.jsonBuilder();
         builder.startObject();
         {
+            // 是否容许对象下面的属性自由扩展，（值true/false/strict,默认true）
+            builder.field("dynamic", "strict");
             builder.startObject("properties");
             {
                 builder.startObject("id");
@@ -125,6 +112,8 @@ public class ESClientTest {
                 builder.startObject("content");
                 {
                     builder.field("type", "keyword");
+                    // 字符串长度限定（针对keyword），keyword类型下，字符过于长，检索意义不大，索引会被禁用，数据不可被检索，默认值256
+                    builder.field("ignore_above", 256);
                 }
                 builder.endObject();
             }
@@ -166,7 +155,7 @@ public class ESClientTest {
         ImmutableOpenMap<String, MappingMetaData> indexMap = mappings.get(indexName);
         MappingMetaData mappingMetaData = indexMap.get(type);
         Map<String, Object> propertiesMap = mappingMetaData.getSourceAsMap();
-        Object o = propertiesMap.get(properties);
+        Object o = propertiesMap.get(ESUtil.PROPERTIES);
         logger.info(JsonUtil.objToJson(o));
     }
 
@@ -184,7 +173,7 @@ public class ESClientTest {
         map.put("id", 2);
         map.put("name", "刘备关羽张飞");
         map.put("content", "桃园结义");
-        map.put("tags", new Long[]{200L});
+        map.put("tags", new Long[] {200L});
         IndexRequest request = new IndexRequest(indexName, "_doc", "2");
         request.source(map, XContentType.JSON);
 
@@ -200,7 +189,7 @@ public class ESClientTest {
         m1.put("id", 1);
         m1.put("name", "刘备关羽张飞");
         m1.put("content", "桃园结义");
-        m1.put("tags", new Long[]{200L});
+        m1.put("tags", new Long[] {200L});
         IndexRequest r1 = new IndexRequest(indexName, "_doc", "1");
         r1.source(m1, XContentType.JSON);
         request.add(r1);
@@ -209,14 +198,14 @@ public class ESClientTest {
         m2.put("id", 2);
         m2.put("name", "曹阿瞒");
         m2.put("content", "火烧");
-        m2.put("tags", new Long[]{200L, 300L});
+        m2.put("tags", new Long[] {200L, 300L});
         IndexRequest r2 = new IndexRequest(indexName, "_doc", "2");
         r2.source(m2, XContentType.JSON);
         request.add(r2);
 
         BulkResponse response = client.bulk(request, RequestOptions.DEFAULT);
         BulkItemResponse[] items = response.getItems();
-        for (BulkItemResponse r: items) {
+        for (BulkItemResponse r : items) {
             logger.info(r.status().name());
         }
         logger.info(response.toString());
@@ -237,7 +226,7 @@ public class ESClientTest {
 
         BulkResponse response = client.bulk(request, RequestOptions.DEFAULT);
         BulkItemResponse[] items = response.getItems();
-        for (BulkItemResponse r: items) {
+        for (BulkItemResponse r : items) {
             logger.info(r.status().name());
         }
         logger.info(response.toString());
@@ -246,12 +235,11 @@ public class ESClientTest {
     @Test
     public void searchTest() throws IOException {
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        List<Long> list = new ArrayList<>();
-        list.add(200L);
-        list.add(300L);
-        boolQueryBuilder.filter(QueryBuilders.termsQuery("tags", list));
-        sourceBuilder.query(boolQueryBuilder);
+        sourceBuilder.query(QueryBuilders.boolQuery().filter(QueryBuilders.termsQuery("tags", Arrays.asList(200L, 300L))));
+        sourceBuilder.from(0);
+        sourceBuilder.size(10);
+        sourceBuilder.timeout(TimeValue.timeValueMillis(10));
+        sourceBuilder.fetchSource(new String[] {"id", "name"}, null);
 
         SearchRequest rq = new SearchRequest();
         rq.indices(indexName);

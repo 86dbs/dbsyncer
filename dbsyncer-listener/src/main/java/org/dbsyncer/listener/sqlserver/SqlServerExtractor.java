@@ -4,9 +4,9 @@ import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.apache.commons.lang.math.RandomUtils;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.enums.TableOperationEnum;
@@ -47,18 +47,18 @@ public class SqlServerExtractor extends AbstractExtractor {
 
     private static final String LSN_POSITION = "position";
     private static final long DEFAULT_POLL_INTERVAL_MILLIS = 300;
-    private static final int PREPARED_STATEMENT_CACHE_CAPACITY = 500;
-    private static final int OFFSET_COLUMNS = 4;
-    private final Map<String, PreparedStatement> preparedStatementCache = new ConcurrentHashMap<>(PREPARED_STATEMENT_CACHE_CAPACITY);
-    private final Lock connectLock = new ReentrantLock();
-    private volatile boolean connected;
-    private volatile boolean connectionClosed;
-    private static Set<String> tables;
-    private static Set<SqlServerChangeTable> changeTables;
-    private ConnectorMapper connectorMapper;
-    private Worker worker;
-    private Lsn lastLsn;
-    private String serverName;
+    private static final int                            PREPARED_STATEMENT_CACHE_CAPACITY = 500;
+    private static final int                            OFFSET_COLUMNS = 4;
+    private final        Map<String, PreparedStatement> preparedStatementCache = new ConcurrentHashMap<>(PREPARED_STATEMENT_CACHE_CAPACITY);
+    private final        Lock                           connectLock = new ReentrantLock();
+    private volatile     boolean                        connected;
+    private volatile     boolean                        connectionClosed;
+    private static       Set<String>                    tables;
+    private static       Set<SqlServerChangeTable>      changeTables;
+    private              DatabaseConnectorMapper        connectorMapper;
+    private              Worker                         worker;
+    private              Lsn                            lastLsn;
+    private              String                         serverName;
 
     @Override
     public void start() {
@@ -121,7 +121,7 @@ public class SqlServerExtractor extends AbstractExtractor {
     private void connect() {
         DatabaseConfig cfg = (DatabaseConfig) connectorConfig;
         if (connectorFactory.isAlive(cfg)) {
-            connectorMapper = connectorFactory.connect(cfg);
+            connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(cfg);
             serverName = cfg.getUrl();
             connectionClosed = false;
         }
@@ -210,7 +210,7 @@ public class SqlServerExtractor extends AbstractExtractor {
     }
 
     private void execute(String... sqlStatements) {
-        connectorMapper.execute((databaseTemplate) -> {
+        connectorMapper.execute(databaseTemplate -> {
             for (String sqlStatement : sqlStatements) {
                 if (sqlStatement != null) {
                     logger.info("executing '{}'", sqlStatement);
@@ -304,7 +304,7 @@ public class SqlServerExtractor extends AbstractExtractor {
             connect();
             return null;
         }
-        Object execute = connectorMapper.execute((databaseTemplate) -> {
+        Object execute = connectorMapper.execute(databaseTemplate -> {
             if (!preparedStatementCache.containsKey(preparedQuerySql)) {
                 preparedStatementCache.putIfAbsent(preparedQuerySql, databaseTemplate.getConnection().prepareStatement(preparedQuerySql));
             }

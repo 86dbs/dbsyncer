@@ -19,9 +19,9 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public ConnectorMapper connect(ConnectorConfig config) {
+    public ConnectorMapper connect(DatabaseConfig config) {
         try {
-            return new SqlServerConnectorMapper(config, DatabaseUtil.getConnection((DatabaseConfig) config));
+            return new SqlServerConnectorMapper(config, DatabaseUtil.getConnection(config));
         } catch (Exception e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e.getMessage());
