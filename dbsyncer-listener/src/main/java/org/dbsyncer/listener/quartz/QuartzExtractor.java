@@ -79,7 +79,7 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
         Point point = checkLastPoint(command, index);
         int pageIndex = 1;
         for (; ; ) {
-            Result reader = connectorFactory.reader(new ReaderConfig(connectionMapper, point.getCommand(), point.getArgs(), pageIndex++, readNum));
+            Result reader = connectorFactory.reader(connectionMapper, new ReaderConfig(point.getCommand(), point.getArgs(), pageIndex++, readNum));
             List<Map> data = reader.getData();
             if (CollectionUtils.isEmpty(data)) {
                 break;

@@ -96,7 +96,7 @@ public interface Connector<M, C> {
      * @param config
      * @return
      */
-    Result reader(ReaderConfig config);
+    Result reader(M connectorMapper, ReaderConfig config);
 
     /**
      * 批量写入目标源数据
@@ -104,7 +104,7 @@ public interface Connector<M, C> {
      * @param config
      * @return
      */
-    Result writer(WriterBatchConfig config);
+    Result writer(M connectorMapper, WriterBatchConfig config);
 
     /**
      * 写入目标源数据
@@ -112,6 +112,6 @@ public interface Connector<M, C> {
      * @param config
      * @return
      */
-    Result writer(WriterSingleConfig config);
+    Result writer(M connectorMapper, WriterSingleConfig config);
 
 }

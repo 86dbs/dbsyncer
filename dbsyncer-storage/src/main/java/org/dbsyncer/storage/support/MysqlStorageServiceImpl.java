@@ -170,7 +170,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             Map<String, String> command = new HashMap<>();
             command.put(SqlBuilderEnum.INSERT.getName(), executor.getInsert());
             ConnectorMapper connectorMapper = connectorFactory.connect(config);
-            connectorFactory.writer(new WriterBatchConfig(connectorMapper, command, executor.getFields(), list));
+            connectorFactory.writer(connectorMapper, new WriterBatchConfig(command, executor.getFields(), list));
         }
 
     }

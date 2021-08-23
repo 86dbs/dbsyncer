@@ -1,7 +1,5 @@
 package org.dbsyncer.connector.config;
 
-import org.dbsyncer.connector.ConnectorMapper;
-
 import java.util.List;
 import java.util.Map;
 
@@ -27,8 +25,7 @@ public class WriterSingleConfig extends WriterConfig {
      */
     private boolean retry;
 
-    public WriterSingleConfig(ConnectorMapper connectorMapper, List<Field> fields, Map<String, String> command, String event, Map<String, Object> data, String table) {
-        setConnectorMapper(connectorMapper);
+    public WriterSingleConfig(List<Field> fields, Map<String, String> command, String event, Map<String, Object> data, String table) {
         setCommand(command);
         setFields(fields);
         setData(data);

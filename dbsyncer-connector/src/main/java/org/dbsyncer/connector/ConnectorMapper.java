@@ -2,9 +2,13 @@ package org.dbsyncer.connector;
 
 import org.dbsyncer.connector.config.ConnectorConfig;
 
-public interface ConnectorMapper<C> {
+public interface ConnectorMapper<K, V> {
 
-    ConnectorConfig getConfig();
+    default ConnectorConfig getOriginalConfig() {
+        return (ConnectorConfig) getConfig();
+    }
 
-    C getConnection();
+    K getConfig();
+
+    V getConnection();
 }

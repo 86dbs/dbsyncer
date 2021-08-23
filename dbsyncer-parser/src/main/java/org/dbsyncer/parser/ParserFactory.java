@@ -231,7 +231,7 @@ public class ParserFactory implements Parser {
 
             // 1、获取数据源数据
             int pageIndex = Integer.parseInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
-            Result reader = connectorFactory.reader(new ReaderConfig(sConnectionMapper, command, new ArrayList<>(), pageIndex, pageSize));
+            Result reader = connectorFactory.reader(sConnectionMapper, new ReaderConfig(command, new ArrayList<>(), pageIndex, pageSize));
             List<Map> data = reader.getData();
             if (CollectionUtils.isEmpty(data)) {
                 params.clear();
@@ -279,7 +279,7 @@ public class ParserFactory implements Parser {
         pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
 
         // 4、写入目标源
-        Result writer = connectorFactory.writer(new WriterSingleConfig(tConnectorMapper, picker.getTargetFields(), tableGroup.getCommand(), event, target, rowChangedEvent.getTableName()));
+        Result writer = connectorFactory.writer(tConnectorMapper, new WriterSingleConfig(picker.getTargetFields(), tableGroup.getCommand(), event, target, rowChangedEvent.getTableName()));
 
         // 5、更新结果
         flush(metaId, writer, event, picker.getTargetMapList());
@@ -362,7 +362,7 @@ public class ParserFactory implements Parser {
         int total = target.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(new WriterBatchConfig(connectorMapper, command, fields, target));
+            return connectorFactory.writer(connectorMapper, new WriterBatchConfig(command, fields, target));
         }
 
         // 批量任务, 拆分
@@ -406,7 +406,7 @@ public class ParserFactory implements Parser {
             }
             data.add(poll);
         }
-        return connectorFactory.writer(new WriterBatchConfig(connectorMapper, command, fields, data));
+        return connectorFactory.writer(connectorMapper, new WriterBatchConfig(command, fields, data));
     }
 
 }

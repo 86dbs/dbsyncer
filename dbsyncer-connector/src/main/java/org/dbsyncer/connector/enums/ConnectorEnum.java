@@ -4,6 +4,8 @@ import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.config.ESConfig;
+import org.dbsyncer.connector.es.ESConnector;
 import org.dbsyncer.connector.mysql.MysqlConnector;
 import org.dbsyncer.connector.oracle.OracleConnector;
 import org.dbsyncer.connector.sql.DQLMysqlConnector;
@@ -43,7 +45,11 @@ public enum ConnectorEnum {
     /**
      * DqlSqlServer 连接器
      */
-    DQL_SQL_SERVER("DqlSqlServer", new DQLSqlServerConnector(), DatabaseConfig.class);
+    DQL_SQL_SERVER("DqlSqlServer", new DQLSqlServerConnector(), DatabaseConfig.class),
+    /**
+     * ElasticSearch 连接器
+     */
+    ELASTIC_SEARCH("ElasticSearch", new ESConnector(), ESConfig.class);
 
     // 连接器名称
     private String type;

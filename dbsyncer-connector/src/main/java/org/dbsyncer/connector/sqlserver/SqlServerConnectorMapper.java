@@ -2,7 +2,7 @@ package org.dbsyncer.connector.sqlserver;
 
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.HandleCallback;
+import org.dbsyncer.connector.database.HandleCallback;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.database.DatabaseTemplate;
 import org.slf4j.Logger;
@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public final class SqlServerConnectorMapper implements ConnectorMapper<Connection> {
+public final class SqlServerConnectorMapper implements ConnectorMapper<ConnectorConfig, Connection> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Lock   lock   = new ReentrantLock(true);

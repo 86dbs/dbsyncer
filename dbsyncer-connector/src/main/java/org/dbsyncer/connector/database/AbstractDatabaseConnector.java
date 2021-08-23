@@ -3,6 +3,7 @@ package org.dbsyncer.connector.database;
 import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
@@ -22,7 +23,7 @@ import java.sql.PreparedStatement;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class AbstractDatabaseConnector implements Connector<DatabaseConnectorMapper, DatabaseConfig>, Database {
+public abstract class AbstractDatabaseConnector extends AbstractConnector implements Connector<DatabaseConnectorMapper, DatabaseConfig>, Database {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -56,7 +57,7 @@ public abstract class AbstractDatabaseConnector implements Connector<DatabaseCon
 
     @Override
     public List<String> getTable(DatabaseConnectorMapper connectorMapper) {
-        String sql = getTableSql((DatabaseConfig) connectorMapper.getConfig());
+        String sql = getTableSql(connectorMapper.getConfig());
         return connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
     }
 
@@ -120,17 +121,17 @@ public abstract class AbstractDatabaseConnector implements Connector<DatabaseCon
     }
 
     @Override
-    public long getCount(DatabaseConnectorMapper config, Map<String, String> command) {
+    public long getCount(DatabaseConnectorMapper connectorMapper, Map<String, String> command) {
         // 1、获取select SQL
         String queryCountSql = command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
         Assert.hasText(queryCountSql, "查询总数语句不能为空.");
 
         // 2、返回结果集
-        return config.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, Long.class));
+        return connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, Long.class));
     }
 
     @Override
-    public Result reader(ReaderConfig config) {
+    public Result reader(DatabaseConnectorMapper connectorMapper, ReaderConfig config) {
         // 1、获取select SQL
         String querySql = config.getCommand().get(SqlBuilderEnum.QUERY.getName());
         Assert.hasText(querySql, "查询语句不能为空.");
@@ -139,7 +140,6 @@ public abstract class AbstractDatabaseConnector implements Connector<DatabaseCon
         Collections.addAll(config.getArgs(), getPageArgs(config.getPageIndex(), config.getPageSize()));
 
         // 3、执行SQL
-        DatabaseConnectorMapper connectorMapper = (DatabaseConnectorMapper) config.getConnectorMapper();
         List<Map<String, Object>> list = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
 
         // 4、返回结果集
@@ -147,7 +147,7 @@ public abstract class AbstractDatabaseConnector implements Connector<DatabaseCon
     }
 
     @Override
-    public Result writer(WriterBatchConfig config) {
+    public Result writer(DatabaseConnectorMapper connectorMapper, WriterBatchConfig config) {
         List<Field> fields = config.getFields();
         List<Map> data = config.getData();
 
@@ -167,10 +167,7 @@ public abstract class AbstractDatabaseConnector implements Connector<DatabaseCon
 
         Result result = new Result();
         try {
-            // 2、获取连接
-            DatabaseConnectorMapper connectorMapper = (DatabaseConnectorMapper) config.getConnectorMapper();
-
-            // 3、设置参数
+            // 2、设置参数
             connectorMapper.execute(databaseTemplate -> {
                 databaseTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
                     @Override
@@ -196,7 +193,7 @@ public abstract class AbstractDatabaseConnector implements Connector<DatabaseCon
     }
 
     @Override
-    public Result writer(WriterSingleConfig config) {
+    public Result writer(DatabaseConnectorMapper connectorMapper, WriterSingleConfig config) {
         String event = config.getEvent();
         List<Field> fields = config.getFields();
         Map<String, Object> data = config.getData();
@@ -220,11 +217,9 @@ public abstract class AbstractDatabaseConnector implements Connector<DatabaseCon
 
         int size = fields.size();
         Result result = new Result();
-        // 2、获取连接
-        DatabaseConnectorMapper connectorMapper = (DatabaseConnectorMapper) config.getConnectorMapper();
         int update = 0;
         try {
-            // 3、设置参数
+            // 2、设置参数
             update = connectorMapper.execute(databaseTemplate ->
                     databaseTemplate.update(sql, (ps) -> {
                         Field f = null;
@@ -253,7 +248,7 @@ public abstract class AbstractDatabaseConnector implements Connector<DatabaseCon
                 config.setEvent(ConnectorConstant.OPERTION_INSERT);
                 config.setRetry(true);
                 logger.warn("{}表执行{}失败, 尝试执行{}", config.getTable(), event, config.getEvent());
-                result = writer(config);
+                result = writer(connectorMapper, config);
             }
         }
         return result;
@@ -268,7 +263,7 @@ public abstract class AbstractDatabaseConnector implements Connector<DatabaseCon
     protected List<String> getDqlTable(DatabaseConnectorMapper config) {
         MetaInfo metaInfo = getDqlMetaInfo(config);
         Assert.notNull(metaInfo, "SQL解析异常.");
-        DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
+        DatabaseConfig cfg = config.getConfig();
         List<String> tables = new ArrayList<>();
         tables.add(cfg.getSql());
         return tables;
@@ -281,7 +276,7 @@ public abstract class AbstractDatabaseConnector implements Connector<DatabaseCon
      * @return
      */
     protected MetaInfo getDqlMetaInfo(DatabaseConnectorMapper config) {
-        DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
+        DatabaseConfig cfg = config.getConfig();
         String sql = cfg.getSql().toUpperCase();
         String queryMetaSql = StringUtils.contains(sql, " WHERE ") ? sql + " AND 1!=1 " : sql + " WHERE 1!=1 ";
         return config.execute(databaseTemplate -> DatabaseUtil.getMetaInfo(databaseTemplate, queryMetaSql, cfg.getTable()));
@@ -492,23 +487,6 @@ public abstract class AbstractDatabaseConnector implements Connector<DatabaseCon
             logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
         }
         return rowNum > 0;
-    }
-
-    private Field getPrimaryKeyField(List<Field> fields) {
-        for (Field f : fields) {
-            if (f.isPk()) {
-                return f;
-            }
-        }
-        throw new ConnectorException("主键为空");
-    }
-
-    private boolean isUpdate(String event) {
-        return StringUtils.equals(ConnectorConstant.OPERTION_UPDATE, event);
-    }
-
-    private boolean isDelete(String event) {
-        return StringUtils.equals(ConnectorConstant.OPERTION_DELETE, event);
     }
 
 }

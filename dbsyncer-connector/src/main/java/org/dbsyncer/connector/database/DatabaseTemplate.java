@@ -1,6 +1,5 @@
 package org.dbsyncer.connector.database;
 
-import org.dbsyncer.connector.ConnectorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -81,12 +80,8 @@ public class DatabaseTemplate extends JdbcAccessor implements JdbcOperations {
 
     private Connection connection;
 
-    public DatabaseTemplate(Object connection) {
-        if(connection instanceof Connection){
-            this.connection = (Connection) connection;
-            return;
-        }
-        throw new ConnectorException(String.format("connection \"%s\" can not cast be class java.sql.Connection", connection));
+    public DatabaseTemplate(Connection connection) {
+        this.connection = connection;
     }
 
     /**

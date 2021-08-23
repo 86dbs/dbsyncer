@@ -152,8 +152,8 @@ public class ESClientTest {
 
         // 字段信息
         ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetaData>> mappings = indexResponse.getMappings();
-        ImmutableOpenMap<String, MappingMetaData> indexMap = mappings.get(indexName);
-        MappingMetaData mappingMetaData = indexMap.get(type);
+        ImmutableOpenMap<String, MappingMetaData> typeMap = mappings.get(indexName);
+        MappingMetaData mappingMetaData = typeMap.get(type);
         Map<String, Object> propertiesMap = mappingMetaData.getSourceAsMap();
         Object o = propertiesMap.get(ESUtil.PROPERTIES);
         logger.info(JsonUtil.objToJson(o));
