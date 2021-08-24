@@ -37,12 +37,11 @@
         <!-- maven 编译插件版本 -->
         <maven.compiler.compilerVersion>1.8</maven.compiler.compilerVersion>
         <java.version>1.8</java.version>
-        <spring-boot.version>2.1.8.RELEASE</spring-boot.version>
+        <spring-boot.version>2.2.0.RELEASE</spring-boot.version>
         <commons-lang.version>2.6</commons-lang.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <commons-io.version>2.5</commons-io.version>
-        <lucene-analyzers-smartcn.version>7.6.0</lucene-analyzers-smartcn.version>
-        <elasticsearch.version>6.6.0</elasticsearch.version>
+        <lucene-analyzers-smartcn.version>7.7.0</lucene-analyzers-smartcn.version>
         <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
         <mysql.version>5.1.40</mysql.version>
         <mysql-binlog.version>0.21.0</mysql-binlog.version>
