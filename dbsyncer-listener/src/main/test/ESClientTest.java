@@ -4,7 +4,6 @@ import org.dbsyncer.connector.util.ESUtil;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
@@ -16,6 +15,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
@@ -161,10 +161,9 @@ public class ESClientTest {
 
     @Test
     public void deleteIndexTest() throws IOException {
-        DeleteIndexRequest request = new DeleteIndexRequest();
-        request.indices(indexName);
-        DeleteIndexResponse indexResponse = client.indices().delete(request, RequestOptions.DEFAULT);
-        logger.info(indexResponse.toString());
+        DeleteIndexRequest request = new DeleteIndexRequest(indexName);
+        AcknowledgedResponse response = client.indices().delete(request, RequestOptions.DEFAULT);
+        logger.info(response.toString());
     }
 
     @Test
