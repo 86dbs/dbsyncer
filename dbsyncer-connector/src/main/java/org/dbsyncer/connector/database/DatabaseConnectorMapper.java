@@ -7,9 +7,9 @@ import org.springframework.dao.EmptyResultDataAccessException;
 
 import java.sql.Connection;
 
-public final class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, Connection> {
-    private DatabaseConfig config;
-    private Connection connection;
+public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, Connection> {
+    protected DatabaseConfig config;
+    protected Connection connection;
 
     public DatabaseConnectorMapper(DatabaseConfig config, Connection connection) {
         this.config = config;

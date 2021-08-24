@@ -23,11 +23,7 @@ public abstract class DatabaseUtil {
     private DatabaseUtil() {
     }
 
-    public static Connection getConnection(DatabaseConfig config)
-            throws SQLException, ClassNotFoundException {
-        if (null != config.getDriverClassName()) {
-            Class.forName(config.getDriverClassName());
-        }
+    public static Connection getConnection(DatabaseConfig config) throws SQLException {
         return DriverManager.getConnection(config.getUrl(), config.getUsername(), config.getPassword());
     }
 
