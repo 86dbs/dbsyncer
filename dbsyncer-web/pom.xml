@@ -18,7 +18,7 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-        <!-- Web 容器，默认使用Tomcat, 当前使用Jetty容器，故排除-->
+        <!-- Web 容器，默认使用Tomcat-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>

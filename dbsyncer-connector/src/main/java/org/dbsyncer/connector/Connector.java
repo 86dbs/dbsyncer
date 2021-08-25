@@ -9,11 +9,11 @@ import java.util.Map;
 /**
  * 连接器基础功能
  *
+ * @param <M> ConnectorMapper
+ * @param <C> ConnectorConfig
  * @author AE86
  * @version 1.0.0
  * @date 2019/9/18 23:30
- * @param <M> ConnectorMapper
- * @param <C> ConnectorConfig
  */
 public interface Connector<M, C> {
 

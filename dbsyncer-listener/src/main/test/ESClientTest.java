@@ -1,11 +1,6 @@
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.config.ESConfig;
 import org.dbsyncer.connector.util.ESUtil;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
-import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -18,8 +13,11 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.CreateIndexResponse;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
-import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -50,7 +48,7 @@ public class ESClientTest {
     @Before
     public void init() {
         ESConfig config = new ESConfig();
-        config.setClusterNodes("127.0.0.1:9200");
+        config.setUrl("127.0.0.1:9200");
         config.setSchema("http");
         config.setUsername("ae86");
         config.setPassword("123456");
@@ -70,9 +68,8 @@ public class ESClientTest {
 
     @Test
     public void isExistsIndexTest() {
-        GetIndexRequest request = new GetIndexRequest();
-        request.indices(indexName);
         try {
+            GetIndexRequest request = new GetIndexRequest(indexName);
             boolean exists = client.indices().exists(request, RequestOptions.DEFAULT);
             logger.info("es exist index:{}", exists);
         } catch (IOException e) {
@@ -127,7 +124,8 @@ public class ESClientTest {
             builder.endObject();
         }
         builder.endObject();
-        request.mapping(type, builder);
+        // 7版本开始去掉type
+        request.mapping(builder);
         // 这里创建索引结构
         CreateIndexResponse response = client.indices().create(request, RequestOptions.DEFAULT);
         // 指示是否所有节点都已确认请求
@@ -141,8 +139,7 @@ public class ESClientTest {
 
     @Test
     public void getIndexTest() throws IOException {
-        GetIndexRequest request = new GetIndexRequest();
-        request.indices(indexName);
+        GetIndexRequest request = new GetIndexRequest(indexName);
         GetIndexResponse indexResponse = client.indices().get(request, RequestOptions.DEFAULT);
         // 获取索引
         String[] indices = indexResponse.getIndices();
@@ -151,12 +148,10 @@ public class ESClientTest {
         }
 
         // 字段信息
-        ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetaData>> mappings = indexResponse.getMappings();
-        ImmutableOpenMap<String, MappingMetaData> typeMap = mappings.get(indexName);
-        MappingMetaData mappingMetaData = typeMap.get(type);
+        MappingMetaData mappingMetaData = indexResponse.getMappings().get(indexName);
         Map<String, Object> propertiesMap = mappingMetaData.getSourceAsMap();
-        Object o = propertiesMap.get(ESUtil.PROPERTIES);
-        logger.info(JsonUtil.objToJson(o));
+        Map<String, Map> properties = (Map<String, Map>) propertiesMap.get(ESUtil.PROPERTIES);
+        logger.info(properties.toString());
     }
 
     @Test
@@ -172,8 +167,8 @@ public class ESClientTest {
         map.put("id", 2);
         map.put("name", "刘备关羽张飞");
         map.put("content", "桃园结义");
-        map.put("tags", new Long[] {200L});
-        IndexRequest request = new IndexRequest(indexName, "_doc", "2");
+        map.put("tags", new Long[]{200L});
+        IndexRequest request = new IndexRequest(indexName, type, "2");
         request.source(map, XContentType.JSON);
 
         IndexResponse indexResponse = client.index(request, RequestOptions.DEFAULT);
@@ -188,8 +183,8 @@ public class ESClientTest {
         m1.put("id", 1);
         m1.put("name", "刘备关羽张飞");
         m1.put("content", "桃园结义");
-        m1.put("tags", new Long[] {200L});
-        IndexRequest r1 = new IndexRequest(indexName, "_doc", "1");
+        m1.put("tags", new Long[]{200L});
+        IndexRequest r1 = new IndexRequest(indexName, type, "1");
         r1.source(m1, XContentType.JSON);
         request.add(r1);
 
@@ -197,8 +192,8 @@ public class ESClientTest {
         m2.put("id", 2);
         m2.put("name", "曹阿瞒");
         m2.put("content", "火烧");
-        m2.put("tags", new Long[] {200L, 300L});
-        IndexRequest r2 = new IndexRequest(indexName, "_doc", "2");
+        m2.put("tags", new Long[]{200L, 300L});
+        IndexRequest r2 = new IndexRequest(indexName, type, "2");
         r2.source(m2, XContentType.JSON);
         request.add(r2);
 
@@ -212,7 +207,7 @@ public class ESClientTest {
 
     @Test
     public void deleteTest() throws IOException {
-        DeleteRequest request = new DeleteRequest(indexName, "_doc", "2");
+        DeleteRequest request = new DeleteRequest(indexName, type, "2");
         DeleteResponse delete = client.delete(request, RequestOptions.DEFAULT);
         logger.info(delete.toString());
     }
@@ -220,8 +215,8 @@ public class ESClientTest {
     @Test
     public void bulkDeleteTest() throws IOException {
         BulkRequest request = new BulkRequest();
-        request.add(new DeleteRequest(indexName, "_doc", "1"));
-        request.add(new DeleteRequest(indexName, "_doc", "2"));
+        request.add(new DeleteRequest(indexName, type, "1"));
+        request.add(new DeleteRequest(indexName, type, "2"));
 
         BulkResponse response = client.bulk(request, RequestOptions.DEFAULT);
         BulkItemResponse[] items = response.getItems();
@@ -238,11 +233,9 @@ public class ESClientTest {
         sourceBuilder.from(0);
         sourceBuilder.size(10);
         sourceBuilder.timeout(TimeValue.timeValueMillis(10));
-        sourceBuilder.fetchSource(new String[] {"id", "name"}, null);
+        sourceBuilder.fetchSource(new String[]{"id", "name"}, null);
 
-        SearchRequest rq = new SearchRequest();
-        rq.indices(indexName);
-        rq.source(sourceBuilder);
+        SearchRequest rq = new SearchRequest(new String[]{indexName}, sourceBuilder);
         SearchResponse searchResponse = client.search(rq, RequestOptions.DEFAULT);
         SearchHits hits = searchResponse.getHits();
         long totalHits = hits.getTotalHits();
@@ -258,9 +251,7 @@ public class ESClientTest {
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         // 取消限制返回查询条数10000
         sourceBuilder.trackTotalHits(true);
-        SearchRequest request = new SearchRequest();
-        request.indices(indexName);
-        request.source(sourceBuilder);
+        SearchRequest request = new SearchRequest(new String[]{indexName}, sourceBuilder);
         SearchResponse searchResponse = client.search(request, RequestOptions.DEFAULT);
         SearchHits hits = searchResponse.getHits();
         long totalHits = hits.getTotalHits();

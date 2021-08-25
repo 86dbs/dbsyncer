@@ -11,7 +11,7 @@ public class ESConfig extends ConnectorConfig {
     /**
      * 集群地址192.168.1.100:9200,192.168.1.200:9200
      */
-    private String clusterNodes;
+    private String url;
 
     /**
      * 协议9200(http),9300(tcp)
@@ -38,12 +38,12 @@ public class ESConfig extends ConnectorConfig {
      */
     private String type;
 
-    public String getClusterNodes() {
-        return clusterNodes;
+    public String getUrl() {
+        return url;
     }
 
-    public void setClusterNodes(String clusterNodes) {
-        this.clusterNodes = clusterNodes;
+    public void setUrl(String url) {
+        this.url = url;
     }
 
     public String getSchema() {

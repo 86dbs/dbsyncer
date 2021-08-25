@@ -52,13 +52,14 @@ public class ConnectorChecker extends AbstractChecker {
         Connector connector = new Connector();
         connector.setName(name);
         connector.setType(ConfigConstant.CONNECTOR);
-        setConfig(connector, connectorType);
+        ConnectorConfig config = getConfig(connectorType);
+        connector.setConfig(config);
 
         // 配置连接器配置
         String type = StringUtil.toLowerCaseFirstOne(connectorType).concat("ConfigChecker");
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
-        checker.modify(connector, params);
+        checker.modify(config, params);
 
         // 获取表
         setTable(connector);
@@ -85,7 +86,7 @@ public class ConnectorChecker extends AbstractChecker {
         String type = StringUtil.toLowerCaseFirstOne(config.getConnectorType()).concat("ConfigChecker");
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
-        checker.modify(connector, params);
+        checker.modify(config, params);
 
         // 获取表
         setTable(connector);
@@ -93,13 +94,13 @@ public class ConnectorChecker extends AbstractChecker {
         return connector;
     }
 
-    private void setConfig(Connector connector, String connectorType) {
+    private ConnectorConfig getConfig(String connectorType) {
         Class<ConnectorConfig> configClass = (Class<ConnectorConfig>) ConnectorEnum.getConfigClass(connectorType);
         Assert.notNull(configClass, String.format("不支持该连接器类型:%s", connectorType));
         try {
             ConnectorConfig config = configClass.newInstance();
             config.setConnectorType(connectorType);
-            connector.setConfig(config);
+            return config;
         } catch (Exception e) {
             logger.error(e.getMessage());
             throw new BizException("获取连接器配置异常.");

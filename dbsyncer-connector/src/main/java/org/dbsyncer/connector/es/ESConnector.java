@@ -8,8 +8,6 @@ import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.util.ESUtil;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -19,8 +17,9 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
-import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.xcontent.StatusToXContentObject;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.RestStatus;
@@ -60,26 +59,23 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
     @Override
     public String getConnectorMapperCacheKey(ESConfig config) {
-        return String.format("%s-%s", config.getClusterNodes(), config.getUsername());
+        return String.format("%s-%s", config.getUrl(), config.getUsername());
     }
 
     @Override
     public List<String> getTable(ESConnectorMapper connectorMapper) {
-        ESConfig config = connectorMapper.getConfig();
-        List<String> tables = new ArrayList<>();
         try {
+            ESConfig config = connectorMapper.getConfig();
             GetIndexRequest request = new GetIndexRequest();
-            request.indices(config.getIndex());
             GetIndexResponse indexResponse = connectorMapper.getConnection().indices().get(request, RequestOptions.DEFAULT);
-            ImmutableOpenMap<String, MappingMetaData> typeMap = indexResponse.getMappings().get(config.getIndex());
-            if (null != typeMap || 0 < typeMap.size()) {
-                typeMap.keysIt().forEachRemaining(type -> tables.add(type));
-            }
+            MappingMetaData mappingMetaData = indexResponse.getMappings().get(config.getIndex());
+            List<String> tables = new ArrayList<>();
+            tables.add(mappingMetaData.type());
+            return tables;
         } catch (IOException e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e);
         }
-        return tables;
     }
 
     @Override
@@ -87,11 +83,9 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         ESConfig config = connectorMapper.getConfig();
         List<Field> fields = new ArrayList<>();
         try {
-            GetIndexRequest request = new GetIndexRequest();
-            request.indices(config.getIndex());
+            GetIndexRequest request = new GetIndexRequest(config.getIndex());
             GetIndexResponse indexResponse = connectorMapper.getConnection().indices().get(request, RequestOptions.DEFAULT);
-            ImmutableOpenMap<String, MappingMetaData> typeMap = indexResponse.getMappings().get(config.getIndex());
-            MappingMetaData mappingMetaData = typeMap.get(tableName);
+            MappingMetaData mappingMetaData = indexResponse.getMappings().get(config.getIndex());
             Map<String, Object> propertiesMap = mappingMetaData.getSourceAsMap();
             Map<String, Map> properties = (Map<String, Map>) propertiesMap.get(ESUtil.PROPERTIES);
             if (CollectionUtils.isEmpty(properties)) {
@@ -121,15 +115,13 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
     @Override
     public long getCount(ESConnectorMapper connectorMapper, Map<String, String> command) {
-        ESConfig config = connectorMapper.getConfig();
-        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-        sourceBuilder.trackTotalHits(true);
-        sourceBuilder.from(0);
-        sourceBuilder.size(0);
-        SearchRequest request = new SearchRequest();
-        request.indices(config.getIndex());
-        request.source(sourceBuilder);
         try {
+            ESConfig config = connectorMapper.getConfig();
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            sourceBuilder.trackTotalHits(true);
+            sourceBuilder.from(0);
+            sourceBuilder.size(0);
+            SearchRequest request = new SearchRequest(new String[]{config.getIndex()}, sourceBuilder);
             SearchResponse response = connectorMapper.getConnection().search(request, RequestOptions.DEFAULT);
             return response.getHits().getTotalHits();
         } catch (IOException e) {

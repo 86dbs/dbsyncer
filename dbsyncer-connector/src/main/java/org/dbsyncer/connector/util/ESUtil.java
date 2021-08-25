@@ -26,7 +26,7 @@ public abstract class ESUtil {
     }
 
     public static RestHighLevelClient getConnection(ESConfig config) {
-        String[] ipAddress = StringUtil.split(config.getClusterNodes(), ",");
+        String[] ipAddress = StringUtil.split(config.getUrl(), ",");
         HttpHost[] hosts = Arrays.stream(ipAddress).map(node -> makeHttpHost(node, config.getSchema())).filter(Objects::nonNull).toArray(
                 HttpHost[]::new);
         RestClientBuilder builder = RestClient.builder(hosts);
