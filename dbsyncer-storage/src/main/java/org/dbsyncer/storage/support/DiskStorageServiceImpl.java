@@ -1,6 +1,5 @@
 package org.dbsyncer.storage.support;
 
-import org.apache.commons.lang.math.NumberUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.IndexableField;
@@ -8,6 +7,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -80,9 +80,9 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
             if (!CollectionUtils.isEmpty(params)) {
                 BooleanQuery.Builder builder = new BooleanQuery.Builder();
                 params.forEach(p -> {
-                    if(p.isNumber()){
-                        builder.add(IntPoint.newSetQuery(p.getKey(), NumberUtils.toInt(p.getValue())), BooleanClause.Occur.MUST);
-                    }else{
+                    if (p.isNumber()) {
+                        builder.add(IntPoint.newSetQuery(p.getKey(), NumberUtil.toInt(p.getValue())), BooleanClause.Occur.MUST);
+                    } else {
                         builder.add(new TermQuery(new Term(p.getKey(), p.getValue())), BooleanClause.Occur.MUST);
                     }
                 });

@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.convert.handler;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.convert.AbstractHandler;
 import org.springframework.util.Assert;
 
@@ -16,9 +16,9 @@ public class ReplaceHandler extends AbstractHandler {
     @Override
     protected Object convert(String args, Object value) {
         Assert.hasText(args, "缺少替换参数.");
-        String[] split = StringUtils.split(args, ",");
+        String[] split = StringUtil.split(args, ",");
         String a = split[0];
         String b = split.length == 2 ? split[1] : "";
-        return StringUtils.replace(String.valueOf(value), a, b);
+        return StringUtil.replace(String.valueOf(value), a, b);
     }
 }

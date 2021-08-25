@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.convert.handler;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.convert.Handler;
 
 /**
@@ -14,6 +14,6 @@ public class DefaultHandler implements Handler {
 
     @Override
     public Object handle(String args, Object value) {
-        return null == value || StringUtils.isBlank(String.valueOf(value)) ? args : value;
+        return null == value || StringUtil.isBlank(String.valueOf(value)) ? args : value;
     }
 }

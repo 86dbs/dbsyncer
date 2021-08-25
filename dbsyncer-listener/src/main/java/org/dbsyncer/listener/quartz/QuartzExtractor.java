@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.quartz;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -119,7 +119,7 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
         final String query = command.get(ConnectorConstant.OPERTION_QUERY);
         List<QuartzFilterEnum> filterEnums = Stream.of(QuartzFilterEnum.values()).filter(f -> {
             Assert.isTrue(appearNotMoreThanOnce(query, f.getType()), String.format("系统参数%s存在多个.", f.getType()));
-            return StringUtils.contains(query, f.getType());
+            return StringUtil.contains(query, f.getType());
         }).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(filterEnums)) {
             return new Point(command, new ArrayList<>());
@@ -133,7 +133,7 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
             final QuartzFilter f = quartzFilter.getQuartzFilter();
 
             // 替换字符
-            replaceQuery = StringUtils.replace(replaceQuery, "'" + type + "'", "?");
+            replaceQuery = StringUtil.replace(replaceQuery, "'" + type + "'", "?");
 
             // 创建参数索引key
             final String key = index + type;
@@ -179,7 +179,7 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
     }
 
     private boolean appearNotMoreThanOnce(String str, String searchStr) {
-        return StringUtils.indexOf(str, searchStr) == StringUtils.lastIndexOf(str, searchStr);
+        return StringUtil.indexOf(str, searchStr) == StringUtil.lastIndexOf(str, searchStr);
     }
 
     public void setCommands(List<Map<String, String>> commands) {
@@ -215,7 +215,7 @@ public class QuartzExtractor extends AbstractExtractor implements ScheduledTaskJ
         }
 
         public void refresh() {
-            if(StringUtils.isNotBlank(beginKey) && StringUtils.isNotBlank(beginValue)){
+            if(StringUtil.isNotBlank(beginKey) && StringUtil.isNotBlank(beginValue)){
                 position.put(beginKey, beginValue);
                 refreshed = true;
             }

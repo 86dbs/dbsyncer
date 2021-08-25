@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.enums;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.listener.oracle.OracleExtractor;
 import org.dbsyncer.listener.quartz.QuartzExtractor;
@@ -49,7 +49,7 @@ public enum ListenerEnum {
      */
     public static Class<?> getExtractor(String type) throws ListenerException {
         for (ListenerEnum e : ListenerEnum.values()) {
-            if (StringUtils.equals(type, e.getType())) {
+            if (StringUtil.equals(type, e.getType())) {
                 return e.getClazz();
             }
         }

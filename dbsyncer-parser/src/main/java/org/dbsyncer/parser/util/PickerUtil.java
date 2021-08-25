@@ -1,7 +1,7 @@
 package org.dbsyncer.parser.util;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.Filter;
 import org.dbsyncer.parser.model.Convert;
@@ -54,7 +54,7 @@ public abstract class PickerUtil {
 
         // 检查增量字段是否在映射关系中
         String eventFieldName = mapping.getListener().getEventFieldName();
-        if (StringUtils.isNotBlank(eventFieldName)) {
+        if (StringUtil.isNotBlank(eventFieldName)) {
             Map<String, Field> fields = convert2Map(group.getSourceTable().getColumn());
             addFieldMapping(fieldMapping, eventFieldName, fields, true);
         }
@@ -75,14 +75,14 @@ public abstract class PickerUtil {
     }
 
     private static void addFieldMapping(List<FieldMapping> fieldMapping, String name, Map<String, Field> fields, boolean checkSource) {
-        if (StringUtils.isNotBlank(name)) {
+        if (StringUtil.isNotBlank(name)) {
             boolean exist = false;
             for (FieldMapping m : fieldMapping) {
                 Field f = checkSource ? m.getSource() : m.getTarget();
                 if (null == f) {
                     continue;
                 }
-                if (StringUtils.equals(f.getName(), name)) {
+                if (StringUtil.equals(f.getName(), name)) {
                     exist = true;
                     break;
                 }

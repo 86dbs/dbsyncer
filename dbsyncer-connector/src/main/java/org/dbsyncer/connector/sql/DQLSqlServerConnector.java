@@ -1,6 +1,6 @@
 package org.dbsyncer.connector.sql;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
@@ -36,7 +36,7 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getPageSql(PageSqlConfig config) {
-        if (StringUtils.isBlank(config.getPk())) {
+        if (StringUtil.isBlank(config.getPk())) {
             logger.error("Table primary key can not be empty.");
             throw new ConnectorException("Table primary key can not be empty.");
         }

@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.enums;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 
 /**
  * @author AE86
@@ -25,11 +25,11 @@ public enum ListenerTypeEnum {
     }
 
     public static boolean isTiming(String type) {
-        return StringUtils.equals(TIMING.getType(), type);
+        return StringUtil.equals(TIMING.getType(), type);
     }
 
     public static boolean isLog(String type) {
-        return StringUtils.equals(LOG.getType(), type);
+        return StringUtil.equals(LOG.getType(), type);
     }
 
     public String getType() {

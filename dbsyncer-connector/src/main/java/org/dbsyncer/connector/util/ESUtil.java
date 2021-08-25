@@ -1,6 +1,6 @@
 package org.dbsyncer.connector.util;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
@@ -26,7 +26,7 @@ public abstract class ESUtil {
     }
 
     public static RestHighLevelClient getConnection(ESConfig config) {
-        String[] ipAddress = StringUtils.split(config.getClusterNodes(), ",");
+        String[] ipAddress = StringUtil.split(config.getClusterNodes(), ",");
         HttpHost[] hosts = Arrays.stream(ipAddress).map(node -> makeHttpHost(node, config.getSchema())).filter(Objects::nonNull).toArray(
                 HttpHost[]::new);
         RestClientBuilder builder = RestClient.builder(hosts);

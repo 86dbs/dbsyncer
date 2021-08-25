@@ -1,8 +1,8 @@
 package org.dbsyncer.storage.support;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
@@ -86,8 +86,8 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             DatabaseMetaData metaData = conn.getMetaData();
             String driverVersion = metaData.getDriverVersion();
             String databaseProductVersion = metaData.getDatabaseProductVersion();
-            boolean driverThanMysql8 = StringUtils.startsWith(driverVersion, "mysql-connector-java-8");
-            boolean dbThanMysql8 = StringUtils.startsWith(databaseProductVersion, "8");
+            boolean driverThanMysql8 = StringUtil.startsWith(driverVersion, "mysql-connector-java-8");
+            boolean dbThanMysql8 = StringUtil.startsWith(databaseProductVersion, "8");
             Assert.isTrue(driverThanMysql8 == dbThanMysql8, String.format("当前驱动%s和数据库%s版本不一致.", driverVersion, databaseProductVersion));
 
             Class clazz = conn.getClass();
@@ -299,7 +299,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             String template = PREFIX_TABLE.concat(type);
             String ddl = readSql("/".concat(template).concat(".sql"));
             // 动态替换表名
-            ddl = executor.isDynamicTableName() ? StringUtils.replaceOnce(ddl, template, table) : ddl;
+            ddl = executor.isDynamicTableName() ? StringUtil.replaceOnce(ddl, template, table) : ddl;
             logger.info(ddl);
             executeSql(ddl);
         }
@@ -362,7 +362,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                 highLight.forEach(p -> {
                     String text = String.valueOf(row.get(p.getKey()));
                     String replacement = new StringBuilder("<span style='color:red'>").append(p.getValue()).append("</span>").toString();
-                    row.put(p.getKey(), StringUtils.replace(text, p.getValue(), replacement));
+                    row.put(p.getKey(), StringUtil.replace(text, p.getValue(), replacement));
                 });
             });
         }

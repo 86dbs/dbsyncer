@@ -1,6 +1,6 @@
 package org.dbsyncer.connector;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 
@@ -18,14 +18,14 @@ public abstract class AbstractConnector {
     }
 
     protected boolean isUpdate(String event) {
-        return StringUtils.equals(ConnectorConstant.OPERTION_UPDATE, event);
+        return StringUtil.equals(ConnectorConstant.OPERTION_UPDATE, event);
     }
 
     protected boolean isInsert(String event) {
-        return StringUtils.equals(ConnectorConstant.OPERTION_INSERT, event);
+        return StringUtil.equals(ConnectorConstant.OPERTION_INSERT, event);
     }
 
     protected boolean isDelete(String event) {
-        return StringUtils.equals(ConnectorConstant.OPERTION_DELETE, event);
+        return StringUtil.equals(ConnectorConstant.OPERTION_DELETE, event);
     }
 }

@@ -1,9 +1,55 @@
 package org.dbsyncer.common.util;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public abstract class StringUtil {
-    public StringUtil() {
+
+    public static boolean equals(CharSequence cs1, CharSequence cs2) {
+        return StringUtils.equals(cs1, cs2);
+    }
+
+    public static boolean isBlank(CharSequence cs) {
+        return StringUtils.isBlank(cs);
+    }
+
+    public static boolean isNotBlank(CharSequence cs) {
+        return StringUtils.isNotBlank(cs);
+    }
+
+    public static String[] split(String str, String separatorChars) {
+        return StringUtils.split(str, separatorChars);
+    }
+
+    public static boolean contains(CharSequence seq, CharSequence searchSeq) {
+        return StringUtils.contains(seq, searchSeq);
+    }
+
+    public static String replace(String text, String searchString, String replacement) {
+        return StringUtils.replace(text, searchString, replacement);
+    }
+
+    public static String replaceOnce(String text, String searchString, String replacement) {
+        return StringUtils.replaceOnce(text, searchString, replacement);
+    }
+
+    public static String substring(String str, int start) {
+        return StringUtils.substring(str, start);
+    }
+
+    public static String substring(String str, int start, int end) {
+        return StringUtils.substring(str, start, end);
+    }
+
+    public static int indexOf(CharSequence seq, CharSequence searchChar) {
+        return StringUtils.indexOf(seq, searchChar);
+    }
+
+    public static int lastIndexOf(CharSequence seq, CharSequence searchChar) {
+        return StringUtils.lastIndexOf(seq, searchChar);
+    }
+
+    public static boolean startsWith(CharSequence str, CharSequence prefix) {
+        return StringUtils.startsWith(str, prefix);
     }
 
     /**

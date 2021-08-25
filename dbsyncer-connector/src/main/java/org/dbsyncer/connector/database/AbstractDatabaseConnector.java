@@ -1,8 +1,8 @@
 package org.dbsyncer.connector.database;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
@@ -86,7 +86,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
         StringBuilder queryCount = new StringBuilder();
         queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(quotation).append(table.getName()).append(quotation);
-        if (StringUtils.isNotBlank(queryFilterSql)) {
+        if (StringUtil.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
         queryCount.append(" GROUP BY ").append(pk).append(") DBSYNCER_T");
@@ -278,7 +278,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     protected MetaInfo getDqlMetaInfo(DatabaseConnectorMapper config) {
         DatabaseConfig cfg = config.getConfig();
         String sql = cfg.getSql().toUpperCase();
-        String queryMetaSql = StringUtils.contains(sql, " WHERE ") ? sql + " AND 1!=1 " : sql + " WHERE 1!=1 ";
+        String queryMetaSql = StringUtil.contains(sql, " WHERE ") ? sql + " AND 1!=1 " : sql + " WHERE 1!=1 ";
         return config.execute(databaseTemplate -> DatabaseUtil.getMetaInfo(databaseTemplate, queryMetaSql, cfg.getTable()));
     }
 
@@ -300,7 +300,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         String querySql = table.getName();
 
         // 存在条件
-        if (StringUtils.isNotBlank(queryFilterSql)) {
+        if (StringUtil.isNotBlank(queryFilterSql)) {
             querySql += queryFilterSql;
         }
         String quotation = buildSqlWithQuotation();
@@ -310,7 +310,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
         queryCount.append("SELECT COUNT(1) FROM (").append(table.getName());
-        if (StringUtils.isNotBlank(queryFilterSql)) {
+        if (StringUtil.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
         // Mysql
@@ -347,20 +347,20 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         // 拼接并且SQL
         String addSql = getFilterSql(OperationEnum.AND.getName(), filter);
         // 如果Add条件存在
-        if (StringUtils.isNotBlank(addSql)) {
+        if (StringUtil.isNotBlank(addSql)) {
             sql.append(addSql);
         }
 
         // 拼接或者SQL
         String orSql = getFilterSql(OperationEnum.OR.getName(), filter);
         // 如果Or条件和Add条件都存在
-        if (StringUtils.isNotBlank(orSql) && StringUtils.isNotBlank(addSql)) {
+        if (StringUtil.isNotBlank(orSql) && StringUtil.isNotBlank(addSql)) {
             sql.append(" OR ");
         }
         sql.append(orSql);
 
         // 如果有条件加上 WHERE
-        if (StringUtils.isNotBlank(sql.toString())) {
+        if (StringUtil.isNotBlank(sql.toString())) {
             // WHERE (USER.USERNAME = 'zhangsan' AND USER.AGE='20') OR (USER.TEL='18299996666')
             sql.insert(0, " WHERE ");
         }
@@ -391,7 +391,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         List<Field> fields = new ArrayList<>();
         for (Field c : column) {
             String name = c.getName();
-            if (StringUtils.isBlank(name)) {
+            if (StringUtil.isBlank(name)) {
                 throw new ConnectorException("The field name can not be empty.");
             }
             if (c.isPk()) {
@@ -407,11 +407,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             throw new ConnectorException("The fields can not be empty.");
         }
         String tableName = table.getName();
-        if (StringUtils.isBlank(tableName)) {
+        if (StringUtil.isBlank(tableName)) {
             logger.error("Table name can not be empty.");
             throw new ConnectorException("Table name can not be empty.");
         }
-        if (StringUtils.isBlank(pk)) {
+        if (StringUtil.isBlank(pk)) {
             pk = DatabaseUtil.findTablePrimaryKey(originalTable, "");
         }
 
@@ -436,7 +436,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * @return
      */
     private String getFilterSql(String queryOperator, List<Filter> filter) {
-        List<Filter> list = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), queryOperator)).collect(Collectors.toList());
+        List<Filter> list = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), queryOperator)).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(list)) {
             return "";
         }
@@ -482,7 +482,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     private boolean existRow(DatabaseConnectorMapper connectorMapper, String sql, Object value) {
         int rowNum = 0;
         try {
-            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[]{value}, Integer.class));
+            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[] {value}, Integer.class));
         } catch (Exception e) {
             logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
         }

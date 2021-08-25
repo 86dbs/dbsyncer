@@ -1,5 +1,5 @@
 import oracle.jdbc.dcn.TableChangeDescription;
-import org.apache.commons.lang.math.RandomUtils;
+import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.listener.oracle.event.DCNEvent;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 public class LinkedBlockingQueueTest {
 
-    private final Logger                  logger = LoggerFactory.getLogger(getClass());
+    private final Logger        logger = LoggerFactory.getLogger(getClass());
     private       BlockingQueue queue  = new LinkedBlockingQueue<>(10);
 
     @Test
@@ -61,7 +61,7 @@ public class LinkedBlockingQueueTest {
         BlockingQueue<DCNEvent> queue;
 
         public Consumer(BlockingQueue<DCNEvent> queue) {
-            setName("Consumer-thread-" + RandomUtils.nextInt(100));
+            setName("Consumer-thread-" + RandomUtil.nextInt(1, 100));
             this.queue = queue;
         }
 
@@ -72,7 +72,7 @@ public class LinkedBlockingQueueTest {
             while (true) {
                 try {
                     // 模拟耗时
-                    TimeUnit.SECONDS.sleep(RandomUtils.nextInt(3));
+                    TimeUnit.SECONDS.sleep(RandomUtil.nextInt(0, 3));
                     // 取走BlockingQueue里排在首位的对象,若BlockingQueue为空,阻断进入等待状态直到Blocking有新的对象被加入为止
                     DCNEvent event = queue.take();
                     logger.error("消费线程{}接受消息：{}", threadName, event.getTableName());

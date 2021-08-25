@@ -1,6 +1,6 @@
 package org.dbsyncer.connector.enums;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -75,7 +75,7 @@ public enum ConnectorEnum {
      */
     public static Connector getConnector(String type) throws ConnectorException {
         for (ConnectorEnum e : ConnectorEnum.values()) {
-            if (StringUtils.equals(type, e.getType())) {
+            if (StringUtil.equals(type, e.getType())) {
                 return e.getConnector();
             }
         }
@@ -91,7 +91,7 @@ public enum ConnectorEnum {
      */
     public static Class<?> getConfigClass(String type) throws ConnectorException {
         for (ConnectorEnum e : ConnectorEnum.values()) {
-            if (StringUtils.equals(type, e.getType())) {
+            if (StringUtil.equals(type, e.getType())) {
                 return e.getConfigClass();
             }
         }

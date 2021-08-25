@@ -6,7 +6,7 @@ import org.dbsyncer.monitor.model.Sample;
 
 import java.math.BigDecimal;
 
-public class DiskMetricDetailFormatter extends AbstractMetricDetailFormatter {
+public final class DiskMetricDetailFormatter extends AbstractMetricDetailFormatter {
 
     @Override
     public void apply(MetricResponseVo vo) {

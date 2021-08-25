@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.enums;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.convert.Handler;
 import org.dbsyncer.parser.convert.handler.*;
@@ -89,7 +89,7 @@ public enum ConvertEnum {
 
     public static Handler getHandler(String code) throws ParserException {
         for (ConvertEnum e : ConvertEnum.values()) {
-            if (StringUtils.equals(code, e.getCode())) {
+            if (StringUtil.equals(code, e.getCode())) {
                 return e.getHandler();
             }
         }

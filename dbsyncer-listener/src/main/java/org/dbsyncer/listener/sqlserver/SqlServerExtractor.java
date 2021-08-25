@@ -1,9 +1,9 @@
 package org.dbsyncer.listener.sqlserver;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
-import org.apache.commons.lang.math.RandomUtils;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
@@ -82,7 +82,7 @@ public class SqlServerExtractor extends AbstractExtractor {
             readLastLsn();
 
             worker = new Worker();
-            worker.setName(new StringBuilder("cdc-parser-").append(serverName).append("_").append(RandomUtils.nextInt(100)).toString());
+            worker.setName(new StringBuilder("cdc-parser-").append(serverName).append("_").append(RandomUtil.nextInt(1, 100)).toString());
             worker.setDaemon(false);
             worker.start();
         } catch (Exception e) {

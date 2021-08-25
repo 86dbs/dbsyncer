@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.convert.handler;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.convert.AbstractHandler;
 
 /**
@@ -15,6 +15,6 @@ public class RemStrLastHandler extends AbstractHandler {
     @Override
     protected Object convert(String args, Object value) {
         String s = String.valueOf(value);
-        return StringUtils.substring(s, 0, s.length() - 1);
+        return StringUtil.substring(s, 0, s.length() - 1);
     }
 }

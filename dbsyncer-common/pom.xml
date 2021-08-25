@@ -45,10 +45,10 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
-        <!-- apache 字符工具类 -->
+        <!-- apache 工具类 -->
         <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>

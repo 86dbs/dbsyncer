@@ -1,6 +1,6 @@
 package org.dbsyncer.connector.sqlserver;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
@@ -35,7 +35,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
 
     @Override
     public String getPageSql(PageSqlConfig config) {
-        if (StringUtils.isBlank(config.getPk())) {
+        if (StringUtil.isBlank(config.getPk())) {
             logger.error("Table primary key can not be empty.");
             throw new ConnectorException("Table primary key can not be empty.");
         }
@@ -61,7 +61,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
-        if (StringUtils.isNotBlank(queryFilterSql)) {
+        if (StringUtil.isNotBlank(queryFilterSql)) {
             queryCount.append("SELECT COUNT(*) FROM ").append(table.getName()).append(queryFilterSql);
         } else {
             // 从存储过程查询（定时更新总数，可能存在误差）

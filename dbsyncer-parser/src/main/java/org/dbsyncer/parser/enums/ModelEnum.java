@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.enums;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserException;
 
 /**
@@ -31,7 +31,7 @@ public enum ModelEnum {
 
     public static ModelEnum getModelEnum(String code) throws ParserException {
         for (ModelEnum e : ModelEnum.values()) {
-            if (StringUtils.equals(code, e.getCode())) {
+            if (StringUtil.equals(code, e.getCode())) {
                 return e;
             }
         }
@@ -39,7 +39,7 @@ public enum ModelEnum {
     }
 
     public static boolean isFull(String model) {
-        return StringUtils.equals(FULL.getCode(), model);
+        return StringUtil.equals(FULL.getCode(), model);
     }
 
     public String getCode() {

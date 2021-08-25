@@ -4,8 +4,6 @@ import java.util.Collection;
 import java.util.Map;
 
 public abstract class CollectionUtils {
-    public CollectionUtils() {
-    }
 
     public static boolean isEmpty(Collection<?> collection) {
         return collection == null || collection.isEmpty();

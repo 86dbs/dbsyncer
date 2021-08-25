@@ -1,6 +1,6 @@
 package org.dbsyncer.connector.util;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -66,7 +66,7 @@ public abstract class DatabaseUtil {
             int columnType;
             boolean pk;
             for (int i = 1; i <= columnCount; i++) {
-                table = StringUtils.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
+                table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
                 if (null == tables.get(table)) {
                     tables.putIfAbsent(table, findTablePrimaryKeys(md, table));
                 }

@@ -13,9 +13,6 @@ public abstract class DateFormatUtil {
     private static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static ZoneId zoneId = ZoneId.systemDefault();
 
-    public DateFormatUtil() {
-    }
-
     public static String getCurrentTime() {
         return LocalDateTime.now().format(timeFormatter);
     }

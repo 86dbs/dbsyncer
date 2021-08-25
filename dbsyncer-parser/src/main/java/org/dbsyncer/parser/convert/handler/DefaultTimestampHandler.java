@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.convert.handler;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.convert.Handler;
 
 import java.sql.Timestamp;
@@ -15,6 +15,6 @@ public class DefaultTimestampHandler implements Handler {
 
     @Override
     public Object handle(String args, Object value) {
-        return null == value || StringUtils.isBlank(String.valueOf(value)) ? new Timestamp(Instant.now().toEpochMilli()) : value;
+        return null == value || StringUtil.isBlank(String.valueOf(value)) ? new Timestamp(Instant.now().toEpochMilli()) : value;
     }
 }
