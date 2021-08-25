@@ -1,8 +1,8 @@
 package org.dbsyncer.web.controller;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.RandomUtils;
 import org.dbsyncer.biz.MappingService;
+import org.dbsyncer.common.util.RandomUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.web.remote.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +48,7 @@ public class TestController implements InitializingBean {
     @RequestMapping("/demo")
     public String demo(ModelMap modelMap, Long id, String version) {
         logger.info("id:{},version:{}", id, version);
-        modelMap.put("data", RandomUtils.nextInt(100));
+        modelMap.put("data", RandomUtil.nextInt(1, 100));
         return id + version;
     }
 
@@ -85,13 +85,13 @@ public class TestController implements InitializingBean {
     }
 
     @Autowired
-    private RequestMappingHandlerAdapter           requestMappingHandlerAdapter;
+    private RequestMappingHandlerAdapter requestMappingHandlerAdapter;
     @Autowired
-    private ApplicationContext                     applicationContext;
-    private Map<String, String>                    parsePackage            = new HashMap<>();
-    private Map<String, InvocableHandlerMethod>    handlers                = new ConcurrentHashMap<>();
-    private HandlerMethodArgumentResolverComposite resolvers               = new HandlerMethodArgumentResolverComposite();
-    private ParameterNameDiscoverer                parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
+    private ApplicationContext applicationContext;
+    private Map<String, String> parsePackage = new HashMap<>();
+    private Map<String, InvocableHandlerMethod> handlers = new ConcurrentHashMap<>();
+    private HandlerMethodArgumentResolverComposite resolvers = new HandlerMethodArgumentResolverComposite();
+    private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
     @Override
     public void afterPropertiesSet() {
@@ -115,7 +115,7 @@ public class TestController implements InitializingBean {
                 filter = false;
                 // 匹配解析包
                 for (int i = 0; i < length; i++) {
-                    if (StringUtils.startsWith((String) array[i], obj.getKey())) {
+                    if (StringUtil.startsWith((String) array[i], obj.getKey())) {
                         Object bean = applicationContext.getBean(v.getBeanType());
                         InvocableHandlerMethod invocableHandlerMethod = new InvocableHandlerMethod(bean, v.getMethod());
                         invocableHandlerMethod.setHandlerMethodArgumentResolvers(resolvers);

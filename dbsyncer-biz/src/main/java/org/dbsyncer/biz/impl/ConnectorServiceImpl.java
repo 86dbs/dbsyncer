@@ -1,8 +1,8 @@
 package org.dbsyncer.biz.impl;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.checker.Checker;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -57,7 +57,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public Connector getConnector(String id) {
-        return StringUtils.isNotBlank(id) ? manager.getConnector(id) : null;
+        return StringUtil.isNotBlank(id) ? manager.getConnector(id) : null;
     }
 
     @Override

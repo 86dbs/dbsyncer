@@ -1,10 +1,10 @@
 package org.dbsyncer.biz.checker.impl.config;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.SHA1Util;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
@@ -66,9 +66,9 @@ public class ConfigChecker extends AbstractChecker {
         // 修改密码
         String newPwd = params.get("newPwd");
         String oldPwd = params.get("oldPwd");
-        if (StringUtils.isNotBlank(newPwd) && StringUtils.isNotBlank(oldPwd)) {
+        if (StringUtil.isNotBlank(newPwd) && StringUtil.isNotBlank(oldPwd)) {
             oldPwd = SHA1Util.b64_sha1(oldPwd);
-            if (!StringUtils.equals(config.getPassword(), oldPwd)) {
+            if (!StringUtil.equals(config.getPassword(), oldPwd)) {
                 logService.log(LogType.SystemLog.ERROR, "修改密码失败");
                 throw new BizException("修改密码失败");
             }
@@ -79,8 +79,8 @@ public class ConfigChecker extends AbstractChecker {
 
         // 刷新监控间隔（秒）
         String refreshInterval = params.get("refreshInterval");
-        if(StringUtils.isNotBlank(refreshInterval)){
-            int time = NumberUtils.toInt(refreshInterval, 10);
+        if (StringUtil.isNotBlank(refreshInterval)) {
+            int time = NumberUtil.toInt(refreshInterval, 10);
             config.setRefreshInterval(time);
         }
 

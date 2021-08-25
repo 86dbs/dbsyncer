@@ -1,9 +1,9 @@
 package org.dbsyncer.manager.puller.impl;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.ConnectorConfig;
@@ -315,7 +315,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
                 pickers.parallelStream().forEach(picker -> {
                     final Map<String, Object> before = picker.getColumns(rowChangedEvent.getBeforeData());
                     final Map<String, Object> after = picker.getColumns(rowChangedEvent.getAfterData());
-                    if (picker.filter(StringUtils.equals(ConnectorConstant.OPERTION_DELETE, rowChangedEvent.getEvent()) ? before : after)) {
+                    if (picker.filter(StringUtil.equals(ConnectorConstant.OPERTION_DELETE, rowChangedEvent.getEvent()) ? before : after)) {
                         rowChangedEvent.setBefore(before);
                         rowChangedEvent.setAfter(after);
                         parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);

@@ -1,6 +1,5 @@
 package org.dbsyncer.biz.impl;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
@@ -9,6 +8,7 @@ import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.monitor.Monitor;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.logger.LogType;
@@ -52,7 +52,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         // 匹配相似表 on
         String autoMatchTable = params.get("autoMatchTable");
-        if(StringUtils.isNotBlank(autoMatchTable)){
+        if(StringUtil.isNotBlank(autoMatchTable)){
             matchSimilarTable(model);
         }
 

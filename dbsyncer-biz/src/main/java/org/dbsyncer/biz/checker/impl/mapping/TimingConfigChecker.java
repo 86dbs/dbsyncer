@@ -1,8 +1,8 @@
 package org.dbsyncer.biz.checker.impl.mapping;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
+import org.dbsyncer.common.util.NumberUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
 import org.dbsyncer.parser.model.Mapping;
@@ -32,19 +32,19 @@ public class TimingConfigChecker implements MappingConfigChecker {
         ListenerConfig config = mapping.getListener();
         Assert.notNull(config, "ListenerConfig can not be null.");
 
-        if (StringUtils.isNotBlank(period)) {
-            config.setPeriod(NumberUtils.toLong(period, 30));
+        if (StringUtil.isNotBlank(period)) {
+            config.setPeriod(NumberUtil.toLong(period, 30));
         }
-        if (StringUtils.isNotBlank(eventFieldName)) {
+        if (StringUtil.isNotBlank(eventFieldName)) {
             config.setEventFieldName(eventFieldName);
         }
-        if (StringUtils.isNotBlank(insert)) {
+        if (StringUtil.isNotBlank(insert)) {
             config.setInsert(insert);
         }
-        if (StringUtils.isNotBlank(update)) {
+        if (StringUtil.isNotBlank(update)) {
             config.setUpdate(update);
         }
-        if (StringUtils.isNotBlank(delete)) {
+        if (StringUtil.isNotBlank(delete)) {
             config.setDelete(delete);
         }
 

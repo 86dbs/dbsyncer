@@ -1,8 +1,8 @@
 package org.dbsyncer.manager.template.impl;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.manager.config.OperationCallBack;
 import org.dbsyncer.manager.config.OperationConfig;
@@ -64,7 +64,7 @@ public final class OperationTemplate extends AbstractTemplate {
     }
 
     public <T> T queryObject(Class<T> clazz, String id) {
-        if (StringUtils.isBlank(id)) {
+        if (StringUtil.isBlank(id)) {
             return null;
         }
         Object o = cacheService.get(id, clazz);

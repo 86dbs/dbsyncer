@@ -1,7 +1,5 @@
 package org.dbsyncer.biz.impl;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.metric.MetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.*;
@@ -9,6 +7,8 @@ import org.dbsyncer.biz.vo.*;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.NumberUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.monitor.Monitor;
 import org.dbsyncer.monitor.enums.DiskMetricEnum;
 import org.dbsyncer.monitor.enums.MetricEnum;
@@ -26,7 +26,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -80,8 +83,8 @@ public class MonitorServiceImpl implements MonitorService {
     @Override
     public Paging queryData(Map<String, String> params) {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        int pageNum = NumberUtils.toInt(params.get("pageNum"), 1);
-        int pageSize = NumberUtils.toInt(params.get("pageSize"), 10);
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String error = params.get(ConfigConstant.DATA_ERROR);
         String success = params.get(ConfigConstant.DATA_SUCCESS);
 
@@ -102,8 +105,8 @@ public class MonitorServiceImpl implements MonitorService {
 
     @Override
     public Paging queryLog(Map<String, String> params) {
-        int pageNum = NumberUtils.toInt(params.get("pageNum"), 1);
-        int pageSize = NumberUtils.toInt(params.get("pageSize"), 10);
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String json = params.get(ConfigConstant.CONFIG_MODEL_JSON);
         Paging paging = monitor.queryLog(pageNum, pageSize, json);
         List<Map> data = (List<Map>) paging.getData();
@@ -153,7 +156,7 @@ public class MonitorServiceImpl implements MonitorService {
     }
 
     private String getDefaultMetaId(String id) {
-        if (StringUtils.isBlank(id)) {
+        if (StringUtil.isBlank(id)) {
             List<MetaVo> list = getMetaAll();
             if (!CollectionUtils.isEmpty(list)) {
                 return list.get(0).getId();

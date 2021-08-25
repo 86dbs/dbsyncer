@@ -1,6 +1,6 @@
 package org.dbsyncer.monitor.enums;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.monitor.MonitorException;
 
@@ -60,7 +60,7 @@ public enum MetricEnum {
 
     public static MetricEnum getMetric(String code) throws ConnectorException {
         for (MetricEnum e : MetricEnum.values()) {
-            if (StringUtils.equals(code, e.getCode())) {
+            if (StringUtil.equals(code, e.getCode())) {
                 return e;
             }
         }

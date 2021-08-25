@@ -32,6 +32,14 @@ public abstract class StringUtil {
         return StringUtils.replaceOnce(text, searchString, replacement);
     }
 
+    public static String join(Iterable<?> iterable, String separator) {
+        return StringUtils.join(iterable, separator);
+    }
+
+    public static String join(Object[] array, String separator) {
+        return StringUtils.join(array, separator);
+    }
+
     public static String substring(String str, int start) {
         return StringUtils.substring(str, start);
     }
