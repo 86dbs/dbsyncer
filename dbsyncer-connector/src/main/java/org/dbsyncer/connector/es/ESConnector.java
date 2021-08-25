@@ -66,7 +66,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
     public List<String> getTable(ESConnectorMapper connectorMapper) {
         try {
             ESConfig config = connectorMapper.getConfig();
-            GetIndexRequest request = new GetIndexRequest();
+            GetIndexRequest request = new GetIndexRequest(config.getIndex());
             GetIndexResponse indexResponse = connectorMapper.getConnection().indices().get(request, RequestOptions.DEFAULT);
             MappingMetaData mappingMetaData = indexResponse.getMappings().get(config.getIndex());
             List<String> tables = new ArrayList<>();
