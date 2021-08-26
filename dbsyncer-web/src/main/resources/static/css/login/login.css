@@ -210,4 +210,4 @@ canvas {z-index: -1;position: absolute;}
 .loginVerifcateError{padding: 9px 4%;width: 91%;background: #fff;color:#717171;border: 1px solid #b94a48;border-radius: 5px;-webkit-box-shadow: inset 0 1px 1px rgba(95, 46, 46, 0.075), 0 0 8px rgba(233, 102, 150, 0.6);box-shadow: inset 0 1px 1px rgba(204, 53, 53, 0.075), 0 0 8px rgba(214, 80, 86, 0.6);}
 .loginVerifcateTextTip{width: 300px;height: 15px;font-size: 16px;color: green;}
 .loginVerifcateTextError{width: 300px;height: 15px;font-size: 16px;color: #e43f3c;}
-.loginTextCenter{width:300px;height:50px;position:fixed;left:39%;bottom:0;text-align:center;}
+.footerContainer{width:100%;position:fixed;bottom:0;}
