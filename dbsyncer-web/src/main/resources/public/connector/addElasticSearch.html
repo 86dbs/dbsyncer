@@ -36,12 +36,19 @@
             </select>
         </div>
     </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label">主键 </label>
+        <div class="col-sm-4">
+            <input class="form-control" name="primaryKey" type="text" maxlength="32" placeholder="id" th:value="${connector?.config?.primaryKey}?:'id'"/>
+        </div>
+        <div class="col-sm-6"></div>
+    </div>
 </div>
 
 <script type="text/javascript">
 $(function () {
     // 初始化select2插件
-    var $connectorTypeSelect = $(".select-control").select2({
+    $(".select-control").select2({
         width: "100%",
         theme: "classic"
     });

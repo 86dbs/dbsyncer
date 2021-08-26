@@ -38,6 +38,11 @@ public class ESConfig extends ConnectorConfig {
      */
     private String type;
 
+    /**
+     * 主键
+     */
+    private String primaryKey;
+
     public String getUrl() {
         return url;
     }
@@ -84,5 +89,13 @@ public class ESConfig extends ConnectorConfig {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public String getPrimaryKey() {
+        return primaryKey;
+    }
+
+    public void setPrimaryKey(String primaryKey) {
+        this.primaryKey = primaryKey;
     }
 }

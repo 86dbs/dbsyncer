@@ -2,11 +2,13 @@ package org.dbsyncer.connector.es;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.enums.ESFieldTypeEnum;
 import org.dbsyncer.connector.util.ESUtil;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -29,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -91,10 +94,9 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             if (CollectionUtils.isEmpty(properties)) {
                 throw new ConnectorException("查询字段不能为空.");
             }
-            properties.keySet().forEach(k -> {
-                // TODO 获取实现类型
-                //String columnType = (String) v.get("type");
-                fields.add(new Field(k, k, 12, false));
+            properties.forEach((k, v) -> {
+                String columnType = (String) v.get("type");
+                fields.add(new Field(k, columnType, ESFieldTypeEnum.getType(columnType), StringUtil.equals(config.getPrimaryKey(), k)));
             });
         } catch (IOException e) {
             logger.error(e.getMessage());
@@ -105,12 +107,12 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        return null;
+        return Collections.EMPTY_MAP;
     }
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        return null;
+        return Collections.EMPTY_MAP;
     }
 
     @Override
