@@ -8,7 +8,7 @@
 .driverVerifcateRequired{color:#d9534f;}
 .dbsyncerVerifcateError{border-color: #b94a48;}
 .driver_add_vertical_center {padding-top: 100%;}
-.footerContainer{width:100%;position:fixed;bottom:0;}
+.footerContainer{width:100%;position:fixed;bottom:0;background-color:white;}
 #initContainer{min-height: 600px;}
 /**
  * 强制单词换行
