@@ -112,10 +112,8 @@ public class ConnectorFactory implements DisposableBean {
         String sType = sourceCommandConfig.getType();
         String tType = targetCommandConfig.getType();
         Map<String, String> map = new HashMap<>();
-        Map<String, String> sCmd = getConnector(sType).getSourceCommand(sourceCommandConfig);
-        Map<String, String> tCmd = getConnector(tType).getTargetCommand(targetCommandConfig);
-        map.putAll(sCmd);
-        map.putAll(tCmd);
+        map.putAll(getConnector(sType).getSourceCommand(sourceCommandConfig));
+        map.putAll(getConnector(tType).getTargetCommand(targetCommandConfig));
         return map;
     }
 

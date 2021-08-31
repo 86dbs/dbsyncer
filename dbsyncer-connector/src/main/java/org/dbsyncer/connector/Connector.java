@@ -3,6 +3,7 @@ package org.dbsyncer.connector;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.connector.config.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -66,22 +67,6 @@ public interface Connector<M, C> {
     MetaInfo getMetaInfo(M connectorMapper, String tableName);
 
     /**
-     * 获取数据源同步参数
-     *
-     * @param commandConfig
-     * @return
-     */
-    Map<String, String> getSourceCommand(CommandConfig commandConfig);
-
-    /**
-     * 获取目标源同步参数
-     *
-     * @param commandConfig
-     * @return
-     */
-    Map<String, String> getTargetCommand(CommandConfig commandConfig);
-
-    /**
      * 获取总数
      *
      * @param connectorMapper
@@ -114,4 +99,23 @@ public interface Connector<M, C> {
      */
     Result writer(M connectorMapper, WriterSingleConfig config);
 
+    /**
+     * 获取数据源同步参数
+     *
+     * @param commandConfig
+     * @return
+     */
+    default Map<String, String> getSourceCommand(CommandConfig commandConfig) {
+        return Collections.EMPTY_MAP;
+    }
+
+    /**
+     * 获取目标源同步参数
+     *
+     * @param commandConfig
+     * @return
+     */
+    default Map<String, String> getTargetCommand(CommandConfig commandConfig) {
+        return Collections.EMPTY_MAP;
+    }
 }

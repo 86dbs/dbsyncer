@@ -1,6 +1,6 @@
 <div>
     <h3>介绍</h3>
-    <p>DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServer、SQL结果集等同步场景。支持上传插件自定义同步转换业务，提供监控全量和增量数据统计图、应用性能预警等。</p>
+    <p>DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServer、Elasticsearch(ES)、SQL等同步场景。支持上传插件自定义同步转换业务，提供监控全量和增量数据统计图、应用性能预警等。</p>
     <p>特点</p>
     <ol>
         <li>组合驱动，自定义库同步到库组合，关系型数据库与非关系型之间组合，任意搭配表同步映射关系</li>
@@ -14,25 +14,19 @@
     <table>
         <tbody>
             <tr>
-                <td colspan="2" rowspan="3">Every point is a DataBase</td>
+                <td colspan="2" rowspan="2">Every point is a DataBase</td>
                 <td colspan="6" align="center">目标源</td>
             </tr>
             <tr>
-                <td colspan="3" align="center">全量</td>
-                <td colspan="3" align="center">增量</td>
-            </tr>
-            <tr>
                 <td>Mysql</td>
                 <td>Oracle</td>
                 <td>SqlServer</td>
-                <td>Mysql</td>
-                <td>Oracle</td>
-                <td>SqlServer</td>
+                <td>ES</td>
+                <td>SQL（Mysql/Oracle/SqlServer）</td>
             </tr>
             <tr>
-                <td rowspan="6">数据源</td>
+                <td rowspan="5">数据源</td>
                 <td>Mysql</td>
-                <td>√</td>
                 <td>√</td>
                 <td>√</td>
                 <td>√</td>
@@ -46,7 +40,6 @@
                 <td>√</td>
                 <td>√</td>
                 <td>√</td>
-                <td>√</td>
             </tr>
             <tr>
                 <td>SqlServer</td>
@@ -55,20 +48,9 @@
                 <td>√</td>
                 <td>√</td>
                 <td>√</td>
-                <td>√</td>
             </tr>
             <tr>
-                <td>DQLMysql</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-            </tr>
-            <tr>
-                <td>DQLOracle</td>
-                <td>√</td>
+                <td>ES</td>
                 <td>√</td>
                 <td>√</td>
                 <td>√</td>
@@ -76,16 +58,15 @@
                 <td>√</td>
             </tr>
             <tr>
-                <td>DQLSqlServer</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
+                <td>SQL（Mysql/Oracle/SqlServer）</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
             </tr>
             <tr>
-                <td rowspan="3">版本支持</td>
+                <td rowspan="4">版本支持</td>
                 <td>Mysql</td>
                 <td colspan="7">5.7.19以上</td>
             </tr>
@@ -98,8 +79,12 @@
                 <td colspan="7">2008以上</td>
             </tr>
             <tr>
+                <td>ES</td>
+                <td colspan="7">6.X以上</td>
+            </tr>
+            <tr>
                 <td>最近计划</td>
-                <td colspan="7">kafka、es、postgrep</td>
+                <td colspan="7">kafka、postgrep</td>
             </tr>
         </tbody>
     </table>
@@ -113,11 +98,11 @@
     <ol>
         <li>安装JRE1.8版本以上（省略详细）</li>
         <li>下载安装包DBSyncer-X.X.X-RELEASE.zip</li>
-        <li>解压，进入目录bin，启动脚本startup.bat（Windows）/startup.sh（Linux）</li>
+        <li>解压，启动脚本bin/startup.bat（Windows）/ bin/startup.sh（Linux）</li>
         <li>打开浏览器，输入访问地址：http://127.0.0.1:18686</li>
         <li>默认账号和密码：admin/admin</li>
     </ol>
-    <h3>增量同步配置</h3>
+    <h3>增量同步配置（源库）</h3>
     <table>
         <tbody>
             <tr>
@@ -138,7 +123,7 @@
                     <p>max_binlog_cache_size = 256M</p>
                     <p>max_binlog_size = 512M</p>
                     <p>expire_logs_days = 7</p>
-                    <p># 多个库使用英文逗号“,”拼接</p>
+                    <p># 监听同步的库, 多个库使用英文逗号“,”拼接</p>
                     <p>replicate-do-db=test</p>
                 </td>
                 <td>Dump Binlog二进制日志。Master同步Slave, 创建IO线程读取数据，写入relaylog，基于消息订阅捕获增量数据。</td>
@@ -166,18 +151,6 @@
             </tr>
         </tbody>
     </table>
-    <p>Mysql增量示例</p>
-    <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2021/0518/004448_26286acc_376718.png" />
-    </p>
-    <p>Oracle增量示例</p>
-    <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2021/0518/004239_d79cf045_376718.png" />
-    </p>
-    <p>定时示例</p>
-    <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2020/1023/160953_d34d6d11_376718.png" />
-    </p>
 </div>
 
 <div>
@@ -201,15 +174,10 @@
     <p align="center">
         <img src="https://images.gitee.com/uploads/images/2021/0806/232643_9b1f3f64_376718.png" />
     </p>
-    <h3>流程图</h3>
-    <p align="center">
-        <img src="http://assets.processon.com/chart_image/5d53b405e4b09965fac2ae27.png" />
-    </p>
 </div>
 
 <div>
 <h3>使用说明</h3>
-    <p>驱动管理<p/>
     <ol>
         <li>创建一个连接器。选择数据源类型，比如：Mysql，填写配置，保存</li>
         <li>添加驱动。配置数据源和目标源（数据源：数据的发送端，目标源：数据接收端），保存</li>
@@ -220,28 +188,17 @@
         <li>点击驱动右上角齿轮按钮，启动或删除</li>
         <li>驱动面板下方显示同步的详细，如果有异常日志，点击日志可跳转至监控菜单查看详细</li>
     </ol>
-    <p>监控<p/>
-    <ol>
-        <li>查看驱动同步数据</li>
-        <li>查看系统性能指标</li>
-        <li>查看系统操作日志</li>
-    </ol>
-    <p>其他<p/>
-    <ol>
-        <li>参数>修改系统参数</li>
-        <li>参数>修改管理员密码</li>
-        <li>注销</li>
-    </ol>
     <h3>开发框架版本</h3>
     <ol>
         <li>JDK - 1.8.0_40 (推荐版本及以上)</li>
         <li>Maven - 3.3.9</li>
-        <li><a target="_blank" href="https://docs.spring.io/spring-boot/docs/2.1.8.RELEASE/reference/html/">Spring Boot - 2.1.8.RELEASE</a></li>
+        <li><a target="_blank" href="https://docs.spring.io/spring-boot/docs/2.2.0.RELEASE/reference/html">Spring Boot - 2.2.0.RELEASE</a></li>
         <li><a target="_blank" href="http://getbootstrap.com">Bootstrap - 3.3.4</a></li>
     </ol>
 </div>
 
 <div>
-    <h3>欢迎加群</h3>
-    QQ群: 875519623 或点击右侧按钮 <a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" />
+    <h3>了解更多</h3>
+    博客地址：<a target="_blank" href="https://my.oschina.net/dbsyncer">https://my.oschina.net/dbsyncer</a><br />
+    QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" />
 </div>
