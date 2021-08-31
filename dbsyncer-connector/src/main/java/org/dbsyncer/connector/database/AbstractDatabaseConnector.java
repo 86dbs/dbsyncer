@@ -69,58 +69,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        // 获取过滤SQL
-        List<Filter> filter = commandConfig.getFilter();
-        String queryFilterSql = getQueryFilterSql(filter);
-
-        // 获取查询SQL
-        Table table = commandConfig.getTable();
-        Map<String, String> map = new HashMap<>();
-
-        String query = ConnectorConstant.OPERTION_QUERY;
-        map.put(query, buildSql(query, table, commandConfig.getOriginalTable(), queryFilterSql));
-
-        // 获取查询总数SQL
-        String quotation = buildSqlWithQuotation();
-        String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
-        StringBuilder queryCount = new StringBuilder();
-        queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(quotation).append(table.getName()).append(quotation);
-        if (StringUtil.isNotBlank(queryFilterSql)) {
-            queryCount.append(queryFilterSql);
-        }
-        queryCount.append(" GROUP BY ").append(pk).append(") DBSYNCER_T");
-        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
-        return map;
-    }
-
-    @Override
-    public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        // 获取增删改SQL
-        Map<String, String> map = new HashMap<>();
-        Table table = commandConfig.getTable();
-        Table originalTable = commandConfig.getOriginalTable();
-
-        String insert = SqlBuilderEnum.INSERT.getName();
-        map.put(insert, buildSql(insert, table, originalTable, null));
-
-        String update = SqlBuilderEnum.UPDATE.getName();
-        map.put(update, buildSql(update, table, originalTable, null));
-
-        String delete = SqlBuilderEnum.DELETE.getName();
-        map.put(delete, buildSql(delete, table, originalTable, null));
-
-        // 获取查询数据行是否存在
-        String quotation = buildSqlWithQuotation();
-        String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
-        StringBuilder queryCount = new StringBuilder().append("SELECT COUNT(1) FROM ").append(quotation).append(table.getName()).append(
-                quotation).append(" WHERE ").append(pk).append(" = ?");
-        String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
-        map.put(queryCountExist, queryCount.toString());
-        return map;
-    }
-
-    @Override
     public long getCount(DatabaseConnectorMapper connectorMapper, Map<String, String> command) {
         // 1、获取select SQL
         String queryCountSql = command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
@@ -252,6 +200,58 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             }
         }
         return result;
+    }
+
+    @Override
+    public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
+        // 获取过滤SQL
+        List<Filter> filter = commandConfig.getFilter();
+        String queryFilterSql = getQueryFilterSql(filter);
+
+        // 获取查询SQL
+        Table table = commandConfig.getTable();
+        Map<String, String> map = new HashMap<>();
+
+        String query = ConnectorConstant.OPERTION_QUERY;
+        map.put(query, buildSql(query, table, commandConfig.getOriginalTable(), queryFilterSql));
+
+        // 获取查询总数SQL
+        String quotation = buildSqlWithQuotation();
+        String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
+        StringBuilder queryCount = new StringBuilder();
+        queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(quotation).append(table.getName()).append(quotation);
+        if (StringUtil.isNotBlank(queryFilterSql)) {
+            queryCount.append(queryFilterSql);
+        }
+        queryCount.append(" GROUP BY ").append(pk).append(") DBSYNCER_T");
+        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
+        return map;
+    }
+
+    @Override
+    public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
+        // 获取增删改SQL
+        Map<String, String> map = new HashMap<>();
+        Table table = commandConfig.getTable();
+        Table originalTable = commandConfig.getOriginalTable();
+
+        String insert = SqlBuilderEnum.INSERT.getName();
+        map.put(insert, buildSql(insert, table, originalTable, null));
+
+        String update = SqlBuilderEnum.UPDATE.getName();
+        map.put(update, buildSql(update, table, originalTable, null));
+
+        String delete = SqlBuilderEnum.DELETE.getName();
+        map.put(delete, buildSql(delete, table, originalTable, null));
+
+        // 获取查询数据行是否存在
+        String quotation = buildSqlWithQuotation();
+        String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
+        StringBuilder queryCount = new StringBuilder().append("SELECT COUNT(1) FROM ").append(quotation).append(table.getName()).append(
+                quotation).append(" WHERE ").append(pk).append(" = ?");
+        String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
+        map.put(queryCountExist, queryCount.toString());
+        return map;
     }
 
     /**

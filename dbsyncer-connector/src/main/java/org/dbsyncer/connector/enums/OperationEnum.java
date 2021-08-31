@@ -25,6 +25,14 @@ public enum OperationEnum {
         this.name = name;
     }
 
+    public static boolean isAnd(String name) {
+        return AND.getName().equals(name);
+    }
+
+    public static boolean isOr(String name) {
+        return OR.getName().equals(name);
+    }
+
     public String getName() {
         return name;
     }
