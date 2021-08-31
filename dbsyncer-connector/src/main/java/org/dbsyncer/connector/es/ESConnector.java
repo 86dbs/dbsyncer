@@ -38,7 +38,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -132,11 +131,12 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
     public long getCount(ESConnectorMapper connectorMapper, Map<String, String> command) {
         try {
             ESConfig config = connectorMapper.getConfig();
-            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-            sourceBuilder.trackTotalHits(true);
-            sourceBuilder.from(0);
-            sourceBuilder.size(0);
-            SearchRequest request = new SearchRequest(new String[]{config.getIndex()}, sourceBuilder);
+            SearchSourceBuilder builder = new SearchSourceBuilder();
+            genSearchSourceBuilder(builder, command);
+            builder.trackTotalHits(true);
+            builder.from(0);
+            builder.size(0);
+            SearchRequest request = new SearchRequest(new String[]{config.getIndex()}, builder);
             SearchResponse response = connectorMapper.getConnection().search(request, RequestOptions.DEFAULT);
             return response.getHits().getTotalHits();
         } catch (IOException e) {
@@ -268,28 +268,23 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         if (CollectionUtils.isEmpty(filters)) {
             return;
         }
+
+        List<Filter> and = filters.stream().filter(f -> OperationEnum.isAnd(f.getOperation())).collect(Collectors.toList());
+        List<Filter> or = filters.stream().filter(f -> OperationEnum.isOr(f.getOperation())).collect(Collectors.toList());
         // where (id = 1 and name = 'tom') or id = 2
         BoolQueryBuilder q = QueryBuilders.boolQuery();
-        BoolQueryBuilder and = QueryBuilders.boolQuery();
-        for (Filter f : filters) {
-            if (OperationEnum.isAnd(f.getOperation())) {
-                genBoolQuery(and, f);
-                continue;
-            }
-
-            if (OperationEnum.isOr(f.getOperation())) {
-                genBoolQuery(q, f);
-            }
+        if(!CollectionUtils.isEmpty(and) && !CollectionUtils.isEmpty(or)){
+            BoolQueryBuilder andQuery = QueryBuilders.boolQuery();
+            BoolQueryBuilder orQuery = QueryBuilders.boolQuery();
+            and.forEach(f -> genBoolQuery(andQuery, f));
+            or.forEach(f -> genBoolQuery(orQuery, f));
+            q.should(andQuery).should(orQuery);
+            builder.query(q);
+            return;
         }
 
-        if (q.hasClauses() && and.hasClauses()) {
-            q.should(and);
-        } else {
-            q.filter(and);
-        }
-
+        filters.forEach(f -> genBoolQuery(q, f));
         builder.query(q);
-
     }
 
     private void genBoolQuery(BoolQueryBuilder builder, Filter f) {
