@@ -35,6 +35,10 @@ public enum ConnectorEnum {
      */
     SQL_SERVER("SqlServer", new SqlServerConnector(), DatabaseConfig.class),
     /**
+     * Elasticsearch 连接器
+     */
+    ELASTIC_SEARCH("Elasticsearch", new ESConnector(), ESConfig.class),
+    /**
      * DqlMysql 连接器
      */
     DQL_MYSQL("DqlMysql", new DQLMysqlConnector(), DatabaseConfig.class),
@@ -45,11 +49,7 @@ public enum ConnectorEnum {
     /**
      * DqlSqlServer 连接器
      */
-    DQL_SQL_SERVER("DqlSqlServer", new DQLSqlServerConnector(), DatabaseConfig.class),
-    /**
-     * ElasticSearch 连接器
-     */
-    ELASTIC_SEARCH("ElasticSearch", new ESConnector(), ESConfig.class);
+    DQL_SQL_SERVER("DqlSqlServer", new DQLSqlServerConnector(), DatabaseConfig.class);
 
     // 连接器名称
     private String type;

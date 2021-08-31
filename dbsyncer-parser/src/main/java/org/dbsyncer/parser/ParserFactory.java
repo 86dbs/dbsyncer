@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -64,6 +65,7 @@ public class ParserFactory implements Parser {
     private FlushService flushService;
 
     @Autowired
+    @Qualifier("taskExecutor")
     private Executor taskExecutor;
 
     @Autowired

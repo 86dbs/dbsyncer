@@ -13,7 +13,7 @@ import java.util.Map;
  * @date 2021/8/25 23:30
  */
 @Component
-public class ElasticSearchConfigChecker implements ConnectorConfigChecker<ESConfig> {
+public class ElasticsearchConfigChecker implements ConnectorConfigChecker<ESConfig> {
 
     @Override
     public void modify(ESConfig connectorConfig, Map<String, String> params) {
