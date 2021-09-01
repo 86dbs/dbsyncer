@@ -271,23 +271,36 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
         List<Filter> and = filters.stream().filter(f -> OperationEnum.isAnd(f.getOperation())).collect(Collectors.toList());
         List<Filter> or = filters.stream().filter(f -> OperationEnum.isOr(f.getOperation())).collect(Collectors.toList());
-        // where (id = 1 and name = 'tom') or id = 2
+        // where (id = 1 and name = 'tom') or id = 2 or id = 3
         BoolQueryBuilder q = QueryBuilders.boolQuery();
         if(!CollectionUtils.isEmpty(and) && !CollectionUtils.isEmpty(or)){
             BoolQueryBuilder andQuery = QueryBuilders.boolQuery();
-            BoolQueryBuilder orQuery = QueryBuilders.boolQuery();
-            and.forEach(f -> genBoolQuery(andQuery, f));
-            or.forEach(f -> genBoolQuery(orQuery, f));
-            q.should(andQuery).should(orQuery);
+            and.forEach(f -> addFilter(andQuery, f));
+            q.should(andQuery);
+            genShouldQuery(q, or);
             builder.query(q);
             return;
         }
 
-        filters.forEach(f -> genBoolQuery(q, f));
+        if(!CollectionUtils.isEmpty(or)){
+            genShouldQuery(q, or);
+            builder.query(q);
+            return;
+        }
+
+        and.forEach(f -> addFilter(q, f));
         builder.query(q);
     }
 
-    private void genBoolQuery(BoolQueryBuilder builder, Filter f) {
+    private void genShouldQuery(BoolQueryBuilder q, List<Filter> or) {
+        or.forEach(f -> {
+            BoolQueryBuilder orQuery = QueryBuilders.boolQuery();
+            addFilter(orQuery, f);
+            q.should(orQuery);
+        });
+    }
+
+    private void addFilter(BoolQueryBuilder builder, Filter f) {
         if (map.containsKey(f.getFilter())) {
             map.get(f.getFilter()).apply(builder, f.getName(), f.getValue());
         }
