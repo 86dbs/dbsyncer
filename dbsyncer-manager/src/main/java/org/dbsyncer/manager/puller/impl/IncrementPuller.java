@@ -15,7 +15,7 @@ import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
-import org.dbsyncer.listener.quartz.QuartzExtractor;
+import org.dbsyncer.listener.quartz.AbstractQuartzExtractor;
 import org.dbsyncer.listener.quartz.ScheduledTaskJob;
 import org.dbsyncer.listener.quartz.ScheduledTaskService;
 import org.dbsyncer.manager.Manager;
@@ -154,7 +154,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
         // 默认定时抽取
         if (ListenerTypeEnum.isTiming(listenerType)) {
-            QuartzExtractor extractor = listener.getExtractor(listenerType, QuartzExtractor.class);
+            AbstractQuartzExtractor extractor = listener.getExtractor(ListenerTypeEnum.TIMING.getType(), connectorConfig.getConnectorType(), AbstractQuartzExtractor.class);
             List<Map<String, String>> commands = list.stream().map(t -> t.getCommand()).collect(Collectors.toList());
             extractor.setCommands(commands);
             setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new QuartzListener(mapping, list));
@@ -163,7 +163,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
         // 基于日志抽取
         if (ListenerTypeEnum.isLog(listenerType)) {
-            AbstractExtractor extractor = listener.getExtractor(connectorConfig.getConnectorType(), AbstractExtractor.class);
+            AbstractExtractor extractor = listener.getExtractor(ListenerTypeEnum.LOG.getType(), connectorConfig.getConnectorType(), AbstractExtractor.class);
             LogListener logListener = new LogListener(mapping, list, extractor);
             Set<String> filterTable = new HashSet<>();
             logListener.getTablePicker().forEach((k, fieldPickers) -> filterTable.add(k));

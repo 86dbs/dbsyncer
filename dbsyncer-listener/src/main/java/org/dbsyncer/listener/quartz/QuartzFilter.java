@@ -1,4 +1,4 @@
-package org.dbsyncer.listener;
+package org.dbsyncer.listener.quartz;
 
 public interface QuartzFilter {
 
@@ -30,7 +30,5 @@ public interface QuartzFilter {
      *
      * @return
      */
-    default boolean begin(){
-        return true;
-    }
+    boolean begin();
 }
