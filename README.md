@@ -149,6 +149,15 @@
                 </td>
                 <td>SQL Server 2008提供了内建的方法变更数据捕获（Change Data Capture 即CDC）以实现异步跟踪用户表的数据修改</td>
             </tr>
+            <tr>
+                <td>
+                    <h5>ES</h5>
+                </td>
+                <td>
+                    <p>账号具有访问权限</p>
+                </td>
+                <td>增量同步只支持定时读取</td>
+            </tr>
         </tbody>
     </table>
 </div>
