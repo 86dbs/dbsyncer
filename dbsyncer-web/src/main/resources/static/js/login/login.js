@@ -21,7 +21,7 @@ var $formHtml = "<dl class=\"admin_login\">\n" +
 
 $(document).ready(function () {
     // 会话过期
-    var html = $("#logoName").html();
+    var html = $("#appName").html();
     if (html != undefined && html != null) {
         location.href = $basePath;
         return;
