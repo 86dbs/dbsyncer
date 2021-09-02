@@ -156,15 +156,21 @@
 <div>
     <h3>预览</h3>
     <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2020/0519/000443_b52b4a8c_376718.png" />
-    </p>
-    <p>驱动关系配置</p>
-    <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2021/0728/000933_477eb06d_376718.png" />
+        <img src="https://images.gitee.com/uploads/images/2021/0903/003755_01016fc1_376718.png" />
     </p>
     <p>驱动表关系配置</p>
     <p align="center">
-        <img src="https://images.gitee.com/uploads/images/2021/0727/235329_54f0fbc6_376718.png" />
+        <img src="https://images.gitee.com/uploads/images/2021/0903/004031_a571f6b5_376718.png" />
+    </p>
+    <p>驱动表字段关系配置</p>
+    <p align="center">
+        <img src="https://images.gitee.com/uploads/images/2021/0903/004106_26399534_376718.png" />
+    </p>
+    <p>定时配置</p>
+    <p align="center">
+        <p>假设源表数据格式</p>
+        <img src="https://images.gitee.com/uploads/images/2021/0903/004406_68ef9bb4_376718.png" />
+        <img src="https://images.gitee.com/uploads/images/2021/0903/004807_07cdf2b7_376718.png" />
     </p>
     <p>监控</p>
     <p align="center">
