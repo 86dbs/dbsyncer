@@ -6,6 +6,8 @@ import org.dbsyncer.parser.convert.Handler;
 import java.util.Date;
 
 /**
+ * 系统日期
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2019/10/8 23:03

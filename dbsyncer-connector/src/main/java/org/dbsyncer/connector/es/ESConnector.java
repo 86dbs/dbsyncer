@@ -84,7 +84,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
     @Override
     public String getConnectorMapperCacheKey(ESConfig config) {
-        return String.format("%s-%s", config.getUrl(), config.getUsername());
+        return String.format("%s-%s-%s-%s", config.getUrl(), config.getIndex(), config.getType(), config.getUsername());
     }
 
     @Override
@@ -272,11 +272,12 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
         // 过滤条件
         String filterJson = command.get(ConnectorConstant.OPERTION_QUERY_FILTER);
-        if (StringUtil.isBlank(filterJson)) {
-            return;
+        List<Filter> filters = null;
+        if (!StringUtil.isBlank(filterJson)) {
+            filters = JsonUtil.jsonToArray(filterJson, Filter.class);
         }
-        List<Filter> filters = JsonUtil.jsonToArray(filterJson, Filter.class);
         if (CollectionUtils.isEmpty(filters)) {
+            builder.query(QueryBuilders.matchAllQuery());
             return;
         }
 
