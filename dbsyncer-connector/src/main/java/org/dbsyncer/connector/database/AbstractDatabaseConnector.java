@@ -1,8 +1,10 @@
 package org.dbsyncer.connector.database;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.AbstractConnector;
+import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
@@ -21,51 +23,183 @@ import java.sql.PreparedStatement;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class AbstractDatabaseConnector implements Database {
+public abstract class AbstractDatabaseConnector extends AbstractConnector implements Connector<DatabaseConnectorMapper, DatabaseConfig>, Database {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected abstract String getTableSql(DatabaseConfig config);
 
     @Override
-    public ConnectorMapper connect(ConnectorConfig config) {
-        DatabaseConfig cfg = (DatabaseConfig) config;
+    public ConnectorMapper connect(DatabaseConfig config) {
         try {
-            return new ConnectorMapper(config, DatabaseUtil.getConnection(cfg));
+            return new DatabaseConnectorMapper(config, DatabaseUtil.getConnection(config));
         } catch (Exception e) {
-            logger.error("Failed to connect:{}, message:{}", cfg.getUrl(), e.getMessage());
+            logger.error("Failed to connect:{}, message:{}", config.getUrl(), e.getMessage());
         }
-        throw new ConnectorException(String.format("Failed to connect:%s", cfg.getUrl()));
+        throw new ConnectorException(String.format("Failed to connect:%s", config.getUrl()));
     }
 
     @Override
-    public void disconnect(ConnectorMapper connectorMapper) {
+    public void disconnect(DatabaseConnectorMapper connectorMapper) {
         DatabaseUtil.close(connectorMapper.getConnection());
     }
 
     @Override
-    public boolean isAlive(ConnectorMapper connectorMapper) {
-        Integer count = connectorMapper.execute((databaseTemplate) -> databaseTemplate.queryForObject(getValidationQuery(), Integer.class));
+    public boolean isAlive(DatabaseConnectorMapper connectorMapper) {
+        Integer count = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(getValidationQuery(), Integer.class));
         return null != count && count > 0;
     }
 
     @Override
-    public String getConnectorMapperCacheKey(ConnectorConfig config) {
-        DatabaseConfig cfg = (DatabaseConfig) config;
-        return String.format("%s-%s", cfg.getUrl(), cfg.getUsername());
+    public String getConnectorMapperCacheKey(DatabaseConfig config) {
+        return String.format("%s-%s", config.getUrl(), config.getUsername());
     }
 
     @Override
-    public List<String> getTable(ConnectorMapper connectorMapper) {
-        String sql = getTableSql((DatabaseConfig) connectorMapper.getConfig());
-        return connectorMapper.execute((databaseTemplate) -> databaseTemplate.queryForList(sql, String.class));
+    public List<String> getTable(DatabaseConnectorMapper connectorMapper) {
+        String sql = getTableSql(connectorMapper.getConfig());
+        return connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
     }
 
     @Override
-    public MetaInfo getMetaInfo(ConnectorMapper connectorMapper, String tableName) {
+    public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableName) {
         String quotation = buildSqlWithQuotation();
         StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).append(" WHERE 1 != 1");
-        return connectorMapper.execute((databaseTemplate) -> DatabaseUtil.getMetaInfo(databaseTemplate, queryMetaSql.toString(), tableName));
+        return connectorMapper.execute(databaseTemplate -> DatabaseUtil.getMetaInfo(databaseTemplate, queryMetaSql.toString(), tableName));
+    }
+
+    @Override
+    public long getCount(DatabaseConnectorMapper connectorMapper, Map<String, String> command) {
+        // 1、获取select SQL
+        String queryCountSql = command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
+        Assert.hasText(queryCountSql, "查询总数语句不能为空.");
+
+        // 2、返回结果集
+        return connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, Long.class));
+    }
+
+    @Override
+    public Result reader(DatabaseConnectorMapper connectorMapper, ReaderConfig config) {
+        // 1、获取select SQL
+        String querySql = config.getCommand().get(SqlBuilderEnum.QUERY.getName());
+        Assert.hasText(querySql, "查询语句不能为空.");
+
+        // 2、设置参数
+        Collections.addAll(config.getArgs(), getPageArgs(config.getPageIndex(), config.getPageSize()));
+
+        // 3、执行SQL
+        List<Map<String, Object>> list = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
+
+        // 4、返回结果集
+        return new Result(new ArrayList<>(list));
+    }
+
+    @Override
+    public Result writer(DatabaseConnectorMapper connectorMapper, WriterBatchConfig config) {
+        List<Field> fields = config.getFields();
+        List<Map> data = config.getData();
+
+        // 1、获取select SQL
+        String insertSql = config.getCommand().get(SqlBuilderEnum.INSERT.getName());
+        Assert.hasText(insertSql, "插入语句不能为空.");
+        if (CollectionUtils.isEmpty(fields)) {
+            logger.error("writer fields can not be empty.");
+            throw new ConnectorException("writer fields can not be empty.");
+        }
+        if (CollectionUtils.isEmpty(data)) {
+            logger.error("writer data can not be empty.");
+            throw new ConnectorException("writer data can not be empty.");
+        }
+        final int size = data.size();
+        final int fSize = fields.size();
+
+        Result result = new Result();
+        try {
+            // 2、设置参数
+            connectorMapper.execute(databaseTemplate -> {
+                databaseTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+                    @Override
+                    public void setValues(PreparedStatement preparedStatement, int i) {
+                        batchRowsSetter(databaseTemplate.getConnection(), preparedStatement, fields, fSize, data.get(i));
+                    }
+
+                    @Override
+                    public int getBatchSize() {
+                        return size;
+                    }
+                });
+                return true;
+            });
+        } catch (Exception e) {
+            // 记录错误数据
+            result.getFailData().addAll(data);
+            result.getFail().set(size);
+            result.getError().append(e.getMessage()).append(System.lineSeparator());
+            logger.error(e.getMessage());
+        }
+        return result;
+    }
+
+    @Override
+    public Result writer(DatabaseConnectorMapper connectorMapper, WriterSingleConfig config) {
+        String event = config.getEvent();
+        List<Field> fields = config.getFields();
+        Map<String, Object> data = config.getData();
+        // 1、获取 SQL
+        String sql = config.getCommand().get(event);
+        Assert.hasText(sql, "执行语句不能为空.");
+        if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(fields)) {
+            logger.error("writer data can not be empty.");
+            throw new ConnectorException("writer data can not be empty.");
+        }
+
+        Field pkField = null;
+        // Update / Delete
+        if (isUpdate(event) || isDelete(event)) {
+            pkField = getPrimaryKeyField(fields);
+            if (isDelete(event)) {
+                fields.clear();
+            }
+            fields.add(pkField);
+        }
+
+        int size = fields.size();
+        Result result = new Result();
+        int update = 0;
+        try {
+            // 2、设置参数
+            update = connectorMapper.execute(databaseTemplate ->
+                    databaseTemplate.update(sql, (ps) -> {
+                        Field f = null;
+                        for (int i = 0; i < size; i++) {
+                            f = fields.get(i);
+                            SetterEnum.getSetter(f.getType()).set(databaseTemplate.getConnection(), ps, i + 1, f.getType(), data.get(f.getName()));
+                        }
+                    })
+            );
+        } catch (Exception e) {
+            // 记录错误数据
+            result.getFailData().add(data);
+            result.getFail().set(1);
+            result.getError().append("SQL:").append(sql).append(System.lineSeparator())
+                    .append("DATA:").append(data).append(System.lineSeparator())
+                    .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
+            logger.error("SQL:{}, DATA:{}, ERROR:{}", sql, data, e.getMessage());
+        }
+
+        // 更新失败尝试插入
+        if (0 == update && isUpdate(event) && null != pkField && !config.isRetry()) {
+            // 插入前检查有无数据
+            String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
+            if (!existRow(connectorMapper, queryCount, data.get(pkField.getName()))) {
+                fields.remove(fields.size() - 1);
+                config.setEvent(ConnectorConstant.OPERTION_INSERT);
+                config.setRetry(true);
+                logger.warn("{}表执行{}失败, 尝试执行{}", config.getTable(), event, config.getEvent());
+                result = writer(connectorMapper, config);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -86,7 +220,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
         StringBuilder queryCount = new StringBuilder();
         queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(quotation).append(table.getName()).append(quotation);
-        if (StringUtils.isNotBlank(queryFilterSql)) {
+        if (StringUtil.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
         queryCount.append(" GROUP BY ").append(pk).append(") DBSYNCER_T");
@@ -120,156 +254,16 @@ public abstract class AbstractDatabaseConnector implements Database {
         return map;
     }
 
-    @Override
-    public long getCount(ConnectorMapper config, Map<String, String> command) {
-        // 1、获取select SQL
-        String queryCountSql = command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
-        Assert.hasText(queryCountSql, "查询总数语句不能为空.");
-
-        // 2、返回结果集
-        return config.execute((databaseTemplate) -> databaseTemplate.queryForObject(queryCountSql, Long.class));
-    }
-
-    @Override
-    public Result reader(ReaderConfig config) {
-        // 1、获取select SQL
-        String querySql = config.getCommand().get(SqlBuilderEnum.QUERY.getName());
-        Assert.hasText(querySql, "查询语句不能为空.");
-
-        // 2、设置参数
-        Collections.addAll(config.getArgs(), getPageArgs(config.getPageIndex(), config.getPageSize()));
-
-        // 3、执行SQL
-        ConnectorMapper connectorMapper = config.getConnectorMapper();
-        List<Map<String, Object>> list = connectorMapper.execute((databaseTemplate) -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
-
-        // 4、返回结果集
-        return new Result(new ArrayList<>(list));
-    }
-
-    @Override
-    public Result writer(WriterBatchConfig config) {
-        List<Field> fields = config.getFields();
-        List<Map> data = config.getData();
-
-        // 1、获取select SQL
-        String insertSql = config.getCommand().get(SqlBuilderEnum.INSERT.getName());
-        Assert.hasText(insertSql, "插入语句不能为空.");
-        if (CollectionUtils.isEmpty(fields)) {
-            logger.error("writer fields can not be empty.");
-            throw new ConnectorException("writer fields can not be empty.");
-        }
-        if (CollectionUtils.isEmpty(data)) {
-            logger.error("writer data can not be empty.");
-            throw new ConnectorException("writer data can not be empty.");
-        }
-        final int size = data.size();
-        final int fSize = fields.size();
-
-        Result result = new Result();
-        try {
-            // 2、获取连接
-            ConnectorMapper connectorMapper = config.getConnectorMapper();
-
-            // 3、设置参数
-            connectorMapper.execute((databaseTemplate) -> {
-                databaseTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
-                    @Override
-                    public void setValues(PreparedStatement preparedStatement, int i) {
-                        batchRowsSetter(databaseTemplate.getConnection(), preparedStatement, fields, fSize, data.get(i));
-                    }
-
-                    @Override
-                    public int getBatchSize() {
-                        return size;
-                    }
-                });
-                return true;
-            });
-        } catch (Exception e) {
-            // 记录错误数据
-            result.getFailData().addAll(data);
-            result.getFail().set(size);
-            result.getError().append(e.getMessage()).append(System.lineSeparator());
-            logger.error(e.getMessage());
-        }
-        return result;
-    }
-
-    @Override
-    public Result writer(WriterSingleConfig config) {
-        String event = config.getEvent();
-        List<Field> fields = config.getFields();
-        Map<String, Object> data = config.getData();
-        // 1、获取 SQL
-        String sql = config.getCommand().get(event);
-        Assert.hasText(sql, "执行语句不能为空.");
-        if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(fields)) {
-            logger.error("writer data can not be empty.");
-            throw new ConnectorException("writer data can not be empty.");
-        }
-
-        Field pkField = null;
-        // Update / Delete
-        if (isUpdate(event) || isDelete(event)) {
-            pkField = getPrimaryKeyField(fields);
-            if (isDelete(event)) {
-                fields.clear();
-            }
-            fields.add(pkField);
-        }
-
-        int size = fields.size();
-        Result result = new Result();
-        // 2、获取连接
-        ConnectorMapper connectorMapper = config.getConnectorMapper();
-        int update = 0;
-        try {
-            // 3、设置参数
-            update = connectorMapper.execute((databaseTemplate) ->
-                    databaseTemplate.update(sql, (ps) -> {
-                        Field f = null;
-                        for (int i = 0; i < size; i++) {
-                            f = fields.get(i);
-                            SetterEnum.getSetter(f.getType()).set(databaseTemplate.getConnection(), ps, i + 1, f.getType(), data.get(f.getName()));
-                        }
-                    })
-            );
-        } catch (Exception e) {
-            // 记录错误数据
-            result.getFailData().add(data);
-            result.getFail().set(1);
-            result.getError().append("SQL:").append(sql).append(System.lineSeparator())
-                    .append("DATA:").append(data).append(System.lineSeparator())
-                    .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
-            logger.error("SQL:{}, DATA:{}, ERROR:{}", sql, data, e.getMessage());
-        }
-
-        // 更新失败尝试插入
-        if (0 == update && isUpdate(event) && null != pkField && !config.isRetry()) {
-            // 插入前检查有无数据
-            String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
-            if (!existRow(connectorMapper, queryCount, data.get(pkField.getName()))) {
-                fields.remove(fields.size() - 1);
-                config.setEvent(ConnectorConstant.OPERTION_INSERT);
-                config.setRetry(true);
-                logger.warn("{}表执行{}失败, 尝试执行{}", config.getTable(), event, config.getEvent());
-                result = writer(config);
-            }
-        }
-        return result;
-    }
-
     /**
      * 获取DQL表信息
      *
      * @param config
      * @return
      */
-    protected List<String> getDqlTable(ConnectorMapper config) {
+    protected List<String> getDqlTable(DatabaseConnectorMapper config) {
         MetaInfo metaInfo = getDqlMetaInfo(config);
         Assert.notNull(metaInfo, "SQL解析异常.");
-        DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
+        DatabaseConfig cfg = config.getConfig();
         List<String> tables = new ArrayList<>();
         tables.add(cfg.getSql());
         return tables;
@@ -281,11 +275,11 @@ public abstract class AbstractDatabaseConnector implements Database {
      * @param config
      * @return
      */
-    protected MetaInfo getDqlMetaInfo(ConnectorMapper config) {
-        DatabaseConfig cfg = (DatabaseConfig) config.getConfig();
+    protected MetaInfo getDqlMetaInfo(DatabaseConnectorMapper config) {
+        DatabaseConfig cfg = config.getConfig();
         String sql = cfg.getSql().toUpperCase();
-        String queryMetaSql = StringUtils.contains(sql, " WHERE ") ? sql + " AND 1!=1 " : sql + " WHERE 1!=1 ";
-        return config.execute((databaseTemplate) -> DatabaseUtil.getMetaInfo(databaseTemplate, queryMetaSql, cfg.getTable()));
+        String queryMetaSql = StringUtil.contains(sql, " WHERE ") ? sql + " AND 1!=1 " : sql + " WHERE 1!=1 ";
+        return config.execute(databaseTemplate -> DatabaseUtil.getMetaInfo(databaseTemplate, queryMetaSql, cfg.getTable()));
     }
 
     /**
@@ -306,7 +300,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         String querySql = table.getName();
 
         // 存在条件
-        if (StringUtils.isNotBlank(queryFilterSql)) {
+        if (StringUtil.isNotBlank(queryFilterSql)) {
             querySql += queryFilterSql;
         }
         String quotation = buildSqlWithQuotation();
@@ -316,7 +310,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
         queryCount.append("SELECT COUNT(1) FROM (").append(table.getName());
-        if (StringUtils.isNotBlank(queryFilterSql)) {
+        if (StringUtil.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
         // Mysql
@@ -353,20 +347,20 @@ public abstract class AbstractDatabaseConnector implements Database {
         // 拼接并且SQL
         String addSql = getFilterSql(OperationEnum.AND.getName(), filter);
         // 如果Add条件存在
-        if (StringUtils.isNotBlank(addSql)) {
+        if (StringUtil.isNotBlank(addSql)) {
             sql.append(addSql);
         }
 
         // 拼接或者SQL
         String orSql = getFilterSql(OperationEnum.OR.getName(), filter);
         // 如果Or条件和Add条件都存在
-        if (StringUtils.isNotBlank(orSql) && StringUtils.isNotBlank(addSql)) {
+        if (StringUtil.isNotBlank(orSql) && StringUtil.isNotBlank(addSql)) {
             sql.append(" OR ");
         }
         sql.append(orSql);
 
         // 如果有条件加上 WHERE
-        if (StringUtils.isNotBlank(sql.toString())) {
+        if (StringUtil.isNotBlank(sql.toString())) {
             // WHERE (USER.USERNAME = 'zhangsan' AND USER.AGE='20') OR (USER.TEL='18299996666')
             sql.insert(0, " WHERE ");
         }
@@ -397,7 +391,7 @@ public abstract class AbstractDatabaseConnector implements Database {
         List<Field> fields = new ArrayList<>();
         for (Field c : column) {
             String name = c.getName();
-            if (StringUtils.isBlank(name)) {
+            if (StringUtil.isBlank(name)) {
                 throw new ConnectorException("The field name can not be empty.");
             }
             if (c.isPk()) {
@@ -413,11 +407,11 @@ public abstract class AbstractDatabaseConnector implements Database {
             throw new ConnectorException("The fields can not be empty.");
         }
         String tableName = table.getName();
-        if (StringUtils.isBlank(tableName)) {
+        if (StringUtil.isBlank(tableName)) {
             logger.error("Table name can not be empty.");
             throw new ConnectorException("Table name can not be empty.");
         }
-        if (StringUtils.isBlank(pk)) {
+        if (StringUtil.isBlank(pk)) {
             pk = DatabaseUtil.findTablePrimaryKey(originalTable, "");
         }
 
@@ -442,7 +436,7 @@ public abstract class AbstractDatabaseConnector implements Database {
      * @return
      */
     private String getFilterSql(String queryOperator, List<Filter> filter) {
-        List<Filter> list = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), queryOperator)).collect(Collectors.toList());
+        List<Filter> list = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), queryOperator)).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(list)) {
             return "";
         }
@@ -485,40 +479,14 @@ public abstract class AbstractDatabaseConnector implements Database {
         }
     }
 
-    private boolean existRow(ConnectorMapper connectorMapper, String sql, Object value) {
+    private boolean existRow(DatabaseConnectorMapper connectorMapper, String sql, Object value) {
         int rowNum = 0;
         try {
-            rowNum = connectorMapper.execute((databaseTemplate) -> databaseTemplate.queryForObject(sql, new Object[]{value}, Integer.class));
+            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[] {value}, Integer.class));
         } catch (Exception e) {
             logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
         }
         return rowNum > 0;
     }
 
-    private Field getPrimaryKeyField(List<Field> fields) {
-        for (Field f : fields) {
-            if (f.isPk()) {
-                return f;
-            }
-        }
-        throw new ConnectorException("主键为空");
-    }
-
-    private boolean isUpdate(String event) {
-        return StringUtils.equals(ConnectorConstant.OPERTION_UPDATE, event);
-    }
-
-    private boolean isDelete(String event) {
-        return StringUtils.equals(ConnectorConstant.OPERTION_DELETE, event);
-    }
-
-    private void close(AutoCloseable closeable) {
-        if (null != closeable) {
-            try {
-                closeable.close();
-            } catch (Exception e) {
-                logger.error(e.getMessage());
-            }
-        }
-    }
 }

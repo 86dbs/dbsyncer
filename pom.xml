@@ -6,7 +6,7 @@
 
     <groupId>org.ghi</groupId>
     <artifactId>dbsyncer</artifactId>
-	<version>1.1.1-Alpha</version>
+	<version>1.1.2-Alpha</version>
     <packaging>pom</packaging>
     <name>dbsyncer</name>
     <url>https://gitee.com/ghi/dbsyncer</url>
@@ -37,11 +37,10 @@
         <!-- maven 编译插件版本 -->
         <maven.compiler.compilerVersion>1.8</maven.compiler.compilerVersion>
         <java.version>1.8</java.version>
-        <spring-boot.version>2.1.8.RELEASE</spring-boot.version>
-        <commons-lang.version>2.6</commons-lang.version>
+        <spring-boot.version>2.2.0.RELEASE</spring-boot.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <commons-io.version>2.5</commons-io.version>
-        <lucene.version>7.6.0</lucene.version>
+        <lucene-analyzers-smartcn.version>7.7.0</lucene-analyzers-smartcn.version>
         <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
         <mysql.version>5.1.40</mysql.version>
         <mysql-binlog.version>0.21.0</mysql-binlog.version>
@@ -97,12 +96,7 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Apache Commons 字符串工具类 -->
-            <dependency>
-                <groupId>commons-lang</groupId>
-                <artifactId>commons-lang</artifactId>
-                <version>${commons-lang.version}</version>
-            </dependency>
+            <!-- Apache Commons 工具类 -->
             <dependency>
                 <groupId>commons-fileupload</groupId>
                 <artifactId>commons-fileupload</artifactId>
@@ -127,32 +121,11 @@
                 <version>${fastjson.version}</version>
             </dependency>
 
-            <!-- 全文检索 -->
-            <dependency>
-                <groupId>org.apache.lucene</groupId>
-                <artifactId>lucene-core</artifactId>
-                <version>${lucene.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.lucene</groupId>
-                <artifactId>lucene-queryparser</artifactId>
-                <version>${lucene.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.lucene</groupId>
-                <artifactId>lucene-analyzers-common</artifactId>
-                <version>${lucene.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.lucene</groupId>
-                <artifactId>lucene-highlighter</artifactId>
-                <version>${lucene.version}</version>
-            </dependency>
             <!-- smartcn中文分词器 -->
             <dependency>
                 <groupId>org.apache.lucene</groupId>
                 <artifactId>lucene-analyzers-smartcn</artifactId>
-                <version>${lucene.version}</version>
+                <version>${lucene-analyzers-smartcn.version}</version>
             </dependency>
 
             <!-- mysql-driver -->
@@ -169,6 +142,7 @@
                 <version>${ojdbc6.version}</version>
             </dependency>
 
+            <!-- sqlserver-driver -->
             <dependency>
                 <groupId>com.microsoft.sqlserver</groupId>
                 <artifactId>mssql-jdbc</artifactId>

@@ -1,9 +1,11 @@
 package org.dbsyncer.connector.enums;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.config.ESConfig;
+import org.dbsyncer.connector.es.ESConnector;
 import org.dbsyncer.connector.mysql.MysqlConnector;
 import org.dbsyncer.connector.oracle.OracleConnector;
 import org.dbsyncer.connector.sql.DQLMysqlConnector;
@@ -32,6 +34,10 @@ public enum ConnectorEnum {
      * SqlServer 连接器
      */
     SQL_SERVER("SqlServer", new SqlServerConnector(), DatabaseConfig.class),
+    /**
+     * Elasticsearch 连接器
+     */
+    ELASTIC_SEARCH("Elasticsearch", new ESConnector(), ESConfig.class),
     /**
      * DqlMysql 连接器
      */
@@ -69,7 +75,7 @@ public enum ConnectorEnum {
      */
     public static Connector getConnector(String type) throws ConnectorException {
         for (ConnectorEnum e : ConnectorEnum.values()) {
-            if (StringUtils.equals(type, e.getType())) {
+            if (StringUtil.equals(type, e.getType())) {
                 return e.getConnector();
             }
         }
@@ -85,7 +91,7 @@ public enum ConnectorEnum {
      */
     public static Class<?> getConfigClass(String type) throws ConnectorException {
         for (ConnectorEnum e : ConnectorEnum.values()) {
-            if (StringUtils.equals(type, e.getType())) {
+            if (StringUtil.equals(type, e.getType())) {
                 return e.getConfigClass();
             }
         }

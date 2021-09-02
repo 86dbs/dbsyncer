@@ -1,10 +1,10 @@
 package org.dbsyncer.biz.checker.impl.mapping;
 
-import org.apache.commons.lang.math.NumberUtils;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
@@ -90,8 +90,8 @@ public class MappingChecker extends AbstractChecker {
         mapping.setModel(null != ModelEnum.getModelEnum(model) ? model : ModelEnum.FULL.getCode());
 
         // 全量配置
-        mapping.setReadNum(NumberUtils.toInt(params.get("readNum"), mapping.getReadNum()));
-        mapping.setBatchNum(NumberUtils.toInt(params.get("batchNum"), mapping.getBatchNum()));
+        mapping.setReadNum(NumberUtil.toInt(params.get("readNum"), mapping.getReadNum()));
+        mapping.setBatchNum(NumberUtil.toInt(params.get("batchNum"), mapping.getBatchNum()));
 
         // 增量配置(日志/定时)
         String incrementStrategy = params.get("incrementStrategy");

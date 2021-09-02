@@ -1,7 +1,7 @@
 package org.dbsyncer.connector.enums;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.connector.CompareFilter;
 import org.dbsyncer.connector.ConnectorException;
 
@@ -17,27 +17,27 @@ public enum FilterEnum {
     /**
      * 等于
      */
-    EQUAL("=", (value, filterValue) -> StringUtils.equals(value, filterValue)),
+    EQUAL("=", (value, filterValue) -> StringUtil.equals(value, filterValue)),
     /**
      * 不等于
      */
-    NOT_EQUAL("!=", (value, filterValue) -> !StringUtils.equals(value, filterValue)),
+    NOT_EQUAL("!=", (value, filterValue) -> !StringUtil.equals(value, filterValue)),
     /**
      * 大于
      */
-    GT(">", (value, filterValue) -> NumberUtils.toInt(value) > NumberUtils.toInt(filterValue)),
+    GT(">", (value, filterValue) -> NumberUtil.toInt(value) > NumberUtil.toInt(filterValue)),
     /**
      * 小于
      */
-    LT("<", (value, filterValue) -> NumberUtils.toInt(value) < NumberUtils.toInt(filterValue)),
+    LT("<", (value, filterValue) -> NumberUtil.toInt(value) < NumberUtil.toInt(filterValue)),
     /**
      * 大于等于
      */
-    GT_AND_EQUAL(">=", (value, filterValue) -> NumberUtils.toInt(value) >= NumberUtils.toInt(filterValue)),
+    GT_AND_EQUAL(">=", (value, filterValue) -> NumberUtil.toInt(value) >= NumberUtil.toInt(filterValue)),
     /**
      * 小于等于
      */
-    LT_AND_EQUAL("<=", (value, filterValue) -> NumberUtils.toInt(value) <= NumberUtils.toInt(filterValue));
+    LT_AND_EQUAL("<=", (value, filterValue) -> NumberUtil.toInt(value) <= NumberUtil.toInt(filterValue));
 
     // 运算符名称
     private String name;
@@ -58,7 +58,7 @@ public enum FilterEnum {
      */
     public static CompareFilter getCompareFilter(String filterName) throws ConnectorException {
         for (FilterEnum e : FilterEnum.values()) {
-            if (StringUtils.equals(filterName, e.getName())) {
+            if (StringUtil.equals(filterName, e.getName())) {
                 return e.getCompareFilter();
             }
         }

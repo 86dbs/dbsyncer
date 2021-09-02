@@ -18,7 +18,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthComponent;
 import org.springframework.boot.actuate.health.HealthEndpoint;
+import org.springframework.boot.actuate.health.SystemHealth;
 import org.springframework.boot.actuate.metrics.MetricsEndpoint;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
@@ -161,8 +163,8 @@ public class MonitorController extends BaseController {
      */
     private List<MetricResponse> getDiskHealth() {
         List<MetricResponse> list = new ArrayList<>();
-        Health health = healthEndpoint.health();
-        Map<String, Object> details = health.getDetails();
+        SystemHealth health = (SystemHealth) healthEndpoint.health();
+        Map<String, HealthComponent> details = health.getComponents();
         Health diskSpace = (Health) details.get("diskSpace");
         Map<String, Object> diskSpaceDetails = diskSpace.getDetails();
         list.add(createDiskMetricResponse(DiskMetricEnum.THRESHOLD, diskSpaceDetails.get("threshold")));

@@ -1,9 +1,9 @@
 package org.dbsyncer.biz.checker;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.Filter;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.model.AbstractConfigModel;
@@ -47,10 +47,10 @@ public abstract class AbstractChecker implements Checker {
         Assert.hasText(model.getName(), "ConfigModel name can not be empty.");
         // 名称
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
-        if (StringUtils.isNotBlank(name)) {
+        if (StringUtil.isNotBlank(name)) {
             model.setName(name);
         }
-        model.setId(StringUtils.isEmpty(model.getId()) ? String.valueOf(snowflakeIdWorker.nextId()) : model.getId());
+        model.setId(StringUtil.isBlank(model.getId()) ? String.valueOf(snowflakeIdWorker.nextId()) : model.getId());
         long now = Instant.now().toEpochMilli();
         model.setCreateTime(null == model.getCreateTime() ? now : model.getCreateTime());
         model.setUpdateTime(now);
@@ -65,18 +65,18 @@ public abstract class AbstractChecker implements Checker {
     protected void modifySuperConfigModel(AbstractConfigModel model, Map<String, String> params) {
         // 全局参数
         String mappingParams = params.get("params");
-        model.setParams(StringUtils.isNotBlank(mappingParams) ? JsonUtil.jsonToObj(mappingParams, Map.class) : new LinkedHashMap());
+        model.setParams(StringUtil.isNotBlank(mappingParams) ? JsonUtil.jsonToObj(mappingParams, Map.class) : new LinkedHashMap());
 
         // 过滤条件
         String filterJson = params.get("filter");
-        if (StringUtils.isNotBlank(filterJson)) {
+        if (StringUtil.isNotBlank(filterJson)) {
             List<Filter> list = jsonToList(filterJson, Filter.class);
             model.setFilter(list);
         }
 
         // 转换配置
         String convertJson = params.get("convert");
-        if (StringUtils.isNotBlank(convertJson)) {
+        if (StringUtil.isNotBlank(convertJson)) {
             List<Convert> convert = jsonToList(convertJson, Convert.class);
             model.setConvert(convert);
         }
@@ -84,11 +84,11 @@ public abstract class AbstractChecker implements Checker {
         // 插件配置
         String pluginClassName = params.get("pluginClassName");
         Plugin plugin = null;
-        if (StringUtils.isNotBlank(pluginClassName)) {
+        if (StringUtil.isNotBlank(pluginClassName)) {
             List<Plugin> plugins = manager.getPluginAll();
             if (!CollectionUtils.isEmpty(plugins)) {
                 for (Plugin p : plugins) {
-                    if (StringUtils.equals(p.getClassName(), pluginClassName)) {
+                    if (StringUtil.equals(p.getClassName(), pluginClassName)) {
                         plugin = p;
                         break;
                     }

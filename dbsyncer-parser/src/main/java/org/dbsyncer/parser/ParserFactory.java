@@ -1,6 +1,5 @@
 package org.dbsyncer.parser;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.FullRefreshEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
@@ -8,6 +7,7 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.model.Task;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -64,6 +65,7 @@ public class ParserFactory implements Parser {
     private FlushService flushService;
 
     @Autowired
+    @Qualifier("taskExecutor")
     private Executor taskExecutor;
 
     @Autowired
@@ -231,7 +233,7 @@ public class ParserFactory implements Parser {
 
             // 1、获取数据源数据
             int pageIndex = Integer.parseInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
-            Result reader = connectorFactory.reader(new ReaderConfig(sConnectionMapper, command, new ArrayList<>(), pageIndex, pageSize));
+            Result reader = connectorFactory.reader(sConnectionMapper, new ReaderConfig(command, new ArrayList<>(), pageIndex, pageSize));
             List<Map> data = reader.getData();
             if (CollectionUtils.isEmpty(data)) {
                 params.clear();
@@ -268,7 +270,7 @@ public class ParserFactory implements Parser {
         ConnectorMapper tConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
         // 1、获取映射字段
         final String event = rowChangedEvent.getEvent();
-        Map<String, Object> data = StringUtils.equals(ConnectorConstant.OPERTION_DELETE, event) ? rowChangedEvent.getBefore() : rowChangedEvent.getAfter();
+        Map<String, Object> data = StringUtil.equals(ConnectorConstant.OPERTION_DELETE, event) ? rowChangedEvent.getBefore() : rowChangedEvent.getAfter();
         Picker picker = new Picker(tableGroup.getFieldMapping(), data);
         Map target = picker.getTargetMap();
 
@@ -279,7 +281,7 @@ public class ParserFactory implements Parser {
         pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
 
         // 4、写入目标源
-        Result writer = connectorFactory.writer(new WriterSingleConfig(tConnectorMapper, picker.getTargetFields(), tableGroup.getCommand(), event, target, rowChangedEvent.getTableName()));
+        Result writer = connectorFactory.writer(tConnectorMapper, new WriterSingleConfig(picker.getTargetFields(), tableGroup.getCommand(), event, target, rowChangedEvent.getTableName()));
 
         // 5、更新结果
         flush(metaId, writer, event, picker.getTargetMapList());
@@ -362,7 +364,7 @@ public class ParserFactory implements Parser {
         int total = target.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(new WriterBatchConfig(connectorMapper, command, fields, target));
+            return connectorFactory.writer(connectorMapper, new WriterBatchConfig(command, fields, target));
         }
 
         // 批量任务, 拆分
@@ -406,7 +408,7 @@ public class ParserFactory implements Parser {
             }
             data.add(poll);
         }
-        return connectorFactory.writer(new WriterBatchConfig(connectorMapper, command, fields, data));
+        return connectorFactory.writer(connectorMapper, new WriterBatchConfig(command, fields, data));
     }
 
 }

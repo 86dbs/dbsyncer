@@ -1,10 +1,10 @@
 package org.dbsyncer.biz.impl;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.biz.vo.PluginVo;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
@@ -45,7 +45,7 @@ public class PluginServiceImpl implements PluginService {
             if (!CollectionUtils.isEmpty(mappingAll)) {
                 mappingAll.forEach(mapping -> {
                     Plugin plugin = mapping.getPlugin();
-                    if(null != plugin){
+                    if (null != plugin) {
                         pluginClassNameMap.putIfAbsent(plugin.getClassName(), new ArrayList<>());
                         pluginClassNameMap.get(plugin.getClassName()).add(mapping.getName());
                     }
@@ -55,7 +55,7 @@ public class PluginServiceImpl implements PluginService {
             vos.addAll(pluginAll.stream().map(plugin -> {
                 PluginVo vo = new PluginVo();
                 BeanUtils.copyProperties(plugin, vo);
-                vo.setMappingName(StringUtils.join(pluginClassNameMap.get(plugin.getClassName()), "|"));
+                vo.setMappingName(StringUtil.join(pluginClassNameMap.get(plugin.getClassName()), "|"));
                 return vo;
             }).collect(Collectors.toList()));
         }
@@ -80,10 +80,10 @@ public class PluginServiceImpl implements PluginService {
 
     @Override
     public void checkFileSuffix(String filename) {
-        if (StringUtils.isNotBlank(filename)) {
+        if (StringUtil.isNotBlank(filename)) {
             String suffix = filename.substring(filename.lastIndexOf(".") + 1, filename.length());
             if (null == FileSuffixEnum.getFileSuffix(suffix)) {
-                suffix = StringUtils.join(FileSuffixEnum.values(), ",").toLowerCase();
+                suffix = StringUtil.join(FileSuffixEnum.values(), ",").toLowerCase();
                 String msg = String.format("不正确的文件扩展名 \"%s\"，只支持 \"%s\" 的文件扩展名。", filename, suffix);
                 logService.log(LogType.PluginLog.CHECK_ERROR, msg);
                 throw new BizException(msg);

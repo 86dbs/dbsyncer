@@ -1,9 +1,8 @@
 package org.dbsyncer.connector.database;
 
-import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.config.PageSqlConfig;
 
-public interface Database extends Connector {
+public interface Database {
 
     /**
      * 获取分页SQL

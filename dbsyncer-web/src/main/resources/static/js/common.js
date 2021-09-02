@@ -59,23 +59,33 @@ function doLoader(url){
     $initContainer.load($basePath + url);
 }
 
+// 异常请求
+function doRequest(action, data){
+    $.loadingT(false);
+    // 异常请求：302
+    if (!(data instanceof Object)) {
+        bootGrowl("会话过期, 3秒后将访问登录主页...", "danger");
+        setTimeout(function () {
+            location.href = $basePath;
+        }, 3000);
+    } else {
+        action(data);
+    }
+}
+
+// 异常响应
+function doErrorResponse(xhr, status, info) {
+    $.loadingT(false);
+    bootGrowl("访问异常，请刷新或重试.", "danger");
+}
+
 // 全局Ajax post
 function doPoster(url, params, action) {
     $.loadingT(true);
     $.post($basePath + url, params, function (data) {
-        $.loadingT(false);
-        // 异常请求：302
-        if (!(data instanceof Object)) {
-            bootGrowl("会话过期, 3秒后将访问登录主页...", "danger");
-            setTimeout(function () {
-                location.href = $basePath;
-            }, 3000);
-        } else {
-            action(data);
-        }
+        doRequest(action, data);
     }).error(function (xhr, status, info) {
-        $.loadingT(false);
-        bootGrowl("访问异常，请刷新或重试.", "danger");
+        doErrorResponse(xhr, status, info);
     });
 }
 
@@ -85,11 +95,9 @@ function doGetter(url, params, action, loading) {
         $.loadingT(true);
     }
     $.get($basePath + url, params, function (data) {
-        $.loadingT(false);
-        action(data);
+        doRequest(action, data);
     }).error(function (xhr, status, info) {
-        $.loadingT(false);
-        bootGrowl("访问异常，请刷新或重试.", "danger");
+        doErrorResponse(xhr, status, info);
     });
 }
 

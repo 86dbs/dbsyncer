@@ -1,6 +1,6 @@
 package org.dbsyncer.biz.checker.impl.connector;
 
-import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.connector.config.DatabaseConfig;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -14,8 +14,8 @@ import java.util.Map;
 public class DqlOracleConfigChecker extends AbstractDataBaseConfigChecker {
 
     @Override
-    public void modify(Connector connector, Map<String, String> params) {
-        super.modify(connector, params);
-        super.modifyDql(connector, params);
+    public void modify(DatabaseConfig connectorConfig, Map<String, String> params) {
+        super.modify(connectorConfig, params);
+        super.modifyDql(connectorConfig, params);
     }
 }

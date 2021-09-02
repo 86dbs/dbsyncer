@@ -1,11 +1,12 @@
 package org.dbsyncer.connector.sql;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.sqlserver.SqlServerConnectorMapper;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.slf4j.Logger;
@@ -19,9 +20,9 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public ConnectorMapper connect(ConnectorConfig config) {
+    public ConnectorMapper connect(DatabaseConfig config) {
         try {
-            return new SqlServerConnectorMapper(config, DatabaseUtil.getConnection((DatabaseConfig) config));
+            return new SqlServerConnectorMapper(config, DatabaseUtil.getConnection(config));
         } catch (Exception e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e.getMessage());
@@ -35,7 +36,7 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getPageSql(PageSqlConfig config) {
-        if (StringUtils.isBlank(config.getPk())) {
+        if (StringUtil.isBlank(config.getPk())) {
             logger.error("Table primary key can not be empty.");
             throw new ConnectorException("Table primary key can not be empty.");
         }
@@ -48,12 +49,12 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public List<String> getTable(ConnectorMapper config) {
+    public List<String> getTable(DatabaseConnectorMapper config) {
         return super.getDqlTable(config);
     }
 
     @Override
-    public MetaInfo getMetaInfo(ConnectorMapper connectorMapper, String tableName) {
+    public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableName) {
         return super.getDqlMetaInfo(connectorMapper);
     }
 

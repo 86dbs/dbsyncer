@@ -2,12 +2,9 @@ package org.dbsyncer.biz.metric.impl;
 
 import org.dbsyncer.biz.metric.AbstractMetricDetailFormatter;
 import org.dbsyncer.biz.vo.MetricResponseVo;
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.monitor.model.Sample;
 
-import java.text.DecimalFormat;
-
-public class MemoryMetricDetailFormatter extends AbstractMetricDetailFormatter {
+public final class MemoryMetricDetailFormatter extends AbstractMetricDetailFormatter {
 
     @Override
     public void apply(MetricResponseVo vo) {

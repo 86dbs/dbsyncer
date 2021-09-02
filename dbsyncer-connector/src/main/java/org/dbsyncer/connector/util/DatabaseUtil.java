@@ -1,6 +1,6 @@
 package org.dbsyncer.connector.util;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -23,11 +23,7 @@ public abstract class DatabaseUtil {
     private DatabaseUtil() {
     }
 
-    public static Connection getConnection(DatabaseConfig config)
-            throws SQLException, ClassNotFoundException {
-        if (null != config.getDriverClassName()) {
-            Class.forName(config.getDriverClassName());
-        }
+    public static Connection getConnection(DatabaseConfig config) throws SQLException {
         return DriverManager.getConnection(config.getUrl(), config.getUsername(), config.getPassword());
     }
 
@@ -70,7 +66,7 @@ public abstract class DatabaseUtil {
             int columnType;
             boolean pk;
             for (int i = 1; i <= columnCount; i++) {
-                table = StringUtils.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
+                table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
                 if (null == tables.get(table)) {
                     tables.putIfAbsent(table, findTablePrimaryKeys(md, table));
                 }

@@ -1,6 +1,6 @@
 package org.dbsyncer.connector.database.sqlbuilder;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.PageSqlConfig;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
@@ -43,7 +43,7 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
             }
 
             // "USERNAME" as "myName"
-            if (StringUtils.isNotEmpty(field.getLabelName())) {
+            if (StringUtil.isNotBlank(field.getLabelName())) {
                 sql.append(" as ").append(quotation).append(field.getLabelName()).append(quotation);
             }
 
@@ -55,7 +55,7 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
         // SELECT "ID","NAME" FROM "USER"
         sql.insert(0, "SELECT ").append(" FROM ").append(quotation).append(tableName).append(quotation);
         // 解析查询条件
-        if (StringUtils.isNotBlank(queryFilter)) {
+        if (StringUtil.isNotBlank(queryFilter)) {
             sql.append(queryFilter);
         }
         return sql.toString();

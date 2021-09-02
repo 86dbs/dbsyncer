@@ -1,9 +1,9 @@
 package org.dbsyncer.manager.puller.impl;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.ConnectorConfig;
@@ -15,7 +15,7 @@ import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
-import org.dbsyncer.listener.quartz.QuartzExtractor;
+import org.dbsyncer.listener.quartz.AbstractQuartzExtractor;
 import org.dbsyncer.listener.quartz.ScheduledTaskJob;
 import org.dbsyncer.listener.quartz.ScheduledTaskService;
 import org.dbsyncer.manager.Manager;
@@ -154,7 +154,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
         // 默认定时抽取
         if (ListenerTypeEnum.isTiming(listenerType)) {
-            QuartzExtractor extractor = listener.getExtractor(listenerType, QuartzExtractor.class);
+            AbstractQuartzExtractor extractor = listener.getExtractor(ListenerTypeEnum.TIMING.getType(), connectorConfig.getConnectorType(), AbstractQuartzExtractor.class);
             List<Map<String, String>> commands = list.stream().map(t -> t.getCommand()).collect(Collectors.toList());
             extractor.setCommands(commands);
             setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new QuartzListener(mapping, list));
@@ -163,7 +163,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
 
         // 基于日志抽取
         if (ListenerTypeEnum.isLog(listenerType)) {
-            AbstractExtractor extractor = listener.getExtractor(connectorConfig.getConnectorType(), AbstractExtractor.class);
+            AbstractExtractor extractor = listener.getExtractor(ListenerTypeEnum.LOG.getType(), connectorConfig.getConnectorType(), AbstractExtractor.class);
             LogListener logListener = new LogListener(mapping, list, extractor);
             Set<String> filterTable = new HashSet<>();
             logListener.getTablePicker().forEach((k, fieldPickers) -> filterTable.add(k));
@@ -315,7 +315,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
                 pickers.parallelStream().forEach(picker -> {
                     final Map<String, Object> before = picker.getColumns(rowChangedEvent.getBeforeData());
                     final Map<String, Object> after = picker.getColumns(rowChangedEvent.getAfterData());
-                    if (picker.filter(StringUtils.equals(ConnectorConstant.OPERTION_DELETE, rowChangedEvent.getEvent()) ? before : after)) {
+                    if (picker.filter(StringUtil.equals(ConnectorConstant.OPERTION_DELETE, rowChangedEvent.getEvent()) ? before : after)) {
                         rowChangedEvent.setBefore(before);
                         rowChangedEvent.setAfter(after);
                         parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);

@@ -1,9 +1,9 @@
 package org.dbsyncer.connector.sqlserver;
 
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.HandleCallback;
-import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.database.DatabaseConnectorMapper;
+import org.dbsyncer.connector.database.HandleCallback;
 import org.dbsyncer.connector.database.DatabaseTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,12 +14,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public final class SqlServerConnectorMapper extends ConnectorMapper {
+public final class SqlServerConnectorMapper extends DatabaseConnectorMapper {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Lock   lock   = new ReentrantLock(true);
 
-    public SqlServerConnectorMapper(ConnectorConfig config, Connection connection) {
+    public SqlServerConnectorMapper(DatabaseConfig config, Connection connection) {
         super(config, connection);
     }
 
@@ -29,7 +29,6 @@ public final class SqlServerConnectorMapper extends ConnectorMapper {
      * @param callback
      * @return
      */
-    @Override
     public <T> T execute(HandleCallback callback) {
         final Lock connectionLock = lock;
         boolean locked = false;
@@ -51,4 +50,5 @@ public final class SqlServerConnectorMapper extends ConnectorMapper {
         }
         return (T) apply;
     }
+
 }

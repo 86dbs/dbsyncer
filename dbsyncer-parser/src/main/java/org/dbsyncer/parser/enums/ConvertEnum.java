@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.enums;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.convert.Handler;
 import org.dbsyncer.parser.convert.handler.*;
@@ -19,9 +19,25 @@ public enum ConvertEnum {
      */
     DEFAULT("DEFAULT", "默认值", 1, new DefaultHandler()),
     /**
-     * 默认系统时间
+     * 系统时间戳
      */
-    DEFAULT_SYSTEM_TIMESTAMP("DEFAULT_SYSTEM_TIMESTAMP", "默认系统时间", 0, new DefaultTimestampHandler()),
+    SYSTEM_TIMESTAMP("SYSTEM_TIMESTAMP", "系统时间戳", 0, new TimestampHandler()),
+    /**
+     * 系统日期date
+     */
+    SYSTEM_DATE("SYSTEM_DATE", "系统日期", 0, new DateHandler()),
+    /**
+     * Timestamp转date
+     */
+    TIMESTAMP_TO_DATE("TIMESTAMP_TO_DATE", "Timestamp转date", 0, new TimestampToDateHandler()),
+    /**
+     * Timestamp转Long
+     */
+    TIMESTAMP_TO_LONG("TIMESTAMP_TO_LONG", "Timestamp转Long", 0, new TimestampToLongHandler()),
+    /**
+     * Long转Timestamp
+     */
+    LONG_TO_TIMESTAMP("LONG_TO_TIMESTAMP", "Long转Timestamp", 0, new LongToTimestampHandler()),
     /**
      * 替换
      */
@@ -89,7 +105,7 @@ public enum ConvertEnum {
 
     public static Handler getHandler(String code) throws ParserException {
         for (ConvertEnum e : ConvertEnum.values()) {
-            if (StringUtils.equals(code, e.getCode())) {
+            if (StringUtil.equals(code, e.getCode())) {
                 return e.getHandler();
             }
         }

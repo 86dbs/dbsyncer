@@ -1,6 +1,6 @@
 package org.dbsyncer.plugin.enums;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 
 /**
  * 文件格式
@@ -30,7 +30,7 @@ public enum FileSuffixEnum {
      */
     public static FileSuffixEnum getFileSuffix(String suffix) {
         for (FileSuffixEnum e : FileSuffixEnum.values()) {
-            if (StringUtils.equals(suffix, e.getName())) {
+            if (StringUtil.equals(suffix, e.getName())) {
                 return e;
             }
         }

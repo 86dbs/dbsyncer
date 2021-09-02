@@ -1,14 +1,17 @@
 package org.dbsyncer.listener.enums;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.enums.ConnectorEnum;
-import org.dbsyncer.listener.oracle.OracleExtractor;
-import org.dbsyncer.listener.quartz.QuartzExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.mysql.MysqlExtractor;
+import org.dbsyncer.listener.oracle.OracleExtractor;
+import org.dbsyncer.listener.quartz.DatabaseQuartzExtractor;
+import org.dbsyncer.listener.quartz.ESQuartzExtractor;
 import org.dbsyncer.listener.sqlserver.SqlServerExtractor;
 
 /**
+ * 监听器Extractor支持日志和定时模式
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2020/04/24 14:19
@@ -16,21 +19,33 @@ import org.dbsyncer.listener.sqlserver.SqlServerExtractor;
 public enum ListenerEnum {
 
     /**
-     * 定时
+     * log_Mysql
      */
-    DEFAULT(ListenerTypeEnum.TIMING.getType(), QuartzExtractor.class),
+    LOG_MYSQL(ListenerTypeEnum.LOG.getType() + ConnectorEnum.MYSQL.getType(), MysqlExtractor.class),
     /**
-     * Mysql
+     * log_Oracle
      */
-    MYSQL(ConnectorEnum.MYSQL.getType(), MysqlExtractor.class),
+    LOG_ORACLE(ListenerTypeEnum.LOG.getType() + ConnectorEnum.ORACLE.getType(), OracleExtractor.class),
     /**
-     * Oracle
+     * log_SqlServer
      */
-    ORACLE(ConnectorEnum.ORACLE.getType(), OracleExtractor.class),
+    LOG_SQL_SERVER(ListenerTypeEnum.LOG.getType() + ConnectorEnum.SQL_SERVER.getType(), SqlServerExtractor.class),
     /**
-     * SqlServer
+     * timing_Mysql
      */
-    SQL_SERVER(ConnectorEnum.SQL_SERVER.getType(), SqlServerExtractor.class);
+    TIMING_MYSQL(ListenerTypeEnum.TIMING.getType() + ConnectorEnum.MYSQL.getType(), DatabaseQuartzExtractor.class),
+    /**
+     * timing_Mysql
+     */
+    TIMING_ORACLE(ListenerTypeEnum.TIMING.getType() + ConnectorEnum.ORACLE.getType(), DatabaseQuartzExtractor.class),
+    /**
+     * timing_SqlServer
+     */
+    TIMING_SQL_SERVER(ListenerTypeEnum.TIMING.getType() + ConnectorEnum.SQL_SERVER.getType(), DatabaseQuartzExtractor.class),
+    /**
+     * timing_Elasticsearch
+     */
+    TIMING_ELASTIC_SEARCH(ListenerTypeEnum.TIMING.getType() + ConnectorEnum.ELASTIC_SEARCH.getType(), ESQuartzExtractor.class);
 
     private String type;
     private Class<?> clazz;
@@ -49,7 +64,7 @@ public enum ListenerEnum {
      */
     public static Class<?> getExtractor(String type) throws ListenerException {
         for (ListenerEnum e : ListenerEnum.values()) {
-            if (StringUtils.equals(type, e.getType())) {
+            if (StringUtil.equals(type, e.getType())) {
                 return e.getClazz();
             }
         }

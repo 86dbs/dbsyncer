@@ -1,6 +1,6 @@
 package org.dbsyncer.connector.enums;
 
-import org.apache.commons.lang.StringUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.sqlbuilder.*;
@@ -30,10 +30,14 @@ public enum SqlBuilderEnum {
      */
     QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery());
 
-    // SQL构造器名称
+    /**
+     * SQL构造器名称
+     */
     private String name;
 
-    // SQL构造器
+    /**
+     * SQL构造器
+     */
     private SqlBuilder sqlBuilder;
 
     SqlBuilderEnum(String name, SqlBuilder sqlBuilder) {
@@ -43,7 +47,7 @@ public enum SqlBuilderEnum {
 
     public static SqlBuilder getSqlBuilder(String name) throws ConnectorException {
         for (SqlBuilderEnum e : SqlBuilderEnum.values()) {
-            if (StringUtils.equals(name, e.getName())) {
+            if (StringUtil.equals(name, e.getName())) {
                 return e.getSqlBuilder();
             }
         }

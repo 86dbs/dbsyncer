@@ -1,8 +1,8 @@
 package org.dbsyncer.biz.checker.impl.connector;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.enums.OracleIncrementEnum;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.Table;
@@ -48,7 +48,7 @@ public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
         List<Field> targetColumn = tableGroup.getTargetTable().getColumn();
         Field targetField = null;
         for (Field f : targetColumn) {
-            if (StringUtils.equals(f.getName(), targetRowIdName)) {
+            if (StringUtil.equals(f.getName(), targetRowIdName)) {
                 targetField = f;
                 targetField.setPk(true);
                 continue;
@@ -69,7 +69,7 @@ public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
             }
 
             // 排除主键关系
-            if (null != m.getTarget() && StringUtils.equals(m.getTarget().getName(), targetRowIdName)) {
+            if (null != m.getTarget() && StringUtil.equals(m.getTarget().getName(), targetRowIdName)) {
                 continue;
             }
 
@@ -151,7 +151,7 @@ public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
                 continue;
             }
 
-            if (null != m.getTarget() && StringUtils.equals(m.getTarget().getName(), pk)) {
+            if (null != m.getTarget() && StringUtil.equals(m.getTarget().getName(), pk)) {
                 m.getTarget().setPk(true);
             }
             list.add(m);

@@ -1,8 +1,8 @@
 package org.dbsyncer.monitor;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.monitor.enums.MetricEnum;
@@ -75,17 +75,17 @@ public class MonitorFactory implements Monitor {
     @Override
     public Paging queryData(String id, int pageNum, int pageSize, String error, String success) {
         // 没有驱动
-        if (StringUtils.isBlank(id)) {
+        if (StringUtil.isBlank(id)) {
             return new Paging(pageNum, pageSize);
         }
 
         // 查询异常信息
         Query query = new Query(pageNum, pageSize);
-        if (StringUtils.isNotBlank(error)) {
+        if (StringUtil.isNotBlank(error)) {
             query.addFilter(ConfigConstant.DATA_ERROR, error, true);
         }
         // 查询是否成功, 默认查询失败
-        query.addFilter(ConfigConstant.DATA_SUCCESS, StringUtils.isNotBlank(success) ? success : StorageDataStatusEnum.FAIL.getCode(), false, true);
+        query.addFilter(ConfigConstant.DATA_SUCCESS, StringUtil.isNotBlank(success) ? success : StorageDataStatusEnum.FAIL.getCode(), false, true);
         return manager.queryData(query, id);
     }
 
@@ -97,7 +97,7 @@ public class MonitorFactory implements Monitor {
     @Override
     public Paging queryLog(int pageNum, int pageSize, String json) {
         Query query = new Query(pageNum, pageSize);
-        if (StringUtils.isNotBlank(json)) {
+        if (StringUtil.isNotBlank(json)) {
             query.addFilter(ConfigConstant.CONFIG_MODEL_JSON, json, true);
         }
         return manager.queryLog(query);

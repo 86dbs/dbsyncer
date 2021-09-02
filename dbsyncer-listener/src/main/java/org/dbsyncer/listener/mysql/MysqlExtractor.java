@@ -2,8 +2,8 @@ package org.dbsyncer.listener.mysql;
 
 import com.github.shyiko.mysql.binlog.event.*;
 import com.github.shyiko.mysql.binlog.network.ServerException;
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.AbstractExtractor;
@@ -46,7 +46,7 @@ public class MysqlExtractor extends AbstractExtractor {
     public void start() {
         try {
             connectLock.lock();
-            if(connected){
+            if (connected) {
                 logger.error("MysqlExtractor is already started");
                 return;
             }
@@ -86,7 +86,7 @@ public class MysqlExtractor extends AbstractExtractor {
         final String pos = snapshot.get(BINLOG_POSITION);
         client = new BinaryLogRemoteClient(host.getIp(), host.getPort(), username, password);
         client.setBinlogFilename(snapshot.get(BINLOG_FILENAME));
-        client.setBinlogPosition(StringUtils.isBlank(pos) ? 0 : Long.parseLong(pos));
+        client.setBinlogPosition(StringUtil.isBlank(pos) ? 0 : Long.parseLong(pos));
         client.setTableMapEventByTableId(tables);
         client.registerEventListener(new MysqlEventListener());
         client.registerLifecycleListener(new MysqlLifecycleListener());
@@ -95,7 +95,7 @@ public class MysqlExtractor extends AbstractExtractor {
     }
 
     private List<Host> readNodes(String url) {
-        if (StringUtils.isBlank(url)) {
+        if (StringUtil.isBlank(url)) {
             return Collections.EMPTY_LIST;
         }
         Matcher matcher = compile("(//)(?!(/)).+?(/)").matcher(url);
@@ -103,13 +103,13 @@ public class MysqlExtractor extends AbstractExtractor {
             url = matcher.group(0);
             break;
         }
-        url = StringUtils.replace(url, "/", "");
+        url = StringUtil.replace(url, "/", "");
 
         List<Host> cluster = new ArrayList<>();
-        String[] arr = StringUtils.split(url, ",");
+        String[] arr = StringUtil.split(url, ",");
         int size = arr.length;
         for (int i = 0; i < size; i++) {
-            String[] host = StringUtils.split(arr[i], ":");
+            String[] host = StringUtil.split(arr[i], ":");
             if (2 == host.length) {
                 cluster.add(new Host(host[0], Integer.parseInt(host[1])));
             }
@@ -149,7 +149,7 @@ public class MysqlExtractor extends AbstractExtractor {
     }
 
     private void refresh(String binlogFilename, long nextPosition) {
-        if (StringUtils.isNotBlank(binlogFilename)) {
+        if (StringUtil.isNotBlank(binlogFilename)) {
             client.setBinlogFilename(binlogFilename);
             snapshot.put(BINLOG_FILENAME, binlogFilename);
         }
@@ -169,7 +169,7 @@ public class MysqlExtractor extends AbstractExtractor {
 
         @Override
         public void onCommunicationFailure(BinaryLogRemoteClient client, Exception e) {
-            if(!connected){
+            if (!connected) {
                 return;
             }
             logger.error(e.getMessage());
@@ -179,9 +179,9 @@ public class MysqlExtractor extends AbstractExtractor {
              * case2> Got fatal error 1236 from master when reading data from binary log.
              * case3> Log event entry exceeded max_allowed_packet; Increase max_allowed_packet on master.
              */
-            if(e instanceof ServerException){
+            if (e instanceof ServerException) {
                 ServerException serverException = (ServerException) e;
-                if(serverException.getErrorCode() == 1236){
+                if (serverException.getErrorCode() == 1236) {
                     close();
                     String log = String.format("线程[%s]执行异常。由于MySQL配置了过期binlog文件自动删除机制，已无法找到原binlog文件%s。建议先保存驱动（加载最新的binlog文件），再启动驱动。",
                             client.getWorkerThreadName(),
@@ -218,7 +218,7 @@ public class MysqlExtractor extends AbstractExtractor {
             if (EventType.isUpdate(header.getEventType())) {
                 UpdateRowsEventData data = event.getData();
                 String tableName = getTableName(data.getTableId());
-                if(isFilterTable(tableName, ConnectorConstant.OPERTION_UPDATE)){
+                if (isFilterTable(tableName, ConnectorConstant.OPERTION_UPDATE)) {
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m.getKey()).collect(Collectors.toList());
                         List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
@@ -231,7 +231,7 @@ public class MysqlExtractor extends AbstractExtractor {
             if (EventType.isWrite(header.getEventType())) {
                 WriteRowsEventData data = event.getData();
                 String tableName = getTableName(data.getTableId());
-                if(isFilterTable(tableName, ConnectorConstant.OPERTION_INSERT)){
+                if (isFilterTable(tableName, ConnectorConstant.OPERTION_INSERT)) {
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m).collect(Collectors.toList());
                         asynSendRowChangedEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after));
@@ -243,7 +243,7 @@ public class MysqlExtractor extends AbstractExtractor {
             if (EventType.isDelete(header.getEventType())) {
                 DeleteRowsEventData data = event.getData();
                 String tableName = getTableName(data.getTableId());
-                if(isFilterTable(tableName, ConnectorConstant.OPERTION_DELETE)){
+                if (isFilterTable(tableName, ConnectorConstant.OPERTION_DELETE)) {
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m).collect(Collectors.toList());
                         asynSendRowChangedEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST));
@@ -266,8 +266,8 @@ public class MysqlExtractor extends AbstractExtractor {
             return tables.get(tableId).getTable();
         }
 
-        private boolean isFilterTable(String tableName, String event){
-            if(!filterTable.contains(tableName)){
+        private boolean isFilterTable(String tableName, String event) {
+            if (!filterTable.contains(tableName)) {
                 logger.info("Table[{}] {}", tableName, event);
                 return false;
             }

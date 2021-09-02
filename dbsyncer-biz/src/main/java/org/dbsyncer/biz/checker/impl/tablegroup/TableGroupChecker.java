@@ -1,6 +1,5 @@
 package org.dbsyncer.biz.checker.impl.tablegroup;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
@@ -142,8 +141,8 @@ public class TableGroupChecker extends AbstractChecker {
         if (!CollectionUtils.isEmpty(list)) {
             for (TableGroup g : list) {
                 // 数据源表和目标表都存在
-                if (StringUtils.equals(sourceTable, g.getSourceTable().getName())
-                        && StringUtils.equals(targetTable, g.getTargetTable().getName())) {
+                if (StringUtil.equals(sourceTable, g.getSourceTable().getName())
+                        && StringUtil.equals(targetTable, g.getTargetTable().getName())) {
                     final String error = String.format("映射关系已存在.%s > %s", sourceTable, targetTable);
                     logger.error(error);
                     throw new BizException(error);

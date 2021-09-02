@@ -1,7 +1,7 @@
 package org.dbsyncer.manager.config;
 
-import org.apache.commons.lang.StringUtils;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.CompareFilter;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.Filter;
@@ -97,9 +97,9 @@ public class FieldPicker {
 
         // 解析过滤条件
         if ((filterSwitch = !CollectionUtils.isEmpty(filter))) {
-            add = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), OperationEnum.AND.getName())).collect(
+            add = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), OperationEnum.AND.getName())).collect(
                     Collectors.toList());
-            or = filter.stream().filter(f -> StringUtils.equals(f.getOperation(), OperationEnum.OR.getName())).collect(Collectors.toList());
+            or = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), OperationEnum.OR.getName())).collect(Collectors.toList());
         }
 
         // 记录字段索引 [{"ID":0},{"NAME":1}]
@@ -128,7 +128,7 @@ public class FieldPicker {
         // 属性
         String name;
         // 索引
-        int    i;
+        int i;
 
         public Node(String name, int i) {
             this.name = name;
