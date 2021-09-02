@@ -19,9 +19,17 @@ public enum ConvertEnum {
      */
     DEFAULT("DEFAULT", "默认值", 1, new DefaultHandler()),
     /**
-     * 默认系统时间
+     * 默认系统时间戳
      */
-    DEFAULT_SYSTEM_TIMESTAMP("DEFAULT_SYSTEM_TIMESTAMP", "默认系统时间", 0, new DefaultTimestampHandler()),
+    DEFAULT_SYSTEM_TIMESTAMP("DEFAULT_SYSTEM_TIMESTAMP", "默认系统时间戳", 0, new DefaultTimestampHandler()),
+    /**
+     * 默认系统日期
+     */
+    SYSTEM_DATE("SYSTEM_DATE", "默认系统日期", 0, new DateHandler()),
+    /**
+     * 时间戳转日期
+     */
+    TIMESTAMP_TO_DATE("TIMESTAMP_TO_DATE", "时间戳转日期", 0, new TimestampToDateHandler()),
     /**
      * 替换
      */

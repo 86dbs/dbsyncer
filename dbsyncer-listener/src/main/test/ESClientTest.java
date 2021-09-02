@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -168,6 +169,7 @@ public class ESClientTest {
         map.put("name", "刘备关羽张飞");
         map.put("content", "桃园结义");
         map.put("tags", new Long[]{200L});
+        map.put("update_time", new Date());
         IndexRequest request = new IndexRequest(indexName, type, "2");
         request.source(map, XContentType.JSON);
 
@@ -184,6 +186,7 @@ public class ESClientTest {
         m1.put("name", "刘备关羽张飞");
         m1.put("content", "桃园结义");
         m1.put("tags", new Long[]{200L});
+        m1.put("update_time", new Date());
         IndexRequest r1 = new IndexRequest(indexName, type, "1");
         r1.source(m1, XContentType.JSON);
         request.add(r1);
@@ -193,6 +196,7 @@ public class ESClientTest {
         m2.put("name", "曹阿瞒");
         m2.put("content", "火烧");
         m2.put("tags", new Long[]{200L, 300L});
+        m2.put("update_time", new Date());
         IndexRequest r2 = new IndexRequest(indexName, type, "2");
         r2.source(m2, XContentType.JSON);
         request.add(r2);

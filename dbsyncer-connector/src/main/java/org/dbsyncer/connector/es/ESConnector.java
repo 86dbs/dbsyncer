@@ -14,6 +14,7 @@ import org.dbsyncer.connector.enums.ESFieldTypeEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.util.ESUtil;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -27,7 +28,6 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.common.xcontent.StatusToXContentObject;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -136,7 +136,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             builder.trackTotalHits(true);
             builder.from(0);
             builder.size(0);
-            SearchRequest request = new SearchRequest(new String[]{config.getIndex()}, builder);
+            SearchRequest request = new SearchRequest(new String[] {config.getIndex()}, builder);
             SearchResponse response = connectorMapper.getConnection().search(request, RequestOptions.DEFAULT);
             return response.getHits().getTotalHits();
         } catch (IOException e) {
@@ -155,7 +155,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         builder.timeout(TimeValue.timeValueMillis(10));
 
         try {
-            SearchRequest rq = new SearchRequest(new String[]{cfg.getIndex()}, builder);
+            SearchRequest rq = new SearchRequest(new String[] {cfg.getIndex()}, builder);
             SearchResponse searchResponse = connectorMapper.getConnection().search(rq, RequestOptions.DEFAULT);
             SearchHits hits = searchResponse.getHits();
             SearchHit[] searchHits = hits.getHits();
@@ -212,16 +212,27 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
         if (isUpdate(config.getEvent())) {
             return execute(connectorMapper, data, pk, (index, type, id) -> {
-                UpdateRequest request = new UpdateRequest(index, type, id);
-                request.doc(data, XContentType.JSON);
-                return connectorMapper.getConnection().update(request, RequestOptions.DEFAULT);
+                try {
+                    UpdateRequest request = new UpdateRequest(index, type, id);
+                    request.doc(data, XContentType.JSON);
+                    connectorMapper.getConnection().update(request, RequestOptions.DEFAULT);
+                } catch (ElasticsearchStatusException e) {
+                    // 数据不存在则写入
+                    if (RestStatus.NOT_FOUND.getStatus() == e.status().getStatus()) {
+                        IndexRequest r = new IndexRequest(index, type, id);
+                        r.source(data, XContentType.JSON);
+                        connectorMapper.getConnection().index(r, RequestOptions.DEFAULT);
+                        return;
+                    }
+                    throw new ConnectorException(e.getMessage());
+                }
             });
         }
         if (isInsert(config.getEvent())) {
             return execute(connectorMapper, data, pk, (index, type, id) -> {
                 IndexRequest request = new IndexRequest(index, type, id);
                 request.source(data, XContentType.JSON);
-                return connectorMapper.getConnection().index(request, RequestOptions.DEFAULT);
+                connectorMapper.getConnection().index(request, RequestOptions.DEFAULT);
             });
         }
         if (isDelete(config.getEvent())) {
@@ -273,7 +284,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         List<Filter> or = filters.stream().filter(f -> OperationEnum.isOr(f.getOperation())).collect(Collectors.toList());
         // where (id = 1 and name = 'tom') or id = 2 or id = 3
         BoolQueryBuilder q = QueryBuilders.boolQuery();
-        if(!CollectionUtils.isEmpty(and) && !CollectionUtils.isEmpty(or)){
+        if (!CollectionUtils.isEmpty(and) && !CollectionUtils.isEmpty(or)) {
             BoolQueryBuilder andQuery = QueryBuilders.boolQuery();
             and.forEach(f -> addFilter(andQuery, f));
             q.should(andQuery);
@@ -282,7 +293,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             return;
         }
 
-        if(!CollectionUtils.isEmpty(or)){
+        if (!CollectionUtils.isEmpty(or)) {
             genShouldQuery(q, or);
             builder.query(q);
             return;
@@ -310,11 +321,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         Result result = new Result();
         final ESConfig config = connectorMapper.getConfig();
         try {
-            StatusToXContentObject status = mapper.apply(config.getIndex(), config.getType(), id);
-            RestStatus restStatus = status.status();
-            if (restStatus.getStatus() != RestStatus.OK.getStatus()) {
-                throw new ConnectorException(String.format("error code:%s", restStatus.getStatus()));
-            }
+            mapper.apply(config.getIndex(), config.getType(), id);
         } catch (Exception e) {
             // 记录错误数据
             result.getFailData().add(data);
@@ -330,7 +337,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
     }
 
     private interface RequestMapper {
-        StatusToXContentObject apply(String index, String type, String id) throws IOException;
+        void apply(String index, String type, String id) throws IOException;
     }
 
     private interface FilterMapper {
