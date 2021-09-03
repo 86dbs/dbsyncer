@@ -59,7 +59,7 @@ public class ConnectorFactory implements DisposableBean {
             connectorCache.remove(cacheKey);
         }
         connect(config);
-        return isAlive(config);
+        return connector.isAlive(connectorCache.get(cacheKey));
     }
 
     /**

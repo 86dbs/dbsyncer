@@ -55,4 +55,16 @@ public interface ConnectorService {
      */
     List<String> getConnectorTypeAll();
 
+    /**
+     * 检查连接器状态
+     */
+    void refreshHealth();
+
+    /**
+     * 连接器是否可用
+     *
+     * @param id
+     * @return
+     */
+    boolean isAlive(String id);
 }

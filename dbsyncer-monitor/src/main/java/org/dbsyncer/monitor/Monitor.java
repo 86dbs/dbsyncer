@@ -17,8 +17,6 @@ import java.util.List;
  */
 public interface Monitor {
 
-    boolean isAlive(String id);
-
     Mapping getMapping(String mappingId);
 
     List<Meta> getMetaAll();

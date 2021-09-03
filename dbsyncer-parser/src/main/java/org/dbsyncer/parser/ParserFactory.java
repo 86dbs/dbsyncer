@@ -83,13 +83,23 @@ public class ParserFactory implements Parser {
 
     @Override
     public boolean isAliveConnectorConfig(ConnectorConfig config) {
+        boolean alive = false;
         try {
-            return connectorFactory.isAlive(config);
+            alive = connectorFactory.isAlive(config);
         } catch (Exception e) {
             LogType.ConnectorLog logType = LogType.ConnectorLog.FAILED;
             flushService.asyncWrite(logType.getType(), String.format("%s%s", logType.getName(), e.getMessage()));
         }
-        return false;
+        // 断线重连
+        if(!alive){
+            try {
+                alive = connectorFactory.refresh(config);
+                logger.info(LogType.ConnectorLog.RECONNECT_SUCCESS.getMessage());
+            } catch (Exception e) {
+                // nothing to do
+            }
+        }
+        return alive;
     }
 
     @Override
