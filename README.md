@@ -1,7 +1,7 @@
 ## 介绍
 DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServer、Elasticsearch(ES)、SQL(Mysql/Oracle/SqlServer)等同步场景。支持上传插件自定义同步转换业务，提供监控全量和增量数据统计图、应用性能预警等。
 
-#### 特点
+> 特点
 * 组合驱动，自定义库同步到库组合，关系型数据库与非关系型之间组合，任意搭配表同步映射关系
 * 实时监控，驱动全量或增量实时同步运行状态、结果、同步日志和系统日志
 * 开发插件，自定义转化同步逻辑
@@ -146,7 +146,8 @@ grant change notification to 你的账号
 ![驱动表字段关系配置](https://images.gitee.com/uploads/images/2021/0903/004106_26399534_376718.png "驱动表字段关系配置.png")
 
 ### 定时配置
-#### 假设源表数据格式
+> 假设源表数据格式
+
 ![表数据格式](https://images.gitee.com/uploads/images/2021/0903/004406_68ef9bb4_376718.png "表数据格式.png")
 ![定时和过滤条件](https://images.gitee.com/uploads/images/2021/0903/004807_07cdf2b7_376718.png "定时和过滤条件.png")
 
