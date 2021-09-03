@@ -1,8 +1,8 @@
 ﻿/***************************************************** 
  *                                                 *#*
- * @项目:loadingT                                 *#*
- * @作者:AE86                                     *#*
- * @Date:2016-11-21 23:46:56                     *#*
+ * @项目:loadingT                                   *#*
+ * @作者:AE86                                       *#*
+ * @Date:2016-11-21 23:46:56                       *#*
  *****************************************************
  *###################################################*/
 
@@ -17,7 +17,7 @@ $.loadingT = {
 		$loadingT.html("<div class='loading-indicator' unselectable='on' onselectstart='return false;'>"+title+content+"</div>");
 		$loadingT.css({ "height":$(document.body).height()+'px' });
 		var $indicato = $(".loading-indicator");
-		$indicato.css({ "margin-top":(document.body.clientHeight / 2) -($indicato.height() / 2) });
+		$indicato.css({ "margin-top":($(window).height() / 2) -($indicato.height() / 2) });
 	}
 }
 //创建遮罩层
@@ -30,7 +30,7 @@ jQuery.extend({
 	resetIndicato:function(){
 		$(".loadingT").css({ "height":$(document.body).height()+'px' });
 		var $indicato = $(".loading-indicator");
-		$indicato.css({ "margin-top":(document.body.clientHeight / 2) -($indicato.height() / 2) });
+		$indicato.css({ "margin-top":($(window).height() / 2) -($indicato.height() / 2) });
 	}
 });
 //兼容浏览器缩放

@@ -18,6 +18,7 @@ import org.dbsyncer.manager.template.impl.OperationTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
@@ -251,8 +252,11 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public void clearData(String collectionId) {
-        LogType.MappingLog clearData = LogType.MappingLog.CLEAR_DATA;
-        logService.log(clearData, "驱动%s，%s", collectionId, clearData.getMessage());
+        Meta meta = getMeta(collectionId);
+        Mapping mapping = getMapping(meta.getMappingId());
+        String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
+        LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
+        logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
         storageService.clear(StorageEnum.DATA, collectionId);
     }
 
