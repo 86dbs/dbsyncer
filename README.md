@@ -170,8 +170,6 @@ grant change notification to 你的账号
 ## 开发依赖
 * [JDK - 1.8.0_40](https://www.oracle.com/java/technologies/jdk8-downloads.html)（推荐版本以上）
 * [Maven - 3.3.9](https://dlcdn.apache.org/maven/maven-3/)（推荐版本以上）
-* [Spring Boot - 2.2.0.RELEASE](https://docs.spring.io/spring-boot/docs/2.2.0.RELEASE/reference/html)
-* [Bootstrap - 3.3.4](http://getbootstrap.com)
 
 ## 手动编译
 > 先确保环境已安装JDK和Maven

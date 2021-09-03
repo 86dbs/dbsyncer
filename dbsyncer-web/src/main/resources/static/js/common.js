@@ -4,6 +4,7 @@ var $path = document.location.pathname;
 var $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.substr(1).indexOf("/")+1);
 // 全局内容区域
 var $initContainer = $("#initContainer");
+    $initContainer.css("min-height", $(window).height() - 125);
 // 监控定时器
 var timer;
 

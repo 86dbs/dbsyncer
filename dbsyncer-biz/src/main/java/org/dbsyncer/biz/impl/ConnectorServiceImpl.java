@@ -118,14 +118,13 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
             }
         });
 
-        if (CollectionUtils.isEmpty(remove)) {
+        if (!CollectionUtils.isEmpty(remove)) {
             remove.forEach(k -> health.remove(k));
         }
     }
 
     @Override
     public boolean isAlive(String id) {
-        final Boolean alive = health.get(id);
-        return null != alive && alive;
+        return health.containsKey(id) && health.get(id);
     }
 }
