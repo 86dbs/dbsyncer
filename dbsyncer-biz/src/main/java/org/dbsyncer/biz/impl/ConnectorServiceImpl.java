@@ -1,12 +1,17 @@
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.checker.Checker;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Mapping;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +28,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorService {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private Manager manager;
@@ -48,6 +55,17 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public String remove(String id) {
+        List<Mapping> mappingAll = manager.getMappingAll();
+        if(!CollectionUtils.isEmpty(mappingAll)){
+            mappingAll.forEach(mapping -> {
+                if(StringUtil.equals(mapping.getSourceConnectorId(), id) || StringUtil.equals(mapping.getTargetConnectorId(), id)){
+                    String error = String.format("驱动“%s”正在使用，请先删除", mapping.getName());
+                    logger.error(error);
+                    throw new BizException(error);
+                }
+            });
+        }
+
         Connector connector = manager.getConnector(id);
         log(LogType.ConnectorLog.DELETE, connector);
 
