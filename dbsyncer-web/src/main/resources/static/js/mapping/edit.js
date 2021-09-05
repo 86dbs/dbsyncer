@@ -193,7 +193,6 @@ $(function () {
 
     // 初始化select插件
     initSelectIndex($(".select-control-table"), 0);
-    initSelect($(".select-control-default"));
 
     // 保存
     $("#mappingSubmitBtn").click(function () {

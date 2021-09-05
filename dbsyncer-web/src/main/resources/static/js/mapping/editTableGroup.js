@@ -157,10 +157,6 @@ $(function() {
     bindFieldMappingListClick();
     bindFieldMappingDelClick();
 
-    // 初始化select插件
-    initSelect($(".select-control"));
-    initSelect($(".select-control-default"));
-
     //保存
     $("#tableGroupSubmitBtn").click(function () {
         var $form = $("#tableGroupModifyForm");
