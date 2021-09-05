@@ -436,7 +436,7 @@ function createTimer(){
 
 $(function () {
     // 初始化select插件
-    initSelect($(".select-control"), 1);
+    initSelect($(".select-control"));
 
     // 连接类型切换事件
     $("#searchMetaData").change(function () {

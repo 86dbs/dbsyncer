@@ -14,7 +14,7 @@ $(function () {
     $('input[type="text"],input[type="password"],textarea').PlaceHolder();
 
     // 初始化select插件
-    initSelect($(".select-control"), 1);
+    initSelect($(".select-control"));
 
     //保存
     $("#connectorSubmitBtn").click(function () {
