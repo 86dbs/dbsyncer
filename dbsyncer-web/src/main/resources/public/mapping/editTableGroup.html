@@ -83,8 +83,8 @@
                                 <div class="col-md-5">
                                     <label class="col-sm-3 control-label text-right">数据源表字段</label>
                                     <div class="col-sm-9">
-                                        <select id="sourceTableField" class="form-control select-control">
-                                            <option value="">无</option>
+                                        <select id="sourceTableField" class="form-control select-control-default">
+                                            <option value="" selected="selected">无</option>
                                             <option th:each="c,s:${tableGroup?.sourceTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
                                         </select>
                                     </div>
@@ -98,8 +98,8 @@
                                     <div class="form-group">
                                         <label class="col-sm-3 control-label text-right">目标源表字段</label>
                                         <div class="col-sm-9">
-                                            <select id="targetTableField" class="form-control select-control">
-                                                <option value="">无</option>
+                                            <select id="targetTableField" class="form-control select-control-default">
+                                                <option value="" selected="selected">无</option>
                                                 <option th:each="c,s:${tableGroup?.targetTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
                                             </select>
                                         </div>

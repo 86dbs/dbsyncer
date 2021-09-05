@@ -22,7 +22,7 @@
     <div class="form-group">
         <label class="col-sm-2 control-label">驱动 </label>
         <div class="col-sm-10">
-            <select class="form-control select-control" name="driverClassName">
+            <select id="driverClassName" class="form-control select-control" name="driverClassName">
                 <option value="com.mysql.jdbc.Driver" th:selected="${connector?.config?.driverClassName eq 'com.mysql.jdbc.Driver'}">com.mysql.jdbc.Driver</option>
                 <option value="com.mysql.cj.jdbc.Driver" th:selected="${connector?.config?.driverClassName eq 'com.mysql.cj.jdbc.Driver'}">com.mysql.cj.jdbc.Driver</option>
             </select>
@@ -33,15 +33,7 @@
 <script type="text/javascript">
 $(function () {
     // 初始化select插件
-    $(".select-control").selectpicker({
-        "title":"请选择",
-        "actionsBox":true,
-        "liveSearch":true,
-        "selectAllText":"全选",
-        "deselectAllText":"取消全选",
-        "noneResultsText":"没有找到 {0}",
-        "selectedTextFormat":"count > 10"
-    });
+    initSelectIndex($("#driverClassName"), 1);
 })
 </script>
 </html>

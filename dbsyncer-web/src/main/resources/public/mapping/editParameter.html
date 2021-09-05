@@ -10,7 +10,7 @@
             <div class="col-md-4">
                 <label class="col-sm-3 control-label text-right"><span title="区分Oracle增量同步数据字段，会将该字段设置为目标源唯一主键">ROWID</span></label>
                 <div class="col-sm-9">
-                    <select name="ORACLE_ROW_ID" class="form-control select-control">
+                    <select id="oracleRowId" name="ORACLE_ROW_ID" class="form-control select-control-default">
                         <option value="" selected="selected">无</option>
                         <!-- Mapping params -->
                         <option th:if="${tableGroup} == null" th:each="c,s:${mapping?.targetColumn}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" th:selected="${c?.name eq mapping?.params?.get('ORACLE_ROW_ID')}"/>

@@ -37,6 +37,32 @@ function beautifySql(){
     $sql.removeAttr('tmp');
 }
 
+// 初始化select组件，默认选中
+function initSelectIndex($select, $selectedIndex){
+    initSelect($select);
+
+    $.each($select, function () {
+        var v = $(this).selectpicker('val');
+        if (undefined == v || '' == v) {
+            var $option = $(this).find("option")[$selectedIndex];
+            if(undefined != $option){
+                $(this).selectpicker('val', $option.value);
+            }
+        }
+    });
+}
+function initSelect($select){
+    $select.selectpicker({
+        "title":"请选择",
+        "actionsBox":true,
+        "liveSearch":true,
+        "selectAllText":"全选",
+        "deselectAllText":"取消全选",
+        "noneResultsText":"没有找到 {0}",
+        "selectedTextFormat":"count > 10"
+    });
+}
+
 // ******************* 扩展JS表单方法 ***************************
 $.fn.serializeJson = function () {
     var o = {};

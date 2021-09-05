@@ -14,15 +14,7 @@ $(function () {
     $('input[type="text"],input[type="password"],textarea').PlaceHolder();
 
     // 初始化select插件
-    $(".select-control").selectpicker({
-        "title":"请选择",
-        "actionsBox":true,
-        "liveSearch":true,
-        "selectAllText":"全选",
-        "deselectAllText":"取消全选",
-        "noneResultsText":"没有找到 {0}",
-        "selectedTextFormat":"count > 10"
-    });
+    initSelect($(".select-control"), 1);
 
     //保存
     $("#connectorSubmitBtn").click(function () {

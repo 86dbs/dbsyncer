@@ -163,6 +163,7 @@ function bindConvertAddClick() {
 }
 
 $(function() {
+    initSelectIndex($(".select-control"), 1);
     // 过滤条件
     initFilter();
     bindConditionAddClick();
