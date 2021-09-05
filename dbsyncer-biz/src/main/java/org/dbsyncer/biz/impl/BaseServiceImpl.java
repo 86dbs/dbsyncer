@@ -35,14 +35,14 @@ public class BaseServiceImpl {
     }
 
     protected void assertRunning(String metaId) {
-        Assert.isTrue(!isRunning(metaId), "驱动正在运行, 请先停止.");
+        synchronized (LOCK) {
+            Assert.isTrue(!isRunning(metaId), "驱动正在运行, 请先停止.");
+        }
     }
 
-    protected void assertRunning(TableGroup model) {
-        synchronized (LOCK) {
-            Mapping mapping = manager.getMapping(model.getMappingId());
-            assertRunning(mapping.getMetaId());
-        }
+    protected void assertRunning(Mapping mapping) {
+        Assert.notNull(mapping, "mapping can not be null.");
+        assertRunning(mapping.getMetaId());
     }
 
     protected void log(LogType log, ConfigModel model) {

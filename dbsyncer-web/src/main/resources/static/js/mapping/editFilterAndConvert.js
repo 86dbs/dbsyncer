@@ -66,9 +66,9 @@ function bindConditionAddClick() {
     var $conditionAdd = $("#conditionAdd");
     $conditionAdd.unbind("click");
     $conditionAdd.bind('click', function () {
-        var conditionOperation = $("#conditionOperation").select2("val");
-        var conditionSourceField = $("#conditionSourceField").select2("val");
-        var conditionFilter = $("#conditionFilter").select2("val");
+        var conditionOperation = $("#conditionOperation").selectpicker("val");
+        var conditionSourceField = $("#conditionSourceField").selectpicker("val");
+        var conditionFilter = $("#conditionFilter").selectpicker("val");
         var conditionArg = $("#conditionArg").val();
         // 非空检查
         if(conditionSourceField == null || conditionSourceField == undefined || conditionSourceField == ''){
@@ -121,9 +121,9 @@ function bindConvertAddClick() {
     $convertAdd.unbind("click");
     $convertAdd.bind('click', function () {
         var $convertOperator = $("#convertOperator");
-        var convertOperatorVal = $convertOperator.select2("val");
-        var convertOperatorText = $convertOperator.select2("data")[0].text;
-        var convertTargetField = $("#convertTargetField").select2("val");
+        var convertOperatorVal = $convertOperator.selectpicker("val");
+        var convertOperatorText = $convertOperator.find("option:selected")[0].text;
+        var convertTargetField = $("#convertTargetField").selectpicker("val");
         var convertArg = $(".convertArg:eq(0)").val();
         var convertArg1 = $(".convertArg:eq(1)").val();
         // 多个参数时，英文符号“,”拼接

@@ -3,10 +3,12 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,22 +33,39 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Override
     public String add(Map<String, String> params) {
-        TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
-        assertRunning(model);
-        log(LogType.TableGroupLog.INSERT, model);
+        String mappingId = params.get("mappingId");
+        assertRunning(manager.getMapping(mappingId));
 
-        String id = manager.addTableGroup(model);
+        // table1, table2
+        String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), ",");
+        String[] targetTableArray = StringUtil.split(params.get("targetTable"), ",");
+        int tableSize = sourceTableArray.length;
+        Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
+
+        String id = null;
+        for (int i = 0; i < tableSize; i++) {
+            params.put("sourceTable", sourceTableArray[i]);
+            params.put("targetTable", targetTableArray[i]);
+            TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
+            log(LogType.TableGroupLog.INSERT, model);
+
+            id = manager.addTableGroup(model);
+        }
 
         // 合并驱动公共字段
-        mergeMappingColumn(model.getMappingId());
+        mergeMappingColumn(mappingId);
 
-        return id;
+        return 1 < tableSize ? String.valueOf(tableSize) : id;
     }
 
     @Override
     public String edit(Map<String, String> params) {
+        String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
+        TableGroup tableGroup = manager.getTableGroup(id);
+        Assert.notNull(tableGroup, "Can not find tableGroup.");
+        assertRunning(manager.getMapping(tableGroup.getMappingId()));
+
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
-        assertRunning(model);
         log(LogType.TableGroupLog.UPDATE, model);
 
         return manager.editTableGroup(model);
@@ -56,19 +75,17 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     public boolean remove(String mappingId, String ids) {
         Assert.hasText(mappingId, "Mapping id can not be null");
         Assert.hasText(ids, "TableGroup ids can not be null");
-        Mapping mapping = manager.getMapping(mappingId);
-        Assert.notNull(mapping, "Mapping can not be null");
-        assertRunning(mapping.getMetaId());
+        assertRunning(manager.getMapping(mappingId));
 
         // 批量删除表
-        Stream.of(ids.split(",")).parallel().forEach(id -> {
+        Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
             TableGroup model = manager.getTableGroup(id);
             log(LogType.TableGroupLog.DELETE, model);
             manager.removeTableGroup(id);
         });
 
         // 合并驱动公共字段
-        mergeMappingColumn(mapping.getId());
+        mergeMappingColumn(mappingId);
         return true;
     }
 

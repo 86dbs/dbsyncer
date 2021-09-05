@@ -10,9 +10,9 @@ function bingMappingParamsInputClick(){
 }
 
 // 生成参数配置
-function genMappingParams($inputs){
+function genMappingParams($select){
     var params = {};
-    $inputs.each(function () {
+    $select.each(function () {
         if('' != $(this).val()){
             params[$(this).attr("name")] = $(this).val();
         }

@@ -103,7 +103,7 @@
                                 <div class="col-md-1">
                                     <!-- 是否包含成功 -->
                                     <select id="searchDataSuccess" class="form-control select-control">
-                                        <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}"/>
+                                        <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq 0}"/>
                                     </select>
                                 </div>
                                 <div class="col-sm-4">

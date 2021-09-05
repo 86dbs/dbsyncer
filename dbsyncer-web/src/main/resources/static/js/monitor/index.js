@@ -108,8 +108,8 @@ function showMore($this, $url, $params, $call){
 function bindQueryDataEvent() {
     $("#queryDataBtn").click(function () {
         var keyword = $("#searchDataKeyword").val();
-        var id = $("#searchMetaData").select2("val");
-        var success = $("#searchDataSuccess").select2("val");
+        var id = $("#searchMetaData").selectpicker("val");
+        var success = $("#searchDataSuccess").selectpicker("val");
         doGetter('/monitor/queryData', {"error": keyword, "success": success, "id" : id, "pageNum" : 1, "pageSize" : 10}, function (data) {
             if (data.success == true) {
                 refreshDataList(data.resultValue);
@@ -122,8 +122,8 @@ function bindQueryDataEvent() {
 function bindQueryDataMoreEvent() {
     $("#queryDataMore").click(function () {
         var keyword = $("#searchDataKeyword").val();
-        var id = $("#searchMetaData").select2("val");
-        var success = $("#searchDataSuccess").select2("val");
+        var id = $("#searchMetaData").selectpicker("val");
+        var success = $("#searchDataSuccess").selectpicker("val");
         showMore($(this), '/monitor/queryData', {"error": keyword, "success": success, "id" : id}, function(resultValue){
             refreshDataList(resultValue, true)
         });
@@ -435,10 +435,15 @@ function createTimer(){
 }
 
 $(function () {
-    // 初始化select2插件
-    $(".select-control").select2({
-        width: "100%",
-        theme: "classic"
+    // 初始化select插件
+    $(".select-control").selectpicker({
+        "title":"请选择",
+        "actionsBox":true,
+        "liveSearch":true,
+        "selectAllText":"全选",
+        "deselectAllText":"取消全选",
+        "noneResultsText":"没有找到 {0}",
+        "selectedTextFormat":"count > 10"
     });
 
     // 连接类型切换事件
