@@ -12,92 +12,56 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
     <table>
         <tbody>
             <tr>
-                <td colspan="2" rowspan="2">Every point is a DataBase</td>
-                <td colspan="6" align="center">目标源</td>
+                <td>连接器</td>
+                <td>数据源</td>
+                <td>目标源</td>
+                <td>支持版本</td>
             </tr>
             <tr>
                 <td>Mysql</td>
-                <td>Oracle</td>
-                <td>SqlServer</td>
-                <td>ES</td>
-                <td>SQL</td>
-            </tr>
-            <tr>
-                <td rowspan="5">数据源</td>
-                <td>Mysql</td>
                 <td>√</td>
                 <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
+                <td>5.7.19以上</td>
             </tr>
             <tr>
                 <td>Oracle</td>
                 <td>√</td>
                 <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
+                <td>10g以上</td>
             </tr>
             <tr>
                 <td>SqlServer</td>
                 <td>√</td>
                 <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
+                <td>2008以上</td>
             </tr>
             <tr>
                 <td>ES</td>
                 <td>√</td>
                 <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
+                <td>6.X以上</td>
             </tr>
             <tr>
                 <td>SQL</td>
+                <td>√</td>
                 <td></td>
                 <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td rowspan="4">版本支持</td>
-                <td>Mysql</td>
-                <td colspan="7">5.7.19以上</td>
-            </tr>
-            <tr>
-                <td>Oracle</td>
-                <td colspan="7">10g以上（Oracle-9i未测试）</td>
-            </tr>
-            <tr>
-                <td>SqlServer</td>
-                <td colspan="7">2008以上</td>
-            </tr>
-            <tr>
-                <td>ES</td>
-                <td colspan="7">6.X以上</td>
             </tr>
             <tr>
                 <td>最近计划</td>
-                <td colspan="7">kafka</td>
+                <td colspan="3">kafka</td>
             </tr>
         </tbody>
     </table>
 <div>
 
 ## 安装配置
-#### 准备
-* [DBSyncer-1.0.0-Alpha.zip](https://gitee.com/ghi/dbsyncer/releases)（安装包）
-* [JRE 1.8 +](https://www.oracle.com/java/technologies/jdk8-downloads.html)
 #### 步骤
-* 安装JRE1.8版本以上（省略详细）
-* 下载安装包DBSyncer-X.X.X-RELEASE.zip
-* 解压安装包，Window执行bin/startup.bat，Linux执行bin/startup.sh
-* 打开浏览器访问：http://127.0.0.1:18686
-* 账号和密码：admin/admin
+1. 安装[JRE 1.8](https://www.oracle.com/java/technologies/jdk8-downloads.html)（省略详细）
+2. 下载安装包[DBSyncer-1.0.0-Alpha.zip](https://gitee.com/ghi/dbsyncer/releases)（也可手动编译）
+3. 解压安装包，Window执行bin/startup.bat，Linux执行bin/startup.sh
+4. 打开浏览器访问：http://127.0.0.1:18686
+5. 账号和密码：admin/admin
 
 #### 增量同步配置（源库）
 
@@ -181,5 +145,5 @@ $ ./build.sh
 ```
 
 ## 了解更多
-* [访问博客地址](https://my.oschina.net/dbsyncer "https://my.oschina.net/dbsyncer")
-* QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" /> 
+* ##### [访问博客地址](https://my.oschina.net/dbsyncer "https://my.oschina.net/dbsyncer")
+* ##### QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" /> 
