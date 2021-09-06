@@ -94,9 +94,11 @@ public class ParserFactory implements Parser {
         if(!alive){
             try {
                 alive = connectorFactory.refresh(config);
-                logger.info(LogType.ConnectorLog.RECONNECT_SUCCESS.getMessage());
             } catch (Exception e) {
                 // nothing to do
+            }
+            if(alive){
+                logger.info(LogType.ConnectorLog.RECONNECT_SUCCESS.getMessage());
             }
         }
         return alive;

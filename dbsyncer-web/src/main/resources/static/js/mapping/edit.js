@@ -117,6 +117,14 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
         m.mappingId = $(this).attr("mappingId");
         m.sourceTable = $sourceSelect.selectpicker('val');
         m.targetTable = $targetSelect.selectpicker('val');
+        if(undefined == m.sourceTable){
+            bootGrowl("请选择数据源表", "danger");
+            return;
+        }
+        if(undefined == m.targetTable){
+            bootGrowl("请选择目标源表", "danger");
+            return;
+        }
 
         // 如果存在多个选择，只筛选相似表
         var sLen = m.sourceTable.length;

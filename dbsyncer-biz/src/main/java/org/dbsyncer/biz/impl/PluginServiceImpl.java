@@ -9,6 +9,7 @@ import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.plugin.enums.FileSuffixEnum;
 import org.springframework.beans.BeanUtils;
@@ -40,18 +41,7 @@ public class PluginServiceImpl implements PluginService {
         List<Plugin> pluginAll = manager.getPluginAll();
         List<PluginVo> vos = new ArrayList<>();
         if (!CollectionUtils.isEmpty(pluginAll)) {
-            Map<String, List<String>> pluginClassNameMap = new HashMap<>();
-            List<Mapping> mappingAll = manager.getMappingAll();
-            if (!CollectionUtils.isEmpty(mappingAll)) {
-                mappingAll.forEach(mapping -> {
-                    Plugin plugin = mapping.getPlugin();
-                    if (null != plugin) {
-                        pluginClassNameMap.putIfAbsent(plugin.getClassName(), new ArrayList<>());
-                        pluginClassNameMap.get(plugin.getClassName()).add(mapping.getName());
-                    }
-                });
-            }
-
+            Map<String, List<String>> pluginClassNameMap = getPluginClassNameMap();
             vos.addAll(pluginAll.stream().map(plugin -> {
                 PluginVo vo = new PluginVo();
                 BeanUtils.copyProperties(plugin, vo);
@@ -89,5 +79,37 @@ public class PluginServiceImpl implements PluginService {
                 throw new BizException(msg);
             }
         }
+    }
+
+    private Map<String, List<String>> getPluginClassNameMap() {
+        Map<String, List<String>> map = new HashMap<>();
+        List<Mapping> mappingAll = manager.getMappingAll();
+        if (CollectionUtils.isEmpty(mappingAll)) {
+            return map;
+        }
+
+        for (Mapping m : mappingAll) {
+            Plugin plugin = m.getPlugin();
+            if (null != plugin) {
+                map.putIfAbsent(plugin.getClassName(), new ArrayList<>());
+                map.get(plugin.getClassName()).add(m.getName());
+                continue;
+            }
+
+            List<TableGroup> tableGroupAll = manager.getTableGroupAll(m.getId());
+            if (CollectionUtils.isEmpty(tableGroupAll)) {
+                continue;
+            }
+            for (TableGroup t : tableGroupAll) {
+                Plugin p = t.getPlugin();
+                if (null != p) {
+                    map.putIfAbsent(p.getClassName(), new ArrayList<>());
+                    map.get(p.getClassName()).add(m.getName());
+                    break;
+                }
+            }
+        }
+
+        return map;
     }
 }
