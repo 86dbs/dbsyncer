@@ -12,92 +12,56 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
     <table>
         <tbody>
             <tr>
-                <td colspan="2" rowspan="2">Every point is a DataBase</td>
-                <td colspan="6" align="center">目标源</td>
+                <td>连接器</td>
+                <td>数据源</td>
+                <td>目标源</td>
+                <td>支持版本</td>
             </tr>
             <tr>
                 <td>Mysql</td>
-                <td>Oracle</td>
-                <td>SqlServer</td>
-                <td>ES</td>
-                <td>SQL</td>
-            </tr>
-            <tr>
-                <td rowspan="5">数据源</td>
-                <td>Mysql</td>
                 <td>√</td>
                 <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
+                <td>5.7.19以上</td>
             </tr>
             <tr>
                 <td>Oracle</td>
                 <td>√</td>
                 <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
+                <td>10g以上</td>
             </tr>
             <tr>
                 <td>SqlServer</td>
                 <td>√</td>
                 <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
+                <td>2008以上</td>
             </tr>
             <tr>
                 <td>ES</td>
                 <td>√</td>
                 <td>√</td>
-                <td>√</td>
-                <td>√</td>
-                <td>√</td>
+                <td>6.X以上</td>
             </tr>
             <tr>
                 <td>SQL</td>
+                <td>√</td>
                 <td></td>
                 <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td rowspan="4">版本支持</td>
-                <td>Mysql</td>
-                <td colspan="7">5.7.19以上</td>
-            </tr>
-            <tr>
-                <td>Oracle</td>
-                <td colspan="7">10g以上（Oracle-9i未测试）</td>
-            </tr>
-            <tr>
-                <td>SqlServer</td>
-                <td colspan="7">2008以上</td>
-            </tr>
-            <tr>
-                <td>ES</td>
-                <td colspan="7">6.X以上</td>
             </tr>
             <tr>
                 <td>最近计划</td>
-                <td colspan="7">kafka</td>
+                <td colspan="3">kafka</td>
             </tr>
         </tbody>
     </table>
 <div>
 
 ## 安装配置
-#### 准备
-* [DBSyncer-1.0.0-Alpha.zip](https://gitee.com/ghi/dbsyncer/releases)（安装包）
-* [JRE 1.8 +](https://www.oracle.com/java/technologies/jdk8-downloads.html)
 #### 步骤
-* 安装JRE1.8版本以上（省略详细）
-* 下载安装包DBSyncer-X.X.X-RELEASE.zip
-* 解压安装包，Window执行bin/startup.bat，Linux执行bin/startup.sh
-* 打开浏览器访问：http://127.0.0.1:18686
-* 账号和密码：admin/admin
+1. 安装[JRE 1.8](https://www.oracle.com/java/technologies/jdk8-downloads.html)（省略详细）
+2. 下载安装包[DBSyncer-1.0.0-Alpha.zip](https://gitee.com/ghi/dbsyncer/releases)（也可手动编译）
+3. 解压安装包，Window执行bin/startup.bat，Linux执行bin/startup.sh
+4. 打开浏览器访问：http://127.0.0.1:18686
+5. 账号和密码：admin/admin
 
 #### 增量同步配置（源库）
 
@@ -135,6 +99,17 @@ grant change notification to 你的账号
 * 配置
 > 账号具有访问权限。
 
+##### 日志
+> 建议Mysql和SqlServer都使用日志
+
+![日志](https://images.gitee.com/uploads/images/2021/0906/181036_1f9a9e78_376718.png "日志.png")
+
+##### 定时
+> 假设源表数据格式
+
+![表数据格式](https://images.gitee.com/uploads/images/2021/0903/004406_68ef9bb4_376718.png "表数据格式.png")
+![定时和过滤条件](https://images.gitee.com/uploads/images/2021/0903/004807_07cdf2b7_376718.png "定时和过滤条件.png")
+
 ## 预览
 ### 驱动管理
 ![连接器和驱动](https://images.gitee.com/uploads/images/2021/0903/003755_01016fc1_376718.png "驱动管理.png")
@@ -144,12 +119,6 @@ grant change notification to 你的账号
 
 ### 驱动表字段关系配置
 ![驱动表字段关系配置](https://images.gitee.com/uploads/images/2021/0903/004106_26399534_376718.png "驱动表字段关系配置.png")
-
-### 定时配置
-> 假设源表数据格式
-
-![表数据格式](https://images.gitee.com/uploads/images/2021/0903/004406_68ef9bb4_376718.png "表数据格式.png")
-![定时和过滤条件](https://images.gitee.com/uploads/images/2021/0903/004807_07cdf2b7_376718.png "定时和过滤条件.png")
 
 ### 监控
 ![监控](https://images.gitee.com/uploads/images/2021/0728/000645_35a544b3_376718.png "监控.png")
@@ -170,8 +139,6 @@ grant change notification to 你的账号
 ## 开发依赖
 * [JDK - 1.8.0_40](https://www.oracle.com/java/technologies/jdk8-downloads.html)（推荐版本以上）
 * [Maven - 3.3.9](https://dlcdn.apache.org/maven/maven-3/)（推荐版本以上）
-* [Spring Boot - 2.2.0.RELEASE](https://docs.spring.io/spring-boot/docs/2.2.0.RELEASE/reference/html)
-* [Bootstrap - 3.3.4](http://getbootstrap.com)
 
 ## 手动编译
 > 先确保环境已安装JDK和Maven
@@ -183,5 +150,5 @@ $ ./build.sh
 ```
 
 ## 了解更多
-* [访问博客地址](https://my.oschina.net/dbsyncer "https://my.oschina.net/dbsyncer")
-* QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" /> 
+* ##### [访问博客地址](https://my.oschina.net/dbsyncer "https://my.oschina.net/dbsyncer")
+* ##### QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" /> 

@@ -11,17 +11,13 @@ import org.dbsyncer.monitor.enums.ThreadPoolMetricEnum;
 import org.dbsyncer.monitor.model.AppReportMetric;
 import org.dbsyncer.monitor.model.MetricResponse;
 import org.dbsyncer.monitor.model.Sample;
-import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.query.Query;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
@@ -41,8 +37,6 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class MonitorFactory implements Monitor {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     @Autowired
     private Manager manager;
 
@@ -54,13 +48,6 @@ public class MonitorFactory implements Monitor {
      */
     @Value(value = "${dbsyncer.web.thread.pool.queue.capacity}")
     private int queueCapacity;
-
-    @Override
-    @Cacheable(value = "connector", keyGenerator = "cacheKeyGenerator")
-    public boolean isAlive(String id) {
-        Connector connector = manager.getConnector(id);
-        return null != connector ? manager.isAliveConnectorConfig(connector.getConfig()) : false;
-    }
 
     @Override
     public Mapping getMapping(String mappingId) {

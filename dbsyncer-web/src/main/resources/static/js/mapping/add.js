@@ -22,11 +22,8 @@ $(function () {
     // 兼容IE PlaceHolder
     $('input[type="text"],input[type="password"],textarea').PlaceHolder();
 
-    // 初始化select2插件
-    $(".select-control").select2({
-        width: "100%",
-        theme: "classic"
-    });
+    // 初始化select插件
+    initSelectIndex($(".select-control"), 1);
 
     // 绑定匹配相似表复选框事件
     bindAutoMatchTableCheckBoxClick();

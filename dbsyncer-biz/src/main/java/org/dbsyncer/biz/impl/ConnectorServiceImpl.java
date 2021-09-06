@@ -15,10 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -30,6 +27,8 @@ import java.util.stream.Collectors;
 public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private Map<String, Boolean> health = new LinkedHashMap<>();
 
     @Autowired
     private Manager manager;
@@ -56,9 +55,9 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     @Override
     public String remove(String id) {
         List<Mapping> mappingAll = manager.getMappingAll();
-        if(!CollectionUtils.isEmpty(mappingAll)){
+        if (!CollectionUtils.isEmpty(mappingAll)) {
             mappingAll.forEach(mapping -> {
-                if(StringUtil.equals(mapping.getSourceConnectorId(), id) || StringUtil.equals(mapping.getTargetConnectorId(), id)){
+                if (StringUtil.equals(mapping.getSourceConnectorId(), id) || StringUtil.equals(mapping.getTargetConnectorId(), id)) {
                     String error = String.format("驱动“%s”正在使用，请先删除", mapping.getName());
                     logger.error(error);
                     throw new BizException(error);
@@ -94,4 +93,38 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         return list;
     }
 
+    @Override
+    public void refreshHealth() {
+        List<Connector> list = manager.getConnectorAll();
+        if (CollectionUtils.isEmpty(list)) {
+            if (!CollectionUtils.isEmpty(health)) {
+                health.clear();
+            }
+            return;
+        }
+
+        // 更新连接器状态
+        Set<String> exist = new HashSet<>();
+        list.forEach(c -> {
+            health.put(c.getId(), manager.isAliveConnectorConfig(c.getConfig()));
+            exist.add(c.getId());
+        });
+
+        // 移除删除的连接器
+        Set<String> remove = new HashSet<>();
+        health.keySet().forEach(k -> {
+            if (!exist.contains(k)) {
+                remove.add(k);
+            }
+        });
+
+        if (!CollectionUtils.isEmpty(remove)) {
+            remove.forEach(k -> health.remove(k));
+        }
+    }
+
+    @Override
+    public boolean isAlive(String id) {
+        return health.containsKey(id) && health.get(id);
+    }
 }

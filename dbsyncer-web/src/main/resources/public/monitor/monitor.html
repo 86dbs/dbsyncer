@@ -103,7 +103,7 @@
                                 <div class="col-md-1">
                                     <!-- 是否包含成功 -->
                                     <select id="searchDataSuccess" class="form-control select-control">
-                                        <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}"/>
+                                        <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq 0}"/>
                                     </select>
                                 </div>
                                 <div class="col-sm-4">
@@ -164,7 +164,7 @@
                                 <u data-toggle="collapse" class="dbsyncer_pointer" href="#queryLogPanel">查询日志</u>
                             </h4>
                         </div>
-                        <div id="queryLogPanel" class="panel-body panel-collapse collapse">
+                        <div id="queryLogPanel" class="panel-body panel-collapse collapse in">
                             <div class="form-group">
                                 <div class="col-sm-4">
                                     <input id="searchLogKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)." />

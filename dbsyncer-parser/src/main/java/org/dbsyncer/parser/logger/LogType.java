@@ -78,7 +78,8 @@ public interface LogType {
         INSERT("20", "新增"),
         UPDATE("21", "修改"),
         DELETE("22", "删除"),
-        FAILED("23", "连接失败");
+        FAILED("23", "连接失败"),
+        RECONNECT_SUCCESS("24", "重连成功");
 
         private String type;
         private String message;
@@ -112,7 +113,8 @@ public interface LogType {
         UPDATE("31", "修改"),
         DELETE("32", "删除"),
         RUNNING("33", "启动"),
-        STOP("34", "停止");
+        STOP("34", "停止"),
+        CLEAR_DATA("35", "清空同步数据");
 
         private String type;
         private String message;

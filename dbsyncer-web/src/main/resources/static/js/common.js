@@ -4,6 +4,7 @@ var $path = document.location.pathname;
 var $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.substr(1).indexOf("/")+1);
 // 全局内容区域
 var $initContainer = $("#initContainer");
+    $initContainer.css("min-height", $(window).height() - 125);
 // 监控定时器
 var timer;
 
@@ -34,6 +35,33 @@ function beautifySql(){
     }
     $sql.val($tmp);
     $sql.removeAttr('tmp');
+}
+
+// 初始化select组件，默认选中
+function initSelectIndex($select, $selectedIndex){
+    initSelect($select);
+
+    $.each($select, function () {
+        var v = $(this).selectpicker('val');
+        if (undefined == v || '' == v) {
+            var $option = $(this).find("option")[$selectedIndex];
+            if(undefined != $option){
+                $(this).selectpicker('val', $option.value);
+            }
+        }
+    });
+}
+function initSelect($select){
+    $select.selectpicker({
+        "style":'dbsyncer_btn-info',
+        "title":"请选择",
+        "actionsBox":true,
+        "liveSearch":true,
+        "selectAllText":"全选",
+        "deselectAllText":"取消全选",
+        "noneResultsText":"没有找到 {0}",
+        "selectedTextFormat":"count > 10"
+    });
 }
 
 // ******************* 扩展JS表单方法 ***************************

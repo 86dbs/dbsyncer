@@ -55,7 +55,7 @@ public abstract class ESUtil {
      * @return
      */
     private static HttpHost makeHttpHost(String address, String scheme) {
-        String[] arr = address.split(":");
+        String[] arr = StringUtil.split(address, ":");
         if (arr.length == ADDRESS_LENGTH) {
             String ip = arr[0];
             int port = Integer.parseInt(arr[1]);

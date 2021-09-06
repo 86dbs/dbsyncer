@@ -78,7 +78,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             return client.ping(RequestOptions.DEFAULT);
         } catch (IOException e) {
             logger.error(e.getMessage());
-            return false;
+            throw new ConnectorException(e.getMessage());
         }
     }
 

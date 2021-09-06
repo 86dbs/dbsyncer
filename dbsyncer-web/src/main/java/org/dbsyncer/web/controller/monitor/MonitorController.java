@@ -1,6 +1,7 @@
 package org.dbsyncer.web.controller.monitor;
 
 import org.dbsyncer.biz.ConfigService;
+import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.vo.AppReportMetricVo;
 import org.dbsyncer.biz.vo.ConfigVo;
@@ -47,6 +48,9 @@ public class MonitorController extends BaseController {
     private MonitorService monitorService;
 
     @Autowired
+    private ConnectorService connectorService;
+
+    @Autowired
     private ConfigService configService;
 
     @Autowired
@@ -76,6 +80,11 @@ public class MonitorController extends BaseController {
     public void recordHistoryStackMetric() {
         recordHistoryStackMetric(MetricEnum.CPU_USAGE, cpu, cpuHistoryStackValueFormatterImpl);
         recordHistoryStackMetric(MetricEnum.MEMORY_USED, memory, memoryHistoryStackValueFormatterImpl);
+    }
+
+    @Scheduled(fixedRate = 10000)
+    public void refreshConnectorHealth() {
+        connectorService.refreshHealth();
     }
 
     @GetMapping("/queryData")

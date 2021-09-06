@@ -30,7 +30,7 @@
         </div>
         <label class="col-sm-2 control-label">协议 </label>
         <div class="col-sm-4">
-            <select class="form-control select-control" name="schema">
+            <select id="schema" class="form-control select-control" name="schema">
                 <option value="http" th:selected="${connector?.config?.schema eq 'http'}">http</option>
                 <option value="tcp" th:selected="${connector?.config?.schema eq 'tcp'}">tcp</option>
             </select>
@@ -47,11 +47,8 @@
 
 <script type="text/javascript">
 $(function () {
-    // 初始化select2插件
-    $(".select-control").select2({
-        width: "100%",
-        theme: "classic"
-    });
+    // 初始化select插件
+    initSelectIndex($("#schema"), 1);
 })
 </script>
 </html>

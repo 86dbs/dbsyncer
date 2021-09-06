@@ -34,7 +34,7 @@ public class MysqlExtractor extends AbstractExtractor {
 
     private static final String          BINLOG_FILENAME = "fileName";
     private static final String          BINLOG_POSITION = "position";
-    private static final int             RETRY_TIMES     = 3;
+    private static final int             RETRY_TIMES     = 10;
     private static final int             MASTER          = 0;
     private Map<Long, TableMapEventData> tables          = new HashMap<>();
     private BinaryLogClient              client;

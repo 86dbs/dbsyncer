@@ -14,14 +14,17 @@ import org.dbsyncer.manager.config.QueryConfig;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.manager.enums.HandlerEnum;
 import org.dbsyncer.manager.puller.Puller;
-import org.dbsyncer.manager.template.impl.DataTemplate;
 import org.dbsyncer.manager.template.impl.OperationTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.parser.enums.ModelEnum;
+import org.dbsyncer.parser.logger.LogService;
+import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
+import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
@@ -53,7 +56,10 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     private OperationTemplate operationTemplate;
 
     @Autowired
-    private DataTemplate dataTemplate;
+    private StorageService storageService;
+
+    @Autowired
+    private LogService logService;
 
     @Autowired
     private Map<String, Puller> map;
@@ -241,23 +247,28 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     public Paging queryData(Query query, String collectionId) {
         query.setType(StorageEnum.DATA);
         query.setCollection(collectionId);
-        return dataTemplate.query(query);
+        return storageService.query(query);
     }
 
     @Override
     public void clearData(String collectionId) {
-        dataTemplate.clear(StorageEnum.DATA, collectionId);
+        Meta meta = getMeta(collectionId);
+        Mapping mapping = getMapping(meta.getMappingId());
+        String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
+        LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
+        logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
+        storageService.clear(StorageEnum.DATA, collectionId);
     }
 
     @Override
     public Paging queryLog(Query query) {
         query.setType(StorageEnum.LOG);
-        return dataTemplate.query(query);
+        return storageService.query(query);
     }
 
     @Override
     public void clearLog() {
-        dataTemplate.clear(StorageEnum.LOG, null);
+        storageService.clear(StorageEnum.LOG, null);
     }
 
     @Override

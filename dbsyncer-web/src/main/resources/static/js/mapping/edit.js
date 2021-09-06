@@ -98,15 +98,50 @@ function bindMappingTableGroupListClick() {
     });
 }
 
+// 绑定下拉选择事件自动匹配相似表事件
+function bindTableSelect(){
+    var $sourceSelect = $("#sourceTable");
+    var $targetSelect = $("#targetTable");
+    $sourceSelect.on('changed.bs.select',function(e){
+        $targetSelect.selectpicker('val', $(this).selectpicker('val'));
+    });
+    bindMappingTableGroupAddClick($sourceSelect, $targetSelect);
+}
+
 // 绑定新增表关系点击事件
-function bindMappingTableGroupAddClick() {
+function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
     var $addBtn = $("#tableGroupAddBtn");
     $addBtn.unbind("click");
     $addBtn.bind('click', function () {
         var m = {};
         m.mappingId = $(this).attr("mappingId");
-        m.sourceTable = $("#sourceTable option:checked").val();
-        m.targetTable = $("#targetTable option:checked").val();
+        m.sourceTable = $sourceSelect.selectpicker('val');
+        m.targetTable = $targetSelect.selectpicker('val');
+        if(undefined == m.sourceTable){
+            bootGrowl("请选择数据源表", "danger");
+            return;
+        }
+        if(undefined == m.targetTable){
+            bootGrowl("请选择目标源表", "danger");
+            return;
+        }
+
+        // 如果存在多个选择，只筛选相似表
+        var sLen = m.sourceTable.length;
+        var tLen = m.targetTable.length;
+        if(1 < sLen || 1 < tLen){
+            var mark = [];
+            for(j = 0; j < sLen; j++) {
+                if(-1 != m.targetTable.indexOf(m.sourceTable[j])){
+                    mark.push(m.sourceTable[j]);
+                }
+            }
+            m.sourceTable = mark;
+            m.targetTable = mark;
+        }
+        m.sourceTable = m.sourceTable.join();
+        m.targetTable = m.targetTable.join();
+
         doPoster("/tableGroup/add", m, function (data) {
             if (data.success == true) {
                 bootGrowl("新增映射关系成功!", "success");
@@ -136,18 +171,6 @@ function bindMappingTableGroupDelClick() {
     });
 }
 
-// 绑定下拉自动匹配字段
-function bindAutoSelect(){
-    var $sourceSelect = $("#sourceTable");
-    var $targetSelect = $("#targetTable");
-
-    // 绑定数据源下拉切换事件
-    $sourceSelect.change(function () {
-        var v = $(this).select2("val");
-        $targetSelect.val(v).trigger("change");
-    });
-}
-
 // 修改驱动名称
 function mappingModifyName(){
     var $name = $("#mappingModifyName");
@@ -171,19 +194,13 @@ $(function () {
 
     // 绑定表关系点击事件
     bindMappingTableGroupListClick();
-    // 绑定新增表关系点击事件
-    bindMappingTableGroupAddClick();
+    // 绑定下拉选择事件自动匹配相似表事件
+    bindTableSelect();
     // 绑定删除表关系点击事件
     bindMappingTableGroupDelClick();
 
-    // 绑定下拉自动匹配字段
-    bindAutoSelect();
-
-    // 初始化select2插件
-    $(".select-control").select2({
-        width: "100%",
-        theme: "classic"
-    });
+    // 初始化select插件
+    initSelectIndex($(".select-control-table"), 0);
 
     // 保存
     $("#mappingSubmitBtn").click(function () {

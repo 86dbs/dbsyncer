@@ -4,6 +4,7 @@ import org.dbsyncer.common.CommonException;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 public abstract class SHA1Util {
 
@@ -16,8 +17,7 @@ public abstract class SHA1Util {
             throw new CommonException(e);
 		}
 	}
-	
-    @SuppressWarnings("restriction")
+
     public static String b64_sha1(String s) {
         if (null == s || "" == s.trim()) {
             return null;
@@ -30,7 +30,7 @@ public abstract class SHA1Util {
         	return null;
         }
         // base64加密
-        return new sun.misc.BASE64Encoder().encode(sha1);
+        return Base64.getEncoder().encodeToString(sha1);
     }
 
 //    public static void main(String[] args) throws Exception {

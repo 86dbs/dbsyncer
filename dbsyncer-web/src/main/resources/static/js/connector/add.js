@@ -9,47 +9,45 @@ function submit(data) {
     });
 }
 
-var check = function () {
-    var $form = $("#connectorAddForm");
-    if ($form.formValidate() == true) {
-        var data = $form.serializeJson();
-        submit(data);
-    }
-};
+// 绑定连接器类型切换事件
+function bindConnectorChangeEvent($select) {
+    // 默认渲染连接页面
+    $select.on('changed.bs.select',function(e){
+        changeConnectorType($(this));
+    });
 
-//切换连接
-function changeConnectorType($this) {
+    changeConnectorType($select);
+}
+
+function changeConnectorType($select){
     //连接类型
-    var connType = $this.val();
+    var connType = $select.selectpicker('val');
     //获取连接配置元素
-    var connectorConfig = $this.parent().parent().parent().find(".connectorConfig");
+    var $connectorConfig = $("#connectorConfig");
     //清空配置
-    connectorConfig.html("");
+    $connectorConfig.html("");
 
     //加载页面
-    connectorConfig.load($basePath + "/connector/page/add" + connType);
+    $connectorConfig.load($basePath + "/connector/page/add" + connType);
 }
 
 $(function () {
     // 兼容IE PlaceHolder
     $('input[type="text"],input[type="password"],textarea').PlaceHolder();
 
-    // 初始化select2插件
-    var $connectorTypeSelect = $(".select-control").select2({
-        width: "100%",
-        theme: "classic"
-    });
-    // 默认渲染连接页面
-    changeConnectorType($connectorTypeSelect);
-
-    //连接类型切换事件
-    $("select[name='connectorType']").change(function () {
-        changeConnectorType($(this));
-    });
+    // 初始化select插件
+    var $select = $("#connectorType");
+    initSelectIndex($select, 1);
+    // 绑定连接器类型切换事件
+    bindConnectorChangeEvent($select);
 
     //保存
     $("#connectorSubmitBtn").click(function () {
-        check();
+        var $form = $("#connectorAddForm");
+        if ($form.formValidate() == true) {
+            var data = $form.serializeJson();
+            submit(data);
+        }
     });
 
     //返回

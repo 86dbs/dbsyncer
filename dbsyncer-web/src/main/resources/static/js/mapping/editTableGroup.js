@@ -10,14 +10,6 @@ function submit(data) {
     });
 }
 
-// 初始化select2插件
-function bindSelectEvent($selector){
-    $selector.find(".select-control").select2({
-        width : "100%",
-        theme : "classic"
-    });
-}
-
 // 初始化映射关系参数
 function initFieldMappingParams(){
     // 生成JSON参数
@@ -85,12 +77,23 @@ function bindFieldMappingListClick(){
         initFieldMappingParams();
     });
 }
+// 绑定下拉选择事件自动匹配相似字段事件
+function bindTableFieldSelect(){
+    var $sourceSelect = $("#sourceTableField");
+    var $targetSelect = $("#targetTableField");
+
+    // 绑定数据源下拉切换事件
+    $sourceSelect.on('changed.bs.select',function(e){
+        $targetSelect.selectpicker('val', $(this).selectpicker('val'));
+    });
+    bindFieldMappingAddClick($sourceSelect, $targetSelect)
+}
 // 绑定添加字段映射点击事件
-function bindFieldMappingAddClick(){
+function bindFieldMappingAddClick($sourceSelect, $targetSelect){
     var $btn = $("#fieldMappingAddBtn");
     $btn.bind('click', function(){
-        var sField = $("#sourceFieldMapping").select2("val");
-        var tField = $("#targetFieldMapping").select2("val");
+        var sField = $sourceSelect.selectpicker("val");
+        var tField = $targetSelect.selectpicker("val");
         sField = sField == null ? "" : sField;
         tField = tField == null ? "" : tField;
         // 非空检查
@@ -139,17 +142,6 @@ function bindFieldMappingDelClick(){
         }
     });
 }
-// 绑定下拉自动匹配字段
-function bindAutoSelect(){
-    var $sourceSelect = $("#sourceFieldMapping");
-    var $targetSelect = $("#targetFieldMapping");
-
-    // 绑定数据源下拉切换事件
-    $sourceSelect.change(function () {
-        var v = $(this).select2("val");
-        $targetSelect.val(v).trigger("change");
-    });
-}
 // 返回驱动配置页面
 function backMappingPage($this){
     doLoader('/mapping/page/edit?id=' + $this.attr("mappingId"));
@@ -158,17 +150,12 @@ function backMappingPage($this){
 $(function() {
     // 绑定表字段关系点击事件
     initFieldMappingParams();
+    // 绑定下拉选择事件自动匹配相似字段事件
+    bindTableFieldSelect();
     // 绑定删除表字段映射事件
     bindFieldMappingCheckBoxClick();
     bindFieldMappingListClick();
-    bindFieldMappingAddClick();
     bindFieldMappingDelClick();
-    // 绑定下拉自动匹配字段
-    bindAutoSelect();
-
-    // 初始化select2插件
-    bindSelectEvent($("#tableGroupBaseConfig"));
-    bindSelectEvent($("#tableGroupSuperConfig"));
 
     //保存
     $("#tableGroupSubmitBtn").click(function () {
