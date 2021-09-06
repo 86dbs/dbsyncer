@@ -99,6 +99,17 @@ grant change notification to 你的账号
 * 配置
 > 账号具有访问权限。
 
+##### 日志
+> 建议Mysql和SqlServer都使用日志
+
+![日志](https://images.gitee.com/uploads/images/2021/0906/181036_1f9a9e78_376718.png "日志.png")
+
+##### 定时
+> 假设源表数据格式
+
+![表数据格式](https://images.gitee.com/uploads/images/2021/0903/004406_68ef9bb4_376718.png "表数据格式.png")
+![定时和过滤条件](https://images.gitee.com/uploads/images/2021/0903/004807_07cdf2b7_376718.png "定时和过滤条件.png")
+
 ## 预览
 ### 驱动管理
 ![连接器和驱动](https://images.gitee.com/uploads/images/2021/0903/003755_01016fc1_376718.png "驱动管理.png")
@@ -108,12 +119,6 @@ grant change notification to 你的账号
 
 ### 驱动表字段关系配置
 ![驱动表字段关系配置](https://images.gitee.com/uploads/images/2021/0903/004106_26399534_376718.png "驱动表字段关系配置.png")
-
-### 定时配置
-> 假设源表数据格式
-
-![表数据格式](https://images.gitee.com/uploads/images/2021/0903/004406_68ef9bb4_376718.png "表数据格式.png")
-![定时和过滤条件](https://images.gitee.com/uploads/images/2021/0903/004807_07cdf2b7_376718.png "定时和过滤条件.png")
 
 ### 监控
 ![监控](https://images.gitee.com/uploads/images/2021/0728/000645_35a544b3_376718.png "监控.png")
