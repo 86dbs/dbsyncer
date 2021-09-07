@@ -39,10 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -261,6 +258,15 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             command.put(ConnectorConstant.OPERTION_QUERY_FILTER, JsonUtil.objToJson(filter));
         }
         return command;
+    }
+
+    @Override
+    public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
+        Table table = commandConfig.getTable();
+        if(!CollectionUtils.isEmpty(table.getColumn())){
+            getPrimaryKeyField(table.getColumn());
+        }
+        return Collections.EMPTY_MAP;
     }
 
     private void genSearchSourceBuilder(SearchSourceBuilder builder, Map<String, String> command) {
