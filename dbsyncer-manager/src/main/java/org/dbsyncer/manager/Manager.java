@@ -91,8 +91,6 @@ public interface Manager extends Executor {
 
     Config getConfig(String configId);
 
-    void removeConfig(String configId);
-
     List<Config> getConfigAll();
 
     // Data

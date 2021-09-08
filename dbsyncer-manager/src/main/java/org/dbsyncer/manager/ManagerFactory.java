@@ -231,11 +231,6 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     }
 
     @Override
-    public void removeConfig(String configId) {
-        operationTemplate.remove(new OperationConfig(configId));
-    }
-
-    @Override
     public List<Config> getConfigAll() {
         Config config = new Config();
         config.setType(ConfigConstant.CONFIG);
