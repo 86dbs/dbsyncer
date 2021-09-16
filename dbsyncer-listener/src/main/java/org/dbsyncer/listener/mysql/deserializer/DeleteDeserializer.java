@@ -1,14 +1,14 @@
 package org.dbsyncer.listener.mysql.deserializer;
 
 import com.github.shyiko.mysql.binlog.event.TableMapEventData;
-import com.github.shyiko.mysql.binlog.event.deserialization.UpdateRowsEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.DeleteRowsEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
 
-public class DeleteDeserializer extends UpdateRowsEventDataDeserializer {
+public class DeleteDeserializer extends DeleteRowsEventDataDeserializer {
 
     private DatetimeV2Deserialize datetimeV2Deserialize;
 
