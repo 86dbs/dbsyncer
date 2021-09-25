@@ -37,6 +37,7 @@ public enum SetterEnum {
     DECIMAL(Types.DECIMAL, new DecimalSetter()),
     DOUBLE(Types.DOUBLE, new DoubleSetter()),
     FLOAT(Types.FLOAT, new FloatSetter()),
+    BIT(Types.BIT, new BitSetter()),
     BLOB(Types.BLOB, new BlobSetter()),
     CLOB(Types.CLOB, new ClobSetter()),
     NCLOB(Types.NCLOB, new NClobSetter()),

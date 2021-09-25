@@ -15,7 +15,7 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
                 <td>连接器</td>
                 <td>数据源</td>
                 <td>目标源</td>
-                <td>支持版本</td>
+                <td>支持版本(包含以下)</td>
             </tr>
             <tr>
                 <td>Mysql</td>
@@ -49,7 +49,7 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
             </tr>
             <tr>
                 <td>最近计划</td>
-                <td colspan="3">kafka</td>
+                <td colspan="3">kafka(设计中)、Redis</td>
             </tr>
         </tbody>
     </table>
@@ -58,7 +58,7 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
 ## 安装配置
 #### 步骤
 1. 安装[JRE 1.8](https://www.oracle.com/java/technologies/jdk8-downloads.html)（省略详细）
-2. 下载安装包[DBSyncer-1.0.0-Alpha.zip](https://gitee.com/ghi/dbsyncer/releases)（也可手动编译）
+2. 下载安装包[DBSyncer-1.0.0-Beta.zip](https://gitee.com/ghi/dbsyncer/releases)（也可手动编译）
 3. 解压安装包，Window执行bin/startup.bat，Linux执行bin/startup.sh
 4. 打开浏览器访问：http://127.0.0.1:18686
 5. 账号和密码：admin/admin
