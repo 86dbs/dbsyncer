@@ -15,7 +15,7 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
                 <td>连接器</td>
                 <td>数据源</td>
                 <td>目标源</td>
-                <td>支持版本</td>
+                <td>支持版本(包含以下)</td>
             </tr>
             <tr>
                 <td>Mysql</td>
