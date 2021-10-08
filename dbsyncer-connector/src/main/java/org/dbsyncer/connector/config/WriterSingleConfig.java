@@ -21,16 +21,22 @@ public class WriterSingleConfig extends WriterConfig {
     private String table;
 
     /**
-     * 更新失败转insert
+     * 重试标记
      */
     private boolean retry;
 
-    public WriterSingleConfig(List<Field> fields, Map<String, String> command, String event, Map<String, Object> data, String table) {
+    /**
+     * 插入失败转更新
+     */
+    private boolean updateRowIfInsertFailed;
+
+    public WriterSingleConfig(List<Field> fields, Map<String, String> command, String event, Map<String, Object> data, String table, boolean updateRowIfInsertFailed) {
         setCommand(command);
         setFields(fields);
         setData(data);
         setEvent(event);
         setTable(table);
+        this.updateRowIfInsertFailed = updateRowIfInsertFailed;
     }
 
     public Map<String, Object> getData() {
@@ -66,5 +72,14 @@ public class WriterSingleConfig extends WriterConfig {
 
     public void setRetry(boolean retry) {
         this.retry = retry;
+    }
+
+    public boolean isUpdateRowIfInsertFailed() {
+        return updateRowIfInsertFailed;
+    }
+
+    public WriterSingleConfig setUpdateRowIfInsertFailed(boolean updateRowIfInsertFailed) {
+        this.updateRowIfInsertFailed = updateRowIfInsertFailed;
+        return this;
     }
 }

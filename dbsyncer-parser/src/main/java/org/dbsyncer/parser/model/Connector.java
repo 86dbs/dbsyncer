@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.config.Table;
 
 import java.util.List;
 
@@ -14,18 +15,18 @@ public class Connector extends ConfigModel{
     /**
      * 表名,["MY_USER", "T_MY_USER", "table_999"]
      */
-    private List<String> table;
+    private List<Table> table;
 
     /**
      * 连接器配置
      */
     private ConnectorConfig config;
 
-    public List<String> getTable() {
+    public List<Table> getTable() {
         return table;
     }
 
-    public Connector setTable(List<String> table) {
+    public Connector setTable(List<Table> table) {
         this.table = table;
         return this;
     }

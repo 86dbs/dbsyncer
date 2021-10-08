@@ -35,9 +35,7 @@ public class TimingConfigChecker implements MappingConfigChecker {
         if (StringUtil.isNotBlank(period)) {
             config.setPeriod(NumberUtil.toLong(period, 30));
         }
-        if (StringUtil.isNotBlank(eventFieldName)) {
-            config.setEventFieldName(eventFieldName);
-        }
+        config.setEventFieldName(eventFieldName);
         if (StringUtil.isNotBlank(insert)) {
             config.setInsert(insert);
         }

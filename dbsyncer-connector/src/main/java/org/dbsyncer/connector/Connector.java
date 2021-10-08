@@ -54,7 +54,7 @@ public interface Connector<M, C> {
      * @param connectorMapper
      * @return
      */
-    List<String> getTable(M connectorMapper);
+    List<Table> getTable(M connectorMapper);
 
     /**
      * 获取表元信息

@@ -6,6 +6,7 @@ import org.dbsyncer.biz.checker.ConnectorConfigChecker;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.logger.LogService;
@@ -115,7 +116,7 @@ public class ConnectorChecker extends AbstractChecker {
         Assert.isTrue(isAlive, "无法连接.");
         // 获取表信息
         ConnectorMapper connectorMapper = manager.connect(connector.getConfig());
-        List<String> table = manager.getTable(connectorMapper);
+        List<Table> table = manager.getTable(connectorMapper);
         connector.setTable(table);
     }
 

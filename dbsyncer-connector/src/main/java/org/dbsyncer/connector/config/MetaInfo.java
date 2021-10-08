@@ -13,10 +13,23 @@ import java.util.List;
 public class MetaInfo {
 
     /**
+     * 表类型
+     */
+    private String tableType;
+    /**
      * 属性字段
      * 格式：[{"name":"ID","typeName":"INT","type":"4"},{"name":"NAME","typeName":"VARCHAR","type":"12"}]
      */
     private List<Field> column;
+
+    public String getTableType() {
+        return tableType;
+    }
+
+    public MetaInfo setTableType(String tableType) {
+        this.tableType = tableType;
+        return this;
+    }
 
     public List<Field> getColumn() {
         return column;
@@ -28,6 +41,6 @@ public class MetaInfo {
     }
     @Override
     public String toString() {
-        return new StringBuilder().append("MetaInfo{").append("column=").append(column).append('}').toString();
+        return new StringBuilder().append("MetaInfo{").append("tableType=").append(tableType).append(", ").append("column=").append(column).append('}').toString();
     }
 }

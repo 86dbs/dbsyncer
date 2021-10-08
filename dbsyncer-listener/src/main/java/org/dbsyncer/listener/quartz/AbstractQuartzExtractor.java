@@ -3,6 +3,7 @@ package org.dbsyncer.listener.quartz;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ReaderConfig;
@@ -105,6 +106,11 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
             Object event = null;
             for (Map<String, Object> row : data) {
+                if(StringUtil.isBlank(eventFieldName)){
+                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_MAP, row, true));
+                    continue;
+                }
+
                 event = row.get(eventFieldName);
                 if (update.contains(event)) {
                     changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_MAP, row));

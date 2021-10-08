@@ -1,15 +1,32 @@
 package org.dbsyncer.connector.oracle;
 
-import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.PageSqlConfig;
+import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.connector.database.DatabaseConnectorMapper;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public final class OracleConnector extends AbstractDatabaseConnector {
 
     @Override
-    protected String getTableSql(DatabaseConfig config) {
-        return String.format("SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER='%s'", config.getUsername()).toUpperCase();
+    protected String getTableSql() {
+        return "SELECT TABLE_NAME,TABLE_TYPE FROM USER_TAB_COMMENTS";
+    }
+
+    @Override
+    public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
+        String sql = getTableSql();
+        List<Map<String, Object>> list = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql));
+        if (!CollectionUtils.isEmpty(list)) {
+            return list.stream().map(r -> new Table(r.get("TABLE_NAME").toString(), r.get("TABLE_TYPE").toString())).collect(Collectors.toList());
+        }
+        return Collections.EMPTY_LIST;
     }
 
     @Override
@@ -19,7 +36,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
 
     @Override
     public Object[] getPageArgs(int pageIndex, int pageSize) {
-        return new Object[] {pageIndex * pageSize, (pageIndex - 1) * pageSize};
+        return new Object[]{pageIndex * pageSize, (pageIndex - 1) * pageSize};
     }
 
     @Override

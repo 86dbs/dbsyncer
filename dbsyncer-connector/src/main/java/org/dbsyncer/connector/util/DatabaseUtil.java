@@ -8,6 +8,7 @@ import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.database.DatabaseTemplate;
+import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
@@ -101,7 +102,10 @@ public abstract class DatabaseUtil {
                 }
             }
         }
-        throw new ConnectorException("Table primary key can not be empty.");
+        if(!TableTypeEnum.isView(table.getType())){
+            throw new ConnectorException("Table primary key can not be empty.");
+        }
+        return "";
     }
 
     private static boolean isPk(Map<String, List<String>> tables, String tableName, String name) {

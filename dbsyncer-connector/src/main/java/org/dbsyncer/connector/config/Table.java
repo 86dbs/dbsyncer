@@ -1,7 +1,8 @@
 package org.dbsyncer.connector.config;
 
+import org.dbsyncer.connector.enums.TableTypeEnum;
+
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author AE86
@@ -10,8 +11,15 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class Table {
 
-    // 表名
+    /**
+     * 表名
+     */
     private String name;
+
+    /**
+     * 表类型[TABLE、VIEW]
+     */
+    private String type;
 
     /**
      * 属性字段
@@ -22,12 +30,40 @@ public class Table {
     // 总数
     private long count;
 
+    public Table() {
+    }
+
+    public Table(String name) {
+        this.name = name;
+        this.type = TableTypeEnum.TABLE.getCode();
+    }
+
+    public Table(String name, String type) {
+        this.name = name;
+        this.type = type;
+    }
+
+    public Table(String name, String type, List<Field> column) {
+        this.name = name;
+        this.type = type;
+        this.column = column;
+    }
+
     public String getName() {
         return name;
     }
 
     public Table setName(String name) {
         this.name = name;
+        return this;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public Table setType(String type) {
+        this.type = type;
         return this;
     }
 
