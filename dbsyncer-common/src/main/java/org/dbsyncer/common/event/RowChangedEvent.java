@@ -24,7 +24,7 @@ public class RowChangedEvent {
     private List<Object> afterData;
     private Map<String, Object> before;
     private Map<String, Object> after;
-    private boolean updateRowIfInsertFailed;
+    private boolean forceUpdate;
 
     public RowChangedEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after) {
         this.tableGroupIndex = tableGroupIndex;
@@ -33,12 +33,12 @@ public class RowChangedEvent {
         this.after = after;
     }
 
-    public RowChangedEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after, boolean updateRowIfInsertFailed) {
+    public RowChangedEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after, boolean forceUpdate) {
         this.tableGroupIndex = tableGroupIndex;
         this.event = event;
         this.before = before;
         this.after = after;
-        this.updateRowIfInsertFailed = updateRowIfInsertFailed;
+        this.forceUpdate = forceUpdate;
     }
 
     public RowChangedEvent(String tableName, String event, List<Object> beforeData, List<Object> afterData) {
@@ -88,12 +88,12 @@ public class RowChangedEvent {
         this.after = after;
     }
 
-    public boolean isUpdateRowIfInsertFailed() {
-        return updateRowIfInsertFailed;
+    public boolean isForceUpdate() {
+        return forceUpdate;
     }
 
-    public RowChangedEvent setUpdateRowIfInsertFailed(boolean updateRowIfInsertFailed) {
-        this.updateRowIfInsertFailed = updateRowIfInsertFailed;
+    public RowChangedEvent setForceUpdate(boolean forceUpdate) {
+        this.forceUpdate = forceUpdate;
         return this;
     }
 

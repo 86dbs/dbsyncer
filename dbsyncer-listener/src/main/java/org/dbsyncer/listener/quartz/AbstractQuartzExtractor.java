@@ -107,7 +107,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
             Object event = null;
             for (Map<String, Object> row : data) {
                 if(StringUtil.isBlank(eventFieldName)){
-                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_MAP, row, true));
+                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_MAP, row, true));
                     continue;
                 }
 

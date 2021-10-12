@@ -182,7 +182,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             );
         } catch (Exception e) {
             // 记录错误数据
-            if(!config.isUpdateRowIfInsertFailed()){
+            if(!config.isForceUpdate()){
                 result.getFailData().add(data);
                 result.getFail().set(1);
                 result.getError().append("SQL:").append(sql).append(System.lineSeparator())
@@ -200,7 +200,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     fields.remove(fields.size() - 1);
                     config.setEvent(ConnectorConstant.OPERTION_INSERT);
                     config.setRetry(true);
-                    logger.warn("{}表执行{}失败, 尝试执行{}", config.getTable(), event, config.getEvent());
+                    logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTable(), event, config.getEvent(), data);
                     return writer(connectorMapper, config);
                 }
                 return result;
