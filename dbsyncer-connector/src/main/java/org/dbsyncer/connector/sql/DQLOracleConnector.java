@@ -11,8 +11,8 @@ import java.util.Map;
 public final class DQLOracleConnector extends AbstractDatabaseConnector {
 
     @Override
-    protected String getTableSql(DatabaseConfig config) {
-        return String.format("SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER='%s'", config.getUsername()).toUpperCase();
+    protected String getTableSql() {
+        return "SELECT TABLE_NAME,TABLE_TYPE FROM USER_TAB_COMMENTS";
     }
 
     @Override
@@ -26,7 +26,7 @@ public final class DQLOracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public List<String> getTable(DatabaseConnectorMapper config) {
+    public List<Table> getTable(DatabaseConnectorMapper config) {
         return super.getDqlTable(config);
     }
 

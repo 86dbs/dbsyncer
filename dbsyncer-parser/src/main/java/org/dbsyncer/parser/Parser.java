@@ -5,6 +5,7 @@ import org.dbsyncer.common.model.Task;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
@@ -54,7 +55,7 @@ public interface Parser {
      * @param config
      * @return
      */
-    List<String> getTable(ConnectorMapper config);
+    List<Table> getTable(ConnectorMapper config);
 
     /**
      * 获取表元信息

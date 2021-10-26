@@ -133,7 +133,7 @@ public class TableGroupChecker extends AbstractChecker {
     private Table getTable(String connectorId, String tableName) {
         MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接器表信息.");
-        return new Table().setName(tableName).setColumn(metaInfo.getColumn());
+        return new Table(tableName, metaInfo.getTableType(), metaInfo.getColumn());
     }
 
     private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {

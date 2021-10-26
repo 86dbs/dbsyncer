@@ -5,6 +5,7 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
+import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
@@ -80,7 +81,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     }
 
     @Override
-    public List<String> getTable(ConnectorMapper config) {
+    public List<Table> getTable(ConnectorMapper config) {
         return parser.getTable(config);
     }
 

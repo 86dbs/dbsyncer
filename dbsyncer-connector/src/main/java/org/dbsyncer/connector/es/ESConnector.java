@@ -85,14 +85,14 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
     }
 
     @Override
-    public List<String> getTable(ESConnectorMapper connectorMapper) {
+    public List<Table> getTable(ESConnectorMapper connectorMapper) {
         try {
             ESConfig config = connectorMapper.getConfig();
             GetIndexRequest request = new GetIndexRequest(config.getIndex());
             GetIndexResponse indexResponse = connectorMapper.getConnection().indices().get(request, RequestOptions.DEFAULT);
             MappingMetaData mappingMetaData = indexResponse.getMappings().get(config.getIndex());
-            List<String> tables = new ArrayList<>();
-            tables.add(mappingMetaData.type());
+            List<Table> tables = new ArrayList<>();
+            tables.add(new Table(mappingMetaData.type()));
             return tables;
         } catch (IOException e) {
             logger.error(e.getMessage());

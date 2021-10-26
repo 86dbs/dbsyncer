@@ -25,6 +25,7 @@ import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -105,14 +106,24 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public List<String> getTable(ConnectorMapper config) {
+    public List<Table> getTable(ConnectorMapper config) {
         return connectorFactory.getTable(config);
     }
 
     @Override
     public MetaInfo getMetaInfo(String connectorId, String tableName) {
-        ConnectorMapper connectorMapper = connectorFactory.connect(getConnectorConfig(connectorId));
-        return connectorFactory.getMetaInfo(connectorMapper, tableName);
+        Connector connector = getConnector(connectorId);
+        ConnectorMapper connectorMapper = connectorFactory.connect(connector.getConfig());
+        MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorMapper, tableName);
+        if(!CollectionUtils.isEmpty(connector.getTable())){
+            for(Table t :connector.getTable()){
+                if(t.getName().equals(tableName)){
+                    metaInfo.setTableType(t.getType());
+                    break;
+                }
+            }
+        }
+        return metaInfo;
     }
 
     @Override
@@ -121,8 +132,8 @@ public class ParserFactory implements Parser {
         String tType = getConnectorConfig(mapping.getTargetConnectorId()).getConnectorType();
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
-        Table sTable = new Table().setName(sourceTable.getName()).setColumn(new ArrayList<>());
-        Table tTable = new Table().setName(targetTable.getName()).setColumn(new ArrayList<>());
+        Table sTable = new Table(sourceTable.getName(), sourceTable.getType(), new ArrayList<>());
+        Table tTable = new Table(targetTable.getName(), targetTable.getType(), new ArrayList<>());
         List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
         if (!CollectionUtils.isEmpty(fieldMapping)) {
             fieldMapping.forEach(m -> {
@@ -152,12 +163,27 @@ public class ParserFactory implements Parser {
         try {
             JSONObject conn = new JSONObject(json);
             JSONObject config = (JSONObject) conn.remove("config");
+            JSONArray table = (JSONArray) conn.remove("table");
             Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
             Assert.notNull(connector, "Connector can not be null.");
             String connectorType = config.getString("connectorType");
             Class<?> configClass = ConnectorEnum.getConfigClass(connectorType);
             ConnectorConfig obj = (ConnectorConfig) JsonUtil.jsonToObj(config.toString(), configClass);
             connector.setConfig(obj);
+
+            List<Table> tableList = new ArrayList<>();
+            boolean exist = false;
+            for (int i = 0; i < table.length(); i++) {
+                if(table.get(i) instanceof String){
+                    tableList.add(new Table(table.getString(i)));
+                    exist = true;
+                }
+            }
+            if(!exist){
+                tableList = JsonUtil.jsonToArray(table.toString(), Table.class);
+            }
+            connector.setTable(tableList);
+
             return connector;
         } catch (JSONException e) {
             logger.error(e.getMessage());
@@ -293,7 +319,7 @@ public class ParserFactory implements Parser {
         pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
 
         // 4、写入目标源
-        Result writer = connectorFactory.writer(tConnectorMapper, new WriterSingleConfig(picker.getTargetFields(), tableGroup.getCommand(), event, target, rowChangedEvent.getTableName()));
+        Result writer = connectorFactory.writer(tConnectorMapper, new WriterSingleConfig(picker.getTargetFields(), tableGroup.getCommand(), event, target, rowChangedEvent.getTableName(), rowChangedEvent.isForceUpdate()));
 
         // 5、更新结果
         flush(metaId, writer, event, picker.getTargetMapList());
@@ -347,17 +373,28 @@ public class ParserFactory implements Parser {
     }
 
     /**
+     * 获取连接器
+     *
+     * @param connectorId
+     * @return
+     */
+    private Connector getConnector(String connectorId) {
+        Assert.hasText(connectorId, "Connector id can not be empty.");
+        Connector conn = cacheService.get(connectorId, Connector.class);
+        Assert.notNull(conn, "Connector can not be null.");
+        Connector connector = new Connector();
+        BeanUtils.copyProperties(conn, connector);
+        return connector;
+    }
+
+    /**
      * 获取连接配置
      *
      * @param connectorId
      * @return
      */
     private ConnectorConfig getConnectorConfig(String connectorId) {
-        Assert.hasText(connectorId, "Connector id can not be empty.");
-        Connector conn = cacheService.get(connectorId, Connector.class);
-        Assert.notNull(conn, "Connector can not be null.");
-        Connector connector = new Connector();
-        BeanUtils.copyProperties(conn, connector);
+        Connector connector = getConnector(connectorId);
         return connector.getConfig();
     }
 

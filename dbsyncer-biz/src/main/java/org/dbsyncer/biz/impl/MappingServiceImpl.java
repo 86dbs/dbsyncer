@@ -201,8 +201,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         }
 
         // 存在交集
-        List<String> sTables = new LinkedList<>(s.getTable());
-        List<String> tTables = new LinkedList<>(t.getTable());
+        List<String> sTables = s.getTable().stream().map(table -> table.getName()).collect(Collectors.toList());
+        List<String> tTables = t.getTable().stream().map(table -> table.getName()).collect(Collectors.toList());
         sTables.retainAll(tTables);
         if (!CollectionUtils.isEmpty(sTables)) {
             Map<String, String> params = new HashMap<>();
