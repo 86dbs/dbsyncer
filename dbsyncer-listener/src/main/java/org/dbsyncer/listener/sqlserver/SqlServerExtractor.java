@@ -14,7 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -47,18 +49,18 @@ public class SqlServerExtractor extends AbstractExtractor {
 
     private static final String LSN_POSITION = "position";
     private static final long DEFAULT_POLL_INTERVAL_MILLIS = 300;
-    private static final int                            PREPARED_STATEMENT_CACHE_CAPACITY = 500;
-    private static final int                            OFFSET_COLUMNS = 4;
-    private final        Map<String, PreparedStatement> preparedStatementCache = new ConcurrentHashMap<>(PREPARED_STATEMENT_CACHE_CAPACITY);
-    private final        Lock                           connectLock = new ReentrantLock();
-    private volatile     boolean                        connected;
-    private volatile     boolean                        connectionClosed;
-    private static       Set<String>                    tables;
-    private static       Set<SqlServerChangeTable>      changeTables;
-    private              DatabaseConnectorMapper        connectorMapper;
-    private              Worker                         worker;
-    private              Lsn                            lastLsn;
-    private              String                         serverName;
+    private static final int PREPARED_STATEMENT_CACHE_CAPACITY = 500;
+    private static final int OFFSET_COLUMNS = 4;
+    private final Map<String, PreparedStatement> preparedStatementCache = new ConcurrentHashMap<>(PREPARED_STATEMENT_CACHE_CAPACITY);
+    private final Lock connectLock = new ReentrantLock();
+    private volatile boolean connected;
+    private volatile boolean connectionClosed;
+    private static Set<String> tables;
+    private static Set<SqlServerChangeTable> changeTables;
+    private DatabaseConnectorMapper connectorMapper;
+    private Worker worker;
+    private Lsn lastLsn;
+    private String serverName;
 
     @Override
     public void start() {
@@ -71,7 +73,7 @@ public class SqlServerExtractor extends AbstractExtractor {
             connected = true;
             connect();
             readTables();
-            Assert.isTrue(!CollectionUtils.isEmpty(tables), "No tables available");
+            Assert.notEmpty(tables, "No tables available");
 
             boolean enabledServerAgent = queryAndMap(IS_SERVER_AGENT_RUNNING, rs -> "Running.".equals(rs.getString(1)));
             Assert.isTrue(enabledServerAgent, "Please ensure that the SQL Server Agent is running");
