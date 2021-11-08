@@ -42,7 +42,9 @@ public enum SetterEnum {
     CLOB(Types.CLOB, new ClobSetter()),
     NCLOB(Types.NCLOB, new NClobSetter()),
     ROWID(Types.ROWID, new RowIdSetter()),
-    REAL(Types.REAL, new RealSetter());
+    REAL(Types.REAL, new RealSetter()),
+    VARBINARY(Types.VARBINARY, new LongVarBinarySetter()),
+    LONGVARBINARY(Types.LONGVARBINARY, new LongVarBinarySetter());
 
     private int type;
 
