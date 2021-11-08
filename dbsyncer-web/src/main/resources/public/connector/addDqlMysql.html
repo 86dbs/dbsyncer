@@ -37,7 +37,7 @@
     <div class="form-group">
         <label class="col-sm-2 control-label">驱动 </label>
         <div class="col-sm-10">
-            <select id="driverClassName" class="form-control select-control" name="driverClassName">
+            <select class="form-control select-control" name="driverClassName">
                 <option value="com.mysql.jdbc.Driver" th:selected="${connector?.config?.driverClassName eq 'com.mysql.jdbc.Driver'}">com.mysql.jdbc.Driver</option>
                 <option value="com.mysql.cj.jdbc.Driver" th:selected="${connector?.config?.driverClassName eq 'com.mysql.cj.jdbc.Driver'}">com.mysql.cj.jdbc.Driver</option>
             </select>
