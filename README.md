@@ -6,7 +6,7 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
 * 实时监控，驱动全量或增量实时同步运行状态、结果、同步日志和系统日志
 * 开发插件，自定义转化同步逻辑
 
-## 应用场景
+## 🌈应用场景
 
 <div>
     <table>
@@ -19,31 +19,31 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
             </tr>
             <tr>
                 <td>Mysql</td>
-                <td>√</td>
-                <td>√</td>
+                <td>✔️</td>
+                <td>✔️</td>
                 <td>5.7.19以上</td>
             </tr>
             <tr>
                 <td>Oracle</td>
-                <td>√</td>
-                <td>√</td>
+                <td>✔️</td>
+                <td>✔️</td>
                 <td>10g以上</td>
             </tr>
             <tr>
                 <td>SqlServer</td>
-                <td>√</td>
-                <td>√</td>
+                <td>✔️</td>
+                <td>✔️</td>
                 <td>2008以上</td>
             </tr>
             <tr>
                 <td>ES</td>
-                <td>√</td>
-                <td>√</td>
+                <td>✔️</td>
+                <td>✔️</td>
                 <td>6.X以上</td>
             </tr>
             <tr>
                 <td>SQL</td>
-                <td>√</td>
+                <td>✔️</td>
                 <td></td>
                 <td></td>
             </tr>
@@ -55,7 +55,7 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
     </table>
 <div>
 
-## 安装配置
+## 📦安装配置
 #### 步骤
 1. 安装[JDK 1.8](https://www.oracle.com/java/technologies/jdk8-downloads.html)（省略详细）
 2. 下载安装包[DBSyncer-1.0.0-Beta.zip](https://gitee.com/ghi/dbsyncer/releases)（也可手动编译）
@@ -110,7 +110,7 @@ grant change notification to 你的账号
 ![表数据格式](https://images.gitee.com/uploads/images/2021/0903/004406_68ef9bb4_376718.png "表数据格式.png")
 ![定时和过滤条件](https://images.gitee.com/uploads/images/2021/0903/004807_07cdf2b7_376718.png "定时和过滤条件.png")
 
-## 预览
+## ✨预览
 ### 驱动管理
 ![连接器和驱动](https://images.gitee.com/uploads/images/2021/0903/003755_01016fc1_376718.png "驱动管理.png")
 
@@ -126,7 +126,20 @@ grant change notification to 你的账号
 ### 上传插件
 ![上传插件](https://images.gitee.com/uploads/images/2021/0806/232643_9b1f3f64_376718.png "上传插件.png")
 
-## 使用说明
+## 🔗开发依赖
+* [JDK - 1.8.0_40](https://www.oracle.com/java/technologies/jdk8-downloads.html)（推荐版本以上）
+* [Maven - 3.3.9](https://dlcdn.apache.org/maven/maven-3/)（推荐版本以上）
+
+## ⚙️手动编译
+> 先确保环境已安装JDK和Maven
+```bash
+$ git clone https://gitee.com/ghi/dbsyncer.git
+$ cd dbsyncer
+$ chmod u+x build.sh
+$ ./build.sh
+```
+
+## ❓使用说明
 * 创建一个连接器。选择数据源类型，比如：Mysql，填写配置，保存
 * 添加驱动。配置数据源和目标源（数据源：数据的发送端，目标源：数据接收端），保存
 * 模式支持全量同步（默认：全量复制）和增量同步（监听变化的数据）
@@ -136,22 +149,15 @@ grant change notification to 你的账号
 * 点击驱动右上角齿轮按钮，启动或删除
 * 驱动面板下方显示同步的详细，如果有异常日志，点击日志可跳转至监控菜单查看详细
 
-## 常见问题
+## 🐛常见问题
 * Mysql无法连接。默认使用的驱动版本为5.1.40，如果为mysql8需要手动替换驱动 [mysql-connector-java-8.0.21.jar](https://gitee.com/ghi/dbsyncer/attach_files) 
+* 有其他问题、建议或需求（如想支持某中间件，记得补充使用的版本号），欢迎大家提[【issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!
 
-## 开发依赖
-* [JDK - 1.8.0_40](https://www.oracle.com/java/technologies/jdk8-downloads.html)（推荐版本以上）
-* [Maven - 3.3.9](https://dlcdn.apache.org/maven/maven-3/)（推荐版本以上）
+## 💕了解更多
+* [访问博客地址](https://my.oschina.net/dbsyncer "https://my.oschina.net/dbsyncer")
+* QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" /></a>
 
-## 手动编译
-> 先确保环境已安装JDK和Maven
-```bash
-$ git clone https://gitee.com/ghi/dbsyncer.git
-$ cd dbsyncer
-$ chmod u+x build.sh
-$ ./build.sh
-```
-
-## 了解更多
-* ##### [访问博客地址](https://my.oschina.net/dbsyncer "https://my.oschina.net/dbsyncer")
-* ##### QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" /> 
+## 🤝贡献支持
+* 为了能让项目得到够更好的且可持续的发展，我们期望获得更多的支持者，我们将把所得款项用于项目研发和推广。您可以通过如下任何一种方式支持我们:
+我们会把详细的捐赠记录登记在[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C)。
+<img src="https://images.gitee.com/uploads/images/2021/1110/001937_717dfb9d_376718.png" title="DBSyncer款项用于研发推广" width="200" height="200" />
