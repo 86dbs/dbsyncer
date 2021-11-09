@@ -54,6 +54,12 @@
             <artifactId>elasticsearch-rest-high-level-client</artifactId>
         </dependency>
 
+        <!-- kafka -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>

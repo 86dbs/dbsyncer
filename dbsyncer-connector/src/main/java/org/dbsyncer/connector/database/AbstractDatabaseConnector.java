@@ -59,7 +59,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
         String sql = getTableSql();
         List<String> tableNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
-        if(!CollectionUtils.isEmpty(tableNames)){
+        if (!CollectionUtils.isEmpty(tableNames)) {
             return tableNames.stream().map(name -> new Table(name)).collect(Collectors.toList());
         }
         return Collections.EMPTY_LIST;
@@ -182,7 +182,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             );
         } catch (Exception e) {
             // 记录错误数据
-            if(!config.isForceUpdate()){
+            if (!config.isForceUpdate()) {
                 result.getFailData().add(data);
                 result.getFail().set(1);
                 result.getError().append("SQL:").append(sql).append(System.lineSeparator())
@@ -194,9 +194,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         if (0 == execute && !config.isRetry() && null != pkField) {
             // 不存在转insert
-            if(isUpdate(event)){
+            if (isUpdate(event)) {
                 String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
-                if(!existRow(connectorMapper, queryCount, data.get(pkField.getName()))){
+                if (!existRow(connectorMapper, queryCount, data.get(pkField.getName()))) {
                     fields.remove(fields.size() - 1);
                     config.setEvent(ConnectorConstant.OPERTION_INSERT);
                     config.setRetry(true);
@@ -206,7 +206,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 return result;
             }
             // 存在转update
-            if(isInsert(event)){
+            if (isInsert(event)) {
                 config.setEvent(ConnectorConstant.OPERTION_UPDATE);
                 config.setRetry(true);
                 return writer(connectorMapper, config);
@@ -237,7 +237,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (StringUtil.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
-        if(!StringUtil.isBlank(pk)){
+        if (!StringUtil.isBlank(pk)) {
             queryCount.append(" GROUP BY ").append(pk);
         }
         queryCount.append(") DBSYNCER_T");
@@ -499,7 +499,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     private boolean existRow(DatabaseConnectorMapper connectorMapper, String sql, Object value) {
         int rowNum = 0;
         try {
-            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[] {value}, Integer.class));
+            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[]{value}, Integer.class));
         } catch (Exception e) {
             logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
         }
