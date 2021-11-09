@@ -158,6 +158,6 @@ $ ./build.sh
 * QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" /></a>
 
 ## 🤝贡献支持
-* 为了能让项目得到够更好的且可持续的发展，我们期望获得更多的支持者，我们将把所得款项用于项目研发和推广。您可以通过如下任何一种方式支持我们:
+* 为了能让项目得到够更好的且可持续的发展，我们期望获得更多的支持者，我们将把所得款项用于项目研发和推广。您可以通过如下方式支持我们:
 我们会把详细的捐赠记录登记在[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C)。
-<img src="https://images.gitee.com/uploads/images/2021/1110/001937_717dfb9d_376718.png" title="DBSyncer款项用于研发推广" width="200" height="200" />
+- <img src="https://images.gitee.com/uploads/images/2021/1110/001937_717dfb9d_376718.png" title="DBSyncer款项用于研发推广" width="200" height="200" />
