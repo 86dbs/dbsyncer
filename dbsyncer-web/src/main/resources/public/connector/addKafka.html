@@ -9,7 +9,18 @@
             <textarea name="servers" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="2" th:text="${connector?.config?.servers}?:'127.0.0.1:9092'"></textarea>
         </div>
     </div>
-    <!-- 参数 -->
+
+    <!-- 消费者配置 -->
+    <div class="form-group">
+        <label class="col-sm-2 control-label">group.id <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-4">
+            <input class="form-control" name="groupId" type="text" maxlength="32" dbsyncer-valid="require" th:value="${connector?.config?.groupId}"/>
+        </div>
+        <label class="col-sm-2 control-label">topic <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-4">
+            <input class="form-control" name="topic" type="text" maxlength="32" dbsyncer-valid="require" th:value="${connector?.config?.topic}"/>
+        </div>
+    </div>
     <div class="form-group">
         <label class="col-sm-2 control-label">key序列化 </label>
         <div class="col-sm-10">
@@ -26,39 +37,27 @@
             </select>
         </div>
     </div>
-
-    <!-- 消费者配置 -->
     <div class="form-group">
-        <label class="col-sm-2 control-label">Group <strong class="driverVerifcateRequired">*</strong></label>
+        <label class="col-sm-2 control-label">enable.auto.commit <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="如果为true，消费者的偏移量将在后台定期提交"></i></label>
         <div class="col-sm-4">
-            <input class="form-control" name="groupId" type="text" maxlength="32" dbsyncer-valid="require" th:value="${connector?.config?.groupId}"/>
-        </div>
-        <label class="col-sm-2 control-label">定期提交偏移量 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="如果为true，消费者的偏移量将在后台定期提交"></i></label>
-        <div class="col-sm-4">
-            <select class="form-control select-control" name="autoCommit">
+            <select class="form-control select-control" name="enableAutoCommit">
                 <option value="false">false</option>
                 <option value="true">true</option>
             </select>
         </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">提交周期(毫秒) <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="定期提交偏移量为true才生效"></i></label>
+        <label class="col-sm-2 control-label">auto.commit.interval.ms(毫秒) <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="enable.auto.commit为true才生效"></i></label>
         <div class="col-sm-4">
-            <input class="form-control" name="commitIntervalMs" type="number" />
-        </div>
-        <label class="col-sm-2 control-label">故障超时(毫秒) <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="在使用Kafka的组管理时，用于检测消费者故障超时"></i></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="sessionTimeoutMs" type="number" />
+            <input class="form-control" name="autoCommitIntervalMs" type="number" th:value="${connector?.config?.autoCommitIntervalMs}?:1000"/>
         </div>
     </div>
 
     <!-- 生产者配置 -->
     <div class="form-group">
-        <label class="col-sm-2 control-label">Topic <strong class="driverVerifcateRequired">*</strong></label>
+        <label class="col-sm-2 control-label">session.timeout.ms(毫秒) <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="在使用Kafka的组管理时，用于检测消费者故障超时"></i></label>
         <div class="col-sm-4">
-            <input class="form-control" name="topic" type="text" maxlength="32" dbsyncer-valid="require" th:value="${connector?.config?.topic}"/>
+            <input class="form-control" name="sessionTimeoutMs" type="number" th:value="${connector?.config?.sessionTimeoutMs}?:10000" />
         </div>
-        <label class="col-sm-2 control-label">acks</label>
+        <label class="col-sm-2 control-label">acks <i class="fa fa-question-circle fa_gray" aria-hidden="true" title=""></i></label>
         <div class="col-sm-4">
             <select class="form-control select-control" name="acks">
                 <option value="1">1</option>
@@ -67,7 +66,7 @@
         </div>
     </div>
     <div class="form-group">
-        <label class="col-sm-2 control-label">发送失败重试次数</label>
+        <label class="col-sm-2 control-label">retries <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="发送失败重试次数"></i></label>
         <div class="col-sm-4">
             <select class="form-control select-control" name="retries">
                 <option value="1">1</option>
@@ -75,25 +74,25 @@
                 <option value="3">3</option>
             </select>
         </div>
-        <label class="col-sm-2 control-label">linger.ms</label>
+        <label class="col-sm-2 control-label">linger.ms <i class="fa fa-question-circle fa_gray" aria-hidden="true" title=""></i></label>
         <div class="col-sm-4">
-            <input class="form-control" name="lingerMms" type="number" />
+            <input class="form-control" name="lingerMms" type="number" th:value="${connector?.config?.lingerMms}?:10"/>
         </div>
     </div>
     <div class="form-group">
-        <label class="col-sm-2 control-label">批处理缓冲区</label>
+        <label class="col-sm-2 control-label">buffer.memory(字节) <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="批处理缓冲区，33554432=32MB的批处理缓冲区"></i></label>
         <div class="col-sm-4">
-            <input class="form-control" name="bufferMemory" type="number" />
+            <input class="form-control" name="bufferMemory" type="number" th:value="${connector?.config?.bufferMemory}?:33554432" />
         </div>
-        <label class="col-sm-2 control-label">批处理条数</label>
+        <label class="col-sm-2 control-label">batch.size <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="批处理条数：当多个记录被发送到同一个分区时，生产者会尝试将记录合并到更少的请求中。这有助于客户端和服务器的性能"></i></label>
         <div class="col-sm-4">
-            <input class="form-control" name="batchSize" type="number" />
+            <input class="form-control" name="batchSize" type="number" th:value="${connector?.config?.batchSize}?:32768" />
         </div>
     </div>
     <div class="form-group">
-        <label class="col-sm-2 control-label">最长发送周期(毫秒)</label>
+        <label class="col-sm-2 control-label">max.block.ms(毫秒) <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="发送周期"></i></label>
         <div class="col-sm-4">
-            <input class="form-control" name="maxBlockMs" type="number" />
+            <input class="form-control" name="maxBlockMs" type="number" th:value="${connector?.config?.maxBlockMs}?:500" />
         </div>
     </div>
 </div>
