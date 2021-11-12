@@ -90,7 +90,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             boolean dbThanMysql8 = StringUtil.startsWith(databaseProductVersion, "8");
             Assert.isTrue(driverThanMysql8 == dbThanMysql8, String.format("当前驱动%s和数据库%s版本不一致.", driverVersion, databaseProductVersion));
 
-            Class clazz = conn.getClass();
+            Class clazz = dbThanMysql8 ? conn.getClass() : conn.getClass().getSuperclass();
             java.lang.reflect.Field field = clazz.getDeclaredField("database");
             field.setAccessible(true);
             Object value = field.get(conn);
