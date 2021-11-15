@@ -43,9 +43,9 @@
                         <label class="col-sm-2 control-label">session.timeout.ms <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="在使用Kafka的组管理时，用于检测消费者故障超时"></i></label>
                         <div class="col-sm-4">
                             <select class="form-control select-control" name="autoCommitIntervalMs">
-                                <option value="10000" th:selected="${connector?.config?.autoCommitIntervalMs eq '10000'}">10000毫秒</option>
-                                <option value="15000" th:selected="${connector?.config?.autoCommitIntervalMs eq '15000'}">15000秒</option>
-                                <option value="20000" th:selected="${connector?.config?.autoCommitIntervalMs eq '20000'}">20000毫秒</option>
+                                <option value="10000" th:selected="${connector?.config?.autoCommitIntervalMs eq '10000'}">10秒</option>
+                                <option value="15000" th:selected="${connector?.config?.autoCommitIntervalMs eq '15000'}">15秒</option>
+                                <option value="20000" th:selected="${connector?.config?.autoCommitIntervalMs eq '20000'}">20秒</option>
                             </select>
                         </div>
                     </div>
@@ -57,12 +57,12 @@
                                 <option value="true" th:selected="${connector?.config?.enableAutoCommit eq 'false'}">true</option>
                             </select>
                         </div>
-                        <label class="col-sm-2 control-label">auto.commit.interval.ms(毫秒) <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="enable.auto.commit为true才生效"></i></label>
+                        <label class="col-sm-2 control-label">auto.commit.interval.ms <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="enable.auto.commit为true才生效"></i></label>
                         <div class="col-sm-4">
                             <select class="form-control select-control" name="autoCommitIntervalMs">
-                                <option value="1000" th:selected="${connector?.config?.autoCommitIntervalMs eq '1000'}">1000毫秒</option>
-                                <option value="1500" th:selected="${connector?.config?.autoCommitIntervalMs eq '1500'}">1500毫秒</option>
-                                <option value="2000" th:selected="${connector?.config?.autoCommitIntervalMs eq '2000'}">2000毫秒</option>
+                                <option value="1000" th:selected="${connector?.config?.autoCommitIntervalMs eq '1000'}">1秒</option>
+                                <option value="1500" th:selected="${connector?.config?.autoCommitIntervalMs eq '1500'}">1.5秒</option>
+                                <option value="2000" th:selected="${connector?.config?.autoCommitIntervalMs eq '2000'}">2秒</option>
                             </select>
                         </div>
                     </div>
@@ -125,9 +125,9 @@
                         <label class="col-sm-2 control-label">linger.ms <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="同时设置batch.size和 linger.ms,就是哪个条件先满足就都会将消息发送出去"></i></label>
                         <div class="col-sm-4">
                             <select class="form-control select-control" name="retries">
-                                <option value="10" th:selected="${connector?.config?.lingerMms eq '10'}">10</option>
-                                <option value="15" th:selected="${connector?.config?.lingerMms eq '15'}">15</option>
-                                <option value="20" th:selected="${connector?.config?.lingerMms eq '20'}">20</option>
+                                <option value="10000" th:selected="${connector?.config?.lingerMms eq '10000'}">10秒</option>
+                                <option value="15000" th:selected="${connector?.config?.lingerMms eq '15000'}">15秒</option>
+                                <option value="20000" th:selected="${connector?.config?.lingerMms eq '20000'}">20秒</option>
                             </select>
                         </div>
                     </div>
@@ -135,9 +135,9 @@
                         <label class="col-sm-2 control-label">max.block.ms <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="该配置控制 KafkaProducer.send() 和 KafkaProducer.partitionsFor() 将阻塞多长时间。此外这些方法被阻止，也可能是因为缓冲区已满或元数据不可用。在用户提供的序列化程序或分区器中的锁定不会计入此超时。"></i></label>
                         <div class="col-sm-4">
                             <select class="form-control select-control" name="maxBlockMs">
-                                <option value="10000" th:selected="${connector?.config?.maxBlockMs eq '10000'}">10000毫秒</option>
-                                <option value="30000" th:selected="${connector?.config?.maxBlockMs eq '30000'}">30000毫秒</option>
-                                <option value="60000" th:selected="${connector?.config?.maxBlockMs eq '60000'}">60000毫秒</option>
+                                <option value="10000" th:selected="${connector?.config?.maxBlockMs eq '10000'}">10秒</option>
+                                <option value="30000" th:selected="${connector?.config?.maxBlockMs eq '30000'}">30秒</option>
+                                <option value="60000" th:selected="${connector?.config?.maxBlockMs eq '60000'}">60秒</option>
                             </select>
                         </div>
                     </div>
