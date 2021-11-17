@@ -9,6 +9,7 @@ import oracle.jdbc.dcn.*;
 import oracle.jdbc.driver.OracleConnection;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.oracle.event.DCNEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +83,7 @@ public class DBChangeNotification {
             dcr.addListener(new DCNListener());
 
             final long regId = dcr.getRegId();
-            final String host = getHost();
+            final String host = getHost(dcr);
             final int port = getPort(dcr);
             final String callback = String.format(CALLBACK, host, port);
             logger.info("regId:{}, callback:{}", regId, callback);
@@ -212,23 +213,12 @@ public class DBChangeNotification {
         return apply;
     }
 
-    private String getHost() {
-        if (url != null) {
-            String host = url.substring(url.indexOf("@") + 1);
-            host = host.substring(0, host.indexOf(":"));
-            return host;
-        }
-        return "127.0.0.1";
-    }
-
-    private int getPort(DatabaseChangeRegistration dcr) {
-        Object obj = null;
+    private Object invokeDCR(DatabaseChangeRegistration dcr, String declaredMethod) {
         try {
-            // 反射获取抽象属性 NTFRegistration
             Class clazz = dcr.getClass().getSuperclass();
-            Method method = clazz.getDeclaredMethod("getClientTCPPort");
+            Method method = clazz.getDeclaredMethod(declaredMethod);
             method.setAccessible(true);
-            obj = method.invoke(dcr, new Object[]{});
+            return method.invoke(dcr, new Object[]{});
         } catch (NoSuchMethodException e) {
             logger.error(e.getMessage());
         } catch (IllegalAccessException e) {
@@ -236,7 +226,17 @@ public class DBChangeNotification {
         } catch (InvocationTargetException e) {
             logger.error(e.getMessage());
         }
-        return null == obj ? 0 : Integer.parseInt(String.valueOf(obj));
+        throw new ListenerException(String.format("Can't invoke '%s'.", declaredMethod));
+    }
+
+    private String getHost(DatabaseChangeRegistration dcr) {
+        Object obj = invokeDCR(dcr, "getClientHost");
+        return String.valueOf(obj);
+    }
+
+    private int getPort(DatabaseChangeRegistration dcr) {
+        Object obj = invokeDCR(dcr, "getClientTCPPort");
+        return Integer.parseInt(String.valueOf(obj));
     }
 
     private void clean(OracleStatement statement, long excludeRegId, String excludeCallback) {
