@@ -19,8 +19,6 @@ import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.util.ParamsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -31,12 +29,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
+ * 将数据存储在磁盘，基于lucene实现
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2019/9/10 23:22
  */
-@Component
-@ConditionalOnProperty(value = "dbsyncer.storage.support.disk", havingValue = "true")
 public class DiskStorageServiceImpl extends AbstractStorageService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());

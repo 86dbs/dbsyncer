@@ -42,6 +42,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ * 将数据存储在mysql
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2019/9/10 23:22
