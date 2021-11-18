@@ -21,6 +21,7 @@ import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.flush.FlushService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
@@ -64,6 +65,9 @@ public class ParserFactory implements Parser {
 
     @Autowired
     private FlushService flushService;
+
+    @Autowired
+    private FlushStrategy flushStrategy;
 
     @Autowired
     @Qualifier("taskExecutor")
@@ -322,7 +326,7 @@ public class ParserFactory implements Parser {
         Result writer = connectorFactory.writer(tConnectorMapper, new WriterSingleConfig(picker.getTargetFields(), tableGroup.getCommand(), event, target, rowChangedEvent.getTableName(), rowChangedEvent.isForceUpdate()));
 
         // 5、更新结果
-        flush(metaId, writer, event, picker.getTargetMapList());
+        flushStrategy.flushIncrementData(metaId, writer, event, picker.getTargetMapList());
     }
 
     /**
@@ -333,30 +337,11 @@ public class ParserFactory implements Parser {
      * @param data
      */
     private void flush(Task task, Result writer, List<Map> data) {
-        flush(task.getId(), writer, ConnectorConstant.OPERTION_INSERT, data);
+        flushStrategy.flushFullData(task.getId(), writer, ConnectorConstant.OPERTION_INSERT, data);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(Instant.now().toEpochMilli());
         applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
-    }
-
-    private void flush(String metaId, Result writer, String event, List<Map> data) {
-        // 引用传递
-        long total = data.size();
-        long fail = writer.getFail().get();
-        Meta meta = getMeta(metaId);
-        meta.getFail().getAndAdd(fail);
-        meta.getSuccess().getAndAdd(total - fail);
-
-        // 记录错误数据
-        Queue<Map> failData = writer.getFailData();
-        boolean success = CollectionUtils.isEmpty(failData);
-        if (!success) {
-            data.clear();
-            data.addAll(failData);
-        }
-        String error = writer.getError().toString();
-        flushService.asyncWrite(metaId, event, success, data, error);
     }
 
     /**
