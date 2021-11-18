@@ -208,11 +208,13 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         Executor executor = tables.get(type.getType());
         Assert.notNull(executor, "未知的存储类型");
 
+        if (tables.containsKey(table)) {
+            return tables.get(table);
+        }
         synchronized (tables) {
             // 检查本地缓存
-            Executor e = tables.get(table);
             if (tables.containsKey(table)) {
-                return e;
+                return tables.get(table);
             }
             // 不存在
             Executor newExecutor = new Executor(executor.getGroup(), executor.getFieldPairs(), executor.getFields(), executor.isDynamicTableName(), executor.isSystemType(), executor.isOrderByUpdateTime());
