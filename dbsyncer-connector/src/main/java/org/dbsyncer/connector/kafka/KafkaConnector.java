@@ -26,7 +26,7 @@ public class KafkaConnector implements Connector<KafkaConnectorMapper, KafkaConf
 
     @Override
     public String getConnectorMapperCacheKey(KafkaConfig config) {
-        return null;
+        return String.format("%s-%s-%s", config.getBootstrapServers(), config.getGroupId(), config.getTopic());
     }
 
     @Override

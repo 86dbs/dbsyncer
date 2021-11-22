@@ -6,7 +6,7 @@
     <div class="form-group">
         <label class="col-sm-2 control-label">地址<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：192.168.1.100:9092,192.168.1.200:9092"></i> <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-10">
-            <textarea name="servers" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="2" th:text="${connector?.config?.servers}?:'127.0.0.1:9092'"></textarea>
+            <textarea name="bootstrapServers" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="2" th:text="${connector?.config?.bootstrapServers}?:'127.0.0.1:9092'"></textarea>
         </div>
     </div>
     <div class="form-group">
@@ -38,10 +38,10 @@
                         </div>
                         <label class="col-sm-3 control-label">session.timeout.ms <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="在使用Kafka的组管理时，用于检测消费者故障超时"></i></label>
                         <div class="col-sm-3">
-                            <select class="form-control select-control" name="autoCommitIntervalMs">
-                                <option value="10000" th:selected="${connector?.config?.autoCommitIntervalMs eq '10000'}">10秒</option>
-                                <option value="15000" th:selected="${connector?.config?.autoCommitIntervalMs eq '15000'}">15秒</option>
-                                <option value="20000" th:selected="${connector?.config?.autoCommitIntervalMs eq '20000'}">20秒</option>
+                            <select class="form-control select-control" name="sessionTimeoutMs">
+                                <option value="10000" th:selected="${connector?.config?.sessionTimeoutMs eq '10000'}">10秒</option>
+                                <option value="15000" th:selected="${connector?.config?.sessionTimeoutMs eq '15000'}">15秒</option>
+                                <option value="20000" th:selected="${connector?.config?.sessionTimeoutMs eq '20000'}">20秒</option>
                             </select>
                         </div>
                     </div>
