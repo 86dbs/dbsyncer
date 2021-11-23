@@ -11,7 +11,7 @@ import java.util.Map;
 public class KafkaConnector implements Connector<KafkaConnectorMapper, KafkaConfig> {
     @Override
     public ConnectorMapper connect(KafkaConfig config) {
-        return null;
+        return new KafkaConnectorMapper(config, new KafkaClient());
     }
 
     @Override
@@ -26,7 +26,7 @@ public class KafkaConnector implements Connector<KafkaConnectorMapper, KafkaConf
 
     @Override
     public String getConnectorMapperCacheKey(KafkaConfig config) {
-        return String.format("%s-%s-%s", config.getBootstrapServers(), config.getGroupId(), config.getTopic());
+        return String.format("%s-%s", config.getBootstrapServers(), config.getGroupId());
     }
 
     @Override

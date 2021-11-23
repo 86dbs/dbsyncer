@@ -19,7 +19,6 @@ public class KafkaConfig extends ConnectorConfig {
     private long maxPartitionFetchBytes;
 
     // 生产者
-    private String topic;
     private long bufferMemory;
     private long batchSize;
     private long lingerMs;
@@ -82,14 +81,6 @@ public class KafkaConfig extends ConnectorConfig {
 
     public void setMaxPartitionFetchBytes(long maxPartitionFetchBytes) {
         this.maxPartitionFetchBytes = maxPartitionFetchBytes;
-    }
-
-    public String getTopic() {
-        return topic;
-    }
-
-    public void setTopic(String topic) {
-        this.topic = topic;
     }
 
     public long getBufferMemory() {

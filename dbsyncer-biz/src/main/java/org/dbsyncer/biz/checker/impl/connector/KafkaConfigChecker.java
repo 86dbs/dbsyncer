@@ -27,13 +27,10 @@ public class KafkaConfigChecker implements ConnectorConfigChecker<KafkaConfig> {
         Assert.hasText(valueSerializer, "valueSerializer is empty.");
 
         String groupId = params.get("groupId");
-        Assert.hasText(groupId, "groupId is empty.");
         boolean enableAutoCommit = BooleanUtil.toBoolean(params.get("enableAutoCommit"));
         long autoCommitIntervalMs = NumberUtil.toLong(params.get("autoCommitIntervalMs"));
         long maxPartitionFetchBytes = NumberUtil.toLong(params.get("maxPartitionFetchBytes"));
 
-        String topic = params.get("topic");
-        Assert.hasText(topic, "topic is empty.");
         long bufferMemory = NumberUtil.toLong(params.get("bufferMemory"));
         long batchSize = NumberUtil.toLong(params.get("batchSize"));
         long lingerMs = NumberUtil.toLong(params.get("lingerMs"));
@@ -51,7 +48,6 @@ public class KafkaConfigChecker implements ConnectorConfigChecker<KafkaConfig> {
         connectorConfig.setAutoCommitIntervalMs(autoCommitIntervalMs);
         connectorConfig.setMaxPartitionFetchBytes(maxPartitionFetchBytes);
 
-        connectorConfig.setTopic(topic);
         connectorConfig.setBufferMemory(bufferMemory);
         connectorConfig.setBatchSize(batchSize);
         connectorConfig.setLingerMs(lingerMs);
