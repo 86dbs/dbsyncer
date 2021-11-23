@@ -20,17 +20,21 @@ public class KafkaConfigChecker implements ConnectorConfigChecker<KafkaConfig> {
     @Override
     public void modify(KafkaConfig connectorConfig, Map<String, String> params) {
         String bootstrapServers = params.get("bootstrapServers");
-        String keyDeserializer = params.get("keyDeserializer");
-        String valueSerializer = params.get("valueSerializer");
         Assert.hasText(bootstrapServers, "bootstrapServers is empty.");
-        Assert.hasText(keyDeserializer, "keyDeserializer is empty.");
-        Assert.hasText(valueSerializer, "valueSerializer is empty.");
 
         String groupId = params.get("groupId");
+        String consumerKeyDeserializer = params.get("consumerKeyDeserializer");
+        String consumerValueDeserializer = params.get("consumerValueDeserializer");
+        Assert.hasText(consumerKeyDeserializer, "consumerKeyDeserializer is empty.");
+        Assert.hasText(consumerValueDeserializer, "consumerValueDeserializer is empty.");
         boolean enableAutoCommit = BooleanUtil.toBoolean(params.get("enableAutoCommit"));
         long autoCommitIntervalMs = NumberUtil.toLong(params.get("autoCommitIntervalMs"));
         long maxPartitionFetchBytes = NumberUtil.toLong(params.get("maxPartitionFetchBytes"));
 
+        String producerKeySerializer = params.get("producerKeySerializer");
+        String producerValueSerializer = params.get("producerValueSerializer");
+        Assert.hasText(producerKeySerializer, "producerKeySerializer is empty.");
+        Assert.hasText(producerValueSerializer, "producerValueSerializer is empty.");
         long bufferMemory = NumberUtil.toLong(params.get("bufferMemory"));
         long batchSize = NumberUtil.toLong(params.get("batchSize"));
         long lingerMs = NumberUtil.toLong(params.get("lingerMs"));
@@ -40,14 +44,16 @@ public class KafkaConfigChecker implements ConnectorConfigChecker<KafkaConfig> {
         long maxRequestSize = NumberUtil.toLong(params.get("maxRequestSize"));
 
         connectorConfig.setBootstrapServers(bootstrapServers);
-        connectorConfig.setKeyDeserializer(keyDeserializer);
-        connectorConfig.setValueSerializer(valueSerializer);
 
         connectorConfig.setGroupId(groupId);
+        connectorConfig.setConsumerKeyDeserializer(consumerKeyDeserializer);
+        connectorConfig.setConsumerValueDeserializer(consumerValueDeserializer);
         connectorConfig.setEnableAutoCommit(enableAutoCommit);
         connectorConfig.setAutoCommitIntervalMs(autoCommitIntervalMs);
         connectorConfig.setMaxPartitionFetchBytes(maxPartitionFetchBytes);
 
+        connectorConfig.setProducerKeySerializer(producerKeySerializer);
+        connectorConfig.setProducerValueSerializer(producerValueSerializer);
         connectorConfig.setBufferMemory(bufferMemory);
         connectorConfig.setBatchSize(batchSize);
         connectorConfig.setLingerMs(lingerMs);

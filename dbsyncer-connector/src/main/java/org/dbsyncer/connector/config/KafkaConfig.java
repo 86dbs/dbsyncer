@@ -9,16 +9,18 @@ package org.dbsyncer.connector.config;
 public class KafkaConfig extends ConnectorConfig {
 
     private String bootstrapServers;
-    private String keyDeserializer;
-    private String valueSerializer;
 
     // 消费者
     private String groupId;
+    private String consumerKeyDeserializer;
+    private String consumerValueDeserializer;
     private boolean enableAutoCommit;
     private long autoCommitIntervalMs;
     private long maxPartitionFetchBytes;
 
     // 生产者
+    private String producerKeySerializer;
+    private String producerValueSerializer;
     private long bufferMemory;
     private long batchSize;
     private long lingerMs;
@@ -35,28 +37,28 @@ public class KafkaConfig extends ConnectorConfig {
         this.bootstrapServers = bootstrapServers;
     }
 
-    public String getKeyDeserializer() {
-        return keyDeserializer;
-    }
-
-    public void setKeyDeserializer(String keyDeserializer) {
-        this.keyDeserializer = keyDeserializer;
-    }
-
-    public String getValueSerializer() {
-        return valueSerializer;
-    }
-
-    public void setValueSerializer(String valueSerializer) {
-        this.valueSerializer = valueSerializer;
-    }
-
     public String getGroupId() {
         return groupId;
     }
 
     public void setGroupId(String groupId) {
         this.groupId = groupId;
+    }
+
+    public String getConsumerKeyDeserializer() {
+        return consumerKeyDeserializer;
+    }
+
+    public void setConsumerKeyDeserializer(String consumerKeyDeserializer) {
+        this.consumerKeyDeserializer = consumerKeyDeserializer;
+    }
+
+    public String getConsumerValueDeserializer() {
+        return consumerValueDeserializer;
+    }
+
+    public void setConsumerValueDeserializer(String consumerValueDeserializer) {
+        this.consumerValueDeserializer = consumerValueDeserializer;
     }
 
     public boolean isEnableAutoCommit() {
@@ -81,6 +83,22 @@ public class KafkaConfig extends ConnectorConfig {
 
     public void setMaxPartitionFetchBytes(long maxPartitionFetchBytes) {
         this.maxPartitionFetchBytes = maxPartitionFetchBytes;
+    }
+
+    public String getProducerKeySerializer() {
+        return producerKeySerializer;
+    }
+
+    public void setProducerKeySerializer(String producerKeySerializer) {
+        this.producerKeySerializer = producerKeySerializer;
+    }
+
+    public String getProducerValueSerializer() {
+        return producerValueSerializer;
+    }
+
+    public void setProducerValueSerializer(String producerValueSerializer) {
+        this.producerValueSerializer = producerValueSerializer;
     }
 
     public long getBufferMemory() {

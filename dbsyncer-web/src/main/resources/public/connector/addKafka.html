@@ -9,18 +9,6 @@
             <textarea name="bootstrapServers" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="2" th:text="${connector?.config?.bootstrapServers}?:'127.0.0.1:9092'"></textarea>
         </div>
     </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">key序列化<strong class="driverVerifcateRequired">*</strong></label>
-        <div class="col-sm-10">
-            <input class="form-control" name="keyDeserializer" type="text" dbsyncer-valid="require" th:value="${connector?.config?.keyDeserializer?:'org.apache.kafka.common.serialization.StringSerializer'}"/>
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">value序列化<strong class="driverVerifcateRequired">*</strong></label>
-        <div class="col-sm-10">
-            <input class="form-control" name="valueSerializer" type="text" dbsyncer-valid="require" th:value="${connector?.config?.valueSerializer?:'org.apache.kafka.common.serialization.StringSerializer'}"/>
-        </div>
-    </div>
 
     <!-- 消费者配置 -->
     <div class="row">
@@ -35,6 +23,18 @@
                         <label class="col-sm-3 control-label">group.id </label>
                         <div class="col-sm-9">
                             <input class="form-control" name="groupId" type="text" maxlength="64" th:value="${connector?.config?.groupId}"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">key序列化<strong class="driverVerifcateRequired">*</strong></label>
+                        <div class="col-sm-9">
+                            <input class="form-control" name="consumerKeyDeserializer" type="text" dbsyncer-valid="require" th:value="${connector?.config?.consumerKeyDeserializer?:'org.apache.kafka.common.serialization.StringDeserializer'}"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">value序列化<strong class="driverVerifcateRequired">*</strong></label>
+                        <div class="col-sm-9">
+                            <input class="form-control" name="consumerValueDeserializer" type="text" dbsyncer-valid="require" th:value="${connector?.config?.consumerValueDeserializer?:'org.apache.kafka.common.serialization.StringDeserializer'}"/>
                         </div>
                     </div>
                     <div class="form-group">
@@ -88,6 +88,18 @@
                 </div>
                 <div class="panel-body">
                     <div class="form-group">
+                        <label class="col-sm-3 control-label">key序列化<strong class="driverVerifcateRequired">*</strong></label>
+                        <div class="col-sm-9">
+                            <input class="form-control" name="producerKeySerializer" type="text" dbsyncer-valid="require" th:value="${connector?.config?.producerKeySerializer?:'org.apache.kafka.common.serialization.StringSerializer'}"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">value序列化<strong class="driverVerifcateRequired">*</strong></label>
+                        <div class="col-sm-9">
+                            <input class="form-control" name="producerValueSerializer" type="text" dbsyncer-valid="require" th:value="${connector?.config?.producerValueSerializer?:'org.apache.kafka.common.serialization.StringSerializer'}"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
                         <label class="col-sm-3 control-label">buffer.memory <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="Kafka的客户端发送数据到服务器，不是来一条就发一条，而是经过缓冲，通过KafkaProducer发送出去的消息都是先进入到客户端本地的内存缓冲里，然后把很多消息收集成一个一个的Batch，再发送到Broker。buffer.memory用来约束KafkaProducer能够使用的内存缓冲的大小，默认值32MB。
 如果buffer.memory设置的太小，可能导致的问题是：消息快速的写入内存缓冲里，但Sender线程来不及把Request发送到Kafka服务器，会造成内存缓冲很快就被写满。而一旦被写满，就会阻塞用户线程，不让继续往Kafka写消息了。
 所以“buffer.memory”参数需要结合实际业务情况压测，需要测算在生产环境中用户线程会以每秒多少消息的频率来写入内存缓冲。经过压测，调试出来一个合理值。"></i></label>
@@ -140,16 +152,6 @@ linger.ms配合batch.size一起来设置，可避免一个Batch迟迟凑不满�
                                 <option value="1" th:selected="${connector?.config?.retries eq '1'}">1</option>
                             </select>
                         </div>
-                        <label class="col-sm-3 control-label">retries.backoff.ms <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="失败重试间隔"></i></label>
-                        <div class="col-sm-3">
-                            <select class="form-control select-control" name="retriesBackoffMs">
-                                <option value="100" th:selected="${connector?.config?.retriesBackoffMs eq '100'}">0.1秒</option>
-                                <option value="300" th:selected="${connector?.config?.retriesBackoffMs eq '300'}">0.3秒</option>
-                                <option value="500" th:selected="${connector?.config?.retriesBackoffMs eq '500'}">0.5秒</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
                         <label class="col-sm-3 control-label">max.block.ms <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="该配置控制 KafkaProducer.send() 和 KafkaProducer.partitionsFor() 将阻塞多长时间。此外这些方法被阻止，也可能是因为缓冲区已满或元数据不可用。在用户提供的序列化程序或分区器中的锁定不会计入此超时。"></i></label>
                         <div class="col-sm-3">
                             <select class="form-control select-control" name="maxBlockMs">
@@ -158,6 +160,8 @@ linger.ms配合batch.size一起来设置，可避免一个Batch迟迟凑不满�
                                 <option value="15000" th:selected="${connector?.config?.maxBlockMs eq '15000'}">15秒</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="form-group">
                         <label class="col-sm-3 control-label">max.request.size <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="每次发送给Kafka服务器请求消息的最大大小，与max.partition.fetch.bytes保持一致"></i></label>
                         <div class="col-sm-3">
                             <select id="maxRequestSizeSelect" class="form-control select-control" name="maxRequestSize">
