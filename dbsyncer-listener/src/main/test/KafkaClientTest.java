@@ -24,7 +24,7 @@ public class KafkaClientTest {
     private KafkaConsumer<String, String> consumer;
     private KafkaProducer<String, String> producer;
 
-    private String server = "192.168.100.100:9092";
+    private String server = "192.168.1.100:9092";
     private String cKeyDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
     private String cValueDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
     private String pKeySerializer = "org.apache.kafka.common.serialization.StringSerializer";
@@ -95,7 +95,7 @@ public class KafkaClientTest {
             while (true) {
                 ConsumerRecords<String, String> records = consumer.poll(100);
                 for (ConsumerRecord<String, String> record : records) {
-                    logger.info("offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
+                    logger.info("收到消息：offset = {}, key = {}, value = {}", record.offset(), record.key(), record.value());
                 }
             }
         }
@@ -110,7 +110,7 @@ public class KafkaClientTest {
         @Override
         public void run() {
             for (int i = 0; i < 100; i++) {
-                producer.send(new ProducerRecord<>(topic, Integer.toString(i), Integer.toString(i)));
+                producer.send(new ProducerRecord<>(topic, Integer.toString(i), "测试" + i));
             }
         }
     }
