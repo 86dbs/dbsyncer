@@ -76,7 +76,7 @@ public class DBChangeNotification {
             prop.setProperty(OracleConnection.DCN_NOTIFY_ROWIDS, "true");
             prop.setProperty(OracleConnection.DCN_IGNORE_UPDATEOP, "false");
             prop.setProperty(OracleConnection.DCN_IGNORE_INSERTOP, "false");
-            prop.setProperty(OracleConnection.DCN_IGNORE_INSERTOP, "false");
+            prop.setProperty(OracleConnection.DCN_IGNORE_DELETEOP, "false");
 
             // add the listener:NTFDCNRegistration
             dcr = conn.registerDatabaseChangeNotification(prop);

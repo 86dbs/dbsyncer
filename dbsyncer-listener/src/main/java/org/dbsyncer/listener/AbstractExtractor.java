@@ -87,7 +87,7 @@ public abstract class AbstractExtractor implements Extractor {
         }
     }
 
-    protected void asynSendRowChangedEvent(RowChangedEvent event) {
+    protected void asyncSendRowChangedEvent(RowChangedEvent event) {
         taskExecutor.execute(() -> changedEvent(event));
     }
 
