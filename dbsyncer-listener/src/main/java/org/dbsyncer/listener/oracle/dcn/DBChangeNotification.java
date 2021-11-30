@@ -8,6 +8,7 @@ import oracle.jdbc.OracleStatement;
 import oracle.jdbc.dcn.*;
 import oracle.jdbc.driver.OracleConnection;
 import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.oracle.event.DCNEvent;
@@ -229,9 +230,29 @@ public class DBChangeNotification {
         throw new ListenerException(String.format("Can't invoke '%s'.", declaredMethod));
     }
 
+    /**
+     * ServiceName: jdbc:oracle:thin:@//host:port/serviceName
+     * TNS: jdbc:oracle:thin:@(description=(address=(protocol=tcp)(port=1521)(host=127.0.0.1))(connect_data=(service_name=orcl)))
+     * SID: jdbc:oracle:thin:@host:port:sid
+     *
+     * @param dcr
+     * @return
+     */
     private String getHost(DatabaseChangeRegistration dcr) {
-        Object obj = invokeDCR(dcr, "getClientHost");
-        return String.valueOf(obj);
+        if (StringUtil.isBlank(url)) {
+            throw new IllegalArgumentException("url is null");
+        }
+
+        // TNS
+        if(StringUtil.startsWith(url, "jdbc:oracle:thin:@(")){
+            Object obj = invokeDCR(dcr, "getClientHost");
+            return String.valueOf(obj);
+        }
+
+        // SID
+        String host = url.substring(url.indexOf("@") + 1);
+        host = host.substring(0, host.indexOf(":"));
+        return host;
     }
 
     private int getPort(DatabaseChangeRegistration dcr) {
