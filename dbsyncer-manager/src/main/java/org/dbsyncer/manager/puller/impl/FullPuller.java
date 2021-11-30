@@ -1,7 +1,7 @@
 package org.dbsyncer.manager.puller.impl;
 
-import org.dbsyncer.common.event.FullRefreshEvent;
-import org.dbsyncer.common.model.Task;
+import org.dbsyncer.parser.event.FullRefreshEvent;
+import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.puller.AbstractPuller;
 import org.dbsyncer.parser.Parser;

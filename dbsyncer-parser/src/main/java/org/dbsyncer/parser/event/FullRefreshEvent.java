@@ -1,6 +1,6 @@
-package org.dbsyncer.common.event;
+package org.dbsyncer.parser.event;
 
-import org.dbsyncer.common.model.Task;
+import org.dbsyncer.parser.model.Task;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ApplicationContextEvent;
 

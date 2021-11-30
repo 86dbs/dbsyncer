@@ -1,4 +1,4 @@
-package org.dbsyncer.common.model;
+package org.dbsyncer.parser.model;
 
 public class Task {
 
