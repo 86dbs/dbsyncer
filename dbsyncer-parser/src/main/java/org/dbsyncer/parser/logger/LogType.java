@@ -147,7 +147,8 @@ public interface LogType {
         INSERT("40", "新增"),
         UPDATE("41", "修改"),
         DELETE("42", "删除"),
-        INCREMENT_FAILED("43", "增量同步异常");
+        INCREMENT_FAILED("43", "增量同步异常"),
+        FULL_FAILED("44", "全量同步异常");
 
         private String type;
         private String message;

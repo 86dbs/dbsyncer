@@ -2,7 +2,6 @@ package org.dbsyncer.parser.strategy;
 
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.parser.flush.FlushService;
 import org.dbsyncer.parser.model.Meta;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +9,6 @@ import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 
 /**
  * @author AE86
@@ -36,22 +34,21 @@ public abstract class AbstractFlushStrategy implements FlushStrategy {
     }
 
     protected void flush(String metaId, Result writer, String event, List<Map> data) {
-        // 引用传递
-        long total = data.size();
+        refreshTotal(metaId, writer, data);
+
+        boolean fail = 0 < writer.getFail().get();
+        if (fail) {
+            data.clear();
+            data.addAll(writer.getFailData());
+        }
+        flushService.asyncWrite(metaId, event, fail, data, writer.getError().toString());
+    }
+
+    protected void refreshTotal(String metaId, Result writer, List<Map> data){
         long fail = writer.getFail().get();
         Meta meta = getMeta(metaId);
         meta.getFail().getAndAdd(fail);
-        meta.getSuccess().getAndAdd(total - fail);
-
-        // 记录错误数据
-        Queue<Map> failData = writer.getFailData();
-        boolean success = CollectionUtils.isEmpty(failData);
-        if (!success) {
-            data.clear();
-            data.addAll(failData);
-        }
-        String error = writer.getError().toString();
-        flushService.asyncWrite(metaId, event, success, data, error);
+        meta.getSuccess().getAndAdd(data.size() - fail);
     }
 
     protected Meta getMeta(String metaId) {

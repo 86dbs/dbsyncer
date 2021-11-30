@@ -18,7 +18,7 @@ import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.ParserEnum;
-import org.dbsyncer.parser.flush.FlushService;
+import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.strategy.FlushStrategy;
@@ -64,7 +64,7 @@ public class ParserFactory implements Parser {
     private CacheService cacheService;
 
     @Autowired
-    private FlushService flushService;
+    private LogService logService;
 
     @Autowired
     private FlushStrategy flushStrategy;
@@ -93,16 +93,16 @@ public class ParserFactory implements Parser {
             alive = connectorFactory.isAlive(config);
         } catch (Exception e) {
             LogType.ConnectorLog logType = LogType.ConnectorLog.FAILED;
-            flushService.asyncWrite(logType.getType(), String.format("%s%s", logType.getName(), e.getMessage()));
+            logService.log(logType, "%s%s", logType.getName(), e.getMessage());
         }
         // 断线重连
-        if(!alive){
+        if (!alive) {
             try {
                 alive = connectorFactory.refresh(config);
             } catch (Exception e) {
                 // nothing to do
             }
-            if(alive){
+            if (alive) {
                 logger.info(LogType.ConnectorLog.RECONNECT_SUCCESS.getMessage());
             }
         }
@@ -119,9 +119,9 @@ public class ParserFactory implements Parser {
         Connector connector = getConnector(connectorId);
         ConnectorMapper connectorMapper = connectorFactory.connect(connector.getConfig());
         MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorMapper, tableName);
-        if(!CollectionUtils.isEmpty(connector.getTable())){
-            for(Table t :connector.getTable()){
-                if(t.getName().equals(tableName)){
+        if (!CollectionUtils.isEmpty(connector.getTable())) {
+            for (Table t : connector.getTable()) {
+                if (t.getName().equals(tableName)) {
                     metaInfo.setTableType(t.getType());
                     break;
                 }
@@ -178,12 +178,12 @@ public class ParserFactory implements Parser {
             List<Table> tableList = new ArrayList<>();
             boolean exist = false;
             for (int i = 0; i < table.length(); i++) {
-                if(table.get(i) instanceof String){
+                if (table.get(i) instanceof String) {
                     tableList.add(new Table(table.getString(i)));
                     exist = true;
                 }
             }
-            if(!exist){
+            if (!exist) {
                 tableList = JsonUtil.jsonToArray(table.toString(), Table.class);
             }
             connector.setTable(tableList);
