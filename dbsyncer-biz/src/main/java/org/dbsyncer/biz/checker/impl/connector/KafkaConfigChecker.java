@@ -1,7 +1,6 @@
 package org.dbsyncer.biz.checker.impl.connector;
 
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
-import org.dbsyncer.common.util.BooleanUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.connector.config.KafkaConfig;
 import org.springframework.stereotype.Component;
@@ -27,29 +26,26 @@ public class KafkaConfigChecker implements ConnectorConfigChecker<KafkaConfig> {
         String consumerValueDeserializer = params.get("consumerValueDeserializer");
         Assert.hasText(consumerKeyDeserializer, "consumerKeyDeserializer is empty.");
         Assert.hasText(consumerValueDeserializer, "consumerValueDeserializer is empty.");
-        boolean enableAutoCommit = BooleanUtil.toBoolean(params.get("enableAutoCommit"));
-        long autoCommitIntervalMs = NumberUtil.toLong(params.get("autoCommitIntervalMs"));
-        long maxPartitionFetchBytes = NumberUtil.toLong(params.get("maxPartitionFetchBytes"));
+        int sessionTimeoutMs = NumberUtil.toInt(params.get("sessionTimeoutMs"));
+        int maxPartitionFetchBytes = NumberUtil.toInt(params.get("maxPartitionFetchBytes"));
 
         String producerKeySerializer = params.get("producerKeySerializer");
         String producerValueSerializer = params.get("producerValueSerializer");
+        String acks = params.get("acks");
         Assert.hasText(producerKeySerializer, "producerKeySerializer is empty.");
         Assert.hasText(producerValueSerializer, "producerValueSerializer is empty.");
-        long bufferMemory = NumberUtil.toLong(params.get("bufferMemory"));
-        long batchSize = NumberUtil.toLong(params.get("batchSize"));
-        long lingerMs = NumberUtil.toLong(params.get("lingerMs"));
-        long maxBlockMs = NumberUtil.toLong(params.get("maxBlockMs"));
-        long retries = NumberUtil.toLong(params.get("retries"));
-        long retriesBackoffMs = NumberUtil.toLong(params.get("retriesBackoffMs"));
-        long maxRequestSize = NumberUtil.toLong(params.get("maxRequestSize"));
+        int bufferMemory = NumberUtil.toInt(params.get("bufferMemory"));
+        int batchSize = NumberUtil.toInt(params.get("batchSize"));
+        int lingerMs = NumberUtil.toInt(params.get("lingerMs"));
+        int retries = NumberUtil.toInt(params.get("retries"));
+        int maxRequestSize = NumberUtil.toInt(params.get("maxRequestSize"));
 
         connectorConfig.setBootstrapServers(bootstrapServers);
 
         connectorConfig.setGroupId(groupId);
         connectorConfig.setConsumerKeyDeserializer(consumerKeyDeserializer);
         connectorConfig.setConsumerValueDeserializer(consumerValueDeserializer);
-        connectorConfig.setEnableAutoCommit(enableAutoCommit);
-        connectorConfig.setAutoCommitIntervalMs(autoCommitIntervalMs);
+        connectorConfig.setSessionTimeoutMs(sessionTimeoutMs);
         connectorConfig.setMaxPartitionFetchBytes(maxPartitionFetchBytes);
 
         connectorConfig.setProducerKeySerializer(producerKeySerializer);
@@ -57,9 +53,8 @@ public class KafkaConfigChecker implements ConnectorConfigChecker<KafkaConfig> {
         connectorConfig.setBufferMemory(bufferMemory);
         connectorConfig.setBatchSize(batchSize);
         connectorConfig.setLingerMs(lingerMs);
-        connectorConfig.setMaxBlockMs(maxBlockMs);
+        connectorConfig.setAcks(acks);
         connectorConfig.setRetries(retries);
-        connectorConfig.setRetriesBackoffMs(retriesBackoffMs);
         connectorConfig.setMaxRequestSize(maxRequestSize);
     }
 

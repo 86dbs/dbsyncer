@@ -4,6 +4,7 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.util.KafkaUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -11,17 +12,17 @@ import java.util.Map;
 public class KafkaConnector implements Connector<KafkaConnectorMapper, KafkaConfig> {
     @Override
     public ConnectorMapper connect(KafkaConfig config) {
-        return new KafkaConnectorMapper(config, new KafkaClient());
+        return new KafkaConnectorMapper(config, KafkaUtil.getConnection(config));
     }
 
     @Override
     public void disconnect(KafkaConnectorMapper connectorMapper) {
-
+        KafkaUtil.close(connectorMapper.getConnection());
     }
 
     @Override
     public boolean isAlive(KafkaConnectorMapper connectorMapper) {
-        return false;
+        return connectorMapper.getConnection().ping();
     }
 
     @Override
@@ -31,7 +32,7 @@ public class KafkaConnector implements Connector<KafkaConnectorMapper, KafkaConf
 
     @Override
     public List<Table> getTable(KafkaConnectorMapper connectorMapper) {
-        return null;
+        return connectorMapper.getConnection().getTopics();
     }
 
     @Override

@@ -14,20 +14,18 @@ public class KafkaConfig extends ConnectorConfig {
     private String groupId;
     private String consumerKeyDeserializer;
     private String consumerValueDeserializer;
-    private boolean enableAutoCommit;
-    private long autoCommitIntervalMs;
-    private long maxPartitionFetchBytes;
+    private int sessionTimeoutMs;
+    private int maxPartitionFetchBytes;
 
     // 生产者
     private String producerKeySerializer;
     private String producerValueSerializer;
-    private long bufferMemory;
-    private long batchSize;
-    private long lingerMs;
-    private long maxBlockMs;
-    private long retries;
-    private long retriesBackoffMs;
-    private long maxRequestSize;
+    private int bufferMemory;
+    private int batchSize;
+    private int lingerMs;
+    private String acks;
+    private int retries;
+    private int maxRequestSize;
 
     public String getBootstrapServers() {
         return bootstrapServers;
@@ -61,27 +59,19 @@ public class KafkaConfig extends ConnectorConfig {
         this.consumerValueDeserializer = consumerValueDeserializer;
     }
 
-    public boolean isEnableAutoCommit() {
-        return enableAutoCommit;
+    public int getSessionTimeoutMs() {
+        return sessionTimeoutMs;
     }
 
-    public void setEnableAutoCommit(boolean enableAutoCommit) {
-        this.enableAutoCommit = enableAutoCommit;
+    public void setSessionTimeoutMs(int sessionTimeoutMs) {
+        this.sessionTimeoutMs = sessionTimeoutMs;
     }
 
-    public long getAutoCommitIntervalMs() {
-        return autoCommitIntervalMs;
-    }
-
-    public void setAutoCommitIntervalMs(long autoCommitIntervalMs) {
-        this.autoCommitIntervalMs = autoCommitIntervalMs;
-    }
-
-    public long getMaxPartitionFetchBytes() {
+    public int getMaxPartitionFetchBytes() {
         return maxPartitionFetchBytes;
     }
 
-    public void setMaxPartitionFetchBytes(long maxPartitionFetchBytes) {
+    public void setMaxPartitionFetchBytes(int maxPartitionFetchBytes) {
         this.maxPartitionFetchBytes = maxPartitionFetchBytes;
     }
 
@@ -101,59 +91,51 @@ public class KafkaConfig extends ConnectorConfig {
         this.producerValueSerializer = producerValueSerializer;
     }
 
-    public long getBufferMemory() {
+    public int getBufferMemory() {
         return bufferMemory;
     }
 
-    public void setBufferMemory(long bufferMemory) {
+    public void setBufferMemory(int bufferMemory) {
         this.bufferMemory = bufferMemory;
     }
 
-    public long getBatchSize() {
+    public int getBatchSize() {
         return batchSize;
     }
 
-    public void setBatchSize(long batchSize) {
+    public void setBatchSize(int batchSize) {
         this.batchSize = batchSize;
     }
 
-    public long getLingerMs() {
+    public int getLingerMs() {
         return lingerMs;
     }
 
-    public void setLingerMs(long lingerMs) {
+    public void setLingerMs(int lingerMs) {
         this.lingerMs = lingerMs;
     }
 
-    public long getMaxBlockMs() {
-        return maxBlockMs;
+    public String getAcks() {
+        return acks;
     }
 
-    public void setMaxBlockMs(long maxBlockMs) {
-        this.maxBlockMs = maxBlockMs;
+    public void setAcks(String acks) {
+        this.acks = acks;
     }
 
-    public long getRetries() {
+    public int getRetries() {
         return retries;
     }
 
-    public void setRetries(long retries) {
+    public void setRetries(int retries) {
         this.retries = retries;
     }
 
-    public long getRetriesBackoffMs() {
-        return retriesBackoffMs;
-    }
-
-    public void setRetriesBackoffMs(long retriesBackoffMs) {
-        this.retriesBackoffMs = retriesBackoffMs;
-    }
-
-    public long getMaxRequestSize() {
+    public int getMaxRequestSize() {
         return maxRequestSize;
     }
 
-    public void setMaxRequestSize(long maxRequestSize) {
+    public void setMaxRequestSize(int maxRequestSize) {
         this.maxRequestSize = maxRequestSize;
     }
 }

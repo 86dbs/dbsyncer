@@ -3,6 +3,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.PartitionInfo;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -10,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -21,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 public class KafkaClientTest {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private KafkaConsumer<String, String> consumer;
-    private KafkaProducer<String, String> producer;
+    private KafkaConsumer consumer;
+    private KafkaProducer producer;
 
     private String server = "192.168.1.100:9092";
     private String cKeyDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
@@ -39,7 +43,7 @@ public class KafkaClientTest {
             props.put("bootstrap.servers", server);
             props.put("group.id", "test");
             props.put("enable.auto.commit", true);
-            props.put("auto.commit.interval.ms", 1000);
+            props.put("auto.commit.interval.ms", 5000);
             props.put("session.timeout.ms", 10000);
             props.put("max.partition.fetch.bytes", 1048576);
             props.put("key.deserializer", cKeyDeserializer);
@@ -56,7 +60,7 @@ public class KafkaClientTest {
             props.put("batch.size", 32768);
             props.put("linger.ms", 10);
             props.put("acks", "1");
-            props.put("retries", 3);
+            props.put("retries", 1);
             props.put("max.block.ms", 60000);
             props.put("max.request.size", 1048576);
             props.put("key.serializer", pKeySerializer);
@@ -78,6 +82,12 @@ public class KafkaClientTest {
     @Test
     public void testProducerAndConsumer() throws Exception {
         logger.info("test begin");
+        // __consumer_offsets
+        Map<String, List<PartitionInfo>> topics = consumer.listTopics();
+        if (!CollectionUtils.isEmpty(topics)) {
+            topics.forEach((t, list) -> logger.info("topic:{}", t));
+        }
+
         new Producer().start();
         new Consumer().start();
         TimeUnit.SECONDS.sleep(60);
