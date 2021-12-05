@@ -10,8 +10,9 @@ import java.util.Properties;
 public abstract class KafkaUtil {
 
     public static KafkaClient getConnection(KafkaConfig config) {
-        KafkaClient client = new KafkaClient();
+
         // Consumer API
+        KafkaConsumer consumer;
         {
             Properties props = new Properties();
             props.put("bootstrap.servers", config.getBootstrapServers());
@@ -22,10 +23,11 @@ public abstract class KafkaUtil {
             props.put("max.partition.fetch.bytes", config.getMaxPartitionFetchBytes());
             props.put("key.deserializer", config.getConsumerKeyDeserializer());
             props.put("value.deserializer", config.getConsumerValueDeserializer());
-            client.setConsumer(new KafkaConsumer<>(props));
+            consumer = new KafkaConsumer<>(props);
         }
 
         // Producer API
+        KafkaProducer producer;
         {
             Properties props = new Properties();
             props.put("bootstrap.servers", config.getBootstrapServers());
@@ -38,9 +40,9 @@ public abstract class KafkaUtil {
             props.put("max.request.size", config.getMaxRequestSize());
             props.put("key.serializer", config.getProducerKeySerializer());
             props.put("value.serializer", config.getProducerValueSerializer());
-            client.setProducer(new KafkaProducer<>(props));
+            producer = new KafkaProducer<>(props);
         }
-        return client;
+        return new KafkaClient(consumer, producer);
     }
 
     public static void close(KafkaClient client) {
