@@ -100,7 +100,7 @@ public class ParserFactory implements Parser {
             try {
                 alive = connectorFactory.refresh(config);
             } catch (Exception e) {
-                // nothing to do
+                logger.error(e.getMessage());
             }
             if (alive) {
                 logger.info(LogType.ConnectorLog.RECONNECT_SUCCESS.getMessage());

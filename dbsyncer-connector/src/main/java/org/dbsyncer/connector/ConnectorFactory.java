@@ -38,7 +38,11 @@ public class ConnectorFactory implements DisposableBean {
         Connector connector = getConnector(config.getConnectorType());
         String cacheKey = connector.getConnectorMapperCacheKey(config);
         if (!connectorCache.containsKey(cacheKey)) {
-            connectorCache.putIfAbsent(cacheKey, connector.connect(config));
+            synchronized (connectorCache) {
+                if (!connectorCache.containsKey(cacheKey)) {
+                    connectorCache.putIfAbsent(cacheKey, connector.connect(config));
+                }
+            }
         }
         return connectorCache.get(cacheKey);
     }
@@ -54,8 +58,7 @@ public class ConnectorFactory implements DisposableBean {
         Connector connector = getConnector(config.getConnectorType());
         String cacheKey = connector.getConnectorMapperCacheKey(config);
         if (connectorCache.containsKey(cacheKey)) {
-            ConnectorMapper mapper = connectorCache.get(cacheKey);
-            connector.disconnect(mapper);
+            disconnect(connectorCache.get(cacheKey));
             connectorCache.remove(cacheKey);
         }
         connect(config);
@@ -70,13 +73,12 @@ public class ConnectorFactory implements DisposableBean {
      */
     public boolean isAlive(ConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
-        String type = config.getConnectorType();
-        Connector connector = getConnector(type);
+        Connector connector = getConnector(config.getConnectorType());
         String cacheKey = connector.getConnectorMapperCacheKey(config);
-        if (!connectorCache.containsKey(cacheKey)) {
-            connect(config);
+        if (connectorCache.containsKey(cacheKey)) {
+            return connector.isAlive(connectorCache.get(cacheKey));
         }
-        return connector.isAlive(connectorCache.get(cacheKey));
+        return false;
     }
 
     /**

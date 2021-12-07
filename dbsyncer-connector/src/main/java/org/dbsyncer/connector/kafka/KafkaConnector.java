@@ -2,6 +2,7 @@ package org.dbsyncer.connector.kafka;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.connector.Connector;
+import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.util.KafkaUtil;
@@ -12,7 +13,11 @@ import java.util.Map;
 public class KafkaConnector implements Connector<KafkaConnectorMapper, KafkaConfig> {
     @Override
     public ConnectorMapper connect(KafkaConfig config) {
-        return new KafkaConnectorMapper(config, KafkaUtil.getConnection(config));
+        try {
+            return new KafkaConnectorMapper(config, KafkaUtil.getConnection(config));
+        } catch (Exception e) {
+            throw new ConnectorException("无法连接, 请检查配置：" + e.getMessage());
+        }
     }
 
     @Override
