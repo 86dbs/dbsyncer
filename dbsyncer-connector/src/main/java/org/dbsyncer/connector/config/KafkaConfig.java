@@ -27,6 +27,11 @@ public class KafkaConfig extends ConnectorConfig {
     private int retries;
     private int maxRequestSize;
 
+    /**
+     * 主键
+     */
+    private String primaryKey;
+
     public String getBootstrapServers() {
         return bootstrapServers;
     }
@@ -137,5 +142,13 @@ public class KafkaConfig extends ConnectorConfig {
 
     public void setMaxRequestSize(int maxRequestSize) {
         this.maxRequestSize = maxRequestSize;
+    }
+
+    public String getPrimaryKey() {
+        return primaryKey;
+    }
+
+    public void setPrimaryKey(String primaryKey) {
+        this.primaryKey = primaryKey;
     }
 }

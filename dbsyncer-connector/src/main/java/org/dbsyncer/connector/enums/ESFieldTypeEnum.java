@@ -51,7 +51,7 @@ public enum ESFieldTypeEnum {
      * 默认格式："strict_date_optional_time||epoch_millis"
      * "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"  “2021/01/01 12:10:30” or “2021-01-01”
      */
-    DAte("date", Types.DATE),
+    DATE("date", Types.DATE),
 
     // 范围类型
     INTEGER_RANGE("integer_range", Types.INTEGER),
