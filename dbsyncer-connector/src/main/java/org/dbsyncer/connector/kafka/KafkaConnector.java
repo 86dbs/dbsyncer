@@ -57,9 +57,9 @@ public class KafkaConnector implements Connector<KafkaConnectorMapper, KafkaConf
         List<Field> fields;
         try {
             String clazzName = config.getConsumerValueDeserializer();
-            Class<?> clazz = Class.forName(clazzName);
-            java.lang.reflect.Field[] clazzFields = clazz.getFields();
-            if (CollectionUtils.isEmpty(clazzFields)) {
+            Object clazz = Class.forName(clazzName).newInstance();
+            java.lang.reflect.Field[] clazzFields = clazz.getClass().getDeclaredFields();
+            if (1 > clazzFields.length) {
                 throw new ConnectorException("查询字段不能为空.");
             }
             fields = Stream.of(clazzFields).map(f -> {
@@ -68,7 +68,7 @@ public class KafkaConnector implements Connector<KafkaConnectorMapper, KafkaConf
                 boolean pk = StringUtil.equals(config.getPrimaryKey(), name);
                 return new Field(name, typeName, KafkaFieldTypeEnum.getType(typeName), pk);
             }).collect(Collectors.toList());
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e);
         }
