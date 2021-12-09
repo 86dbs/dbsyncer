@@ -10,6 +10,13 @@
         </div>
     </div>
 
+    <div class="form-group">
+        <label class="col-sm-2 control-label">映射class<strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-10">
+            <input class="form-control" name="valueClass" type="text" dbsyncer-valid="require" th:value="${connector?.config?.valueClass?:'org.apache.kafka.common.serialization.StringSerializer'}"/>
+        </div>
+    </div>
+
     <!-- 消费者配置 -->
     <div class="row">
         <div class="col-sm-2"></div>
@@ -23,18 +30,6 @@
                         <label class="col-sm-3 control-label">group.id </label>
                         <div class="col-sm-9">
                             <input class="form-control" name="groupId" type="text" maxlength="64" th:value="${connector?.config?.groupId}"/>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">key序列化<strong class="driverVerifcateRequired">*</strong></label>
-                        <div class="col-sm-9">
-                            <input class="form-control" name="consumerKeyDeserializer" type="text" dbsyncer-valid="require" th:value="${connector?.config?.consumerKeyDeserializer?:'org.apache.kafka.common.serialization.StringDeserializer'}"/>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">value序列化<strong class="driverVerifcateRequired">*</strong></label>
-                        <div class="col-sm-9">
-                            <input class="form-control" name="consumerValueDeserializer" type="text" dbsyncer-valid="require" th:value="${connector?.config?.consumerValueDeserializer?:'org.apache.kafka.common.serialization.StringDeserializer'}"/>
                         </div>
                     </div>
                     <div class="form-group">
@@ -70,18 +65,6 @@
                     <h3 class="panel-title">生产者配置</h3>
                 </div>
                 <div class="panel-body">
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">key序列化<strong class="driverVerifcateRequired">*</strong></label>
-                        <div class="col-sm-9">
-                            <input class="form-control" name="producerKeySerializer" type="text" dbsyncer-valid="require" th:value="${connector?.config?.producerKeySerializer?:'org.apache.kafka.common.serialization.StringSerializer'}"/>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">value序列化<strong class="driverVerifcateRequired">*</strong></label>
-                        <div class="col-sm-9">
-                            <input class="form-control" name="producerValueSerializer" type="text" dbsyncer-valid="require" th:value="${connector?.config?.producerValueSerializer?:'org.apache.kafka.common.serialization.StringSerializer'}"/>
-                        </div>
-                    </div>
                     <div class="form-group">
                         <label class="col-sm-3 control-label">buffer.memory <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="Kafka的客户端发送数据到服务器，不是来一条就发一条，而是经过缓冲，通过KafkaProducer发送出去的消息都是先进入到客户端本地的内存缓冲里，然后把很多消息收集成一个一个的Batch，再发送到Broker。buffer.memory用来约束KafkaProducer能够使用的内存缓冲的大小，默认值32MB。
 如果buffer.memory设置的太小，可能导致的问题是：消息快速的写入内存缓冲里，但Sender线程来不及把Request发送到Kafka服务器，会造成内存缓冲很快就被写满。而一旦被写满，就会阻塞用户线程，不让继续往Kafka写消息了。
