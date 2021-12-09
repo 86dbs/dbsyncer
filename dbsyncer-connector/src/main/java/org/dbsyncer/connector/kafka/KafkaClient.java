@@ -85,23 +85,6 @@ public class KafkaClient {
         return field.get(obj);
     }
 
-//    private boolean isConnected(Object obj, String nodeId) throws NoSuchFieldException, InvocationTargetException, IllegalAccessException {
-//        final Field field = obj.getClass().getDeclaredField("connectionStates");
-//        field.setAccessible(true);
-//        Object connectionStates = field.get(obj);
-//
-//        Method[] methods = connectionStates.getClass().getDeclaredMethods();
-//        Method method = null;
-//        for (int i = 0; i < methods.length; i++) {
-//            if (methods[i].getName() == "isConnected") {
-//                method = methods[i];
-//                method.setAccessible(true);
-//                break;
-//            }
-//        }
-//        return (boolean) method.invoke(connectionStates, nodeId);
-//    }
-
     public void close() {
         if (null != producer) {
             producer.close();

@@ -64,7 +64,7 @@ public class KafkaConnector implements Connector<KafkaConnectorMapper, KafkaConf
             }
             fields = Stream.of(clazzFields).map(f -> {
                 String name = f.getName();
-                String typeName = f.getType().getName();
+                String typeName = f.getType().getSimpleName();
                 boolean pk = StringUtil.equals(config.getPrimaryKey(), name);
                 return new Field(name, typeName, KafkaFieldTypeEnum.getType(typeName), pk);
             }).collect(Collectors.toList());
