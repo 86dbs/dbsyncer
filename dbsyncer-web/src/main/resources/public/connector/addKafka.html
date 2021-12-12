@@ -26,42 +26,13 @@
 
     <div class="form-group">
         <label class="col-sm-2 control-label">字段 <strong class="driverVerifcateRequired">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" maxlength="64" dbsyncer-valid="require" type="text" name="filedName" />
+        <div class="col-sm-9">
+            <textarea name="fields" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="15" th:text="${connector?.config?.fields}?:'[{\'name\':\'ID\',\'typeName\':\'VARCHAR\',\'type\':12,\'pk\':true}]'"></textarea>
         </div>
-        <label class="col-sm-1 control-label">类型 </label>
         <div class="col-sm-1">
-            <select class="form-control select-control" id="typeName">
-                <option value="12">VARCHAR</option>
-                <option value="2">NUMERIC</option>
-                <option value="4">INTEGER</option>
-                <option value="91">DATE</option>
-                <option value="93">TIMESTAMP</option>
-                <option value="-7">BOOLEAN</option>
-                <option value="6">FLOAT</option>
-                <option value="8">DOUBLE</option>
-            </select>
-        </div>
-        <label class="col-sm-1 control-label">主键 </label>
-        <div class="col-sm-1">
-            <select class="form-control select-control" id="pk">
-                <option value="false">否</option>
-                <option value="true">是</option>
-            </select>
-        </div>
-        <div class="col-sm-2">
-            <button type="button" class="btn btn-primary tableGroupAddBtn">
-                <span class="fa fa-plus"></span>添加
+            <button type="button" class="btn btn-default beautifulBtn">
+                <span class="fa fa-magic"></span>美化
             </button>
-            <button type="button" class="btn btn-default tableGroupDelBtn">
-                <span class="fa fa-remove"></span>删除
-            </button>
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label"></label>
-        <div class="col-sm-10">
-            <textarea name="fields" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="2" th:text="${connector?.config?.fields}?:'[{\'name\':\'ID\',\'typeName\':\'VARCHAR\',\'type\':12,\'pk\':true}]'"></textarea>
         </div>
     </div>
 
