@@ -1,22 +1,19 @@
 package org.dbsyncer.connector.kafka;
 
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
-import org.dbsyncer.connector.enums.KafkaFieldTypeEnum;
 import org.dbsyncer.connector.util.KafkaUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class KafkaConnector implements Connector<KafkaConnectorMapper, KafkaConfig> {
 
@@ -43,35 +40,20 @@ public class KafkaConnector implements Connector<KafkaConnectorMapper, KafkaConf
 
     @Override
     public String getConnectorMapperCacheKey(KafkaConfig config) {
-        return String.format("%s-%s", config.getBootstrapServers(), config.getGroupId());
+        return String.format("%s-%s-%s", config.getBootstrapServers(), config.getTopic(), config.getGroupId());
     }
 
     @Override
     public List<Table> getTable(KafkaConnectorMapper connectorMapper) {
-        return connectorMapper.getConnection().getTopics();
+        List<Table> topics = new ArrayList<>();
+        topics.add(new Table(connectorMapper.getConfig().getTopic()));
+        return topics;
     }
 
     @Override
     public MetaInfo getMetaInfo(KafkaConnectorMapper connectorMapper, String tableName) {
         KafkaConfig config = connectorMapper.getConfig();
-        List<Field> fields;
-        try {
-            String clazzName = config.getConsumerValueDeserializer();
-            Object clazz = Class.forName(clazzName).newInstance();
-            java.lang.reflect.Field[] clazzFields = clazz.getClass().getDeclaredFields();
-            if (1 > clazzFields.length) {
-                throw new ConnectorException("查询字段不能为空.");
-            }
-            fields = Stream.of(clazzFields).map(f -> {
-                String name = f.getName();
-                String typeName = f.getType().getSimpleName();
-                boolean pk = StringUtil.equals(config.getPrimaryKey(), name);
-                return new Field(name, typeName, KafkaFieldTypeEnum.getType(typeName), pk);
-            }).collect(Collectors.toList());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            logger.error(e.getMessage());
-            throw new ConnectorException(e);
-        }
+        List<Field> fields = JsonUtil.jsonToArray(config.getFields(), Field.class);
         return new MetaInfo().setColumn(fields);
     }
 

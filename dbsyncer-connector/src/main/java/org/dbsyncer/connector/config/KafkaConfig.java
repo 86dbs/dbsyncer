@@ -9,28 +9,22 @@ package org.dbsyncer.connector.config;
 public class KafkaConfig extends ConnectorConfig {
 
     private String bootstrapServers;
+    private String serializer;
+    private String topic;
+    private String fields;
 
     // 消费者
     private String groupId;
-    private String consumerKeyDeserializer;
-    private String consumerValueDeserializer;
     private int sessionTimeoutMs;
     private int maxPartitionFetchBytes;
 
     // 生产者
-    private String producerKeySerializer;
-    private String producerValueSerializer;
     private int bufferMemory;
     private int batchSize;
     private int lingerMs;
     private String acks;
     private int retries;
     private int maxRequestSize;
-
-    /**
-     * 主键
-     */
-    private String primaryKey;
 
     public String getBootstrapServers() {
         return bootstrapServers;
@@ -40,28 +34,36 @@ public class KafkaConfig extends ConnectorConfig {
         this.bootstrapServers = bootstrapServers;
     }
 
+    public String getSerializer() {
+        return serializer;
+    }
+
+    public void setSerializer(String serializer) {
+        this.serializer = serializer;
+    }
+
+    public String getTopic() {
+        return topic;
+    }
+
+    public void setTopic(String topic) {
+        this.topic = topic;
+    }
+
+    public String getFields() {
+        return fields;
+    }
+
+    public void setFields(String fields) {
+        this.fields = fields;
+    }
+
     public String getGroupId() {
         return groupId;
     }
 
     public void setGroupId(String groupId) {
         this.groupId = groupId;
-    }
-
-    public String getConsumerKeyDeserializer() {
-        return consumerKeyDeserializer;
-    }
-
-    public void setConsumerKeyDeserializer(String consumerKeyDeserializer) {
-        this.consumerKeyDeserializer = consumerKeyDeserializer;
-    }
-
-    public String getConsumerValueDeserializer() {
-        return consumerValueDeserializer;
-    }
-
-    public void setConsumerValueDeserializer(String consumerValueDeserializer) {
-        this.consumerValueDeserializer = consumerValueDeserializer;
     }
 
     public int getSessionTimeoutMs() {
@@ -78,22 +80,6 @@ public class KafkaConfig extends ConnectorConfig {
 
     public void setMaxPartitionFetchBytes(int maxPartitionFetchBytes) {
         this.maxPartitionFetchBytes = maxPartitionFetchBytes;
-    }
-
-    public String getProducerKeySerializer() {
-        return producerKeySerializer;
-    }
-
-    public void setProducerKeySerializer(String producerKeySerializer) {
-        this.producerKeySerializer = producerKeySerializer;
-    }
-
-    public String getProducerValueSerializer() {
-        return producerValueSerializer;
-    }
-
-    public void setProducerValueSerializer(String producerValueSerializer) {
-        this.producerValueSerializer = producerValueSerializer;
     }
 
     public int getBufferMemory() {
@@ -142,13 +128,5 @@ public class KafkaConfig extends ConnectorConfig {
 
     public void setMaxRequestSize(int maxRequestSize) {
         this.maxRequestSize = maxRequestSize;
-    }
-
-    public String getPrimaryKey() {
-        return primaryKey;
-    }
-
-    public void setPrimaryKey(String primaryKey) {
-        this.primaryKey = primaryKey;
     }
 }

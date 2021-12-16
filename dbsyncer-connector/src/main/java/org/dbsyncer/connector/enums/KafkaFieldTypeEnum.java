@@ -3,7 +3,8 @@ package org.dbsyncer.connector.enums;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 
-import java.sql.Types;
+import java.sql.Timestamp;
+import java.util.Date;
 
 /**
  * Kafka字段类型
@@ -11,47 +12,48 @@ import java.sql.Types;
  * @author AE86
  * @version 1.0.0
  * @date 2021/12/08 21:13
+ * @date 2021/12/17 0:02
  */
 public enum KafkaFieldTypeEnum {
 
     // 字符类型
-    STRING("string", Types.VARCHAR),
+    STRING("String", String.class),
 
     // 数字类型
-    INTEGER("integer", Types.INTEGER),
-    LONG("long", Types.BIGINT),
-    SHORT("short", Types.TINYINT),
-    DOUBLE("double", Types.DOUBLE),
-    FLOAT("float", Types.FLOAT),
-    BOOLEAN("boolean", Types.BOOLEAN),
-    BYTE("byte", Types.BINARY),
+    INTEGER("Integer", Integer.class),
+    LONG("Long", Long.class),
+    SHORT("Short", Short.class),
+    DOUBLE("Double", Double.class),
+    FLOAT("Float", Float.class),
+    BOOLEAN("Boolean", Boolean.class),
+    BYTE("Byte", Byte.class),
 
     // 日期类型
-    DATE("date", Types.DATE),
-    TIMESTAMP("timestamp", Types.TIMESTAMP);
+    DATE("DATE", Date.class),
+    TIMESTAMP("TIMESTAMP", Timestamp.class);
 
     private String code;
-    private int type;
+    private Class type;
 
-    KafkaFieldTypeEnum(String code, int type) {
+    KafkaFieldTypeEnum(String code, Class type) {
         this.code = code;
         this.type = type;
     }
 
-    public static int getType(String code) throws ConnectorException {
+    public static Class getType(String code) throws ConnectorException {
         for (KafkaFieldTypeEnum e : KafkaFieldTypeEnum.values()) {
             if (StringUtil.equals(e.getCode(), code)) {
                 return e.getType();
             }
         }
-        return Types.VARCHAR;
+        throw new ConnectorException(String.format("Unsupported code: %s", code));
     }
 
     public String getCode() {
         return code;
     }
 
-    public int getType() {
+    public Class getType() {
         return type;
     }
 

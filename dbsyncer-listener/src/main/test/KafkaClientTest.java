@@ -2,7 +2,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.dbsyncer.connector.config.KafkaConfig;
-import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.kafka.KafkaClient;
 import org.dbsyncer.connector.util.KafkaUtil;
 import org.junit.After;
@@ -12,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -27,22 +25,13 @@ public class KafkaClientTest {
 
     @Before
     public void init() {
-        String cKeyDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
-        String cValueDeserializer = cKeyDeserializer;
-        String pKeySerializer = "org.apache.kafka.common.serialization.StringSerializer";
-        String pValueSerializer = pKeySerializer;
-
         KafkaConfig config = new KafkaConfig();
-        config.setBootstrapServers("192.168.1.100:9092");
+        config.setBootstrapServers("127.0.0.1:9092");
 
         config.setGroupId("test");
-        config.setConsumerKeyDeserializer(cKeyDeserializer);
-        config.setConsumerValueDeserializer(cValueDeserializer);
         config.setSessionTimeoutMs(10000);
         config.setMaxPartitionFetchBytes(1048576);
 
-        config.setProducerKeySerializer(pKeySerializer);
-        config.setProducerValueSerializer(pValueSerializer);
         config.setBufferMemory(33554432);
         config.setBatchSize(32768);
         config.setLingerMs(10);
@@ -61,9 +50,6 @@ public class KafkaClientTest {
     @Test
     public void testProducerAndConsumer() throws Exception {
         logger.info("test begin");
-        List<Table> topics = client.getTopics();
-        topics.forEach(t -> logger.info(t.getName()));
-
         logger.info("ping {}", client.ping());
 
         String topic = "mytopic";

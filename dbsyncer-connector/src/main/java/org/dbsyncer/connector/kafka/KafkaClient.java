@@ -5,19 +5,12 @@ import org.apache.kafka.clients.NetworkClient;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.Node;
-import org.apache.kafka.common.PartitionInfo;
-import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.config.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Kafka客户端，集成消费者、生产者API
@@ -25,32 +18,17 @@ import java.util.Map;
 public class KafkaClient {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private static final String DEFAULT_TOPIC = "__consumer_offsets";
 
     private KafkaConsumer consumer;
     private KafkaProducer producer;
     private NetworkClient networkClient;
+    // 序列化/反序列化对象
+    private Object serializationObject;
 
-    public KafkaClient(KafkaConsumer consumer, KafkaProducer producer) {
+    public KafkaClient(KafkaConsumer consumer, KafkaProducer producer, Object serializationObject) {
         this.consumer = consumer;
         this.producer = producer;
-    }
-
-    public List<Table> getTopics() {
-        try {
-            Map<String, List<PartitionInfo>> topicMap = consumer.listTopics();
-            List<Table> topics = new ArrayList<>();
-            if (!CollectionUtils.isEmpty(topicMap)) {
-                topicMap.forEach((t, list) -> {
-                    if (!StringUtil.equals(DEFAULT_TOPIC, t)) {
-                        topics.add(new Table(t));
-                    }
-                });
-            }
-            return topics;
-        } catch (Exception e) {
-            throw new ConnectorException("获取Topic异常" + e.getMessage());
-        }
+        this.serializationObject = serializationObject;
     }
 
     public boolean ping() {
