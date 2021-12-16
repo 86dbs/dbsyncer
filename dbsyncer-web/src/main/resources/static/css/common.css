@@ -16,3 +16,4 @@
 .fa_blueviolet {color: blueviolet}
 .dbsyncer_btn-info { background-color: #E7EDF8;}
 .dbsyncer_btn-info.active, .dbsyncer_btn-info.focus, .dbsyncer_btn-info:active, .dbsyncer_btn-info:focus, .dbsyncer_btn-info:hover, .open>.dropdown-toggle.dbsyncer_btn-info {background-color: #D4DDED;}
+.dbsyncer_textarea_resize_none {resize: none; }

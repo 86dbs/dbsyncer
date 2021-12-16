@@ -6,7 +6,7 @@
     <div class="form-group">
         <label class="col-sm-2 control-label">地址<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：192.168.1.100:9092,192.168.1.200:9092"></i> <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-10">
-            <textarea name="bootstrapServers" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="2" th:text="${connector?.config?.bootstrapServers}?:'127.0.0.1:9092'"></textarea>
+            <textarea name="bootstrapServers" class="form-control dbsyncer_textarea_resize_none" maxlength="1024" dbsyncer-valid="require" rows="2" th:text="${connector?.config?.bootstrapServers}?:'127.0.0.1:9092'"></textarea>
         </div>
     </div>
 
@@ -25,12 +25,12 @@
     </div>
 
     <div class="form-group">
-        <label class="col-sm-2 control-label">字段 <strong class="driverVerifcateRequired">*</strong></label>
+        <label class="col-sm-2 control-label">字段 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="支持8种字段类型。name字段名, typeName类型名称, type类型编码, pk是否为主键"></i><strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-9">
-            <textarea name="fields" class="form-control" maxlength="1024" dbsyncer-valid="require" rows="15" th:text="${connector?.config?.fields}?:'[{\'name\':\'ID\',\'typeName\':\'VARCHAR\',\'type\':12,\'pk\':true}]'"></textarea>
+            <textarea id="fields" name="fields" class="form-control dbsyncer_textarea_resize_none" maxlength="1024" dbsyncer-valid="require" rows="20" th:text="${connector?.config?.fields}"></textarea>
         </div>
         <div class="col-sm-1">
-            <button type="button" class="btn btn-default beautifulBtn">
+            <button type="button" class="btn btn-default" onclick="format()">
                 <span class="fa fa-magic"></span>美化
             </button>
         </div>
@@ -153,7 +153,29 @@ linger.ms配合batch.size一起来设置，可避免一个Batch迟迟凑不满�
     </div>
 
     <script type="text/javascript">
+        function format(){
+            const $text = $("#fields");
+            if("" == $text.text()){
+                const data = [
+                    {"name":"ID","typeName":"VARCHAR","type":12,"pk":true},
+                    {"name":"AGE","typeName":"INTEGER","type":4},
+                    {"name":"CREATE_DATE","typeName":"DATE","type":91},
+                    {"name":"UPDATE_TIME","typeName":"TIMESTAMP","type":93},
+                    {"name":"SEX","typeName":"BOOLEAN","type":16},
+                    {"name":"TYPE","typeName":"SHORT","type":-6},
+                    {"name":"MONEY","typeName":"FLOAT","type":6},
+                    {"name":"SCORE","typeName":"DOUBLE","type":8},
+                    {"name":"FILE","typeName":"BINARY","type":-2}
+                ];
+                $text.val(JSON.stringify(data, null, 4));
+                return;
+            }
+            $text.val(JSON.stringify(JSON.parse($text.text()), null, 4));
+        }
+
         $(function () {
+            format();
+
             // 初始化select插件
             initSelectIndex($(".select-control"), 1);
 
