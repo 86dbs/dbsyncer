@@ -13,21 +13,15 @@
     <div class="form-group">
         <label class="col-sm-2 control-label">Topic <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-4">
-            <input class="form-control" name="topic" type="text" maxlength="64" th:value="${connector?.config?.topic}"/>
+            <input class="form-control" name="topic" type="text" maxlength="64" dbsyncer-valid="require" th:value="${connector?.config?.topic}"/>
         </div>
-        <label class="col-sm-2 control-label">value序列化为 </label>
-        <div class="col-sm-4">
-            <select class="form-control select-control" name="serializer">
-                <option value="json" th:selected="${connector?.config?.serializer eq 'json'}">JSON</option>
-                <option value="javabean" th:selected="${connector?.config?.serializer eq 'javabean'}">JavaBean</option>
-            </select>
-        </div>
+        <div class="col-sm-6"></div>
     </div>
 
     <div class="form-group">
-        <label class="col-sm-2 control-label">字段 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="支持8种字段类型。name字段名, typeName类型名称, type类型编码, pk是否为主键"></i><strong class="driverVerifcateRequired">*</strong></label>
+        <label class="col-sm-2 control-label">字段 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="支持11种字段类型。name字段名, typeName类型名称, type类型编码, pk是否为主键"></i><strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-9">
-            <textarea id="fields" name="fields" class="form-control dbsyncer_textarea_resize_none" maxlength="1024" dbsyncer-valid="require" rows="20" th:text="${connector?.config?.fields}"></textarea>
+            <textarea id="fields" name="fields" class="form-control dbsyncer_textarea_resize_none" maxlength="4096" dbsyncer-valid="require" rows="20" th:text="${connector?.config?.fields}"></textarea>
         </div>
         <div class="col-sm-1">
             <button type="button" class="btn btn-default" onclick="format()">
@@ -46,9 +40,15 @@
                 </div>
                 <div class="panel-body">
                     <div class="form-group">
-                        <label class="col-sm-3 control-label">group.id </label>
+                        <label class="col-sm-3 control-label">group.id <strong class="driverVerifcateRequired">*</strong></label>
                         <div class="col-sm-9">
-                            <input class="form-control" name="groupId" type="text" maxlength="64" th:value="${connector?.config?.groupId}"/>
+                            <input class="form-control" name="groupId" type="text" maxlength="64" dbsyncer-valid="require" th:value="${connector?.config?.groupId}"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">反序列化 <strong class="driverVerifcateRequired">*</strong></label>
+                        <div class="col-sm-9">
+                            <input class="form-control" name="deserializer" type="text" maxlength="2048" dbsyncer-valid="require" th:value="${connector?.config?.deserializer}?:'org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer'"/>
                         </div>
                     </div>
                     <div class="form-group">
@@ -84,6 +84,12 @@
                     <h3 class="panel-title">生产者配置</h3>
                 </div>
                 <div class="panel-body">
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">序列化 <strong class="driverVerifcateRequired">*</strong></label>
+                        <div class="col-sm-9">
+                            <input class="form-control" name="serializer" type="text" maxlength="2048" dbsyncer-valid="require" th:value="${connector?.config?.serializer}?:'org.dbsyncer.connector.kafka.serialization.MapToJsonSerializer'"/>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label class="col-sm-3 control-label">buffer.memory <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="Kafka的客户端发送数据到服务器，不是来一条就发一条，而是经过缓冲，通过KafkaProducer发送出去的消息都是先进入到客户端本地的内存缓冲里，然后把很多消息收集成一个一个的Batch，再发送到Broker。buffer.memory用来约束KafkaProducer能够使用的内存缓冲的大小，默认值32MB。
 如果buffer.memory设置的太小，可能导致的问题是：消息快速的写入内存缓冲里，但Sender线程来不及把Request发送到Kafka服务器，会造成内存缓冲很快就被写满。而一旦被写满，就会阻塞用户线程，不让继续往Kafka写消息了。
@@ -157,15 +163,17 @@ linger.ms配合batch.size一起来设置，可避免一个Batch迟迟凑不满�
             const $text = $("#fields");
             if("" == $text.text()){
                 const data = [
-                    {"name":"ID","typeName":"VARCHAR","type":12,"pk":true},
-                    {"name":"AGE","typeName":"INTEGER","type":4},
-                    {"name":"CREATE_DATE","typeName":"DATE","type":91},
-                    {"name":"UPDATE_TIME","typeName":"TIMESTAMP","type":93},
-                    {"name":"SEX","typeName":"BOOLEAN","type":16},
-                    {"name":"TYPE","typeName":"SHORT","type":-6},
-                    {"name":"MONEY","typeName":"FLOAT","type":6},
-                    {"name":"SCORE","typeName":"DOUBLE","type":8},
-                    {"name":"FILE","typeName":"BINARY","type":-2}
+                    {"name":"id","typeName":"String","type":12,"pk":true},
+                    {"name":"age","typeName":"Integer","type":4},
+                    {"name":"count","typeName":"Long","type":-5},
+                    {"name":"type","typeName":"Short","type":5},
+                    {"name":"money","typeName":"Float","type":6},
+                    {"name":"score","typeName":"Double","type":8},
+                    {"name":"status","typeName":"Boolean","type":-7},
+                    // {"name":"photo","typeName":"byte[]","type":-2},
+                    {"name":"create_date","typeName":"Date","type":91},
+                    {"name":"time","typeName":"Time","type":92},
+                    {"name":"update_time","typeName":"Timestamp","type":93}
                 ];
                 $text.val(JSON.stringify(data, null, 4));
                 return;

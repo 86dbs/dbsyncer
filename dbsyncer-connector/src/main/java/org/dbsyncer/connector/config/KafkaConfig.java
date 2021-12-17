@@ -9,16 +9,17 @@ package org.dbsyncer.connector.config;
 public class KafkaConfig extends ConnectorConfig {
 
     private String bootstrapServers;
-    private String serializer;
     private String topic;
     private String fields;
 
     // 消费者
+    private String deserializer;
     private String groupId;
     private int sessionTimeoutMs;
     private int maxPartitionFetchBytes;
 
     // 生产者
+    private String serializer;
     private int bufferMemory;
     private int batchSize;
     private int lingerMs;
@@ -32,14 +33,6 @@ public class KafkaConfig extends ConnectorConfig {
 
     public void setBootstrapServers(String bootstrapServers) {
         this.bootstrapServers = bootstrapServers;
-    }
-
-    public String getSerializer() {
-        return serializer;
-    }
-
-    public void setSerializer(String serializer) {
-        this.serializer = serializer;
     }
 
     public String getTopic() {
@@ -56,6 +49,14 @@ public class KafkaConfig extends ConnectorConfig {
 
     public void setFields(String fields) {
         this.fields = fields;
+    }
+
+    public String getDeserializer() {
+        return deserializer;
+    }
+
+    public void setDeserializer(String deserializer) {
+        this.deserializer = deserializer;
     }
 
     public String getGroupId() {
@@ -80,6 +81,14 @@ public class KafkaConfig extends ConnectorConfig {
 
     public void setMaxPartitionFetchBytes(int maxPartitionFetchBytes) {
         this.maxPartitionFetchBytes = maxPartitionFetchBytes;
+    }
+
+    public String getSerializer() {
+        return serializer;
+    }
+
+    public void setSerializer(String serializer) {
+        this.serializer = serializer;
     }
 
     public int getBufferMemory() {

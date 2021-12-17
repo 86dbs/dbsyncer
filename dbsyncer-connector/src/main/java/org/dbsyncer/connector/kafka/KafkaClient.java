@@ -2,8 +2,10 @@ package org.dbsyncer.connector.kafka;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.NetworkClient;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.Node;
 import org.dbsyncer.connector.ConnectorException;
 import org.slf4j.Logger;
@@ -11,6 +13,8 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Kafka客户端，集成消费者、生产者API
@@ -22,13 +26,10 @@ public class KafkaClient {
     private KafkaConsumer consumer;
     private KafkaProducer producer;
     private NetworkClient networkClient;
-    // 序列化/反序列化对象
-    private Object serializationObject;
 
-    public KafkaClient(KafkaConsumer consumer, KafkaProducer producer, Object serializationObject) {
+    public KafkaClient(KafkaConsumer consumer, KafkaProducer producer) {
         this.consumer = consumer;
         this.producer = producer;
-        this.serializationObject = serializationObject;
     }
 
     public boolean ping() {
@@ -72,11 +73,16 @@ public class KafkaClient {
         }
     }
 
-    public KafkaConsumer getConsumer() {
-        return consumer;
+    public void subscribe(List<String> topics) {
+        consumer.subscribe(topics);
     }
 
-    public KafkaProducer getProducer() {
-        return producer;
+    public ConsumerRecords<String, Object> poll(long timeout) {
+        return consumer.poll(timeout);
     }
+
+    public void send(String topic, String key, Map<String, Object> map) {
+        producer.send(new ProducerRecord<>(topic, key, map));
+    }
+
 }

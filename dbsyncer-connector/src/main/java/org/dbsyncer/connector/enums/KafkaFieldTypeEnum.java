@@ -3,7 +3,9 @@ package org.dbsyncer.connector.enums;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 
+import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Date;
 
 /**
@@ -17,33 +19,38 @@ import java.util.Date;
 public enum KafkaFieldTypeEnum {
 
     // 字符类型
-    STRING("String", String.class),
+    STRING("String", String.class, Types.VARCHAR),
 
     // 数字类型
-    INTEGER("Integer", Integer.class),
-    LONG("Long", Long.class),
-    SHORT("Short", Short.class),
-    DOUBLE("Double", Double.class),
-    FLOAT("Float", Float.class),
-    BOOLEAN("Boolean", Boolean.class),
-    BYTE("Byte", Byte.class),
+    INTEGER("Integer", Integer.class, Types.INTEGER),
+    LONG("Long", Long.class, Types.BIGINT),
+    SHORT("Short", Short.class, Types.SMALLINT),
+    FLOAT("Float", Float.class, Types.FLOAT),
+    DOUBLE("Double", Double.class, Types.DOUBLE),
+    BOOLEAN("Boolean", Boolean.class, Types.BIT),
+
+    // 字节类型
+//    BINARY("byte[]", Byte.class, Types.BINARY),
 
     // 日期类型
-    DATE("DATE", Date.class),
-    TIMESTAMP("TIMESTAMP", Timestamp.class);
+    DATE("Date", Date.class, Types.DATE),
+    TIME("Time", Time.class, Types.TIME),
+    TIMESTAMP("Timestamp", Timestamp.class, Types.TIMESTAMP);
 
     private String code;
-    private Class type;
+    private Class clazz;
+    private int type;
 
-    KafkaFieldTypeEnum(String code, Class type) {
+    KafkaFieldTypeEnum(String code, Class clazz, int type) {
         this.code = code;
+        this.clazz = clazz;
         this.type = type;
     }
 
     public static Class getType(String code) throws ConnectorException {
         for (KafkaFieldTypeEnum e : KafkaFieldTypeEnum.values()) {
             if (StringUtil.equals(e.getCode(), code)) {
-                return e.getType();
+                return e.getClazz();
             }
         }
         throw new ConnectorException(String.format("Unsupported code: %s", code));
@@ -53,8 +60,11 @@ public enum KafkaFieldTypeEnum {
         return code;
     }
 
-    public Class getType() {
-        return type;
+    public Class getClazz() {
+        return clazz;
     }
 
+    public int getType() {
+        return type;
+    }
 }
