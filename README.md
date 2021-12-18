@@ -55,7 +55,7 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
             </tr>
             <tr>
                 <td>最近计划</td>
-                <td colspan="3">kafka(设计中)、Redis</td>
+                <td colspan="3">Kafka(开发中)、PostgreSQL(设计中)、Redis</td>
             </tr>
         </tbody>
     </table>
