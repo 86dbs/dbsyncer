@@ -27,7 +27,7 @@ public class OracleExtractor extends AbstractExtractor {
             String url = config.getUrl();
             client = new DBChangeNotification(username, password, url);
             client.setFilterTable(filterTable);
-            client.addRowEventListener((e) -> asynSendRowChangedEvent(e));
+            client.addRowEventListener((e) -> asyncSendRowChangedEvent(e));
             client.start();
         } catch (Exception e) {
             logger.error("启动失败:{}", e.getMessage());

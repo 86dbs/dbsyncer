@@ -42,6 +42,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ * 将数据存储在mysql
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2019/9/10 23:22
@@ -206,11 +208,13 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         Executor executor = tables.get(type.getType());
         Assert.notNull(executor, "未知的存储类型");
 
+        if (tables.containsKey(table)) {
+            return tables.get(table);
+        }
         synchronized (tables) {
             // 检查本地缓存
-            Executor e = tables.get(table);
             if (tables.containsKey(table)) {
-                return e;
+                return tables.get(table);
             }
             // 不存在
             Executor newExecutor = new Executor(executor.getGroup(), executor.getFieldPairs(), executor.getFields(), executor.isDynamicTableName(), executor.isSystemType(), executor.isOrderByUpdateTime());

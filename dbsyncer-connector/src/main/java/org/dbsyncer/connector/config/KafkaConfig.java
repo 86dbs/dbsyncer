@@ -8,47 +8,134 @@ package org.dbsyncer.connector.config;
  */
 public class KafkaConfig extends ConnectorConfig {
 
-    /**
-     * 消费者:
-     * bootstrap.servers=192.168.100.1:9092,192.168.100.2:9092
-     * # 消费者群组ID，发布-订阅模式，即如果一个生产者，多个消费者都要消费，那么需要定义自己的群组，同一群组内的消费者只有一个能消费到消息
-     * group.id=my_group
-     * # 如果为true，消费者的偏移量将在后台定期提交
-     * enable.auto.commit=false
-     * # 如何设置为自动提交（enable.auto.commit=true），这里设置自动提交周期
-     * auto.commit.interval.ms=1000
-     * # 在使用Kafka的组管理时，用于检测消费者故障的超时
-     * session.timeout.ms=10000
-     * key.deserializer=org.apache.kafka.common.serialization.StringSerializer
-     * value.serializer=org.apache.kafka.common.serialization.StringSerializer
-     *
-     * 生产者:
-     * # brokers集群
-     * bootstrap.servers=192.168.100.1:9092,192.168.100.2:9092
-     * acks=1
-     * # 发送失败重试次数
-     * retries=3
-     * linger.ms=10
-     * # 33554432 即32MB的批处理缓冲区
-     * buffer.memory=33554432
-     * # 批处理条数：当多个记录被发送到同一个分区时，生产者会尝试将记录合并到更少的请求中。这有助于客户端和服务器的性能
-     * batch.size=32768
-     * max.block.ms=500
-     * key.deserializer=org.apache.kafka.common.serialization.StringSerializer
-     * value.serializer=org.apache.kafka.common.serialization.StringSerializer
-     */
+    private String bootstrapServers;
+    private String topic;
+    private String fields;
 
-    private String servers;
+    // 消费者
+    private String deserializer;
     private String groupId;
-    private boolean autoCommit;
-    private long autoCommitInterval;
-    private long sessionTimeout;
-    private long retries;
-    private long linger;
-    private long bufferMemory;
-    private long batchSize;
-    private long maxBlock;
-    private String keyDeserializer;
-    private String valueSerializer;
+    private int sessionTimeoutMs;
+    private int maxPartitionFetchBytes;
 
+    // 生产者
+    private String serializer;
+    private int bufferMemory;
+    private int batchSize;
+    private int lingerMs;
+    private String acks;
+    private int retries;
+    private int maxRequestSize;
+
+    public String getBootstrapServers() {
+        return bootstrapServers;
+    }
+
+    public void setBootstrapServers(String bootstrapServers) {
+        this.bootstrapServers = bootstrapServers;
+    }
+
+    public String getTopic() {
+        return topic;
+    }
+
+    public void setTopic(String topic) {
+        this.topic = topic;
+    }
+
+    public String getFields() {
+        return fields;
+    }
+
+    public void setFields(String fields) {
+        this.fields = fields;
+    }
+
+    public String getDeserializer() {
+        return deserializer;
+    }
+
+    public void setDeserializer(String deserializer) {
+        this.deserializer = deserializer;
+    }
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
+
+    public int getSessionTimeoutMs() {
+        return sessionTimeoutMs;
+    }
+
+    public void setSessionTimeoutMs(int sessionTimeoutMs) {
+        this.sessionTimeoutMs = sessionTimeoutMs;
+    }
+
+    public int getMaxPartitionFetchBytes() {
+        return maxPartitionFetchBytes;
+    }
+
+    public void setMaxPartitionFetchBytes(int maxPartitionFetchBytes) {
+        this.maxPartitionFetchBytes = maxPartitionFetchBytes;
+    }
+
+    public String getSerializer() {
+        return serializer;
+    }
+
+    public void setSerializer(String serializer) {
+        this.serializer = serializer;
+    }
+
+    public int getBufferMemory() {
+        return bufferMemory;
+    }
+
+    public void setBufferMemory(int bufferMemory) {
+        this.bufferMemory = bufferMemory;
+    }
+
+    public int getBatchSize() {
+        return batchSize;
+    }
+
+    public void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
+    }
+
+    public int getLingerMs() {
+        return lingerMs;
+    }
+
+    public void setLingerMs(int lingerMs) {
+        this.lingerMs = lingerMs;
+    }
+
+    public String getAcks() {
+        return acks;
+    }
+
+    public void setAcks(String acks) {
+        this.acks = acks;
+    }
+
+    public int getRetries() {
+        return retries;
+    }
+
+    public void setRetries(int retries) {
+        this.retries = retries;
+    }
+
+    public int getMaxRequestSize() {
+        return maxRequestSize;
+    }
+
+    public void setMaxRequestSize(int maxRequestSize) {
+        this.maxRequestSize = maxRequestSize;
+    }
 }

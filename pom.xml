@@ -6,7 +6,7 @@
 
     <groupId>org.ghi</groupId>
     <artifactId>dbsyncer</artifactId>
-	<version>1.1.4-Beta</version>
+	<version>1.1.5-Beta</version>
     <packaging>pom</packaging>
     <name>dbsyncer</name>
     <url>https://gitee.com/ghi/dbsyncer</url>
@@ -45,6 +45,7 @@
         <mysql.version>5.1.40</mysql.version>
         <mysql-binlog.version>0.21.0</mysql-binlog.version>
         <mssql-jdbc.version>8.2.0.jre8</mssql-jdbc.version>
+        <kafka.version>0.9.0.0</kafka.version>
         <json.version>20090211</json.version>
         <fastjson.version>1.2.75</fastjson.version>
         <junit.version>4.12</junit.version>
@@ -153,6 +154,12 @@
                 <groupId>com.github.shyiko</groupId>
                 <artifactId>mysql-binlog-connector-java</artifactId>
                 <version>${mysql-binlog.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>${kafka.version}</version>
             </dependency>
 
             <dependency>

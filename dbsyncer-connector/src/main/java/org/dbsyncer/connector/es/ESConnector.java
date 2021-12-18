@@ -193,7 +193,6 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             }
         } catch (Exception e) {
             // 记录错误数据
-            result.getFailData().addAll(data);
             result.getFail().set(data.size());
             result.getError().append(e.getMessage()).append(System.lineSeparator());
             logger.error(e.getMessage());

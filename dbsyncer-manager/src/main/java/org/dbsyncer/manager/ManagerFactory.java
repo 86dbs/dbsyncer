@@ -1,6 +1,6 @@
 package org.dbsyncer.manager;
 
-import org.dbsyncer.common.event.ClosedEvent;
+import org.dbsyncer.manager.event.ClosedEvent;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;

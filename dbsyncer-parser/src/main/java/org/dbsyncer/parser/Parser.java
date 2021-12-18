@@ -1,7 +1,7 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.common.event.RowChangedEvent;
-import org.dbsyncer.common.model.Task;
+import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;

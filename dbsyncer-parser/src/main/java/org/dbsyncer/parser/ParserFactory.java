@@ -1,10 +1,10 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.cache.CacheService;
-import org.dbsyncer.common.event.FullRefreshEvent;
+import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.model.Task;
+import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -18,9 +18,10 @@ import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.ParserEnum;
-import org.dbsyncer.parser.flush.FlushService;
+import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
@@ -63,7 +64,10 @@ public class ParserFactory implements Parser {
     private CacheService cacheService;
 
     @Autowired
-    private FlushService flushService;
+    private LogService logService;
+
+    @Autowired
+    private FlushStrategy flushStrategy;
 
     @Autowired
     @Qualifier("taskExecutor")
@@ -89,16 +93,16 @@ public class ParserFactory implements Parser {
             alive = connectorFactory.isAlive(config);
         } catch (Exception e) {
             LogType.ConnectorLog logType = LogType.ConnectorLog.FAILED;
-            flushService.asyncWrite(logType.getType(), String.format("%s%s", logType.getName(), e.getMessage()));
+            logService.log(logType, "%s%s", logType.getName(), e.getMessage());
         }
         // 断线重连
-        if(!alive){
+        if (!alive) {
             try {
                 alive = connectorFactory.refresh(config);
             } catch (Exception e) {
-                // nothing to do
+                logger.error(e.getMessage());
             }
-            if(alive){
+            if (alive) {
                 logger.info(LogType.ConnectorLog.RECONNECT_SUCCESS.getMessage());
             }
         }
@@ -115,9 +119,9 @@ public class ParserFactory implements Parser {
         Connector connector = getConnector(connectorId);
         ConnectorMapper connectorMapper = connectorFactory.connect(connector.getConfig());
         MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorMapper, tableName);
-        if(!CollectionUtils.isEmpty(connector.getTable())){
-            for(Table t :connector.getTable()){
-                if(t.getName().equals(tableName)){
+        if (!CollectionUtils.isEmpty(connector.getTable())) {
+            for (Table t : connector.getTable()) {
+                if (t.getName().equals(tableName)) {
                     metaInfo.setTableType(t.getType());
                     break;
                 }
@@ -174,12 +178,12 @@ public class ParserFactory implements Parser {
             List<Table> tableList = new ArrayList<>();
             boolean exist = false;
             for (int i = 0; i < table.length(); i++) {
-                if(table.get(i) instanceof String){
+                if (table.get(i) instanceof String) {
                     tableList.add(new Table(table.getString(i)));
                     exist = true;
                 }
             }
-            if(!exist){
+            if (!exist) {
                 tableList = JsonUtil.jsonToArray(table.toString(), Table.class);
             }
             connector.setTable(tableList);
@@ -322,7 +326,7 @@ public class ParserFactory implements Parser {
         Result writer = connectorFactory.writer(tConnectorMapper, new WriterSingleConfig(picker.getTargetFields(), tableGroup.getCommand(), event, target, rowChangedEvent.getTableName(), rowChangedEvent.isForceUpdate()));
 
         // 5、更新结果
-        flush(metaId, writer, event, picker.getTargetMapList());
+        flushStrategy.flushIncrementData(metaId, writer, event, picker.getTargetMapList());
     }
 
     /**
@@ -333,30 +337,11 @@ public class ParserFactory implements Parser {
      * @param data
      */
     private void flush(Task task, Result writer, List<Map> data) {
-        flush(task.getId(), writer, ConnectorConstant.OPERTION_INSERT, data);
+        flushStrategy.flushFullData(task.getId(), writer, ConnectorConstant.OPERTION_INSERT, data);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(Instant.now().toEpochMilli());
         applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
-    }
-
-    private void flush(String metaId, Result writer, String event, List<Map> data) {
-        // 引用传递
-        long total = data.size();
-        long fail = writer.getFail().get();
-        Meta meta = getMeta(metaId);
-        meta.getFail().getAndAdd(fail);
-        meta.getSuccess().getAndAdd(total - fail);
-
-        // 记录错误数据
-        Queue<Map> failData = writer.getFailData();
-        boolean success = CollectionUtils.isEmpty(failData);
-        if (!success) {
-            data.clear();
-            data.addAll(failData);
-        }
-        String error = writer.getError().toString();
-        flushService.asyncWrite(metaId, event, success, data, error);
     }
 
     /**

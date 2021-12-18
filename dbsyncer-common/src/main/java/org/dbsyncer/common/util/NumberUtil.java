@@ -12,6 +12,10 @@ public abstract class NumberUtil {
         return NumberUtils.toInt(str, defaultValue);
     }
 
+    public static long toLong(String str) {
+        return NumberUtils.toLong(str);
+    }
+
     public static long toLong(String str, long defaultValue) {
         return NumberUtils.toLong(str, defaultValue);
     }
