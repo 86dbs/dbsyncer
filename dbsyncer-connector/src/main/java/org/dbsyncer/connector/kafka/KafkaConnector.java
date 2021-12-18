@@ -1,7 +1,9 @@
 package org.dbsyncer.connector.kafka;
 
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
@@ -15,7 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class KafkaConnector implements Connector<KafkaConnectorMapper, KafkaConfig> {
+public class KafkaConnector extends AbstractConnector implements Connector<KafkaConnectorMapper, KafkaConfig> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -64,17 +66,49 @@ public class KafkaConnector implements Connector<KafkaConnectorMapper, KafkaConf
 
     @Override
     public Result reader(KafkaConnectorMapper connectorMapper, ReaderConfig config) {
-        return null;
+        throw new ConnectorException("Full synchronization is not supported");
     }
 
     @Override
     public Result writer(KafkaConnectorMapper connectorMapper, WriterBatchConfig config) {
-        return null;
+        List<Map> data = config.getData();
+        if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(config.getFields())) {
+            logger.error("writer data can not be empty.");
+            throw new ConnectorException("writer data can not be empty.");
+        }
+
+        Result result = new Result();
+        final KafkaConfig cfg = connectorMapper.getConfig();
+        Field pkField = getPrimaryKeyField(config.getFields());
+        try {
+            String topic = cfg.getTopic();
+            String pk = pkField.getName();
+            data.forEach(row -> connectorMapper.getConnection().send(topic, String.valueOf(row.get(pk)), row));
+        } catch (Exception e) {
+            // 记录错误数据
+            result.getFail().set(data.size());
+            result.getError().append(e.getMessage()).append(System.lineSeparator());
+            logger.error(e.getMessage());
+        }
+        return result;
     }
 
     @Override
     public Result writer(KafkaConnectorMapper connectorMapper, WriterSingleConfig config) {
-        return null;
+        Map<String, Object> data = config.getData();
+        Result result = new Result();
+        final KafkaConfig cfg = connectorMapper.getConfig();
+        Field pkField = getPrimaryKeyField(config.getFields());
+        try {
+            connectorMapper.getConnection().send(cfg.getTopic(), String.valueOf(data.get(pkField.getName())), data);
+        } catch (Exception e) {
+            // 记录错误数据
+            result.getFailData().add(data);
+            result.getFail().set(data.size());
+            result.getError().append(e.getMessage()).append(System.lineSeparator());
+            logger.error(e.getMessage());
+        }
+        return result;
     }
 
     @Override

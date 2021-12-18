@@ -65,17 +65,17 @@ public class KafkaClientTest {
         client.subscribe(Arrays.asList(config.getTopic()));
 
         // 模拟生产者
-        for (int i = 0; i < 5; i++) {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", i);
-            map.put("name", "张三" + i);
-            map.put("update_time", new Timestamp(System.currentTimeMillis()));
-            client.send(config.getTopic(), map.get("id").toString(), map);
-        }
+//        for (int i = 0; i < 5; i++) {
+//            Map<String, Object> map = new HashMap<>();
+//            map.put("id", i);
+//            map.put("name", "张三" + i);
+//            map.put("update_time", new Timestamp(System.currentTimeMillis()));
+//            client.send(config.getTopic(), map.get("id").toString(), map);
+//        }
 
         new Consumer().start();
         new Heartbeat().start();
-        TimeUnit.SECONDS.sleep(600);
+        TimeUnit.SECONDS.sleep(6000);
         logger.info("test end");
     }
 

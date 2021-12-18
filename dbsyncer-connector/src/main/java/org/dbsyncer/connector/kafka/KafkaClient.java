@@ -11,8 +11,10 @@ import org.dbsyncer.connector.ConnectorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.List;
 import java.util.Map;
 
@@ -33,15 +35,11 @@ public class KafkaClient {
     }
 
     public boolean ping() {
-        return ping(consumer);
-    }
-
-    private boolean ping(Object client) {
         if (null == networkClient) {
             synchronized (this) {
                 if (null == networkClient) {
                     try {
-                        networkClient = (NetworkClient) invoke(invoke(client, "client"), "client");
+                        networkClient = (NetworkClient) invoke(invoke(consumer, "client"), "client");
                     } catch (NoSuchFieldException e) {
                         logger.error(e.getMessage());
                     } catch (IllegalAccessException e) {
@@ -51,11 +49,24 @@ public class KafkaClient {
             }
         }
         final Node node = networkClient.leastLoadedNode(0);
-        InetSocketAddress address = new InetSocketAddress(node.host(), node.port());
-        if (address.isUnresolved()) {
-            throw new ConnectorException(String.format("DNS resolution failed for url in %s %s:%s", CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, node.host(), node.port()));
-        }
+        telnet(node.host(), node.port(), 5000);
         return true;
+    }
+
+    private boolean telnet(String host, int port, int timeout) {
+        Socket socket = new Socket();
+        try {
+            socket.connect(new InetSocketAddress(host, port), timeout);
+            return socket.isConnected();
+        } catch (IOException e) {
+            throw new ConnectorException(String.format("DNS resolution failed for url in %s %s:%s", CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, host, port));
+        } finally {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                // nothing to do
+            }
+        }
     }
 
     private Object invoke(Object obj, String declaredFieldName) throws NoSuchFieldException, IllegalAccessException {
