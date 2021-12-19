@@ -36,12 +36,12 @@ public abstract class AbstractFlushStrategy implements FlushStrategy {
     protected void flush(String metaId, Result writer, String event, List<Map> data) {
         refreshTotal(metaId, writer, data);
 
-        boolean fail = 0 < writer.getFail().get();
-        if (fail) {
+        boolean success = 0 == writer.getFail().get();
+        if (!success) {
             data.clear();
             data.addAll(writer.getFailData());
         }
-        flushService.asyncWrite(metaId, event, fail, data, writer.getError().toString());
+        flushService.asyncWrite(metaId, event, success, data, writer.getError().toString());
     }
 
     protected void refreshTotal(String metaId, Result writer, List<Map> data){
