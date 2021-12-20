@@ -23,13 +23,17 @@ public enum ConvertEnum {
      */
     SYSTEM_TIMESTAMP("SYSTEM_TIMESTAMP", "系统时间戳", 0, new TimestampHandler()),
     /**
-     * 系统日期date
+     * 系统日期Date
      */
     SYSTEM_DATE("SYSTEM_DATE", "系统日期", 0, new DateHandler()),
     /**
-     * Timestamp转date
+     * Byte[]转String
      */
-    TIMESTAMP_TO_DATE("TIMESTAMP_TO_DATE", "Timestamp转date", 0, new TimestampToDateHandler()),
+    BYTES_TO_STRING("BYTES_TO_STRING", "Byte[]转String", 0, new BytesToStringHandler()),
+    /**
+     * Timestamp转Date
+     */
+    TIMESTAMP_TO_DATE("TIMESTAMP_TO_DATE", "Timestamp转Date", 0, new TimestampToDateHandler()),
     /**
      * Timestamp转Long
      */
@@ -38,6 +42,10 @@ public enum ConvertEnum {
      * Long转Timestamp
      */
     LONG_TO_TIMESTAMP("LONG_TO_TIMESTAMP", "Long转Timestamp", 0, new LongToTimestampHandler()),
+    /**
+     * Date转中国标准时间
+     */
+    DATE_TO_CHINESE_STANDARD_TIME("DATE_TO_CHINESE_STANDARD_TIME", "Date转yyyy-MM-dd HH:mm:ss", 0, new DateToChineseStandardTimeHandler()),
     /**
      * 替换
      */
