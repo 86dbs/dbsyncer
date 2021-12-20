@@ -28,18 +28,18 @@
         <div class="col-sm-4">
             <textarea id="sql" name="url" class="form-control dbsyncer_textarea_resize_none" maxlength="1024" dbsyncer-valid="require" rows="2" th:text="${connector?.config?.url}?:'127.0.0.1:9200'"></textarea>
         </div>
+        <label class="col-sm-2 control-label">主键 <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-4">
+            <input class="form-control" name="primaryKey" type="text" maxlength="32" dbsyncer-valid="require" placeholder="id" th:value="${connector?.config?.primaryKey}?:'id'"/>
+        </div>
+    </div>
+    <div class="form-group">
         <label class="col-sm-2 control-label">协议 </label>
         <div class="col-sm-4">
             <select class="form-control select-control" name="schema">
                 <option value="http" th:selected="${connector?.config?.schema eq 'http'}">http</option>
                 <option value="tcp" th:selected="${connector?.config?.schema eq 'tcp'}">tcp</option>
             </select>
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">主键 </label>
-        <div class="col-sm-4">
-            <input class="form-control" name="primaryKey" type="text" maxlength="32" placeholder="id" th:value="${connector?.config?.primaryKey}?:'id'"/>
         </div>
         <div class="col-sm-6"></div>
     </div>
