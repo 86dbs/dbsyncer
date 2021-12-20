@@ -40,7 +40,6 @@ public class SqlServerExtractor extends AbstractExtractor {
     private static final String IS_TABLE_CDC_ENABLED = "SELECT COUNT(*) FROM sys.tables tb WHERE tb.is_tracked_by_cdc = 1 AND tb.name='#'";
     private static final String ENABLE_DB_CDC = "IF EXISTS(select 1 from sys.databases where name = '#' AND is_cdc_enabled=0) EXEC sys.sp_cdc_enable_db";
     private static final String ENABLE_TABLE_CDC = "IF EXISTS(select 1 from sys.tables where name = '#' AND is_tracked_by_cdc=0) EXEC sys.sp_cdc_enable_table @source_schema = N'dbo', @source_name = N'#', @role_name = NULL, @supports_net_changes = 0";
-    private static final String DISABLE_TABLE_CDC = "EXEC sys.sp_cdc_disable_table @source_schema = N'dbo', @source_name = N'#', @capture_instance = 'all'";
     private static final String GET_TABLES_CDC_ENABLED = "EXEC sys.sp_cdc_help_change_data_capture";
     private static final String GET_MAX_LSN = "SELECT sys.fn_cdc_get_max_lsn()";
     private static final String GET_MIN_LSN = "SELECT sys.fn_cdc_get_min_lsn('#')";
@@ -103,7 +102,6 @@ public class SqlServerExtractor extends AbstractExtractor {
                 worker.interrupt();
                 worker = null;
             }
-            disableTableCDC();
             preparedStatementCache.values().forEach(this::close);
             preparedStatementCache.clear();
             connected = false;
@@ -177,12 +175,6 @@ public class SqlServerExtractor extends AbstractExtractor {
             }
             return tables;
         });
-    }
-
-    private void disableTableCDC() {
-        if (!CollectionUtils.isEmpty(tables)) {
-            tables.forEach(table -> execute(DISABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table)));
-        }
     }
 
     private void enableTableCDC() {
