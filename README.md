@@ -19,37 +19,37 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
             </tr>
             <tr>
                 <td>Mysql</td>
-                <td>✔️</td>
-                <td>✔️</td>
+                <td>✔</td>
+                <td>✔</td>
                 <td>5.7.19以上</td>
             </tr>
             <tr>
                 <td>Oracle</td>
-                <td>✔️</td>
-                <td>✔️</td>
+                <td>✔</td>
+                <td>✔</td>
                 <td>10g以上</td>
             </tr>
             <tr>
                 <td>SqlServer</td>
-                <td>✔️</td>
-                <td>✔️</td>
+                <td>✔</td>
+                <td>✔</td>
                 <td>2008以上</td>
             </tr>
             <tr>
                 <td>ES</td>
-                <td>✔️</td>
-                <td>✔️</td>
+                <td>✔</td>
+                <td>✔</td>
                 <td>6.X以上</td>
             </tr>
             <tr>
                 <td>Kafka</td>
                 <td>开发中</td>
-                <td>✔️</td>
+                <td>✔</td>
                 <td>2.10-0.9.0.0以上</td>
             </tr>
             <tr>
                 <td>SQL</td>
-                <td>✔️</td>
+                <td>✔</td>
                 <td></td>
                 <td></td>
             </tr>
