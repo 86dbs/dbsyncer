@@ -31,7 +31,7 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     protected String getTableSql() {
-        return "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('DBO')";
+        return "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('dbo')";
     }
 
     @Override

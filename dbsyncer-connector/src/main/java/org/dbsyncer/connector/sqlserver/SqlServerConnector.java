@@ -33,7 +33,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
 
     @Override
     protected String getTableSql() {
-        return "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('DBO') AND IS_MS_SHIPPED = 0";
+        return "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('dbo') AND IS_MS_SHIPPED = 0";
     }
 
     @Override
@@ -68,7 +68,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
             queryCount.append("SELECT COUNT(*) FROM ").append(table.getName()).append(queryFilterSql);
         } else {
             // 从存储过程查询（定时更新总数，可能存在误差）
-            queryCount.append("SELECT ROWS FROM SYSINDEXES WHERE ID = OBJECT_ID('").append("DBO.").append(table.getName()).append(
+            queryCount.append("SELECT ROWS FROM SYSINDEXES WHERE ID = OBJECT_ID('").append("dbo.").append(table.getName()).append(
                     "') AND INDID IN (0, 1)");
         }
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
