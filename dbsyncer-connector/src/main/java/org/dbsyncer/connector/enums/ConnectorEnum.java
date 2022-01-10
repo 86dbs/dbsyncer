@@ -3,9 +3,7 @@ package org.dbsyncer.connector.enums;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.ESConfig;
-import org.dbsyncer.connector.config.KafkaConfig;
+import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.es.ESConnector;
 import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.mysql.MysqlConnector;
@@ -35,7 +33,7 @@ public enum ConnectorEnum {
     /**
      * SqlServer 连接器
      */
-    SQL_SERVER("SqlServer", new SqlServerConnector(), DatabaseConfig.class),
+    SQL_SERVER("SqlServer", new SqlServerConnector(), SqlServerDatabaseConfig.class),
     /**
      * Elasticsearch 连接器
      */
@@ -55,7 +53,7 @@ public enum ConnectorEnum {
     /**
      * DqlSqlServer 连接器
      */
-    DQL_SQL_SERVER("DqlSqlServer", new DQLSqlServerConnector(), DatabaseConfig.class);
+    DQL_SQL_SERVER("DqlSqlServer", new DQLSqlServerConnector(), SqlServerDatabaseConfig.class);
 
     // 连接器名称
     private String type;

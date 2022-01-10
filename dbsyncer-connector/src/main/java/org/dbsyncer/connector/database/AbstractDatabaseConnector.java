@@ -27,7 +27,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected abstract String getTableSql();
+    protected abstract String getTableSql(DatabaseConfig config);
 
     @Override
     public ConnectorMapper connect(DatabaseConfig config) {
@@ -57,7 +57,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
-        String sql = getTableSql();
+        String sql = getTableSql(connectorMapper.getConfig());
         List<String> tableNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
         if (!CollectionUtils.isEmpty(tableNames)) {
             return tableNames.stream().map(name -> new Table(name)).collect(Collectors.toList());

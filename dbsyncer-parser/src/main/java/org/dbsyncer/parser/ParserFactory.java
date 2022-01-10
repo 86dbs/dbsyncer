@@ -132,7 +132,8 @@ public class ParserFactory implements Parser {
 
     @Override
     public Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup) {
-        String sType = getConnectorConfig(mapping.getSourceConnectorId()).getConnectorType();
+        ConnectorConfig connectorConfig = getConnectorConfig(mapping.getSourceConnectorId());
+        String sType = connectorConfig.getConnectorType();
         String tType = getConnectorConfig(mapping.getTargetConnectorId()).getConnectorType();
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
@@ -149,7 +150,7 @@ public class ParserFactory implements Parser {
                 }
             });
         }
-        final CommandConfig sourceConfig = new CommandConfig(sType, sTable, sourceTable, tableGroup.getFilter());
+        final CommandConfig sourceConfig = new CommandConfig(sType, sTable, sourceTable, tableGroup.getFilter(), connectorConfig);
         final CommandConfig targetConfig = new CommandConfig(tType, tTable, targetTable);
         // 获取连接器同步参数
         Map<String, String> command = connectorFactory.getCommand(sourceConfig, targetConfig);

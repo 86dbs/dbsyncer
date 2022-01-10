@@ -26,13 +26,13 @@ public class ChangeDataCaptureTest {
     private static final String STATEMENTS_PLACEHOLDER = "#";
     private static final String GET_DATABASE_NAME = "SELECT db_name()";
     private static final String GET_DATABASE_VERSION = "SELECT @@VERSION AS 'SQL Server Version'";
-    private static final String GET_TABLE_LIST = "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('dbo') AND IS_MS_SHIPPED = 0";
-    private static final String IS_SERVER_AGENT_RUNNING = "EXEC master.dbo.xp_servicecontrol N'QUERYSTATE', N'SQLSERVERAGENT'";
+    private static final String GET_TABLE_LIST = "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('#') AND IS_MS_SHIPPED = 0";
+    private static final String IS_SERVER_AGENT_RUNNING = "EXEC master.#.xp_servicecontrol N'QUERYSTATE', N'SQLSERVERAGENT'";
     private static final String IS_DB_CDC_ENABLED = "SELECT is_cdc_enabled FROM sys.databases WHERE name = '#'";
     private static final String IS_TABLE_CDC_ENABLED = "SELECT COUNT(*) FROM sys.tables tb WHERE tb.is_tracked_by_cdc = 1 AND tb.name='#'";
     private static final String ENABLE_DB_CDC = "IF EXISTS(select 1 from sys.databases where name = '#' AND is_cdc_enabled=0) EXEC sys.sp_cdc_enable_db";
-    private static final String ENABLE_TABLE_CDC = "IF EXISTS(select 1 from sys.tables where name = '#' AND is_tracked_by_cdc=0) EXEC sys.sp_cdc_enable_table @source_schema = N'dbo', @source_name = N'#', @role_name = NULL, @supports_net_changes = 0";
-    private static final String DISABLE_TABLE_CDC = "EXEC sys.sp_cdc_disable_table @source_schema = N'dbo', @source_name = N'#', @capture_instance = 'all'";
+    private static final String ENABLE_TABLE_CDC = "IF EXISTS(select 1 from sys.tables where name = '#' AND is_tracked_by_cdc=0) EXEC sys.sp_cdc_enable_table @source_schema = N'%s', @source_name = N'#', @role_name = NULL, @supports_net_changes = 0";
+    private static final String DISABLE_TABLE_CDC = "EXEC sys.sp_cdc_disable_table @source_schema = N'%s', @source_name = N'#', @capture_instance = 'all'";
 
     private static final String AT_TIME_ZONE_UTC = " AT TIME ZONE 'UTC'";
     private static final String GET_ALL_CHANGES_FOR_TABLE = "SELECT sys.fn_cdc_map_lsn_to_time([__$start_lsn])#, * FROM cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC, [__$operation] ASC";
@@ -45,6 +45,7 @@ public class ChangeDataCaptureTest {
     private String getAllChangesForTable;
     private Connection connection = null;
     private Set<String> tables;
+    private String schema;
 
     /**
      * <p>cdc.captured_columns – 此表返回捕获列列表的结果。</p>
@@ -75,7 +76,7 @@ public class ChangeDataCaptureTest {
             supportsAtTimeZone = 2016 < Integer.valueOf(version.substring(21, 25));
         }
         logger.info("数据库版本:{}", version);
-        tables = cdc.queryAndMapList(GET_TABLE_LIST, rs -> {
+        tables = cdc.queryAndMapList(GET_TABLE_LIST.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs -> {
             Set<String> table = new LinkedHashSet<>();
             while (rs.next()) {
                 table.add(rs.getString(1));
@@ -84,7 +85,7 @@ public class ChangeDataCaptureTest {
         });
         logger.info("所有表:{}", tables);
         // 获取Agent服务状态 Stopped. Running.
-        boolean enabledServerAgent = cdc.queryAndMap(IS_SERVER_AGENT_RUNNING, rs -> "Running.".equals(rs.getString(1)));
+        boolean enabledServerAgent = cdc.queryAndMap(IS_SERVER_AGENT_RUNNING.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs -> "Running.".equals(rs.getString(1)));
         logger.info("是否启动Agent服务:{}", enabledServerAgent);
         Assert.assertTrue("The agent server is not running", enabledServerAgent);
         boolean enabledCDC = cdc.queryAndMap(IS_DB_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs -> rs.getBoolean(1));
@@ -101,7 +102,7 @@ public class ChangeDataCaptureTest {
                 boolean enabledTableCDC = cdc.queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs -> rs.getInt(1) > 0);
                 logger.info("是否启用CDC表[{}]:{}", table, enabledTableCDC);
                 if (!enabledTableCDC) {
-                    cdc.execute(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table));
+                    cdc.execute(String.format(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
                     Lsn minLsn = cdc.queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, table), rs -> new Lsn(rs.getBytes(1)));
                     logger.info("启用CDC表[{}]:{}", table, minLsn.isAvailable());
                 }
@@ -190,7 +191,7 @@ public class ChangeDataCaptureTest {
 
         // 注销CDC表
         for (String table : tables) {
-            cdc.execute(DISABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table));
+            cdc.execute(String.format(DISABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
         }
         cdc.close();
     }
@@ -199,6 +200,7 @@ public class ChangeDataCaptureTest {
         String username = "sa";
         String password = "123";
         String url = "jdbc:sqlserver://127.0.0.1:1434;DatabaseName=test";
+        schema = "dbo";
         connection = DriverManager.getConnection(url, username, password);
         if (connection != null) {
             DatabaseMetaData dm = (DatabaseMetaData) connection.getMetaData();

@@ -1,6 +1,11 @@
 package org.dbsyncer.biz.checker.impl.connector;
 
+import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.config.SqlServerDatabaseConfig;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
+
+import java.util.Map;
 
 /**
  * @author AE86
@@ -9,5 +14,13 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class SqlServerConfigChecker extends AbstractDataBaseConfigChecker {
+    @Override
+    public void modify(DatabaseConfig connectorConfig, Map<String, String> params) {
+        super.modify(connectorConfig, params);
+        String schema = params.get("schema");
+        Assert.hasText(schema, "Schema is empty.");
 
+        SqlServerDatabaseConfig config = (SqlServerDatabaseConfig) connectorConfig;
+        config.setSchema(schema);
+    }
 }

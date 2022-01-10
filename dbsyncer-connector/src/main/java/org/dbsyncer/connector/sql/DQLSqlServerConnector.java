@@ -30,8 +30,9 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String getTableSql() {
-        return "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('dbo')";
+    protected String getTableSql(DatabaseConfig config) {
+        SqlServerDatabaseConfig cfg = (SqlServerDatabaseConfig) config;
+        return String.format("SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('%s')", cfg.getSchema());
     }
 
     @Override
