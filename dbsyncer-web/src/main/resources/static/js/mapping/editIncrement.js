@@ -57,7 +57,7 @@ function createMetaSnapshotParams(){
         var value = $(this).find("td:eq(1)").text();
         snapshot[key] = value;
     });
-    $("#mappingMetaSnapshot").val(JSON.stringify(snapshot));
+    $("#metaSnapshot").val(JSON.stringify(snapshot));
 }
 
 $(function() {

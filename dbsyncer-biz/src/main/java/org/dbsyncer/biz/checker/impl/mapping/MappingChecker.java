@@ -106,7 +106,7 @@ public class MappingChecker extends AbstractChecker {
         this.modifySuperConfigModel(mapping, params);
 
         // 更新meta
-        String metaSnapshot = params.get("mappingMetaSnapshot");
+        String metaSnapshot = params.get("metaSnapshot");
         updateMeta(mapping, metaSnapshot);
 
         return mapping;
