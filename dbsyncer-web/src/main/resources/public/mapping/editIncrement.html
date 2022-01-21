@@ -26,7 +26,7 @@
                 <input id="metaSnapshot" name="metaSnapshot" class="form-control hidden" type="text"/>
             </div>
             <div class="col-md-11">
-                <table class="table table-hover">
+                <table th:if="${mapping?.meta?.map?.size() gt 0}" class="table table-hover">
                     <thead>
                     <tr>
                         <th>Key</th>

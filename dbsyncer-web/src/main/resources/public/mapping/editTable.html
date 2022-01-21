@@ -41,13 +41,13 @@
                 </button>
                 <button id="tableGroupAddBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-primary">
                     <span class="fa fa-plus"></span>添加
-                </button>
+                </button>&nbsp;
             </div>
         </div>
     </div>
 
     <div class="form-group">
-        <table class="table table-hover">
+        <table th:if="${tableGroups.size() gt 0}" class="table table-hover">
             <thead>
             <tr>
                 <th>数据源表</th>
