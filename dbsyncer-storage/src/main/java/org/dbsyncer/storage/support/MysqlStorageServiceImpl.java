@@ -12,7 +12,6 @@ import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
-import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -179,7 +178,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void destroy() {
-        DatabaseUtil.close(connectorMapper.getConnection());
+        connectorMapper.close();
     }
 
     @Override

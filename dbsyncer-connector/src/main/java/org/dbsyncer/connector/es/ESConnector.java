@@ -60,12 +60,12 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
     @Override
     public ConnectorMapper connect(ESConfig config) {
-        return new ESConnectorMapper(config, ESUtil.getConnection(config));
+        return new ESConnectorMapper(config);
     }
 
     @Override
     public void disconnect(ESConnectorMapper connectorMapper) {
-        ESUtil.close(connectorMapper.getConnection());
+        connectorMapper.close();
     }
 
     @Override

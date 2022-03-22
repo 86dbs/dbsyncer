@@ -7,7 +7,6 @@ import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
-import org.dbsyncer.connector.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +20,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
     @Override
     public ConnectorMapper connect(DatabaseConfig config) {
         try {
-            return new SqlServerConnectorMapper(config, DatabaseUtil.getConnection(config));
+            return new SqlServerConnectorMapper(config);
         } catch (Exception e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e.getMessage());

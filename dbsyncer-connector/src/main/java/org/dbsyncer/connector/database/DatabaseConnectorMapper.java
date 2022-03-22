@@ -3,22 +3,24 @@ package org.dbsyncer.connector.database;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.util.DatabaseUtil;
 import org.springframework.dao.EmptyResultDataAccessException;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 
 public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, Connection> {
     protected DatabaseConfig config;
-    protected Connection connection;
+    protected DatabaseTemplate template;
 
-    public DatabaseConnectorMapper(DatabaseConfig config, Connection connection) {
+    public DatabaseConnectorMapper(DatabaseConfig config) throws SQLException {
         this.config = config;
-        this.connection = connection;
+        template = new DatabaseTemplate(DatabaseUtil.getConnection(config));
     }
 
     public <T> T execute(HandleCallback callback) {
         try {
-            return (T) callback.apply(new DatabaseTemplate(connection));
+            return (T) callback.apply(template);
         } catch (EmptyResultDataAccessException e) {
             throw e;
         } catch (Exception e) {
@@ -33,6 +35,11 @@ public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, 
 
     @Override
     public Connection getConnection() {
-        return connection;
+        return template.getConnection();
+    }
+
+    @Override
+    public void close() {
+        DatabaseUtil.close(getConnection());
     }
 }

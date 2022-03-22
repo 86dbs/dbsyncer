@@ -32,7 +32,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     @Override
     public ConnectorMapper connect(DatabaseConfig config) {
         try {
-            return new DatabaseConnectorMapper(config, DatabaseUtil.getConnection(config));
+            return new DatabaseConnectorMapper(config);
         } catch (Exception e) {
             logger.error("Failed to connect:{}, message:{}", config.getUrl(), e.getMessage());
         }
@@ -41,7 +41,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public void disconnect(DatabaseConnectorMapper connectorMapper) {
-        DatabaseUtil.close(connectorMapper.getConnection());
+        connectorMapper.close();
     }
 
     @Override
