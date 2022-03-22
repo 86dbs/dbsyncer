@@ -48,6 +48,8 @@ public interface Manager extends Executor {
 
     List<Connector> getConnectorAll();
 
+    void checkAllConnectorStatus();
+
     // Mapping
     String addMapping(ConfigModel model);
 

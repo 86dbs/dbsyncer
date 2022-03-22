@@ -17,6 +17,10 @@ public interface ConnectorMapper<K, V> {
         return (ConnectorConfig) getConfig();
     }
 
+    default String getConnectorType() {
+        return getOriginalConfig().getConnectorType();
+    }
+
     K getConfig();
 
     V getConnection();

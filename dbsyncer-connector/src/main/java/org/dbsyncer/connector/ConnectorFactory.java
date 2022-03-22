@@ -88,7 +88,7 @@ public class ConnectorFactory implements DisposableBean {
      */
     public List<Table> getTable(ConnectorMapper config) {
         Assert.notNull(config, "ConnectorMapper can not be null.");
-        String type = config.getOriginalConfig().getConnectorType();
+        String type = config.getConnectorType();
         return getConnector(type).getTable(config);
     }
 
@@ -149,7 +149,7 @@ public class ConnectorFactory implements DisposableBean {
     }
 
     public Connector getConnector(ConnectorMapper connectorMapper) {
-        return getConnector(connectorMapper.getOriginalConfig().getConnectorType());
+        return getConnector(connectorMapper.getConnectorType());
     }
 
     /**
@@ -171,7 +171,7 @@ public class ConnectorFactory implements DisposableBean {
      */
     private void disconnect(ConnectorMapper connectorMapper) {
         Assert.notNull(connectorMapper, "ConnectorMapper can not be null.");
-        String type = connectorMapper.getOriginalConfig().getConnectorType();
+        String type = connectorMapper.getConnectorType();
         getConnector(type).disconnect(connectorMapper);
     }
 
