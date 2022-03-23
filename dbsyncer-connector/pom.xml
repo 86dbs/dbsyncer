@@ -24,12 +24,6 @@
             <artifactId>spring-jdbc</artifactId>
         </dependency>
 
-        <!-- druid数据源 -->
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid</artifactId>
-        </dependency>
-
         <!-- mysql-driver -->
         <dependency>
             <groupId>mysql</groupId>

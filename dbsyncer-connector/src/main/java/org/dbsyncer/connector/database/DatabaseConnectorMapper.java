@@ -4,27 +4,32 @@ import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.util.DatabaseUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 
 public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, Connection> {
-    protected DatabaseConfig config;
-    protected DatabaseTemplate template;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private DatabaseConfig config;
 
-    public DatabaseConnectorMapper(DatabaseConfig config) throws SQLException {
+    public DatabaseConnectorMapper(DatabaseConfig config) {
         this.config = config;
-        template = new DatabaseTemplate(DatabaseUtil.getConnection(config));
     }
 
     public <T> T execute(HandleCallback callback) {
+        Connection connection = null;
         try {
-            return (T) callback.apply(template);
+            connection = DatabaseUtil.getConnection(config);
+            return (T) callback.apply(new DatabaseTemplate(connection));
         } catch (EmptyResultDataAccessException e) {
             throw e;
         } catch (Exception e) {
+            logger.error(e.getMessage());
             throw new ConnectorException(e.getMessage());
+        } finally {
+            DatabaseUtil.close(connection);
         }
     }
 
@@ -33,13 +38,4 @@ public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, 
         return config;
     }
 
-    @Override
-    public Connection getConnection() {
-        return template.getConnection();
-    }
-
-    @Override
-    public void close() {
-        DatabaseUtil.close(getConnection());
-    }
 }
