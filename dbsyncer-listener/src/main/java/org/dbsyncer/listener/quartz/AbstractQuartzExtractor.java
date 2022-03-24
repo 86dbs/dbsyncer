@@ -2,6 +2,7 @@ package org.dbsyncer.listener.quartz;
 
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;

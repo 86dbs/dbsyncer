@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -19,9 +18,9 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class SqlServerConnectorMapper extends DatabaseConnectorMapper {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Lock   lock   = new ReentrantLock(true);
+    private final Lock lock = new ReentrantLock(true);
 
-    public SqlServerConnectorMapper(DatabaseConfig config) throws SQLException {
+    public SqlServerConnectorMapper(DatabaseConfig config) {
         super(config);
     }
 
@@ -40,7 +39,7 @@ public final class SqlServerConnectorMapper extends DatabaseConnectorMapper {
         try {
             locked = connectionLock.tryLock(60, TimeUnit.SECONDS);
             if (locked) {
-                connection = DatabaseUtil.getConnection(getConfig());
+                connection = getConnection();
                 apply = callback.apply(new DatabaseTemplate(connection));
             }
         } catch (EmptyResultDataAccessException e) {
