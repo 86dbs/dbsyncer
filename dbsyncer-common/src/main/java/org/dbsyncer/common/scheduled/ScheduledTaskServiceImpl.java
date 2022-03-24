@@ -1,6 +1,6 @@
-package org.dbsyncer.listener.quartz;
+package org.dbsyncer.common.scheduled;
 
-import org.dbsyncer.listener.ListenerException;
+import org.dbsyncer.common.CommonException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +54,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
         if (null != scheduledFuture && !scheduledFuture.isCancelled()) {
             String msg = String.format(">>>>>> 任务已启动 %s  >>>>>>", key);
             logger.error(msg);
-            throw new ListenerException(msg);
+            throw new CommonException(msg);
         }
         map.putIfAbsent(key, scheduledFutureMapper.apply());
     }

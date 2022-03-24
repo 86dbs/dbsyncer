@@ -1,4 +1,4 @@
-package org.dbsyncer.listener.quartz;
+package org.dbsyncer.common.scheduled;
 
 public interface ScheduledTaskService {
 
