@@ -5,6 +5,7 @@ import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.database.DatabaseTemplate;
 import org.dbsyncer.connector.database.HandleCallback;
+import org.dbsyncer.connector.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -17,7 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class SqlServerConnectorMapper extends DatabaseConnectorMapper {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Lock   lock   = new ReentrantLock(true);
+    private final Lock lock = new ReentrantLock(true);
 
     public SqlServerConnectorMapper(DatabaseConfig config) {
         super(config);
@@ -48,7 +49,7 @@ public final class SqlServerConnectorMapper extends DatabaseConnectorMapper {
             throw new ConnectorException(e.getMessage());
         } finally {
             if (locked) {
-                close(connection);
+                DatabaseUtil.close(connection);
                 connectionLock.unlock();
             }
         }

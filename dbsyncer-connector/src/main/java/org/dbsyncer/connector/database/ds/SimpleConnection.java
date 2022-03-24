@@ -5,21 +5,18 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.time.Instant;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SimpleConnection implements Connection {
-    private final Logger                       logger     = LoggerFactory.getLogger(getClass());
-    private final AtomicBoolean                isClosed   = new AtomicBoolean(false);
-    private final Connection                   connection;
-    private final LinkedList<SimpleConnection> pool;
-    private       long                         activeTime = Instant.now().toEpochMilli();
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Connection connection;
+    private final SimpleDataSource simpleDataSource;
+    private final long activeTime = Instant.now().toEpochMilli();
 
-    public SimpleConnection(LinkedList<SimpleConnection> pool, Connection connection) {
-        this.pool = pool;
+    public SimpleConnection(SimpleDataSource simpleDataSource, Connection connection) {
+        this.simpleDataSource = simpleDataSource;
         this.connection = connection;
     }
 
@@ -65,8 +62,13 @@ public class SimpleConnection implements Connection {
 
     @Override
     public void close() {
+        if(activeTime + simpleDataSource.getLifeTime() < Instant.now().toEpochMilli()){
+            closeQuietly();
+            return;
+        }
+
         // 回收连接
-        pool.addLast(this);
+        simpleDataSource.getPool().offer(this);
     }
 
     /**

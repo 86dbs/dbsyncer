@@ -9,42 +9,32 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.LinkedList;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
 public class SimpleDataSource implements DataSource, AutoCloseable {
 
-    private final org.slf4j.Logger       logger = LoggerFactory.getLogger(getClass());
-    private       LinkedList<SimpleConnection> pool   = new LinkedList<>();
-    private       String                 url;
-    private       String                 username;
-    private       String                 password;
-    private       String                 threanPoolName = "SimpleDataSourcePool-";
-    private int minIdle = 10;
-    private long lifeTime = 30 * 1000;
+    private final org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
+    private final BlockingQueue<SimpleConnection> pool = new LinkedBlockingQueue<>(2000);
+    private long lifeTime = 60 * 1000;
+    private String url;
+    private String username;
+    private String password;
 
     public SimpleDataSource(String url, String username, String password) {
         this.url = url;
         this.username = username;
         this.password = password;
-
-        try {
-            for (int i = 0; i < minIdle; i++) {
-                createConnection();
-            }
-        } catch (SQLException e) {
-            logger.error(e.getMessage());
-        }
-        // TODO 心跳检测过期连接
     }
 
     @Override
     public Connection getConnection() throws SQLException {
         synchronized (pool) {
             if (pool.isEmpty()) {
-                createConnection();
+                pool.offer(new SimpleConnection(this, DatabaseUtil.getConnection(url, username, password)));
             }
-            return pool.getFirst();
+            return pool.poll();
         }
     }
 
@@ -93,8 +83,11 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
         pool.forEach(c -> c.closeQuietly());
     }
 
-    private void createConnection() throws SQLException {
-        pool.addLast(new SimpleConnection(pool, DatabaseUtil.getConnection(url, username, password)));
+    public BlockingQueue<SimpleConnection> getPool() {
+        return pool;
     }
 
+    public long getLifeTime() {
+        return lifeTime;
+    }
 }
