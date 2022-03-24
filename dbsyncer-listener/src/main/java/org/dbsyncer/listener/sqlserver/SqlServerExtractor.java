@@ -5,6 +5,7 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.config.SqlServerDatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.listener.AbstractExtractor;
@@ -34,13 +35,12 @@ public class SqlServerExtractor extends AbstractExtractor {
 
     private static final String STATEMENTS_PLACEHOLDER = "#";
     private static final String GET_DATABASE_NAME = "SELECT db_name()";
-    private static final String GET_TABLE_LIST = "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('DBO') AND IS_MS_SHIPPED = 0";
-    private static final String IS_SERVER_AGENT_RUNNING = "EXEC master.dbo.xp_servicecontrol N'QUERYSTATE', N'SQLSERVERAGENT'";
+    private static final String GET_TABLE_LIST = "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('#') AND IS_MS_SHIPPED = 0";
+    private static final String IS_SERVER_AGENT_RUNNING = "EXEC master.#.xp_servicecontrol N'QUERYSTATE', N'SQLSERVERAGENT'";
     private static final String IS_DB_CDC_ENABLED = "SELECT is_cdc_enabled FROM sys.databases WHERE name = '#'";
     private static final String IS_TABLE_CDC_ENABLED = "SELECT COUNT(*) FROM sys.tables tb WHERE tb.is_tracked_by_cdc = 1 AND tb.name='#'";
     private static final String ENABLE_DB_CDC = "IF EXISTS(select 1 from sys.databases where name = '#' AND is_cdc_enabled=0) EXEC sys.sp_cdc_enable_db";
-    private static final String ENABLE_TABLE_CDC = "IF EXISTS(select 1 from sys.tables where name = '#' AND is_tracked_by_cdc=0) EXEC sys.sp_cdc_enable_table @source_schema = N'dbo', @source_name = N'#', @role_name = NULL, @supports_net_changes = 0";
-    private static final String DISABLE_TABLE_CDC = "EXEC sys.sp_cdc_disable_table @source_schema = N'dbo', @source_name = N'#', @capture_instance = 'all'";
+    private static final String ENABLE_TABLE_CDC = "IF EXISTS(select 1 from sys.tables where name = '#' AND is_tracked_by_cdc=0) EXEC sys.sp_cdc_enable_table @source_schema = N'%s', @source_name = N'#', @role_name = NULL, @supports_net_changes = 0";
     private static final String GET_TABLES_CDC_ENABLED = "EXEC sys.sp_cdc_help_change_data_capture";
     private static final String GET_MAX_LSN = "SELECT sys.fn_cdc_get_max_lsn()";
     private static final String GET_MIN_LSN = "SELECT sys.fn_cdc_get_min_lsn('#')";
@@ -61,6 +61,7 @@ public class SqlServerExtractor extends AbstractExtractor {
     private Worker worker;
     private Lsn lastLsn;
     private String serverName;
+    private String schema;
 
     @Override
     public void start() {
@@ -75,7 +76,7 @@ public class SqlServerExtractor extends AbstractExtractor {
             readTables();
             Assert.notEmpty(tables, "No tables available");
 
-            boolean enabledServerAgent = queryAndMap(IS_SERVER_AGENT_RUNNING, rs -> "Running.".equals(rs.getString(1)));
+            boolean enabledServerAgent = queryAndMap(IS_SERVER_AGENT_RUNNING.replace(STATEMENTS_PLACEHOLDER, schema), rs -> "Running.".equals(rs.getString(1)));
             Assert.isTrue(enabledServerAgent, "Please ensure that the SQL Server Agent is running");
 
             enableDBCDC();
@@ -103,7 +104,6 @@ public class SqlServerExtractor extends AbstractExtractor {
                 worker.interrupt();
                 worker = null;
             }
-            disableTableCDC();
             preparedStatementCache.values().forEach(this::close);
             preparedStatementCache.clear();
             connected = false;
@@ -121,10 +121,11 @@ public class SqlServerExtractor extends AbstractExtractor {
     }
 
     private void connect() {
-        DatabaseConfig cfg = (DatabaseConfig) connectorConfig;
+        SqlServerDatabaseConfig cfg = (SqlServerDatabaseConfig) connectorConfig;
         if (connectorFactory.isAlive(cfg)) {
             connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(cfg);
             serverName = cfg.getUrl();
+            schema = cfg.getSchema();
             connectionClosed = false;
         }
     }
@@ -143,7 +144,7 @@ public class SqlServerExtractor extends AbstractExtractor {
     }
 
     private void readTables() {
-        tables = queryAndMapList(GET_TABLE_LIST, rs -> {
+        tables = queryAndMapList(GET_TABLE_LIST.replace(STATEMENTS_PLACEHOLDER, schema), rs -> {
             Set<String> table = new LinkedHashSet<>();
             while (rs.next()) {
                 if (filterTable.contains(rs.getString(1))) {
@@ -179,18 +180,12 @@ public class SqlServerExtractor extends AbstractExtractor {
         });
     }
 
-    private void disableTableCDC() {
-        if (!CollectionUtils.isEmpty(tables)) {
-            tables.forEach(table -> execute(DISABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table)));
-        }
-    }
-
     private void enableTableCDC() {
         if (!CollectionUtils.isEmpty(tables)) {
             tables.forEach(table -> {
                 boolean enabledTableCDC = queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs -> rs.getInt(1) > 0);
                 if (!enabledTableCDC) {
-                    execute(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table));
+                    execute(String.format(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
                     Lsn minLsn = queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, table), rs -> new Lsn(rs.getBytes(1)));
                     logger.info("启用CDC表[{}]:{}", table, minLsn.isAvailable());
                 }

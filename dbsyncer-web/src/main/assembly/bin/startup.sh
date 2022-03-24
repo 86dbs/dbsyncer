@@ -34,6 +34,8 @@ JMXREMOTE_ACCESS="-Dcom.sun.management.jmxremote.access.file=$JMXREMOTE_CONFIG_P
 JMXREMOTE_PASSWORD="-Dcom.sun.management.jmxremote.password.file=$JMXREMOTE_CONFIG_PATH/jmxremote.password"
 # set jmxremote model
 #SERVER_OPTS="$SERVER_OPTS $JMXREMOTE_HOSTNAME $JMXREMOTE_PORT $JMXREMOTE_SSL $JMXREMOTE_AUTH $JMXREMOTE_ACCESS $JMXREMOTE_PASSWORD"
+# set IPv4
+#SERVER_OPTS="$SERVER_OPTS -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses"
 echo $SERVER_OPTS
 # execute commond
 java $SERVER_OPTS \

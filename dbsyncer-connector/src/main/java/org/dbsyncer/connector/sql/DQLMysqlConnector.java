@@ -11,7 +11,7 @@ import java.util.Map;
 public final class DQLMysqlConnector extends AbstractDatabaseConnector {
 
     @Override
-    protected String getTableSql() {
+    protected String getTableSql(DatabaseConfig config) {
         return "show tables";
     }
 

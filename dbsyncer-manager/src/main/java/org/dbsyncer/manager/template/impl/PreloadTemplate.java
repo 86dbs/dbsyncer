@@ -102,7 +102,10 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
         // Load plugins
         manager.loadPlugins();
 
-        // 启动驱动
+        // Check connectors status
+        manager.checkAllConnectorStatus();
+
+        // Launch drivers
         Meta meta = new Meta();
         meta.setType(ConfigConstant.META);
         QueryConfig<Meta> queryConfig = new QueryConfig<>(meta);
@@ -113,7 +116,7 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
                 if (MetaEnum.RUNNING.getCode() == m.getState()) {
                     Mapping mapping = manager.getMapping(m.getMappingId());
                     manager.start(mapping);
-                }else if(MetaEnum.STOPPING.getCode() == m.getState()){
+                } else if (MetaEnum.STOPPING.getCode() == m.getState()) {
                     manager.changeMetaState(m.getId(), MetaEnum.READY);
                 }
             });

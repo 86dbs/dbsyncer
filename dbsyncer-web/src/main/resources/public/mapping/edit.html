@@ -9,7 +9,8 @@
             <div class="row text-center">
                 <h3>
                     <span id="mappingModifyName">[[${mapping?.name}]]</span>&nbsp;
-                    <i th:onclick="mappingModifyName()" th:title="点击修改名称" class="fa fa-edit well-sign-green dbsyncer_pointer"></i></h3>
+                    <i th:onclick="mappingModifyName()" th:title="点击修改名称" class="fa fa-edit well-sign-green dbsyncer_pointer"></i>
+                </h3>
                 <p>[[${mapping?.id}]]</p>
             </div>
 
@@ -79,13 +80,13 @@
                 </div>
             </div>
 
-            <!-- 基本配置区域 -->
+            <!-- 映射关系区域 -->
             <div class="row">
                 <div class="panel-group">
                     <div class="panel panel-success">
                         <div class="panel-heading">
                             <h4 class="panel-title">
-                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#mappingBaseConfig">基本配置</u>
+                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#mappingBaseConfig">映射关系</u>
                             </h4>
                         </div>
                         <div id="mappingBaseConfig" class="panel-body panel-collapse collapse in">

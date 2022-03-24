@@ -2,14 +2,15 @@ package org.dbsyncer.connector.kafka;
 
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.KafkaConfig;
+import org.dbsyncer.connector.util.KafkaUtil;
 
 public final class KafkaConnectorMapper implements ConnectorMapper<KafkaConfig, KafkaClient> {
     private KafkaConfig config;
     private KafkaClient client;
 
-    public KafkaConnectorMapper(KafkaConfig config, KafkaClient client) {
+    public KafkaConnectorMapper(KafkaConfig config) {
         this.config = config;
-        this.client = client;
+        this.client = KafkaUtil.getConnection(config);
     }
 
     @Override
@@ -20,5 +21,10 @@ public final class KafkaConnectorMapper implements ConnectorMapper<KafkaConfig, 
     @Override
     public KafkaClient getConnection() {
         return client;
+    }
+
+    @Override
+    public void close() {
+        KafkaUtil.close(client);
     }
 }

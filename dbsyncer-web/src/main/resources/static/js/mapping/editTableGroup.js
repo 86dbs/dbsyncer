@@ -23,6 +23,12 @@ function initFieldMappingParams(){
             "pk":($pk != "" || $.trim($pk).length > 0)
         });
     });
+    var $fieldMappingTable = $("#fieldMappingTable");
+    if (0 >= row.length) {
+        $fieldMappingTable.addClass("hidden");
+    } else {
+        $fieldMappingTable.removeClass("hidden");
+    }
     $("#fieldMapping").val(JSON.stringify(row));
 }
 

@@ -1,6 +1,7 @@
 @echo off
 
-set APP_VERSION=1.1.5-Beta
+for /F "eol=; tokens=2,2 delims==" %%i in ('findstr /i "info.app.version=" dbsyncer-web\src\main\resources\application.properties') DO set APP_VERSION=%%i
+echo %APP_VERSION%
 
 echo "Clean Project ..."
 call mvn clean -f pom.xml

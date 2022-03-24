@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.util.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,15 +72,20 @@ public class UploadController {
     @GetMapping("/download")
     public void download(HttpServletResponse response) {
         String fileName = String.format("dbsyncer-common-%s.jar", version);
+        File file = new File(pluginService.getLibraryPath() + fileName);
+        if(!file.exists()){
+            write(response, RestResult.restFail("Could not find file", 404));
+            return;
+        }
+
         response.setHeader("content-type", "application/octet-stream");
-        response.setHeader("Content-Disposition", "attachment; filename=" + fileName);
+        response.setHeader("Content-Disposition", String.format("attachment; filename=%s", fileName));
         response.setContentType("application/octet-stream");
         BufferedInputStream bis = null;
         OutputStream outputStream = null;
         try {
             outputStream = response.getOutputStream();
-            String filePath = pluginService.getLibraryPath();
-            bis = new BufferedInputStream(new FileInputStream(new File(filePath + fileName)));
+            bis = new BufferedInputStream(new FileInputStream(file));
             byte[] buff = new byte[2048];
             int read = bis.read(buff);
             while (read != -1) {
@@ -92,6 +98,29 @@ public class UploadController {
         } finally {
             IOUtils.closeQuietly(bis);
             IOUtils.closeQuietly(outputStream);
+        }
+    }
+
+    /**
+     * 响应
+     *
+     * @param response
+     * @param result
+     */
+    private void write(HttpServletResponse response, RestResult result) {
+        PrintWriter out = null;
+        try {
+            response.setContentType("application/json;charset=utf-8");
+            response.setStatus(result.getStatus());
+            out = response.getWriter();
+            out.write(JsonUtil.objToJson(result));
+            out.flush();
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+        } finally {
+            if (null != out) {
+                out.close();
+            }
         }
     }
 

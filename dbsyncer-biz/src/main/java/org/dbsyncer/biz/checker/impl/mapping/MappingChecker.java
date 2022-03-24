@@ -4,6 +4,7 @@ import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.listener.config.ListenerConfig;
@@ -105,7 +106,8 @@ public class MappingChecker extends AbstractChecker {
         this.modifySuperConfigModel(mapping, params);
 
         // 更新meta
-        updateMeta(mapping);
+        String metaSnapshot = params.get("metaSnapshot");
+        updateMeta(mapping, metaSnapshot);
 
         return mapping;
     }
@@ -116,11 +118,29 @@ public class MappingChecker extends AbstractChecker {
      * @param mapping
      */
     public void updateMeta(Mapping mapping) {
+        updateMeta(mapping, null);
+    }
+
+    /**
+     * 更新元信息
+     *
+     * @param mapping
+     * @param metaSnapshot
+     */
+    private void updateMeta(Mapping mapping, String metaSnapshot) {
         Meta meta = manager.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "驱动meta不存在.");
 
         // 清空状态
         meta.clear();
+
+        // 手动配置增量点
+        if(StringUtil.isNotBlank(metaSnapshot)){
+            Map snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
+            if(!CollectionUtils.isEmpty(snapshot)){
+                meta.setMap(snapshot);
+            }
+        }
 
         getMetaTotal(meta, mapping.getModel());
 

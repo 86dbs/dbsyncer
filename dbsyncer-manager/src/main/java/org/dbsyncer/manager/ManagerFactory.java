@@ -1,5 +1,6 @@
 package org.dbsyncer.manager;
 
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.event.ClosedEvent;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.connector.ConnectorMapper;
@@ -117,6 +118,21 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
         QueryConfig<Connector> queryConfig = new QueryConfig<>(connector);
         List<Connector> connectors = operationTemplate.queryAll(queryConfig);
         return connectors;
+    }
+
+    @Override
+    public void checkAllConnectorStatus() {
+        List<Connector> list = getConnectorAll();
+        if (!CollectionUtils.isEmpty(list)) {
+            list.forEach(c -> {
+                try {
+                    refreshConnectorConfig(c.getConfig());
+                } catch (Exception e) {
+                    LogType.ConnectorLog logType = LogType.ConnectorLog.FAILED;
+                    logService.log(logType, "%s%s", logType.getName(), e.getMessage());
+                }
+            });
+        }
     }
 
     @Override

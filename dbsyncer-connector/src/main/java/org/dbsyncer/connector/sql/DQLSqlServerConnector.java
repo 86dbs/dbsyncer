@@ -8,7 +8,6 @@ import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.sqlserver.SqlServerConnectorMapper;
-import org.dbsyncer.connector.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +21,7 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public ConnectorMapper connect(DatabaseConfig config) {
         try {
-            return new SqlServerConnectorMapper(config, DatabaseUtil.getConnection(config));
+            return new SqlServerConnectorMapper(config);
         } catch (Exception e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e.getMessage());
@@ -30,8 +29,9 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String getTableSql() {
-        return "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('DBO')";
+    protected String getTableSql(DatabaseConfig config) {
+        SqlServerDatabaseConfig cfg = (SqlServerDatabaseConfig) config;
+        return String.format("SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('%s')", cfg.getSchema());
     }
 
     @Override

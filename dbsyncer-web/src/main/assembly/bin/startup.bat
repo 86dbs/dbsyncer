@@ -13,6 +13,8 @@ echo %CURRENT_DIR%
 set SERVER_OPTS=-Xms1024m -Xmx1024m -Xss1m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m
 rem debug model
 set SERVER_OPTS=%SERVER_OPTS% -Djava.compiler=NONE -Xnoagent -Xdebug -Xrunjdwp:transport=dt_socket,address=15005,server=y,suspend=n
+rem set IPv4
+rem set SERVER_OPTS=%SERVER_OPTS% -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses
 
 rem set jmxremote args
 set HOST=127.0.0.1

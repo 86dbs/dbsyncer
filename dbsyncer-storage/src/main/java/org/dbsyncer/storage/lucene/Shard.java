@@ -12,6 +12,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.storage.query.Option;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +27,8 @@ import java.util.*;
  * @date 2019/11/12 20:29
  */
 public class Shard {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private File indexPath;
 
@@ -60,36 +64,27 @@ public class Shard {
     }
 
     public void insert(Document doc) throws IOException {
-        if (null != doc) {
-            indexWriter.addDocument(doc);
-            indexWriter.commit();
-        }
+        execute(doc, () -> indexWriter.addDocument(doc));
     }
 
     public void insertBatch(List<Document> docs) throws IOException {
-        if (null != docs) {
-            indexWriter.addDocuments(docs);
-            indexWriter.commit();
-        }
+        execute(docs, () -> indexWriter.addDocuments(docs));
     }
 
     public void update(Term term, Document doc) throws IOException {
-        if (null != term && null != doc) {
-            indexWriter.updateDocument(term, doc);
-            indexWriter.commit();
+        if (null != term) {
+            execute(doc, () -> indexWriter.updateDocument(term, doc));
         }
     }
 
     public void delete(Term term) throws IOException {
         if (null != term) {
-            indexWriter.deleteDocuments(term);
-            indexWriter.commit();
+            execute(term, () -> indexWriter.deleteDocuments(term));
         }
     }
 
     public void deleteAll() throws IOException {
-        indexWriter.deleteAll();
-        indexWriter.commit();
+        // Fix Bug: this IndexReader is closed. 直接删除文件
         close();
         directory.close();
         FileUtils.deleteDirectory(indexPath);
@@ -193,6 +188,27 @@ public class Shard {
             list.add(r);
         }
         return list;
+    }
+
+    private void execute(Object value, Callback callback) throws IOException {
+        if (null != value) {
+            if (indexWriter.isOpen()) {
+                callback.execute();
+                indexWriter.commit();
+                return;
+            }
+            logger.error(value.toString());
+        }
+    }
+
+    interface Callback {
+
+        /**
+         * 索引回执
+         *
+         * @throws IOException
+         */
+        void execute() throws IOException;
     }
 
 }

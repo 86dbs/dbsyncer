@@ -12,14 +12,17 @@ import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
+import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
+import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
 import org.springframework.util.Assert;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,12 +30,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected abstract String getTableSql();
+    protected abstract String getTableSql(DatabaseConfig config);
 
     @Override
     public ConnectorMapper connect(DatabaseConfig config) {
         try {
-            return new DatabaseConnectorMapper(config, DatabaseUtil.getConnection(config));
+            return new DatabaseConnectorMapper(config);
         } catch (Exception e) {
             logger.error("Failed to connect:{}, message:{}", config.getUrl(), e.getMessage());
         }
@@ -41,7 +44,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public void disconnect(DatabaseConnectorMapper connectorMapper) {
-        DatabaseUtil.close(connectorMapper.getConnection());
+        connectorMapper.close();
     }
 
     @Override
@@ -57,7 +60,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
-        String sql = getTableSql();
+        String sql = getTableSql(connectorMapper.getConfig());
         List<String> tableNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
         if (!CollectionUtils.isEmpty(tableNames)) {
             return tableNames.stream().map(name -> new Table(name)).collect(Collectors.toList());
@@ -69,7 +72,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableName) {
         String quotation = buildSqlWithQuotation();
         StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).append(" WHERE 1 != 1");
-        return connectorMapper.execute(databaseTemplate -> DatabaseUtil.getMetaInfo(databaseTemplate, queryMetaSql.toString(), tableName));
+        return connectorMapper.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql.toString(), tableName));
     }
 
     @Override
@@ -230,7 +233,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 获取查询总数SQL
         String quotation = buildSqlWithQuotation();
-        String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
+        String pk = findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
         StringBuilder queryCount = new StringBuilder();
         queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(quotation).append(table.getName()).append(quotation);
         if (StringUtil.isNotBlank(queryFilterSql)) {
@@ -262,7 +265,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 获取查询数据行是否存在
         String quotation = buildSqlWithQuotation();
-        String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
+        String pk = findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
         StringBuilder queryCount = new StringBuilder().append("SELECT COUNT(1) FROM ").append(quotation).append(table.getName()).append(
                 quotation).append(" WHERE ").append(pk).append(" = ?");
         String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
@@ -295,7 +298,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         DatabaseConfig cfg = config.getConfig();
         String sql = cfg.getSql().toUpperCase();
         String queryMetaSql = StringUtil.contains(sql, " WHERE ") ? sql + " AND 1!=1 " : sql + " WHERE 1!=1 ";
-        return config.execute(databaseTemplate -> DatabaseUtil.getMetaInfo(databaseTemplate, queryMetaSql, cfg.getTable()));
+        return config.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql, cfg.getTable()));
     }
 
     /**
@@ -320,7 +323,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             querySql += queryFilterSql;
         }
         String quotation = buildSqlWithQuotation();
-        String pk = DatabaseUtil.findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
+        String pk = findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
         map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(new PageSqlConfig(querySql, pk)));
 
         // 获取查询总数SQL
@@ -428,7 +431,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             throw new ConnectorException("Table name can not be empty.");
         }
         if (StringUtil.isBlank(pk)) {
-            pk = DatabaseUtil.findTablePrimaryKey(originalTable, "");
+            pk = findTablePrimaryKey(originalTable, "");
         }
 
         SqlBuilderConfig config = new SqlBuilderConfig(this, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());
@@ -503,6 +506,96 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
         }
         return rowNum > 0;
+    }
+
+    /**
+     * 获取数据库表元数据信息
+     *
+     * @param databaseTemplate
+     * @param metaSql          查询元数据
+     * @param tableName        表名
+     * @return
+     */
+    private MetaInfo getMetaInfo(DatabaseTemplate databaseTemplate, String metaSql, String tableName) throws SQLException {
+        SqlRowSet sqlRowSet = databaseTemplate.queryForRowSet(metaSql);
+        ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
+        SqlRowSetMetaData metaData = rowSet.getMetaData();
+
+        // 查询表字段信息
+        int columnCount = metaData.getColumnCount();
+        if (1 > columnCount) {
+            throw new ConnectorException("查询表字段不能为空.");
+        }
+        List<Field> fields = new ArrayList<>(columnCount);
+        Map<String, List<String>> tables = new HashMap<>();
+        try {
+            DatabaseMetaData md = databaseTemplate.getConnection().getMetaData();
+            String name = null;
+            String label = null;
+            String typeName = null;
+            String table = null;
+            int columnType;
+            boolean pk;
+            for (int i = 1; i <= columnCount; i++) {
+                table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
+                if (null == tables.get(table)) {
+                    tables.putIfAbsent(table, findTablePrimaryKeys(md, table));
+                }
+                name = metaData.getColumnName(i);
+                label = metaData.getColumnLabel(i);
+                typeName = metaData.getColumnTypeName(i);
+                columnType = metaData.getColumnType(i);
+                pk = isPk(tables, table, name);
+                fields.add(new Field(label, typeName, columnType, pk));
+            }
+        } finally {
+            tables.clear();
+        }
+        return new MetaInfo().setColumn(fields);
+    }
+
+    /**
+     * 返回主键名称
+     *
+     * @param table
+     * @param quotation
+     * @return
+     */
+    private String findTablePrimaryKey(Table table, String quotation) {
+        if (null != table) {
+            List<Field> column = table.getColumn();
+            if (!CollectionUtils.isEmpty(column)) {
+                for (Field c : column) {
+                    if (c.isPk()) {
+                        return new StringBuilder(quotation).append(c.getName()).append(quotation).toString();
+                    }
+                }
+            }
+        }
+        if(!TableTypeEnum.isView(table.getType())){
+            throw new ConnectorException("Table primary key can not be empty.");
+        }
+        return "";
+    }
+
+    private boolean isPk(Map<String, List<String>> tables, String tableName, String name) {
+        List<String> pk = tables.get(tableName);
+        return !CollectionUtils.isEmpty(pk) && pk.contains(name);
+    }
+
+    private List<String> findTablePrimaryKeys(DatabaseMetaData md, String tableName) throws SQLException {
+        //根据表名获得主键结果集
+        ResultSet rs = null;
+        List<String> primaryKeys = new ArrayList<>();
+        try {
+            rs = md.getPrimaryKeys(null, null, tableName);
+            while (rs.next()) {
+                primaryKeys.add(rs.getString("COLUMN_NAME"));
+            }
+        } finally {
+            DatabaseUtil.close(rs);
+        }
+        return primaryKeys;
     }
 
 }

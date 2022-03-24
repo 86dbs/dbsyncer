@@ -37,6 +37,12 @@ function initFilterParams(){
            "value": arg
          });
     });
+    var $conditionTable = $("#conditionTable");
+    if (0 >= row.length) {
+        $conditionTable.addClass("hidden");
+    } else {
+        $conditionTable.removeClass("hidden");
+    }
     $("#filter").val(JSON.stringify(row));
 }
 
@@ -58,6 +64,12 @@ function initConvertParams(){
            "args": args
          });
     });
+    var $convertTable = $("#convertTable");
+    if (0 >= row.length) {
+        $convertTable.addClass("hidden");
+    } else {
+        $convertTable.removeClass("hidden");
+    }
     $("#convert").val(JSON.stringify(row));
 }
 

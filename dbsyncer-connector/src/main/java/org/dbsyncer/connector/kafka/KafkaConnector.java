@@ -8,7 +8,6 @@ import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
-import org.dbsyncer.connector.util.KafkaUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +23,7 @@ public class KafkaConnector extends AbstractConnector implements Connector<Kafka
     @Override
     public ConnectorMapper connect(KafkaConfig config) {
         try {
-            return new KafkaConnectorMapper(config, KafkaUtil.getConnection(config));
+            return new KafkaConnectorMapper(config);
         } catch (Exception e) {
             throw new ConnectorException("无法连接, 请检查配置：" + e.getMessage());
         }
@@ -32,7 +31,7 @@ public class KafkaConnector extends AbstractConnector implements Connector<Kafka
 
     @Override
     public void disconnect(KafkaConnectorMapper connectorMapper) {
-        KafkaUtil.close(connectorMapper.getConnection());
+        connectorMapper.close();
     }
 
     @Override

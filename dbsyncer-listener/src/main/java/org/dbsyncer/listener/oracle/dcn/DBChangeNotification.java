@@ -40,7 +40,7 @@ public class DBChangeNotification {
 
     private static final String QUERY_ROW_DATA_SQL = "SELECT * FROM \"%s\" WHERE ROWID='%s'";
     private static final String QUERY_TABLE_ALL_SQL = "SELECT TABLE_NAME FROM USER_TAB_COMMENTS WHERE TABLE_TYPE='TABLE'";
-    private static final String QUERY_TABLE_ID_SQL = "SELECT OBJECT_ID FROM DBA_OBJECTS WHERE OBJECT_TYPE='TABLE' AND OBJECT_NAME='%s'";
+    private static final String QUERY_TABLE_ID_SQL = "SELECT OBJECT_ID FROM DBA_OBJECTS WHERE OBJECT_TYPE='TABLE' AND OBJECT_NAME='%s' AND OWNER='%s'";
     private static final String QUERY_TABLE_SQL = "SELECT 1 FROM \"%s\" WHERE 1=2";
     private static final String QUERY_CALLBACK_SQL = "SELECT REGID,CALLBACK FROM USER_CHANGE_NOTIFICATION_REGS";
     private static final String CALLBACK = "net8://(ADDRESS=(PROTOCOL=tcp)(HOST=%s)(PORT=%s))?PR=0";
@@ -178,7 +178,8 @@ public class DBChangeNotification {
         tables = new LinkedHashMap<>();
         List<String> tableList = queryForList(QUERY_TABLE_ALL_SQL, rs -> rs.getString(1));
         Assert.notEmpty(tableList, "No tables available");
-        tableList.forEach(tableName -> tables.put(queryForObject(String.format(QUERY_TABLE_ID_SQL, tableName), rs -> rs.getInt(1)), tableName));
+        final String owner = username.toUpperCase();
+        tableList.forEach(tableName -> tables.put(queryForObject(String.format(QUERY_TABLE_ID_SQL, tableName, owner), rs -> rs.getInt(1)), tableName));
     }
 
     private <T> List<T> queryForList(String sql, ResultSetMapper<T> mapper) {
