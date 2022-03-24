@@ -308,4 +308,8 @@ public class SimpleConnection implements Connection {
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
         return false;
     }
+
+    public Connection getConnection() {
+        return connection;
+    }
 }

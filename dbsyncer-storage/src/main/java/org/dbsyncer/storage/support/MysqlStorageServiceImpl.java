@@ -9,6 +9,7 @@ import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.Database;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
+import org.dbsyncer.connector.database.ds.SimpleConnection;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
@@ -91,6 +92,10 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             boolean dbThanMysql8 = StringUtil.startsWith(databaseProductVersion, "8");
             Assert.isTrue(driverThanMysql8 == dbThanMysql8, String.format("当前驱动%s和数据库%s版本不一致.", driverVersion, databaseProductVersion));
 
+            if(conn instanceof SimpleConnection){
+                SimpleConnection simpleConnection = (SimpleConnection) conn;
+                conn = simpleConnection.getConnection();
+            }
             Class clazz = dbThanMysql8 ? conn.getClass() : conn.getClass().getSuperclass();
             java.lang.reflect.Field field = clazz.getDeclaredField("database");
             field.setAccessible(true);

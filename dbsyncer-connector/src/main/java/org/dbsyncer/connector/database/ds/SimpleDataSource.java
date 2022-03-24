@@ -2,7 +2,6 @@ package org.dbsyncer.connector.database.ds;
 
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.util.DatabaseUtil;
-import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
@@ -15,7 +14,6 @@ import java.util.logging.Logger;
 
 public class SimpleDataSource implements DataSource, AutoCloseable {
 
-    private final org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
     private final BlockingQueue<SimpleConnection> pool = new LinkedBlockingQueue<>(2000);
     private long lifeTime = 60 * 1000;
     private String url;
@@ -89,5 +87,9 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
     public long getLifeTime() {
         return lifeTime;
+    }
+
+    public void setLifeTime(long lifeTime) {
+        this.lifeTime = lifeTime;
     }
 }
