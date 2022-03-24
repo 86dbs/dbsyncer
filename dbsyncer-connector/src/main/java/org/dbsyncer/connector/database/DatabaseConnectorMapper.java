@@ -3,6 +3,8 @@ package org.dbsyncer.connector.database;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.database.ds.SimpleConnection;
+import org.dbsyncer.connector.database.ds.SimpleDataSource;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,17 +13,19 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import java.sql.Connection;
 
 public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, Connection> {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-    private DatabaseConfig config;
+    private final Logger           logger = LoggerFactory.getLogger(getClass());
+    private       DatabaseConfig   config;
+    private       SimpleDataSource dataSource;
 
     public DatabaseConnectorMapper(DatabaseConfig config) {
         this.config = config;
+        this.dataSource = new SimpleDataSource(config.getUrl(), config.getUsername(), config.getPassword());
     }
 
     public <T> T execute(HandleCallback callback) {
         Connection connection = null;
         try {
-            connection = DatabaseUtil.getConnection(config);
+            connection = getConnection();
             return (T) callback.apply(new DatabaseTemplate(connection));
         } catch (EmptyResultDataAccessException e) {
             throw e;
@@ -29,7 +33,7 @@ public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, 
             logger.error(e.getMessage());
             throw new ConnectorException(e.getMessage());
         } finally {
-            DatabaseUtil.close(connection);
+            close(connection);
         }
     }
 
@@ -38,4 +42,18 @@ public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, 
         return config;
     }
 
+    @Override
+    public Connection getConnection() throws Exception {
+        return dataSource.getConnection();
+    }
+
+    @Override
+    public void close() {
+        dataSource.close();
+    }
+
+    protected void close(Connection connection) {
+        SimpleConnection conn = (SimpleConnection)connection;
+        conn.closeQuietly();
+    }
 }
