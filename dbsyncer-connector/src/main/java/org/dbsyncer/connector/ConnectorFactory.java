@@ -84,23 +84,25 @@ public class ConnectorFactory implements DisposableBean {
     /**
      * 获取配置表
      *
+     * @param connectionMapper
      * @return
      */
-    public List<Table> getTable(ConnectorMapper config) {
-        Assert.notNull(config, "ConnectorMapper can not be null.");
-        String type = config.getConnectorType();
-        return getConnector(type).getTable(config);
+    public List<Table> getTable(ConnectorMapper connectionMapper) {
+        Assert.notNull(connectionMapper, "ConnectorMapper can not be null.");
+        return getConnector(connectionMapper).getTable(connectionMapper);
     }
 
     /**
      * 获取配置表元信息
      *
+     * @param connectionMapper
+     * @param tableName
      * @return
      */
-    public MetaInfo getMetaInfo(ConnectorMapper config, String tableName) {
-        Assert.notNull(config, "ConnectorMapper can not be null.");
+    public MetaInfo getMetaInfo(ConnectorMapper connectionMapper, String tableName) {
+        Assert.notNull(connectionMapper, "ConnectorMapper can not be null.");
         Assert.hasText(tableName, "tableName can not be empty.");
-        return getConnector(config).getMetaInfo(config, tableName);
+        return getConnector(connectionMapper).getMetaInfo(connectionMapper, tableName);
     }
 
     /**
@@ -119,15 +121,8 @@ public class ConnectorFactory implements DisposableBean {
         return map;
     }
 
-    /**
-     * 获取总数
-     *
-     * @param config
-     * @param command
-     * @return
-     */
-    public long getCount(ConnectorMapper config, Map<String, String> command) {
-        return getConnector(config).getCount(config, command);
+    public long getCount(ConnectorMapper connectionMapper, Map<String, String> command) {
+        return getConnector(connectionMapper).getCount(connectionMapper, command);
     }
 
     public Result reader(ConnectorMapper connectionMapper, ReaderConfig config) {
@@ -171,8 +166,7 @@ public class ConnectorFactory implements DisposableBean {
      */
     private void disconnect(ConnectorMapper connectorMapper) {
         Assert.notNull(connectorMapper, "ConnectorMapper can not be null.");
-        String type = connectorMapper.getConnectorType();
-        getConnector(type).disconnect(connectorMapper);
+        getConnector(connectorMapper).disconnect(connectorMapper);
     }
 
 }
