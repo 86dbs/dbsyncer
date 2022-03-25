@@ -1,7 +1,10 @@
 package org.dbsyncer.parser.flush;
 
 import com.alibaba.fastjson.JSONException;
+import org.dbsyncer.common.scheduled.ScheduledTaskJob;
+import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.storage.SnowflakeIdWorker;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -9,11 +12,15 @@ import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -27,7 +34,7 @@ import java.util.stream.Collectors;
  * @date 2020/05/19 18:38
  */
 @Component
-public class FlushServiceImpl implements FlushService {
+public class FlushServiceImpl implements FlushService, ScheduledTaskJob, DisposableBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -36,6 +43,19 @@ public class FlushServiceImpl implements FlushService {
 
     @Autowired
     private SnowflakeIdWorker snowflakeIdWorker;
+
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
+
+    private String key;
+
+    @PostConstruct
+    private void init() {
+        key = UUIDUtil.getUUID();
+        String cron = "*/3 * * * * ?";
+        scheduledTaskService.start(key, cron, this);
+        logger.info("[{}], Started scheduled task", cron);
+    }
 
     @Override
     public void asyncWrite(String type, String error) {
@@ -68,5 +88,18 @@ public class FlushServiceImpl implements FlushService {
             return params;
         }).collect(Collectors.toList());
         storageService.addData(StorageEnum.DATA, metaId, list);
+    }
+
+
+    @Override
+    public void run() {
+        // TODO 批量写入同步数据
+        logger.info("run flush task");
+    }
+
+    @Override
+    public void destroy() {
+        scheduledTaskService.stop(key);
+        logger.info("Stopped scheduled task.");
     }
 }

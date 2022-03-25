@@ -192,12 +192,10 @@ public class Shard {
 
     private void execute(Object value, Callback callback) throws IOException {
         if (null != value) {
-            synchronized(indexWriter){
-                if (indexWriter.isOpen()) {
-                    callback.execute();
-                    indexWriter.commit();
-                    return;
-                }
+            if (indexWriter.isOpen()) {
+                callback.execute();
+                indexWriter.commit();
+                return;
             }
             logger.error(value.toString());
         }

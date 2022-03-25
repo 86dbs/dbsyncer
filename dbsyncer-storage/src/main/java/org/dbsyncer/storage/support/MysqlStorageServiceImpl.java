@@ -49,7 +49,7 @@ import java.util.stream.Stream;
  * @date 2019/9/10 23:22
  */
 @Component
-@ConditionalOnProperty(value = "dbsyncer.storage.support.mysql", havingValue = "true")
+@ConditionalOnProperty(value = "dbsyncer.storage.support.mysql.enabled", havingValue = "true")
 @ConfigurationProperties(prefix = "dbsyncer.storage.support.mysql")
 public class MysqlStorageServiceImpl extends AbstractStorageService {
 

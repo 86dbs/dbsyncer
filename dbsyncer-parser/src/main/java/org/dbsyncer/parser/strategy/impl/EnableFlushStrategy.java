@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  * @date 2021/11/18 22:21
  */
 @Component
-@ConditionalOnProperty(prefix = "dbsyncer.parser.flush", value = "enabled", havingValue = "true")
+@ConditionalOnProperty(value = "dbsyncer.parser.flush.enabled", havingValue = "true")
 public final class EnableFlushStrategy extends AbstractFlushStrategy {
 
 }
