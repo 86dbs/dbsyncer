@@ -42,7 +42,7 @@ public class Shard {
 
     private IndexWriterConfig config;
 
-    private final Object lock = new Object();
+    private final Object LOCK = new Object();
 
     private static final int MAX_SIZE = 10000;
 
@@ -101,7 +101,7 @@ public class Shard {
         if (null != changeReader) {
             indexReader.close();
             indexReader = null;
-            synchronized (lock) {
+            synchronized (LOCK) {
                 if (null == indexReader) {
                     indexReader = changeReader;
                 }
@@ -192,10 +192,12 @@ public class Shard {
 
     private void execute(Object value, Callback callback) throws IOException {
         if (null != value) {
-            if (indexWriter.isOpen()) {
-                callback.execute();
-                indexWriter.commit();
-                return;
+            synchronized (LOCK) {
+                if (indexWriter.isOpen()) {
+                    callback.execute();
+                    indexWriter.commit();
+                    return;
+                }
             }
             logger.error(value.toString());
         }

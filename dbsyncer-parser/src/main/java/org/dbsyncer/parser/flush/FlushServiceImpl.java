@@ -18,9 +18,10 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,17 @@ public class FlushServiceImpl implements FlushService, ScheduledTaskJob, Disposa
 
     @Autowired
     private ScheduledTaskService scheduledTaskService;
+
+    @Autowired
+    private Executor taskExecutor;
+
+    private Queue<Task> buffer = new ConcurrentLinkedQueue();
+
+    private Queue<Task> temp = new ConcurrentLinkedQueue();
+
+    private final Object LOCK = new Object();
+
+    private volatile boolean running;
 
     private String key;
 
@@ -87,14 +99,59 @@ public class FlushServiceImpl implements FlushService, ScheduledTaskJob, Disposa
             added.set(true);
             return params;
         }).collect(Collectors.toList());
-        storageService.addData(StorageEnum.DATA, metaId, list);
-    }
 
+        if (running) {
+            temp.offer(new Task(metaId, list));
+            return;
+        }
+
+        buffer.offer(new Task(metaId, list));
+    }
 
     @Override
     public void run() {
-        // TODO 批量写入同步数据
-        logger.info("run flush task");
+        if (running) {
+            return;
+        }
+        synchronized (LOCK) {
+            if (running) {
+                return;
+            }
+            running = true;
+            flush(buffer);
+            running = false;
+            try {
+                TimeUnit.MILLISECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                logger.error(e.getMessage());
+            }
+            flush(temp);
+        }
+    }
+
+    private void flush(Queue<Task> buffer) {
+        if (!buffer.isEmpty()) {
+            final Map<String, List<Map>> task = new LinkedHashMap<>();
+            while (!buffer.isEmpty()) {
+                Task t = buffer.poll();
+                if (!task.containsKey(t.metaId)) {
+                    task.putIfAbsent(t.metaId, new LinkedList<>());
+                }
+                task.get(t.metaId).addAll(t.list);
+            }
+            task.forEach((metaId, list) -> {
+                taskExecutor.execute(() -> {
+                    long now = Instant.now().toEpochMilli();
+                    try {
+                        storageService.addData(StorageEnum.DATA, metaId, list);
+                    } catch (Exception e) {
+                        logger.error("[{}]-flush异常{}", metaId, list.size());
+                    }
+                    logger.info("[{}]-flush{}条，耗时{}秒", metaId, list.size(), (Instant.now().toEpochMilli() - now) / 1000);
+                });
+            });
+            task.clear();
+        }
     }
 
     @Override
@@ -102,4 +159,15 @@ public class FlushServiceImpl implements FlushService, ScheduledTaskJob, Disposa
         scheduledTaskService.stop(key);
         logger.info("Stopped scheduled task.");
     }
+
+    final class Task {
+        String metaId;
+        List<Map> list;
+
+        public Task(String metaId, List<Map> list) {
+            this.metaId = metaId;
+            this.list = list;
+        }
+    }
+
 }
