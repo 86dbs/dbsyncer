@@ -1,4 +1,4 @@
-package org.dbsyncer.manager.puller.impl;
+package org.dbsyncer.manager.puller;
 
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.event.RowChangedEvent;
@@ -21,7 +21,6 @@ import org.dbsyncer.listener.quartz.AbstractQuartzExtractor;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.manager.config.FieldPicker;
-import org.dbsyncer.manager.puller.AbstractPuller;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
@@ -88,7 +87,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
         key = UUIDUtil.getUUID();
         String cron = "*/10 * * * * ?";
         scheduledTaskService.start(key, cron, this);
-        logger.info("[{}], Started persistence task {}", cron, key);
+        logger.info("[{}], Started scheduled task", cron);
     }
 
     @Override
@@ -141,7 +140,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
     @Override
     public void destroy() {
         scheduledTaskService.stop(key);
-        logger.info("Stopped persistence task {}", key);
+        logger.info("Stopped scheduled task.");
     }
 
     private AbstractExtractor getExtractor(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta)

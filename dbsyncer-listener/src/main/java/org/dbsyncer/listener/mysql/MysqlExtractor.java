@@ -234,7 +234,7 @@ public class MysqlExtractor extends AbstractExtractor {
 
             if (EventType.isUpdate(header.getEventType())) {
                 UpdateRowsEventData data = event.getData();
-                if (isFilterTable(data.getTableId(), ConnectorConstant.OPERTION_UPDATE)) {
+                if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m.getKey()).collect(Collectors.toList());
                         List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
@@ -246,7 +246,7 @@ public class MysqlExtractor extends AbstractExtractor {
             }
             if (EventType.isWrite(header.getEventType())) {
                 WriteRowsEventData data = event.getData();
-                if (isFilterTable(data.getTableId(), ConnectorConstant.OPERTION_INSERT)) {
+                if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m).collect(Collectors.toList());
                         asyncSendRowChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after));
@@ -257,7 +257,7 @@ public class MysqlExtractor extends AbstractExtractor {
             }
             if (EventType.isDelete(header.getEventType())) {
                 DeleteRowsEventData data = event.getData();
-                if (isFilterTable(data.getTableId(), ConnectorConstant.OPERTION_DELETE)) {
+                if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m).collect(Collectors.toList());
                         asyncSendRowChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST));
@@ -280,13 +280,9 @@ public class MysqlExtractor extends AbstractExtractor {
             return tables.get(tableId).getTable();
         }
 
-        private boolean isFilterTable(long tableId, String event) {
+        private boolean isFilterTable(long tableId) {
             final TableMapEventData tableMap = tables.get(tableId);
-            if (!StringUtil.equals(database, tableMap.getDatabase()) || !filterTable.contains(tableMap.getTable())) {
-                logger.info("Table[{}.{}] {}", tableMap.getDatabase(), tableMap.getTable(), event);
-                return false;
-            }
-            return true;
+            return StringUtil.equals(database, tableMap.getDatabase()) && filterTable.contains(tableMap.getTable());
         }
 
     }

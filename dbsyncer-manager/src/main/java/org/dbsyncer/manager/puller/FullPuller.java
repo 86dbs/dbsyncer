@@ -1,15 +1,14 @@
-package org.dbsyncer.manager.puller.impl;
+package org.dbsyncer.manager.puller;
 
-import org.dbsyncer.parser.event.FullRefreshEvent;
-import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.manager.Manager;
-import org.dbsyncer.manager.puller.AbstractPuller;
 import org.dbsyncer.parser.Parser;
+import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

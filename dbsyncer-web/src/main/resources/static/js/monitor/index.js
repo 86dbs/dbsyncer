@@ -230,21 +230,21 @@ function showQueueChart(queueUp, queueCapacity){
                 type: 'gauge',
                 min: 0,
                 max: queueCapacity,
-                splitNumber: 5,
+                splitNumber: 2,
                 axisLine: {            // 坐标轴线
                     lineStyle: {       // 属性lineStyle控制线条样式
-                        color: [[0.1, '#5cb85c'], [0.3, '#5bc0de'],[0.8, '#f0ad4e'],[1, '#d9534f']],
-                        width: 10
+                        color: [[0.3, '#67e0e3'], [0.7, '#37a2da'],[1, '#fd666d']],
+                        width: 5
                     }
                 },
                 axisTick: {            // 坐标轴小标记
-                    length: 15,        // 属性length控制线长
+                    length: 10,        // 属性length控制线长
                     lineStyle: {       // 属性lineStyle控制线条样式
                         color: 'auto'
                     }
                 },
                 splitLine: {           // 分隔线
-                    length: 20,         // 属性length控制线长
+                    length: 10,         // 属性length控制线长
                     lineStyle: {       // 属性lineStyle（详见lineStyle）控制线条样式
                         color: 'auto'
                     }
