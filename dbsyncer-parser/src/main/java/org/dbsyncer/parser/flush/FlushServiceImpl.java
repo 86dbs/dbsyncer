@@ -4,7 +4,6 @@ import com.alibaba.fastjson.JSONException;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.storage.SnowflakeIdWorker;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -12,7 +11,6 @@ import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -35,7 +33,7 @@ import java.util.stream.Collectors;
  * @date 2020/05/19 18:38
  */
 @Component
-public class FlushServiceImpl implements FlushService, ScheduledTaskJob, DisposableBean {
+public class FlushServiceImpl implements FlushService, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -59,14 +57,9 @@ public class FlushServiceImpl implements FlushService, ScheduledTaskJob, Disposa
 
     private volatile boolean running;
 
-    private String key;
-
     @PostConstruct
     private void init() {
-        key = UUIDUtil.getUUID();
-        String cron = "*/3 * * * * ?";
-        scheduledTaskService.start(key, cron, this);
-        logger.info("[{}], Started scheduled task", cron);
+        scheduledTaskService.start("*/3 * * * * ?", this);
     }
 
     @Override
@@ -152,12 +145,6 @@ public class FlushServiceImpl implements FlushService, ScheduledTaskJob, Disposa
             });
             task.clear();
         }
-    }
-
-    @Override
-    public void destroy() {
-        scheduledTaskService.stop(key);
-        logger.info("Stopped scheduled task.");
     }
 
     final class Task {

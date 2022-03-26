@@ -6,7 +6,6 @@ import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.Field;
@@ -31,7 +30,6 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -53,7 +51,7 @@ import java.util.stream.Collectors;
  * @date 2020/04/26 15:28
  */
 @Component
-public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob, DisposableBean {
+public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -78,16 +76,11 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
     @Autowired
     private Executor taskExecutor;
 
-    private String key;
-
     private Map<String, Extractor> map = new ConcurrentHashMap<>();
 
     @PostConstruct
     private void init() {
-        key = UUIDUtil.getUUID();
-        String cron = "*/10 * * * * ?";
-        scheduledTaskService.start(key, cron, this);
-        logger.info("[{}], Started scheduled task", cron);
+        scheduledTaskService.start("*/10 * * * * ?", this);
     }
 
     @Override
@@ -135,12 +128,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob,
     public void run() {
         // 定时同步增量信息
         map.forEach((k, v) -> v.flushEvent());
-    }
-
-    @Override
-    public void destroy() {
-        scheduledTaskService.stop(key);
-        logger.info("Stopped scheduled task.");
     }
 
     private AbstractExtractor getExtractor(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta)

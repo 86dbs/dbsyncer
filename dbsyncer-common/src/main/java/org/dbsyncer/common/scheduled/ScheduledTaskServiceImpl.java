@@ -1,8 +1,10 @@
 package org.dbsyncer.common.scheduled;
 
 import org.dbsyncer.common.CommonException;
+import org.dbsyncer.common.util.UUIDUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
@@ -18,7 +20,7 @@ import java.util.concurrent.ScheduledFuture;
  * @Date 2020-05-24 22:06
  */
 @Component
-public class ScheduledTaskServiceImpl implements ScheduledTaskService {
+public class ScheduledTaskServiceImpl implements ScheduledTaskService, DisposableBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -32,12 +34,19 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
 
     @Override
     public void start(String key, String cron, ScheduledTaskJob job) {
+        logger.info("{}-[{}], Started task [{}]", key, cron, job.getClass().getName());
         apply(key, () -> taskScheduler.schedule(job, (trigger) -> new CronTrigger(cron).nextExecutionTime(trigger)));
     }
 
     @Override
     public void start(String key, long period, ScheduledTaskJob job) {
+        logger.info("[period={}], Started task [{}]", period, key);
         apply(key, () -> taskScheduler.scheduleAtFixedRate(job, period));
+    }
+
+    @Override
+    public void start(String cron, ScheduledTaskJob job) {
+        start(UUIDUtil.getUUID(), cron, job);
     }
 
     @Override
@@ -46,6 +55,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
         if (null != job) {
             job.cancel(true);
             map.remove(key);
+            logger.info("Stopped task [{}]", key);
         }
     }
 
@@ -57,6 +67,11 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
             throw new CommonException(msg);
         }
         map.putIfAbsent(key, scheduledFutureMapper.apply());
+    }
+
+    @Override
+    public void destroy() {
+        map.keySet().forEach(this::stop);
     }
 
     private interface ScheduledFutureMapper {
