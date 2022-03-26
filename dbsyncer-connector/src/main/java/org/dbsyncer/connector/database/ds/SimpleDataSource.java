@@ -28,12 +28,23 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
     @Override
     public Connection getConnection() throws SQLException {
-        synchronized (pool) {
+        SimpleConnection poll = null;
+        int i = 3;
+        do {
             if (pool.isEmpty()) {
-                pool.offer(new SimpleConnection(this, DatabaseUtil.getConnection(url, username, password)));
+                pool.offer(createConnection());
             }
-            return pool.poll();
+            poll = pool.poll();
+            if (null != poll) {
+                break;
+            }
+            i--;
+        } while (i > 1);
+
+        if (null == poll) {
+            poll = createConnection();
         }
+        return poll;
     }
 
     @Override
@@ -79,6 +90,10 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     @Override
     public void close() {
         pool.forEach(c -> c.closeQuietly());
+    }
+
+    private SimpleConnection createConnection() throws SQLException {
+        return new SimpleConnection(this, DatabaseUtil.getConnection(url, username, password));
     }
 
     public BlockingQueue<SimpleConnection> getPool() {

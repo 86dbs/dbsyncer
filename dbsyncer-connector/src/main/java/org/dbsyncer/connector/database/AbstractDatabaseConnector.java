@@ -174,13 +174,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         try {
             // 2、设置参数
             execute = connectorMapper.execute(databaseTemplate ->
-                    databaseTemplate.update(sql, (ps) -> {
-                        Field f = null;
-                        for (int i = 0; i < size; i++) {
-                            f = fields.get(i);
-                            SetterEnum.getSetter(f.getType()).set(databaseTemplate.getConnection(), ps, i + 1, f.getType(), data.get(f.getName()));
-                        }
-                    })
+                    databaseTemplate.update(sql, (ps) ->
+                            batchRowsSetter(databaseTemplate.getConnection(), ps, fields, size, data)
+                    )
             );
         } catch (Exception e) {
             // 记录错误数据
@@ -572,7 +568,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 }
             }
         }
-        if(!TableTypeEnum.isView(table.getType())){
+        if (!TableTypeEnum.isView(table.getType())) {
             throw new ConnectorException("Table primary key can not be empty.");
         }
         return "";
