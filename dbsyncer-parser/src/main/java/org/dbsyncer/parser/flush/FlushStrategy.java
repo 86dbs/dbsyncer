@@ -1,4 +1,4 @@
-package org.dbsyncer.parser.strategy;
+package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.common.model.Result;
 
@@ -18,20 +18,20 @@ public interface FlushStrategy {
      * 记录全量同步数据
      *
      * @param metaId
-     * @param writer
+     * @param result
      * @param event
-     * @param data
+     * @param dataList
      */
-    void flushFullData(String metaId, Result writer, String event, List<Map> data);
+    void flushFullData(String metaId, Result result, String event, List<Map> dataList);
 
     /**
      * 记录增量同步数据
      *
      * @param metaId
-     * @param writer
+     * @param result
      * @param event
-     * @param data
+     * @param dataList
      */
-    void flushIncrementData(String metaId, Result writer, String event, List<Map> data);
+    void flushIncrementData(String metaId, Result result, String event, List<Map> dataList);
 
 }

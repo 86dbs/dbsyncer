@@ -26,6 +26,8 @@ public abstract class PickerUtil {
      */
     public static TableGroup mergeTableGroupConfig(Mapping mapping, TableGroup tableGroup) {
         TableGroup group = new TableGroup();
+        group.setId(tableGroup.getId());
+        group.setMappingId(mapping.getId());
         group.setFieldMapping(tableGroup.getFieldMapping());
         group.setSourceTable(tableGroup.getSourceTable());
         group.setTargetTable(tableGroup.getTargetTable());

@@ -44,7 +44,7 @@ public class Mapping extends AbstractConfigModel {
     private int readNum = 10000;
 
     // 单次写入
-    private int batchNum = 200;
+    private int batchNum = 1000;
 
     public String getSourceConnectorId() {
         return sourceConnectorId;

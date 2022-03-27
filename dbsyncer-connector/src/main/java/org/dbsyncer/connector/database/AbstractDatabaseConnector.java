@@ -103,13 +103,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public Result writer(DatabaseConnectorMapper connectorMapper, WriterBatchConfig config) {
-        List<Field> fields = config.getFields();
+        String event = config.getEvent();
         List<Map> data = config.getData();
 
-        // 1、获取select SQL
-        String insertSql = config.getCommand().get(SqlBuilderEnum.INSERT.getName());
-        Assert.hasText(insertSql, "插入语句不能为空.");
-        if (CollectionUtils.isEmpty(fields)) {
+        // 1、获取SQL
+        String executeSql = config.getCommand().get(event);
+        Assert.hasText(executeSql, "执行SQL语句不能为空.");
+        if (CollectionUtils.isEmpty(config.getFields())) {
             logger.error("writer fields can not be empty.");
             throw new ConnectorException("writer fields can not be empty.");
         }
@@ -117,14 +117,23 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             logger.error("writer data can not be empty.");
             throw new ConnectorException("writer data can not be empty.");
         }
+        List<Field> fields = new ArrayList<>(config.getFields());
+        Field pkField = getPrimaryKeyField(config.getFields());
+        // Update / Delete
+        if (!isInsert(event)) {
+            if (isDelete(event)) {
+                fields.clear();
+            }
+            fields.add(pkField);
+        }
+
         final int size = data.size();
         final int fSize = fields.size();
-
         Result result = new Result();
         try {
             // 2、设置参数
             connectorMapper.execute(databaseTemplate -> {
-                databaseTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+                databaseTemplate.batchUpdate(executeSql, new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(PreparedStatement preparedStatement, int i) {
                         batchRowsSetter(databaseTemplate.getConnection(), preparedStatement, fields, fSize, data.get(i));
@@ -161,7 +170,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         Field pkField = getPrimaryKeyField(fields);
         // Update / Delete
-        if (isUpdate(event) || isDelete(event)) {
+        if (!isInsert(event)) {
             if (isDelete(event)) {
                 fields.clear();
             }
@@ -174,13 +183,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         try {
             // 2、设置参数
             execute = connectorMapper.execute(databaseTemplate ->
-                    databaseTemplate.update(sql, (ps) -> {
-                        Field f = null;
-                        for (int i = 0; i < size; i++) {
-                            f = fields.get(i);
-                            SetterEnum.getSetter(f.getType()).set(databaseTemplate.getConnection(), ps, i + 1, f.getType(), data.get(f.getName()));
-                        }
-                    })
+                    databaseTemplate.update(sql, (ps) ->
+                            batchRowsSetter(databaseTemplate.getConnection(), ps, fields, size, data)
+                    )
             );
         } catch (Exception e) {
             // 记录错误数据
@@ -572,7 +577,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 }
             }
         }
-        if(!TableTypeEnum.isView(table.getType())){
+        if (!TableTypeEnum.isView(table.getType())) {
             throw new ConnectorException("Table primary key can not be empty.");
         }
         return "";

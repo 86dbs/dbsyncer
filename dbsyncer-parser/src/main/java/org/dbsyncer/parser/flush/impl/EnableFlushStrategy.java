@@ -1,6 +1,6 @@
-package org.dbsyncer.parser.strategy.impl;
+package org.dbsyncer.parser.flush.impl;
 
-import org.dbsyncer.parser.strategy.AbstractFlushStrategy;
+import org.dbsyncer.parser.flush.AbstractFlushStrategy;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
