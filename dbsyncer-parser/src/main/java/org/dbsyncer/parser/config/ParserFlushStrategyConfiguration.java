@@ -1,7 +1,7 @@
 package org.dbsyncer.parser.config;
 
-import org.dbsyncer.parser.strategy.FlushStrategy;
-import org.dbsyncer.parser.strategy.impl.DisableFullFlushStrategy;
+import org.dbsyncer.parser.flush.FlushStrategy;
+import org.dbsyncer.parser.flush.impl.DisableFullFlushStrategy;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

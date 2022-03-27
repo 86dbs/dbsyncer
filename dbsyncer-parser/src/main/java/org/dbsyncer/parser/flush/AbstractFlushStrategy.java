@@ -1,8 +1,7 @@
-package org.dbsyncer.parser.strategy;
+package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.parser.flush.FlushService;
 import org.dbsyncer.parser.model.Meta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;

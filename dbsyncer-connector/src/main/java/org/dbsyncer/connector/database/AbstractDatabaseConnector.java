@@ -106,9 +106,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         List<Field> fields = config.getFields();
         List<Map> data = config.getData();
 
-        // 1、获取select SQL
-        String insertSql = config.getCommand().get(SqlBuilderEnum.INSERT.getName());
-        Assert.hasText(insertSql, "插入语句不能为空.");
+        // 1、获取SQL
+        String executeSql = config.getCommand().get(config.getEvent());
+        Assert.hasText(executeSql, "执行SQL语句不能为空.");
         if (CollectionUtils.isEmpty(fields)) {
             logger.error("writer fields can not be empty.");
             throw new ConnectorException("writer fields can not be empty.");
@@ -124,7 +124,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         try {
             // 2、设置参数
             connectorMapper.execute(databaseTemplate -> {
-                databaseTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+                databaseTemplate.batchUpdate(executeSql, new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(PreparedStatement preparedStatement, int i) {
                         batchRowsSetter(databaseTemplate.getConnection(), preparedStatement, fields, fSize, data.get(i));

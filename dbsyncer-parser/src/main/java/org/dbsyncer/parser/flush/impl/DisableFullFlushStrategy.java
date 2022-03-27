@@ -1,9 +1,9 @@
-package org.dbsyncer.parser.strategy.impl;
+package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.parser.flush.AbstractFlushStrategy;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
-import org.dbsyncer.parser.strategy.AbstractFlushStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
