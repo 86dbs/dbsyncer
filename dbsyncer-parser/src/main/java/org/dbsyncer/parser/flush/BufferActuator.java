@@ -9,6 +9,6 @@ import org.dbsyncer.parser.flush.model.AbstractRequest;
  */
 public interface BufferActuator {
 
-    void offer(AbstractRequest task);
+    void offer(AbstractRequest request);
 
 }

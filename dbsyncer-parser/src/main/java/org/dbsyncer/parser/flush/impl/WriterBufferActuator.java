@@ -58,7 +58,7 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     }
 
     @Override
-    protected void flush(WriterResponse response) {
+    protected void pull(WriterResponse response) {
         Result result = parserFactory.writeBatch(response.getConnectorMapper(), response.getCommand(), response.getEvent(), response.getFields(), response.getDataList(), BATCH_SIZE);
         flushStrategy.flushIncrementData(response.getMetaId(), result, response.getEvent(), response.getDataList());
     }

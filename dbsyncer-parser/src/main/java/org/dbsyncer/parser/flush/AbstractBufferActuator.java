@@ -71,19 +71,19 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     protected abstract void partition(Request request, Response response);
 
     /**
-     * 异步批处理
+     * 批处理
      *
      * @param response
      */
-    protected abstract void flush(Response response);
+    protected abstract void pull(Response response);
 
     @Override
-    public void offer(AbstractRequest task) {
+    public void offer(AbstractRequest request) {
         if (running) {
-            temp.offer((Request) task);
+            temp.offer((Request) request);
             return;
         }
-        buffer.offer((Request) task);
+        buffer.offer((Request) request);
     }
 
     @Override
@@ -117,7 +117,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
             map.forEach((key, flushTask) -> {
                 long now = Instant.now().toEpochMilli();
                 try {
-                    flush((Response) flushTask);
+                    pull((Response) flushTask);
                 } catch (Exception e) {
                     logger.error("[{}]-flush异常{}", key);
                 }

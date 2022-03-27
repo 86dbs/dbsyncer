@@ -42,7 +42,7 @@ public class FlushBufferActuator extends AbstractBufferActuator<FlushRequest, Fl
     }
 
     @Override
-    protected void flush(FlushResponse response) {
+    protected void pull(FlushResponse response) {
         storageService.addData(StorageEnum.DATA, response.getMetaId(), response.getDataList());
     }
 }
