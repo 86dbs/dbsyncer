@@ -121,24 +121,24 @@ public class ConnectorFactory implements DisposableBean {
         return map;
     }
 
-    public long getCount(ConnectorMapper connectionMapper, Map<String, String> command) {
-        return getConnector(connectionMapper).getCount(connectionMapper, command);
+    public long getCount(ConnectorMapper connectorMapper, Map<String, String> command) {
+        return getConnector(connectorMapper).getCount(connectorMapper, command);
     }
 
-    public Result reader(ConnectorMapper connectionMapper, ReaderConfig config) {
-        Result result = getConnector(connectionMapper).reader(connectionMapper, config);
+    public Result reader(ConnectorMapper connectorMapper, ReaderConfig config) {
+        Result result = getConnector(connectorMapper).reader(connectorMapper, config);
         Assert.notNull(result, "Connector reader result can not null");
         return result;
     }
 
-    public Result writer(ConnectorMapper connectionMapper, WriterBatchConfig config) {
-        Result result = getConnector(connectionMapper).writer(connectionMapper, config);
+    public Result writer(ConnectorMapper connectorMapper, WriterBatchConfig config) {
+        Result result = getConnector(connectorMapper).writer(connectorMapper, config);
         Assert.notNull(result, "Connector writer batch result can not null");
         return result;
     }
 
-    public Result writer(ConnectorMapper connectionMapper, WriterSingleConfig config) {
-        Result result = getConnector(connectionMapper).writer(connectionMapper, config);
+    public Result writer(ConnectorMapper connectorMapper, WriterSingleConfig config) {
+        Result result = getConnector(connectorMapper).writer(connectorMapper, config);
         Assert.notNull(result, "Connector writer single result can not null");
         return result;
     }

@@ -22,13 +22,13 @@ public final class DisableFullFlushStrategy extends AbstractFlushStrategy {
     private LogService logService;
 
     @Override
-    public void flushFullData(String metaId, Result writer, String event, List<Map> data) {
+    public void flushFullData(String metaId, Result result, String event, List<Map> dataList) {
         // 不记录全量数据，只统计成功失败总数
-        refreshTotal(metaId, writer, data);
+        refreshTotal(metaId, result, dataList);
 
-        if (0 < writer.getFail().get()) {
+        if (0 < result.getFail().get()) {
             LogType logType = LogType.TableGroupLog.FULL_FAILED;
-            logService.log(logType, "%s:%s", logType.getMessage(), writer.getError().toString());
+            logService.log(logType, "%s:%s", logType.getMessage(), result.getError().toString());
         }
     }
 

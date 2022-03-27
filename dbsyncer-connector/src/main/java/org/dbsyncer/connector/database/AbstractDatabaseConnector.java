@@ -103,13 +103,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public Result writer(DatabaseConnectorMapper connectorMapper, WriterBatchConfig config) {
-        List<Field> fields = config.getFields();
+        String event = config.getEvent();
         List<Map> data = config.getData();
 
         // 1、获取SQL
-        String executeSql = config.getCommand().get(config.getEvent());
+        String executeSql = config.getCommand().get(event);
         Assert.hasText(executeSql, "执行SQL语句不能为空.");
-        if (CollectionUtils.isEmpty(fields)) {
+        if (CollectionUtils.isEmpty(config.getFields())) {
             logger.error("writer fields can not be empty.");
             throw new ConnectorException("writer fields can not be empty.");
         }
@@ -117,9 +117,18 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             logger.error("writer data can not be empty.");
             throw new ConnectorException("writer data can not be empty.");
         }
+        List<Field> fields = new ArrayList<>(config.getFields());
+        Field pkField = getPrimaryKeyField(config.getFields());
+        // Update / Delete
+        if (!isInsert(event)) {
+            if (isDelete(event)) {
+                fields.clear();
+            }
+            fields.add(pkField);
+        }
+
         final int size = data.size();
         final int fSize = fields.size();
-
         Result result = new Result();
         try {
             // 2、设置参数
@@ -161,7 +170,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         Field pkField = getPrimaryKeyField(fields);
         // Update / Delete
-        if (isUpdate(event) || isDelete(event)) {
+        if (!isInsert(event)) {
             if (isDelete(event)) {
                 fields.clear();
             }

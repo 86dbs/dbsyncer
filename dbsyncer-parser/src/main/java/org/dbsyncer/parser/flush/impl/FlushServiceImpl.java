@@ -139,9 +139,9 @@ public class FlushServiceImpl implements FlushService, ScheduledTaskJob {
                     try {
                         storageService.addData(StorageEnum.DATA, metaId, list);
                     } catch (Exception e) {
-                        logger.error("[{}]-flush异常{}", metaId, list.size());
+                        logger.error("[{}]-flushData异常{}", metaId, list.size());
                     }
-                    logger.info("[{}]-flush{}条，耗时{}秒", metaId, list.size(), (Instant.now().toEpochMilli() - now) / 1000);
+                    logger.info("[{}]-flushData{}条，耗时{}秒", metaId, list.size(), (Instant.now().toEpochMilli() - now) / 1000);
                 });
             });
             task.clear();

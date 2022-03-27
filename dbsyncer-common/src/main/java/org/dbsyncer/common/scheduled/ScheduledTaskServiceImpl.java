@@ -50,6 +50,11 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService, Disposabl
     }
 
     @Override
+    public void start(long period, ScheduledTaskJob job) {
+        start(UUIDUtil.getUUID(), period, job);
+    }
+
+    @Override
     public void stop(String key) {
         ScheduledFuture job = map.get(key);
         if (null != job) {

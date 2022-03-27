@@ -21,6 +21,8 @@ public interface ScheduledTaskService {
 
     void start(String cron, ScheduledTaskJob job);
 
+    void start(long period, ScheduledTaskJob job);
+
     void stop(String key);
 
 }

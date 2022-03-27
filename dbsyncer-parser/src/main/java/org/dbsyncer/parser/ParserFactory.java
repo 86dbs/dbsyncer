@@ -17,10 +17,12 @@ import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
+import org.dbsyncer.parser.flush.BufferActuator;
+import org.dbsyncer.parser.flush.FlushStrategy;
+import org.dbsyncer.parser.flush.model.WriterBufferTask;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
-import org.dbsyncer.parser.flush.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
@@ -76,6 +78,9 @@ public class ParserFactory implements Parser {
 
     @Autowired
     private ApplicationContext applicationContext;
+
+    @Autowired
+    private BufferActuator writerBufferActuator;
 
     @Override
     public ConnectorMapper connect(ConnectorConfig config) {
@@ -266,8 +271,8 @@ public class ParserFactory implements Parser {
         params.putIfAbsent(ParserEnum.PAGE_INDEX.getCode(), ParserEnum.PAGE_INDEX.getDefaultValue());
         int pageSize = mapping.getReadNum();
         int batchSize = mapping.getBatchNum();
-        ConnectorMapper sConnectionMapper = connectorFactory.connect(sConfig);
-        ConnectorMapper tConnectionMapper = connectorFactory.connect(tConfig);
+        ConnectorMapper sConnectorMapper = connectorFactory.connect(sConfig);
+        ConnectorMapper tConnectorMapper = connectorFactory.connect(tConfig);
 
         for (; ; ) {
             if (!task.isRunning()) {
@@ -277,7 +282,7 @@ public class ParserFactory implements Parser {
 
             // 1、获取数据源数据
             int pageIndex = Integer.parseInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
-            Result reader = connectorFactory.reader(sConnectionMapper, new ReaderConfig(command, new ArrayList<>(), pageIndex, pageSize));
+            Result reader = connectorFactory.reader(sConnectorMapper, new ReaderConfig(command, new ArrayList<>(), pageIndex, pageSize));
             List<Map> data = reader.getData();
             if (CollectionUtils.isEmpty(data)) {
                 params.clear();
@@ -295,7 +300,7 @@ public class ParserFactory implements Parser {
             pluginFactory.convert(group.getPlugin(), data, target);
 
             // 5、写入目标源
-            Result writer = writeBatch(tConnectionMapper, command, picker.getTargetFields(), target, batchSize);
+            Result writer = writeBatch(tConnectorMapper, command, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize);
 
             // 6、更新结果
             flush(task, writer, target);
@@ -324,11 +329,67 @@ public class ParserFactory implements Parser {
         // 3、插件转换
         pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
 
-        // 4、写入目标源
-        Result writer = connectorFactory.writer(tConnectorMapper, new WriterSingleConfig(picker.getTargetFields(), tableGroup.getCommand(), event, target, rowChangedEvent.getTableName(), rowChangedEvent.isForceUpdate()));
+        // 4、写入缓冲执行器
+        writerBufferActuator.offer(new WriterBufferTask(metaId, tableGroup.getId(), event, tConnectorMapper, picker.getTargetFields(), tableGroup.getCommand(), target));
+    }
 
-        // 5、更新结果
-        flushStrategy.flushIncrementData(metaId, writer, event, picker.getTargetMapList());
+    /**
+     * 批量写入
+     *
+     * @param connectorMapper
+     * @param command
+     * @param fields
+     * @param dataList
+     * @param batchSize
+     * @return
+     */
+    @Override
+    public Result writeBatch(ConnectorMapper connectorMapper, Map<String, String> command, String event, List<Field> fields, List<Map> dataList, int batchSize) {
+        // 总数
+        int total = dataList.size();
+        // 单次任务
+        if (total <= batchSize) {
+            return connectorFactory.writer(connectorMapper, new WriterBatchConfig(event, command, fields, dataList));
+        }
+
+        // 批量任务, 拆分
+        int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
+
+        final Result result = new Result();
+        final CountDownLatch latch = new CountDownLatch(taskSize);
+        int fromIndex = 0;
+        int toIndex = batchSize;
+        for (int i = 0; i < taskSize; i++) {
+            final List<Map> data;
+            if (toIndex > total) {
+                toIndex = fromIndex + (total % batchSize);
+                data = dataList.subList(fromIndex, toIndex);
+            } else {
+                data = dataList.subList(fromIndex, toIndex);
+                fromIndex += batchSize;
+                toIndex += batchSize;
+            }
+
+            taskExecutor.execute(() -> {
+                try {
+                    Result w = connectorFactory.writer(connectorMapper, new WriterBatchConfig(event, command, fields, data));
+                    // CAS
+                    result.getFailData().addAll(w.getFailData());
+                    result.getFail().getAndAdd(w.getFail().get());
+                    result.getError().append(w.getError());
+                } catch (Exception e) {
+                    result.getError().append(e.getMessage()).append(System.lineSeparator());
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage());
+        }
+        return result;
     }
 
     /**
@@ -383,66 +444,6 @@ public class ParserFactory implements Parser {
     private ConnectorConfig getConnectorConfig(String connectorId) {
         Connector connector = getConnector(connectorId);
         return connector.getConfig();
-    }
-
-    /**
-     * 批量写入
-     *
-     * @param connectorMapper
-     * @param command
-     * @param fields
-     * @param target
-     * @param batchSize
-     * @return
-     */
-    private Result writeBatch(ConnectorMapper connectorMapper, Map<String, String> command, List<Field> fields, List<Map> target, int batchSize) {
-        // 事件
-        String event = ConnectorConstant.OPERTION_INSERT;
-        // 总数
-        int total = target.size();
-        // 单次任务
-        if (total <= batchSize) {
-            return connectorFactory.writer(connectorMapper, new WriterBatchConfig(event, command, fields, target));
-        }
-
-        // 批量任务, 拆分
-        int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
-
-        final Result result = new Result();
-        final CountDownLatch latch = new CountDownLatch(taskSize);
-        int fromIndex = 0;
-        int toIndex = batchSize;
-        for (int i = 0; i < taskSize; i++) {
-            final List<Map> data;
-            if (toIndex > total) {
-                toIndex = fromIndex + (total % batchSize);
-                data = target.subList(fromIndex, toIndex);
-            } else {
-                data = target.subList(fromIndex, toIndex);
-                fromIndex += batchSize;
-                toIndex += batchSize;
-            }
-
-            taskExecutor.execute(() -> {
-                try {
-                    Result w = connectorFactory.writer(connectorMapper, new WriterBatchConfig(event, command, fields, data));
-                    // CAS
-                    result.getFailData().addAll(w.getFailData());
-                    result.getFail().getAndAdd(w.getFail().get());
-                    result.getError().append(w.getError());
-                } catch (Exception e) {
-                    result.getError().append(e.getMessage()).append(System.lineSeparator());
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            logger.error(e.getMessage());
-        }
-        return result;
     }
 
 }

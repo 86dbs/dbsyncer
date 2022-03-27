@@ -1,6 +1,8 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.model.Result;
+import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
@@ -161,4 +163,18 @@ public interface Parser {
      * @param rowChangedEvent
      */
     void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent rowChangedEvent);
+
+    /**
+     * 批执行
+     *
+     * @param connectorMapper
+     * @param command
+     * @param event
+     * @param fields
+     * @param dataList
+     * @param batchSize
+     * @return
+     */
+    Result writeBatch(ConnectorMapper connectorMapper, Map<String, String> command, String event, List<Field> fields, List<Map> dataList, int batchSize);
+
 }
