@@ -1,5 +1,7 @@
 package org.dbsyncer.parser.flush;
 
+import org.dbsyncer.parser.flush.model.AbstractRequest;
+
 /**
  * @author AE86
  * @version 1.0.0
@@ -7,6 +9,6 @@ package org.dbsyncer.parser.flush;
  */
 public interface BufferActuator {
 
-    void offer(AbstractBufferTask task);
+    void offer(AbstractRequest task);
 
 }

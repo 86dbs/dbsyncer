@@ -2,7 +2,6 @@ package org.dbsyncer.parser.flush.model;
 
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.Field;
-import org.dbsyncer.parser.flush.AbstractBufferTask;
 
 import java.util.List;
 import java.util.Map;
@@ -12,7 +11,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2022/3/27 16:57
  */
-public class WriterBufferTask extends AbstractBufferTask {
+public class WriterRequest extends AbstractRequest {
 
     private String metaId;
 
@@ -28,7 +27,7 @@ public class WriterBufferTask extends AbstractBufferTask {
 
     private Map row;
 
-    public WriterBufferTask(String metaId, String tableGroupId, String event, ConnectorMapper connectorMapper, List<Field> fields, Map<String, String> command, Map row) {
+    public WriterRequest(String metaId, String tableGroupId, String event, ConnectorMapper connectorMapper, List<Field> fields, Map<String, String> command, Map row) {
         this.metaId = metaId;
         this.tableGroupId = tableGroupId;
         this.event = event;

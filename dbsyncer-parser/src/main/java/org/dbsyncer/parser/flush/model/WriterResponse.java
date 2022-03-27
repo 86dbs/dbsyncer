@@ -2,7 +2,6 @@ package org.dbsyncer.parser.flush.model;
 
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.Field;
-import org.dbsyncer.parser.flush.AbstractFlushTask;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -13,7 +12,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2022/3/27 18:11
  */
-public class WriterFlushTask extends AbstractFlushTask {
+public class WriterResponse extends AbstractResponse {
 
     private boolean isMerged;
 
@@ -86,7 +85,7 @@ public class WriterFlushTask extends AbstractFlushTask {
     }
 
     @Override
-    public int getFlushTaskSize() {
+    public int getTaskSize() {
         return dataList.size();
     }
 

@@ -3,10 +3,10 @@ package org.dbsyncer.parser.flush.impl;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.parser.ParserFactory;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
-import org.dbsyncer.parser.flush.AbstractFlushTask;
+import org.dbsyncer.parser.flush.model.AbstractResponse;
 import org.dbsyncer.parser.flush.FlushStrategy;
-import org.dbsyncer.parser.flush.model.WriterBufferTask;
-import org.dbsyncer.parser.flush.model.WriterFlushTask;
+import org.dbsyncer.parser.flush.model.WriterRequest;
+import org.dbsyncer.parser.flush.model.WriterResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +18,7 @@ import java.util.Collections;
  * @date 2022/3/27 16:50
  */
 @Component
-public class WriterBufferActuator extends AbstractBufferActuator<WriterBufferTask, WriterFlushTask> {
+public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, WriterResponse> {
 
     @Autowired
     private ParserFactory parserFactory;
@@ -29,32 +29,37 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterBufferTas
     private final static int BATCH_SIZE = 100;
 
     @Override
-    protected AbstractFlushTask getValue() {
-        return new WriterFlushTask();
+    protected long getPeriod() {
+        return 300;
     }
 
     @Override
-    protected String getPartitionKey(WriterBufferTask bufferTask) {
-        return new StringBuilder(bufferTask.getTableGroupId()).append(bufferTask.getEvent()).toString();
+    protected AbstractResponse getValue() {
+        return new WriterResponse();
     }
 
     @Override
-    protected void partition(WriterBufferTask bufferTask, WriterFlushTask flushTask) {
-        flushTask.getDataList().add(bufferTask.getRow());
-        if (flushTask.isMerged()) {
+    protected String getPartitionKey(WriterRequest request) {
+        return new StringBuilder(request.getTableGroupId()).append("-").append(request.getEvent()).toString();
+    }
+
+    @Override
+    protected void partition(WriterRequest request, WriterResponse response) {
+        response.getDataList().add(request.getRow());
+        if (response.isMerged()) {
             return;
         }
-        flushTask.setMetaId(bufferTask.getMetaId());
-        flushTask.setEvent(bufferTask.getEvent());
-        flushTask.setConnectorMapper(bufferTask.getConnectorMapper());
-        flushTask.setFields(Collections.unmodifiableList(bufferTask.getFields()));
-        flushTask.setCommand(bufferTask.getCommand());
-        flushTask.setMerged(true);
+        response.setMetaId(request.getMetaId());
+        response.setEvent(request.getEvent());
+        response.setConnectorMapper(request.getConnectorMapper());
+        response.setFields(Collections.unmodifiableList(request.getFields()));
+        response.setCommand(request.getCommand());
+        response.setMerged(true);
     }
 
     @Override
-    protected void flush(WriterFlushTask flushTask) {
-        Result result = parserFactory.writeBatch(flushTask.getConnectorMapper(), flushTask.getCommand(), flushTask.getEvent(), flushTask.getFields(), flushTask.getDataList(), BATCH_SIZE);
-        flushStrategy.flushIncrementData(flushTask.getMetaId(), result, flushTask.getEvent(), flushTask.getDataList());
+    protected void flush(WriterResponse response) {
+        Result result = parserFactory.writeBatch(response.getConnectorMapper(), response.getCommand(), response.getEvent(), response.getFields(), response.getDataList(), BATCH_SIZE);
+        flushStrategy.flushIncrementData(response.getMetaId(), result, response.getEvent(), response.getDataList());
     }
 }

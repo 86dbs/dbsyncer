@@ -2,6 +2,8 @@ package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.parser.flush.model.AbstractRequest;
+import org.dbsyncer.parser.flush.model.AbstractResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,16 +20,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @version 1.0.0
  * @date 2022/3/27 17:36
  */
-public abstract class AbstractBufferActuator<B, F> implements BufferActuator, ScheduledTaskJob {
+public abstract class AbstractBufferActuator<Request, Response> implements BufferActuator, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private ScheduledTaskService scheduledTaskService;
 
-    private Queue<B> buffer = new ConcurrentLinkedQueue();
+    private Queue<Request> buffer = new ConcurrentLinkedQueue();
 
-    private Queue<B> temp = new ConcurrentLinkedQueue();
+    private Queue<Request> temp = new ConcurrentLinkedQueue();
 
     private final Object LOCK = new Object();
 
@@ -35,46 +37,53 @@ public abstract class AbstractBufferActuator<B, F> implements BufferActuator, Sc
 
     @PostConstruct
     private void init() {
-        scheduledTaskService.start(300, this);
+        scheduledTaskService.start(getPeriod(), this);
     }
+
+    /**
+     * 获取定时间隔（毫秒）
+     *
+     * @return
+     */
+    protected abstract long getPeriod();
 
     /**
      * 生成缓存value
      *
      * @return
      */
-    protected abstract AbstractFlushTask getValue();
+    protected abstract AbstractResponse getValue();
 
     /**
      * 生成分区key
      *
-     * @param bufferTask
+     * @param request
      * @return
      */
-    protected abstract String getPartitionKey(B bufferTask);
+    protected abstract String getPartitionKey(Request request);
 
     /**
      * 分区
      *
-     * @param bufferTask
-     * @param flushTask
+     * @param request
+     * @param response
      */
-    protected abstract void partition(B bufferTask, F flushTask);
+    protected abstract void partition(Request request, Response response);
 
     /**
      * 异步批处理
      *
-     * @param flushTask
+     * @param response
      */
-    protected abstract void flush(F flushTask);
+    protected abstract void flush(Response response);
 
     @Override
-    public void offer(AbstractBufferTask task) {
+    public void offer(AbstractRequest task) {
         if (running) {
-            temp.offer((B) task);
+            temp.offer((Request) task);
             return;
         }
-        buffer.offer((B) task);
+        buffer.offer((Request) task);
     }
 
     @Override
@@ -93,26 +102,26 @@ public abstract class AbstractBufferActuator<B, F> implements BufferActuator, Sc
         }
     }
 
-    private void flush(Queue<B> queue) {
+    private void flush(Queue<Request> queue) {
         if (!queue.isEmpty()) {
-            final Map<String, AbstractFlushTask> map = new LinkedHashMap<>();
+            final Map<String, AbstractResponse> map = new LinkedHashMap<>();
             while (!queue.isEmpty()) {
-                B poll = queue.poll();
+                Request poll = queue.poll();
                 String key = getPartitionKey(poll);
                 if (!map.containsKey(key)) {
                     map.putIfAbsent(key, getValue());
                 }
-                partition(poll, (F) map.get(key));
+                partition(poll, (Response) map.get(key));
             }
 
             map.forEach((key, flushTask) -> {
                 long now = Instant.now().toEpochMilli();
                 try {
-                    flush((F) flushTask);
+                    flush((Response) flushTask);
                 } catch (Exception e) {
                     logger.error("[{}]-flush异常{}", key);
                 }
-                logger.info("[{}]-flush{}条，耗时{}秒", key, flushTask.getFlushTaskSize(), (Instant.now().toEpochMilli() - now) / 1000);
+                logger.info("[{}]-flush{}条，耗时{}秒", key, flushTask.getTaskSize(), (Instant.now().toEpochMilli() - now) / 1000);
             });
             map.clear();
         }
