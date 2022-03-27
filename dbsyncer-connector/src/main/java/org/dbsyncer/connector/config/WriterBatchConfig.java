@@ -10,10 +10,11 @@ public class WriterBatchConfig extends WriterConfig {
      */
     private List<Map> data;
 
-    public WriterBatchConfig(Map<String, String> command, List<Field> fields, List<Map> data) {
+    public WriterBatchConfig(String event, Map<String, String> command, List<Field> fields, List<Map> data) {
+        setEvent(event);
         setCommand(command);
         setFields(fields);
-        setData(data);
+        this.data = data;
     }
 
     public List<Map> getData() {

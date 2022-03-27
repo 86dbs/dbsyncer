@@ -11,11 +11,6 @@ public class WriterSingleConfig extends WriterConfig {
     private Map<String, Object> data;
 
     /**
-     * 事件
-     */
-    private String event;
-
-    /**
      * 表名
      */
     private String table;
@@ -31,11 +26,11 @@ public class WriterSingleConfig extends WriterConfig {
     private boolean forceUpdate;
 
     public WriterSingleConfig(List<Field> fields, Map<String, String> command, String event, Map<String, Object> data, String table, boolean forceUpdate) {
+        setEvent(event);
         setCommand(command);
         setFields(fields);
-        setData(data);
-        setEvent(event);
-        setTable(table);
+        this.data = data;
+        this.table = table;
         this.forceUpdate = forceUpdate;
     }
 
@@ -45,15 +40,6 @@ public class WriterSingleConfig extends WriterConfig {
 
     public WriterSingleConfig setData(Map<String, Object> data) {
         this.data = data;
-        return this;
-    }
-
-    public String getEvent() {
-        return event;
-    }
-
-    public WriterSingleConfig setEvent(String event) {
-        this.event = event;
         return this;
     }
 

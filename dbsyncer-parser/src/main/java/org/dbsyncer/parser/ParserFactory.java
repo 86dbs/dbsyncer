@@ -396,11 +396,13 @@ public class ParserFactory implements Parser {
      * @return
      */
     private Result writeBatch(ConnectorMapper connectorMapper, Map<String, String> command, List<Field> fields, List<Map> target, int batchSize) {
+        // 事件
+        String event = ConnectorConstant.OPERTION_INSERT;
         // 总数
         int total = target.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(connectorMapper, new WriterBatchConfig(command, fields, target));
+            return connectorFactory.writer(connectorMapper, new WriterBatchConfig(event, command, fields, target));
         }
 
         // 批量任务, 拆分
@@ -423,7 +425,7 @@ public class ParserFactory implements Parser {
 
             taskExecutor.execute(() -> {
                 try {
-                    Result w = connectorFactory.writer(connectorMapper, new WriterBatchConfig(command, fields, data));
+                    Result w = connectorFactory.writer(connectorMapper, new WriterBatchConfig(event, command, fields, data));
                     // CAS
                     result.getFailData().addAll(w.getFailData());
                     result.getFail().getAndAdd(w.getFail().get());

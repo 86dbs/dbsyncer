@@ -6,6 +6,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.Database;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
@@ -176,7 +177,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             Map<String, String> command = new HashMap<>();
             command.put(SqlBuilderEnum.INSERT.getName(), executor.getInsert());
             ConnectorMapper connectorMapper = connectorFactory.connect(config);
-            connectorFactory.writer(connectorMapper, new WriterBatchConfig(command, executor.getFields(), list));
+            connectorFactory.writer(connectorMapper, new WriterBatchConfig(ConnectorConstant.OPERTION_INSERT, command, executor.getFields(), list));
         }
 
     }
