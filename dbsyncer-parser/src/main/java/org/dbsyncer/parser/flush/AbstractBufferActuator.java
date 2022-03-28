@@ -14,6 +14,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author AE86
@@ -31,7 +33,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     private Queue<Request> temp = new ConcurrentLinkedQueue();
 
-    private final Object LOCK = new Object();
+    private final Lock lock = new ReentrantLock(true);
 
     private volatile boolean running;
 
@@ -91,14 +93,23 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
         if (running) {
             return;
         }
-        synchronized (LOCK) {
-            if (running) {
-                return;
+
+        final Lock bufferLock = lock;
+        boolean locked = false;
+        try {
+            locked = bufferLock.tryLock();
+            if (locked && !running) {
+                running = true;
+                flush(buffer);
+                running = false;
+                flush(temp);
             }
-            running = true;
-            flush(buffer);
-            running = false;
-            flush(temp);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        } finally {
+            if (locked) {
+                bufferLock.unlock();
+            }
         }
     }
 
@@ -119,9 +130,9 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
                 try {
                     pull((Response) flushTask);
                 } catch (Exception e) {
-                    logger.error("[{}]-flush异常{}", key);
+                    logger.error("[{}]异常{}", key);
                 }
-                logger.info("[{}]-flush{}条，耗时{}秒", key, flushTask.getTaskSize(), (Instant.now().toEpochMilli() - now) / 1000);
+                logger.info("[{}]{}条，耗时{}秒", key, flushTask.getTaskSize(), (Instant.now().toEpochMilli() - now) / 1000);
             });
             map.clear();
         }
