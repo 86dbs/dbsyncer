@@ -27,12 +27,10 @@ import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
@@ -174,26 +172,12 @@ public class ParserFactory implements Parser {
         try {
             JSONObject conn = new JSONObject(json);
             JSONObject config = (JSONObject) conn.remove("config");
-            JSONArray table = (JSONArray) conn.remove("table");
             Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
             Assert.notNull(connector, "Connector can not be null.");
             String connectorType = config.getString("connectorType");
             Class<?> configClass = ConnectorEnum.getConfigClass(connectorType);
             ConnectorConfig obj = (ConnectorConfig) JsonUtil.jsonToObj(config.toString(), configClass);
             connector.setConfig(obj);
-
-            List<Table> tableList = new ArrayList<>();
-            boolean exist = false;
-            for (int i = 0; i < table.length(); i++) {
-                if (table.get(i) instanceof String) {
-                    tableList.add(new Table(table.getString(i)));
-                    exist = true;
-                }
-            }
-            if (!exist) {
-                tableList = JsonUtil.jsonToArray(table.toString(), Table.class);
-            }
-            connector.setTable(tableList);
 
             return connector;
         } catch (JSONException e) {
@@ -204,16 +188,8 @@ public class ParserFactory implements Parser {
 
     @Override
     public <T> T parseObject(String json, Class<T> clazz) {
-        try {
-            JSONObject obj = new JSONObject(json);
-            T t = JsonUtil.jsonToObj(obj.toString(), clazz);
-            String format = String.format("%s can not be null.", clazz.getSimpleName());
-            Assert.notNull(t, format);
-            return t;
-        } catch (JSONException e) {
-            logger.error(e.getMessage());
-            throw new ParserException(e.getMessage());
-        }
+        T t = JsonUtil.jsonToObj(json, clazz);
+        return t;
     }
 
     @Override
@@ -430,9 +406,7 @@ public class ParserFactory implements Parser {
         Assert.hasText(connectorId, "Connector id can not be empty.");
         Connector conn = cacheService.get(connectorId, Connector.class);
         Assert.notNull(conn, "Connector can not be null.");
-        Connector connector = new Connector();
-        BeanUtils.copyProperties(conn, connector);
-        return connector;
+        return conn;
     }
 
     /**
@@ -442,8 +416,7 @@ public class ParserFactory implements Parser {
      * @return
      */
     private ConnectorConfig getConnectorConfig(String connectorId) {
-        Connector connector = getConnector(connectorId);
-        return connector.getConfig();
+        return getConnector(connectorId).getConfig();
     }
 
 }

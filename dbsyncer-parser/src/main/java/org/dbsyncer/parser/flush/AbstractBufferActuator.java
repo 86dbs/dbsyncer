@@ -98,7 +98,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
         boolean locked = false;
         try {
             locked = bufferLock.tryLock();
-            if (locked && !running) {
+            if (locked) {
                 running = true;
                 flush(buffer);
                 running = false;
@@ -108,6 +108,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
             logger.error(e.getMessage());
         } finally {
             if (locked) {
+                running = false;
                 bufferLock.unlock();
             }
         }
