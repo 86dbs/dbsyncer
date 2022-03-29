@@ -2,12 +2,10 @@ package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.parser.model.Meta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author AE86
@@ -23,31 +21,30 @@ public abstract class AbstractFlushStrategy implements FlushStrategy {
     private CacheService cacheService;
 
     @Override
-    public void flushFullData(String metaId, Result result, String event, List<Map> dataList) {
-        flush(metaId, result, event, dataList);
+    public void flushFullData(String metaId, Result result, String event) {
+        flush(metaId, result, event);
     }
 
     @Override
-    public void flushIncrementData(String metaId, Result result, String event, List<Map> dataList) {
-        flush(metaId, result, event, dataList);
+    public void flushIncrementData(String metaId, Result result, String event) {
+        flush(metaId, result, event);
     }
 
-    protected void flush(String metaId, Result result, String event, List<Map> dataList) {
-        refreshTotal(metaId, result, dataList);
+    protected void flush(String metaId, Result result, String event) {
+        refreshTotal(metaId, result);
 
-        boolean success = 0 == result.getFail().get();
-        if (!success) {
-            dataList.clear();
-            dataList.addAll(result.getFailData());
+        if (!CollectionUtils.isEmpty(result.getFailData())) {
+            flushService.asyncWrite(metaId, event, false, result.getFailData(), result.getError().toString());
         }
-        flushService.asyncWrite(metaId, event, success, dataList, result.getError().toString());
+        if (!CollectionUtils.isEmpty(result.getSuccessData())) {
+            flushService.asyncWrite(metaId, event, true, result.getSuccessData(), "");
+        }
     }
 
-    protected void refreshTotal(String metaId, Result writer, List<Map> dataList){
-        long fail = writer.getFail().get();
+    protected void refreshTotal(String metaId, Result writer) {
         Meta meta = getMeta(metaId);
-        meta.getFail().getAndAdd(fail);
-        meta.getSuccess().getAndAdd(dataList.size() - fail);
+        meta.getFail().getAndAdd(writer.getFailData().size());
+        meta.getSuccess().getAndAdd(writer.getSuccessData().size());
     }
 
     protected Meta getMeta(String metaId) {

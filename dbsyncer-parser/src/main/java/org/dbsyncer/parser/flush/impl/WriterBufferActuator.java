@@ -3,8 +3,8 @@ package org.dbsyncer.parser.flush.impl;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.parser.ParserFactory;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
-import org.dbsyncer.parser.flush.model.AbstractResponse;
 import org.dbsyncer.parser.flush.FlushStrategy;
+import org.dbsyncer.parser.flush.model.AbstractResponse;
 import org.dbsyncer.parser.flush.model.WriterRequest;
 import org.dbsyncer.parser.flush.model.WriterResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +59,8 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
 
     @Override
     protected void pull(WriterResponse response) {
-        Result result = parserFactory.writeBatch(response.getConnectorMapper(), response.getCommand(), response.getEvent(), response.getFields(), response.getDataList(), BATCH_SIZE);
-        flushStrategy.flushIncrementData(response.getMetaId(), result, response.getEvent(), response.getDataList());
+        Result result = parserFactory.writeBatch(response.getConnectorMapper(), response.getCommand(), response.getEvent(),
+                response.getFields(), response.getDataList(), BATCH_SIZE);
+        flushStrategy.flushIncrementData(response.getMetaId(), result, response.getEvent());
     }
 }

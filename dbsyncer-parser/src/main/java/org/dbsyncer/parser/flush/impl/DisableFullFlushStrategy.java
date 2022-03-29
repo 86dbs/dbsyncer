@@ -1,13 +1,11 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.parser.flush.AbstractFlushStrategy;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * 不记录全量数据, 只记录增量同步数据, 将异常记录到系统日志中
@@ -22,11 +20,11 @@ public final class DisableFullFlushStrategy extends AbstractFlushStrategy {
     private LogService logService;
 
     @Override
-    public void flushFullData(String metaId, Result result, String event, List<Map> dataList) {
+    public void flushFullData(String metaId, Result result, String event) {
         // 不记录全量数据，只统计成功失败总数
-        refreshTotal(metaId, result, dataList);
+        refreshTotal(metaId, result);
 
-        if (0 < result.getFail().get()) {
+        if (!CollectionUtils.isEmpty(result.getFailData())) {
             LogType logType = LogType.TableGroupLog.FULL_FAILED;
             logService.log(logType, "%s:%s", logType.getMessage(), result.getError().toString());
         }

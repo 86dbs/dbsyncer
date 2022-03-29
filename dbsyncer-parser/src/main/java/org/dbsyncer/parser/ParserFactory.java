@@ -259,7 +259,7 @@ public class ParserFactory implements Parser {
             // 1、获取数据源数据
             int pageIndex = Integer.parseInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
             Result reader = connectorFactory.reader(sConnectorMapper, new ReaderConfig(command, new ArrayList<>(), pageIndex, pageSize));
-            List<Map> data = reader.getData();
+            List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
                 params.clear();
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
@@ -267,7 +267,7 @@ public class ParserFactory implements Parser {
             }
 
             // 2、映射字段
-            List<Map> target = picker.pickData(reader.getData());
+            List<Map> target = picker.pickData(data);
 
             // 3、参数转换
             ConvertUtil.convert(group.getConvert(), target);
@@ -279,7 +279,7 @@ public class ParserFactory implements Parser {
             Result writer = writeBatch(tConnectorMapper, command, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize);
 
             // 6、更新结果
-            flush(task, writer, target);
+            flush(task, writer);
 
             // 7、更新分页数
             params.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(++pageIndex));
@@ -349,12 +349,11 @@ public class ParserFactory implements Parser {
             taskExecutor.execute(() -> {
                 try {
                     Result w = connectorFactory.writer(connectorMapper, new WriterBatchConfig(event, command, fields, data));
-                    // CAS
-                    result.getFailData().addAll(w.getFailData());
-                    result.getFail().getAndAdd(w.getFail().get());
+                    result.addSuccessData(w.getSuccessData());
+                    result.addFailData(w.getFailData());
                     result.getError().append(w.getError());
                 } catch (Exception e) {
-                    result.getError().append(e.getMessage()).append(System.lineSeparator());
+                    logger.error(e.getMessage());
                 } finally {
                     latch.countDown();
                 }
@@ -373,10 +372,9 @@ public class ParserFactory implements Parser {
      *
      * @param task
      * @param writer
-     * @param data
      */
-    private void flush(Task task, Result writer, List<Map> data) {
-        flushStrategy.flushFullData(task.getId(), writer, ConnectorConstant.OPERTION_INSERT, data);
+    private void flush(Task task, Result writer) {
+        flushStrategy.flushFullData(task.getId(), writer, ConnectorConstant.OPERTION_INSERT);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(Instant.now().toEpochMilli());

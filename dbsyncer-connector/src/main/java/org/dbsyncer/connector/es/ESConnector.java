@@ -160,7 +160,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             for (SearchHit hit : searchHits) {
                 list.add(hit.getSourceAsMap());
             }
-            return new Result(new ArrayList<>(list));
+            return new Result(list);
         } catch (IOException e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e.getMessage());
@@ -193,7 +193,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             }
         } catch (Exception e) {
             // 记录错误数据
-            result.getFail().set(data.size());
+            result.addFailData(data);
             result.getError().append(e.getMessage()).append(System.lineSeparator());
             logger.error(e.getMessage());
         }
@@ -331,7 +331,6 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         } catch (Exception e) {
             // 记录错误数据
             result.getFailData().add(data);
-            result.getFail().set(1);
             result.getError().append("INDEX:").append(config.getIndex()).append(System.lineSeparator())
                     .append("TYPE:").append(config.getType()).append(System.lineSeparator())
                     .append("ID:").append(id).append(System.lineSeparator())

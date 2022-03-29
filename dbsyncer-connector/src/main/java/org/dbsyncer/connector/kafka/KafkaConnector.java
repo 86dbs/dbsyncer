@@ -85,7 +85,7 @@ public class KafkaConnector extends AbstractConnector implements Connector<Kafka
             data.forEach(row -> connectorMapper.getConnection().send(topic, String.valueOf(row.get(pk)), row));
         } catch (Exception e) {
             // 记录错误数据
-            result.getFail().set(data.size());
+            result.addFailData(data);
             result.getError().append(e.getMessage()).append(System.lineSeparator());
             logger.error(e.getMessage());
         }
@@ -103,7 +103,6 @@ public class KafkaConnector extends AbstractConnector implements Connector<Kafka
         } catch (Exception e) {
             // 记录错误数据
             result.getFailData().add(data);
-            result.getFail().set(data.size());
             result.getError().append(e.getMessage()).append(System.lineSeparator());
             logger.error(e.getMessage());
         }

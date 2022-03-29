@@ -98,7 +98,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         List<Map<String, Object>> list = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
 
         // 4、返回结果集
-        return new Result(new ArrayList<>(list));
+        return new Result(list);
     }
 
     @Override
@@ -130,10 +130,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         final int size = data.size();
         final int fSize = fields.size();
         Result result = new Result();
+        int[] execute = null;
         try {
             // 2、设置参数
-            connectorMapper.execute(databaseTemplate -> {
-                databaseTemplate.batchUpdate(executeSql, new BatchPreparedStatementSetter() {
+            execute = connectorMapper.execute(databaseTemplate -> {
+                int[] batchUpdate = databaseTemplate.batchUpdate(executeSql, new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(PreparedStatement preparedStatement, int i) {
                         batchRowsSetter(databaseTemplate.getConnection(), preparedStatement, fields, fSize, data.get(i));
@@ -144,13 +145,25 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                         return size;
                     }
                 });
-                return true;
+                return batchUpdate;
             });
         } catch (Exception e) {
-            // 记录错误数据
-            result.getFail().set(size);
-            result.getError().append(e.getMessage()).append(System.lineSeparator());
-            logger.error(e.getMessage());
+            result.getError().append("SQL:").append(executeSql).append(System.lineSeparator())
+                    .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
+            logger.error(result.getError().toString());
+        }
+
+        if (null != execute) {
+            int batchSize = execute.length;
+            for (int i = 0; i < batchSize; i++) {
+                if (execute[i] == 0) {
+                    result.getFailData().add(data.get(i));
+                    result.getError().append("SQL:").append(executeSql).append(System.lineSeparator())
+                            .append("DATA:").append(data.get(i)).append(System.lineSeparator());
+                    continue;
+                }
+                result.getSuccessData().add(data.get(i));
+            }
         }
         return result;
     }
@@ -191,11 +204,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             // 记录错误数据
             if (!config.isForceUpdate()) {
                 result.getFailData().add(data);
-                result.getFail().set(1);
                 result.getError().append("SQL:").append(sql).append(System.lineSeparator())
                         .append("DATA:").append(data).append(System.lineSeparator())
                         .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
-                logger.error("SQL:{}, DATA:{}, ERROR:{}", sql, data, e.getMessage());
+                logger.error(result.getError().toString());
             }
         }
 
@@ -506,7 +518,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     private boolean existRow(DatabaseConnectorMapper connectorMapper, String sql, Object value) {
         int rowNum = 0;
         try {
-            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[]{value}, Integer.class));
+            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[] {value}, Integer.class));
         } catch (Exception e) {
             logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
         }
