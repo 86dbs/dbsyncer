@@ -93,23 +93,6 @@ public class KafkaConnector extends AbstractConnector implements Connector<Kafka
     }
 
     @Override
-    public Result writer(KafkaConnectorMapper connectorMapper, WriterSingleConfig config) {
-        Map<String, Object> data = config.getData();
-        Result result = new Result();
-        final KafkaConfig cfg = connectorMapper.getConfig();
-        Field pkField = getPrimaryKeyField(config.getFields());
-        try {
-            connectorMapper.getConnection().send(cfg.getTopic(), String.valueOf(data.get(pkField.getName())), data);
-        } catch (Exception e) {
-            // 记录错误数据
-            result.getFailData().add(data);
-            result.getError().append(e.getMessage()).append(System.lineSeparator());
-            logger.error(e.getMessage());
-        }
-        return result;
-    }
-
-    @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
         return Collections.EMPTY_MAP;
     }

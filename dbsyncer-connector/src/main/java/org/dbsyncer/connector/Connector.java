@@ -91,14 +91,6 @@ public interface Connector<M, C> {
     Result writer(M connectorMapper, WriterBatchConfig config);
 
     /**
-     * 写入目标源数据
-     *
-     * @param config
-     * @return
-     */
-    Result writer(M connectorMapper, WriterSingleConfig config);
-
-    /**
      * 获取数据源同步参数
      *
      * @param commandConfig

@@ -168,7 +168,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return result;
     }
 
-    @Override
     public Result writer(DatabaseConnectorMapper connectorMapper, WriterSingleConfig config) {
         String event = config.getEvent();
         List<Field> fields = config.getFields();
