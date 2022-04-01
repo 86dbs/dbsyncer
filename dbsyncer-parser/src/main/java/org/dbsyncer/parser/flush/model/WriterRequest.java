@@ -27,7 +27,9 @@ public class WriterRequest extends AbstractRequest {
 
     private Map row;
 
-    public WriterRequest(String metaId, String tableGroupId, String event, ConnectorMapper connectorMapper, List<Field> fields, Map<String, String> command, Map row) {
+    private boolean isForceUpdate;
+
+    public WriterRequest(String metaId, String tableGroupId, String event, ConnectorMapper connectorMapper, List<Field> fields, Map<String, String> command, Map row, boolean isForceUpdate) {
         this.metaId = metaId;
         this.tableGroupId = tableGroupId;
         this.event = event;
@@ -35,6 +37,7 @@ public class WriterRequest extends AbstractRequest {
         this.fields = fields;
         this.command = command;
         this.row = row;
+        this.isForceUpdate = isForceUpdate;
     }
 
     public String getMetaId() {
@@ -63,5 +66,9 @@ public class WriterRequest extends AbstractRequest {
 
     public Map getRow() {
         return row;
+    }
+
+    public boolean isForceUpdate() {
+        return isForceUpdate;
     }
 }

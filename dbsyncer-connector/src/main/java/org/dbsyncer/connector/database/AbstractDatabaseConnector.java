@@ -26,7 +26,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class AbstractDatabaseConnector extends AbstractConnector implements Connector<DatabaseConnectorMapper, DatabaseConfig>, Database {
+public abstract class AbstractDatabaseConnector extends AbstractConnector
+        implements Connector<DatabaseConnectorMapper, DatabaseConfig>, Database {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -71,7 +72,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     @Override
     public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableName) {
         String quotation = buildSqlWithQuotation();
-        StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).append(" WHERE 1 != 1");
+        StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).append(
+                " WHERE 1 != 1");
         return connectorMapper.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql.toString(), tableName));
     }
 
@@ -95,7 +97,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         Collections.addAll(config.getArgs(), getPageArgs(config.getPageIndex(), config.getPageSize()));
 
         // 3、执行SQL
-        List<Map<String, Object>> list = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
+        List<Map<String, Object>> list = connectorMapper.execute(
+                databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
 
         // 4、返回结果集
         return new Result(list);
@@ -150,86 +153,18 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         } catch (Exception e) {
             result.getError().append("SQL:").append(executeSql).append(System.lineSeparator())
                     .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
-            logger.error(result.getError().toString());
+            result.addFailData(data);
         }
 
         if (null != execute) {
             int batchSize = execute.length;
             for (int i = 0; i < batchSize; i++) {
                 if (execute[i] == 0) {
-                    result.getFailData().add(data.get(i));
-                    result.getError().append("SQL:").append(executeSql).append(System.lineSeparator())
-                            .append("DATA:").append(data.get(i)).append(System.lineSeparator());
+                    forceUpdate(result, connectorMapper, config, pkField, data.get(i));
                     continue;
                 }
                 result.getSuccessData().add(data.get(i));
             }
-        }
-        return result;
-    }
-
-    public Result writer(DatabaseConnectorMapper connectorMapper, WriterSingleConfig config) {
-        String event = config.getEvent();
-        List<Field> fields = config.getFields();
-        Map<String, Object> data = config.getData();
-        // 1、获取 SQL
-        String sql = config.getCommand().get(event);
-        Assert.hasText(sql, "执行语句不能为空.");
-        if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(fields)) {
-            logger.error("writer data can not be empty.");
-            throw new ConnectorException("writer data can not be empty.");
-        }
-
-        Field pkField = getPrimaryKeyField(fields);
-        // Update / Delete
-        if (!isInsert(event)) {
-            if (isDelete(event)) {
-                fields.clear();
-            }
-            fields.add(pkField);
-        }
-
-        int size = fields.size();
-        Result result = new Result();
-        int execute = 0;
-        try {
-            // 2、设置参数
-            execute = connectorMapper.execute(databaseTemplate ->
-                    databaseTemplate.update(sql, (ps) ->
-                            batchRowsSetter(databaseTemplate.getConnection(), ps, fields, size, data)
-                    )
-            );
-        } catch (Exception e) {
-            // 记录错误数据
-            if (!config.isForceUpdate()) {
-                result.getFailData().add(data);
-                result.getError().append("SQL:").append(sql).append(System.lineSeparator())
-                        .append("DATA:").append(data).append(System.lineSeparator())
-                        .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
-                logger.error(result.getError().toString());
-            }
-        }
-
-        if (0 == execute && !config.isRetry() && null != pkField) {
-            // 不存在转insert
-            if (isUpdate(event)) {
-                String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
-                if (!existRow(connectorMapper, queryCount, data.get(pkField.getName()))) {
-                    fields.remove(fields.size() - 1);
-                    config.setEvent(ConnectorConstant.OPERTION_INSERT);
-                    config.setRetry(true);
-                    logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTable(), event, config.getEvent(), data);
-                    return writer(connectorMapper, config);
-                }
-                return result;
-            }
-            // 存在转update
-            if (isInsert(event)) {
-                config.setEvent(ConnectorConstant.OPERTION_UPDATE);
-                config.setRetry(true);
-                return writer(connectorMapper, config);
-            }
-
         }
         return result;
     }
@@ -287,6 +222,67 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
         map.put(queryCountExist, queryCount.toString());
         return map;
+    }
+
+    private void forceUpdate(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField,
+                             Map row) {
+        String event = config.getEvent();
+        if (!config.isForceUpdate()) {
+            result.getFailData().add(row);
+            result.getError().append("SQL:").append(config.getCommand().get(event)).append(System.lineSeparator())
+                    .append("DATA:").append(row).append(System.lineSeparator());
+        }
+
+        // 不存在转insert
+        if (isUpdate(event)) {
+            String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
+            if (!existRow(connectorMapper, queryCount, row.get(pkField.getName()))) {
+                logger.warn("{}表执行{}失败, 尝试执行{}, {}", "", event, ConnectorConstant.OPERTION_INSERT, row);
+                writer(result, connectorMapper, config, pkField, row, ConnectorConstant.OPERTION_INSERT);
+            }
+            return;
+        }
+
+        // 存在转update
+        if (isInsert(config.getEvent())) {
+            logger.warn("{}表执行{}失败, 尝试执行{}, {}", "", event, ConnectorConstant.OPERTION_UPDATE, row);
+            writer(result, connectorMapper, config, pkField, row, ConnectorConstant.OPERTION_UPDATE);
+        }
+    }
+
+    private void writer(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField, Map row,
+                        String event) {
+        // 1、获取 SQL
+        String sql = config.getCommand().get(event);
+
+        List<Field> fields = new ArrayList<>(config.getFields());
+        // Update / Delete
+        if (!isInsert(event)) {
+            if (isDelete(event)) {
+                fields.clear();
+            }
+            fields.add(pkField);
+        }
+
+        int size = fields.size();
+        try {
+            // 2、设置参数
+            int execute = connectorMapper.execute(databaseTemplate ->
+                    databaseTemplate.update(sql, (ps) ->
+                            batchRowsSetter(databaseTemplate.getConnection(), ps, fields, size, row)
+                    )
+            );
+            if (execute == 0) {
+                throw new ConnectorException(String.format("retry %s error", event));
+            }
+        } catch (Exception e) {
+            // 记录错误数据
+            result.getFailData().add(row);
+            result.getError().append("SQL:").append(sql).append(System.lineSeparator())
+                    .append("DATA:").append(row).append(System.lineSeparator())
+                    .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
+            logger.error(result.getError().toString());
+        }
     }
 
     /**

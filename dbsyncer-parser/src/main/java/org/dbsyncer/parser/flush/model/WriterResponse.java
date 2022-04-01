@@ -28,6 +28,8 @@ public class WriterResponse extends AbstractResponse {
 
     private List<Map> dataList = new LinkedList<>();
 
+    private boolean isForceUpdate;
+
     public boolean isMerged() {
         return isMerged;
     }
@@ -82,6 +84,14 @@ public class WriterResponse extends AbstractResponse {
 
     public void setDataList(List<Map> dataList) {
         this.dataList = dataList;
+    }
+
+    public boolean isForceUpdate() {
+        return isForceUpdate;
+    }
+
+    public void setForceUpdate(boolean forceUpdate) {
+        isForceUpdate = forceUpdate;
     }
 
     @Override

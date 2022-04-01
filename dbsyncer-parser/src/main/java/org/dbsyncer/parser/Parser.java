@@ -2,8 +2,6 @@ package org.dbsyncer.parser;
 
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.connector.config.Field;
-import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.MetaInfo;
@@ -13,9 +11,7 @@ import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
 import java.util.List;
@@ -167,14 +163,9 @@ public interface Parser {
     /**
      * 批执行
      *
-     * @param connectorMapper
-     * @param command
-     * @param event
-     * @param fields
-     * @param dataList
-     * @param batchSize
+     * @param batchWriter
      * @return
      */
-    Result writeBatch(ConnectorMapper connectorMapper, Map<String, String> command, String event, List<Field> fields, List<Map> dataList, int batchSize);
+    Result writeBatch(BatchWriter batchWriter);
 
 }
