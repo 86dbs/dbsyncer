@@ -24,18 +24,12 @@ public class RowChangedEvent {
     private List<Object> afterData;
     private Map<String, Object> before;
     private Map<String, Object> after;
-    private boolean isForceUpdate;
 
     public RowChangedEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after) {
-        this(tableGroupIndex, event, before, after, false);
-    }
-
-    public RowChangedEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after, boolean isForceUpdate) {
         this.tableGroupIndex = tableGroupIndex;
         this.event = event;
         this.before = before;
         this.after = after;
-        this.isForceUpdate = isForceUpdate;
     }
 
     public RowChangedEvent(String tableName, String event, List<Object> beforeData, List<Object> afterData) {
@@ -83,10 +77,6 @@ public class RowChangedEvent {
 
     public void setAfter(Map<String, Object> after) {
         this.after = after;
-    }
-
-    public boolean isForceUpdate() {
-        return isForceUpdate;
     }
 
     @Override

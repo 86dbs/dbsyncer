@@ -1,6 +1,5 @@
 package org.dbsyncer.parser.flush.model;
 
-import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.Field;
 
 import java.util.List;
@@ -15,11 +14,13 @@ public class WriterRequest extends AbstractRequest {
 
     private String metaId;
 
+    private String targetConnectorId;
+
     private String tableGroupId;
 
-    private String event;
+    private String tableName;
 
-    private ConnectorMapper connectorMapper;
+    private String event;
 
     private List<Field> fields;
 
@@ -27,33 +28,36 @@ public class WriterRequest extends AbstractRequest {
 
     private Map row;
 
-    private boolean isForceUpdate;
-
-    public WriterRequest(String metaId, String tableGroupId, String event, ConnectorMapper connectorMapper, List<Field> fields, Map<String, String> command, Map row, boolean isForceUpdate) {
+    public WriterRequest(String metaId, String targetConnectorId, String tableGroupId, String tableName, String event, List<Field> fields,
+                         Map<String, String> command, Map row) {
         this.metaId = metaId;
+        this.targetConnectorId = targetConnectorId;
         this.tableGroupId = tableGroupId;
+        this.tableName = tableName;
         this.event = event;
-        this.connectorMapper = connectorMapper;
         this.fields = fields;
         this.command = command;
         this.row = row;
-        this.isForceUpdate = isForceUpdate;
     }
 
     public String getMetaId() {
         return metaId;
     }
 
+    public String getTargetConnectorId() {
+        return targetConnectorId;
+    }
+
     public String getTableGroupId() {
         return tableGroupId;
     }
 
-    public String getEvent() {
-        return event;
+    public String getTableName() {
+        return tableName;
     }
 
-    public ConnectorMapper getConnectorMapper() {
-        return connectorMapper;
+    public String getEvent() {
+        return event;
     }
 
     public List<Field> getFields() {
@@ -68,7 +72,4 @@ public class WriterRequest extends AbstractRequest {
         return row;
     }
 
-    public boolean isForceUpdate() {
-        return isForceUpdate;
-    }
 }

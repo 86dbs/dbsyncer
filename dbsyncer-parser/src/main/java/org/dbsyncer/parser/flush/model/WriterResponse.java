@@ -18,17 +18,17 @@ public class WriterResponse extends AbstractResponse {
 
     private String metaId;
 
-    private String event;
+    private String targetConnectorId;
 
-    private ConnectorMapper connectorMapper;
+    private String tableName;
+
+    private String event;
 
     private List<Field> fields;
 
     private Map<String, String> command;
 
     private List<Map> dataList = new LinkedList<>();
-
-    private boolean isForceUpdate;
 
     public boolean isMerged() {
         return isMerged;
@@ -46,6 +46,14 @@ public class WriterResponse extends AbstractResponse {
         this.metaId = metaId;
     }
 
+    public String getTableName() {
+        return tableName;
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
+
     public String getEvent() {
         return event;
     }
@@ -54,12 +62,12 @@ public class WriterResponse extends AbstractResponse {
         this.event = event;
     }
 
-    public ConnectorMapper getConnectorMapper() {
-        return connectorMapper;
+    public String getTargetConnectorId() {
+        return targetConnectorId;
     }
 
-    public void setConnectorMapper(ConnectorMapper connectorMapper) {
-        this.connectorMapper = connectorMapper;
+    public void setTargetConnectorId(String targetConnectorId) {
+        this.targetConnectorId = targetConnectorId;
     }
 
     public List<Field> getFields() {
@@ -84,14 +92,6 @@ public class WriterResponse extends AbstractResponse {
 
     public void setDataList(List<Map> dataList) {
         this.dataList = dataList;
-    }
-
-    public boolean isForceUpdate() {
-        return isForceUpdate;
-    }
-
-    public void setForceUpdate(boolean forceUpdate) {
-        isForceUpdate = forceUpdate;
     }
 
     @Override

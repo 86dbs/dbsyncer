@@ -276,7 +276,7 @@ public class ParserFactory implements Parser {
             pluginFactory.convert(group.getPlugin(), data, target);
 
             // 5、写入目标源
-            Result writer = writeBatch(new BatchWriter(tConnectorMapper, command, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize));
+            Result writer = writeBatch(new BatchWriter(tConnectorMapper, command, sTableName, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize));
 
             // 6、更新结果
             flush(task, writer);
@@ -290,9 +290,7 @@ public class ParserFactory implements Parser {
     public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent rowChangedEvent) {
         logger.info("Table[{}] {}, before:{}, after:{}", rowChangedEvent.getTableName(), rowChangedEvent.getEvent(),
                 rowChangedEvent.getBefore(), rowChangedEvent.getAfter());
-        final String metaId = mapping.getMetaId();
 
-        ConnectorMapper tConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
         // 1、获取映射字段
         final String event = rowChangedEvent.getEvent();
         Map<String, Object> data = StringUtil.equals(ConnectorConstant.OPERTION_DELETE, event) ? rowChangedEvent.getBefore() : rowChangedEvent.getAfter();
@@ -306,7 +304,7 @@ public class ParserFactory implements Parser {
         pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
 
         // 4、写入缓冲执行器
-        writerBufferActuator.offer(new WriterRequest(metaId, tableGroup.getId(), event, tConnectorMapper, picker.getTargetFields(), tableGroup.getCommand(), target, rowChangedEvent.isForceUpdate()));
+        writerBufferActuator.offer(new WriterRequest(mapping.getMetaId(), mapping.getTargetConnectorId(), tableGroup.getId(), rowChangedEvent.getTableName(), event, picker.getTargetFields(), tableGroup.getCommand(), target));
     }
 
     /**
@@ -319,14 +317,16 @@ public class ParserFactory implements Parser {
     public Result writeBatch(BatchWriter batchWriter) {
         List<Map> dataList = batchWriter.getDataList();
         int batchSize = batchWriter.getBatchSize();
+        String tableName = batchWriter.getTableName();
         String event = batchWriter.getEvent();
         Map<String, String> command = batchWriter.getCommand();
         List<Field> fields = batchWriter.getFields();
+        boolean forceUpdate = batchWriter.isForceUpdate();
         // 总数
         int total = dataList.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(event, command, fields, dataList, batchWriter.isForceUpdate()));
+            return connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, dataList, forceUpdate));
         }
 
         // 批量任务, 拆分
@@ -349,8 +349,7 @@ public class ParserFactory implements Parser {
 
             taskExecutor.execute(() -> {
                 try {
-                    Result w = connectorFactory.writer(batchWriter.getConnectorMapper(),
-                            new WriterBatchConfig(event, command, fields, data, batchWriter.isForceUpdate()));
+                    Result w = connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, data, forceUpdate));
                     result.addSuccessData(w.getSuccessData());
                     result.addFailData(w.getFailData());
                     result.getError().append(w.getError());

@@ -6,6 +6,10 @@ import java.util.Map;
 public class WriterBatchConfig extends WriterConfig {
 
     /**
+     * 表名
+     */
+    private String tableName;
+    /**
      * 事件
      */
     private String event;
@@ -26,16 +30,17 @@ public class WriterBatchConfig extends WriterConfig {
      */
     private boolean isForceUpdate;
 
-    public WriterBatchConfig(String event, Map<String, String> command, List<Field> fields, List<Map> data) {
-        this(event, command, fields, data, false);
-    }
-
-    public WriterBatchConfig(String event, Map<String, String> command, List<Field> fields, List<Map> data, boolean isForceUpdate) {
+    public WriterBatchConfig(String tableName, String event, Map<String, String> command, List<Field> fields, List<Map> data, boolean isForceUpdate) {
+        this.tableName = tableName;
         this.event = event;
         this.command = command;
         this.fields = fields;
         this.data = data;
         this.isForceUpdate = isForceUpdate;
+    }
+
+    public String getTableName() {
+        return tableName;
     }
 
     public String getEvent() {

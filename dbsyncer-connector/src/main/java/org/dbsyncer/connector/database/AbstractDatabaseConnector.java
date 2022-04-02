@@ -130,26 +130,23 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             fields.add(pkField);
         }
 
-        final int size = data.size();
-        final int fSize = fields.size();
         Result result = new Result();
         int[] execute = null;
         try {
             // 2、设置参数
-            execute = connectorMapper.execute(databaseTemplate -> {
-                int[] batchUpdate = databaseTemplate.batchUpdate(executeSql, new BatchPreparedStatementSetter() {
+            execute = connectorMapper.execute(databaseTemplate ->
+                databaseTemplate.batchUpdate(executeSql, new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(PreparedStatement preparedStatement, int i) {
-                        batchRowsSetter(databaseTemplate.getConnection(), preparedStatement, fields, fSize, data.get(i));
+                        batchRowsSetter(databaseTemplate.getConnection(), preparedStatement, fields, data.get(i));
                     }
 
                     @Override
                     public int getBatchSize() {
-                        return size;
+                        return data.size();
                     }
-                });
-                return batchUpdate;
-            });
+                })
+            );
         } catch (Exception e) {
             result.getError().append("SQL:").append(executeSql).append(System.lineSeparator())
                     .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
@@ -231,13 +228,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             result.getFailData().add(row);
             result.getError().append("SQL:").append(config.getCommand().get(event)).append(System.lineSeparator())
                     .append("DATA:").append(row).append(System.lineSeparator());
+            return;
         }
 
         // 不存在转insert
         if (isUpdate(event)) {
             String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
             if (!existRow(connectorMapper, queryCount, row.get(pkField.getName()))) {
-                logger.warn("{}表执行{}失败, 尝试执行{}, {}", "", event, ConnectorConstant.OPERTION_INSERT, row);
+                logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTableName(), event, ConnectorConstant.OPERTION_INSERT, row);
                 writer(result, connectorMapper, config, pkField, row, ConnectorConstant.OPERTION_INSERT);
             }
             return;
@@ -245,7 +243,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
 
         // 存在转update
         if (isInsert(config.getEvent())) {
-            logger.warn("{}表执行{}失败, 尝试执行{}, {}", "", event, ConnectorConstant.OPERTION_UPDATE, row);
+            logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTableName(), event, ConnectorConstant.OPERTION_UPDATE, row);
             writer(result, connectorMapper, config, pkField, row, ConnectorConstant.OPERTION_UPDATE);
         }
     }
@@ -264,19 +262,18 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             fields.add(pkField);
         }
 
-        int size = fields.size();
         try {
             // 2、设置参数
             int execute = connectorMapper.execute(databaseTemplate ->
                     databaseTemplate.update(sql, (ps) ->
-                            batchRowsSetter(databaseTemplate.getConnection(), ps, fields, size, row)
+                            batchRowsSetter(databaseTemplate.getConnection(), ps, fields, row)
                     )
             );
             if (execute == 0) {
-                throw new ConnectorException(String.format("retry %s error", event));
+                throw new ConnectorException(String.format("尝试执行[%s]失败", event));
             }
+            result.getSuccessData().add(row);
         } catch (Exception e) {
-            // 记录错误数据
             result.getFailData().add(row);
             result.getError().append("SQL:").append(sql).append(System.lineSeparator())
                     .append("DATA:").append(row).append(System.lineSeparator())
@@ -494,14 +491,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
      * @param connection 连接
      * @param ps         参数构造器
      * @param fields     同步字段，例如[{name=ID, type=4}, {name=NAME, type=12}]
-     * @param fSize      同步字段个数
      * @param row        同步字段对应的值，例如{ID=123, NAME=张三11}
      */
-    private void batchRowsSetter(Connection connection, PreparedStatement ps, List<Field> fields, int fSize, Map row) {
+    private void batchRowsSetter(Connection connection, PreparedStatement ps, List<Field> fields, Map row) {
         Field f = null;
         int type;
         Object val = null;
-        for (int i = 0; i < fSize; i++) {
+        int size = fields.size();
+        for (int i = 0; i < size; i++) {
             // 取出字段和对应值
             f = fields.get(i);
             type = f.getType();
