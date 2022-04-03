@@ -91,6 +91,7 @@ public class Shard {
     }
 
     public void close() throws IOException {
+        indexWriter.commit();
         indexReader.close();
         indexWriter.close();
     }
@@ -191,16 +192,11 @@ public class Shard {
     }
 
     private void execute(Object value, Callback callback) throws IOException {
-        if (null != value) {
-            synchronized (LOCK) {
-                if (indexWriter.isOpen()) {
-                    callback.execute();
-                    indexWriter.commit();
-                    return;
-                }
-            }
-            logger.error(value.toString());
+        if (null != value && indexWriter.isOpen()) {
+            callback.execute();
+            return;
         }
+        logger.error(value.toString());
     }
 
     interface Callback {

@@ -83,9 +83,9 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         return new SavedRequestAwareAuthenticationSuccessHandler() {
             @Override
             public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-                Object principal = authentication.getPrincipal();
-                logger.info("USER : " + principal + " LOGIN SUCCESS !  ");
-                write(response, RestResult.restSuccess("登录成功!"));
+                String msg = String.format("%s 登录成功!", authentication.getPrincipal());
+                write(response, RestResult.restSuccess(msg));
+                logger.info(msg);
             }
         };
     }
