@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -36,6 +37,8 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     private final Lock lock = new ReentrantLock(true);
 
     private volatile boolean running;
+
+    private final static long MAX_BATCH_COUNT = 1000L;
 
     @PostConstruct
     private void init() {
@@ -116,14 +119,16 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     private void flush(Queue<Request> queue) {
         if (!queue.isEmpty()) {
+            AtomicLong batchCounter = new AtomicLong();
             final Map<String, AbstractResponse> map = new LinkedHashMap<>();
-            while (!queue.isEmpty()) {
+            while (!queue.isEmpty() && batchCounter.get() < MAX_BATCH_COUNT) {
                 Request poll = queue.poll();
                 String key = getPartitionKey(poll);
                 if (!map.containsKey(key)) {
                     map.putIfAbsent(key, getValue());
                 }
                 partition(poll, (Response) map.get(key));
+                batchCounter.incrementAndGet();
             }
 
             map.forEach((key, flushTask) -> {
