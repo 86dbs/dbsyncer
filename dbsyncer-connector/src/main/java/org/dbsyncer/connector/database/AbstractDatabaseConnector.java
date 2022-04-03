@@ -278,7 +278,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             result.getError().append("SQL:").append(sql).append(System.lineSeparator())
                     .append("DATA:").append(row).append(System.lineSeparator())
                     .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
-            logger.error(result.getError().toString());
+            logger.error("执行{}失败: {}, DATA:{}", event, e.getMessage(), row);
         }
     }
 

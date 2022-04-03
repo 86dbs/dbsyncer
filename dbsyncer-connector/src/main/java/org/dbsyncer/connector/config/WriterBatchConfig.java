@@ -30,6 +30,10 @@ public class WriterBatchConfig extends WriterConfig {
      */
     private boolean isForceUpdate;
 
+    public WriterBatchConfig(String tableName, String event, Map<String, String> command, List<Field> fields, List<Map> data) {
+        this(tableName, event, command, fields, data, false);
+    }
+
     public WriterBatchConfig(String tableName, String event, Map<String, String> command, List<Field> fields, List<Map> data, boolean isForceUpdate) {
         this.tableName = tableName;
         this.event = event;
