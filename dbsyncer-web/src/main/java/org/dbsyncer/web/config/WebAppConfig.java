@@ -94,12 +94,12 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     public LogoutSuccessHandler logoutHandler() {
         return (request, response, authentication) -> {
             try {
-                Object principal = authentication.getPrincipal();
-                logger.info("USER : {} LOGOUT SUCCESS ! ", principal);
-                write(response, RestResult.restSuccess("注销成功!"));
+                String msg = String.format("%s 注销成功!", authentication.getPrincipal());
+                write(response, RestResult.restSuccess(msg));
+                logger.info(msg);
             } catch (Exception e) {
-                logger.info("LOGOUT EXCEPTION , e : {}", e.getMessage());
                 write(response, RestResult.restFail(e.getMessage(), 403));
+                logger.info("注销失败: {}", e.getMessage());
             }
         };
     }
