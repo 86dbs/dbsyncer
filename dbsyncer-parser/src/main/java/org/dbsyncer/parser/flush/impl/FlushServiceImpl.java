@@ -19,7 +19,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -58,13 +57,12 @@ public class FlushServiceImpl implements FlushService {
     @Override
     public void asyncWrite(String metaId, String event, boolean success, List<Map> data, String error) {
         long now = Instant.now().toEpochMilli();
-        AtomicBoolean added = new AtomicBoolean(false);
         List<Map> list = data.parallelStream().map(r -> {
             Map<String, Object> params = new HashMap();
             params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             params.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
             params.put(ConfigConstant.DATA_EVENT, event);
-            params.put(ConfigConstant.DATA_ERROR, added.get() ? "" : error);
+            params.put(ConfigConstant.DATA_ERROR, error);
             try {
                 params.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(r));
             } catch (JSONException e) {
@@ -72,7 +70,6 @@ public class FlushServiceImpl implements FlushService {
                 params.put(ConfigConstant.CONFIG_MODEL_JSON, r.toString());
             }
             params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
-            added.set(true);
             return params;
         }).collect(Collectors.toList());
 
