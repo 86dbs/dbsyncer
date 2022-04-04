@@ -1,5 +1,7 @@
 package org.dbsyncer.parser.flush.model;
 
+import org.dbsyncer.parser.flush.BufferResponse;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -9,7 +11,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2022/3/27 16:57
  */
-public class FlushResponse extends AbstractResponse {
+public class StorageResponse implements BufferResponse {
 
     private String metaId;
     private List<Map> dataList = new LinkedList<>();

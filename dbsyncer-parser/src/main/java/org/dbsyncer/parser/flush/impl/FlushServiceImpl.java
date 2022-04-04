@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSONException;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.FlushService;
-import org.dbsyncer.parser.flush.model.FlushRequest;
+import org.dbsyncer.parser.flush.model.StorageRequest;
 import org.dbsyncer.storage.SnowflakeIdWorker;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -43,7 +43,7 @@ public class FlushServiceImpl implements FlushService {
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Autowired
-    private BufferActuator flushBufferActuator;
+    private BufferActuator storageBufferActuator;
 
     @Override
     public void asyncWrite(String type, String error) {
@@ -76,7 +76,7 @@ public class FlushServiceImpl implements FlushService {
             return params;
         }).collect(Collectors.toList());
 
-        flushBufferActuator.offer(new FlushRequest(metaId, list));
+        storageBufferActuator.offer(new StorageRequest(metaId, list));
     }
 
 }

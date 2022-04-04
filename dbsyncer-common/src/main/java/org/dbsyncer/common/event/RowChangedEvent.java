@@ -18,7 +18,8 @@ import java.util.Map;
 public class RowChangedEvent {
 
     private int tableGroupIndex;
-    private String tableName;
+    private String sourceTableName;
+    private String targetTableName;
     private String event;
     private List<Object> beforeData;
     private List<Object> afterData;
@@ -32,8 +33,8 @@ public class RowChangedEvent {
         this.after = after;
     }
 
-    public RowChangedEvent(String tableName, String event, List<Object> beforeData, List<Object> afterData) {
-        this.tableName = tableName;
+    public RowChangedEvent(String sourceTableName, String event, List<Object> beforeData, List<Object> afterData) {
+        this.sourceTableName = sourceTableName;
         this.event = event;
         this.beforeData = beforeData;
         this.afterData = afterData;
@@ -43,12 +44,20 @@ public class RowChangedEvent {
         return tableGroupIndex;
     }
 
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
+    public String getSourceTableName() {
+        return sourceTableName;
     }
 
-    public String getTableName() {
-        return tableName;
+    public void setSourceTableName(String sourceTableName) {
+        this.sourceTableName = sourceTableName;
+    }
+
+    public String getTargetTableName() {
+        return targetTableName;
+    }
+
+    public void setTargetTableName(String targetTableName) {
+        this.targetTableName = targetTableName;
     }
 
     public String getEvent() {

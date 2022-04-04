@@ -3,7 +3,7 @@ package org.dbsyncer.connector.config;
 import java.util.List;
 import java.util.Map;
 
-public class WriterBatchConfig extends WriterConfig {
+public class WriterBatchConfig {
 
     /**
      * 表名

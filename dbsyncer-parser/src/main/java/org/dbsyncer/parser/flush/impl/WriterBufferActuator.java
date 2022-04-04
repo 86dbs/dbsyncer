@@ -7,8 +7,8 @@ import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.parser.ParserFactory;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
+import org.dbsyncer.parser.flush.BufferResponse;
 import org.dbsyncer.parser.flush.FlushStrategy;
-import org.dbsyncer.parser.flush.model.AbstractResponse;
 import org.dbsyncer.parser.flush.model.WriterRequest;
 import org.dbsyncer.parser.flush.model.WriterResponse;
 import org.dbsyncer.parser.model.BatchWriter;
@@ -47,7 +47,7 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     }
 
     @Override
-    protected AbstractResponse getValue() {
+    protected BufferResponse getValue() {
         return new WriterResponse();
     }
 
@@ -64,17 +64,18 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
         }
         response.setMetaId(request.getMetaId());
         response.setTargetConnectorId(request.getTargetConnectorId());
-        response.setCommand(request.getCommand());
-        response.setTableName(request.getTableName());
+        response.setSourceTableName(request.getSourceTableName());
+        response.setTargetTableName(request.getTargetTableName());
         response.setEvent(request.getEvent());
         response.setFields(Collections.unmodifiableList(request.getFields()));
+        response.setCommand(request.getCommand());
         response.setMerged(true);
     }
 
     @Override
     protected void pull(WriterResponse response) {
         ConnectorMapper targetConnectorMapper = connectorFactory.connect(getConnectorConfig(response.getTargetConnectorId()));
-        Result result = parserFactory.writeBatch(new BatchWriter(targetConnectorMapper, response.getCommand(), response.getTableName(), response.getEvent(),
+        Result result = parserFactory.writeBatch(new BatchWriter(targetConnectorMapper, response.getCommand(), response.getTargetTableName(), response.getEvent(),
                 response.getFields(), response.getDataList(), BATCH_SIZE, true));
         flushStrategy.flushIncrementData(response.getMetaId(), result, response.getEvent());
     }

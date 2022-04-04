@@ -287,13 +287,13 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent rowChangedEvent) {
-        logger.info("Table[{}] {}, before:{}, after:{}", rowChangedEvent.getTableName(), rowChangedEvent.getEvent(),
-                rowChangedEvent.getBefore(), rowChangedEvent.getAfter());
+    public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent event) {
+        logger.info("Table[{}] {}, before:{}, after:{}", event.getSourceTableName(), event.getEvent(),
+                event.getBefore(), event.getAfter());
 
         // 1、获取映射字段
-        final String event = rowChangedEvent.getEvent();
-        Map<String, Object> data = StringUtil.equals(ConnectorConstant.OPERTION_DELETE, event) ? rowChangedEvent.getBefore() : rowChangedEvent.getAfter();
+        final String eventName = event.getEvent();
+        Map<String, Object> data = StringUtil.equals(ConnectorConstant.OPERTION_DELETE, eventName) ? event.getBefore() : event.getAfter();
         Picker picker = new Picker(tableGroup.getFieldMapping(), data);
         Map target = picker.getTargetMap();
 
@@ -301,10 +301,10 @@ public class ParserFactory implements Parser {
         ConvertUtil.convert(tableGroup.getConvert(), target);
 
         // 3、插件转换
-        pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
+        pluginFactory.convert(tableGroup.getPlugin(), eventName, data, target);
 
         // 4、写入缓冲执行器
-        writerBufferActuator.offer(new WriterRequest(mapping.getMetaId(), mapping.getTargetConnectorId(), tableGroup.getId(), rowChangedEvent.getTableName(), event, picker.getTargetFields(), tableGroup.getCommand(), target));
+        writerBufferActuator.offer(new WriterRequest(tableGroup.getId(), target, mapping.getMetaId(), mapping.getTargetConnectorId(), event.getSourceTableName(), event.getTargetTableName(), eventName, picker.getTargetFields(), tableGroup.getCommand()));
     }
 
     /**

@@ -2,8 +2,6 @@ package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
-import org.dbsyncer.parser.flush.model.AbstractRequest;
-import org.dbsyncer.parser.flush.model.AbstractResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +55,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
      *
      * @return
      */
-    protected abstract AbstractResponse getValue();
+    protected abstract BufferResponse getValue();
 
     /**
      * 生成分区key
@@ -83,7 +81,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     protected abstract void pull(Response response);
 
     @Override
-    public void offer(AbstractRequest request) {
+    public void offer(BufferRequest request) {
         if (running) {
             temp.offer((Request) request);
             return;
@@ -120,7 +118,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     private void flush(Queue<Request> queue) {
         if (!queue.isEmpty()) {
             AtomicLong batchCounter = new AtomicLong();
-            final Map<String, AbstractResponse> map = new LinkedHashMap<>();
+            final Map<String, BufferResponse> map = new LinkedHashMap<>();
             while (!queue.isEmpty() && batchCounter.get() < MAX_BATCH_COUNT) {
                 Request poll = queue.poll();
                 String key = getPartitionKey(poll);

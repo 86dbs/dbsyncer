@@ -148,9 +148,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
                 })
             );
         } catch (Exception e) {
-            result.getError().append("SQL:").append(executeSql).append(System.lineSeparator())
-                    .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
-            result.addFailData(data);
+            data.forEach(row -> forceUpdate(result, connectorMapper, config, pkField, row));
         }
 
         if (null != execute) {
@@ -227,7 +225,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         if (!config.isForceUpdate()) {
             result.getFailData().add(row);
             result.getError().append("SQL:").append(config.getCommand().get(event)).append(System.lineSeparator())
-                    .append("DATA:").append(row).append(System.lineSeparator());
+                    .append("DATA:").append(row).append(System.lineSeparator())
+                    .append("ERROR:").append("Row data does not exist.").append(System.lineSeparator());
             return;
         }
 
