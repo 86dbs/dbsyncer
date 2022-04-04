@@ -5,7 +5,10 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.config.Field;
+import org.dbsyncer.connector.config.SqlBuilderConfig;
+import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.Database;
@@ -38,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -77,7 +81,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     private String database;
 
     @PostConstruct
-    private void init() {
+    private void init() throws InterruptedException {
         logger.info("url:{}", config.getUrl());
         config.setConnectorType(ConnectorEnum.MYSQL.getType());
         connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(config);
@@ -268,7 +272,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         }
     }
 
-    private void initTable() {
+    private void initTable() throws InterruptedException {
         // 配置
         FieldBuilder builder = new FieldBuilder();
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
@@ -294,6 +298,9 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                 createTableIfNotExist(tableName, e);
             }
         });
+
+        // wait few seconds for execute sql
+        TimeUnit.SECONDS.sleep(1);
     }
 
     private void createTableIfNotExist(String table, Executor executor) {
