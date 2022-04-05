@@ -26,12 +26,12 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class AbstractDatabaseConnector extends AbstractConnector
+public abstract class AbstractDatabaseConnector<Config> extends AbstractConnector
         implements Connector<DatabaseConnectorMapper, DatabaseConfig>, Database {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected abstract String getTableSql(DatabaseConfig config);
+    protected abstract String getTableSql(Config config);
 
     @Override
     public ConnectorMapper connect(DatabaseConfig config) {
@@ -61,7 +61,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
-        String sql = getTableSql(connectorMapper.getConfig());
+        String sql = getTableSql((Config) connectorMapper.getConfig());
         List<String> tableNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
         if (!CollectionUtils.isEmpty(tableNames)) {
             return tableNames.stream().map(name -> new Table(name)).collect(Collectors.toList());

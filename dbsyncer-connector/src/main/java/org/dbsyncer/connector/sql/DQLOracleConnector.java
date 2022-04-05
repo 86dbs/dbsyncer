@@ -8,7 +8,7 @@ import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import java.util.List;
 import java.util.Map;
 
-public final class DQLOracleConnector extends AbstractDatabaseConnector {
+public final class DQLOracleConnector extends AbstractDatabaseConnector<DatabaseConfig> {
 
     @Override
     protected String getTableSql(DatabaseConfig config) {

@@ -1,13 +1,13 @@
 package org.dbsyncer.connector.config;
 
 /**
- * SqlServer连接配置
+ * PostgreSQL连接配置
  *
  * @author AE86
  * @version 1.0.0
- * @date 2022/1/10 23:57
+ * @date 2022/4/5 23:57
  */
-public class SqlServerDatabaseConfig extends DatabaseConfig {
+public class PostgreSQLConfig extends DatabaseConfig {
 
     // 构架名
     private String schema;

@@ -8,6 +8,7 @@ import org.dbsyncer.connector.es.ESConnector;
 import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.mysql.MysqlConnector;
 import org.dbsyncer.connector.oracle.OracleConnector;
+import org.dbsyncer.connector.postgresql.PostgreSQLConnector;
 import org.dbsyncer.connector.sql.DQLMysqlConnector;
 import org.dbsyncer.connector.sql.DQLOracleConnector;
 import org.dbsyncer.connector.sql.DQLSqlServerConnector;
@@ -34,6 +35,10 @@ public enum ConnectorEnum {
      * SqlServer 连接器
      */
     SQL_SERVER("SqlServer", new SqlServerConnector(), SqlServerDatabaseConfig.class),
+    /**
+     * PostgreSQL 连接器
+     */
+    PostgreSQL("PostgreSQL", new PostgreSQLConnector(), PostgreSQLConfig.class),
     /**
      * Elasticsearch 连接器
      */

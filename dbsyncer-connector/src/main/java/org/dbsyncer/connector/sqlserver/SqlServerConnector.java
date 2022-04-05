@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class SqlServerConnector extends AbstractDatabaseConnector implements SqlServer {
+public final class SqlServerConnector extends AbstractDatabaseConnector<SqlServerDatabaseConfig> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -28,9 +28,8 @@ public final class SqlServerConnector extends AbstractDatabaseConnector implemen
     }
 
     @Override
-    protected String getTableSql(DatabaseConfig config) {
-        SqlServerDatabaseConfig cfg = (SqlServerDatabaseConfig) config;
-        return String.format("SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('%s') AND IS_MS_SHIPPED = 0", cfg.getSchema());
+    protected String getTableSql(SqlServerDatabaseConfig config) {
+        return String.format("SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('%s') AND IS_MS_SHIPPED = 0", config.getSchema());
     }
 
     @Override

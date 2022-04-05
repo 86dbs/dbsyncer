@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public final class OracleConnector extends AbstractDatabaseConnector {
+public final class OracleConnector extends AbstractDatabaseConnector<DatabaseConfig> {
 
     @Override
     protected String getTableSql(DatabaseConfig config) {

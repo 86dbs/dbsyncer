@@ -16,11 +16,13 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
     private final BlockingQueue<SimpleConnection> pool = new LinkedBlockingQueue<>(2000);
     private long lifeTime = 60 * 1000;
+    private String driverClassName;
     private String url;
     private String username;
     private String password;
 
-    public SimpleDataSource(String url, String username, String password) {
+    public SimpleDataSource(String driverClassName, String url, String username, String password) {
+        this.driverClassName = driverClassName;
         this.url = url;
         this.username = username;
         this.password = password;
@@ -93,7 +95,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     }
 
     private SimpleConnection createConnection() throws SQLException {
-        return new SimpleConnection(this, DatabaseUtil.getConnection(url, username, password));
+        return new SimpleConnection(this, DatabaseUtil.getConnection(driverClassName, url, username, password));
     }
 
     public BlockingQueue<SimpleConnection> getPool() {

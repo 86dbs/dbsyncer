@@ -18,7 +18,7 @@ public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, 
 
     public DatabaseConnectorMapper(DatabaseConfig config) {
         this.config = config;
-        this.dataSource = new SimpleDataSource(config.getUrl(), config.getUsername(), config.getPassword());
+        this.dataSource = new SimpleDataSource(config.getDriverClassName(), config.getUrl(), config.getUsername(), config.getPassword());
     }
 
     public <T> T execute(HandleCallback callback) {

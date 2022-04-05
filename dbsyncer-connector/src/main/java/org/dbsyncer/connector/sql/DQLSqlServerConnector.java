@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 
-public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
+public final class DQLSqlServerConnector extends AbstractDatabaseConnector<SqlServerDatabaseConfig> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -29,9 +29,8 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String getTableSql(DatabaseConfig config) {
-        SqlServerDatabaseConfig cfg = (SqlServerDatabaseConfig) config;
-        return String.format("SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('%s')", cfg.getSchema());
+    protected String getTableSql(SqlServerDatabaseConfig config) {
+        return String.format("SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('%s')", config.getSchema());
     }
 
     @Override
