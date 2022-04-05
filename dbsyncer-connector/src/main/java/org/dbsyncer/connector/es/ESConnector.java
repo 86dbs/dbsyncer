@@ -187,6 +187,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             if (restStatus.getStatus() != RestStatus.OK.getStatus()) {
                 throw new ConnectorException(String.format("error code:%s", restStatus.getStatus()));
             }
+            result.addSuccessData(data);
         } catch (Exception e) {
             // 记录错误数据
             result.addFailData(data);

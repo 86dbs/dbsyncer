@@ -83,6 +83,7 @@ public class KafkaConnector extends AbstractConnector implements Connector<Kafka
             String topic = cfg.getTopic();
             String pk = pkField.getName();
             data.forEach(row -> connectorMapper.getConnection().send(topic, String.valueOf(row.get(pk)), row));
+            result.addSuccessData(data);
         } catch (Exception e) {
             // 记录错误数据
             result.addFailData(data);
