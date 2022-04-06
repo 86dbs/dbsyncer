@@ -13,6 +13,7 @@ import org.dbsyncer.connector.oracle.OracleConnector;
 import org.dbsyncer.connector.postgresql.PostgreSQLConnector;
 import org.dbsyncer.connector.sql.DQLMysqlConnector;
 import org.dbsyncer.connector.sql.DQLOracleConnector;
+import org.dbsyncer.connector.sql.DQLPostgreSQLConnector;
 import org.dbsyncer.connector.sql.DQLSqlServerConnector;
 import org.dbsyncer.connector.sqlserver.SqlServerConnector;
 
@@ -40,7 +41,7 @@ public enum ConnectorEnum {
     /**
      * PostgreSQL 连接器
      */
-    PostgreSQL("PostgreSQL", new PostgreSQLConnector(), DatabaseConfig.class),
+    POSTGRE_SQL("PostgreSQL", new PostgreSQLConnector(), DatabaseConfig.class),
     /**
      * Elasticsearch 连接器
      */
@@ -60,7 +61,11 @@ public enum ConnectorEnum {
     /**
      * DqlSqlServer 连接器
      */
-    DQL_SQL_SERVER("DqlSqlServer", new DQLSqlServerConnector(), DatabaseConfig.class);
+    DQL_SQL_SERVER("DqlSqlServer", new DQLSqlServerConnector(), DatabaseConfig.class),
+    /**
+     * DqlPostgreSQL 连接器
+     */
+    DQL_POSTGRE_SQL("DqlPostgreSQL", new DQLPostgreSQLConnector(), DatabaseConfig.class);
 
     // 连接器名称
     private String type;

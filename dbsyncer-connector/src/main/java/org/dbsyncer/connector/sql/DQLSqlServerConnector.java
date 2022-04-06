@@ -3,18 +3,14 @@ package org.dbsyncer.connector.sql;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.config.PageSqlConfig;
 import org.dbsyncer.connector.constant.DatabaseConstant;
-import org.dbsyncer.connector.database.AbstractDatabaseConnector;
-import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.sqlserver.SqlServerConnectorMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-
-public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
+public final class DQLSqlServerConnector extends AbstractDQLConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -29,11 +25,6 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String getTableSql(DatabaseConfig config) {
-        return String.format("SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('%s')", config.getSchema());
-    }
-
-    @Override
     public String getPageSql(PageSqlConfig config) {
         if (StringUtil.isBlank(config.getPk())) {
             logger.error("Table primary key can not be empty.");
@@ -45,21 +36,6 @@ public final class DQLSqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public Object[] getPageArgs(int pageIndex, int pageSize) {
         return new Object[]{(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
-    }
-
-    @Override
-    public List<Table> getTable(DatabaseConnectorMapper config) {
-        return super.getDqlTable(config);
-    }
-
-    @Override
-    public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableName) {
-        return super.getDqlMetaInfo(connectorMapper);
-    }
-
-    @Override
-    public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        return super.getDqlSourceCommand(commandConfig, false);
     }
 
 }

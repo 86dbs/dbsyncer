@@ -219,136 +219,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         return map;
     }
 
-    private void forceUpdate(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField,
-                             Map row) {
-        String event = config.getEvent();
-        if (!config.isForceUpdate()) {
-            result.getFailData().add(row);
-            result.getError().append("SQL:").append(config.getCommand().get(event)).append(System.lineSeparator())
-                    .append("DATA:").append(row).append(System.lineSeparator())
-                    .append("ERROR:").append("Row data does not exist.").append(System.lineSeparator());
-            return;
-        }
-
-        // 不存在转insert
-        if (isUpdate(event)) {
-            String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
-            if (!existRow(connectorMapper, queryCount, row.get(pkField.getName()))) {
-                logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTableName(), event, ConnectorConstant.OPERTION_INSERT, row);
-                writer(result, connectorMapper, config, pkField, row, ConnectorConstant.OPERTION_INSERT);
-            }
-            return;
-        }
-
-        // 存在转update
-        if (isInsert(config.getEvent())) {
-            logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTableName(), event, ConnectorConstant.OPERTION_UPDATE, row);
-            writer(result, connectorMapper, config, pkField, row, ConnectorConstant.OPERTION_UPDATE);
-        }
-    }
-
-    private void writer(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField, Map row,
-                        String event) {
-        // 1、获取 SQL
-        String sql = config.getCommand().get(event);
-
-        List<Field> fields = new ArrayList<>(config.getFields());
-        // Update / Delete
-        if (!isInsert(event)) {
-            if (isDelete(event)) {
-                fields.clear();
-            }
-            fields.add(pkField);
-        }
-
-        try {
-            // 2、设置参数
-            int execute = connectorMapper.execute(databaseTemplate ->
-                    databaseTemplate.update(sql, (ps) ->
-                            batchRowsSetter(databaseTemplate.getConnection(), ps, fields, row)
-                    )
-            );
-            if (execute == 0) {
-                throw new ConnectorException(String.format("尝试执行[%s]失败", event));
-            }
-            result.getSuccessData().add(row);
-        } catch (Exception e) {
-            result.getFailData().add(row);
-            result.getError().append("SQL:").append(sql).append(System.lineSeparator())
-                    .append("DATA:").append(row).append(System.lineSeparator())
-                    .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
-            logger.error("执行{}失败: {}, DATA:{}", event, e.getMessage(), row);
-        }
-    }
-
-    /**
-     * 获取DQL表信息
-     *
-     * @param config
-     * @return
-     */
-    protected List<Table> getDqlTable(DatabaseConnectorMapper config) {
-        MetaInfo metaInfo = getDqlMetaInfo(config);
-        Assert.notNull(metaInfo, "SQL解析异常.");
-        DatabaseConfig cfg = config.getConfig();
-        List<Table> tables = new ArrayList<>();
-        tables.add(new Table(cfg.getSql()));
-        return tables;
-    }
-
-    /**
-     * 获取DQL元信息
-     *
-     * @param config
-     * @return
-     */
-    protected MetaInfo getDqlMetaInfo(DatabaseConnectorMapper config) {
-        DatabaseConfig cfg = config.getConfig();
-        String sql = cfg.getSql().toUpperCase();
-        String queryMetaSql = StringUtil.contains(sql, " WHERE ") ? sql + " AND 1!=1 " : sql + " WHERE 1!=1 ";
-        return config.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql, cfg.getTable()));
-    }
-
-    /**
-     * 获取DQL源配置
-     *
-     * @param commandConfig
-     * @param appendGroupByPK
-     * @return
-     */
-    protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig, boolean appendGroupByPK) {
-        // 获取过滤SQL
-        List<Filter> filter = commandConfig.getFilter();
-        String queryFilterSql = getQueryFilterSql(filter);
-
-        // 获取查询SQL
-        Table table = commandConfig.getTable();
-        Map<String, String> map = new HashMap<>();
-        String querySql = table.getName();
-
-        // 存在条件
-        if (StringUtil.isNotBlank(queryFilterSql)) {
-            querySql += queryFilterSql;
-        }
-        String quotation = buildSqlWithQuotation();
-        String pk = findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
-        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(new PageSqlConfig(querySql, pk)));
-
-        // 获取查询总数SQL
-        StringBuilder queryCount = new StringBuilder();
-        queryCount.append("SELECT COUNT(1) FROM (").append(table.getName());
-        if (StringUtil.isNotBlank(queryFilterSql)) {
-            queryCount.append(queryFilterSql);
-        }
-        // Mysql
-        if (appendGroupByPK) {
-            queryCount.append(" GROUP BY ").append(pk);
-        }
-        queryCount.append(") DBSYNCER_T");
-        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
-        return map;
-    }
-
     /**
      * 查询语句表名和字段带上引号（默认不加）
      *
@@ -456,6 +326,76 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     }
 
     /**
+     * 获取数据库表元数据信息
+     *
+     * @param databaseTemplate
+     * @param metaSql          查询元数据
+     * @param tableName        表名
+     * @return
+     */
+    protected MetaInfo getMetaInfo(DatabaseTemplate databaseTemplate, String metaSql, String tableName) throws SQLException {
+        SqlRowSet sqlRowSet = databaseTemplate.queryForRowSet(metaSql);
+        ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
+        SqlRowSetMetaData metaData = rowSet.getMetaData();
+
+        // 查询表字段信息
+        int columnCount = metaData.getColumnCount();
+        if (1 > columnCount) {
+            throw new ConnectorException("查询表字段不能为空.");
+        }
+        List<Field> fields = new ArrayList<>(columnCount);
+        Map<String, List<String>> tables = new HashMap<>();
+        try {
+            DatabaseMetaData md = databaseTemplate.getConnection().getMetaData();
+            String name = null;
+            String label = null;
+            String typeName = null;
+            String table = null;
+            int columnType;
+            boolean pk;
+            for (int i = 1; i <= columnCount; i++) {
+                table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
+                if (null == tables.get(table)) {
+                    tables.putIfAbsent(table, findTablePrimaryKeys(md, table));
+                }
+                name = metaData.getColumnName(i);
+                label = metaData.getColumnLabel(i);
+                typeName = metaData.getColumnTypeName(i);
+                columnType = metaData.getColumnType(i);
+                pk = isPk(tables, table, name);
+                fields.add(new Field(label, typeName, columnType, pk));
+            }
+        } finally {
+            tables.clear();
+        }
+        return new MetaInfo().setColumn(fields);
+    }
+
+    /**
+     * 返回主键名称
+     *
+     * @param table
+     * @param quotation
+     * @return
+     */
+    protected String findTablePrimaryKey(Table table, String quotation) {
+        if (null != table) {
+            List<Field> column = table.getColumn();
+            if (!CollectionUtils.isEmpty(column)) {
+                for (Field c : column) {
+                    if (c.isPk()) {
+                        return new StringBuilder(quotation).append(c.getName()).append(quotation).toString();
+                    }
+                }
+            }
+        }
+        if (!TableTypeEnum.isView(table.getType())) {
+            throw new ConnectorException("Table primary key can not be empty.");
+        }
+        return "";
+    }
+
+    /**
      * 根据过滤条件获取查询SQL
      *
      * @param queryOperator and/or
@@ -506,84 +446,76 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         }
     }
 
+    private void forceUpdate(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField,
+                             Map row) {
+        String event = config.getEvent();
+        if (!config.isForceUpdate()) {
+            result.getFailData().add(row);
+            result.getError().append("SQL:").append(config.getCommand().get(event)).append(System.lineSeparator())
+                    .append("DATA:").append(row).append(System.lineSeparator())
+                    .append("ERROR:").append("Row data does not exist.").append(System.lineSeparator());
+            return;
+        }
+
+        // 不存在转insert
+        if (isUpdate(event)) {
+            String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
+            if (!existRow(connectorMapper, queryCount, row.get(pkField.getName()))) {
+                logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTableName(), event, ConnectorConstant.OPERTION_INSERT, row);
+                writer(result, connectorMapper, config, pkField, row, ConnectorConstant.OPERTION_INSERT);
+            }
+            return;
+        }
+
+        // 存在转update
+        if (isInsert(config.getEvent())) {
+            logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTableName(), event, ConnectorConstant.OPERTION_UPDATE, row);
+            writer(result, connectorMapper, config, pkField, row, ConnectorConstant.OPERTION_UPDATE);
+        }
+    }
+
+    private void writer(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField, Map row,
+                        String event) {
+        // 1、获取 SQL
+        String sql = config.getCommand().get(event);
+
+        List<Field> fields = new ArrayList<>(config.getFields());
+        // Update / Delete
+        if (!isInsert(event)) {
+            if (isDelete(event)) {
+                fields.clear();
+            }
+            fields.add(pkField);
+        }
+
+        try {
+            // 2、设置参数
+            int execute = connectorMapper.execute(databaseTemplate ->
+                    databaseTemplate.update(sql, (ps) ->
+                            batchRowsSetter(databaseTemplate.getConnection(), ps, fields, row)
+                    )
+            );
+            if (execute == 0) {
+                throw new ConnectorException(String.format("尝试执行[%s]失败", event));
+            }
+            result.getSuccessData().add(row);
+        } catch (Exception e) {
+            result.getFailData().add(row);
+            result.getError().append("SQL:").append(sql).append(System.lineSeparator())
+                    .append("DATA:").append(row).append(System.lineSeparator())
+                    .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
+            logger.error("执行{}失败: {}, DATA:{}", event, e.getMessage(), row);
+        }
+    }
+
     private boolean existRow(DatabaseConnectorMapper connectorMapper, String sql, Object value) {
         int rowNum = 0;
         try {
-            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[] {value}, Integer.class));
+            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[]{value}, Integer.class));
         } catch (Exception e) {
             logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
         }
         return rowNum > 0;
-    }
-
-    /**
-     * 获取数据库表元数据信息
-     *
-     * @param databaseTemplate
-     * @param metaSql          查询元数据
-     * @param tableName        表名
-     * @return
-     */
-    private MetaInfo getMetaInfo(DatabaseTemplate databaseTemplate, String metaSql, String tableName) throws SQLException {
-        SqlRowSet sqlRowSet = databaseTemplate.queryForRowSet(metaSql);
-        ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
-        SqlRowSetMetaData metaData = rowSet.getMetaData();
-
-        // 查询表字段信息
-        int columnCount = metaData.getColumnCount();
-        if (1 > columnCount) {
-            throw new ConnectorException("查询表字段不能为空.");
-        }
-        List<Field> fields = new ArrayList<>(columnCount);
-        Map<String, List<String>> tables = new HashMap<>();
-        try {
-            DatabaseMetaData md = databaseTemplate.getConnection().getMetaData();
-            String name = null;
-            String label = null;
-            String typeName = null;
-            String table = null;
-            int columnType;
-            boolean pk;
-            for (int i = 1; i <= columnCount; i++) {
-                table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
-                if (null == tables.get(table)) {
-                    tables.putIfAbsent(table, findTablePrimaryKeys(md, table));
-                }
-                name = metaData.getColumnName(i);
-                label = metaData.getColumnLabel(i);
-                typeName = metaData.getColumnTypeName(i);
-                columnType = metaData.getColumnType(i);
-                pk = isPk(tables, table, name);
-                fields.add(new Field(label, typeName, columnType, pk));
-            }
-        } finally {
-            tables.clear();
-        }
-        return new MetaInfo().setColumn(fields);
-    }
-
-    /**
-     * 返回主键名称
-     *
-     * @param table
-     * @param quotation
-     * @return
-     */
-    private String findTablePrimaryKey(Table table, String quotation) {
-        if (null != table) {
-            List<Field> column = table.getColumn();
-            if (!CollectionUtils.isEmpty(column)) {
-                for (Field c : column) {
-                    if (c.isPk()) {
-                        return new StringBuilder(quotation).append(c.getName()).append(quotation).toString();
-                    }
-                }
-            }
-        }
-        if (!TableTypeEnum.isView(table.getType())) {
-            throw new ConnectorException("Table primary key can not be empty.");
-        }
-        return "";
     }
 
     private boolean isPk(Map<String, List<String>> tables, String tableName, String name) {
