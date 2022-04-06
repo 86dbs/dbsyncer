@@ -135,20 +135,23 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         try {
             // 2、设置参数
             execute = connectorMapper.execute(databaseTemplate ->
-                databaseTemplate.batchUpdate(executeSql, new BatchPreparedStatementSetter() {
-                    @Override
-                    public void setValues(PreparedStatement preparedStatement, int i) {
-                        batchRowsSetter(databaseTemplate.getConnection(), preparedStatement, fields, data.get(i));
-                    }
+                    databaseTemplate.batchUpdate(executeSql, new BatchPreparedStatementSetter() {
+                        @Override
+                        public void setValues(PreparedStatement preparedStatement, int i) {
+                            batchRowsSetter(databaseTemplate.getConnection(), preparedStatement, fields, data.get(i));
+                        }
 
-                    @Override
-                    public int getBatchSize() {
-                        return data.size();
-                    }
-                })
+                        @Override
+                        public int getBatchSize() {
+                            return data.size();
+                        }
+                    })
             );
         } catch (Exception e) {
-            data.forEach(row -> forceUpdate(result, connectorMapper, config, pkField, row));
+            if (!config.isForceUpdate()) {
+                result.addFailData(data);
+                result.getError().append(e.getMessage());
+            }
         }
 
         if (null != execute) {
@@ -448,20 +451,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
 
     private void forceUpdate(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField,
                              Map row) {
-        String event = config.getEvent();
-        if (!config.isForceUpdate()) {
-            result.getFailData().add(row);
-            result.getError().append("SQL:").append(config.getCommand().get(event)).append(System.lineSeparator())
-                    .append("DATA:").append(row).append(System.lineSeparator())
-                    .append("ERROR:").append("Row data does not exist.").append(System.lineSeparator());
-            return;
-        }
-
         // 不存在转insert
-        if (isUpdate(event)) {
+        if (isUpdate(config.getEvent())) {
             String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
             if (!existRow(connectorMapper, queryCount, row.get(pkField.getName()))) {
-                logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTableName(), event, ConnectorConstant.OPERTION_INSERT, row);
+                logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTableName(), config.getEvent(), ConnectorConstant.OPERTION_INSERT, row);
                 writer(result, connectorMapper, config, pkField, row, ConnectorConstant.OPERTION_INSERT);
             }
             return;
@@ -469,7 +463,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
 
         // 存在转update
         if (isInsert(config.getEvent())) {
-            logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTableName(), event, ConnectorConstant.OPERTION_UPDATE, row);
+            logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTableName(), config.getEvent(), ConnectorConstant.OPERTION_UPDATE, row);
             writer(result, connectorMapper, config, pkField, row, ConnectorConstant.OPERTION_UPDATE);
         }
     }
