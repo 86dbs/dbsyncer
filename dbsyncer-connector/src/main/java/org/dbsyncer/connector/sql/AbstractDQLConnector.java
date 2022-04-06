@@ -1,7 +1,6 @@
 package org.dbsyncer.connector.sql;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
@@ -19,11 +18,6 @@ import java.util.Map;
  * @date 2022/4/6 22:16
  */
 public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
-
-    @Override
-    protected String getTableSql(DatabaseConfig config) {
-        throw new ConnectorException("Unsupported method.");
-    }
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper config) {

@@ -31,8 +31,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected abstract String getTableSql(DatabaseConfig config);
-
     @Override
     public ConnectorMapper connect(DatabaseConfig config) {
         try {
@@ -57,16 +55,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     @Override
     public String getConnectorMapperCacheKey(DatabaseConfig config) {
         return String.format("%s-%s", config.getUrl(), config.getUsername());
-    }
-
-    @Override
-    public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
-        String sql = getTableSql(connectorMapper.getConfig());
-        List<String> tableNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
-        if (!CollectionUtils.isEmpty(tableNames)) {
-            return tableNames.stream().map(name -> new Table(name)).collect(Collectors.toList());
-        }
-        return Collections.EMPTY_LIST;
     }
 
     @Override
@@ -223,12 +211,36 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     }
 
     /**
+     * 健康检查
+     *
+     * @return
+     */
+    protected String getValidationQuery() {
+        return "select 1";
+    }
+
+    /**
      * 查询语句表名和字段带上引号（默认不加）
      *
      * @return
      */
     protected String buildSqlWithQuotation() {
         return "";
+    }
+
+    /**
+     * 获取表列表
+     *
+     * @param connectorMapper
+     * @param sql
+     * @return
+     */
+    protected List<Table> getTable(DatabaseConnectorMapper connectorMapper, String sql) {
+        List<String> tableNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
+        if (!CollectionUtils.isEmpty(tableNames)) {
+            return tableNames.stream().map(name -> new Table(name)).collect(Collectors.toList());
+        }
+        return Collections.EMPTY_LIST;
     }
 
     /**
@@ -264,6 +276,37 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             // WHERE (USER.USERNAME = 'zhangsan' AND USER.AGE='20') OR (USER.TEL='18299996666')
             sql.insert(0, " WHERE ");
         }
+        return sql.toString();
+    }
+
+    /**
+     * 根据过滤条件获取查询SQL
+     *
+     * @param queryOperator and/or
+     * @param filter
+     * @return
+     */
+    private String getFilterSql(String queryOperator, List<Filter> filter) {
+        List<Filter> list = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), queryOperator)).collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(list)) {
+            return "";
+        }
+
+        int size = list.size();
+        int end = size - 1;
+        StringBuilder sql = new StringBuilder();
+        sql.append("(");
+        Filter c = null;
+        String quotation = buildSqlWithQuotation();
+        for (int i = 0; i < size; i++) {
+            c = list.get(i);
+            // "USER" = 'zhangsan'
+            sql.append(quotation).append(c.getName()).append(quotation).append(c.getFilter()).append("'").append(c.getValue()).append("'");
+            if (i < end) {
+                sql.append(" ").append(queryOperator).append(" ");
+            }
+        }
+        sql.append(")");
         return sql.toString();
     }
 
@@ -317,15 +360,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
 
         SqlBuilderConfig config = new SqlBuilderConfig(this, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());
         return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
-    }
-
-    /**
-     * 健康检查
-     *
-     * @return
-     */
-    protected String getValidationQuery() {
-        return "select 1";
     }
 
     /**
@@ -399,34 +433,26 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     }
 
     /**
-     * 根据过滤条件获取查询SQL
+     * 返回表主键
      *
-     * @param queryOperator and/or
-     * @param filter
+     * @param md
+     * @param tableName
      * @return
+     * @throws SQLException
      */
-    private String getFilterSql(String queryOperator, List<Filter> filter) {
-        List<Filter> list = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), queryOperator)).collect(Collectors.toList());
-        if (CollectionUtils.isEmpty(list)) {
-            return "";
-        }
-
-        int size = list.size();
-        int end = size - 1;
-        StringBuilder sql = new StringBuilder();
-        sql.append("(");
-        Filter c = null;
-        String quotation = buildSqlWithQuotation();
-        for (int i = 0; i < size; i++) {
-            c = list.get(i);
-            // "USER" = 'zhangsan'
-            sql.append(quotation).append(c.getName()).append(quotation).append(c.getFilter()).append("'").append(c.getValue()).append("'");
-            if (i < end) {
-                sql.append(" ").append(queryOperator).append(" ");
+    private List<String> findTablePrimaryKeys(DatabaseMetaData md, String tableName) throws SQLException {
+        //根据表名获得主键结果集
+        ResultSet rs = null;
+        List<String> primaryKeys = new ArrayList<>();
+        try {
+            rs = md.getPrimaryKeys(null, null, tableName);
+            while (rs.next()) {
+                primaryKeys.add(rs.getString("COLUMN_NAME"));
             }
+        } finally {
+            DatabaseUtil.close(rs);
         }
-        sql.append(")");
-        return sql.toString();
+        return primaryKeys;
     }
 
     /**
@@ -485,9 +511,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         try {
             // 2、设置参数
             int execute = connectorMapper.execute(databaseTemplate ->
-                    databaseTemplate.update(sql, (ps) ->
-                            batchRowsSetter(databaseTemplate.getConnection(), ps, fields, row)
-                    )
+                    databaseTemplate.update(sql, (ps) -> batchRowsSetter(databaseTemplate.getConnection(), ps, fields, row))
             );
             if (execute == 0) {
                 throw new ConnectorException(String.format("尝试执行[%s]失败", event));
@@ -515,21 +539,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     private boolean isPk(Map<String, List<String>> tables, String tableName, String name) {
         List<String> pk = tables.get(tableName);
         return !CollectionUtils.isEmpty(pk) && pk.contains(name);
-    }
-
-    private List<String> findTablePrimaryKeys(DatabaseMetaData md, String tableName) throws SQLException {
-        //根据表名获得主键结果集
-        ResultSet rs = null;
-        List<String> primaryKeys = new ArrayList<>();
-        try {
-            rs = md.getPrimaryKeys(null, null, tableName);
-            while (rs.next()) {
-                primaryKeys.add(rs.getString("COLUMN_NAME"));
-            }
-        } finally {
-            DatabaseUtil.close(rs);
-        }
-        return primaryKeys;
     }
 
 }

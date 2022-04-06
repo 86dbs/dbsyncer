@@ -10,10 +10,12 @@ import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class SqlServerConnector extends AbstractDatabaseConnector {
@@ -31,8 +33,9 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String getTableSql(DatabaseConfig config) {
-        return String.format("SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('%s') AND IS_MS_SHIPPED = 0", config.getSchema());
+    public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
+        DatabaseConfig config = connectorMapper.getConfig();
+        return super.getTable(connectorMapper, String.format("SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('%s') AND IS_MS_SHIPPED = 0", config.getSchema()));
     }
 
     @Override

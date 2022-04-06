@@ -1,16 +1,14 @@
 package org.dbsyncer.connector.mysql;
 
-import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.PageSqlConfig;
+import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.connector.database.DatabaseConnectorMapper;
+
+import java.util.List;
 
 public final class MysqlConnector extends AbstractDatabaseConnector {
-
-    @Override
-    protected String getTableSql(DatabaseConfig config) {
-        return "show tables";
-    }
 
     @Override
     public String getPageSql(PageSqlConfig config) {
@@ -22,4 +20,8 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
         return new Object[]{(pageIndex - 1) * pageSize, pageSize};
     }
 
+    @Override
+    public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
+        return super.getTable(connectorMapper, "show tables");
+    }
 }
