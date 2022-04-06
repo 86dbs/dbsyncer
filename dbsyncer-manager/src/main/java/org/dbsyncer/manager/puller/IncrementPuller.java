@@ -31,6 +31,7 @@ import org.dbsyncer.parser.util.PickerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -73,6 +74,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
     @Autowired
     private ConnectorFactory connectorFactory;
 
+    @Qualifier("taskExecutor")
     @Autowired
     private Executor taskExecutor;
 
@@ -80,7 +82,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
     @PostConstruct
     private void init() {
-        scheduledTaskService.start("*/10 * * * * ?", this);
+        scheduledTaskService.start(10000, this);
     }
 
     @Override
@@ -240,10 +242,12 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         @Override
         public void changedEvent(RowChangedEvent rowChangedEvent) {
             final FieldPicker picker = tablePicker.get(rowChangedEvent.getTableGroupIndex());
-            rowChangedEvent.setTableName(picker.getTableGroup().getSourceTable().getName());
+            TableGroup tableGroup = picker.getTableGroup();
+            rowChangedEvent.setSourceTableName(tableGroup.getSourceTable().getName());
+            rowChangedEvent.setTargetTableName(tableGroup.getTargetTable().getName());
 
             // 处理过程有异常向上抛
-            parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);
+            parser.execute(mapping, tableGroup, rowChangedEvent);
 
             // 标记有变更记录
             changed.compareAndSet(false, true);
@@ -296,7 +300,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         @Override
         public void changedEvent(RowChangedEvent rowChangedEvent) {
             // 处理过程有异常向上抛
-            List<FieldPicker> pickers = tablePicker.get(rowChangedEvent.getTableName());
+            List<FieldPicker> pickers = tablePicker.get(rowChangedEvent.getSourceTableName());
             if (!CollectionUtils.isEmpty(pickers)) {
                 pickers.parallelStream().forEach(picker -> {
                     final Map<String, Object> before = picker.getColumns(rowChangedEvent.getBeforeData());
@@ -304,6 +308,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
                     if (picker.filter(StringUtil.equals(ConnectorConstant.OPERTION_DELETE, rowChangedEvent.getEvent()) ? before : after)) {
                         rowChangedEvent.setBefore(before);
                         rowChangedEvent.setAfter(after);
+                        rowChangedEvent.setTargetTableName(picker.getTableGroup().getTargetTable().getName());
                         parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);
                     }
                 });

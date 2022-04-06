@@ -100,7 +100,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         int pageIndex = 1;
         for (; ; ) {
             Result reader = connectorFactory.reader(connectionMapper, new ReaderConfig(point.getCommand(), point.getArgs(), pageIndex++, readNum));
-            List<Map> data = reader.getData();
+            List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
                 break;
             }
@@ -108,7 +108,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
             Object event = null;
             for (Map<String, Object> row : data) {
                 if(StringUtil.isBlank(eventFieldName)){
-                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_MAP, row, true));
+                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_MAP, row));
                     continue;
                 }
 

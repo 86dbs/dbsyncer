@@ -39,4 +39,10 @@ public abstract class AbstractDataBaseConfigChecker implements ConnectorConfigCh
         connectorConfig.setTable(table);
     }
 
+    protected void modifySchema(DatabaseConfig connectorConfig, Map<String, String> params) {
+        String schema = params.get("schema");
+        Assert.hasText(schema, "Schema is empty.");
+        connectorConfig.setSchema(schema);
+    }
+
 }

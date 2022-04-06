@@ -30,4 +30,9 @@ public class DatabaseConstant {
      */
     public static final String SQLSERVER_PAGE_SQL = "SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY %s) AS SQLSERVER_ROW_ID, * FROM (%s) S) A WHERE A.SQLSERVER_ROW_ID BETWEEN ? AND ?";
 
+    //*********************************** PostgreSQL **************************************//
+    /**
+     * PostgreSQL分页语句
+     */
+    public static final String POSTGRESQL_PAGE_SQL = " limit ? OFFSET ?";
 }

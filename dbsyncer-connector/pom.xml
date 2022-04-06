@@ -42,6 +42,12 @@
             <artifactId>mssql-jdbc</artifactId>
         </dependency>
 
+        <!-- postgresql -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+
         <!-- smartcn中文分词器 -->
         <dependency>
             <groupId>org.apache.lucene</groupId>

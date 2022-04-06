@@ -5,7 +5,6 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.SqlServerDatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.listener.AbstractExtractor;
@@ -121,7 +120,7 @@ public class SqlServerExtractor extends AbstractExtractor {
     }
 
     private void connect() {
-        SqlServerDatabaseConfig cfg = (SqlServerDatabaseConfig) connectorConfig;
+        DatabaseConfig cfg = (DatabaseConfig) connectorConfig;
         if (connectorFactory.isAlive(cfg)) {
             connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(cfg);
             serverName = cfg.getUrl();

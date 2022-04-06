@@ -18,13 +18,13 @@ import java.util.Map;
 public class RowChangedEvent {
 
     private int tableGroupIndex;
-    private String tableName;
+    private String sourceTableName;
+    private String targetTableName;
     private String event;
     private List<Object> beforeData;
     private List<Object> afterData;
     private Map<String, Object> before;
     private Map<String, Object> after;
-    private boolean forceUpdate;
 
     public RowChangedEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after) {
         this.tableGroupIndex = tableGroupIndex;
@@ -33,16 +33,8 @@ public class RowChangedEvent {
         this.after = after;
     }
 
-    public RowChangedEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after, boolean forceUpdate) {
-        this.tableGroupIndex = tableGroupIndex;
-        this.event = event;
-        this.before = before;
-        this.after = after;
-        this.forceUpdate = forceUpdate;
-    }
-
-    public RowChangedEvent(String tableName, String event, List<Object> beforeData, List<Object> afterData) {
-        this.tableName = tableName;
+    public RowChangedEvent(String sourceTableName, String event, List<Object> beforeData, List<Object> afterData) {
+        this.sourceTableName = sourceTableName;
         this.event = event;
         this.beforeData = beforeData;
         this.afterData = afterData;
@@ -52,12 +44,20 @@ public class RowChangedEvent {
         return tableGroupIndex;
     }
 
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
+    public String getSourceTableName() {
+        return sourceTableName;
     }
 
-    public String getTableName() {
-        return tableName;
+    public void setSourceTableName(String sourceTableName) {
+        this.sourceTableName = sourceTableName;
+    }
+
+    public String getTargetTableName() {
+        return targetTableName;
+    }
+
+    public void setTargetTableName(String targetTableName) {
+        this.targetTableName = targetTableName;
     }
 
     public String getEvent() {
@@ -86,15 +86,6 @@ public class RowChangedEvent {
 
     public void setAfter(Map<String, Object> after) {
         this.after = after;
-    }
-
-    public boolean isForceUpdate() {
-        return forceUpdate;
-    }
-
-    public RowChangedEvent setForceUpdate(boolean forceUpdate) {
-        this.forceUpdate = forceUpdate;
-        return this;
     }
 
     @Override

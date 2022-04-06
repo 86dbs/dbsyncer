@@ -14,7 +14,6 @@ import org.dbsyncer.connector.enums.ESFieldTypeEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.util.ESUtil;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -160,7 +159,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             for (SearchHit hit : searchHits) {
                 list.add(hit.getSourceAsMap());
             }
-            return new Result(new ArrayList<>(list));
+            return new Result(list);
         } catch (IOException e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e.getMessage());
@@ -175,69 +174,27 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             throw new ConnectorException("writer data can not be empty.");
         }
 
-        Result result = new Result();
+        final Result result = new Result();
         final ESConfig cfg = connectorMapper.getConfig();
-        Field pkField = getPrimaryKeyField(config.getFields());
+        final Field pkField = getPrimaryKeyField(config.getFields());
+        final String primaryKeyName = pkField.getName();
         try {
             BulkRequest request = new BulkRequest();
-            data.forEach(row -> {
-                IndexRequest r = new IndexRequest(cfg.getIndex(), cfg.getType(), String.valueOf(row.get(pkField.getName())));
-                r.source(row, XContentType.JSON);
-                request.add(r);
-            });
+            data.forEach(row -> addRequest(request, cfg.getIndex(), cfg.getType(), config.getEvent(), String.valueOf(row.get(primaryKeyName)), row));
 
             BulkResponse response = connectorMapper.getConnection().bulk(request, RequestOptions.DEFAULT);
             RestStatus restStatus = response.status();
             if (restStatus.getStatus() != RestStatus.OK.getStatus()) {
                 throw new ConnectorException(String.format("error code:%s", restStatus.getStatus()));
             }
+            result.addSuccessData(data);
         } catch (Exception e) {
             // 记录错误数据
-            result.getFail().set(data.size());
+            result.addFailData(data);
             result.getError().append(e.getMessage()).append(System.lineSeparator());
             logger.error(e.getMessage());
         }
         return result;
-    }
-
-    @Override
-    public Result writer(ESConnectorMapper connectorMapper, WriterSingleConfig config) {
-        Map<String, Object> data = config.getData();
-        Field pkField = getPrimaryKeyField(config.getFields());
-        String pk = String.valueOf(data.get(pkField.getName()));
-
-        if (isUpdate(config.getEvent())) {
-            return execute(connectorMapper, data, pk, (index, type, id) -> {
-                try {
-                    UpdateRequest request = new UpdateRequest(index, type, id);
-                    request.doc(data, XContentType.JSON);
-                    connectorMapper.getConnection().update(request, RequestOptions.DEFAULT);
-                } catch (ElasticsearchStatusException e) {
-                    // 数据不存在则写入
-                    if (RestStatus.NOT_FOUND.getStatus() == e.status().getStatus()) {
-                        IndexRequest r = new IndexRequest(index, type, id);
-                        r.source(data, XContentType.JSON);
-                        connectorMapper.getConnection().index(r, RequestOptions.DEFAULT);
-                        return;
-                    }
-                    throw new ConnectorException(e.getMessage());
-                }
-            });
-        }
-        if (isInsert(config.getEvent())) {
-            return execute(connectorMapper, data, pk, (index, type, id) -> {
-                IndexRequest request = new IndexRequest(index, type, id);
-                request.source(data, XContentType.JSON);
-                connectorMapper.getConnection().index(request, RequestOptions.DEFAULT);
-            });
-        }
-        if (isDelete(config.getEvent())) {
-            return execute(connectorMapper, data, pk, (index, type, id) ->
-                    connectorMapper.getConnection().delete(new DeleteRequest(index, type, id), RequestOptions.DEFAULT)
-            );
-        }
-
-        throw new ConnectorException(String.format("Unsupported event: %s", config.getEvent()));
     }
 
     @Override
@@ -262,7 +219,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         Table table = commandConfig.getTable();
-        if(!CollectionUtils.isEmpty(table.getColumn())){
+        if (!CollectionUtils.isEmpty(table.getColumn())) {
             getPrimaryKeyField(table.getColumn());
         }
         return Collections.EMPTY_MAP;
@@ -323,27 +280,22 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         }
     }
 
-    private Result execute(ESConnectorMapper connectorMapper, Map<String, Object> data, String id, RequestMapper mapper) {
-        Result result = new Result();
-        final ESConfig config = connectorMapper.getConfig();
-        try {
-            mapper.apply(config.getIndex(), config.getType(), id);
-        } catch (Exception e) {
-            // 记录错误数据
-            result.getFailData().add(data);
-            result.getFail().set(1);
-            result.getError().append("INDEX:").append(config.getIndex()).append(System.lineSeparator())
-                    .append("TYPE:").append(config.getType()).append(System.lineSeparator())
-                    .append("ID:").append(id).append(System.lineSeparator())
-                    .append("DATA:").append(data).append(System.lineSeparator())
-                    .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
-            logger.error("INDEX:{}, TYPE:{}, ID:{}, DATA:{}, ERROR:{}", config.getIndex(), config.getType(), id, data, e.getMessage());
+    private void addRequest(BulkRequest request, String index, String type, String event, String id, Map data) {
+        if (isUpdate(event)) {
+            UpdateRequest req = new UpdateRequest(index, type, id);
+            req.doc(data, XContentType.JSON);
+            request.add(req);
+            return;
         }
-        return result;
-    }
-
-    private interface RequestMapper {
-        void apply(String index, String type, String id) throws IOException;
+        if (isInsert(event)) {
+            IndexRequest req = new IndexRequest(index, type, id);
+            req.source(data, XContentType.JSON);
+            request.add(req);
+            return;
+        }
+        if (isDelete(event)) {
+            request.add(new DeleteRequest(index, type, id));
+        }
     }
 
     private interface FilterMapper {

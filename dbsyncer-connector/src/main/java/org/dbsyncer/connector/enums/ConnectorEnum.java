@@ -3,13 +3,17 @@ package org.dbsyncer.connector.enums;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.config.ESConfig;
+import org.dbsyncer.connector.config.KafkaConfig;
 import org.dbsyncer.connector.es.ESConnector;
 import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.mysql.MysqlConnector;
 import org.dbsyncer.connector.oracle.OracleConnector;
+import org.dbsyncer.connector.postgresql.PostgreSQLConnector;
 import org.dbsyncer.connector.sql.DQLMysqlConnector;
 import org.dbsyncer.connector.sql.DQLOracleConnector;
+import org.dbsyncer.connector.sql.DQLPostgreSQLConnector;
 import org.dbsyncer.connector.sql.DQLSqlServerConnector;
 import org.dbsyncer.connector.sqlserver.SqlServerConnector;
 
@@ -33,7 +37,11 @@ public enum ConnectorEnum {
     /**
      * SqlServer 连接器
      */
-    SQL_SERVER("SqlServer", new SqlServerConnector(), SqlServerDatabaseConfig.class),
+    SQL_SERVER("SqlServer", new SqlServerConnector(), DatabaseConfig.class),
+    /**
+     * PostgreSQL 连接器
+     */
+    POSTGRE_SQL("PostgreSQL", new PostgreSQLConnector(), DatabaseConfig.class),
     /**
      * Elasticsearch 连接器
      */
@@ -53,7 +61,11 @@ public enum ConnectorEnum {
     /**
      * DqlSqlServer 连接器
      */
-    DQL_SQL_SERVER("DqlSqlServer", new DQLSqlServerConnector(), SqlServerDatabaseConfig.class);
+    DQL_SQL_SERVER("DqlSqlServer", new DQLSqlServerConnector(), DatabaseConfig.class),
+    /**
+     * DqlPostgreSQL 连接器
+     */
+    DQL_POSTGRE_SQL("DqlPostgreSQL", new DQLPostgreSQLConnector(), DatabaseConfig.class);
 
     // 连接器名称
     private String type;

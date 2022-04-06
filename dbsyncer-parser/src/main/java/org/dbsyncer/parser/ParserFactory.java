@@ -27,12 +27,10 @@ import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
@@ -174,26 +172,12 @@ public class ParserFactory implements Parser {
         try {
             JSONObject conn = new JSONObject(json);
             JSONObject config = (JSONObject) conn.remove("config");
-            JSONArray table = (JSONArray) conn.remove("table");
             Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
             Assert.notNull(connector, "Connector can not be null.");
             String connectorType = config.getString("connectorType");
             Class<?> configClass = ConnectorEnum.getConfigClass(connectorType);
             ConnectorConfig obj = (ConnectorConfig) JsonUtil.jsonToObj(config.toString(), configClass);
             connector.setConfig(obj);
-
-            List<Table> tableList = new ArrayList<>();
-            boolean exist = false;
-            for (int i = 0; i < table.length(); i++) {
-                if (table.get(i) instanceof String) {
-                    tableList.add(new Table(table.getString(i)));
-                    exist = true;
-                }
-            }
-            if (!exist) {
-                tableList = JsonUtil.jsonToArray(table.toString(), Table.class);
-            }
-            connector.setTable(tableList);
 
             return connector;
         } catch (JSONException e) {
@@ -204,16 +188,8 @@ public class ParserFactory implements Parser {
 
     @Override
     public <T> T parseObject(String json, Class<T> clazz) {
-        try {
-            JSONObject obj = new JSONObject(json);
-            T t = JsonUtil.jsonToObj(obj.toString(), clazz);
-            String format = String.format("%s can not be null.", clazz.getSimpleName());
-            Assert.notNull(t, format);
-            return t;
-        } catch (JSONException e) {
-            logger.error(e.getMessage());
-            throw new ParserException(e.getMessage());
-        }
+        T t = JsonUtil.jsonToObj(json, clazz);
+        return t;
     }
 
     @Override
@@ -283,7 +259,7 @@ public class ParserFactory implements Parser {
             // 1、获取数据源数据
             int pageIndex = Integer.parseInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
             Result reader = connectorFactory.reader(sConnectorMapper, new ReaderConfig(command, new ArrayList<>(), pageIndex, pageSize));
-            List<Map> data = reader.getData();
+            List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
                 params.clear();
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
@@ -291,7 +267,7 @@ public class ParserFactory implements Parser {
             }
 
             // 2、映射字段
-            List<Map> target = picker.pickData(reader.getData());
+            List<Map> target = picker.pickData(data);
 
             // 3、参数转换
             ConvertUtil.convert(group.getConvert(), target);
@@ -300,10 +276,10 @@ public class ParserFactory implements Parser {
             pluginFactory.convert(group.getPlugin(), data, target);
 
             // 5、写入目标源
-            Result writer = writeBatch(tConnectorMapper, command, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize);
+            Result writer = writeBatch(new BatchWriter(tConnectorMapper, command, sTableName, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize));
 
             // 6、更新结果
-            flush(task, writer, target);
+            flush(task, writer);
 
             // 7、更新分页数
             params.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(++pageIndex));
@@ -311,15 +287,13 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent rowChangedEvent) {
-        logger.info("Table[{}] {}, before:{}, after:{}", rowChangedEvent.getTableName(), rowChangedEvent.getEvent(),
-                rowChangedEvent.getBefore(), rowChangedEvent.getAfter());
-        final String metaId = mapping.getMetaId();
+    public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent event) {
+        logger.info("Table[{}] {}, before:{}, after:{}", event.getSourceTableName(), event.getEvent(),
+                event.getBefore(), event.getAfter());
 
-        ConnectorMapper tConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
         // 1、获取映射字段
-        final String event = rowChangedEvent.getEvent();
-        Map<String, Object> data = StringUtil.equals(ConnectorConstant.OPERTION_DELETE, event) ? rowChangedEvent.getBefore() : rowChangedEvent.getAfter();
+        final String eventName = event.getEvent();
+        Map<String, Object> data = StringUtil.equals(ConnectorConstant.OPERTION_DELETE, eventName) ? event.getBefore() : event.getAfter();
         Picker picker = new Picker(tableGroup.getFieldMapping(), data);
         Map target = picker.getTargetMap();
 
@@ -327,29 +301,32 @@ public class ParserFactory implements Parser {
         ConvertUtil.convert(tableGroup.getConvert(), target);
 
         // 3、插件转换
-        pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
+        pluginFactory.convert(tableGroup.getPlugin(), eventName, data, target);
 
         // 4、写入缓冲执行器
-        writerBufferActuator.offer(new WriterRequest(metaId, tableGroup.getId(), event, tConnectorMapper, picker.getTargetFields(), tableGroup.getCommand(), target));
+        writerBufferActuator.offer(new WriterRequest(tableGroup.getId(), target, mapping.getMetaId(), mapping.getTargetConnectorId(), event.getSourceTableName(), event.getTargetTableName(), eventName, picker.getTargetFields(), tableGroup.getCommand()));
     }
 
     /**
      * 批量写入
      *
-     * @param connectorMapper
-     * @param command
-     * @param fields
-     * @param dataList
-     * @param batchSize
+     * @param batchWriter
      * @return
      */
     @Override
-    public Result writeBatch(ConnectorMapper connectorMapper, Map<String, String> command, String event, List<Field> fields, List<Map> dataList, int batchSize) {
+    public Result writeBatch(BatchWriter batchWriter) {
+        List<Map> dataList = batchWriter.getDataList();
+        int batchSize = batchWriter.getBatchSize();
+        String tableName = batchWriter.getTableName();
+        String event = batchWriter.getEvent();
+        Map<String, String> command = batchWriter.getCommand();
+        List<Field> fields = batchWriter.getFields();
+        boolean forceUpdate = batchWriter.isForceUpdate();
         // 总数
         int total = dataList.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(connectorMapper, new WriterBatchConfig(event, command, fields, dataList));
+            return connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, dataList, forceUpdate));
         }
 
         // 批量任务, 拆分
@@ -372,13 +349,12 @@ public class ParserFactory implements Parser {
 
             taskExecutor.execute(() -> {
                 try {
-                    Result w = connectorFactory.writer(connectorMapper, new WriterBatchConfig(event, command, fields, data));
-                    // CAS
-                    result.getFailData().addAll(w.getFailData());
-                    result.getFail().getAndAdd(w.getFail().get());
+                    Result w = connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, data, forceUpdate));
+                    result.addSuccessData(w.getSuccessData());
+                    result.addFailData(w.getFailData());
                     result.getError().append(w.getError());
                 } catch (Exception e) {
-                    result.getError().append(e.getMessage()).append(System.lineSeparator());
+                    logger.error(e.getMessage());
                 } finally {
                     latch.countDown();
                 }
@@ -397,10 +373,9 @@ public class ParserFactory implements Parser {
      *
      * @param task
      * @param writer
-     * @param data
      */
-    private void flush(Task task, Result writer, List<Map> data) {
-        flushStrategy.flushFullData(task.getId(), writer, ConnectorConstant.OPERTION_INSERT, data);
+    private void flush(Task task, Result writer) {
+        flushStrategy.flushFullData(task.getId(), writer, ConnectorConstant.OPERTION_INSERT);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(Instant.now().toEpochMilli());
@@ -430,9 +405,7 @@ public class ParserFactory implements Parser {
         Assert.hasText(connectorId, "Connector id can not be empty.");
         Connector conn = cacheService.get(connectorId, Connector.class);
         Assert.notNull(conn, "Connector can not be null.");
-        Connector connector = new Connector();
-        BeanUtils.copyProperties(conn, connector);
-        return connector;
+        return conn;
     }
 
     /**
@@ -442,8 +415,7 @@ public class ParserFactory implements Parser {
      * @return
      */
     private ConnectorConfig getConnectorConfig(String connectorId) {
-        Connector connector = getConnector(connectorId);
-        return connector.getConfig();
+        return getConnector(connectorId).getConfig();
     }
 
 }

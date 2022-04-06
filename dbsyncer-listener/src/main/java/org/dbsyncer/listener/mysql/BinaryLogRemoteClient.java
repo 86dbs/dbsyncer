@@ -19,6 +19,7 @@ import javax.net.ssl.X509TrustManager;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.security.GeneralSecurityException;
@@ -36,7 +37,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
         @Override
         protected void initSSLContext(SSLContext sc) throws GeneralSecurityException {
-            sc.init(null, new TrustManager[] {
+            sc.init(null, new TrustManager[]{
                     new X509TrustManager() {
 
                         @Override
@@ -93,10 +94,10 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     /**
      * Alias for BinaryLogRemoteClient(hostname, port, &lt;no schema&gt; = null, username, password).
      *
-     * @see BinaryLogRemoteClient#BinaryLogRemoteClient(String, int, String, String, String)
+     * @see BinaryLogRemoteClient#BinaryLogRemoteClient(String, int, String, String, String, long)
      */
-    public BinaryLogRemoteClient(String hostname, int port, String username, String password) {
-        this(hostname, port, null, username, password);
+    public BinaryLogRemoteClient(String hostname, int port, String username, String password) throws IOException {
+        this(hostname, port, null, username, password, 0L);
     }
 
     /**
@@ -106,13 +107,15 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
      *                 authentication.
      * @param username login name
      * @param password password
+     * @param serverId serverId
      */
-    public BinaryLogRemoteClient(String hostname, int port, String schema, String username, String password) {
+    public BinaryLogRemoteClient(String hostname, int port, String schema, String username, String password, long serverId) throws IOException {
         this.hostname = hostname;
         this.port = port;
         this.schema = schema;
         this.username = username;
         this.password = password;
+        this.serverId = randomPort(serverId);
     }
 
     @Override
@@ -207,8 +210,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         }
         synchronized (gtidSetAccessLock) {
             String position = gtidSet != null ? gtidSet.toString() : binlogFilename + "/" + binlogPosition;
-            logger.info("Connected to {}:{} at {} ({}cid:{})", hostname, port, position, (blocking ? "sid:" + serverId + ", " : ""),
-                    connectionId);
+            logger.info("Connected to {}:{} at {} (sid:{}, cid:{})", hostname, port, position, serverId, connectionId);
         }
         connected = true;
     }
@@ -535,7 +537,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         }
 
         IdentityHashMap eventDataDeserializers = new IdentityHashMap();
-        if(null == eventDeserializer){
+        if (null == eventDeserializer) {
             this.eventDeserializer = new EventDeserializer(new EventHeaderV4Deserializer(), new NullEventDataDeserializer(), eventDataDeserializers, tableMapEventByTableId);
         }
 
@@ -575,6 +577,21 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 }
             }
         }
+    }
+
+    private long randomPort(long serverId) throws IOException {
+        if (0 == serverId) {
+            ServerSocket serverSocket = null;
+            try {
+                serverSocket = new ServerSocket(0);
+                return serverSocket.getLocalPort();
+            } finally {
+                if (null != serverSocket) {
+                    serverSocket.close();
+                }
+            }
+        }
+        return serverId;
     }
 
     @Override

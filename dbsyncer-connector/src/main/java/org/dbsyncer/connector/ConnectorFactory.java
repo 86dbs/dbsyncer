@@ -137,12 +137,6 @@ public class ConnectorFactory implements DisposableBean {
         return result;
     }
 
-    public Result writer(ConnectorMapper connectorMapper, WriterSingleConfig config) {
-        Result result = getConnector(connectorMapper).writer(connectorMapper, config);
-        Assert.notNull(result, "Connector writer single result can not null");
-        return result;
-    }
-
     public Connector getConnector(ConnectorMapper connectorMapper) {
         return getConnector(connectorMapper.getConnectorType());
     }

@@ -1,14 +1,21 @@
 package org.dbsyncer.parser.flush.impl;
 
+import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.ConnectorMapper;
+import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.parser.ParserFactory;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
-import org.dbsyncer.parser.flush.model.AbstractResponse;
+import org.dbsyncer.parser.flush.BufferResponse;
 import org.dbsyncer.parser.flush.FlushStrategy;
 import org.dbsyncer.parser.flush.model.WriterRequest;
 import org.dbsyncer.parser.flush.model.WriterResponse;
+import org.dbsyncer.parser.model.BatchWriter;
+import org.dbsyncer.parser.model.Connector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import java.util.Collections;
 
@@ -21,10 +28,16 @@ import java.util.Collections;
 public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, WriterResponse> {
 
     @Autowired
+    private ConnectorFactory connectorFactory;
+
+    @Autowired
     private ParserFactory parserFactory;
 
     @Autowired
     private FlushStrategy flushStrategy;
+
+    @Autowired
+    private CacheService cacheService;
 
     private final static int BATCH_SIZE = 100;
 
@@ -34,7 +47,7 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     }
 
     @Override
-    protected AbstractResponse getValue() {
+    protected BufferResponse getValue() {
         return new WriterResponse();
     }
 
@@ -50,8 +63,10 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
             return;
         }
         response.setMetaId(request.getMetaId());
+        response.setTargetConnectorId(request.getTargetConnectorId());
+        response.setSourceTableName(request.getSourceTableName());
+        response.setTargetTableName(request.getTargetTableName());
         response.setEvent(request.getEvent());
-        response.setConnectorMapper(request.getConnectorMapper());
         response.setFields(Collections.unmodifiableList(request.getFields()));
         response.setCommand(request.getCommand());
         response.setMerged(true);
@@ -59,7 +74,22 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
 
     @Override
     protected void pull(WriterResponse response) {
-        Result result = parserFactory.writeBatch(response.getConnectorMapper(), response.getCommand(), response.getEvent(), response.getFields(), response.getDataList(), BATCH_SIZE);
-        flushStrategy.flushIncrementData(response.getMetaId(), result, response.getEvent(), response.getDataList());
+        ConnectorMapper targetConnectorMapper = connectorFactory.connect(getConnectorConfig(response.getTargetConnectorId()));
+        Result result = parserFactory.writeBatch(new BatchWriter(targetConnectorMapper, response.getCommand(), response.getTargetTableName(), response.getEvent(),
+                response.getFields(), response.getDataList(), BATCH_SIZE, true));
+        flushStrategy.flushIncrementData(response.getMetaId(), result, response.getEvent());
+    }
+
+    /**
+     * 获取连接器配置
+     *
+     * @param connectorId
+     * @return
+     */
+    private ConnectorConfig getConnectorConfig(String connectorId) {
+        Assert.hasText(connectorId, "Connector id can not be empty.");
+        Connector conn = cacheService.get(connectorId, Connector.class);
+        Assert.notNull(conn, "Connector can not be null.");
+        return conn.getConfig();
     }
 }

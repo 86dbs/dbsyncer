@@ -26,49 +26,47 @@ public class DatabaseConfig extends ConnectorConfig {
     // 通过SQL获取表信息
     private String sql;
 
+    // 构架名
+    private String schema;
+
     public String getDriverClassName() {
         return driverClassName;
     }
 
-    public DatabaseConfig setDriverClassName(String driverClassName) {
+    public void setDriverClassName(String driverClassName) {
         this.driverClassName = driverClassName;
-        return this;
     }
 
     public String getUrl() {
         return url;
     }
 
-    public DatabaseConfig setUrl(String url) {
+    public void setUrl(String url) {
         this.url = url;
-        return this;
     }
 
     public String getUsername() {
         return username;
     }
 
-    public DatabaseConfig setUsername(String username) {
+    public void setUsername(String username) {
         this.username = username;
-        return this;
     }
 
     public String getPassword() {
         return password;
     }
 
-    public DatabaseConfig setPassword(String password) {
+    public void setPassword(String password) {
         this.password = password;
-        return this;
     }
 
     public String getTable() {
         return table;
     }
 
-    public DatabaseConfig setTable(String table) {
+    public void setTable(String table) {
         this.table = table;
-        return this;
     }
 
     public String getSql() {
@@ -79,4 +77,11 @@ public class DatabaseConfig extends ConnectorConfig {
         this.sql = sql;
     }
 
+    public String getSchema() {
+        return schema;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
+    }
 }

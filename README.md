@@ -1,5 +1,5 @@
 ## 介绍
-DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServer、Elasticsearch(ES)、Kafka、SQL(Mysql/Oracle/SqlServer)等同步场景。支持上传插件自定义同步转换业务，提供监控全量和增量数据统计图、应用性能预警等。
+DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServer、PostgreSQL、Elasticsearch(ES)、Kafka、SQL(Mysql/Oracle/SqlServer/PostgreSQL)等同步场景。支持上传插件自定义同步转换业务，提供监控全量和增量数据统计图、应用性能预警等。
 
 > 特点
 * 组合驱动，自定义库同步到库组合，关系型数据库与非关系型之间组合，任意搭配表同步映射关系
@@ -36,10 +36,16 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
                 <td>2008以上</td>
             </tr>
             <tr>
+                <td>PostgreSQL</td>
+                <td>✔</td>
+                <td>✔</td>
+                <td>9.5.25以上</td>
+            </tr>
+            <tr>
                 <td>ES</td>
                 <td>✔</td>
                 <td>✔</td>
-                <td>6.X以上</td>
+                <td>6.0以上</td>
             </tr>
             <tr>
                 <td>Kafka</td>
@@ -51,11 +57,11 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
                 <td>SQL</td>
                 <td>✔</td>
                 <td></td>
-                <td></td>
+                <td>支持以上关系型数据库</td>
             </tr>
             <tr>
                 <td>最近计划</td>
-                <td colspan="3">PostgreSQL(设计中)、Redis</td>
+                <td colspan="3">Redis</td>
             </tr>
         </tbody>
     </table>
