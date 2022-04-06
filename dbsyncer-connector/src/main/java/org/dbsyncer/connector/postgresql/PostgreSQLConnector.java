@@ -1,8 +1,8 @@
 package org.dbsyncer.connector.postgresql;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.PageSqlConfig;
-import org.dbsyncer.connector.config.PostgreSQLConfig;
 import org.dbsyncer.connector.config.Table;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
@@ -12,17 +12,17 @@ import org.dbsyncer.connector.enums.TableTypeEnum;
 import java.util.LinkedList;
 import java.util.List;
 
-public final class PostgreSQLConnector extends AbstractDatabaseConnector<PostgreSQLConfig> {
+public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     @Override
-    protected String getTableSql(PostgreSQLConfig config) {
+    protected String getTableSql(DatabaseConfig config) {
         return String.format("SELECT TABLENAME FROM PG_TABLES WHERE SCHEMANAME ='%s'", config.getSchema());
     }
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
         List<Table> list = new LinkedList<>();
-        PostgreSQLConfig config = (PostgreSQLConfig) connectorMapper.getConfig();
+        DatabaseConfig config = connectorMapper.getConfig();
         List<String> tableNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(getTableSql(config), String.class));
         if (!CollectionUtils.isEmpty(tableNames)) {
             tableNames.forEach(name -> list.add(new Table(name, TableTypeEnum.TABLE.getCode())));
@@ -49,7 +49,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector<Postgre
         return "\"";
     }
 
-    private String getTableViewSql(PostgreSQLConfig config) {
+    private String getTableViewSql(DatabaseConfig config) {
         return String.format("SELECT VIEWNAME FROM PG_VIEWS WHERE SCHEMANAME ='%s'", config.getSchema());
     }
 }
