@@ -44,10 +44,10 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
      * 获取DQL源配置
      *
      * @param commandConfig
-     * @param appendGroupByPK
+     * @param groupByPK
      * @return
      */
-    protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig, boolean appendGroupByPK) {
+    protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig, boolean groupByPK) {
         // 获取过滤SQL
         List<Filter> filter = commandConfig.getFilter();
         String queryFilterSql = getQueryFilterSql(filter);
@@ -67,12 +67,10 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
-        queryCount.append("SELECT COUNT(1) FROM (").append(table.getName());
-        if (StringUtil.isNotBlank(queryFilterSql)) {
-            queryCount.append(queryFilterSql);
-        }
+        queryCount.append("SELECT COUNT(1) FROM (").append(querySql);
+
         // Mysql
-        if (appendGroupByPK) {
+        if (groupByPK) {
             queryCount.append(" GROUP BY ").append(pk);
         }
         queryCount.append(") DBSYNCER_T");
