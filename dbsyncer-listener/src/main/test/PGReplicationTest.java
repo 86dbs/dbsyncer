@@ -1,12 +1,10 @@
+import org.dbsyncer.connector.util.DatabaseUtil;
 import org.postgresql.PGConnection;
-import org.postgresql.PGProperty;
 import org.postgresql.replication.PGReplicationStream;
 
 import java.nio.ByteBuffer;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -17,27 +15,24 @@ import java.util.concurrent.TimeUnit;
 public class PGReplicationTest {
 
     public static void main(String[] args) throws SQLException, InterruptedException {
-        String url = "jdbc:postgresql://localhost:5432/postgres";
-        Properties props = new Properties();
-        PGProperty.USER.set(props, "postgres");
-        PGProperty.PASSWORD.set(props, "123456");
-        PGProperty.ASSUME_MIN_SERVER_VERSION.set(props, "14.2");
-        PGProperty.REPLICATION.set(props, "postgres");
-        PGProperty.PREFER_QUERY_MODE.set(props, "simple");
-        Connection con = DriverManager.getConnection(url, props);
+        String url = "jdbc:postgresql://127.0.0.1:5432/postgres";
+        String driverClassNam = "org.postgresql.Driver";
+        String username = "postgres";
+        String password = "123456";
+        String slotName = "test_slot";
+        Connection con = DatabaseUtil.getConnection(driverClassNam, url, username, password);
         PGConnection replConnection = con.unwrap(PGConnection.class);
         replConnection.getReplicationAPI()
                 .createReplicationSlot()
                 .logical()
-                .withSlotName("test_slot")
+                .withSlotName(slotName)
                 .withOutputPlugin("wal2json")
                 .make();
-        PGReplicationStream stream =
-                replConnection.getReplicationAPI()
-                        .replicationStream()
-                        .logical()
-                        .withSlotName("test_slot")
-                        .start();
+        PGReplicationStream stream = replConnection.getReplicationAPI()
+                .replicationStream()
+                .logical()
+                .withSlotName(slotName)
+                .start();
         while (true) {
             //non blocking receive message
             ByteBuffer msg = stream.readPending();
