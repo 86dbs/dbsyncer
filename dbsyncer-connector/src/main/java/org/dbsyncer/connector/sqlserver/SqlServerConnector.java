@@ -2,7 +2,6 @@ package org.dbsyncer.connector.sqlserver;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.PageSqlConfig;
@@ -21,16 +20,6 @@ import java.util.Map;
 public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    @Override
-    public ConnectorMapper connect(DatabaseConfig config) {
-        try {
-            return new SqlServerConnectorMapper(config);
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-            throw new ConnectorException(e.getMessage());
-        }
-    }
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
