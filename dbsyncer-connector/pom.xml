@@ -38,8 +38,8 @@
 
         <!-- sqlserver-driver -->
         <dependency>
-            <groupId>com.microsoft.sqlserver</groupId>
-            <artifactId>mssql-jdbc</artifactId>
+            <groupId>com.microsoft</groupId>
+            <artifactId>sqljdbc4</artifactId>
         </dependency>
 
         <!-- postgresql -->
