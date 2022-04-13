@@ -6,7 +6,6 @@ import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.kafka.KafkaExtractor;
 import org.dbsyncer.listener.mysql.MysqlExtractor;
 import org.dbsyncer.listener.oracle.OracleExtractor;
-import org.dbsyncer.listener.postgresql.PostgreSQLExtractor;
 import org.dbsyncer.listener.quartz.DatabaseQuartzExtractor;
 import org.dbsyncer.listener.quartz.ESQuartzExtractor;
 import org.dbsyncer.listener.sqlserver.SqlServerExtractor;
@@ -35,7 +34,7 @@ public enum ListenerEnum {
     /**
      * log_PostgreSQL
      */
-    LOG_POSTGRE_SQL(ListenerTypeEnum.LOG.getType() + ConnectorEnum.POSTGRE_SQL.getType(), PostgreSQLExtractor.class),
+//    LOG_POSTGRE_SQL(ListenerTypeEnum.LOG.getType() + ConnectorEnum.POSTGRE_SQL.getType(), PostgreSQLExtractor.class),
     /**
      * log_Kafka
      */
