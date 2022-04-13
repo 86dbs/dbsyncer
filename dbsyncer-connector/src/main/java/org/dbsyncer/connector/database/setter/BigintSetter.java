@@ -28,6 +28,11 @@ public class BigintSetter extends AbstractSetter<Long> {
             ps.setLong(i, bitInt.longValue());
             return;
         }
+        if (val instanceof Integer) {
+            Integer integer = (Integer) val;
+            ps.setLong(i, integer);
+            return;
+        }
         throw new ConnectorException(String.format("BigintSetter can not find type [%s], val [%s]", type, val));
     }
 }
