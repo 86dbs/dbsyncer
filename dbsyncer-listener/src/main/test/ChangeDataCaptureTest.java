@@ -199,7 +199,7 @@ public class ChangeDataCaptureTest {
     public void start() throws SQLException {
         String username = "sa";
         String password = "123";
-        String url = "jdbc:sqlserver://127.0.0.1:1434;DatabaseName=test";
+        String url = "jdbc:sqlserver://127.0.0.1:1433;DatabaseName=test";
         schema = "dbo";
         connection = DriverManager.getConnection(url, username, password);
         if (connection != null) {

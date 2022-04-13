@@ -15,19 +15,17 @@ import java.util.List;
 public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     @Override
-    protected String getTableSql(DatabaseConfig config) {
-        return String.format("SELECT TABLENAME FROM PG_TABLES WHERE SCHEMANAME ='%s'", config.getSchema());
-    }
-
-    @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
         List<Table> list = new LinkedList<>();
         DatabaseConfig config = connectorMapper.getConfig();
-        List<String> tableNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(getTableSql(config), String.class));
+        final String queryTableSql = String.format("SELECT TABLENAME FROM PG_TABLES WHERE SCHEMANAME ='%s'", config.getSchema());
+        List<String> tableNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(queryTableSql, String.class));
         if (!CollectionUtils.isEmpty(tableNames)) {
             tableNames.forEach(name -> list.add(new Table(name, TableTypeEnum.TABLE.getCode())));
         }
-        List<String> tableViewNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(getTableViewSql(config), String.class));
+
+        final String queryTableViewSql = String.format("SELECT VIEWNAME FROM PG_VIEWS WHERE SCHEMANAME ='%s'", config.getSchema());
+        List<String> tableViewNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(queryTableViewSql, String.class));
         if (!CollectionUtils.isEmpty(tableViewNames)) {
             tableViewNames.forEach(name -> list.add(new Table(name, TableTypeEnum.VIEW.getCode())));
         }
@@ -47,9 +45,5 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     @Override
     protected String buildSqlWithQuotation() {
         return "\"";
-    }
-
-    private String getTableViewSql(DatabaseConfig config) {
-        return String.format("SELECT VIEWNAME FROM PG_VIEWS WHERE SCHEMANAME ='%s'", config.getSchema());
     }
 }

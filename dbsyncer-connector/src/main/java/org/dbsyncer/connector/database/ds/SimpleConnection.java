@@ -301,12 +301,15 @@ public class SimpleConnection implements Connection {
 
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
-        return null;
+        if (iface.isAssignableFrom(connection.getClass())) {
+            return iface.cast(connection);
+        }
+        throw new SQLException("Cannot unwrap to " + iface.getName());
     }
 
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        return false;
+        return iface.isAssignableFrom(connection.getClass());
     }
 
     public Connection getConnection() {

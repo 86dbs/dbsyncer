@@ -49,7 +49,6 @@ public class LuceneFactoryTest {
 
     @After
     public void tearDown() throws IOException {
-        shard.close();
         shard.deleteAll();
     }
 
@@ -69,9 +68,10 @@ public class LuceneFactoryTest {
                     // 模拟操作
                     System.out.println(String.format("%s:%s", Thread.currentThread().getName(), k));
 
-                    Document update = ParamsUtil.convertData2Doc(createMap(k));
-                    IndexableField field = update.getField(ConfigConstant.CONFIG_MODEL_ID);
-                    shard.update(new Term(ConfigConstant.CONFIG_MODEL_ID, field.stringValue()), update);
+                    Document data = ParamsUtil.convertData2Doc(createMap(k));
+                    //IndexableField field = data.getField(ConfigConstant.CONFIG_MODEL_ID);
+                    //shard.update(new Term(ConfigConstant.CONFIG_MODEL_ID, field.stringValue()), data);
+                    shard.insert(data);
 
                 } catch (InterruptedException e) {
                     logger.error(e.getMessage());
@@ -114,7 +114,7 @@ public class LuceneFactoryTest {
         params.put(ConfigConstant.DATA_EVENT, ConnectorConstant.OPERTION_UPDATE);
         params.put(ConfigConstant.DATA_ERROR, "");
         Map<String, Object> row = new HashMap<>();
-        row.put("id", "1");
+        row.put("id", i);
         row.put("name", "中文");
         row.put("tel", "15800001234");
         row.put("update_time", System.currentTimeMillis());
