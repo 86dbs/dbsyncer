@@ -91,7 +91,6 @@ public class Shard {
     }
 
     public void close() throws IOException {
-        indexWriter.flush();
         indexWriter.commit();
         indexReader.close();
         indexWriter.close();
