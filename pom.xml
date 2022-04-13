@@ -44,7 +44,7 @@
         <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
         <mysql.version>5.1.40</mysql.version>
         <mysql-binlog.version>0.21.0</mysql-binlog.version>
-        <sqljdbc4.version>3.0</sqljdbc4.version>
+        <mssql-jdbc.version>7.4.1.jre8</mssql-jdbc.version>
         <postgresql.version>42.3.3</postgresql.version>
         <kafka.version>0.9.0.0</kafka.version>
         <json.version>20090211</json.version>
@@ -146,9 +146,9 @@
 
             <!-- sqlserver-driver -->
             <dependency>
-                <groupId>com.microsoft</groupId>
-                <artifactId>sqljdbc4</artifactId>
-                <version>${sqljdbc4.version}</version>
+                <groupId>com.microsoft.sqlserver</groupId>
+                <artifactId>mssql-jdbc</artifactId>
+                <version>${mssql-jdbc.version}</version>
             </dependency>
 
             <!-- postgresql -->
