@@ -1,16 +1,14 @@
-import org.dbsyncer.connector.util.DatabaseUtil;
 import org.junit.Test;
 import org.postgresql.PGConnection;
+import org.postgresql.PGProperty;
 import org.postgresql.replication.LogSequenceNumber;
 import org.postgresql.replication.PGReplicationStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -29,18 +27,48 @@ public class PGReplicationTest {
         String driverClassNam = "org.postgresql.Driver";
         String username = "postgres";
         String password = "123456";
-        connection = DatabaseUtil.getConnection(driverClassNam, url, username, password);
+//        String slotName = "test_slot";
+        String slotName = "test_pgoutput";
+//        String outputPlugin = "test_decoding";
+        String outputPlugin = "pgoutput";
+        String publicationName = "mypub";
 
-        LogSequenceNumber currentLSN = query("SELECT pg_current_wal_lsn()", rs -> LogSequenceNumber.valueOf(rs.getString(1)));
+        Properties props = new Properties();
+        PGProperty.USER.set(props, username);
+        PGProperty.PASSWORD.set(props, password);
+        PGProperty.ASSUME_MIN_SERVER_VERSION.set(props, "9.4");
+        PGProperty.REPLICATION.set(props, "database");
+        PGProperty.PREFER_QUERY_MODE.set(props, "simple");
+        connection = DriverManager.getConnection(url, props);
+        ;
+        LogSequenceNumber lsn = currentXLogLocation();
 
-        PGConnection replConnection = connection.unwrap(PGConnection.class);
-        PGReplicationStream stream = replConnection
-                .getReplicationAPI()
+        PGConnection pgConnection = connection.unwrap(PGConnection.class);
+
+//        pgConnection.getReplicationAPI()
+//                    .createReplicationSlot()
+//                    .logical()
+//                    .withSlotName(slotName)
+//                    .withOutputPlugin(outputPlugin)
+//                    .make();
+
+        PGReplicationStream stream = pgConnection.getReplicationAPI()
                 .replicationStream()
                 .logical()
-                .withSlotName("test_slot")
-                .withStartPosition(currentLSN)
+                .withSlotName(slotName)
+//                .withSlotOption("include-xids", true)
+//                .withSlotOption("skip-empty-xacts", true)
+                .withSlotOption("proto_version", 1)
+                .withSlotOption("publication_names", publicationName)
+                .withStatusInterval(5, TimeUnit.SECONDS)
+                .withStartPosition(lsn)
                 .start();
+
+        try {
+            Thread.sleep(10);
+        } catch (Exception e) {
+        }
+        stream.forceUpdateStatus();
         while (true) {
             //non blocking receive message
             ByteBuffer msg = stream.readPending();
@@ -55,6 +83,20 @@ public class PGReplicationTest {
             System.out.println(new String(source, offset, length));
         }
 
+    }
+
+    /**
+     * Returns the current position in the server tx log.
+     *
+     * @return a long value, never negative
+     * @throws SQLException if anything unexpected fails.
+     */
+    public LogSequenceNumber currentXLogLocation() throws SQLException {
+        int majorVersion = connection.getMetaData().getDatabaseMajorVersion();
+        String sql = majorVersion >= 10 ? "select * from pg_current_wal_lsn()" : "select * from pg_current_xlog_location()";
+        return query(sql, rs ->
+                LogSequenceNumber.valueOf(rs.getString(1))
+        );
     }
 
     public <T> T query(String sql, ResultSetMapper mapper) {
@@ -74,6 +116,20 @@ public class PGReplicationTest {
             close(ps);
         }
         return apply;
+    }
+
+    public boolean execute(String sql) {
+        PreparedStatement ps = null;
+        boolean execute = false;
+        try {
+            ps = connection.prepareStatement(sql);
+            execute = ps.execute();
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        } finally {
+            close(ps);
+        }
+        return execute;
     }
 
     private void close(AutoCloseable closeable) {
