@@ -14,7 +14,8 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
     @Override
     public String getSlotName() {
         DatabaseConfig config = messageDecoderContext.getConfig();
-        return String.format("DBSyncer-%s-%s", config.getSchema(), config.getUsername());
+//        return String.format("DBSyncer-%s-%s", config.getSchema(), config.getUsername());
+        return "test123";
     }
 
     public void setMessageDecoderContext(MessageDecoderContext messageDecoderContext) {

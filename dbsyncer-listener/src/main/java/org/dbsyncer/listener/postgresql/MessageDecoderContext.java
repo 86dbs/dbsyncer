@@ -9,9 +9,11 @@ import org.dbsyncer.connector.config.DatabaseConfig;
  */
 public class MessageDecoderContext {
     private DatabaseConfig config;
+    private String publicationName;
 
-    public MessageDecoderContext(DatabaseConfig config) {
+    public MessageDecoderContext(DatabaseConfig config, String publicationName) {
         this.config = config;
+        this.publicationName = publicationName;
     }
 
     public DatabaseConfig getConfig() {
@@ -19,6 +21,6 @@ public class MessageDecoderContext {
     }
 
     public String getPublicationName() {
-        return "";
+        return publicationName;
     }
 }
