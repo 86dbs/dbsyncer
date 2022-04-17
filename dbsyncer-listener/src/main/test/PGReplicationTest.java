@@ -40,7 +40,7 @@ public class PGReplicationTest {
         PGProperty.REPLICATION.set(props, "database");
         PGProperty.PREFER_QUERY_MODE.set(props, "simple");
         connection = DriverManager.getConnection(url, props);
-        ;
+
         LogSequenceNumber lsn = currentXLogLocation();
 
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
@@ -52,7 +52,8 @@ public class PGReplicationTest {
 //                    .withOutputPlugin(outputPlugin)
 //                    .make();
 
-        PGReplicationStream stream = pgConnection.getReplicationAPI()
+        PGReplicationStream stream = pgConnection
+                .getReplicationAPI()
                 .replicationStream()
                 .logical()
                 .withSlotName(slotName)
@@ -94,9 +95,7 @@ public class PGReplicationTest {
     public LogSequenceNumber currentXLogLocation() throws SQLException {
         int majorVersion = connection.getMetaData().getDatabaseMajorVersion();
         String sql = majorVersion >= 10 ? "select * from pg_current_wal_lsn()" : "select * from pg_current_xlog_location()";
-        return query(sql, rs ->
-                LogSequenceNumber.valueOf(rs.getString(1))
-        );
+        return query(sql, rs -> LogSequenceNumber.valueOf(rs.getString(1)));
     }
 
     public <T> T query(String sql, ResultSetMapper mapper) {
