@@ -92,10 +92,11 @@ public class PostgreSQLExtractor extends AbstractExtractor {
             worker.start();
         } catch (Exception e) {
             logger.error("启动失败:{}", e.getMessage());
+            DatabaseUtil.close(stream);
+            DatabaseUtil.close(connection);
             throw new ListenerException(e);
         } finally {
             connectLock.unlock();
-            close();
         }
     }
 
@@ -139,8 +140,20 @@ public class PostgreSQLExtractor extends AbstractExtractor {
         stream.forceUpdateStatus();
     }
 
+    private LogSequenceNumber readLastLsn() throws SQLException {
+        if (!snapshot.containsKey(LSN_POSITION)) {
+            LogSequenceNumber lsn = currentXLogLocation();
+            if (null == lsn && lsn.asLong() == 0) {
+                throw new ListenerException("No maximum LSN recorded in the database");
+            }
+            snapshot.put(LSN_POSITION, lsn.asString());
+        }
+
+        return LogSequenceNumber.valueOf(snapshot.get(LSN_POSITION));
+    }
+
     private void createReplicationStream(PGConnection pgConnection) throws SQLException {
-        LogSequenceNumber lsn = currentXLogLocation();
+        LogSequenceNumber lsn = readLastLsn();
         ChainedLogicalStreamBuilder streamBuilder = pgConnection
                 .getReplicationAPI()
                 .replicationStream()
@@ -192,7 +205,9 @@ public class PostgreSQLExtractor extends AbstractExtractor {
                     System.out.println(new String(source, offset, length));
 
                     LogSequenceNumber lsn = stream.getLastReceiveLSN();
-                    snapshot.put(LSN_POSITION, lsn.asString());
+                    if (lsn.asLong() > 0) {
+                        snapshot.put(LSN_POSITION, lsn.asString());
+                    }
                     //feedback
                     stream.setAppliedLSN(lsn);
                     stream.setFlushedLSN(lsn);
