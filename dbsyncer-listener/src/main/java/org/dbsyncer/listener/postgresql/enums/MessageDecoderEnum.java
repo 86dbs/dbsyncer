@@ -13,8 +13,14 @@ import org.dbsyncer.listener.postgresql.decoder.TestDecodingMessageDecoder;
  */
 public enum MessageDecoderEnum {
 
+    /**
+     * 插件：TEST_DECODING
+     */
     TEST_DECODING("test_decoding", TestDecodingMessageDecoder.class),
 
+    /**
+     * 插件：PG_OUTPUT
+     */
     PG_OUTPUT("pgoutput", PgOutputMessageDecoder.class);
 
     private String type;
@@ -31,7 +37,7 @@ public enum MessageDecoderEnum {
                 return (MessageDecoder) e.getClazz().newInstance();
             }
         }
-        throw new ListenerException(String.format("MessageDecoder type \"%s\" does not exist.", type));
+        return (MessageDecoder) TEST_DECODING.getClazz().newInstance();
     }
 
     public String getType() {

@@ -1,5 +1,6 @@
 package org.dbsyncer.listener.postgresql;
 
+import org.dbsyncer.common.util.BooleanUtil;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
@@ -42,12 +43,16 @@ public class PostgreSQLExtractor extends AbstractExtractor {
     private static final String GET_DATABASE = "SELECT current_database()";
     private static final String GET_WAL_LEVEL = "SHOW WAL_LEVEL";
     private static final String DEFAULT_WAL_LEVEL = "logical";
+    private static final String PLUGIN_NAME = "pluginName";
+    //private static final String LSN_POSITION  = "position";
+    private static final String DROP_SLOT_ON_CLOSE = "dropSlotOnClose";
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
     private DatabaseConfig config;
     private DatabaseConnectorMapper connectorMapper;
     private Connection connection;
     private PGReplicationStream stream;
+    private boolean dropSlotOnClose;
     private MessageDecoder messageDecoder;
     private Worker worker;
 
@@ -81,6 +86,11 @@ public class PostgreSQLExtractor extends AbstractExtractor {
                 throw new ListenerException(String.format("Postgres roles LOGIN and REPLICATION are not assigned to user: %s", config.getUsername()));
             }
 
+            messageDecoder = MessageDecoderEnum.getMessageDecoder(config.getProperties().get(PLUGIN_NAME));
+            messageDecoder.setConfig(config);
+            String dropSlot = config.getProperties().get(DROP_SLOT_ON_CLOSE);
+            dropSlotOnClose = null != dropSlot ? BooleanUtil.toBoolean(dropSlot) : true;
+
             connect();
             connected = true;
 
@@ -106,6 +116,7 @@ public class PostgreSQLExtractor extends AbstractExtractor {
                 worker.interrupt();
                 worker = null;
             }
+            dropReplicationSlot();
             DatabaseUtil.close(stream);
             DatabaseUtil.close(connection);
         } catch (Exception e) {
@@ -113,7 +124,7 @@ public class PostgreSQLExtractor extends AbstractExtractor {
         }
     }
 
-    private void connect() throws SQLException, InstantiationException, IllegalAccessException {
+    private void connect() throws SQLException {
         Properties props = new Properties();
         PGProperty.USER.set(props, config.getUsername());
         PGProperty.PASSWORD.set(props, config.getPassword());
@@ -125,10 +136,6 @@ public class PostgreSQLExtractor extends AbstractExtractor {
         Assert.notNull(connection, "Unable to get connection.");
 
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
-
-        String plugin = MessageDecoderEnum.TEST_DECODING.getType();
-        messageDecoder = MessageDecoderEnum.getMessageDecoder(plugin);
-        messageDecoder.setConfig(config);
 
         createReplicationSlot(pgConnection);
         createReplicationStream(pgConnection);
@@ -177,6 +184,15 @@ public class PostgreSQLExtractor extends AbstractExtractor {
         }
     }
 
+    private void dropReplicationSlot() {
+        if (dropSlotOnClose) {
+            connectorMapper.execute(databaseTemplate -> {
+                databaseTemplate.execute(String.format("select pg_drop_replication_slot('%s')", messageDecoder.getSlotName()));
+                return true;
+            });
+        }
+    }
+
     private LogSequenceNumber currentXLogLocation() throws SQLException {
         int majorVersion = connection.getMetaData().getDatabaseMajorVersion();
         String sql = majorVersion >= 10 ? "select * from pg_current_wal_lsn()" : "select * from pg_current_xlog_location()";
@@ -200,7 +216,7 @@ public class PostgreSQLExtractor extends AbstractExtractor {
                     logger.error("Recover streaming occurred error");
                     DatabaseUtil.close(stream);
                     DatabaseUtil.close(connection);
-                    sleepInMills(5000L);
+                    sleepInMills(3000L);
                 }
             }
             long e = Instant.now().toEpochMilli();
@@ -228,9 +244,6 @@ public class PostgreSQLExtractor extends AbstractExtractor {
                     ByteBuffer msg = stream.readPending();
 
                     if (msg == null) {
-                        if(stream.isClosed()){
-                           throw new ListenerException("PGReplicationStream Occurred Error");
-                        }
                         sleepInMills(10L);
                         continue;
                     }
