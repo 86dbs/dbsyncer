@@ -11,6 +11,9 @@ import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
  */
 public class PgOutputMessageDecoder extends AbstractMessageDecoder {
 
+    // 发布名称
+    private static final String PUBLICATION_NAMES = "pubNames";
+
     @Override
     public String getOutputPlugin() {
         return MessageDecoderEnum.PG_OUTPUT.getType();
@@ -19,7 +22,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     @Override
     public void withSlotOption(ChainedLogicalStreamBuilder builder) {
         builder.withSlotOption("proto_version", 1)
-                .withSlotOption("publication_names", messageDecoderContext.getPublicationName());
+                .withSlotOption("publication_names", config.getProperties().get(PUBLICATION_NAMES));
     }
 
 }

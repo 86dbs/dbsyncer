@@ -9,16 +9,15 @@ import org.dbsyncer.connector.config.DatabaseConfig;
  */
 public abstract class AbstractMessageDecoder implements MessageDecoder {
 
-    protected MessageDecoderContext messageDecoderContext;
+    protected DatabaseConfig config;
 
     @Override
     public String getSlotName() {
-        DatabaseConfig config = messageDecoderContext.getConfig();
-//        return String.format("DBSyncer-%s-%s", config.getSchema(), config.getUsername());
-        return "test123";
+        return String.format("dbsyncer_%s_%s", config.getSchema(), config.getUsername());
     }
 
-    public void setMessageDecoderContext(MessageDecoderContext messageDecoderContext) {
-        this.messageDecoderContext = messageDecoderContext;
+    @Override
+    public void setConfig(DatabaseConfig config) {
+        this.config = config;
     }
 }

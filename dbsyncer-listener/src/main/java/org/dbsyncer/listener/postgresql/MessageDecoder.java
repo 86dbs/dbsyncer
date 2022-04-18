@@ -1,5 +1,6 @@
 package org.dbsyncer.listener.postgresql;
 
+import org.dbsyncer.connector.config.DatabaseConfig;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 
 /**
@@ -15,6 +16,6 @@ public interface MessageDecoder {
 
     void withSlotOption(ChainedLogicalStreamBuilder builder);
 
-    void setMessageDecoderContext(MessageDecoderContext messageDecoderContext);
+    void setConfig(DatabaseConfig config);
 
 }

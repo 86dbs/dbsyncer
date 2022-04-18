@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -37,8 +38,8 @@ public class PostgreSQLExtractor extends AbstractExtractor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final String GET_SLOT = "select count(1) from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
-    private static final String GET_VALIDATION = "SELECT 1";
     private static final String GET_ROLE = "SELECT r.rolcanlogin AS rolcanlogin, r.rolreplication AS rolreplication, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rds_superuser') AS BOOL) IS TRUE AS aws_superuser, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsadmin') AS BOOL) IS TRUE AS aws_admin, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsrepladmin') AS BOOL) IS TRUE AS aws_repladmin FROM pg_roles r WHERE r.rolname = current_user";
+    private static final String GET_DATABASE = "SELECT current_database()";
     private static final String GET_WAL_LEVEL = "SHOW WAL_LEVEL";
     private static final String DEFAULT_WAL_LEVEL = "logical";
     private final Lock connectLock = new ReentrantLock();
@@ -49,7 +50,6 @@ public class PostgreSQLExtractor extends AbstractExtractor {
     private PGReplicationStream stream;
     private MessageDecoder messageDecoder;
     private Worker worker;
-    private String database = "postgres";
 
     @Override
     public void start() {
@@ -62,8 +62,6 @@ public class PostgreSQLExtractor extends AbstractExtractor {
 
             config = (DatabaseConfig) connectorConfig;
             connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(connectorConfig);
-            connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_VALIDATION, Integer.class));
-            logger.info("Successfully tested connection for {} with user '{}'", config.getUrl(), config.getUsername());
 
             final String walLevel = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_WAL_LEVEL, String.class));
             if (!DEFAULT_WAL_LEVEL.equals(walLevel)) {
@@ -103,7 +101,6 @@ public class PostgreSQLExtractor extends AbstractExtractor {
     @Override
     public void close() {
         try {
-            connectLock.lock();
             connected = false;
             if (null != worker && !worker.isInterrupted()) {
                 worker.interrupt();
@@ -113,12 +110,10 @@ public class PostgreSQLExtractor extends AbstractExtractor {
             DatabaseUtil.close(connection);
         } catch (Exception e) {
             logger.error("关闭失败:{}", e.getMessage());
-        } finally {
-            connectLock.unlock();
         }
     }
 
-    private void connect() throws SQLException, InstantiationException, IllegalAccessException, InterruptedException {
+    private void connect() throws SQLException, InstantiationException, IllegalAccessException {
         Properties props = new Properties();
         PGProperty.USER.set(props, config.getUsername());
         PGProperty.PASSWORD.set(props, config.getPassword());
@@ -130,20 +125,21 @@ public class PostgreSQLExtractor extends AbstractExtractor {
         Assert.notNull(connection, "Unable to get connection.");
 
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
-        messageDecoder = MessageDecoderEnum.getMessageDecoder(MessageDecoderEnum.TEST_DECODING.getType());
-        messageDecoder.setMessageDecoderContext(new MessageDecoderContext(config, ""));
+
+        String plugin = MessageDecoderEnum.TEST_DECODING.getType();
+        messageDecoder = MessageDecoderEnum.getMessageDecoder(plugin);
+        messageDecoder.setConfig(config);
 
         createReplicationSlot(pgConnection);
         createReplicationStream(pgConnection);
 
-        TimeUnit.MILLISECONDS.sleep(10);
-        stream.forceUpdateStatus();
+        sleepInMills(10L);
     }
 
     private LogSequenceNumber readLastLsn() throws SQLException {
         if (!snapshot.containsKey(LSN_POSITION)) {
             LogSequenceNumber lsn = currentXLogLocation();
-            if (null == lsn && lsn.asLong() == 0) {
+            if (null == lsn || lsn.asLong() == 0) {
                 throw new ListenerException("No maximum LSN recorded in the database");
             }
             snapshot.put(LSN_POSITION, lsn.asString());
@@ -167,6 +163,7 @@ public class PostgreSQLExtractor extends AbstractExtractor {
     }
 
     private void createReplicationSlot(PGConnection pgConnection) throws SQLException {
+        String database = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_DATABASE, String.class));
         String slotName = messageDecoder.getSlotName();
         String plugin = messageDecoder.getOutputPlugin();
         boolean existSlot = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_SLOT, new Object[]{database, slotName, plugin}, Integer.class) > 0);
@@ -186,38 +183,73 @@ public class PostgreSQLExtractor extends AbstractExtractor {
         return connectorMapper.execute(databaseTemplate -> LogSequenceNumber.valueOf(databaseTemplate.queryForObject(sql, String.class)));
     }
 
+    private void recover() {
+        connectLock.lock();
+        try {
+            long s = Instant.now().toEpochMilli();
+            DatabaseUtil.close(stream);
+            DatabaseUtil.close(connection);
+            stream = null;
+            connection = null;
+
+            while (true && connected) {
+                try {
+                    connect();
+                    break;
+                } catch (Exception e) {
+                    logger.error("Recover streaming occurred error");
+                    DatabaseUtil.close(stream);
+                    DatabaseUtil.close(connection);
+                    sleepInMills(5000L);
+                }
+            }
+            long e = Instant.now().toEpochMilli();
+            logger.info("Recover logical replication success, slot:{}, plugin:{}, cost:{}seconds", messageDecoder.getSlotName(), messageDecoder.getOutputPlugin(), (e - s) / 1000);
+        } finally {
+            connectLock.unlock();
+        }
+    }
+
+    private void sleepInMills(long timeout) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(timeout);
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage());
+        }
+    }
+
     final class Worker extends Thread {
 
         @Override
         public void run() {
             while (!isInterrupted() && connected) {
                 try {
-                    //non blocking receive message
+                    // non blocking receive message
                     ByteBuffer msg = stream.readPending();
 
                     if (msg == null) {
-                        TimeUnit.MILLISECONDS.sleep(10L);
+                        if(stream.isClosed()){
+                           throw new ListenerException("PGReplicationStream Occurred Error");
+                        }
+                        sleepInMills(10L);
                         continue;
                     }
                     int offset = msg.arrayOffset();
                     byte[] source = msg.array();
                     int length = source.length - offset;
-                    System.out.println(new String(source, offset, length));
+                    logger.info(new String(source, offset, length));
 
                     LogSequenceNumber lsn = stream.getLastReceiveLSN();
                     if (lsn.asLong() > 0) {
                         snapshot.put(LSN_POSITION, lsn.asString());
                     }
-                    //feedback
+                    // feedback
                     stream.setAppliedLSN(lsn);
                     stream.setFlushedLSN(lsn);
+                    stream.forceUpdateStatus();
                 } catch (Exception e) {
                     logger.error(e.getMessage());
-                    try {
-                        TimeUnit.SECONDS.sleep(1);
-                    } catch (InterruptedException ex) {
-                        logger.error(ex.getMessage());
-                    }
+                    recover();
                 }
             }
         }
