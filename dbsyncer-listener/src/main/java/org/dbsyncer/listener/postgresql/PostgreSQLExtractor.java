@@ -38,7 +38,7 @@ public class PostgreSQLExtractor extends AbstractExtractor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final String GET_SLOT = "select count(1) from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
-    private static final String GET_ROLE = "SELECT r.rolcanlogin AS rolcanlogin, r.rolreplication AS rolreplication, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rds_superuser') AS BOOL) IS TRUE AS aws_superuser, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsadmin') AS BOOL) IS TRUE AS aws_admin, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsrepladmin') AS BOOL) IS TRUE AS aws_repladmin FROM pg_roles r WHERE r.rolname = current_user";
+    private static final String GET_ROLE = "SELECT r.rolcanlogin AS login, r.rolreplication AS replication, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rds_superuser') AS BOOL) IS TRUE AS superuser, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsadmin') AS BOOL) IS TRUE AS admin, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsrepladmin') AS BOOL) IS TRUE AS rep_admin FROM pg_roles r WHERE r.rolname = current_user";
     private static final String GET_DATABASE = "SELECT current_database()";
     private static final String GET_WAL_LEVEL = "SHOW WAL_LEVEL";
     private static final String DEFAULT_WAL_LEVEL = "logical";
@@ -74,12 +74,12 @@ public class PostgreSQLExtractor extends AbstractExtractor {
 
             final boolean hasAuth = connectorMapper.execute(databaseTemplate -> {
                 Map rs = databaseTemplate.queryForMap(GET_ROLE);
-                Boolean login = (Boolean) rs.getOrDefault("rolcanlogin", false);
-                Boolean replication = (Boolean) rs.getOrDefault("rolreplication", false);
-                Boolean superuser = (Boolean) rs.getOrDefault("aws_superuser", false);
-                Boolean admin = (Boolean) rs.getOrDefault("aws_admin", false);
-                Boolean replicationAdmin = (Boolean) rs.getOrDefault("aws_repladmin", false);
-                return login && (replication || superuser || admin || replicationAdmin);
+                Boolean login = (Boolean) rs.getOrDefault("login", false);
+                Boolean replication = (Boolean) rs.getOrDefault("replication", false);
+                Boolean superuser = (Boolean) rs.getOrDefault("superuser", false);
+                Boolean admin = (Boolean) rs.getOrDefault("admin", false);
+                Boolean repAdmin = (Boolean) rs.getOrDefault("rep_admin", false);
+                return login && (replication || superuser || admin || repAdmin);
             });
             if (!hasAuth) {
                 throw new ListenerException(String.format("Postgres roles LOGIN and REPLICATION are not assigned to user: %s", config.getUsername()));
