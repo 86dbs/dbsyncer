@@ -35,7 +35,6 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class PostgreSQLExtractor extends AbstractExtractor {
 
-    private static final String LSN_POSITION = "position";
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final String GET_SLOT = "select count(1) from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
@@ -44,7 +43,7 @@ public class PostgreSQLExtractor extends AbstractExtractor {
     private static final String GET_WAL_LEVEL = "SHOW WAL_LEVEL";
     private static final String DEFAULT_WAL_LEVEL = "logical";
     private static final String PLUGIN_NAME = "pluginName";
-    //private static final String LSN_POSITION  = "position";
+    private static final String LSN_POSITION = "position";
     private static final String DROP_SLOT_ON_CLOSE = "dropSlotOnClose";
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
@@ -65,8 +64,8 @@ public class PostgreSQLExtractor extends AbstractExtractor {
                 return;
             }
 
-            config = (DatabaseConfig) connectorConfig;
             connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(connectorConfig);
+            config = connectorMapper.getConfig();
 
             final String walLevel = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_WAL_LEVEL, String.class));
             if (!DEFAULT_WAL_LEVEL.equals(walLevel)) {
