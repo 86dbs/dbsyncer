@@ -13,6 +13,8 @@ import org.postgresql.PGProperty;
 import org.postgresql.replication.LogSequenceNumber;
 import org.postgresql.replication.PGReplicationStream;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
+import org.postgresql.util.PSQLException;
+import org.postgresql.util.PSQLState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -115,9 +117,9 @@ public class PostgreSQLExtractor extends AbstractExtractor {
                 worker.interrupt();
                 worker = null;
             }
-            dropReplicationSlot();
             DatabaseUtil.close(stream);
             DatabaseUtil.close(connection);
+            dropReplicationSlot();
         } catch (Exception e) {
             logger.error("关闭失败:{}", e.getMessage());
         }
@@ -184,11 +186,39 @@ public class PostgreSQLExtractor extends AbstractExtractor {
     }
 
     private void dropReplicationSlot() {
-        if (dropSlotOnClose) {
-            connectorMapper.execute(databaseTemplate -> {
-                databaseTemplate.execute(String.format("select pg_drop_replication_slot('%s')", messageDecoder.getSlotName()));
-                return true;
-            });
+        if (!dropSlotOnClose) {
+            return;
+        }
+
+        final String slotName = messageDecoder.getSlotName();
+        final int ATTEMPTS = 3;
+        for (int i = 0; i < ATTEMPTS; i++) {
+            try {
+                connectorMapper.execute(databaseTemplate -> {
+                    databaseTemplate.execute(String.format("select pg_drop_replication_slot('%s')", slotName));
+                    return true;
+                });
+                break;
+            } catch (Exception e) {
+                if(e.getCause() instanceof PSQLException){
+                    PSQLException ex = (PSQLException) e.getCause();
+                    if (PSQLState.OBJECT_IN_USE.getState().equals(ex.getSQLState())) {
+                        if (i < ATTEMPTS - 1) {
+                            logger.debug("Cannot drop replication slot '{}' because it's still in use", slotName);
+                            continue;
+                        }
+                        logger.warn("Cannot drop replication slot '{}' because it's still in use", slotName);
+                        break;
+                    }
+
+                    if (PSQLState.UNDEFINED_OBJECT.getState().equals(ex.getSQLState())) {
+                        logger.debug("Replication slot {} has already been dropped", slotName);
+                        break;
+                    }
+
+                    logger.error("Unexpected error while attempting to drop replication slot", ex);
+                }
+            }
         }
     }
 
