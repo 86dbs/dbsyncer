@@ -255,14 +255,6 @@ public class PostgreSQLExtractor extends AbstractExtractor {
         }
     }
 
-    private void sleepInMills(long timeout) {
-        try {
-            TimeUnit.MILLISECONDS.sleep(timeout);
-        } catch (InterruptedException e) {
-            logger.error(e.getMessage());
-        }
-    }
-
     final class Worker extends Thread {
 
         @Override
