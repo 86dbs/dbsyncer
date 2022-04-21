@@ -87,10 +87,9 @@ public class PostgreSQLExtractor extends AbstractExtractor {
                 throw new ListenerException(String.format("Postgres roles LOGIN and REPLICATION are not assigned to user: %s", config.getUsername()));
             }
 
-            messageDecoder = MessageDecoderEnum.getMessageDecoder(config.getProperties().get(PLUGIN_NAME));
+            messageDecoder = MessageDecoderEnum.getMessageDecoder(config.getProperty(PLUGIN_NAME));
             messageDecoder.setConfig(config);
-            String dropSlot = config.getProperties().get(DROP_SLOT_ON_CLOSE);
-            dropSlotOnClose = null != dropSlot ? BooleanUtil.toBoolean(dropSlot) : true;
+            dropSlotOnClose = BooleanUtil.toBoolean(config.getProperty(DROP_SLOT_ON_CLOSE, "true"));
 
             connect();
             connected = true;
@@ -137,7 +136,6 @@ public class PostgreSQLExtractor extends AbstractExtractor {
         Assert.notNull(connection, "Unable to get connection.");
 
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
-
         createReplicationSlot(pgConnection);
         createReplicationStream(pgConnection);
 
@@ -237,7 +235,7 @@ public class PostgreSQLExtractor extends AbstractExtractor {
             stream = null;
             connection = null;
 
-            while (true && connected) {
+            while (connected) {
                 try {
                     connect();
                     break;

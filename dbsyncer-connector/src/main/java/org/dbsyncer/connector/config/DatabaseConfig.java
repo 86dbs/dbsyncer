@@ -35,6 +35,14 @@ public class DatabaseConfig extends ConnectorConfig {
     // 参数配置
     private Map<String, String> properties = new LinkedHashMap<>();
 
+    public String getProperty(String key){
+        return properties.get(key);
+    }
+
+    public String getProperty(String key, String defaultValue){
+        return properties.containsKey(key) ? properties.get(key) : defaultValue;
+    }
+
     public String getDriverClassName() {
         return driverClassName;
     }
