@@ -26,8 +26,8 @@ public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public boolean skipMessage(ByteBuffer buffer, LogSequenceNumber lsn) {
-        if (null == lsn || lsn.asLong() == 0) {
+    public boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn) {
+        if (super.skipMessage(buffer, startLsn, lastReceiveLsn)) {
             return true;
         }
         int position = buffer.position();

@@ -1,6 +1,9 @@
 package org.dbsyncer.listener.postgresql;
 
 import org.dbsyncer.connector.config.DatabaseConfig;
+import org.postgresql.replication.LogSequenceNumber;
+
+import java.nio.ByteBuffer;
 
 /**
  * @author AE86
@@ -10,6 +13,11 @@ import org.dbsyncer.connector.config.DatabaseConfig;
 public abstract class AbstractMessageDecoder implements MessageDecoder {
 
     protected DatabaseConfig config;
+
+    @Override
+    public boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn) {
+        return null == lastReceiveLsn || lastReceiveLsn.asLong() == 0 || startLsn.equals(lastReceiveLsn);
+    }
 
     @Override
     public String getSlotName() {

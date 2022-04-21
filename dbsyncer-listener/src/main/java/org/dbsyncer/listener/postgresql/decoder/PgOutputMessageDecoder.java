@@ -3,7 +3,6 @@ package org.dbsyncer.listener.postgresql.decoder;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.listener.postgresql.AbstractMessageDecoder;
 import org.dbsyncer.listener.postgresql.enums.MessageDecoderEnum;
-import org.postgresql.replication.LogSequenceNumber;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 
 import java.nio.ByteBuffer;
@@ -14,11 +13,6 @@ import java.nio.ByteBuffer;
  * @date 2022/4/17 23:00
  */
 public class PgOutputMessageDecoder extends AbstractMessageDecoder {
-
-    @Override
-    public boolean skipMessage(ByteBuffer buffer, LogSequenceNumber lsn) {
-        return false;
-    }
 
     @Override
     public RowChangedEvent processMessage(ByteBuffer buffer) {

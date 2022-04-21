@@ -14,7 +14,7 @@ import java.nio.ByteBuffer;
  */
 public interface MessageDecoder {
 
-    boolean skipMessage(ByteBuffer buffer, LogSequenceNumber lsn);
+    boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn);
 
     RowChangedEvent processMessage(ByteBuffer buffer);
 
