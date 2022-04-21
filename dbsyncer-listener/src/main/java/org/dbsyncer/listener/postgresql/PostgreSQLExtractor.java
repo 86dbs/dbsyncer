@@ -39,23 +39,32 @@ public class PostgreSQLExtractor extends AbstractExtractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String GET_SLOT = "select count(1) from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
-    private static final String GET_ROLE = "SELECT r.rolcanlogin AS login, r.rolreplication AS replication, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rds_superuser') AS BOOL) IS TRUE AS superuser, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsadmin') AS BOOL) IS TRUE AS admin, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsrepladmin') AS BOOL) IS TRUE AS rep_admin FROM pg_roles r WHERE r.rolname = current_user";
-    private static final String GET_DATABASE = "SELECT current_database()";
-    private static final String GET_WAL_LEVEL = "SHOW WAL_LEVEL";
-    private static final String DEFAULT_WAL_LEVEL = "logical";
-    private static final String PLUGIN_NAME = "pluginName";
-    private static final String LSN_POSITION = "position";
-    private static final String DROP_SLOT_ON_CLOSE = "dropSlotOnClose";
-    private final Lock connectLock = new ReentrantLock();
-    private volatile boolean connected;
-    private DatabaseConfig config;
-    private DatabaseConnectorMapper connectorMapper;
-    private Connection connection;
-    private PGReplicationStream stream;
-    private boolean dropSlotOnClose;
-    private MessageDecoder messageDecoder;
-    private Worker worker;
+    private static final String                  GET_SLOT
+                                                                    = "select count(1) from pg_replication_slots where database = ? and "
+            + "slot_name = ? and plugin = ?";
+    private static final String                  GET_ROLE
+                                                                    = "SELECT r.rolcanlogin AS login, r.rolreplication AS replication, "
+            + "CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b"
+            + ".oid) WHERE m.member = r.oid), 'rds_superuser') AS BOOL) IS TRUE AS superuser, CAST(array_position(ARRAY(SELECT b.rolname "
+            + "FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsadmin') AS"
+            + " BOOL) IS TRUE AS admin, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog"
+            + ".pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsrepladmin') AS BOOL) IS TRUE AS rep_admin FROM pg_roles r "
+            + "WHERE r.rolname = current_user";
+    private static final String                  GET_DATABASE       = "SELECT current_database()";
+    private static final String                  GET_WAL_LEVEL      = "SHOW WAL_LEVEL";
+    private static final String                  DEFAULT_WAL_LEVEL  = "logical";
+    private static final String                  PLUGIN_NAME        = "pluginName";
+    private static final String                  LSN_POSITION       = "position";
+    private static final String                  DROP_SLOT_ON_CLOSE = "dropSlotOnClose";
+    private final        Lock                    connectLock        = new ReentrantLock();
+    private volatile     boolean                 connected;
+    private              DatabaseConfig          config;
+    private              DatabaseConnectorMapper connectorMapper;
+    private              Connection              connection;
+    private              PGReplicationStream     stream;
+    private              boolean                 dropSlotOnClose;
+    private              MessageDecoder          messageDecoder;
+    private              Worker                  worker;
 
     @Override
     public void start() {
@@ -69,9 +78,11 @@ public class PostgreSQLExtractor extends AbstractExtractor {
             connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(connectorConfig);
             config = connectorMapper.getConfig();
 
-            final String walLevel = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_WAL_LEVEL, String.class));
+            final String walLevel = connectorMapper.execute(
+                    databaseTemplate -> databaseTemplate.queryForObject(GET_WAL_LEVEL, String.class));
             if (!DEFAULT_WAL_LEVEL.equals(walLevel)) {
-                throw new ListenerException(String.format("Postgres server wal_level property must be \"%s\" but is: %s", DEFAULT_WAL_LEVEL, walLevel));
+                throw new ListenerException(
+                        String.format("Postgres server wal_level property must be \"%s\" but is: %s", DEFAULT_WAL_LEVEL, walLevel));
             }
 
             final boolean hasAuth = connectorMapper.execute(databaseTemplate -> {
@@ -84,7 +95,8 @@ public class PostgreSQLExtractor extends AbstractExtractor {
                 return login && (replication || superuser || admin || repAdmin);
             });
             if (!hasAuth) {
-                throw new ListenerException(String.format("Postgres roles LOGIN and REPLICATION are not assigned to user: %s", config.getUsername()));
+                throw new ListenerException(
+                        String.format("Postgres roles LOGIN and REPLICATION are not assigned to user: %s", config.getUsername()));
             }
 
             messageDecoder = MessageDecoderEnum.getMessageDecoder(config.getProperty(PLUGIN_NAME));
@@ -95,7 +107,8 @@ public class PostgreSQLExtractor extends AbstractExtractor {
             connected = true;
 
             worker = new Worker();
-            worker.setName(new StringBuilder("wal-parser-").append(config.getUrl()).append("_").append(RandomUtil.nextInt(1, 100)).toString());
+            worker.setName(new StringBuilder("wal-parser-").append(config.getUrl()).append("_").append(RandomUtil.nextInt(1, 100))
+                    .toString());
             worker.setDaemon(false);
             worker.start();
         } catch (Exception e) {
@@ -172,7 +185,9 @@ public class PostgreSQLExtractor extends AbstractExtractor {
         String database = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_DATABASE, String.class));
         String slotName = messageDecoder.getSlotName();
         String plugin = messageDecoder.getOutputPlugin();
-        boolean existSlot = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_SLOT, new Object[]{database, slotName, plugin}, Integer.class) > 0);
+        boolean existSlot = connectorMapper.execute(
+                databaseTemplate -> databaseTemplate.queryForObject(GET_SLOT, new Object[] {database, slotName, plugin}, Integer.class)
+                        > 0);
         if (!existSlot) {
             pgConnection.getReplicationAPI()
                     .createReplicationSlot()
@@ -198,7 +213,7 @@ public class PostgreSQLExtractor extends AbstractExtractor {
                 });
                 break;
             } catch (Exception e) {
-                if(e.getCause() instanceof PSQLException){
+                if (e.getCause() instanceof PSQLException) {
                     PSQLException ex = (PSQLException) e.getCause();
                     if (PSQLState.OBJECT_IN_USE.getState().equals(ex.getSQLState())) {
                         if (i < ATTEMPTS - 1) {
@@ -247,9 +262,16 @@ public class PostgreSQLExtractor extends AbstractExtractor {
                 }
             }
             long e = Instant.now().toEpochMilli();
-            logger.info("Recover logical replication success, slot:{}, plugin:{}, cost:{}seconds", messageDecoder.getSlotName(), messageDecoder.getOutputPlugin(), (e - s) / 1000);
+            logger.info("Recover logical replication success, slot:{}, plugin:{}, cost:{}seconds", messageDecoder.getSlotName(),
+                    messageDecoder.getOutputPlugin(), (e - s) / 1000);
         } finally {
             connectLock.unlock();
+        }
+    }
+
+    private void flushLSN(LogSequenceNumber lsn) {
+        if (null != lsn && lsn.asLong() > 0) {
+            snapshot.put(LSN_POSITION, lsn.asString());
         }
     }
 
@@ -266,19 +288,23 @@ public class PostgreSQLExtractor extends AbstractExtractor {
                         sleepInMills(10L);
                         continue;
                     }
-                    int offset = msg.arrayOffset();
-                    byte[] source = msg.array();
-                    int length = source.length - offset;
-                    logger.info(new String(source, offset, length));
 
                     LogSequenceNumber lsn = stream.getLastReceiveLSN();
-                    if (lsn.asLong() > 0) {
-                        snapshot.put(LSN_POSITION, lsn.asString());
+                    if (messageDecoder.skipMessage(msg, lsn)) {
+                        continue;
                     }
+
+                    flushLSN(lsn);
+                    // process decoder
+                    changedEvent(messageDecoder.processMessage(msg));
+                    forceFlushEvent();
+
                     // feedback
                     stream.setAppliedLSN(lsn);
                     stream.setFlushedLSN(lsn);
                     stream.forceUpdateStatus();
+                } catch (IllegalStateException e) {
+                    logger.error(e.getMessage());
                 } catch (Exception e) {
                     logger.error(e.getMessage());
                     recover();
@@ -287,4 +313,5 @@ public class PostgreSQLExtractor extends AbstractExtractor {
         }
 
     }
+
 }

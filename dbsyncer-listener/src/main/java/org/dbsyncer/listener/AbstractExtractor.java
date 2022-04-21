@@ -3,7 +3,6 @@ package org.dbsyncer.listener;
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.listener.config.ListenerConfig;
@@ -48,7 +47,9 @@ public abstract class AbstractExtractor implements Extractor {
 
     @Override
     public void changedEvent(RowChangedEvent event) {
-        taskExecutor.execute(() -> watcher.forEach(w -> w.changedEvent(event)));
+        if(null != event){
+            taskExecutor.execute(() -> watcher.forEach(w -> w.changedEvent(event)));
+        }
     }
 
     @Override

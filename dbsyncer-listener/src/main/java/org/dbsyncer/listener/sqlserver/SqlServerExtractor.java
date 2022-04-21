@@ -324,10 +324,10 @@ public class SqlServerExtractor extends AbstractExtractor {
                         continue;
                     }
 
-                    pull(stopLsn);
-
                     lastLsn = stopLsn;
                     snapshot.put(LSN_POSITION, lastLsn.toString());
+
+                    pull(stopLsn);
                 } catch (Exception e) {
                     logger.error(e.getMessage());
                     sleepInMills(1000L);

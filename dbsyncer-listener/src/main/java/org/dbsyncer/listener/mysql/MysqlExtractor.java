@@ -233,6 +233,7 @@ public class MysqlExtractor extends AbstractExtractor {
             }
 
             if (EventType.isUpdate(header.getEventType())) {
+                refresh(header);
                 UpdateRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
@@ -241,10 +242,10 @@ public class MysqlExtractor extends AbstractExtractor {
                         changedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, before, after));
                     });
                 }
-                refresh(header);
                 return;
             }
             if (EventType.isWrite(header.getEventType())) {
+                refresh(header);
                 WriteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
@@ -252,10 +253,10 @@ public class MysqlExtractor extends AbstractExtractor {
                         changedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after));
                     });
                 }
-                refresh(header);
                 return;
             }
             if (EventType.isDelete(header.getEventType())) {
+                refresh(header);
                 DeleteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
@@ -263,7 +264,6 @@ public class MysqlExtractor extends AbstractExtractor {
                         changedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST));
                     });
                 }
-                refresh(header);
                 return;
             }
 
