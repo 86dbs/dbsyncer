@@ -1,5 +1,9 @@
 package org.dbsyncer.listener.postgresql.column;
 
+import org.dbsyncer.common.util.StringUtil;
+
+import java.math.BigDecimal;
+
 public final class TestDecodingColumnValue extends AbstractColumnValue {
 
     private String value;
@@ -10,7 +14,7 @@ public final class TestDecodingColumnValue extends AbstractColumnValue {
 
     @Override
     public boolean isNull() {
-        return false;
+        return value == null;
     }
 
     @Override
@@ -20,36 +24,36 @@ public final class TestDecodingColumnValue extends AbstractColumnValue {
 
     @Override
     public Boolean asBoolean() {
-        return null;
+        return "t".equalsIgnoreCase(value);
     }
 
     @Override
     public Integer asInteger() {
-        return null;
+        return Integer.valueOf(value);
     }
 
     @Override
     public Long asLong() {
-        return null;
+        return Long.valueOf(value);
     }
 
     @Override
     public Float asFloat() {
-        return null;
+        return Float.valueOf(value);
     }
 
     @Override
     public Double asDouble() {
-        return null;
+        return Double.valueOf(value);
     }
 
     @Override
     public Object asDecimal() {
-        return null;
+        return new BigDecimal(value);
     }
 
     @Override
     public byte[] asByteArray() {
-        return new byte[0];
+        return StringUtil.hexStringToByteArray(value.substring(2));
     }
 }

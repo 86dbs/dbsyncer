@@ -4,6 +4,8 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.postgresql.AbstractMessageDecoder;
+import org.dbsyncer.listener.postgresql.column.ColumnValueResolver;
+import org.dbsyncer.listener.postgresql.column.TestDecodingColumnValue;
 import org.dbsyncer.listener.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
 import org.postgresql.replication.LogSequenceNumber;
@@ -24,6 +26,8 @@ import java.util.List;
 public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private static final ColumnValueResolver resolver = new ColumnValueResolver();
 
     @Override
     public boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn) {
@@ -102,19 +106,19 @@ public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
             String type = parseType(lexer);
             lexer.skip(1);
             String value = parseValue(lexer);
-            data.add(value);
+            data.add(resolver.resolveValue(type, new TestDecodingColumnValue(value)));
         }
 
         RowChangedEvent event = null;
-        if(StringUtil.equals(ConnectorConstant.OPERTION_UPDATE, eventType)){
+        if (StringUtil.equals(ConnectorConstant.OPERTION_UPDATE, eventType)) {
             event = new RowChangedEvent(table, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, data);
         }
 
-        if(StringUtil.equals(ConnectorConstant.OPERTION_INSERT, eventType)){
+        if (StringUtil.equals(ConnectorConstant.OPERTION_INSERT, eventType)) {
             event = new RowChangedEvent(table, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, data);
         }
 
-        if(StringUtil.equals(ConnectorConstant.OPERTION_DELETE, eventType)){
+        if (StringUtil.equals(ConnectorConstant.OPERTION_DELETE, eventType)) {
             event = new RowChangedEvent(table, ConnectorConstant.OPERTION_DELETE, data, Collections.EMPTY_LIST);
         }
         logger.info(event.toString());
@@ -180,7 +184,7 @@ public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
                 int commaCount = 1;
                 StringBuilder out = new StringBuilder(16);
                 while (!((pos == length - 1 || (array[pos + 1] == ' ' && commaCount % 2 == 1)) && array[pos] == '\'')) {
-                    if(array[pos] == '\'') {
+                    if (array[pos] == '\'') {
                         commaCount++;
                     }
                     out.append(array[pos]);

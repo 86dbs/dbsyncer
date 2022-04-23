@@ -85,7 +85,7 @@ public abstract class DateFormatUtil {
     }
 
     public static LocalDate stringToLocalDate(String s) {
-        return LocalDate.parse(s, CHINESE_STANDARD_TIME_FORMATTER);
+        return LocalDate.parse(s, DATE_FORMATTER);
     }
 
     public static LocalTime stringToLocalTime(String s) {
