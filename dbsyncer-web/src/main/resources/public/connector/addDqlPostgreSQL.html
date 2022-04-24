@@ -51,7 +51,8 @@
         <div class="col-sm-6"></div>
     </div>
     <div class="form-group">
-        <label class="col-sm-2 control-label">删除Slot</label>
+        <label class="col-sm-2 control-label">删除Slot <i aria-hidden="true" class="fa fa-question-circle fa_gray"
+                                                        title="增量同步，停止驱动自动删除Slot"></i></label>
         <div class="col-sm-4">
             <input id="dropSlotOnCloseSwitch" name="dropSlotOnClose"
                    th:checked="${#maps.isEmpty(connector?.config?.properties) or connector?.config?.properties?.dropSlotOnClose eq 'true'}"
