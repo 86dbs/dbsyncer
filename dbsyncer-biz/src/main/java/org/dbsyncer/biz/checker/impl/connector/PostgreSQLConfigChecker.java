@@ -1,5 +1,6 @@
 package org.dbsyncer.biz.checker.impl.connector;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.springframework.stereotype.Component;
 
@@ -16,5 +17,13 @@ public class PostgreSQLConfigChecker extends AbstractDataBaseConfigChecker {
     public void modify(DatabaseConfig connectorConfig, Map<String, String> params) {
         super.modify(connectorConfig, params);
         super.modifySchema(connectorConfig, params);
+
+        String dropSlotOnClose = params.get("dropSlotOnClose");
+        connectorConfig.getProperties().put("dropSlotOnClose", StringUtil.equals("on", dropSlotOnClose) ? "true" : "false");
+
+        String pluginName = params.get("pluginName");
+        if (StringUtil.isNotBlank(pluginName)) {
+            connectorConfig.getProperties().put("pluginName", pluginName);
+        }
     }
 }

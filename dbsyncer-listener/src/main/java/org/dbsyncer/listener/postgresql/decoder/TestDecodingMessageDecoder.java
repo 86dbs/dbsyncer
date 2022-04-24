@@ -11,8 +11,6 @@ import org.dbsyncer.listener.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
 import org.postgresql.replication.LogSequenceNumber;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -25,8 +23,6 @@ import java.util.List;
  * @date 2022/4/17 23:00
  */
 public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final ColumnValueResolver resolver = new ColumnValueResolver();
 
@@ -45,10 +41,13 @@ public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
                 case TRUNCATE:
                 case TYPE:
                 case ORIGIN:
+                case INSERT:
+                case UPDATE:
+                case DELETE:
                 case NONE:
                     return true;
                 default:
-                    // TABLE|INSERT|UPDATE|DELETE
+                    // TABLE
                     return false;
             }
         } finally {
@@ -82,7 +81,6 @@ public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
     }
 
     private RowChangedEvent parseMessage(String message) {
-        logger.info(message);
         Lexer lexer = new Lexer(message);
 
         // table
@@ -122,9 +120,7 @@ public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
         if (StringUtil.equals(ConnectorConstant.OPERTION_DELETE, eventType)) {
             event = new RowChangedEvent(table, ConnectorConstant.OPERTION_DELETE, data, Collections.EMPTY_LIST);
         }
-        logger.info(event.toString());
-
-        return null;
+        return event;
     }
 
     private String parseName(Lexer lexer) {
