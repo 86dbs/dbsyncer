@@ -5,6 +5,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.postgresql.AbstractMessageDecoder;
 import org.dbsyncer.listener.postgresql.column.ColumnValueResolver;
+import org.dbsyncer.listener.postgresql.column.Lexer;
 import org.dbsyncer.listener.postgresql.column.TestDecodingColumnValue;
 import org.dbsyncer.listener.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
@@ -147,66 +148,6 @@ public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
         }
         lexer.nextToken(' ');
         return lexer.token();
-    }
-
-    final class Lexer {
-        private final String input;
-        private final char[] array;
-        private final int length;
-        private int pos = 0;
-        private String token;
-
-        public Lexer(String input) {
-            this.input = input;
-            this.array = input.toCharArray();
-            this.length = this.array.length;
-        }
-
-        public String token() {
-            return token;
-        }
-
-        public String nextToken(char comma) {
-            if (pos < length) {
-                StringBuilder out = new StringBuilder(16);
-                while (pos < length && array[pos] != comma) {
-                    out.append(array[pos]);
-                    pos++;
-                }
-                pos++;
-                return token = out.toString();
-            }
-            return token = null;
-        }
-
-        public String nextTokenToQuote() {
-            if (pos < length) {
-                int commaCount = 1;
-                StringBuilder out = new StringBuilder(16);
-                while (!((pos == length - 1 || (array[pos + 1] == ' ' && commaCount % 2 == 1)) && array[pos] == '\'')) {
-                    if (array[pos] == '\'') {
-                        commaCount++;
-                    }
-                    out.append(array[pos]);
-                    pos++;
-                }
-                pos++;
-                return token = out.toString();
-            }
-            return token = null;
-        }
-
-        public void skip(int skip) {
-            this.pos += skip;
-        }
-
-        public char current() {
-            return array[pos];
-        }
-
-        public boolean hasNext() {
-            return pos < length;
-        }
     }
 
 }
