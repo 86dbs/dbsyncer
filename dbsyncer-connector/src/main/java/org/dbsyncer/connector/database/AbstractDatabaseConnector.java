@@ -54,7 +54,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
 
     @Override
     public String getConnectorMapperCacheKey(DatabaseConfig config) {
-        return String.format("%s-%s", config.getUrl(), config.getUsername());
+        return String.format("%s-%s-%s", config.getConnectorType(), config.getUrl(), config.getUsername());
     }
 
     @Override
