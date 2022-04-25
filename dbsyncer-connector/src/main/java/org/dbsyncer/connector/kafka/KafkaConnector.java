@@ -41,7 +41,7 @@ public class KafkaConnector extends AbstractConnector implements Connector<Kafka
 
     @Override
     public String getConnectorMapperCacheKey(KafkaConfig config) {
-        return String.format("%s-%s-%s", config.getBootstrapServers(), config.getTopic(), config.getGroupId());
+        return String.format("%s-%s-%s-%s", config.getConnectorType(), config.getBootstrapServers(), config.getTopic(), config.getGroupId());
     }
 
     @Override

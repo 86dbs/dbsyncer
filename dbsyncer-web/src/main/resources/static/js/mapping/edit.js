@@ -129,18 +129,18 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
         // 如果存在多个选择，只筛选相似表
         var sLen = m.sourceTable.length;
         var tLen = m.targetTable.length;
-        if(1 < sLen || 1 < tLen){
+        if (1 < sLen || 1 < tLen) {
             var mark = [];
-            for(j = 0; j < sLen; j++) {
-                if(-1 != m.targetTable.indexOf(m.sourceTable[j])){
+            for (j = 0; j < sLen; j++) {
+                if (-1 != m.targetTable.indexOf(m.sourceTable[j])) {
                     mark.push(m.sourceTable[j]);
                 }
             }
             m.sourceTable = mark;
             m.targetTable = mark;
         }
-        m.sourceTable = m.sourceTable.join();
-        m.targetTable = m.targetTable.join();
+        m.sourceTable = m.sourceTable.join('|');
+        m.targetTable = m.targetTable.join('|');
 
         doPoster("/tableGroup/add", m, function (data) {
             if (data.success == true) {

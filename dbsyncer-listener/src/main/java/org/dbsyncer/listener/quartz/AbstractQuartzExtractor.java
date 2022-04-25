@@ -41,6 +41,9 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
     private Set<String> insert;
     private Set<String> delete;
     private String taskKey;
+    private long period;
+    private volatile boolean running;
+    private final Lock lock = new ReentrantLock(true);
 //    private long period;
     private String cron;
     private AtomicBoolean running;
@@ -68,6 +71,8 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 //        period = listenerConfig.getPeriod();
         cron = listenerConfig.getCron();
         running = new AtomicBoolean();
+        period = listenerConfig.getPeriod();
+        running = true;
         run();
 //        scheduledTaskService.start(taskKey, period * 1000, this);
         scheduledTaskService.start(taskKey, cron, this);
@@ -77,24 +82,29 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
     @Override
     public void run() {
+        final Lock taskLock = lock;
+        boolean locked = false;
         try {
-            if (running.compareAndSet(false, true)) {
-                // 依次执行同步映射关系
+            locked = taskLock.tryLock();
+            if (locked) {
                 for (int i = 0; i < commandSize; i++) {
                     execute(commands.get(i), i);
                 }
-                running.compareAndSet(true, false);
             }
         } catch (Exception e) {
-            running.compareAndSet(true, false);
             errorEvent(e);
             logger.error(e.getMessage());
+        } finally {
+            if (locked) {
+                taskLock.unlock();
+            }
         }
     }
 
     @Override
     public void close() {
         scheduledTaskService.stop(taskKey);
+        running = false;
     }
 
     private void execute(Map<String, String> command, int index) {
@@ -102,7 +112,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         ConnectorMapper connectionMapper = connectorFactory.connect(connectorConfig);
         Point point = checkLastPoint(command, index);
         int pageIndex = 1;
-        for (; ; ) {
+        while (running) {
             Result reader = connectorFactory.reader(connectionMapper, new ReaderConfig(point.getCommand(), point.getArgs(), pageIndex++, readNum));
             List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
@@ -134,10 +144,6 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
             // 更新记录点
             point.refresh();
 
-            // 说明没有数据了
-            if (data.size() < readNum) {
-                break;
-            }
         }
 
         // 持久化

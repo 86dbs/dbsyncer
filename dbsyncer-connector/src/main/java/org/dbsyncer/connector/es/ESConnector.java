@@ -80,7 +80,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
     @Override
     public String getConnectorMapperCacheKey(ESConfig config) {
-        return String.format("%s-%s-%s-%s", config.getUrl(), config.getIndex(), config.getType(), config.getUsername());
+        return String.format("%s-%s-%s-%s-%s", config.getConnectorType(), config.getUrl(), config.getIndex(), config.getType(), config.getUsername());
     }
 
     @Override
