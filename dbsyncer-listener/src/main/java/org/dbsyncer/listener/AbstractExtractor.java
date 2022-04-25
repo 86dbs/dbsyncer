@@ -3,7 +3,6 @@ package org.dbsyncer.listener;
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.listener.config.ListenerConfig;
@@ -15,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @version 1.0.0
@@ -31,64 +31,54 @@ public abstract class AbstractExtractor implements Extractor {
     protected ListenerConfig listenerConfig;
     protected Map<String, String> snapshot;
     protected Set<String> filterTable;
-    private List<Event> watcher;
+    private List<Event> watcher = new CopyOnWriteArrayList<>();
 
     @Override
     public void addListener(Event event) {
         if (null != event) {
-            if (null == watcher) {
-                watcher = new CopyOnWriteArrayList<>();
-            }
             watcher.add(event);
         }
     }
 
     @Override
     public void clearAllListener() {
-        if (null != watcher) {
-            watcher.clear();
-            watcher = null;
-        }
+        watcher.clear();
     }
 
     @Override
     public void changedEvent(RowChangedEvent event) {
-        if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.changedEvent(event));
+        if(null != event){
+            taskExecutor.execute(() -> watcher.forEach(w -> w.changedEvent(event)));
         }
     }
 
     @Override
     public void flushEvent() {
-        if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.flushEvent(snapshot));
-        }
+        watcher.forEach(w -> w.flushEvent(snapshot));
     }
 
     @Override
     public void forceFlushEvent() {
-        if (!CollectionUtils.isEmpty(watcher)) {
-            logger.info("Force flush:{}", snapshot);
-            watcher.forEach(w -> w.forceFlushEvent(snapshot));
-        }
+        logger.info("Force flush:{}", snapshot);
+        watcher.forEach(w -> w.forceFlushEvent(snapshot));
     }
 
     @Override
     public void errorEvent(Exception e) {
-        if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.errorEvent(e));
-        }
+        watcher.forEach(w -> w.errorEvent(e));
     }
 
     @Override
     public void interruptException(Exception e) {
-        if (!CollectionUtils.isEmpty(watcher)) {
-            watcher.forEach(w -> w.interruptException(e));
-        }
+        watcher.forEach(w -> w.interruptException(e));
     }
 
-    protected void asyncSendRowChangedEvent(RowChangedEvent event) {
-        taskExecutor.execute(() -> changedEvent(event));
+    protected void sleepInMills(long timeout) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(timeout);
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage());
+        }
     }
 
     public void setTaskExecutor(Executor taskExecutor) {

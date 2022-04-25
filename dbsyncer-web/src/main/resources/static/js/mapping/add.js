@@ -11,10 +11,12 @@ function submit(data) {
 
 // 绑定匹配相似表复选框事件
 function bindAutoMatchTableCheckBoxClick(){
-    $('#autoMatchTableSelect').iCheck({
-        checkboxClass: 'icheckbox_square-blue',
-        labelHover: false,
-        cursor: true
+    $('#autoMatchTableSwitch').bootstrapSwitch({
+        onText: "Yes",
+        offText: "No",
+        onColor: "success",
+        offColor: "info",
+        size: "normal"
     });
 }
 

@@ -30,7 +30,7 @@ public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, 
             throw e;
         } catch (Exception e) {
             logger.error(e.getMessage());
-            throw new ConnectorException(e.getMessage());
+            throw new ConnectorException(e.getMessage(), e.getCause());
         } finally {
             DatabaseUtil.close(connection);
         }

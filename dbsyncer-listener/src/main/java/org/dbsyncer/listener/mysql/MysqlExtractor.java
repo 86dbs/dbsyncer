@@ -233,37 +233,37 @@ public class MysqlExtractor extends AbstractExtractor {
             }
 
             if (EventType.isUpdate(header.getEventType())) {
+                refresh(header);
                 UpdateRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m.getKey()).collect(Collectors.toList());
                         List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
-                        asyncSendRowChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, before, after));
+                        changedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, before, after));
                     });
                 }
-                refresh(header);
                 return;
             }
             if (EventType.isWrite(header.getEventType())) {
+                refresh(header);
                 WriteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m).collect(Collectors.toList());
-                        asyncSendRowChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after));
+                        changedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after));
                     });
                 }
-                refresh(header);
                 return;
             }
             if (EventType.isDelete(header.getEventType())) {
+                refresh(header);
                 DeleteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m).collect(Collectors.toList());
-                        asyncSendRowChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST));
+                        changedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST));
                     });
                 }
-                refresh(header);
                 return;
             }
 

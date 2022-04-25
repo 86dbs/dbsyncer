@@ -37,8 +37,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         assertRunning(manager.getMapping(mappingId));
 
         // table1, table2
-        String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), ",");
-        String[] targetTableArray = StringUtil.split(params.get("targetTable"), ",");
+        String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), "|");
+        String[] targetTableArray = StringUtil.split(params.get("targetTable"), "|");
         int tableSize = sourceTableArray.length;
         Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
 

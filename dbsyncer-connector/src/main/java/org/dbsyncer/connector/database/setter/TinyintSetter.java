@@ -21,6 +21,11 @@ public class TinyintSetter extends AbstractSetter<Integer> {
             ps.setShort(i, v);
             return;
         }
+        if (val instanceof Boolean) {
+            Boolean b = (Boolean) val;
+            ps.setBoolean(i, b);
+            return;
+        }
         throw new ConnectorException(String.format("TinyintSetter can not find type [%s], val [%s]", type, val));
     }
 }

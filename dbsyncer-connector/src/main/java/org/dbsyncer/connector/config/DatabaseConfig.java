@@ -1,5 +1,8 @@
 package org.dbsyncer.connector.config;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * @author AE86
  * @ClassName: DatabaseConfig
@@ -28,6 +31,17 @@ public class DatabaseConfig extends ConnectorConfig {
 
     // 构架名
     private String schema;
+
+    // 参数配置
+    private Map<String, String> properties = new LinkedHashMap<>();
+
+    public String getProperty(String key){
+        return properties.get(key);
+    }
+
+    public String getProperty(String key, String defaultValue){
+        return properties.containsKey(key) ? properties.get(key) : defaultValue;
+    }
 
     public String getDriverClassName() {
         return driverClassName;
@@ -83,5 +97,13 @@ public class DatabaseConfig extends ConnectorConfig {
 
     public void setSchema(String schema) {
         this.schema = schema;
+    }
+
+    public Map<String, String> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, String> properties) {
+        this.properties = properties;
     }
 }
