@@ -5,16 +5,11 @@
 <div th:fragment="content">
     <div class="form-group">
         <div class="row">
-<!--            <div class="col-md-4">-->
-<!--                <label class="col-sm-3 control-label text-right">间隔(秒)*</label>-->
-<!--                <div class="col-sm-9">-->
-<!--                    <input name="incrementStrategyTimingPeriodExpression" type="number" min="1" class="form-control" dbsyncer-valid="require" th:value="${mapping?.listener?.period}?:30"/>-->
-<!--                </div>-->
-<!--            </div>-->
             <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">间隔(cron)*</label>
+                <label class="col-sm-3 control-label text-right">Cron*</label>
                 <div class="col-sm-9">
-                    <input name="incrementStrategyTimingCronExpression" type="text" class="form-control" dbsyncer-valid="require" th:value="${mapping?.listener?.cron}?:'0/30 * * * * ?'"/>
+                    <input class="form-control" dbsyncer-valid="require" name="incrementStrategyTimingCronExpression"
+                           th:value="${mapping?.listener?.cron}?:'*/30 * * * * ?'" type="text"/>
                 </div>
             </div>
             <div class="col-md-4">

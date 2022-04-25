@@ -17,7 +17,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,12 +42,9 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
     private Set<String> insert;
     private Set<String> delete;
     private String taskKey;
-    private long period;
     private volatile boolean running;
     private final Lock lock = new ReentrantLock(true);
-//    private long period;
     private String cron;
-    private AtomicBoolean running;
 
     /**
      * 获取增量参数
@@ -68,16 +66,11 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         delete = Stream.of(listenerConfig.getDelete().split(",")).collect(Collectors.toSet());
 
         taskKey = UUIDUtil.getUUID();
-//        period = listenerConfig.getPeriod();
         cron = listenerConfig.getCron();
-        running = new AtomicBoolean();
-        period = listenerConfig.getPeriod();
         running = true;
-        run();
-//        scheduledTaskService.start(taskKey, period * 1000, this);
-        scheduledTaskService.start(taskKey, cron, this);
 
-        logger.info("启动定时任务:{} >> {}秒", taskKey, cron);
+        scheduledTaskService.start(taskKey, cron, this);
+        logger.info("启动定时任务:{} >> {}", taskKey, cron);
     }
 
     @Override
