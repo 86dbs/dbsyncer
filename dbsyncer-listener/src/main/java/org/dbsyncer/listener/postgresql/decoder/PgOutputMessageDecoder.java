@@ -4,6 +4,7 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.listener.postgresql.AbstractMessageDecoder;
 import org.dbsyncer.listener.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
+import org.postgresql.PGConnection;
 import org.postgresql.replication.LogSequenceNumber;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 import org.slf4j.Logger;
@@ -19,6 +20,11 @@ import java.nio.ByteBuffer;
 public class PgOutputMessageDecoder extends AbstractMessageDecoder {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Override
+    public void postProcessBeforeInitialization(PGConnection pgConnection) {
+        // TODO create pub name
+    }
 
     @Override
     public boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn) {
@@ -68,7 +74,11 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     @Override
     public void withSlotOption(ChainedLogicalStreamBuilder builder) {
         builder.withSlotOption("proto_version", 1);
-        builder.withSlotOption("publication_names", String.format("dbs_pub_%s_%s", config.getSchema(), config.getUsername()));
+        builder.withSlotOption("publication_names", getPubName());
+    }
+
+    private String getPubName() {
+        return String.format("dbs_pub_%s_%s", config.getSchema(), config.getUsername());
     }
 
     private RowChangedEvent parseMessage(String message) {

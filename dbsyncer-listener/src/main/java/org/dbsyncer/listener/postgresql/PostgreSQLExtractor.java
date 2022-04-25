@@ -139,6 +139,7 @@ public class PostgreSQLExtractor extends AbstractExtractor {
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
         createReplicationSlot(pgConnection);
         createReplicationStream(pgConnection);
+        messageDecoder.postProcessBeforeInitialization(pgConnection);
 
         sleepInMills(10L);
     }
