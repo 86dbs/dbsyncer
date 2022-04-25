@@ -134,6 +134,10 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
             // 更新记录点
             point.refresh();
 
+            // 说明没有数据了
+            if (data.size() < readNum) {
+                break;
+            }
         }
 
         // 持久化
