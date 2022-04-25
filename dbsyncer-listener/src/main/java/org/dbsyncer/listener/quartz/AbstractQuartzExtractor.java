@@ -41,7 +41,8 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
     private Set<String> insert;
     private Set<String> delete;
     private String taskKey;
-    private long period;
+//    private long period;
+    private String cron;
     private AtomicBoolean running;
 
     /**
@@ -64,11 +65,14 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         delete = Stream.of(listenerConfig.getDelete().split(",")).collect(Collectors.toSet());
 
         taskKey = UUIDUtil.getUUID();
-        period = listenerConfig.getPeriod();
+//        period = listenerConfig.getPeriod();
+        cron = listenerConfig.getCron();
         running = new AtomicBoolean();
         run();
-        scheduledTaskService.start(taskKey, period * 1000, this);
-        logger.info("启动定时任务:{} >> {}秒", taskKey, period);
+//        scheduledTaskService.start(taskKey, period * 1000, this);
+        scheduledTaskService.start(taskKey, cron, this);
+
+        logger.info("启动定时任务:{} >> {}秒", taskKey, cron);
     }
 
     @Override

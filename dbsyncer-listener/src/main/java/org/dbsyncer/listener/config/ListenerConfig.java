@@ -23,6 +23,9 @@ public class ListenerConfig {
     // 定时(秒)
     private long period = 30;
 
+    // cron
+    private String cron = "0/30 * * * * ?";
+
     // 事件字段
     private String eventFieldName = "";
 
@@ -107,5 +110,13 @@ public class ListenerConfig {
 
     public void setTableLabel(String tableLabel) {
         this.tableLabel = tableLabel;
+    }
+
+    public String getCron() {
+        return cron;
+    }
+
+    public void setCron(String cron) {
+        this.cron = cron;
     }
 }
