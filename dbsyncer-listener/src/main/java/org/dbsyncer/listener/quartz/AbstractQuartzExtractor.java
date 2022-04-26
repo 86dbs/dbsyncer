@@ -44,7 +44,6 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
     private String taskKey;
     private volatile boolean running;
     private final Lock lock = new ReentrantLock(true);
-    private String cron;
 
     /**
      * 获取增量参数
@@ -66,11 +65,10 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         delete = Stream.of(listenerConfig.getDelete().split(",")).collect(Collectors.toSet());
 
         taskKey = UUIDUtil.getUUID();
-        cron = listenerConfig.getCron();
         running = true;
 
-        scheduledTaskService.start(taskKey, cron, this);
-        logger.info("启动定时任务:{} >> {}", taskKey, cron);
+        scheduledTaskService.start(taskKey, listenerConfig.getCron(), this);
+        logger.info("启动定时任务:{} >> {}", taskKey, listenerConfig.getCron());
     }
 
     @Override

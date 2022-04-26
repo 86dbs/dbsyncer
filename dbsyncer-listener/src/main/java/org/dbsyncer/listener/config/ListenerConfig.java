@@ -18,7 +18,7 @@ public class ListenerConfig {
     /**
      * 每次读取数
      */
-    private int readNum = 200;
+    private int readNum = 1000;
 
     // 定时表达式, 格式: [秒] [分] [小时] [日] [月] [周]
     private String cron = "*/30 * * * * ?";
