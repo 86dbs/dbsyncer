@@ -8,7 +8,6 @@ import org.dbsyncer.listener.postgresql.column.Lexer;
 import org.dbsyncer.listener.postgresql.column.TestDecodingColumnValue;
 import org.dbsyncer.listener.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
-import org.postgresql.replication.LogSequenceNumber;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,35 +26,6 @@ public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private static final ColumnValueResolver resolver = new ColumnValueResolver();
-
-    @Override
-    public boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn) {
-        if (super.skipMessage(buffer, startLsn, lastReceiveLsn)) {
-            return true;
-        }
-        int position = buffer.position();
-        try {
-            MessageTypeEnum type = MessageTypeEnum.getType((char) buffer.get());
-            switch (type) {
-                case BEGIN:
-                case COMMIT:
-                case RELATION:
-                case TRUNCATE:
-                case TYPE:
-                case ORIGIN:
-                case INSERT:
-                case UPDATE:
-                case DELETE:
-                case NONE:
-                    return true;
-                default:
-                    // TABLE
-                    return false;
-            }
-        } finally {
-            buffer.position(position);
-        }
-    }
 
     @Override
     public RowChangedEvent processMessage(ByteBuffer buffer) {

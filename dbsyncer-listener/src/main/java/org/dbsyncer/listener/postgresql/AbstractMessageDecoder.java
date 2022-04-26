@@ -1,6 +1,7 @@
 package org.dbsyncer.listener.postgresql;
 
 import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
 import org.postgresql.replication.LogSequenceNumber;
 
 import java.nio.ByteBuffer;
@@ -16,7 +17,29 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
 
     @Override
     public boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn) {
-        return null == lastReceiveLsn || lastReceiveLsn.asLong() == 0 || startLsn.equals(lastReceiveLsn);
+        if (null == lastReceiveLsn || lastReceiveLsn.asLong() == 0 || startLsn.equals(lastReceiveLsn)) {
+            return true;
+        }
+
+        int position = buffer.position();
+        try {
+            MessageTypeEnum type = MessageTypeEnum.getType((char) buffer.get());
+            switch (type) {
+                case BEGIN:
+                case COMMIT:
+                case RELATION:
+                case TRUNCATE:
+                case TYPE:
+                case ORIGIN:
+                case NONE:
+                    return true;
+                default:
+                    // TABLE|INSERT|UPDATE|DELETE
+                    return false;
+            }
+        } finally {
+            buffer.position(position);
+        }
     }
 
     @Override

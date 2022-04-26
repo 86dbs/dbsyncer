@@ -7,7 +7,6 @@ import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.postgresql.AbstractMessageDecoder;
 import org.dbsyncer.listener.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
-import org.postgresql.replication.LogSequenceNumber;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,32 +50,6 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
         }
 
         // TODO read table schema
-    }
-
-    @Override
-    public boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn) {
-        if (super.skipMessage(buffer, startLsn, lastReceiveLsn)) {
-            return true;
-        }
-        int position = buffer.position();
-        try {
-            MessageTypeEnum type = MessageTypeEnum.getType((char) buffer.get());
-            switch (type) {
-                case BEGIN:
-                case COMMIT:
-                case RELATION:
-                case TRUNCATE:
-                case TYPE:
-                case ORIGIN:
-                case NONE:
-                    return true;
-                default:
-                    // TABLE|INSERT|UPDATE|DELETE
-                    return false;
-            }
-        } finally {
-            buffer.position(position);
-        }
     }
 
     @Override
