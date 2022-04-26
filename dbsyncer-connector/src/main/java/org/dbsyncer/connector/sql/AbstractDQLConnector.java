@@ -39,7 +39,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         sql = sql.replace("\t", " ");
         sql = sql.replace("\r", " ");
         sql = sql.replace("\n", " ");
-        String queryMetaSql = StringUtil.contains(sql, " WHERE ") ? sql + " AND 1!=1 " : sql + " WHERE 1!=1 ";
+        String queryMetaSql = StringUtil.contains(sql, " WHERE ") ? cfg.getSql() + " AND 1!=1 " : cfg.getSql() + " WHERE 1!=1 ";
         return connectorMapper.execute(databaseTemplate -> super.getMetaInfo(databaseTemplate, queryMetaSql, cfg.getTable()));
     }
 
