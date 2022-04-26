@@ -1,7 +1,6 @@
 package org.dbsyncer.listener.postgresql.decoder;
 
 import org.dbsyncer.common.event.RowChangedEvent;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.postgresql.AbstractMessageDecoder;
 import org.dbsyncer.listener.postgresql.column.ColumnValueResolver;
@@ -11,6 +10,8 @@ import org.dbsyncer.listener.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
 import org.postgresql.replication.LogSequenceNumber;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import java.util.List;
  */
 public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private static final ColumnValueResolver resolver = new ColumnValueResolver();
 
     @Override
@@ -109,16 +111,21 @@ public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
         }
 
         RowChangedEvent event = null;
-        if (StringUtil.equals(ConnectorConstant.OPERTION_UPDATE, eventType)) {
-            event = new RowChangedEvent(table, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, data);
-        }
+        switch (eventType) {
+            case ConnectorConstant.OPERTION_UPDATE:
+                event = new RowChangedEvent(table, eventType, Collections.EMPTY_LIST, data);
+                break;
 
-        if (StringUtil.equals(ConnectorConstant.OPERTION_INSERT, eventType)) {
-            event = new RowChangedEvent(table, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, data);
-        }
+            case ConnectorConstant.OPERTION_INSERT:
+                event = new RowChangedEvent(table, eventType, Collections.EMPTY_LIST, data);
+                break;
 
-        if (StringUtil.equals(ConnectorConstant.OPERTION_DELETE, eventType)) {
-            event = new RowChangedEvent(table, ConnectorConstant.OPERTION_DELETE, data, Collections.EMPTY_LIST);
+            case ConnectorConstant.OPERTION_DELETE:
+                event = new RowChangedEvent(table, eventType, data, Collections.EMPTY_LIST);
+                break;
+
+            default:
+                logger.info("Type {} not implemented", eventType);
         }
         return event;
     }
