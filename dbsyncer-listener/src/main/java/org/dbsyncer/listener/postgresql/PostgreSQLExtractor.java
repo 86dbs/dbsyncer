@@ -90,6 +90,7 @@ public class PostgreSQLExtractor extends AbstractExtractor {
 
             messageDecoder = MessageDecoderEnum.getMessageDecoder(config.getProperty(PLUGIN_NAME));
             messageDecoder.setConfig(config);
+            messageDecoder.postProcessBeforeInitialization(connectorMapper);
             dropSlotOnClose = BooleanUtil.toBoolean(config.getProperty(DROP_SLOT_ON_CLOSE, "true"));
 
             connect();
@@ -139,7 +140,6 @@ public class PostgreSQLExtractor extends AbstractExtractor {
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
         createReplicationSlot(pgConnection);
         createReplicationStream(pgConnection);
-        messageDecoder.postProcessBeforeInitialization(pgConnection);
 
         sleepInMills(10L);
     }

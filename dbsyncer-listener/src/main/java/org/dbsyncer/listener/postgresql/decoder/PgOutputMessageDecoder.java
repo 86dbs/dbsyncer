@@ -1,16 +1,19 @@
 package org.dbsyncer.listener.postgresql.decoder;
 
 import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.connector.database.DatabaseConnectorMapper;
+import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.postgresql.AbstractMessageDecoder;
 import org.dbsyncer.listener.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
-import org.postgresql.PGConnection;
 import org.postgresql.replication.LogSequenceNumber;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * @author AE86
@@ -22,8 +25,25 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public void postProcessBeforeInitialization(PGConnection pgConnection) {
-        // TODO create pub name
+    public void postProcessBeforeInitialization(DatabaseConnectorMapper connectorMapper) {
+        String pubName = getPubName();
+        String selectPublication = String.format("SELECT COUNT(1) FROM pg_publication WHERE pubname = '%s'", pubName);
+        Integer count = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(selectPublication, Integer.class));
+        if (0 < count) {
+            return;
+        }
+
+        logger.info("Creating new publication '{}' for plugin '{}'", pubName, getOutputPlugin());
+        try {
+            String createPublication = String.format("CREATE PUBLICATION %s FOR ALL TABLES", pubName);
+            logger.info("Creating Publication with statement '{}'", createPublication);
+            connectorMapper.execute(databaseTemplate -> {
+                databaseTemplate.execute(createPublication);
+                return true;
+            });
+        } catch (Exception e) {
+            throw new ListenerException(e.getCause());
+        }
     }
 
     @Override
@@ -57,12 +77,26 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
         if (!buffer.hasArray()) {
             throw new IllegalStateException("Invalid buffer received from PG server during streaming replication");
         }
+
         MessageTypeEnum type = MessageTypeEnum.getType((char) buffer.get());
-        if (MessageTypeEnum.TABLE == type) {
-            int offset = buffer.arrayOffset();
-            byte[] source = buffer.array();
-            return parseMessage(new String(source, offset, (source.length - offset)));
+        if (MessageTypeEnum.UPDATE == type) {
+            final byte[] source = buffer.array();
+            final byte[] content = Arrays.copyOfRange(source, buffer.arrayOffset(), source.length);
+            return parseMessage(ConnectorConstant.OPERTION_UPDATE, new String(content));
         }
+
+        if (MessageTypeEnum.INSERT == type) {
+            final byte[] source = buffer.array();
+            final byte[] content = Arrays.copyOfRange(source, buffer.arrayOffset(), source.length);
+            return parseMessage(ConnectorConstant.OPERTION_INSERT, new String(content));
+        }
+
+        if (MessageTypeEnum.DELETE == type) {
+            final byte[] source = buffer.array();
+            final byte[] content = Arrays.copyOfRange(source, buffer.arrayOffset(), source.length);
+            return parseMessage(ConnectorConstant.OPERTION_DELETE, new String(content));
+        }
+
         return null;
     }
 
@@ -81,7 +115,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
         return String.format("dbs_pub_%s_%s", config.getSchema(), config.getUsername());
     }
 
-    private RowChangedEvent parseMessage(String message) {
+    private RowChangedEvent parseMessage(String event, String message) {
         logger.info(message);
 
         return null;
