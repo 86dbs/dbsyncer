@@ -42,7 +42,6 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
     private Set<String> insert;
     private Set<String> delete;
     private String taskKey;
-    private long period;
     private volatile boolean running;
     private final Lock lock = new ReentrantLock(true);
 
@@ -66,11 +65,10 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         delete = Stream.of(listenerConfig.getDelete().split(",")).collect(Collectors.toSet());
 
         taskKey = UUIDUtil.getUUID();
-        period = listenerConfig.getPeriod();
         running = true;
-        run();
-        scheduledTaskService.start(taskKey, period * 1000, this);
-        logger.info("启动定时任务:{} >> {}秒", taskKey, period);
+
+        scheduledTaskService.start(taskKey, listenerConfig.getCron(), this);
+        logger.info("启动定时任务:{} >> {}", taskKey, listenerConfig.getCron());
     }
 
     @Override
@@ -136,6 +134,10 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
             }
             // 更新记录点
             point.refresh();
+
+            if (data.size() < readNum) {
+                break;
+            }
 
         }
 

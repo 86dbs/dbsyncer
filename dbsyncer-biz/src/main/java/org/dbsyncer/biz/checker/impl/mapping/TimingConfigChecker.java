@@ -1,7 +1,6 @@
 package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.dbsyncer.biz.checker.MappingConfigChecker;
-import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
@@ -23,7 +22,7 @@ public class TimingConfigChecker implements MappingConfigChecker {
 
     @Override
     public void modify(Mapping mapping, Map<String, String> params) {
-        String period = params.get("incrementStrategyTimingPeriodExpression");
+        String cron = params.get("incrementStrategyTimingCronExpression");
         String eventFieldName = params.get("incrementStrategyTimingEventFieldName");
         String insert = params.get("incrementStrategyTimingInsert");
         String update = params.get("incrementStrategyTimingUpdate");
@@ -32,8 +31,8 @@ public class TimingConfigChecker implements MappingConfigChecker {
         ListenerConfig config = mapping.getListener();
         Assert.notNull(config, "ListenerConfig can not be null.");
 
-        if (StringUtil.isNotBlank(period)) {
-            config.setPeriod(NumberUtil.toLong(period, 30));
+        if (StringUtil.isNotBlank(cron)) {
+            config.setCron(cron);
         }
         config.setEventFieldName(eventFieldName);
         if (StringUtil.isNotBlank(insert)) {

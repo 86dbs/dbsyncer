@@ -15,25 +15,27 @@ public enum QuartzFilterEnum {
     /**
      * 时间戳(开始)
      */
-    TIME_STAMP_BEGIN("$timestamp_begin$", "系统时间戳(开始)", new TimestampFilter(true)),
+    TIME_STAMP_BEGIN(1, "$timestamp_begin$", "系统时间戳(开始)", new TimestampFilter(true)),
     /**
      * 时间戳(结束)
      */
-    TIME_STAMP_END("$timestamp_end$", "系统时间戳(结束)", new TimestampFilter(false)),
+    TIME_STAMP_END(2, "$timestamp_end$", "系统时间戳(结束)", new TimestampFilter(false)),
     /**
      * 日期(开始)
      */
-    DATE_BEGIN("$date_begin$", "系统日期(开始)", new DateFilter(true)),
+    DATE_BEGIN(3, "$date_begin$", "系统日期(开始)", new DateFilter(true)),
     /**
      * 日期(结束)
      */
-    DATE_END("$date_end$", "系统日期(结束)", new DateFilter(false));
+    DATE_END(4, "$date_end$", "系统日期(结束)", new DateFilter(false));
 
+    private Integer index;
     private String type;
     private String message;
     private QuartzFilter quartzFilter;
 
-    QuartzFilterEnum(String type, String message, QuartzFilter quartzFilter) {
+    QuartzFilterEnum(Integer index, String type, String message, QuartzFilter quartzFilter) {
+        this.index = index;
         this.type = type;
         this.message = message;
         this.quartzFilter = quartzFilter;
@@ -50,6 +52,10 @@ public enum QuartzFilterEnum {
             }
         }
         return null;
+    }
+
+    public Integer getIndex() {
+        return index;
     }
 
     public String getType() {
