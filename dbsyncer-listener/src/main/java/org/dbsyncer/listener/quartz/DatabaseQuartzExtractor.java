@@ -6,10 +6,7 @@ import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.springframework.util.Assert;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -25,10 +22,10 @@ public final class DatabaseQuartzExtractor extends AbstractQuartzExtractor {
     protected Point checkLastPoint(Map<String, String> command, int index) {
         // 检查是否存在系统参数
         final String query = command.get(ConnectorConstant.OPERTION_QUERY);
-        List<QuartzFilterEnum> filterEnums = Stream.of(QuartzFilterEnum.values()).filter(f -> {
-            Assert.isTrue(appearNotMoreThanOnce(query, f.getType()), String.format("系统参数%s存在多个.", f.getType()));
-            return StringUtil.contains(query, f.getType());
-        }).collect(Collectors.toList());
+
+        // 对“过滤条件”的对数进行排序处理，并得到参数集合
+        List<QuartzFilterEnum> filterEnums = getListQuartzFilterEnum(query);
+
         if (CollectionUtils.isEmpty(filterEnums)) {
             return new Point(command, new ArrayList<>());
         }
@@ -74,5 +71,30 @@ public final class DatabaseQuartzExtractor extends AbstractQuartzExtractor {
 
     private boolean appearNotMoreThanOnce(String str, String searchStr) {
         return StringUtil.indexOf(str, searchStr) == StringUtil.lastIndexOf(str, searchStr);
+    }
+
+    /**
+     * 对“过滤条件”的对数进行排序处理，并得到参数集合
+     * @param query
+     * @return
+     */
+    private List<QuartzFilterEnum>  getListQuartzFilterEnum(String query){
+        Map<Integer,QuartzFilterEnum> map = new TreeMap<Integer,QuartzFilterEnum>(
+                new Comparator<Integer>() {
+                    public int compare(Integer obj1, Integer obj2) {
+                        // 升序排序
+                        return obj1.compareTo(obj2);
+                    }
+                });
+        Stream.of(QuartzFilterEnum.values()).forEach(f -> {
+            Assert.isTrue(appearNotMoreThanOnce(query, f.getType()), String.format("系统参数%s存在多个.", f.getType()));
+            // 记录存在的变量参数位置
+            if (StringUtil.contains(query, f.getType())) {
+                int typeIndex = StringUtil.indexOf(query,f.getType());
+                map.put(typeIndex,f);
+            }
+        });
+        // 需要对当前参数进行排序
+        return map.size() > 0 ? new ArrayList(map.values()) : null;
     }
 }
