@@ -2,10 +2,7 @@ package org.dbsyncer.listener.quartz;
 
 import org.dbsyncer.common.util.StringUtil;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Point {
 
@@ -66,4 +63,7 @@ public class Point {
         this.beginValue = beginValue;
     }
 
+    public void reverseArgs() {
+        Collections.reverse(args);
+    }
 }
