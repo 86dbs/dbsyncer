@@ -284,13 +284,12 @@ public class PostgreSQLExtractor extends AbstractExtractor {
                     flushLsn(lsn);
                     // process decoder
                     changedEvent(messageDecoder.processMessage(msg));
-                    forceFlushEvent();
 
                     // feedback
                     stream.setAppliedLSN(lsn);
                     stream.setFlushedLSN(lsn);
                     stream.forceUpdateStatus();
-                } catch (IllegalStateException e) {
+                } catch (IllegalStateException | ListenerException e) {
                     logger.error(e.getMessage());
                 } catch (Exception e) {
                     logger.error(e.getMessage());

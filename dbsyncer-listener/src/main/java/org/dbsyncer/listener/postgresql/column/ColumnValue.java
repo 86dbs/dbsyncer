@@ -16,6 +16,8 @@ import java.time.OffsetTime;
  */
 public interface ColumnValue {
 
+    void setValue(String value);
+
     boolean isNull();
 
     String asString();

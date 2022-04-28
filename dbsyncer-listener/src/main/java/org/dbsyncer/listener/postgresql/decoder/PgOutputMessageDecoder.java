@@ -5,7 +5,6 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.MetaInfo;
-import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.postgresql.AbstractMessageDecoder;
@@ -14,6 +13,7 @@ import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
@@ -29,15 +29,17 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final LocalDateTime PG_EPOCH = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
-
     private static final String GET_TABLE_SCHEMA = "select oid,relname as tableName from pg_class t inner join (select ns.oid as nspoid, ns.nspname from pg_namespace ns where ns.nspname = (select (current_schemas(false))[s.r] from generate_series(1, array_upper(current_schemas(false), 1)) as s(r))) as n on n.nspoid = t.relnamespace where relkind = 'r'";
-
     private static final Map<Integer, TableId> tables = new LinkedHashMap<>();
+    private ConnectorFactory connectorFactory;
+    private DatabaseConnectorMapper connectorMapper;
 
     @Override
     public void postProcessBeforeInitialization(ConnectorFactory connectorFactory, DatabaseConnectorMapper connectorMapper) {
-        initPublication(connectorMapper);
-        readSchema(connectorFactory, connectorMapper);
+        this.connectorFactory = connectorFactory;
+        this.connectorMapper = connectorMapper;
+        initPublication();
+        readSchema();
     }
 
     @Override
@@ -46,20 +48,12 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
             throw new IllegalStateException("Invalid buffer received from PG server during streaming replication");
         }
 
-        RowChangedEvent event = null;
         MessageTypeEnum type = MessageTypeEnum.getType((char) buffer.get());
         switch (type) {
             case UPDATE:
-                event = parseUpdate(buffer);
-                break;
-
             case INSERT:
-                event = parseInsert(buffer);
-                break;
-
             case DELETE:
-                event = parseDelete(buffer);
-                break;
+                return parseData(type, buffer);
 
             case BEGIN:
                 long beginLsn = buffer.getLong();
@@ -80,10 +74,6 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
                 logger.info("Type {} not implemented", type.name());
         }
 
-        if (null != event) {
-            logger.info(event.toString());
-        }
-
         return null;
     }
 
@@ -102,7 +92,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
         return String.format("dbs_pub_%s_%s", config.getSchema(), config.getUsername());
     }
 
-    private void initPublication(DatabaseConnectorMapper connectorMapper) {
+    private void initPublication() {
         String pubName = getPubName();
         String selectPublication = String.format("SELECT COUNT(1) FROM pg_publication WHERE pubname = '%s'", pubName);
         Integer count = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(selectPublication, Integer.class));
@@ -123,113 +113,90 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
         }
     }
 
-    private void readSchema(ConnectorFactory connectorFactory, DatabaseConnectorMapper connectorMapper) {
+    private void readSchema() {
         List<Map> schemas = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(GET_TABLE_SCHEMA));
         if (!CollectionUtils.isEmpty(schemas)) {
             schemas.forEach(map -> {
                 Long oid = (Long) map.get("oid");
                 String tableName = (String) map.get("tableName");
-                tables.put(oid.intValue(), new TableId(oid.intValue(), tableName));
+                MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorMapper, tableName);
+                Assert.notEmpty(metaInfo.getColumn(), String.format("The table column for '%s' must not be empty.", tableName));
+                tables.put(oid.intValue(), new TableId(oid.intValue(), tableName, metaInfo.getColumn()));
             });
         }
+    }
 
-        // read column
-        for (TableId tableId : tables.values()) {
-            MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorMapper, tableId.tableName);
-            if(!CollectionUtils.isEmpty(metaInfo.getColumn())){
-                tableId.fields = metaInfo.getColumn();
+    private RowChangedEvent parseData(MessageTypeEnum type, ByteBuffer buffer) {
+        final int relationId = buffer.getInt();
+        final TableId tableId = tables.get(relationId);
+        if (null != tableId) {
+            String newTuple = new String(new byte[]{buffer.get()}, 0, 1);
+            switch (newTuple) {
+                case "N":
+                case "K":
+                case "O":
+                    List<Object> data = new ArrayList<>();
+                    readTupleData(tableId, buffer, data);
+                    if (MessageTypeEnum.DELETE == type) {
+                        return new RowChangedEvent(tableId.tableName, type.name(), data, Collections.EMPTY_LIST);
+                    }
+                    return new RowChangedEvent(tableId.tableName, type.name(), Collections.EMPTY_LIST, data);
+
+                default:
+                    logger.info("N, K, O not set, got instead {}", newTuple);
             }
         }
+        return null;
     }
 
-    private RowChangedEvent parseDelete(ByteBuffer buffer) {
-        int relationId = buffer.getInt();
-
-        List<Object> data = new ArrayList<>();
-        String newTuple = new String(new byte[] {buffer.get()}, 0, 1);
-
-        switch (newTuple) {
-            case "K":
-                readTupleData(buffer, data);
-                break;
-            default:
-                logger.info("K not set, got instead {}", newTuple);
-        }
-        return new RowChangedEvent(tables.get(relationId).tableName, ConnectorConstant.OPERTION_INSERT, data, Collections.EMPTY_LIST);
-    }
-
-    private RowChangedEvent parseInsert(ByteBuffer buffer) {
-        int relationId = buffer.getInt();
-
-        List<Object> data = new ArrayList<>();
-        String newTuple = new String(new byte[] {buffer.get()}, 0, 1);
-        switch (newTuple) {
-            case "N":
-                readTupleData(buffer, data);
-                break;
-            default:
-                logger.info("N not set, got instead {}", newTuple);
-        }
-        return new RowChangedEvent(tables.get(relationId).tableName, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, data);
-    }
-
-    private RowChangedEvent parseUpdate(ByteBuffer buffer) {
-        int relationId = buffer.getInt();
-
-        List<Object> data = new ArrayList<>();
-        String newTuple = new String(new byte[] {buffer.get()}, 0, 1);
-        switch (newTuple) {
-            case "K":
-                readTupleData(buffer, data);
-                break;
-            case "O":
-                readTupleData(buffer, data);
-                break;
-            case "N":
-                readTupleData(buffer, data);
-                break;
-            default:
-                logger.info("K or O Byte1 not set, got instead {}", newTuple);
-        }
-
-        return new RowChangedEvent(tables.get(relationId).tableName, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, data);
-    }
-
-    private void readTupleData(ByteBuffer msg, List<Object> data) {
+    private void readTupleData(TableId tableId, ByteBuffer msg, List<Object> data) {
         short nColumn = msg.getShort();
+        if (nColumn != tableId.fields.size()) {
+            logger.warn("The column size of table '{}' is {}, but we has been received column size is {}.", tableId.tableName, tableId.fields.size(), nColumn);
+
+            // The table schema has been changed, we should be get a new table schema from db.
+            MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorMapper, tableId.tableName);
+            if (CollectionUtils.isEmpty(metaInfo.getColumn())) {
+                throw new ListenerException(String.format("The table column for '%s' is empty.", tableId.tableName));
+            }
+            tableId.fields = metaInfo.getColumn();
+            return;
+        }
+
         for (int n = 0; n < nColumn; n++) {
-            String tupleContentType = new String(new byte[] {msg.get()}, 0, 1);
-            if (tupleContentType.equals("t")) {
-                int size = msg.getInt();
-                byte[] text = new byte[size];
+            String type = new String(new byte[]{msg.get()}, 0, 1);
+            switch (type) {
+                case "t":
+                    int size = msg.getInt();
+                    byte[] text = new byte[size];
+                    for (int z = 0; z < size; z++) {
+                        text[z] = msg.get();
+                    }
+                    data.add(resolveValue(tableId.fields.get(n).getTypeName(), new String(text, 0, size)));
+                    break;
 
-                for (int z = 0; z < size; z++) {
-                    text[z] = msg.get();
-                }
-                String content = new String(text, 0, size);
-                data.add(content);
-                continue;
-            }
+                case "n":
+                    data.add(null);
+                    break;
 
-            if (tupleContentType.equals("n")) {
-                data.add(null);
-                continue;
-            }
-
-            if (tupleContentType.equals("u")) {
-                data.add("TOASTED");
+                case "u":
+                    data.add("TOASTED");
+                    break;
+                default:
+                    logger.info("t, n, u not set, got instead {}", type);
             }
         }
     }
 
     final class TableId {
-        Integer     oid;
-        String      tableName;
+        Integer oid;
+        String tableName;
         List<Field> fields = new LinkedList<>();
 
-        public TableId(Integer oid, String tableName) {
+        public TableId(Integer oid, String tableName, List<Field> fields) {
             this.oid = oid;
             this.tableName = tableName;
+            this.fields = fields;
         }
     }
 
