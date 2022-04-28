@@ -17,6 +17,7 @@ import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import java.nio.ByteBuffer;
@@ -90,7 +91,7 @@ public class PostgreSQLExtractor extends AbstractExtractor {
 
             messageDecoder = MessageDecoderEnum.getMessageDecoder(config.getProperty(PLUGIN_NAME));
             messageDecoder.setConfig(config);
-            messageDecoder.postProcessBeforeInitialization(connectorMapper);
+            messageDecoder.postProcessBeforeInitialization(connectorFactory, connectorMapper);
             dropSlotOnClose = BooleanUtil.toBoolean(config.getProperty(DROP_SLOT_ON_CLOSE, "true"));
 
             connect();
