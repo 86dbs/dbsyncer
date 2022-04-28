@@ -1,10 +1,11 @@
 package org.dbsyncer.common.util;
 
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.time.*;
 import java.time.format.*;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
-import java.util.Date;
 
 public abstract class DateFormatUtil {
 
@@ -79,17 +80,15 @@ public abstract class DateFormatUtil {
     }
 
     public static Date stringToDate(String s) {
-        LocalDate localDate = LocalDate.parse(s, DATE_FORMATTER);
-        Instant instant = localDate.atStartOfDay().atZone(zoneId).toInstant();
-        return Date.from(instant);
-    }
-
-    public static LocalDate stringToLocalDate(String s) {
-        return LocalDate.parse(s, DATE_FORMATTER);
+        return Date.valueOf(LocalDate.parse(s, DATE_FORMATTER));
     }
 
     public static LocalTime stringToLocalTime(String s) {
         return LocalTime.parse(s, CHINESE_STANDARD_TIME_FORMATTER);
+    }
+
+    public static Timestamp stringToTimestamp(String s) {
+        return Timestamp.valueOf(LocalDateTime.from(TS_FORMAT.parse(s)));
     }
 
     public static OffsetTime timeWithTimeZone(String s) {
@@ -106,7 +105,4 @@ public abstract class DateFormatUtil {
         return OffsetDateTime.from(parsedTimestamp).withOffsetSameInstant(ZoneOffset.UTC);
     }
 
-    public static Instant timestampToInstant(String s) {
-        return LocalDateTime.from(TS_FORMAT.parse(s)).toInstant(ZoneOffset.UTC);
-    }
 }

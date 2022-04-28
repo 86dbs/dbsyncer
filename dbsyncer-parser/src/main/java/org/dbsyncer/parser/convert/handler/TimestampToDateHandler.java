@@ -2,9 +2,9 @@ package org.dbsyncer.parser.convert.handler;
 
 import org.dbsyncer.parser.convert.AbstractHandler;
 
+import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.ZoneId;
-import java.util.Date;
 
 /**
  * 时间戳转日期

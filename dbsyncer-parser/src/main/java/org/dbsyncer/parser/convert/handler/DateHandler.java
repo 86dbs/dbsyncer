@@ -3,7 +3,8 @@ package org.dbsyncer.parser.convert.handler;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.convert.Handler;
 
-import java.util.Date;
+import java.sql.Date;
+import java.time.LocalDate;
 
 /**
  * 系统日期
@@ -16,6 +17,6 @@ public class DateHandler implements Handler {
 
     @Override
     public Object handle(String args, Object value) {
-        return null == value || StringUtil.isBlank(String.valueOf(value)) ? new Date() : value;
+        return null == value || StringUtil.isBlank(String.valueOf(value)) ? Date.valueOf(LocalDate.now()) : value;
     }
 }

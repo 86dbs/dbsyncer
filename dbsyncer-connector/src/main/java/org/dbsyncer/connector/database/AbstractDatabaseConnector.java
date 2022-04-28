@@ -85,8 +85,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         Collections.addAll(config.getArgs(), getPageArgs(config.getPageIndex(), config.getPageSize()));
 
         // 3、执行SQL
-        List<Map<String, Object>> list = connectorMapper.execute(
-                databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
+        List<Map<String, Object>> list = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
 
         // 4、返回结果集
         return new Result(list);

@@ -3,8 +3,8 @@ package org.dbsyncer.listener.postgresql.column;
 import org.postgresql.geometric.*;
 import org.postgresql.util.PGmoney;
 
-import java.time.Instant;
-import java.time.LocalDate;
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 
@@ -34,11 +34,11 @@ public interface ColumnValue {
 
     Object asDecimal();
 
-    LocalDate asLocalDate();
+    Date asDate();
 
     OffsetDateTime asOffsetDateTimeAtUtc();
 
-    Instant asInstant();
+    Timestamp asTimestamp();
 
     Object asTime();
 

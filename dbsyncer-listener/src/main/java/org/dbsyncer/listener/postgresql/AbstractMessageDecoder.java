@@ -117,7 +117,7 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
                 return value.asString();
 
             case "date":
-                return value.asLocalDate();
+                return value.asDate();
 
             case "timestamp with time zone":
             case "timestamptz":
@@ -125,7 +125,7 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
 
             case "timestamp":
             case "timestamp without time zone":
-                return value.asInstant();
+                return value.asTimestamp();
 
             case "time":
                 return value.asTime();
