@@ -77,7 +77,7 @@ public abstract class AbstractExtractor implements Extractor {
         try {
             TimeUnit.MILLISECONDS.sleep(timeout);
         } catch (InterruptedException e) {
-            logger.error(e.getMessage());
+            logger.info(e.getMessage());
         }
     }
 

@@ -191,7 +191,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     final class TableId {
         Integer oid;
         String tableName;
-        List<Field> fields = new LinkedList<>();
+        List<Field> fields;
 
         public TableId(Integer oid, String tableName, List<Field> fields) {
             this.oid = oid;
