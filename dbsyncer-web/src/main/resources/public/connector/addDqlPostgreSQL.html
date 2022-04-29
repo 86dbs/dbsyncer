@@ -56,14 +56,11 @@
                    type="checkbox">
         </div>
         <label class="col-sm-2 control-label">插件</label>
-        <div class="col-sm-4"
-             th:if="${#maps.isEmpty(connector?.config?.properties) or not #maps.containsKey(connector?.config?.properties, 'pluginName')}">
-            <input class="form-control" maxlength="32" name="pluginName" th:value="'test_decoding'" type="text"/>
-        </div>
-        <div class="col-sm-4"
-             th:if="${not #maps.isEmpty(connector?.config?.properties) and #maps.containsKey(connector?.config?.properties, 'pluginName')}">
-            <input class="form-control" maxlength="32" name="pluginName"
-                   th:value="${connector?.config?.properties?.pluginName}" type="text"/>
+        <div class="col-sm-4">
+            <select class="form-control select-control" name="pluginName">
+                <option value="pgoutput" th:selected="${connector?.config?.properties?.pluginName eq 'pgoutput'}">pgoutput</option>
+                <option value="test_decoding" th:selected="${connector?.config?.properties?.pluginName eq 'test_decoding'}">test_decoding</option>
+            </select>
         </div>
     </div>
     <div class="form-group">
@@ -83,6 +80,8 @@
                 offColor: "info",
                 size: "normal"
             });
+            // 初始化select插件
+            initSelectIndex($(".select-control"), 1);
         })
     </script>
 </div>
