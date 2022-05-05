@@ -1,12 +1,12 @@
 package org.dbsyncer.connector.sql;
 
-import org.dbsyncer.connector.config.PageSqlConfig;
+import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 
 public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
 
     @Override
-    public String getPageSql(PageSqlConfig config) {
+    public String getPageSql(PageSql config) {
         return config.getQuerySql() + DatabaseConstant.POSTGRESQL_PAGE_SQL;
     }
 

@@ -2,8 +2,8 @@ package org.dbsyncer.parser.util;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.Field;
-import org.dbsyncer.connector.config.Filter;
+import org.dbsyncer.connector.model.Field;
+import org.dbsyncer.connector.model.Filter;
 import org.dbsyncer.parser.model.Convert;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;

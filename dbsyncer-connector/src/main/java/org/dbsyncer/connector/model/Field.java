@@ -1,4 +1,4 @@
-package org.dbsyncer.connector.config;
+package org.dbsyncer.connector.model;
 
 import org.dbsyncer.common.util.JsonUtil;
 

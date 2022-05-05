@@ -1,7 +1,7 @@
 package org.dbsyncer.connector;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.Field;
+import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 
 import java.util.List;

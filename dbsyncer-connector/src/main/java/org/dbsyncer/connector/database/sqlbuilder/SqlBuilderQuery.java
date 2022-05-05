@@ -1,8 +1,8 @@
 package org.dbsyncer.connector.database.sqlbuilder;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.Field;
-import org.dbsyncer.connector.config.PageSqlConfig;
+import org.dbsyncer.connector.model.Field;
+import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
 import org.dbsyncer.connector.database.AbstractSqlBuilder;
 import org.dbsyncer.connector.database.Database;
@@ -20,7 +20,7 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
     public String buildSql(SqlBuilderConfig config) {
         // 分页语句
         Database database = config.getDatabase();
-        return database.getPageSql(new PageSqlConfig(buildQuerySql(config), config.getPk()));
+        return database.getPageSql(new PageSql(buildQuerySql(config), config.getPk()));
     }
 
     @Override

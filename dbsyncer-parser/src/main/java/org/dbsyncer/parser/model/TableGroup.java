@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.connector.config.Table;
+import org.dbsyncer.connector.model.Table;
 
 import java.util.List;
 import java.util.Map;
