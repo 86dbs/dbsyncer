@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <div class="form-group">
+        <label class="col-sm-2 control-label">监听路径<i class="fa fa-question-circle fa_gray" aria-hidden="true"
+                                                     title="监听的文件路径"></i> <strong
+                class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-4">
+            <input class="form-control" name="fileDir" type="text" maxlength="512" dbsyncer-valid="require"
+                   th:value="${connector?.config?.fileDir}?:'/soft'"/>
+        </div>
+        <div class="col-sm-6"></div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">schema <i class="fa fa-question-circle fa_gray" aria-hidden="true"
+                                                        title="支持11种字段类型。name字段名, typeName类型名称, type类型编码, pk是否为主键"></i><strong
+                class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-9">
+            <textarea id="schema" name="schema" class="form-control dbsyncer_textarea_resize_none" maxlength="4096"
+                      dbsyncer-valid="require" rows="20" th:text="${connector?.config?.schema}"></textarea>
+        </div>
+        <div class="col-sm-1">
+            <button type="button" class="btn btn-default" onclick="format()">
+                <span class="fa fa-magic"></span>美化
+            </button>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        function format() {
+            const $text = $("#schema");
+            if ("" == $text.text()) {
+                const data = [
+                    {"name": "id", "typeName": "String", "type": 12, "pk": true},
+                    {"name": "age", "typeName": "Integer", "type": 4},
+                    {"name": "count", "typeName": "Long", "type": -5},
+                    {"name": "type", "typeName": "Short", "type": 5},
+                    {"name": "money", "typeName": "Float", "type": 6},
+                    {"name": "score", "typeName": "Double", "type": 8},
+                    {"name": "status", "typeName": "Boolean", "type": -7},
+                    // {"name":"photo","typeName":"byte[]","type":-2},
+                    {"name": "create_date", "typeName": "Date", "type": 91},
+                    {"name": "time", "typeName": "Time", "type": 92},
+                    {"name": "update_time", "typeName": "Timestamp", "type": 93}
+                ];
+                $text.val(JSON.stringify(data, null, 4));
+                return;
+            }
+            $text.val(JSON.stringify(JSON.parse($text.text()), null, 4));
+        }
+
+        $(function () {
+            format();
+        })
+    </script>
+</div>
+
+</html>

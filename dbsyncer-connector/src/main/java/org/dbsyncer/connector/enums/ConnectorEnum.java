@@ -5,8 +5,10 @@ import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.ESConfig;
+import org.dbsyncer.connector.config.FileConfig;
 import org.dbsyncer.connector.config.KafkaConfig;
 import org.dbsyncer.connector.es.ESConnector;
+import org.dbsyncer.connector.file.FileConnector;
 import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.mysql.MysqlConnector;
 import org.dbsyncer.connector.oracle.OracleConnector;
@@ -50,6 +52,10 @@ public enum ConnectorEnum {
      * Kafka 连接器
      */
     KAFKA("Kafka", new KafkaConnector(), KafkaConfig.class),
+    /**
+     * File 连接器
+     */
+    FILE("File", new FileConnector(), FileConfig.class),
     /**
      * DqlMysql 连接器
      */
