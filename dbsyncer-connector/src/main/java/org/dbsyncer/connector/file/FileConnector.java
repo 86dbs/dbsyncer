@@ -1,6 +1,8 @@
 package org.dbsyncer.connector.file;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.LineIterator;
 import org.dbsyncer.common.column.Lexer;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -23,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -85,12 +88,18 @@ public final class FileConnector extends AbstractConnector implements Connector<
     @Override
     public long getCount(FileConnectorMapper connectorMapper, Map<String, String> command) {
         AtomicLong count = new AtomicLong();
+        FileReader reader = null;
         try {
-            String file = command.get(FILE_PATH);
-            List<String> lines = FileUtils.readLines(new File(file), Charset.defaultCharset());
-            count.addAndGet(lines.size());
+            reader = new FileReader(new File(command.get(FILE_PATH)));
+            LineIterator lineIterator = IOUtils.lineIterator(reader);
+            while (lineIterator.hasNext()) {
+                lineIterator.next();
+                count.addAndGet(1);
+            }
         } catch (IOException e) {
             throw new ConnectorException(e.getCause());
+        } finally {
+            IOUtils.closeQuietly(reader);
         }
         return count.get();
     }
