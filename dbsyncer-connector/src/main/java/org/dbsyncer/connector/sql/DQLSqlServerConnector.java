@@ -2,7 +2,7 @@ package org.dbsyncer.connector.sql;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.config.PageSqlConfig;
+import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +12,7 @@ public final class DQLSqlServerConnector extends AbstractDQLConnector {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public String getPageSql(PageSqlConfig config) {
+    public String getPageSql(PageSql config) {
         if (StringUtil.isBlank(config.getPk())) {
             logger.error("Table primary key can not be empty.");
             throw new ConnectorException("Table primary key can not be empty.");

@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.flush.model;
 
-import org.dbsyncer.connector.config.Field;
+import org.dbsyncer.connector.model.Field;
 
 import java.util.List;
 import java.util.Map;

@@ -1,12 +1,12 @@
-package org.dbsyncer.connector.config;
+package org.dbsyncer.connector.model;
 
-public class PageSqlConfig {
+public class PageSql {
 
     private String querySql;
 
     private String pk;
 
-    public PageSqlConfig(String querySql, String pk) {
+    public PageSql(String querySql, String pk) {
         this.querySql = querySql;
         this.pk = pk;
     }

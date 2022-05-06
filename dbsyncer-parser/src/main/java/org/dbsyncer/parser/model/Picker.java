@@ -1,7 +1,7 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.config.Field;
+import org.dbsyncer.connector.model.Field;
 
 import java.util.*;
 

@@ -1,22 +1,23 @@
 package org.dbsyncer.connector.config;
 
 import org.dbsyncer.connector.database.Database;
+import org.dbsyncer.connector.model.Field;
 
 import java.util.List;
 
 public class SqlBuilderConfig {
 
-    private Database    database;
+    private Database database;
     // 表名
-    private String      tableName;
+    private String tableName;
     // 主键
-    private String      pk;
+    private String pk;
     // 字段
     private List<Field> fields;
     // 过滤条件
-    private String      queryFilter;
+    private String queryFilter;
     // 引号
-    private String      quotation;
+    private String quotation;
 
     public SqlBuilderConfig(String name, String pk) {
         this.tableName = name;

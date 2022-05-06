@@ -2,7 +2,7 @@ package org.dbsyncer.connector.database.setter;
 
 import org.dbsyncer.connector.database.AbstractSetter;
 
-import java.util.Date;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;

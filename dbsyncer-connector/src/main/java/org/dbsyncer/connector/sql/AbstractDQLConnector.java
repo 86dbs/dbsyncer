@@ -6,6 +6,10 @@ import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
+import org.dbsyncer.connector.model.Filter;
+import org.dbsyncer.connector.model.MetaInfo;
+import org.dbsyncer.connector.model.PageSql;
+import org.dbsyncer.connector.model.Table;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,7 +70,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         }
         String quotation = buildSqlWithQuotation();
         String pk = findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
-        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(new PageSqlConfig(querySql, pk)));
+        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(new PageSql(querySql, pk)));
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();

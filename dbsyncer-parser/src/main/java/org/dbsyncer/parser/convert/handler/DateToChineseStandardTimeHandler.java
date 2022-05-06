@@ -3,7 +3,7 @@ package org.dbsyncer.parser.convert.handler;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.parser.convert.AbstractHandler;
 
-import java.util.Date;
+import java.sql.Date;
 
 /**
  * Date转中国标准时间

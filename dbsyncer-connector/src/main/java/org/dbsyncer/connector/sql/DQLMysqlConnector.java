@@ -1,7 +1,7 @@
 package org.dbsyncer.connector.sql;
 
 import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.PageSqlConfig;
+import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 
 import java.util.Map;
@@ -9,7 +9,7 @@ import java.util.Map;
 public final class DQLMysqlConnector extends AbstractDQLConnector {
 
     @Override
-    public String getPageSql(PageSqlConfig config) {
+    public String getPageSql(PageSql config) {
         return config.getQuerySql() + DatabaseConstant.MYSQL_PAGE_SQL;
     }
 
