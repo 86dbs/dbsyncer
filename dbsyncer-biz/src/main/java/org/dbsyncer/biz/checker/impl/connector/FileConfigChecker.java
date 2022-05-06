@@ -1,9 +1,7 @@
 package org.dbsyncer.biz.checker.impl.connector;
 
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.config.FileConfig;
-import org.dbsyncer.connector.model.FileSchema;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -21,11 +19,14 @@ public class FileConfigChecker implements ConnectorConfigChecker<FileConfig> {
     public void modify(FileConfig fileConfig, Map<String, String> params) {
         String fileDir = params.get("fileDir");
         String schema = params.get("schema");
+        String separator = params.get("separator");
         Assert.hasText(fileDir, "fileDir is empty.");
         Assert.hasText(schema, "schema is empty.");
+        Assert.hasText(schema, "separator is empty.");
 
         fileConfig.setFileDir(fileDir);
-        fileConfig.setFileSchema(JsonUtil.jsonToArray(schema, FileSchema.class));
+        fileConfig.setSeparator(separator);
+        fileConfig.setSchema(schema);
     }
 
 }

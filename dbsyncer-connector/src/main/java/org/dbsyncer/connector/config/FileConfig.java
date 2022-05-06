@@ -1,9 +1,5 @@
 package org.dbsyncer.connector.config;
 
-import org.dbsyncer.connector.model.FileSchema;
-
-import java.util.List;
-
 /**
  * @author AE86
  * @version 1.0.0
@@ -17,9 +13,14 @@ public class FileConfig extends ConnectorConfig {
     private String fileDir;
 
     /**
+     * 分隔符
+     */
+    private String separator;
+
+    /**
      * 文件描述信息
      */
-    private List<FileSchema> fileSchema;
+    private String schema;
 
     public String getFileDir() {
         return fileDir;
@@ -29,11 +30,19 @@ public class FileConfig extends ConnectorConfig {
         this.fileDir = fileDir;
     }
 
-    public List<FileSchema> getFileSchema() {
-        return fileSchema;
+    public String getSeparator() {
+        return separator;
     }
 
-    public void setFileSchema(List<FileSchema> fileSchema) {
-        this.fileSchema = fileSchema;
+    public void setSeparator(String separator) {
+        this.separator = separator;
+    }
+
+    public String getSchema() {
+        return schema;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
     }
 }

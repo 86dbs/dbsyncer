@@ -14,10 +14,6 @@ public class FileSchema {
      */
     private String fileName;
     /**
-     * 分割符
-     */
-    private String separator;
-    /**
      * 字段信息
      */
     private List<Field> fields;
@@ -28,14 +24,6 @@ public class FileSchema {
 
     public void setFileName(String fileName) {
         this.fileName = fileName;
-    }
-
-    public String getSeparator() {
-        return separator;
-    }
-
-    public void setSeparator(String separator) {
-        this.separator = separator;
     }
 
     public List<Field> getFields() {

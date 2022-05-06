@@ -1,21 +1,33 @@
 package org.dbsyncer.connector.file;
 
+import org.apache.commons.io.FileUtils;
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
+import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.FileConfig;
+import org.dbsyncer.connector.config.ReaderConfig;
+import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.model.FileSchema;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
@@ -39,7 +51,7 @@ public final class FileConnector extends AbstractConnector implements Connector<
 
     @Override
     public boolean isAlive(FileConnectorMapper connectorMapper) {
-        return true;
+        return connectorMapper.getConnection().exists();
     }
 
     @Override
@@ -51,18 +63,19 @@ public final class FileConnector extends AbstractConnector implements Connector<
             logger.error(e.getMessage());
             localIP = "127.0.0.1";
         }
-        return String.format("%s-%s", config.getConnectorType(), localIP, config.getFileDir());
+        return String.format("%s-%s", localIP, config.getFileDir());
     }
 
     @Override
     public List<Table> getTable(FileConnectorMapper connectorMapper) {
-        return connectorMapper.getConfig().getFileSchema().stream().map(fileSchema -> new Table(fileSchema.getFileName())).collect(Collectors.toList());
+        return getFileSchema(connectorMapper).stream().map(fileSchema -> new Table(fileSchema.getFileName())).collect(Collectors.toList());
     }
 
     @Override
     public MetaInfo getMetaInfo(FileConnectorMapper connectorMapper, String tableName) {
         MetaInfo metaInfo = new MetaInfo();
-        for (FileSchema fileSchema : connectorMapper.getConfig().getFileSchema()) {
+        List<FileSchema> fileSchemas = getFileSchema(connectorMapper);
+        for (FileSchema fileSchema : fileSchemas) {
             if (StringUtil.equals(fileSchema.getFileName(), tableName)) {
                 metaInfo.setColumn(fileSchema.getFields());
                 break;
@@ -73,7 +86,23 @@ public final class FileConnector extends AbstractConnector implements Connector<
 
     @Override
     public long getCount(FileConnectorMapper connectorMapper, Map<String, String> command) {
-        return 0;
+        AtomicLong count = new AtomicLong();
+        final String fileDir = connectorMapper.getConfig().getFileDir();
+        getFileSchema(connectorMapper).forEach(fileSchema -> {
+            StringBuilder file = new StringBuilder(fileDir);
+            if (!StringUtil.endsWith(fileDir, File.separator)) {
+                file.append(File.separator);
+            }
+            file.append(fileSchema.getFileName());
+
+            try {
+                List<String> lines = FileUtils.readLines(new File(file.toString()), Charset.defaultCharset());
+                count.addAndGet(lines.size());
+            } catch (IOException e) {
+                throw new ConnectorException(e.getCause());
+            }
+        });
+        return count.get();
     }
 
     @Override
@@ -88,11 +117,17 @@ public final class FileConnector extends AbstractConnector implements Connector<
 
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        return null;
+        return Collections.EMPTY_MAP;
     }
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        return null;
+        return Collections.EMPTY_MAP;
+    }
+
+    private List<FileSchema> getFileSchema(FileConnectorMapper connectorMapper) {
+        List<FileSchema> fileSchemas = JsonUtil.jsonToArray(connectorMapper.getConfig().getSchema(), FileSchema.class);
+        Assert.notEmpty(fileSchemas, "The schema is empty.");
+        return fileSchemas;
     }
 }
