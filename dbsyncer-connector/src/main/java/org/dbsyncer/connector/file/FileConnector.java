@@ -1,10 +1,12 @@
 package org.dbsyncer.connector.file;
 
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.model.FileSchema;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
 import org.slf4j.Logger;
@@ -14,6 +16,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author AE86
@@ -36,7 +39,7 @@ public final class FileConnector extends AbstractConnector implements Connector<
 
     @Override
     public boolean isAlive(FileConnectorMapper connectorMapper) {
-        return false;
+        return true;
     }
 
     @Override
@@ -53,12 +56,19 @@ public final class FileConnector extends AbstractConnector implements Connector<
 
     @Override
     public List<Table> getTable(FileConnectorMapper connectorMapper) {
-        return null;
+        return connectorMapper.getConfig().getFileSchema().stream().map(fileSchema -> new Table(fileSchema.getFileName())).collect(Collectors.toList());
     }
 
     @Override
     public MetaInfo getMetaInfo(FileConnectorMapper connectorMapper, String tableName) {
-        return null;
+        MetaInfo metaInfo = new MetaInfo();
+        for (FileSchema fileSchema : connectorMapper.getConfig().getFileSchema()) {
+            if (StringUtil.equals(fileSchema.getFileName(), tableName)) {
+                metaInfo.setColumn(fileSchema.getFields());
+                break;
+            }
+        }
+        return metaInfo;
     }
 
     @Override
