@@ -1,11 +1,9 @@
 package org.dbsyncer.connector.file;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.dbsyncer.common.column.Lexer;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.AbstractConnector;
@@ -29,7 +27,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -107,42 +104,34 @@ public final class FileConnector extends AbstractConnector implements Connector<
     @Override
     public Result reader(FileConnectorMapper connectorMapper, ReaderConfig config) {
         List<Map<String, Object>> list = new ArrayList<>();
+        FileReader reader = null;
         try {
-            String filePath = config.getCommand().get(FILE_PATH);
-            List<String> lines = FileUtils.readLines(new File(filePath), Charset.defaultCharset());
+            FileConfig fileConfig = connectorMapper.getConfig();
+            FileSchema fileSchema = getFileSchema(connectorMapper, config.getCommand().get(FILE_NAME));
+            final List<Field> fields = fileSchema.getFields();
+            Assert.notEmpty(fields, "The fields of file schema is empty.");
+            char separator = fileConfig.getSeparator().charAt(0);
 
-            if (!CollectionUtils.isEmpty(lines)) {
-                int total = lines.size();
-                int from = (config.getPageIndex() - 1) * config.getPageSize();
-                int to = from + config.getPageSize() > total ? total : from + config.getPageSize();
-
-                if (from < total) {
-                    FileConfig fileConfig = connectorMapper.getConfig();
-                    FileSchema fileSchema = getFileSchema(connectorMapper, config.getCommand().get(FILE_NAME));
-                    final List<Field> fields = fileSchema.getFields();
-                    Assert.notEmpty(fields, "The fields of file schema is empty.");
-
-                    lines.subList(from, to).forEach(line -> {
-                        Map<String, Object> row = new LinkedHashMap<>();
-                        List<String> columns = new LinkedList<>();
-                        Lexer lexer = new Lexer(line);
-                        while (lexer.hasNext()) {
-                            columns.add(lexer.nextToken(fileConfig.getSeparator().charAt(0)));
-                        }
-
-                        int columnSize = columns.size();
-                        int fieldSize = fields.size();
-                        for (int i = 0; i < fieldSize; i++) {
-                            if (i < columnSize) {
-                                row.put(fields.get(i).getName(), resolver.resolveValue(fields.get(i).getTypeName(), columns.get(i)));
-                            }
-                        }
-                        list.add(row);
-                    });
+            reader = new FileReader(new File(config.getCommand().get(FILE_PATH)));
+            LineIterator lineIterator = IOUtils.lineIterator(reader);
+            int from = (config.getPageIndex() - 1) * config.getPageSize();
+            int to = from + config.getPageSize();
+            AtomicLong count = new AtomicLong();
+            while (lineIterator.hasNext()) {
+                if (count.get() >= from && count.get() < to) {
+                    list.add(parseRow(fields, separator, lineIterator.next()));
+                } else {
+                    lineIterator.next();
+                }
+                count.addAndGet(1);
+                if (count.get() >= to) {
+                    break;
                 }
             }
         } catch (IOException e) {
             throw new ConnectorException(e.getCause());
+        } finally {
+            IOUtils.closeQuietly(reader);
         }
         return new Result(list);
     }
@@ -170,6 +159,24 @@ public final class FileConnector extends AbstractConnector implements Connector<
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         return Collections.EMPTY_MAP;
+    }
+
+    private Map<String, Object> parseRow(List<Field> fields, char separator, String next) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        List<String> columns = new LinkedList<>();
+        Lexer lexer = new Lexer(next);
+        while (lexer.hasNext()) {
+            columns.add(lexer.nextToken(separator));
+        }
+
+        int columnSize = columns.size();
+        int fieldSize = fields.size();
+        for (int i = 0; i < fieldSize; i++) {
+            if (i < columnSize) {
+                row.put(fields.get(i).getName(), resolver.resolveValue(fields.get(i).getTypeName(), columns.get(i)));
+            }
+        }
+        return row;
     }
 
     private FileSchema getFileSchema(FileConnectorMapper connectorMapper, String tableName) {

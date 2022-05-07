@@ -284,7 +284,14 @@ public class ParserFactory implements Parser {
             // 6、更新结果
             flush(task, writer);
 
-            // 7、更新分页数
+            // 7、判断尾页
+            if (data.size() < pageSize) {
+                params.clear();
+                logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
+                break;
+            }
+
+            // 8、更新分页数
             params.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(++pageIndex));
         }
     }
