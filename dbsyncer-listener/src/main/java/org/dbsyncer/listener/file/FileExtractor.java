@@ -1,11 +1,15 @@
 package org.dbsyncer.listener.file;
 
 import org.apache.commons.io.IOUtils;
+import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.connector.config.FileConfig;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.file.FileConnectorMapper;
+import org.dbsyncer.connector.file.FileResolver;
+import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.FileSchema;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.ListenerException;
@@ -15,8 +19,8 @@ import org.springframework.util.Assert;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.file.*;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,14 +36,17 @@ public class FileExtractor extends AbstractExtractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    private static final byte[] buffer = new byte[4096];
+    private static final String POS_PREFIX = "pos_";
+    private static final String CHARSET_NAME = "UTF-8";
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
     private FileConnectorMapper connectorMapper;
     private WatchService watchService;
     private Worker worker;
-    private Map<String, RandomAccessFile> pipeline = new ConcurrentHashMap<>();
-    private static final byte[] buffer = new byte[4096];
-    private static final String POS_PREFIX = "pos_";
+    private Map<String, PipelineResolver> pipeline = new ConcurrentHashMap<>();
+    private final FileResolver fileResolver = new FileResolver();
+    private char separator;
 
     @Override
     public void start() {
@@ -55,10 +62,16 @@ public class FileExtractor extends AbstractExtractor {
             final String mapperCacheKey = connectorFactory.getConnector(connectorMapper).getConnectorMapperCacheKey(connectorConfig);
             connected = true;
 
+            separator = config.getSeparator();
             initPipeline(config.getFileDir(), config.getSchema());
             watchService = FileSystems.getDefault().newWatchService();
             Path p = Paths.get(config.getFileDir());
             p.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
+
+            for (String fileName : pipeline.keySet()) {
+                parseEvent(fileName);
+            }
+            forceFlushEvent();
 
             worker = new Worker();
             worker.setName(new StringBuilder("file-parser-").append(mapperCacheKey).append("_").append(RandomUtil.nextInt(1, 100)).toString());
@@ -77,19 +90,19 @@ public class FileExtractor extends AbstractExtractor {
         List<FileSchema> fileSchemas = JsonUtil.jsonToArray(schema, FileSchema.class);
         Assert.notEmpty(fileSchemas, "found not file schema.");
         for (FileSchema fileSchema : fileSchemas) {
-            String file = fileDir.concat(fileSchema.getFileName());
+            String fileName = fileSchema.getFileName();
+            String file = fileDir.concat(fileName);
             Assert.isTrue(new File(file).exists(), String.format("found not file '%s'", file));
 
-            final RandomAccessFile raf = new RandomAccessFile(file, "r");
-            pipeline.put(fileSchema.getFileName(), raf);
-
-            final String filePosKey = getFilePosKey(fileSchema.getFileName());
+            final BufferedRandomAccessFile raf = new BufferedRandomAccessFile(file, "r");
+            final String filePosKey = getFilePosKey(fileName);
             if (snapshot.containsKey(filePosKey)) {
                 raf.seek(NumberUtil.toLong(snapshot.get(filePosKey), 0L));
-                continue;
+            } else {
+                raf.seek(raf.length());
             }
 
-            raf.seek(raf.length());
+            pipeline.put(fileName, new PipelineResolver(fileSchema.getFields(), raf));
         }
     }
 
@@ -109,7 +122,7 @@ public class FileExtractor extends AbstractExtractor {
 
     private void closePipelineAndWatch() {
         try {
-            pipeline.values().forEach(raf -> IOUtils.closeQuietly(raf));
+            pipeline.values().forEach(pipelineResolver -> IOUtils.closeQuietly(pipelineResolver.getRaf()));
             pipeline.clear();
 
             if (null != watchService) {
@@ -126,16 +139,17 @@ public class FileExtractor extends AbstractExtractor {
 
     private void parseEvent(String fileName) throws IOException {
         if (pipeline.containsKey(fileName)) {
-            final RandomAccessFile raf = pipeline.get(fileName);
+            PipelineResolver pipelineResolver = pipeline.get(fileName);
+            final BufferedRandomAccessFile raf = pipelineResolver.getRaf();
 
             int len = 0;
             while (-1 != len) {
+                // TODO 多行出现粘包，需手动readline
                 len = raf.read(buffer);
                 if (0 < len) {
-                    // TODO 解析 line
-                    logger.info("offset:{}, len:{}", raf.getFilePointer(), len);
-                    logger.info(new String(buffer, 1, len, "UTF-8"));
-                    continue;
+                    String lines = new String(buffer, 0, len, CHARSET_NAME);
+                    List<Object> row = fileResolver.parseList(pipelineResolver.getFields(), separator, lines);
+                    changedEvent(new RowChangedEvent(fileName, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, row));
                 }
             }
 
@@ -144,20 +158,43 @@ public class FileExtractor extends AbstractExtractor {
         }
     }
 
+    final class PipelineResolver {
+
+        List<Field> fields;
+        BufferedRandomAccessFile raf;
+
+        public PipelineResolver(List<Field> fields, BufferedRandomAccessFile raf) {
+            this.fields = fields;
+            this.raf = raf;
+        }
+
+        public List<Field> getFields() {
+            return fields;
+        }
+
+        public BufferedRandomAccessFile getRaf() {
+            return raf;
+        }
+    }
+
     final class Worker extends Thread {
 
         @Override
         public void run() {
             while (!isInterrupted() && connected) {
+                WatchKey watchKey = null;
                 try {
-                    WatchKey watchKey = watchService.take();
+                    watchKey = watchService.take();
                     List<WatchEvent<?>> watchEvents = watchKey.pollEvents();
                     for (WatchEvent<?> event : watchEvents) {
                         parseEvent(event.context().toString());
                     }
-                    watchKey.reset();
                 } catch (Exception e) {
                     logger.error(e.getMessage());
+                } finally {
+                    if (null != watchKey) {
+                        watchKey.reset();
+                    }
                 }
             }
         }

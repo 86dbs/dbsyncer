@@ -39,7 +39,7 @@ public class FileConfigChecker implements ConnectorConfigChecker<FileConfig> {
         }
 
         fileConfig.setFileDir(fileDir);
-        fileConfig.setSeparator(separator);
+        fileConfig.setSeparator(separator.charAt(0));
         fileConfig.setSchema(schema);
     }
 

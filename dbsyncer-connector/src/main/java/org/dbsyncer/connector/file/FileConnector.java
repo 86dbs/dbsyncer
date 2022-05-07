@@ -2,7 +2,6 @@ package org.dbsyncer.connector.file;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
-import org.dbsyncer.common.column.Lexer;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -42,7 +41,7 @@ public final class FileConnector extends AbstractConnector implements Connector<
 
     private static final String FILE_NAME = "fileName";
     private static final String FILE_PATH = "filePath";
-    private final FileResolver resolver = new FileResolver();
+    private final FileResolver fileResolver = new FileResolver();
 
     @Override
     public ConnectorMapper connect(FileConfig config) {
@@ -110,7 +109,7 @@ public final class FileConnector extends AbstractConnector implements Connector<
             FileSchema fileSchema = getFileSchema(connectorMapper, config.getCommand().get(FILE_NAME));
             final List<Field> fields = fileSchema.getFields();
             Assert.notEmpty(fields, "The fields of file schema is empty.");
-            char separator = fileConfig.getSeparator().charAt(0);
+            final char separator = fileConfig.getSeparator();
 
             reader = new FileReader(new File(config.getCommand().get(FILE_PATH)));
             LineIterator lineIterator = IOUtils.lineIterator(reader);
@@ -119,7 +118,7 @@ public final class FileConnector extends AbstractConnector implements Connector<
             AtomicLong count = new AtomicLong();
             while (lineIterator.hasNext()) {
                 if (count.get() >= from && count.get() < to) {
-                    list.add(parseRow(fields, separator, lineIterator.next()));
+                    list.add(fileResolver.parseMap(fields, separator, lineIterator.next()));
                 } else {
                     lineIterator.next();
                 }
@@ -159,24 +158,6 @@ public final class FileConnector extends AbstractConnector implements Connector<
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         return Collections.EMPTY_MAP;
-    }
-
-    private Map<String, Object> parseRow(List<Field> fields, char separator, String next) {
-        Map<String, Object> row = new LinkedHashMap<>();
-        List<String> columns = new LinkedList<>();
-        Lexer lexer = new Lexer(next);
-        while (lexer.hasNext()) {
-            columns.add(lexer.nextToken(separator));
-        }
-
-        int columnSize = columns.size();
-        int fieldSize = fields.size();
-        for (int i = 0; i < fieldSize; i++) {
-            if (i < columnSize) {
-                row.put(fields.get(i).getName(), resolver.resolveValue(fields.get(i).getTypeName(), columns.get(i)));
-            }
-        }
-        return row;
     }
 
     private FileSchema getFileSchema(FileConnectorMapper connectorMapper, String tableName) {

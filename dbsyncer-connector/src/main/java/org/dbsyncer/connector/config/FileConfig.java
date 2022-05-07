@@ -15,7 +15,7 @@ public class FileConfig extends ConnectorConfig {
     /**
      * 分隔符
      */
-    private String separator;
+    private char separator;
 
     /**
      * 文件描述信息
@@ -30,11 +30,11 @@ public class FileConfig extends ConnectorConfig {
         this.fileDir = fileDir;
     }
 
-    public String getSeparator() {
+    public char getSeparator() {
         return separator;
     }
 
-    public void setSeparator(String separator) {
+    public void setSeparator(char separator) {
         this.separator = separator;
     }
 

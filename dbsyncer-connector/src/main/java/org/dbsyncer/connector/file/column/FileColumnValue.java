@@ -64,11 +64,15 @@ public class FileColumnValue implements ColumnValue {
 
     @Override
     public Timestamp asTimestamp() {
-        if (NumberUtil.isCreatable(value)) {
-            return new Timestamp(asLong());
-        }
+        try {
+            if (NumberUtil.isCreatable(value)) {
+                return new Timestamp(asLong());
+            }
 
-        return DateFormatUtil.stringToTimestamp(value);
+            return DateFormatUtil.stringToTimestamp(value);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Override
