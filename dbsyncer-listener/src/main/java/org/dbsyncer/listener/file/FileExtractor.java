@@ -143,13 +143,10 @@ public class FileExtractor extends AbstractExtractor {
         if (pipeline.containsKey(fileName)) {
             PipelineResolver pipelineResolver = pipeline.get(fileName);
             final RandomAccessFile raf = pipelineResolver.raf;
-            logger.info("{}", raf.getFilePointer());
 
             final String filePosKey = getFilePosKey(fileName);
             String line;
             while (null != (line = pipelineResolver.readLine())) {
-                logger.info(line);
-                logger.info("{}", raf.getFilePointer());
                 snapshot.put(filePosKey, String.valueOf(raf.getFilePointer()));
                 List<Object> row = fileResolver.parseList(pipelineResolver.fields, separator, line);
                 changedEvent(new RowChangedEvent(fileName, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, row));
@@ -181,17 +178,13 @@ public class FileExtractor extends AbstractExtractor {
             raf.read(b);
 
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            boolean ifCRLF = false;
             int read = 0;
-            while (!ifCRLF) {
-                for (int i = 0; i < b.length; i++) {
-                    read++;
-                    if (b[i] == '\n' || b[i] == '\r') {
-                        ifCRLF = true;
-                        break;
-                    }
-                    stream.write(b[i]);
+            for (int i = 0; i < b.length; i++) {
+                read++;
+                if (b[i] == '\n' || b[i] == '\r') {
+                    break;
                 }
+                stream.write(b[i]);
             }
             b = Arrays.copyOfRange(b, read, b.length);
 
