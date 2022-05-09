@@ -1,7 +1,12 @@
 @CHARSET "UTF-8";
 
-.dbsyncer_img {border-radius: 5%; border:1px solid rosybrown;}
-.dbsyncer_pointer{cursor:pointer;}
+.dbsyncer_img {
+    border-radius: 5%;
+}
+
+.dbsyncer_pointer {
+    cursor: pointer;
+}
 .dbsyncer_over_hidden{overflow: hidden; text-overflow:ellipsis; white-space: nowrap;}
 .dbsyncer_block {border:1px solid #ffffff;}
 .dbsyncer_block:hover { cursor:pointer; background-color: #EBEBEB; -moz-box-shadow:2px 2px 5px; -webkit-box-shadow:2px 2px 5px; box-shadow:2px 2px 5px; -webkit-transform:translateY(-3px); transform: translateY(-3px); transition: all 0.3s ease-in-out;}

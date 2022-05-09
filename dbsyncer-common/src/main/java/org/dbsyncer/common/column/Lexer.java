@@ -1,4 +1,4 @@
-package org.dbsyncer.listener.postgresql.column;
+package org.dbsyncer.common.column;
 
 /**
  * @author AE86

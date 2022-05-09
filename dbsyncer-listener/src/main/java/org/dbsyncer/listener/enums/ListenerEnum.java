@@ -3,6 +3,7 @@ package org.dbsyncer.listener.enums;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.listener.ListenerException;
+import org.dbsyncer.listener.file.FileExtractor;
 import org.dbsyncer.listener.kafka.KafkaExtractor;
 import org.dbsyncer.listener.mysql.MysqlExtractor;
 import org.dbsyncer.listener.oracle.OracleExtractor;
@@ -40,6 +41,10 @@ public enum ListenerEnum {
      * log_Kafka
      */
     LOG_KAFKA(ListenerTypeEnum.LOG.getType() + ConnectorEnum.KAFKA.getType(), KafkaExtractor.class),
+    /**
+     * log_File
+     */
+    LOG_FILE(ListenerTypeEnum.LOG.getType() + ConnectorEnum.FILE.getType(), FileExtractor.class),
     /**
      * timing_Mysql
      */

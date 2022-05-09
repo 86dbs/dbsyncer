@@ -1,6 +1,7 @@
 package org.dbsyncer.connector;
 
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.model.MetaInfo;
@@ -118,8 +119,15 @@ public class ConnectorFactory implements DisposableBean {
         String sType = sourceCommandConfig.getType();
         String tType = targetCommandConfig.getType();
         Map<String, String> map = new HashMap<>();
-        map.putAll(getConnector(sType).getSourceCommand(sourceCommandConfig));
-        map.putAll(getConnector(tType).getTargetCommand(targetCommandConfig));
+        Map sCmd = getConnector(sType).getSourceCommand(sourceCommandConfig);
+        if (!CollectionUtils.isEmpty(sCmd)) {
+            map.putAll(sCmd);
+        }
+
+        Map tCmd = getConnector(tType).getTargetCommand(targetCommandConfig);
+        if (!CollectionUtils.isEmpty(sCmd)) {
+            map.putAll(tCmd);
+        }
         return map;
     }
 

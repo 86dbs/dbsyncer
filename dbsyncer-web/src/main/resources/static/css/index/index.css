@@ -1,6 +1,13 @@
 @charset "UTF-8";
-.connectorList img{width: 65px;height: 55px; border-radius: 20%;}
-.connectorList .well-sign-red{color: #ff0000;}
+.connectorList img {
+    width: 65px;
+    height: 65px;
+    border-radius: 20%;
+}
+
+.connectorList .well-sign-red {
+    color: #ff0000;
+}
 .connectorList .well-sign-operation{color: #999999; border-radius: 50%; }
 .connectorList .well-sign-operation:hover {color: #333333;}
 .connectorList .dropdown {position: absolute; right:16px; top: 0px;}

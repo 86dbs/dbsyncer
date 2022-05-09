@@ -13,6 +13,11 @@ public class FileConfig extends ConnectorConfig {
     private String fileDir;
 
     /**
+     * 分隔符
+     */
+    private char separator;
+
+    /**
      * 文件描述信息
      */
     private String schema;
@@ -23,6 +28,14 @@ public class FileConfig extends ConnectorConfig {
 
     public void setFileDir(String fileDir) {
         this.fileDir = fileDir;
+    }
+
+    public char getSeparator() {
+        return separator;
+    }
+
+    public void setSeparator(char separator) {
+        this.separator = separator;
     }
 
     public String getSchema() {

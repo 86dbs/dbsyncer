@@ -71,6 +71,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
 
     @Override
     public long getCount(DatabaseConnectorMapper connectorMapper, Map<String, String> command) {
+        if (CollectionUtils.isEmpty(command)) {
+            return 0L;
+        }
+
         // 1、获取select SQL
         String queryCountSql = command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
         Assert.hasText(queryCountSql, "查询总数语句不能为空.");
