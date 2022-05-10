@@ -5,6 +5,7 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.RandomUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.FileConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.file.FileConnectorMapper;
@@ -148,8 +149,10 @@ public class FileExtractor extends AbstractExtractor {
             String line;
             while (null != (line = pipelineResolver.readLine())) {
                 snapshot.put(filePosKey, String.valueOf(raf.getFilePointer()));
-                List<Object> row = fileResolver.parseList(pipelineResolver.fields, separator, line);
-                changedEvent(new RowChangedEvent(fileName, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, row));
+                if (StringUtil.isNotBlank(line)) {
+                    List<Object> row = fileResolver.parseList(pipelineResolver.fields, separator, line);
+                    changedEvent(new RowChangedEvent(fileName, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, row));
+                }
             }
 
         }
