@@ -169,14 +169,14 @@ public final class FileConnector extends AbstractConnector implements Connector<
         Result result = new Result();
         FileChannel fileChannel = null;
         try {
-            fileChannel = connectorMapper.getFileChannel(config.getTableName());
+            fileChannel = connectorMapper.getFileChannel(config.getCommand().get(FILE_NAME));
             for (Map row: data) {
                 List<String> array = new ArrayList<>();
                 fields.forEach(field -> {
                     Object o = row.get(field.getName());
                     array.add(null != o ? String.valueOf(o) : "");
                 });
-                String join = StringUtil.join(array.toArray(), separator);
+                String join = StringUtil.join(array.toArray(), separator).concat("\n");
                 fileChannel.write(ByteBuffer.wrap(join.getBytes()));
             }
         } catch (Exception e) {
@@ -212,7 +212,9 @@ public final class FileConnector extends AbstractConnector implements Connector<
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        return Collections.EMPTY_MAP;
+        Map<String, String> command = new HashMap<>();
+        command.put(FILE_NAME, commandConfig.getTable().getName());
+        return command;
     }
 
 }
