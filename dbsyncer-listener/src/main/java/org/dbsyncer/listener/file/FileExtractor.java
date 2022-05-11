@@ -66,7 +66,7 @@ public class FileExtractor extends AbstractExtractor {
             connected = true;
 
             separator = config.getSeparator();
-            initPipeline(config.getFileDir(), config.getSchema());
+            initPipeline(config.getFileDir());
             watchService = FileSystems.getDefault().newWatchService();
             Path p = Paths.get(config.getFileDir());
             p.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
@@ -89,10 +89,8 @@ public class FileExtractor extends AbstractExtractor {
         }
     }
 
-    private void initPipeline(String fileDir, String schema) throws IOException {
-        List<FileSchema> fileSchemas = JsonUtil.jsonToArray(schema, FileSchema.class);
-        Assert.notEmpty(fileSchemas, "found not file schema.");
-        for (FileSchema fileSchema : fileSchemas) {
+    private void initPipeline(String fileDir) throws IOException {
+        for (FileSchema fileSchema : connectorMapper.getFileSchemaList()) {
             String fileName = fileSchema.getFileName();
             String file = fileDir.concat(fileName);
             Assert.isTrue(new File(file).exists(), String.format("found not file '%s'", file));
