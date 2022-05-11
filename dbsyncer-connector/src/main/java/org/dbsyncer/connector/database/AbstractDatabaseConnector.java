@@ -143,10 +143,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
                     })
             );
         } catch (Exception e) {
-            if (!config.isForceUpdate()) {
-                result.addFailData(data);
-                result.getError().append(e.getMessage());
-            }
+            result.addFailData(data);
+            result.getError().append(e.getMessage());
         }
 
         if (null != execute) {

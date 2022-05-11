@@ -76,7 +76,7 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     protected void pull(WriterResponse response) {
         ConnectorMapper targetConnectorMapper = connectorFactory.connect(getConnectorConfig(response.getTargetConnectorId()));
         Result result = parserFactory.writeBatch(new BatchWriter(targetConnectorMapper, response.getCommand(), response.getTargetTableName(), response.getEvent(),
-                response.getFields(), response.getDataList(), BATCH_SIZE, false));
+                response.getFields(), response.getDataList(), BATCH_SIZE, true));
         flushStrategy.flushIncrementData(response.getMetaId(), result, response.getEvent());
     }
 
