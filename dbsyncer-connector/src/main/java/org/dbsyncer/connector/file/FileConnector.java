@@ -21,14 +21,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -48,11 +43,7 @@ public final class FileConnector extends AbstractConnector implements Connector<
 
     @Override
     public ConnectorMapper connect(FileConfig config) {
-        try {
-            return new FileConnectorMapper(config);
-        } catch (FileNotFoundException e) {
-            throw new ConnectorException(e.getCause());
-        }
+        return new FileConnectorMapper(config);
     }
 
     @Override
@@ -167,30 +158,25 @@ public final class FileConnector extends AbstractConnector implements Connector<
         final String separator = new String(new char[] {connectorMapper.getConfig().getSeparator()});
 
         Result result = new Result();
-        FileChannel fileChannel = null;
+        OutputStream output = null;
         try {
-            fileChannel = connectorMapper.getFileChannel(config.getCommand().get(FILE_NAME));
-            for (Map row: data) {
+            final String filePath = connectorMapper.getFilePath(config.getCommand().get(FILE_NAME));
+            output = new FileOutputStream(filePath, true);
+            List<String> lines = data.stream().map(row -> {
                 List<String> array = new ArrayList<>();
                 fields.forEach(field -> {
                     Object o = row.get(field.getName());
                     array.add(null != o ? String.valueOf(o) : "");
                 });
-                String join = StringUtil.join(array.toArray(), separator).concat("\n");
-                fileChannel.write(ByteBuffer.wrap(join.getBytes()));
-            }
+                return StringUtil.join(array.toArray(), separator);
+            }).collect(Collectors.toList());
+            IOUtils.writeLines(lines, null, output, "UTF-8");
         } catch (Exception e) {
             result.addFailData(data);
             result.getError().append(e.getMessage()).append(System.lineSeparator());
             logger.error(e.getMessage());
-        }finally {
-            if(null != fileChannel){
-                try {
-                    fileChannel.close();
-                } catch (IOException e) {
-                    logger.error(e.getMessage());
-                }
-            }
+        } finally {
+            IOUtils.closeQuietly(output);
         }
         return result;
     }

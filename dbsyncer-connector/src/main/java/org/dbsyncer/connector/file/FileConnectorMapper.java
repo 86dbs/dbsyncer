@@ -5,15 +5,9 @@ import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.FileConfig;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.FileSchema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,13 +19,11 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class FileConnectorMapper implements ConnectorMapper<FileConfig, String> {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     private FileConfig config;
     private List<FileSchema> fileSchemaList;
     private Map<String, FileResolver> fileSchemaMap = new ConcurrentHashMap<>();
 
-    public FileConnectorMapper(FileConfig config) throws FileNotFoundException {
+    public FileConnectorMapper(FileConfig config) {
         this.config = config;
         fileSchemaList = JsonUtil.jsonToArray(config.getSchema(), FileSchema.class);
         Assert.notEmpty(fileSchemaList, "The schema is empty.");
@@ -56,7 +48,7 @@ public final class FileConnectorMapper implements ConnectorMapper<FileConfig, St
 
     @Override
     public void close() {
-        fileSchemaMap.values().forEach(fileResolver -> fileResolver.close());
+        fileSchemaMap.clear();
     }
 
     public List<FileSchema> getFileSchemaList() {
@@ -69,12 +61,6 @@ public final class FileConnectorMapper implements ConnectorMapper<FileConfig, St
         return fileResolver.fileSchema;
     }
 
-    public FileChannel getFileChannel(String tableName) {
-        FileResolver fileResolver = fileSchemaMap.get(tableName);
-        Assert.notNull(fileResolver, String.format("can not find fileSchema by tableName '%s'", tableName));
-        return fileResolver.raf.getChannel();
-    }
-
     public String getFilePath(String tableName) {
         FileResolver fileResolver = fileSchemaMap.get(tableName);
         Assert.notNull(fileResolver, String.format("can not find fileSchema by tableName '%s'", tableName));
@@ -82,28 +68,14 @@ public final class FileConnectorMapper implements ConnectorMapper<FileConfig, St
     }
 
     class FileResolver {
-
         FileSchema fileSchema;
-        RandomAccessFile raf;
         String filePath;
 
-        public FileResolver(FileSchema fileSchema) throws FileNotFoundException {
+        public FileResolver(FileSchema fileSchema) {
             this.fileSchema = fileSchema;
             this.filePath = config.getFileDir().concat(fileSchema.getFileName());
             File file = new File(filePath);
             Assert.isTrue(file.exists(), String.format("found not file '%s'", filePath));
-            this.raf = new RandomAccessFile(file, "rw");
         }
-
-        public void close(){
-            if(null != raf){
-                try {
-                    raf.close();
-                } catch (IOException e) {
-                    logger.error(e.getMessage());
-                }
-            }
-        }
-
     }
 }
