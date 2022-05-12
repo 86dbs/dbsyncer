@@ -56,7 +56,7 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
             <tr>
                 <td>File</td>
                 <td>✔</td>
-                <td>开发中</td>
+                <td>✔</td>
                 <td>*.txt, *.unl</td>
             </tr>
             <tr>
@@ -148,12 +148,9 @@ grant change notification to 你的账号
 * [JDK - 1.8.0_40](https://www.oracle.com/java/technologies/jdk8-downloads.html)（推荐版本以上）
 * [Maven - 3.3.9](https://dlcdn.apache.org/maven/maven-3/)（推荐版本以上）
 
-## 设计
+## 🎨设计
 #### 架构图
 <img src="http://assets.processon.com/chart_image/5d63b0bce4b0ac2b61877037.png" />
-
-#### 流程图
-<img src="http://assets.processon.com/chart_image/612c4138e401fd1fb696cbcc.png" />
 
 ## ⚙️手动编译
 > 先确保环境已安装JDK和Maven
