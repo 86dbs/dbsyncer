@@ -143,18 +143,18 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
                     })
             );
         } catch (Exception e) {
-            if (!config.isForceUpdate()) {
-                result.addFailData(data);
-                result.getError().append(e.getMessage());
-            }
+            result.addFailData(data);
+            result.getError().append(e.getMessage());
         }
 
         if (null != execute) {
             int batchSize = execute.length;
             for (int i = 0; i < batchSize; i++) {
                 if (execute[i] == 0) {
-                    if(config.isForceUpdate()){
+                    if (config.isForceUpdate()) {
                         forceUpdate(result, connectorMapper, config, pkField, data.get(i));
+                    } else {
+                        result.getFailData().add(data.get(i));
                     }
                     continue;
                 }
