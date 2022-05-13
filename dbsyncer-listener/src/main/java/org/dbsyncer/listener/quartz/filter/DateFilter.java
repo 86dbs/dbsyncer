@@ -3,7 +3,8 @@ package org.dbsyncer.listener.quartz.filter;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.listener.quartz.QuartzFilter;
 
-import java.util.Date;
+import java.sql.Date;
+import java.time.LocalDate;
 
 public class DateFilter implements QuartzFilter {
 
@@ -15,7 +16,7 @@ public class DateFilter implements QuartzFilter {
 
     @Override
     public Object getObject() {
-        return new Date();
+        return Date.valueOf(LocalDate.now());
     }
 
     @Override

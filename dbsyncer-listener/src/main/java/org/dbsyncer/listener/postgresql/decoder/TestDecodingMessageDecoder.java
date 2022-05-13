@@ -3,9 +3,7 @@ package org.dbsyncer.listener.postgresql.decoder;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.postgresql.AbstractMessageDecoder;
-import org.dbsyncer.listener.postgresql.column.ColumnValueResolver;
-import org.dbsyncer.listener.postgresql.column.Lexer;
-import org.dbsyncer.listener.postgresql.column.TestDecodingColumnValue;
+import org.dbsyncer.common.column.Lexer;
 import org.dbsyncer.listener.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
@@ -25,7 +23,6 @@ import java.util.List;
 public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private static final ColumnValueResolver resolver = new ColumnValueResolver();
 
     @Override
     public RowChangedEvent processMessage(ByteBuffer buffer) {
@@ -77,7 +74,7 @@ public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
             String type = parseType(lexer);
             lexer.skip(1);
             String value = parseValue(lexer);
-            data.add(resolver.resolveValue(type, new TestDecodingColumnValue(value)));
+            data.add(resolveValue(type, value));
         }
 
         RowChangedEvent event = null;

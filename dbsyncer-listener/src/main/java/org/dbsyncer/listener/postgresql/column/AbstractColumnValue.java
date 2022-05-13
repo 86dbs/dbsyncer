@@ -10,7 +10,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.time.*;
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.ZoneOffset;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractColumnValue implements ColumnValue {
@@ -18,8 +23,8 @@ public abstract class AbstractColumnValue implements ColumnValue {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public LocalDate asLocalDate() {
-        return DateFormatUtil.stringToLocalDate(asString());
+    public Date asDate() {
+        return DateFormatUtil.stringToDate(asString());
     }
 
     @Override
@@ -48,13 +53,13 @@ public abstract class AbstractColumnValue implements ColumnValue {
     }
 
     @Override
-    public Instant asInstant() {
+    public Timestamp asTimestamp() {
         if ("infinity".equals(asString())) {
-            return toInstantFromMicros(PGStatement.DATE_POSITIVE_INFINITY);
+            return Timestamp.from(toInstantFromMicros(PGStatement.DATE_POSITIVE_INFINITY));
         } else if ("-infinity".equals(asString())) {
-            return toInstantFromMicros(PGStatement.DATE_NEGATIVE_INFINITY);
+            return Timestamp.from(toInstantFromMicros(PGStatement.DATE_NEGATIVE_INFINITY));
         }
-        return DateFormatUtil.timestampToInstant(asString());
+        return DateFormatUtil.stringToTimestamp(asString());
     }
 
     @Override

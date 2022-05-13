@@ -13,6 +13,10 @@ import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
 import org.dbsyncer.connector.enums.TableTypeEnum;
+import org.dbsyncer.connector.model.Field;
+import org.dbsyncer.connector.model.Filter;
+import org.dbsyncer.connector.model.MetaInfo;
+import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +71,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
 
     @Override
     public long getCount(DatabaseConnectorMapper connectorMapper, Map<String, String> command) {
+        if (CollectionUtils.isEmpty(command)) {
+            return 0L;
+        }
+
         // 1、获取select SQL
         String queryCountSql = command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
         Assert.hasText(queryCountSql, "查询总数语句不能为空.");
@@ -85,8 +93,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         Collections.addAll(config.getArgs(), getPageArgs(config.getPageIndex(), config.getPageSize()));
 
         // 3、执行SQL
-        List<Map<String, Object>> list = connectorMapper.execute(
-                databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
+        List<Map<String, Object>> list = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
 
         // 4、返回结果集
         return new Result(list);
@@ -136,17 +143,19 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
                     })
             );
         } catch (Exception e) {
-            if (!config.isForceUpdate()) {
-                result.addFailData(data);
-                result.getError().append(e.getMessage());
-            }
+            result.addFailData(data);
+            result.getError().append(e.getMessage());
         }
 
         if (null != execute) {
             int batchSize = execute.length;
             for (int i = 0; i < batchSize; i++) {
                 if (execute[i] == 0) {
-                    forceUpdate(result, connectorMapper, config, pkField, data.get(i));
+                    if (config.isForceUpdate()) {
+                        forceUpdate(result, connectorMapper, config, pkField, data.get(i));
+                    } else {
+                        result.getFailData().add(data.get(i));
+                    }
                     continue;
                 }
                 result.getSuccessData().add(data.get(i));

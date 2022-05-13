@@ -2,8 +2,8 @@ package org.dbsyncer.connector.postgresql;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.PageSqlConfig;
-import org.dbsyncer.connector.config.Table;
+import org.dbsyncer.connector.model.PageSql;
+import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
@@ -33,7 +33,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getPageSql(PageSqlConfig config) {
+    public String getPageSql(PageSql config) {
         return config.getQuerySql() + DatabaseConstant.POSTGRESQL_PAGE_SQL;
     }
 

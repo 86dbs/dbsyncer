@@ -31,7 +31,7 @@ public abstract class AbstractExtractor implements Extractor {
     protected ListenerConfig listenerConfig;
     protected Map<String, String> snapshot;
     protected Set<String> filterTable;
-    private List<Event> watcher = new CopyOnWriteArrayList<>();
+    private final List<Event> watcher = new CopyOnWriteArrayList<>();
 
     @Override
     public void addListener(Event event) {
@@ -48,7 +48,7 @@ public abstract class AbstractExtractor implements Extractor {
     @Override
     public void changedEvent(RowChangedEvent event) {
         if(null != event){
-            taskExecutor.execute(() -> watcher.forEach(w -> w.changedEvent(event)));
+            watcher.forEach(w -> w.changedEvent(event));
         }
     }
 
@@ -77,7 +77,7 @@ public abstract class AbstractExtractor implements Extractor {
         try {
             TimeUnit.MILLISECONDS.sleep(timeout);
         } catch (InterruptedException e) {
-            logger.error(e.getMessage());
+            logger.info(e.getMessage());
         }
     }
 

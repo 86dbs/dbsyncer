@@ -1,7 +1,7 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.config.Table;
+import org.dbsyncer.connector.model.Table;
 
 import java.util.List;
 

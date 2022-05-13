@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.connector.config.Field;
+import org.dbsyncer.connector.model.Field;
 
 /**
  * 字段映射关系

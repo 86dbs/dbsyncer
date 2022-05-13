@@ -22,7 +22,7 @@ public class StorageBufferActuator extends AbstractBufferActuator<StorageRequest
 
     @Override
     protected long getPeriod() {
-        return 3000;
+        return 500;
     }
 
     @Override

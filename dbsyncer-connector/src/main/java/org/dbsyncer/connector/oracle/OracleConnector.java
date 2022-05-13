@@ -1,8 +1,8 @@
 package org.dbsyncer.connector.oracle;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.config.PageSqlConfig;
-import org.dbsyncer.connector.config.Table;
+import org.dbsyncer.connector.model.PageSql;
+import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
@@ -25,7 +25,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getPageSql(PageSqlConfig config) {
+    public String getPageSql(PageSql config) {
         return DatabaseConstant.ORACLE_PAGE_SQL_START + config.getQuerySql() + DatabaseConstant.ORACLE_PAGE_SQL_END;
     }
 

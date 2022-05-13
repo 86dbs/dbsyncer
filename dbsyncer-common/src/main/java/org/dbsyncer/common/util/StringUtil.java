@@ -24,6 +24,14 @@ public abstract class StringUtil {
         return StringUtils.contains(seq, searchSeq);
     }
 
+    public static boolean endsWith(final CharSequence str, final CharSequence suffix) {
+        return StringUtils.endsWith(str, suffix);
+    }
+
+    public static String trim(String text) {
+        return StringUtils.trim(text);
+    }
+
     public static String replace(String text, String searchString, String replacement) {
         return StringUtils.replace(text, searchString, replacement);
     }

@@ -5,13 +5,19 @@ import java.util.List;
 
 public class Result<T> {
 
-    // 成功数据
-    private List<T> successData = new LinkedList<>();
+    /**
+     * 成功数据
+     */
+    private final List<T> successData = new LinkedList<>();
 
-    // 错误数据
-    private List<T> failData = new LinkedList<>();
+    /**
+     * 错误数据
+     */
+    private final List<T> failData = new LinkedList<>();
 
-    // 错误日志
+    /**
+     * 错误日志
+     */
     private StringBuffer error = new StringBuffer();
 
     private final Object LOCK = new Object();

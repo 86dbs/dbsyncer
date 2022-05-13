@@ -11,7 +11,8 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -28,9 +29,11 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     @Autowired
     private ScheduledTaskService scheduledTaskService;
 
-    private Queue<Request> buffer = new ConcurrentLinkedQueue();
+    private static final int CAPACITY = 10_0000;
 
-    private Queue<Request> temp = new ConcurrentLinkedQueue();
+    private Queue<Request> buffer = new LinkedBlockingQueue(CAPACITY);
+
+    private Queue<Request> temp = new LinkedBlockingQueue(CAPACITY);
 
     private final Lock lock = new ReentrantLock(true);
 
@@ -82,11 +85,24 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     @Override
     public void offer(BufferRequest request) {
+        int size = 0;
         if (running) {
             temp.offer((Request) request);
-            return;
+            size = temp.size();
+        } else {
+            buffer.offer((Request) request);
+            size = temp.size();
         }
-        buffer.offer((Request) request);
+
+        // TODO 临时解决方案：生产大于消费问题，限制生产速度
+        if (size >= CAPACITY) {
+            try {
+                TimeUnit.SECONDS.sleep(30);
+                logger.warn("当前任务队列大小{}已达上限{}，请稍等{}秒", size, CAPACITY, 30);
+            } catch (InterruptedException e) {
+                logger.error(e.getMessage());
+            }
+        }
     }
 
     @Override

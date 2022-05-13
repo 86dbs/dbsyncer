@@ -13,6 +13,9 @@ import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.connector.model.Field;
+import org.dbsyncer.connector.model.MetaInfo;
+import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.ParserEnum;
@@ -281,7 +284,14 @@ public class ParserFactory implements Parser {
             // 6、更新结果
             flush(task, writer);
 
-            // 7、更新分页数
+            // 7、判断尾页
+            if (data.size() < pageSize) {
+                params.clear();
+                logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
+                break;
+            }
+
+            // 8、更新分页数
             params.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(++pageIndex));
         }
     }

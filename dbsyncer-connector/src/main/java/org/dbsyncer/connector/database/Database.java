@@ -1,6 +1,6 @@
 package org.dbsyncer.connector.database;
 
-import org.dbsyncer.connector.config.PageSqlConfig;
+import org.dbsyncer.connector.model.PageSql;
 
 public interface Database {
 
@@ -10,7 +10,7 @@ public interface Database {
      * @param config
      * @return
      */
-    String getPageSql(PageSqlConfig config);
+    String getPageSql(PageSql config);
 
     /**
      * 获取分页SQL

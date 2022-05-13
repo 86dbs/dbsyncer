@@ -1,12 +1,12 @@
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.connector.config.Field;
 import org.dbsyncer.connector.config.KafkaConfig;
 import org.dbsyncer.connector.enums.KafkaFieldTypeEnum;
 import org.dbsyncer.connector.kafka.KafkaClient;
 import org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer;
 import org.dbsyncer.connector.kafka.serialization.MapToJsonSerializer;
+import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.util.KafkaUtil;
 import org.junit.After;
 import org.junit.Before;

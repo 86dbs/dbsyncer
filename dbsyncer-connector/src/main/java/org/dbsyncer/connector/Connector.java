@@ -2,6 +2,8 @@ package org.dbsyncer.connector;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.model.MetaInfo;
+import org.dbsyncer.connector.model.Table;
 
 import java.util.List;
 import java.util.Map;

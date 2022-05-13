@@ -1,5 +1,8 @@
 package org.dbsyncer.connector.config;
 
+import org.dbsyncer.connector.model.Filter;
+import org.dbsyncer.connector.model.Table;
+
 import java.util.List;
 
 /**

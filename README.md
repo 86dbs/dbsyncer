@@ -1,5 +1,5 @@
 ## 介绍
-DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServer、PostgreSQL、Elasticsearch(ES)、Kafka、SQL(Mysql/Oracle/SqlServer/PostgreSQL)等同步场景。支持上传插件自定义同步转换业务，提供监控全量和增量数据统计图、应用性能预警等。
+DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServer、PostgreSQL、Elasticsearch(ES)、Kafka、File、SQL(Mysql/Oracle/SqlServer/PostgreSQL)等同步场景。支持上传插件自定义同步转换业务，提供监控全量和增量数据统计图、应用性能预警等。
 
 > 特点
 * 组合驱动，自定义库同步到库组合，关系型数据库与非关系型之间组合，任意搭配表同步映射关系
@@ -54,13 +54,19 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
                 <td>2.10-0.9.0.0以上</td>
             </tr>
             <tr>
+                <td>File</td>
+                <td>✔</td>
+                <td>✔</td>
+                <td>*.txt, *.unl</td>
+            </tr>
+            <tr>
                 <td>SQL</td>
                 <td>✔</td>
                 <td></td>
                 <td>支持以上关系型数据库</td>
             </tr>
             <tr>
-                <td>最近计划</td>
+                <td>后期计划</td>
                 <td colspan="3">Redis</td>
             </tr>
         </tbody>
@@ -79,8 +85,7 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
 
 ##### Mysql
 * Dump Binlog二进制日志。Master同步Slave, 创建IO线程读取数据，写入relaylog，基于消息订阅捕获增量数据。
-* 配置
-> 修改my.ini文件
+> 修改my.ini文件，重启服务
 ```bash
 #服务唯一ID
 server_id=1
@@ -95,7 +100,6 @@ replicate-do-db=test
 
 ##### Oracle
 * CDN注册订阅。监听增删改事件，得到rowid，根据rowid执行SQL查询，得到变化数据。
-* 配置
 > 授予账号监听权限, 同时要求目标源表必须定义一个长度为18的varchar字段，通过接收rowid值实现增删改操作。
 ```roomsql
 grant change notification to 你的账号
@@ -103,16 +107,25 @@ grant change notification to 你的账号
 
 ##### SqlServer
 * SQL Server 2008提供了内建的方法变更数据捕获（Change Data Capture 即CDC）以实现异步跟踪用户表的数据修改。
-* 配置
 > 要求2008版本以上, 启动代理服务（Agent服务）, 连接账号具有 sysadmin 固定服务器角色或 db_owner 固定数据库角色的成员身份。对于所有其他用户，具有源表SELECT 权限；如果已定义捕获实例的访问控制角色，则还要求具有该数据库角色的成员身份。
+
+##### PostgreSQL
+* 通过复制流技术监听增量事件，基于内置插件pgoutput、test_decoding实现解析wal日志
+> 修改postgresql.conf文件，重启服务
+``` shell
+wal_level=logical
+```
+
+##### File
+* 监听文件修改时间得到变化文件，通过文件偏移量读取最新数据
+> [监听文件实现方案](https://gitee.com/ghi/dbsyncer/issues/I55EP5)
 
 ##### ES
 * 定时获取增量数据。
-* 配置
 > 账号具有访问权限。
 
 ##### 日志
-> 建议Mysql和SqlServer都使用日志
+> 建议Mysql、SqlServer、PostgreSQL都使用日志
 
 ![日志](https://images.gitee.com/uploads/images/2021/0906/181036_1f9a9e78_376718.png "日志.png")
 
@@ -137,6 +150,10 @@ grant change notification to 你的账号
 
 ### 上传插件
 ![上传插件](https://images.gitee.com/uploads/images/2021/0806/232643_9b1f3f64_376718.png "上传插件.png")
+
+## 🎨设计
+#### 架构图
+<img src="http://assets.processon.com/chart_image/5d63b0bce4b0ac2b61877037.png" />
 
 ## 🔗开发依赖
 * [JDK - 1.8.0_40](https://www.oracle.com/java/technologies/jdk8-downloads.html)（推荐版本以上）

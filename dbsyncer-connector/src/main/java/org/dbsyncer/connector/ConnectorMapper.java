@@ -23,9 +23,7 @@ public interface ConnectorMapper<K, V> {
 
     K getConfig();
 
-    default V getConnection() throws Exception {
-        throw new ConnectorException("Unsupported method.");
-    }
+    V getConnection() throws Exception;
 
-    default void close() {}
+    void close();
 }
