@@ -48,7 +48,6 @@ public abstract class AbstractExtractor implements Extractor {
     @Override
     public void changedEvent(RowChangedEvent event) {
         if(null != event){
-//            taskExecutor.execute(() ->);
             watcher.forEach(w -> w.changedEvent(event));
         }
     }

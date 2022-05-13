@@ -22,7 +22,7 @@ public class StorageBufferActuator extends AbstractBufferActuator<StorageRequest
 
     @Override
     protected long getPeriod() {
-        return 300;
+        return 500;
     }
 
     @Override
@@ -38,7 +38,7 @@ public class StorageBufferActuator extends AbstractBufferActuator<StorageRequest
     @Override
     protected void partition(StorageRequest request, StorageResponse response) {
         response.setMetaId(request.getMetaId());
-        response.getDataList().add(request.getMap());
+        response.getDataList().addAll(request.getList());
     }
 
     @Override

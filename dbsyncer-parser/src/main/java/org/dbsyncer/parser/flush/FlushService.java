@@ -3,6 +3,7 @@ package org.dbsyncer.parser.flush;
 import org.springframework.scheduling.annotation.Async;
 
 import java.util.List;
+import java.util.Map;
 
 public interface FlushService {
 
@@ -23,6 +24,6 @@ public interface FlushService {
      * @param success
      * @param data
      */
-//    @Async("taskExecutor")
-    void asyncWrite(String metaId, String event, boolean success, List<Object> data, String error);
+    @Async("taskExecutor")
+    void asyncWrite(String metaId, String event, boolean success, List<Map> data, String error);
 }
