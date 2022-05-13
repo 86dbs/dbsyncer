@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -28,9 +28,9 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     @Autowired
     private ScheduledTaskService scheduledTaskService;
 
-    private Queue<Request> buffer = new ConcurrentLinkedQueue();
+    private Queue<Request> buffer = new LinkedBlockingQueue();
 
-    private Queue<Request> temp = new ConcurrentLinkedQueue();
+    private Queue<Request> temp = new LinkedBlockingQueue();
 
     private final Lock lock = new ReentrantLock(true);
 
@@ -81,12 +81,13 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     protected abstract void pull(Response response);
 
     @Override
-    public void offer(BufferRequest request) {
+    public int offer(BufferRequest request) {
         if (running) {
             temp.offer((Request) request);
-            return;
+            return temp.size();
         }
         buffer.offer((Request) request);
+        return buffer.size();
     }
 
     @Override

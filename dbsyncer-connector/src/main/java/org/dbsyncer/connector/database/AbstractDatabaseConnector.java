@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.database;
 
+import org.dbsyncer.common.model.FailData;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -143,8 +144,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
                     })
             );
         } catch (Exception e) {
-            result.addFailData(data);
-            result.getError().append(e.getMessage());
+            result.addFailData(new FailData(data, e.getMessage()));
         }
 
         if (null != execute) {

@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.flush.impl;
 
 import com.alibaba.fastjson.JSONException;
+import org.dbsyncer.common.model.FailData;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.FlushService;
@@ -19,7 +20,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 持久化
@@ -55,10 +55,22 @@ public class FlushServiceImpl implements FlushService {
     }
 
     @Override
-    public void asyncWrite(String metaId, String event, boolean success, List<Map> data, String error) {
+    public void asyncWrite(String metaId, String event, boolean success, List<Object> data, String error) {
+        if (!success) {
+            data.forEach(r -> {
+                FailData failData = (FailData) r;
+                doWrite(metaId, event, success, failData.getFailList(), failData.getError());
+            });
+        } else {
+            doWrite(metaId, event, success, data, error);
+        }
+    }
+
+    private void doWrite(String metaId, String event, boolean success, List<Object> data, String error) {
         long now = Instant.now().toEpochMilli();
-        List<Map> list = data.parallelStream().map(r -> {
-            Map<String, Object> params = new HashMap();
+        data.parallelStream().forEach(r -> {
+            Map<String, Object> params = new HashMap<>();
+
             params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             params.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
             params.put(ConfigConstant.DATA_EVENT, event);
@@ -70,10 +82,15 @@ public class FlushServiceImpl implements FlushService {
                 params.put(ConfigConstant.CONFIG_MODEL_JSON, r.toString());
             }
             params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
-            return params;
-        }).collect(Collectors.toList());
-
-        storageBufferActuator.offer(new StorageRequest(metaId, list));
+            int count = storageBufferActuator.offer(new StorageRequest(metaId, params));
+            if (count > 400000) {
+                try {
+                    Thread.sleep(30000);
+                    logger.info("==================>全量同步 休眠30秒：{}", count);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
-
 }

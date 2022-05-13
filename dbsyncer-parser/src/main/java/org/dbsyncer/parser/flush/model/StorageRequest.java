@@ -2,7 +2,6 @@ package org.dbsyncer.parser.flush.model;
 
 import org.dbsyncer.parser.flush.BufferRequest;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -14,18 +13,18 @@ public class StorageRequest implements BufferRequest {
 
     private String metaId;
 
-    private List<Map> list;
+    private Map<String, Object> map;
 
-    public StorageRequest(String metaId, List<Map> list) {
+    public StorageRequest(String metaId, Map<String, Object> map) {
         this.metaId = metaId;
-        this.list = list;
+        this.map = map;
     }
 
     public String getMetaId() {
         return metaId;
     }
 
-    public List<Map> getList() {
-        return list;
+    public Map<String, Object> getMap() {
+        return map;
     }
 }

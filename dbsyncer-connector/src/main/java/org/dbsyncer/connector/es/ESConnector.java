@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.es;
 
+import org.dbsyncer.common.model.FailData;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -8,7 +9,10 @@ import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.ESConfig;
+import org.dbsyncer.connector.config.ReaderConfig;
+import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ESFieldTypeEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
@@ -194,8 +198,9 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             result.addSuccessData(data);
         } catch (Exception e) {
             // 记录错误数据
-            result.addFailData(data);
-            result.getError().append(e.getMessage()).append(System.lineSeparator());
+//            result.addFailData(data);
+//            result.getError().append(e.getMessage()).append(System.lineSeparator());
+            result.addFailData(new FailData(data, e.getMessage()));
             logger.error(e.getMessage());
         }
         return result;

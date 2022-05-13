@@ -8,7 +8,10 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.config.ReaderConfig;
+import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
@@ -314,7 +317,17 @@ public class ParserFactory implements Parser {
         pluginFactory.convert(tableGroup.getPlugin(), eventName, data, target);
 
         // 4、写入缓冲执行器
-        writerBufferActuator.offer(new WriterRequest(tableGroup.getId(), target, mapping.getMetaId(), mapping.getTargetConnectorId(), event.getSourceTableName(), event.getTargetTableName(), eventName, picker.getTargetFields(), tableGroup.getCommand()));
+        int size = writerBufferActuator.offer(new WriterRequest(tableGroup.getId(), target, mapping.getMetaId(),
+                mapping.getTargetConnectorId(), event.getSourceTableName(), event.getTargetTableName(),
+                eventName, picker.getTargetFields(), tableGroup.getCommand()));
+        if (size >= 400000) {
+            try {
+                Thread.sleep(30000);
+                logger.info("暂停30秒：{}", size);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
@@ -362,7 +375,7 @@ public class ParserFactory implements Parser {
                     Result w = connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, data, forceUpdate));
                     result.addSuccessData(w.getSuccessData());
                     result.addFailData(w.getFailData());
-                    result.getError().append(w.getError());
+//                    result.getError().append(w.getError());
                 } catch (Exception e) {
                     logger.error(e.getMessage());
                 } finally {

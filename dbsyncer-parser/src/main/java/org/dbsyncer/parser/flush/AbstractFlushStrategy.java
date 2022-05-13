@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.cache.CacheService;
+import org.dbsyncer.common.model.FailData;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.parser.model.Meta;
@@ -43,7 +44,7 @@ public abstract class AbstractFlushStrategy implements FlushStrategy {
 
     protected void refreshTotal(String metaId, Result writer) {
         Meta meta = getMeta(metaId);
-        meta.getFail().getAndAdd(writer.getFailData().size());
+        meta.getFail().getAndAdd(getFailDataSize(writer));
         meta.getSuccess().getAndAdd(writer.getSuccessData().size());
     }
 
@@ -52,6 +53,14 @@ public abstract class AbstractFlushStrategy implements FlushStrategy {
         Meta meta = cacheService.get(metaId, Meta.class);
         Assert.notNull(meta, "Meta can not be null.");
         return meta;
+    }
+
+    protected int getFailDataSize(Result<Object> writer) {
+        int failCount = 0;
+        for (FailData<Object> failData : writer.getFailData()) {
+            failCount = failCount + failData.getFailList().size();
+        }
+        return failCount;
     }
 
 }

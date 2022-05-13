@@ -5,14 +5,20 @@ import java.util.List;
 
 public class Result<T> {
 
-    // 成功数据
-    private List<T> successData = new LinkedList<>();
+    /**
+     * 成功数据
+     */
+    private final List<T> successData = new LinkedList<>();
 
-    // 错误数据
-    private List<T> failData = new LinkedList<>();
+    /**
+     * 错误数据
+     */
+    private final List<FailData<T>> failData = new LinkedList<>();
 
-    // 错误日志
-    private StringBuffer error = new StringBuffer();
+    /**
+     * 错误日志
+     */
+    private final StringBuffer error = new StringBuffer();
 
     private final Object LOCK = new Object();
 
@@ -27,7 +33,7 @@ public class Result<T> {
         return successData;
     }
 
-    public List<T> getFailData() {
+    public List<FailData<T>> getFailData() {
         return failData;
     }
 
@@ -38,9 +44,9 @@ public class Result<T> {
     /**
      * 线程安全添加集合
      *
-     * @param failData
+     * @param failData 失败数据
      */
-    public void addFailData(List failData) {
+    public void addFailData(List<FailData<T>> failData) {
         synchronized (LOCK) {
             this.failData.addAll(failData);
         }
@@ -49,9 +55,20 @@ public class Result<T> {
     /**
      * 线程安全添加集合
      *
-     * @param successData
+     * @param failData 失败数据
      */
-    public void addSuccessData(List successData) {
+    public void addFailData(FailData<T> failData) {
+        synchronized (LOCK) {
+            this.failData.add(failData);
+        }
+    }
+
+    /**
+     * 线程安全添加集合
+     *
+     * @param successData 成功数据
+     */
+    public void addSuccessData(List<T> successData) {
         synchronized (LOCK) {
             this.successData.addAll(successData);
         }

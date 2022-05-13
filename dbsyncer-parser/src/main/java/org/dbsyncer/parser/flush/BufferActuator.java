@@ -7,6 +7,6 @@ package org.dbsyncer.parser.flush;
  */
 public interface BufferActuator {
 
-    void offer(BufferRequest request);
+    int offer(BufferRequest request);
 
 }
