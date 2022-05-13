@@ -3,7 +3,7 @@ package org.dbsyncer.connector.file;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
@@ -21,9 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -55,7 +53,20 @@ public final class FileConnector extends AbstractConnector implements Connector<
 
     @Override
     public boolean isAlive(FileConnectorMapper connectorMapper) {
-        return connectorMapper.getConnection().exists();
+        String fileDir = connectorMapper.getConnection();
+        boolean alive = new File(fileDir).exists();
+        if (!alive) {
+            logger.warn("can not find fileDir:{}", fileDir);
+            return false;
+        }
+        for (FileSchema fileSchema : connectorMapper.getFileSchemaList()) {
+            String filePath = connectorMapper.getFilePath(fileSchema.getFileName());
+            if (!new File(filePath).exists()) {
+                logger.warn("can not find file:{}", filePath);
+                alive = false;
+            }
+        }
+        return alive;
     }
 
     @Override
@@ -72,12 +83,12 @@ public final class FileConnector extends AbstractConnector implements Connector<
 
     @Override
     public List<Table> getTable(FileConnectorMapper connectorMapper) {
-        return getFileSchema(connectorMapper).stream().map(fileSchema -> new Table(fileSchema.getFileName())).collect(Collectors.toList());
+        return connectorMapper.getFileSchemaList().stream().map(fileSchema -> new Table(fileSchema.getFileName())).collect(Collectors.toList());
     }
 
     @Override
     public MetaInfo getMetaInfo(FileConnectorMapper connectorMapper, String tableName) {
-        FileSchema fileSchema = getFileSchema(connectorMapper, tableName);
+        FileSchema fileSchema = connectorMapper.getFileSchema(tableName);
         return new MetaInfo().setColumn(fileSchema.getFields());
     }
 
@@ -106,7 +117,7 @@ public final class FileConnector extends AbstractConnector implements Connector<
         FileReader reader = null;
         try {
             FileConfig fileConfig = connectorMapper.getConfig();
-            FileSchema fileSchema = getFileSchema(connectorMapper, config.getCommand().get(FILE_NAME));
+            FileSchema fileSchema = connectorMapper.getFileSchema(config.getCommand().get(FILE_NAME));
             final List<Field> fields = fileSchema.getFields();
             Assert.notEmpty(fields, "The fields of file schema is empty.");
             final char separator = fileConfig.getSeparator();
@@ -137,7 +148,37 @@ public final class FileConnector extends AbstractConnector implements Connector<
 
     @Override
     public Result writer(FileConnectorMapper connectorMapper, WriterBatchConfig config) {
-        return null;
+        List<Map> data = config.getData();
+        if (CollectionUtils.isEmpty(data)) {
+            logger.error("writer data can not be empty.");
+            throw new ConnectorException("writer data can not be empty.");
+        }
+
+        final List<Field> fields = config.getFields();
+        final String separator = new String(new char[] {connectorMapper.getConfig().getSeparator()});
+
+        Result result = new Result();
+        OutputStream output = null;
+        try {
+            final String filePath = connectorMapper.getFilePath(config.getCommand().get(FILE_NAME));
+            output = new FileOutputStream(filePath, true);
+            List<String> lines = data.stream().map(row -> {
+                List<String> array = new ArrayList<>();
+                fields.forEach(field -> {
+                    Object o = row.get(field.getName());
+                    array.add(null != o ? String.valueOf(o) : "");
+                });
+                return StringUtil.join(array.toArray(), separator);
+            }).collect(Collectors.toList());
+            IOUtils.writeLines(lines, null, output, "UTF-8");
+        } catch (Exception e) {
+            result.addFailData(data);
+            result.getError().append(e.getMessage()).append(System.lineSeparator());
+            logger.error(e.getMessage());
+        } finally {
+            IOUtils.closeQuietly(output);
+        }
+        return result;
     }
 
     @Override
@@ -157,22 +198,9 @@ public final class FileConnector extends AbstractConnector implements Connector<
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        return Collections.EMPTY_MAP;
+        Map<String, String> command = new HashMap<>();
+        command.put(FILE_NAME, commandConfig.getTable().getName());
+        return command;
     }
 
-    private FileSchema getFileSchema(FileConnectorMapper connectorMapper, String tableName) {
-        List<FileSchema> fileSchemaList = getFileSchema(connectorMapper);
-        for (FileSchema fileSchema : fileSchemaList) {
-            if (StringUtil.equals(fileSchema.getFileName(), tableName)) {
-                return fileSchema;
-            }
-        }
-        throw new ConnectorException(String.format("can not find fileSchema by tableName '%s'", tableName));
-    }
-
-    private List<FileSchema> getFileSchema(FileConnectorMapper connectorMapper) {
-        List<FileSchema> fileSchemas = JsonUtil.jsonToArray(connectorMapper.getConfig().getSchema(), FileSchema.class);
-        Assert.notEmpty(fileSchemas, "The schema is empty.");
-        return fileSchemas;
-    }
 }
