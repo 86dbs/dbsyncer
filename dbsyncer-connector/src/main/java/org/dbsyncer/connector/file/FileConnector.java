@@ -170,7 +170,7 @@ public final class FileConnector extends AbstractConnector implements Connector<
                 });
                 return StringUtil.join(array.toArray(), separator);
             }).collect(Collectors.toList());
-            IOUtils.writeLines(lines, null, output, "UTF-8");
+            IOUtils.writeLines(lines, System.lineSeparator(), output, "UTF-8");
         } catch (Exception e) {
             result.addFailData(data);
             result.getError().append(e.getMessage()).append(System.lineSeparator());
