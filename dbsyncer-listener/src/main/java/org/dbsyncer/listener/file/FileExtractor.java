@@ -209,6 +209,8 @@ public class FileExtractor extends AbstractExtractor {
                     for (WatchEvent<?> event : watchEvents) {
                         parseEvent(event.context().toString());
                     }
+                } catch (ClosedWatchServiceException e) {
+                    break;
                 } catch (Exception e) {
                     logger.error(e.getMessage());
                 } finally {

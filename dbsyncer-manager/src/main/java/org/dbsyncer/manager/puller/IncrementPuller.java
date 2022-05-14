@@ -82,7 +82,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
     @PostConstruct
     private void init() {
-        scheduledTaskService.start(10000, this);
+        scheduledTaskService.start(3000, this);
     }
 
     @Override
