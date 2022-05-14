@@ -2,6 +2,7 @@ package org.dbsyncer.parser.flush.impl;
 
 import com.alibaba.fastjson.JSONException;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.FlushService;
 import org.dbsyncer.parser.flush.model.StorageRequest;
@@ -35,6 +36,8 @@ public class FlushServiceImpl implements FlushService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    private static final int MAX_ERROR_LENGTH = 1000;
+
     @Autowired
     private StorageService storageService;
 
@@ -62,7 +65,7 @@ public class FlushServiceImpl implements FlushService {
             params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             params.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
             params.put(ConfigConstant.DATA_EVENT, event);
-            params.put(ConfigConstant.DATA_ERROR, error);
+            params.put(ConfigConstant.DATA_ERROR, StringUtil.substring(error, 0, MAX_ERROR_LENGTH));
             try {
                 params.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(r));
             } catch (JSONException e) {
