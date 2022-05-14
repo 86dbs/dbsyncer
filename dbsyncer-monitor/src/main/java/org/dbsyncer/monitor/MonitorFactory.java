@@ -1,5 +1,6 @@
 package org.dbsyncer.monitor;
 
+import org.dbsyncer.common.config.ThreadPoolConfig;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -17,7 +18,7 @@ import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
@@ -40,14 +41,12 @@ public class MonitorFactory implements Monitor {
     @Autowired
     private Manager manager;
 
+    @Qualifier("taskExecutor")
     @Autowired
     private Executor taskExecutor;
 
-    /**
-     * 工作线程池队列容量
-     */
-    @Value(value = "${dbsyncer.web.thread.pool.queue.capacity}")
-    private int queueCapacity;
+    @Autowired
+    private ThreadPoolConfig threadPoolConfig;
 
     @Override
     public Mapping getMapping(String mappingId) {
@@ -134,7 +133,7 @@ public class MonitorFactory implements Monitor {
         ThreadPoolExecutor pool = threadTask.getThreadPoolExecutor();
         BlockingQueue<Runnable> queue = pool.getQueue();
         report.setQueueUp(queue.size());
-        report.setQueueCapacity(queueCapacity);
+        report.setQueueCapacity(threadPoolConfig.getQueueCapacity());
         return report;
     }
 

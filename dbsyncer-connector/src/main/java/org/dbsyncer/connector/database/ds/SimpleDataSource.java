@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 
 public class SimpleDataSource implements DataSource, AutoCloseable {
 
-    private final BlockingQueue<SimpleConnection> pool = new LinkedBlockingQueue<>(2000);
+    private final BlockingQueue<SimpleConnection> pool = new LinkedBlockingQueue<>(500);
     private long lifeTime = 60 * 1000;
     private String driverClassName;
     private String url;
