@@ -91,7 +91,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
             size = temp.size();
         } else {
             buffer.offer((Request) request);
-            size = temp.size();
+            size = buffer.size();
         }
 
         // TODO 临时解决方案：生产大于消费问题，限制生产速度
