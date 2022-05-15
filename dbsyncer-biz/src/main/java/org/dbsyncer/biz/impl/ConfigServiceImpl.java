@@ -12,6 +12,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,16 @@ public class ConfigServiceImpl implements ConfigService {
         List<ConfigVo> list = manager.getConfigAll().stream()
                 .map(config -> convertConfig2Vo(config))
                 .collect(Collectors.toList());
+        return list;
+    }
+
+    @Override
+    public List<ConfigModel> getConfigModelAll() {
+        List<ConfigModel> list = new ArrayList<>();
+        manager.getConfigAll().forEach(config -> list.add(config));
+        manager.getConnectorAll().forEach(config -> list.add(config));
+        manager.getMappingAll().forEach(config -> list.add(config));
+        manager.getMetaAll().forEach(config -> list.add(config));
         return list;
     }
 

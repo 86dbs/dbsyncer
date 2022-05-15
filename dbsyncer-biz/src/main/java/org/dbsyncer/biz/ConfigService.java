@@ -1,6 +1,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.ConfigVo;
+import org.dbsyncer.parser.model.ConfigModel;
 
 import java.util.List;
 import java.util.Map;
@@ -39,5 +40,12 @@ public interface ConfigService {
      * @return
      */
     List<ConfigVo> queryConfig();
+
+    /**
+     * 获取所有配置
+     *
+     * @return
+     */
+    List<ConfigModel> getConfigModelAll();
 
 }
