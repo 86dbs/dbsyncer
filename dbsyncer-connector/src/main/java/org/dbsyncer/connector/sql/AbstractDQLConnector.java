@@ -70,7 +70,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         }
         String quotation = buildSqlWithQuotation();
         DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
-        String pk = cfg.getPrimaryKey();
+        String pk = new StringBuilder(quotation).append(cfg.getPrimaryKey()).append(quotation).toString();
         map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(new PageSql(querySql, pk)));
 
         // 获取查询总数SQL
