@@ -24,6 +24,5 @@ public interface FlushService {
      * @param success
      * @param data
      */
-    @Async("taskExecutor")
-    void asyncWrite(String metaId, String event, boolean success, List<Map> data, String error);
+    void write(String metaId, String event, boolean success, List<Map> data, String error);
 }
