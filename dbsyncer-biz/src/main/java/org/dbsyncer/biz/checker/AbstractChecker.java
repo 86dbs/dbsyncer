@@ -10,7 +10,7 @@ import org.dbsyncer.parser.model.AbstractConfigModel;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Convert;
 import org.dbsyncer.plugin.config.Plugin;
-import org.dbsyncer.storage.SnowflakeIdWorker;
+import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.json.JSONArray;
 import org.json.JSONException;

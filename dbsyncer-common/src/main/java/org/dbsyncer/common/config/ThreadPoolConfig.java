@@ -1,6 +1,6 @@
-package org.dbsyncer.web.config;
+package org.dbsyncer.common.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -14,19 +14,23 @@ import java.util.concurrent.RejectedExecutionHandler;
  * @date 2020-04-26 23:40
  */
 @Configuration
+@ConfigurationProperties(prefix = "dbsyncer.web.thread.pool")
 public class ThreadPoolConfig {
-
-    /**
-     * 工作线程池队列容量
-     */
-    @Value(value = "${dbsyncer.web.thread.pool.queue.capacity}")
-    private int queueCapacity;
 
     /**
      * 工作线程数
      */
-    @Value(value = "${dbsyncer.web.thread.pool.core.size}")
-    private int coreSize;
+    private int coreSize = Runtime.getRuntime().availableProcessors() * 2;
+
+    /**
+     * 最大工作线程数
+     */
+    private int maxSize = 64;
+
+    /**
+     * 工作线任务队列
+     */
+    private int queueCapacity = 1000;
 
     @Bean("taskExecutor")
     public Executor taskExecutor() {
@@ -37,7 +41,7 @@ public class ThreadPoolConfig {
         executor.setCorePoolSize(coreSize);
         //最大线程数128：线程池最大的线程数，只有在缓冲队列满了之后才会申请超过核心线程数的线程
         //maxPoolSize 当系统负载大道最大值时,核心线程数已无法按时处理完所有任务,这是就需要增加线程.每秒200个任务需要20个线程,那么当每秒1000个任务时,则需要(1000-queueCapacity)*(20/200),即60个线程,可将maxPoolSize设置为60;
-        executor.setMaxPoolSize(128);
+        executor.setMaxPoolSize(maxSize);
         //缓冲队列：用来缓冲执行任务的队列
         executor.setQueueCapacity(queueCapacity);
         //允许线程的空闲时间30秒：当超过了核心线程出之外的线程在空闲时间到达之后会被销毁
@@ -68,6 +72,30 @@ public class ThreadPoolConfig {
                 e.printStackTrace();
             }
         };
+    }
+
+    public int getQueueCapacity() {
+        return queueCapacity;
+    }
+
+    public void setQueueCapacity(int queueCapacity) {
+        this.queueCapacity = queueCapacity;
+    }
+
+    public int getCoreSize() {
+        return coreSize;
+    }
+
+    public void setCoreSize(int coreSize) {
+        this.coreSize = coreSize;
+    }
+
+    public int getMaxSize() {
+        return maxSize;
+    }
+
+    public void setMaxSize(int maxSize) {
+        this.maxSize = maxSize;
     }
 
 }

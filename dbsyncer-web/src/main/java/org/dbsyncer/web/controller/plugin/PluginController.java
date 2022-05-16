@@ -1,4 +1,4 @@
-package org.dbsyncer.web.controller.upload;
+package org.dbsyncer.web.controller.plugin;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -21,10 +21,13 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 
 @Controller
-@RequestMapping("/upload")
-public class UploadController {
+@RequestMapping("/plugin")
+public class PluginController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Autowired
+    private PluginService pluginService;
 
     /**
      * 版本号
@@ -36,11 +39,8 @@ public class UploadController {
     public String index(ModelMap model) {
         model.put("plugins", pluginService.getPluginAll());
         model.put("version", version);
-        return "upload/upload";
+        return "plugin/plugin";
     }
-
-    @Autowired
-    private PluginService pluginService;
 
     @PostMapping(value = "/upload")
     @ResponseBody
