@@ -3,6 +3,7 @@ package org.dbsyncer.parser.flush;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.Meta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
@@ -13,6 +14,8 @@ import org.springframework.util.Assert;
  * @date 2021/11/18 22:22
  */
 public abstract class AbstractFlushStrategy implements FlushStrategy {
+
+    private static final int MAX_ERROR_LENGTH = 1000;
 
     @Autowired
     private FlushService flushService;
@@ -34,10 +37,11 @@ public abstract class AbstractFlushStrategy implements FlushStrategy {
         refreshTotal(metaId, result);
 
         if (!CollectionUtils.isEmpty(result.getFailData())) {
-            flushService.asyncWrite(metaId, event, false, result.getFailData(), result.getError().toString());
+            final String error = StringUtil.substring(result.getError().toString(), 0, MAX_ERROR_LENGTH);
+            flushService.write(metaId, event, false, result.getFailData(), error);
         }
         if (!CollectionUtils.isEmpty(result.getSuccessData())) {
-            flushService.asyncWrite(metaId, event, true, result.getSuccessData(), "");
+            flushService.write(metaId, event, true, result.getSuccessData(), "");
         }
     }
 
