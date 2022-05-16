@@ -16,8 +16,21 @@
 /**
  * 强制单词换行
  */
-.driver_break_word { word-break: break-all;word-wrap:break-word;white-space:normal}
-.fa_gray {color: gray}
+.driver_break_word {
+    word-break: break-all;
+    word-wrap: break-word;
+    white-space: normal
+}
+
+.driver_hidden_word {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis
+}
+
+.fa_gray {
+    color: gray
+}
 .fa_blueviolet {color: blueviolet}
 .dbsyncer_btn-info { background-color: #E7EDF8;}
 .dbsyncer_btn-info.active, .dbsyncer_btn-info.focus, .dbsyncer_btn-info:active, .dbsyncer_btn-info:focus, .dbsyncer_btn-info:hover, .open>.dropdown-toggle.dbsyncer_btn-info {background-color: #D4DDED;}

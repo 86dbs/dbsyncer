@@ -33,10 +33,13 @@ public abstract class AbstractDataBaseConfigChecker implements ConnectorConfigCh
     protected void modifyDql(DatabaseConfig connectorConfig, Map<String, String> params) {
         String sql = params.get("sql");
         String table = params.get("table");
+        String primaryKey = params.get("primaryKey");
         Assert.hasText(sql, "Sql is empty.");
         Assert.hasText(table, "Table is empty.");
+        Assert.hasText(primaryKey, "PrimaryKey is empty.");
         connectorConfig.setSql(sql);
         connectorConfig.setTable(table);
+        connectorConfig.setPrimaryKey(primaryKey);
     }
 
     protected void modifySchema(DatabaseConfig connectorConfig, Map<String, String> params) {
