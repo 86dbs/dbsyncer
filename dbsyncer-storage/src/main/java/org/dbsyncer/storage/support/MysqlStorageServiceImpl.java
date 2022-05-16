@@ -374,13 +374,13 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         // 开启高亮
         if (!CollectionUtils.isEmpty(list) && query.isEnableHighLightSearch()) {
             List<Param> highLight = query.getParams().stream().filter(p -> p.isHighlighter()).collect(Collectors.toList());
-            list.parallelStream().forEach(row -> {
+            list.forEach(row ->
                 highLight.forEach(p -> {
                     String text = String.valueOf(row.get(p.getKey()));
                     String replacement = new StringBuilder("<span style='color:red'>").append(p.getValue()).append("</span>").toString();
                     row.put(p.getKey(), StringUtil.replace(text, p.getValue(), replacement));
-                });
-            });
+                })
+            );
         }
     }
 

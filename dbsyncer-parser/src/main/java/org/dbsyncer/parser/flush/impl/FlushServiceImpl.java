@@ -60,7 +60,7 @@ public class FlushServiceImpl implements FlushService {
     @Override
     public void asyncWrite(String metaId, String event, boolean success, List<Map> data, String error) {
         long now = Instant.now().toEpochMilli();
-        List<Map> list = data.parallelStream().map(r -> {
+        List<Map> list = data.stream().map(r -> {
             Map<String, Object> params = new HashMap();
             params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             params.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());

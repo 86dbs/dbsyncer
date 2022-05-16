@@ -302,7 +302,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             // 处理过程有异常向上抛
             List<FieldPicker> pickers = tablePicker.get(rowChangedEvent.getSourceTableName());
             if (!CollectionUtils.isEmpty(pickers)) {
-                pickers.parallelStream().forEach(picker -> {
+                pickers.forEach(picker -> {
                     final Map<String, Object> before = picker.getColumns(rowChangedEvent.getBeforeData());
                     final Map<String, Object> after = picker.getColumns(rowChangedEvent.getAfterData());
                     if (picker.filter(StringUtil.equals(ConnectorConstant.OPERTION_DELETE, rowChangedEvent.getEvent()) ? before : after)) {
