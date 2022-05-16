@@ -20,10 +20,7 @@ public abstract class ConvertUtil {
      */
     public static void convert(List<Convert> convert, List<Map> data) {
         if (!CollectionUtils.isEmpty(convert) && !CollectionUtils.isEmpty(data)) {
-            // 并行流计算
-            data.parallelStream().forEach(row -> {
-                convert(convert, row);
-            });
+            data.forEach(row -> convert(convert, row));
         }
     }
 

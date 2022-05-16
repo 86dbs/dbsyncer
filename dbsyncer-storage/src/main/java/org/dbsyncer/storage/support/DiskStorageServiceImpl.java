@@ -135,7 +135,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
     @Override
     public void insertData(StorageEnum type, String collection, List<Map> list) throws IOException {
         createShardIfNotExist(collection);
-        List<Document> docs = list.parallelStream().map(r -> ParamsUtil.convertData2Doc(r)).collect(Collectors.toList());
+        List<Document> docs = list.stream().map(r -> ParamsUtil.convertData2Doc(r)).collect(Collectors.toList());
         map.get(collection).insertBatch(docs);
     }
 
