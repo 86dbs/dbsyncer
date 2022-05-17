@@ -1,7 +1,5 @@
 package org.dbsyncer.common.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
@@ -16,7 +14,6 @@ import java.util.concurrent.RejectedExecutionHandler;
  */
 @Configuration
 public class ScheduleConfig implements SchedulingConfigurer {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar scheduledTaskRegistrar) {
