@@ -4,9 +4,8 @@ import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.biz.vo.VersionVo;
+import org.dbsyncer.common.config.AppConfig;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +17,6 @@ import java.io.UnsupportedEncodingException;
 
 @Controller
 @RequestMapping("/index")
-@ConfigurationProperties(prefix = "info.app")
 public class IndexController {
 
     @Autowired
@@ -27,9 +25,8 @@ public class IndexController {
     @Autowired
     private MappingService mappingService;
 
-    private String name;
-
-    private String copyright;
+    @Autowired
+    private AppConfig appConfig;
 
     @GetMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
@@ -41,22 +38,7 @@ public class IndexController {
     @GetMapping("/version.json")
     @ResponseBody
     public RestResult version() throws UnsupportedEncodingException {
-        return RestResult.restSuccess(new VersionVo(name, copyright));
+        return RestResult.restSuccess(new VersionVo(appConfig.getName(), appConfig.getCopyright()));
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getCopyright() {
-        return copyright;
-    }
-
-    public void setCopyright(String copyright) {
-        this.copyright = copyright;
-    }
 }
