@@ -1,3 +1,3 @@
-# 在这里开启自动状态，遵循spring 扫描规则
+# 鍦ㄨ繖閲屽紑鍚嚜鍔ㄧ姸鎬侊紝閬靛惊spring 鎵弿瑙勫垯
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
 org.dbsyncer.connector.AutoConfiguration

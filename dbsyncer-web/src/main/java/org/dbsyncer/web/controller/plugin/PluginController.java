@@ -4,11 +4,11 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,16 +29,13 @@ public class PluginController {
     @Autowired
     private PluginService pluginService;
 
-    /**
-     * 版本号
-     */
-    @Value(value = "${info.app.version}")
-    private String version;
+    @Autowired
+    private AppConfig appConfig;
 
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("plugins", pluginService.getPluginAll());
-        model.put("version", version);
+        model.put("version", appConfig.getVersion());
         return "plugin/plugin";
     }
 
@@ -71,9 +68,9 @@ public class PluginController {
 
     @GetMapping("/download")
     public void download(HttpServletResponse response) {
-        String fileName = String.format("dbsyncer-common-%s.jar", version);
+        String fileName = String.format("dbsyncer-common-%s.jar", appConfig.getVersion());
         File file = new File(pluginService.getLibraryPath() + fileName);
-        if(!file.exists()){
+        if (!file.exists()) {
             write(response, RestResult.restFail("Could not find file", 404));
             return;
         }
