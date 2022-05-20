@@ -19,6 +19,7 @@ public abstract class AbstractDataBaseConfigChecker implements ConnectorConfigCh
         String password = params.get("password");
         String url = params.get("url");
         String driverClassName = params.get("driverClassName");
+        String primaryKey = params.get("primaryKey");
         Assert.hasText(username, "Username is empty.");
         Assert.hasText(password, "Password is empty.");
         Assert.hasText(url, "Url is empty.");
@@ -28,6 +29,7 @@ public abstract class AbstractDataBaseConfigChecker implements ConnectorConfigCh
         connectorConfig.setPassword(password);
         connectorConfig.setUrl(url);
         connectorConfig.setDriverClassName(driverClassName);
+        connectorConfig.setPrimaryKey(primaryKey);
     }
 
     protected void modifyDql(DatabaseConfig connectorConfig, Map<String, String> params) {
