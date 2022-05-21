@@ -12,7 +12,6 @@ import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
-import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Filter;
 import org.dbsyncer.connector.model.MetaInfo;
@@ -175,20 +174,17 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         Map<String, String> map = new HashMap<>();
 
         String query = ConnectorConstant.OPERTION_QUERY;
-        map.put(query, buildSql(query, table, commandConfig.getOriginalTable(), queryFilterSql));
+        map.put(query, buildSql(query, commandConfig, queryFilterSql));
 
         // 获取查询总数SQL
         String quotation = buildSqlWithQuotation();
-        String pk = findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
+        String pk = findOriginalTablePrimaryKey(commandConfig, quotation);
         StringBuilder queryCount = new StringBuilder();
         queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(quotation).append(table.getName()).append(quotation);
         if (StringUtil.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
-        if (!StringUtil.isBlank(pk)) {
-            queryCount.append(" GROUP BY ").append(pk);
-        }
-        queryCount.append(") DBSYNCER_T");
+        queryCount.append(" GROUP BY ").append(pk).append(") DBSYNCER_T");
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
         return map;
     }
@@ -197,22 +193,19 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         // 获取增删改SQL
         Map<String, String> map = new HashMap<>();
-        Table table = commandConfig.getTable();
-        Table originalTable = commandConfig.getOriginalTable();
-
         String insert = SqlBuilderEnum.INSERT.getName();
-        map.put(insert, buildSql(insert, table, originalTable, null));
+        map.put(insert, buildSql(insert, commandConfig, null));
 
         String update = SqlBuilderEnum.UPDATE.getName();
-        map.put(update, buildSql(update, table, originalTable, null));
+        map.put(update, buildSql(update, commandConfig, null));
 
         String delete = SqlBuilderEnum.DELETE.getName();
-        map.put(delete, buildSql(delete, table, originalTable, null));
+        map.put(delete, buildSql(delete, commandConfig, null));
 
         // 获取查询数据行是否存在
         String quotation = buildSqlWithQuotation();
-        String pk = findTablePrimaryKey(commandConfig.getOriginalTable(), quotation);
-        StringBuilder queryCount = new StringBuilder().append("SELECT COUNT(1) FROM ").append(quotation).append(table.getName()).append(
+        String pk = findOriginalTablePrimaryKey(commandConfig, quotation);
+        StringBuilder queryCount = new StringBuilder().append("SELECT COUNT(1) FROM ").append(quotation).append(commandConfig.getTable().getName()).append(
                 quotation).append(" WHERE ").append(pk).append(" = ?");
         String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
         map.put(queryCountExist, queryCount.toString());
@@ -323,12 +316,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
      * 获取查询SQL
      *
      * @param type           {@link SqlBuilderEnum}
-     * @param table
-     * @param originalTable
+     * @param commandConfig
      * @param queryFilterSQL
      * @return
      */
-    protected String buildSql(String type, Table table, Table originalTable, String queryFilterSQL) {
+    protected String buildSql(String type, CommandConfig commandConfig, String queryFilterSQL) {
+        Table table = commandConfig.getTable();
         if (null == table) {
             logger.error("Table can not be null.");
             throw new ConnectorException("Table can not be null.");
@@ -364,7 +357,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             throw new ConnectorException("Table name can not be empty.");
         }
         if (StringUtil.isBlank(pk)) {
-            pk = findTablePrimaryKey(originalTable, "");
+            pk = findOriginalTablePrimaryKey(commandConfig, "");
         }
 
         SqlBuilderConfig config = new SqlBuilderConfig(this, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());
@@ -420,11 +413,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     /**
      * 返回主键名称
      *
-     * @param table
+     * @param commandConfig
      * @param quotation
      * @return
      */
-    protected String findTablePrimaryKey(Table table, String quotation) {
+    protected String findOriginalTablePrimaryKey(CommandConfig commandConfig, String quotation) {
+        Table table = commandConfig.getOriginalTable();
         if (null != table) {
             List<Field> column = table.getColumn();
             if (!CollectionUtils.isEmpty(column)) {
@@ -435,10 +429,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
                 }
             }
         }
-        if (!TableTypeEnum.isView(table.getType())) {
+
+        DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
+        if (StringUtil.isBlank(cfg.getPrimaryKey())) {
             throw new ConnectorException("Table primary key can not be empty.");
         }
-        return "";
+
+        return new StringBuilder(quotation).append(cfg.getPrimaryKey()).append(quotation).toString();
     }
 
     /**

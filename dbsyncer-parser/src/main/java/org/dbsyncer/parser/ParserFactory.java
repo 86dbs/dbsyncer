@@ -139,9 +139,8 @@ public class ParserFactory implements Parser {
 
     @Override
     public Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup) {
-        ConnectorConfig connectorConfig = getConnectorConfig(mapping.getSourceConnectorId());
-        String sType = connectorConfig.getConnectorType();
-        String tType = getConnectorConfig(mapping.getTargetConnectorId()).getConnectorType();
+        ConnectorConfig sConnConfig = getConnectorConfig(mapping.getSourceConnectorId());
+        ConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
         Table sTable = new Table(sourceTable.getName(), sourceTable.getType(), new ArrayList<>());
@@ -157,8 +156,8 @@ public class ParserFactory implements Parser {
                 }
             });
         }
-        final CommandConfig sourceConfig = new CommandConfig(sType, sTable, sourceTable, tableGroup.getFilter(), connectorConfig);
-        final CommandConfig targetConfig = new CommandConfig(tType, tTable, targetTable);
+        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable, sourceTable, sConnConfig, tableGroup.getFilter());
+        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), tTable, targetTable, tConnConfig);
         // 获取连接器同步参数
         Map<String, String> command = connectorFactory.getCommand(sourceConfig, targetConfig);
         return command;

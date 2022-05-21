@@ -10,19 +10,31 @@
         </div>
         <label class="col-sm-2 control-label">密码 <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-4 ">
-            <input class="form-control" name="password" type="password" maxlength="32" dbsyncer-valid="require" th:value="${connector?.config?.password}"/>
+            <input class="form-control" name="password" type="password" maxlength="32" dbsyncer-valid="require"
+                   th:value="${connector?.config?.password}"/>
         </div>
     </div>
     <div class="form-group">
         <label class="col-sm-2 control-label">URL <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-10">
-            <textarea name="url" class="form-control dbsyncer_textarea_resize_none" maxlength="1024" dbsyncer-valid="require" rows="5" th:text="${connector?.config?.url} ?: 'jdbc:oracle:thin:@127.0.0.1:1521:ORCL'"></textarea>
+            <textarea name="url" class="form-control dbsyncer_textarea_resize_none" maxlength="1024"
+                      dbsyncer-valid="require" rows="5"
+                      th:text="${connector?.config?.url} ?: 'jdbc:oracle:thin:@127.0.0.1:1521:ORCL'"></textarea>
         </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label">主键</label>
+        <div class="col-sm-4">
+            <input class="form-control" name="primaryKey" type="text" maxlength="32" placeholder="ID"
+                   th:value="${connector?.config?.primaryKey}"/>
+        </div>
+        <div class="col-sm-6"></div>
     </div>
     <div class="form-group">
         <label class="col-sm-2 control-label">驱动 </label>
         <div class="col-sm-10">
-            <input class="form-control" readonly="true" name="driverClassName" type="text" th:value="${connector?.config?.driverClassName} ?: 'oracle.jdbc.OracleDriver'" />
+            <input class="form-control" readonly="true" name="driverClassName" type="text"
+                   th:value="${connector?.config?.driverClassName} ?: 'oracle.jdbc.OracleDriver'"/>
         </div>
     </div>
 </div>
