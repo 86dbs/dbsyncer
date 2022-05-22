@@ -8,6 +8,7 @@ import org.dbsyncer.listener.kafka.KafkaExtractor;
 import org.dbsyncer.listener.mysql.MysqlExtractor;
 import org.dbsyncer.listener.oracle.OracleExtractor;
 import org.dbsyncer.listener.postgresql.PostgreSQLExtractor;
+import org.dbsyncer.listener.sqlserver.DqlSqlServerExtractor;
 import org.dbsyncer.listener.sqlserver.SqlServerExtractor;
 
 /**
@@ -42,7 +43,11 @@ public enum LogExtractorEnum {
     /**
      * File
      */
-    FILE(ConnectorEnum.FILE.getType(), FileExtractor.class);
+    FILE(ConnectorEnum.FILE.getType(), FileExtractor.class),
+    /**
+     * DqlSqlServer
+     */
+    DQL_SQL_SERVER(ConnectorEnum.DQL_SQL_SERVER.getType(), DqlSqlServerExtractor.class);
 
     private String type;
     private Class clazz;
