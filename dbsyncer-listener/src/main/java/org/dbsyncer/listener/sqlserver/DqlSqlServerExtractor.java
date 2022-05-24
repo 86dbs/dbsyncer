@@ -1,0 +1,17 @@
+package org.dbsyncer.listener.sqlserver;
+
+import org.dbsyncer.common.event.RowChangedEvent;
+
+/**
+ * @author AE86
+ * @version 1.0.0
+ * @date 2022/5/22 22:56
+ */
+public class DqlSqlServerExtractor extends SqlServerExtractor {
+
+    @Override
+    protected void sendChangedEvent(RowChangedEvent event) {
+        super.sendChangedEvent(event);
+
+    }
+}

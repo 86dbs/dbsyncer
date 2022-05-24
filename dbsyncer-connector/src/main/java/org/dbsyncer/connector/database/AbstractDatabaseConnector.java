@@ -328,7 +328,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         }
         List<Field> column = table.getColumn();
         if (CollectionUtils.isEmpty(column)) {
-            logger.warn("Table column is null.");
             return null;
         }
         String pk = null;

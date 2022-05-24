@@ -142,7 +142,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
         // 默认定时抽取
         if (ListenerTypeEnum.isTiming(listenerType)) {
-            AbstractQuartzExtractor extractor = listener.getExtractor(ListenerTypeEnum.TIMING.getType(), connectorConfig.getConnectorType(), AbstractQuartzExtractor.class);
+            AbstractQuartzExtractor extractor = listener.getExtractor(ListenerTypeEnum.TIMING, connectorConfig.getConnectorType(), AbstractQuartzExtractor.class);
             List<Map<String, String>> commands = list.stream().map(t -> t.getCommand()).collect(Collectors.toList());
             extractor.setCommands(commands);
             setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new QuartzListener(mapping, list));
@@ -151,9 +151,9 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
         // 基于日志抽取
         if (ListenerTypeEnum.isLog(listenerType)) {
-            AbstractExtractor extractor = listener.getExtractor(ListenerTypeEnum.LOG.getType(), connectorConfig.getConnectorType(), AbstractExtractor.class);
-            LogListener logListener = new LogListener(mapping, list, extractor);
+            AbstractExtractor extractor = listener.getExtractor(ListenerTypeEnum.LOG, connectorConfig.getConnectorType(), AbstractExtractor.class);
             Set<String> filterTable = new HashSet<>();
+            LogListener logListener = new LogListener(mapping, list, extractor);
             logListener.getTablePicker().forEach((k, fieldPickers) -> filterTable.add(k));
             extractor.setFilterTable(filterTable);
             setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), logListener);

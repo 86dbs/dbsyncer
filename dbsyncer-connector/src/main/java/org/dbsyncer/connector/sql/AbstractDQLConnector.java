@@ -6,7 +6,6 @@ import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
-import org.dbsyncer.connector.model.Filter;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
@@ -27,7 +26,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
     public List<Table> getTable(DatabaseConnectorMapper config) {
         DatabaseConfig cfg = config.getConfig();
         List<Table> tables = new ArrayList<>();
-        tables.add(new Table(cfg.getSql()));
+        tables.add(new Table(cfg.getTable()));
         return tables;
     }
 
@@ -56,20 +55,18 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
      */
     protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig, boolean groupByPK) {
         // 获取过滤SQL
-        List<Filter> filter = commandConfig.getFilter();
-        String queryFilterSql = getQueryFilterSql(filter);
+        String queryFilterSql = getQueryFilterSql(commandConfig.getFilter());
+        DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
 
         // 获取查询SQL
-        Table table = commandConfig.getTable();
         Map<String, String> map = new HashMap<>();
-        String querySql = table.getName();
+        String querySql = cfg.getSql();
 
         // 存在条件
         if (StringUtil.isNotBlank(queryFilterSql)) {
             querySql += queryFilterSql;
         }
         String quotation = buildSqlWithQuotation();
-        DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
         String pk = new StringBuilder(quotation).append(cfg.getPrimaryKey()).append(quotation).toString();
         map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(new PageSql(querySql, pk)));
 

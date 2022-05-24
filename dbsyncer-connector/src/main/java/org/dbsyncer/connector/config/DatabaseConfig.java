@@ -12,7 +12,7 @@ import java.util.Map;
 public class DatabaseConfig extends ConnectorConfig {
 
     /**
-     * 驱动com.mysql.jdbc.Driver
+     * 驱动
      */
     private String driverClassName;
 
@@ -32,7 +32,7 @@ public class DatabaseConfig extends ConnectorConfig {
     private String password;
 
     /**
-     * 通过SQL获取表
+     * 主表
      */
     private String table;
 
@@ -42,7 +42,7 @@ public class DatabaseConfig extends ConnectorConfig {
     private String primaryKey;
 
     /**
-     * 通过SQL获取表信息
+     * SQL
      */
     private String sql;
 

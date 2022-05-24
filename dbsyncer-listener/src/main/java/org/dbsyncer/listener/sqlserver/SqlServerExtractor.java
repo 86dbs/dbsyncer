@@ -49,8 +49,8 @@ public class SqlServerExtractor extends AbstractExtractor {
     private static final int OFFSET_COLUMNS = 4;
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
-    private static Set<String> tables;
-    private static Set<SqlServerChangeTable> changeTables;
+    private Set<String> tables;
+    private Set<SqlServerChangeTable> changeTables;
     private DatabaseConnectorMapper connectorMapper;
     private Worker worker;
     private Lsn lastLsn;
@@ -100,6 +100,10 @@ public class SqlServerExtractor extends AbstractExtractor {
             }
             connected = false;
         }
+    }
+
+    protected void sendChangedEvent(RowChangedEvent event) {
+        changedEvent(event);
     }
 
     private void close(AutoCloseable closeable) {
@@ -245,17 +249,17 @@ public class SqlServerExtractor extends AbstractExtractor {
         for (CDCEvent event : list) {
             int code = event.getCode();
             if (TableOperationEnum.isUpdateAfter(code)) {
-                changedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, event.getRow()));
+                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, event.getRow()));
                 continue;
             }
 
             if (TableOperationEnum.isInsert(code)) {
-                changedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, event.getRow()));
+                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, event.getRow()));
                 continue;
             }
 
             if (TableOperationEnum.isDelete(code)) {
-                changedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), Collections.EMPTY_LIST));
+                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), Collections.EMPTY_LIST));
             }
         }
     }
