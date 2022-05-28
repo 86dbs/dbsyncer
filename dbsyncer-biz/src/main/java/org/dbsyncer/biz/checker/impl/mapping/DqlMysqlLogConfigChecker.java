@@ -22,10 +22,6 @@ public class DqlMysqlLogConfigChecker implements MappingLogConfigChecker {
     public void modify(Mapping mapping, Map<String, String> params) {
         ListenerConfig config = mapping.getListener();
         Assert.notNull(config, "ListenerConfig can not be null.");
-
-        String label = params.get("incrementStrategyLogTableLabel");
-        Assert.hasText(label, "MysqlLogConfigChecker check params incrementStrategyLogTableLabel is empty");
-        config.setTableLabel(label);
         mapping.setListener(config);
     }
 
