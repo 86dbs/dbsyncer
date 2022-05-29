@@ -12,9 +12,11 @@
 
         <!-- 操作 -->
         <div class="row">
-            <div class="col-md-12">
+            <div class="col-md-7">
                 <table class="table table-hover">
-                    <caption>配置列表([[${config?.size()} ?: 0]])</caption>
+                    <caption>配置列表([[${config?.size()} ?: 0]])，<a onClick="downLoad()" href="javascript:;"
+                                                                 th:title="'下载文件大小'+${#numbers.formatDecimal((fileSize / 1024),0 ,2)}+'KB'">下载</a>
+                    </caption>
                     <thead>
                     <tr>
                         <th>ID</th>
@@ -35,9 +37,48 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- 配置列表 -->
+            <div class="col-md-5">
+                <form id="uploadForm" class="form-horizontal" role="form">
+                    <div class="page-header">
+                        <h3>上传配置 <small>只支持 "json" 的文件扩展名.</small></h3>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="file-loading">
+                            <input id="fileConfig" type="file" name="files" multiple="multiple"/>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
         </div>
     </form>
 </div>
 
-<script th:src="@{/js/pwd/index.js}"></script>
+<script type="text/javascript">
+    $("#fileConfig").fileinput({
+        theme: 'fas',
+        language: 'zh',
+        uploadUrl: $basePath + '/config/upload',
+        enctype: 'multipart/form-data',
+        removeFromPreviewOnError: true, //当选择的文件不符合规则时，例如不是指定后缀文件、大小超出配置等，选择的文件不会出现在预览框中，只会显示错误信息
+        allowedFileExtensions: ['json'],
+        minFileCount: 0, //每次多次上载允许的最小文件数。如果设置为0，则表示文件数是可选的
+        maxFileCount: 5, //表示允许同时上传的最大文件个数 如果设置为0，则表示允许的文件数不受限制
+        showPreview: true,
+        showUpload: true,//不展示上传按钮
+        validateInitialCount: true,//是否在验证minFileCount和包含初始预览文件计数（服务器上载文件）maxFileCount
+    }).on("fileuploaded", function (event, data, previewId, index) {
+        if (!data.response.success) {
+            bootGrowl(data.response.resultValue, "danger");
+        }
+        doLoader("/config");
+    });
+
+    function downLoad() {
+        window.open($basePath + "/config/download");
+    }
+</script>
 </html>
