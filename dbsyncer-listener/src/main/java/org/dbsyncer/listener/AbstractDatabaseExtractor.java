@@ -36,10 +36,13 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
      */
     protected void sendDqlChangedEvent(RowChangedEvent event) {
         if (null != event && event.getSourceTableName().equals(dqlMapper.tableName)) {
-            if (StringUtil.equals(ConnectorConstant.OPERTION_DELETE, event.getEvent())) {
-                event.setBeforeData(queryData(event.getBeforeData()));
-            } else {
-                event.setAfterData(queryData(event.getAfterData()));
+            switch (event.getEvent()){
+                case ConnectorConstant.OPERTION_UPDATE:
+                case ConnectorConstant.OPERTION_INSERT:
+                    event.setAfterData(queryData(event.getAfterData()));
+                    break;
+                default:
+                    break;
             }
             changedEvent(event);
         }
