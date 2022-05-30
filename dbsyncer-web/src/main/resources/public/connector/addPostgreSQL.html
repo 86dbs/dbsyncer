@@ -29,7 +29,11 @@
             <input class="form-control" dbsyncer-valid="require" maxlength="32" name="schema" placeholder="public"
                    th:value="${connector?.config?.schema} ?: 'public'" type="text"/>
         </div>
-        <div class="col-sm-6"></div>
+        <label class="col-sm-2 control-label">主键</label>
+        <div class="col-sm-4">
+            <input class="form-control" name="primaryKey" type="text" maxlength="32" placeholder="ID"
+                   th:value="${connector?.config?.primaryKey}"/>
+        </div>
     </div>
     <div class="form-group">
         <label class="col-sm-2 control-label">删除Slot <i aria-hidden="true" class="fa fa-question-circle fa_gray" title="增量同步，停止驱动自动删除Slot"></i></label>

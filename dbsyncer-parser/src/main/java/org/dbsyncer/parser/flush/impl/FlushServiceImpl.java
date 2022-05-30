@@ -2,11 +2,10 @@ package org.dbsyncer.parser.flush.impl;
 
 import com.alibaba.fastjson.JSONException;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.FlushService;
 import org.dbsyncer.parser.flush.model.StorageRequest;
-import org.dbsyncer.storage.SnowflakeIdWorker;
+import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
@@ -20,7 +19,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 持久化
@@ -35,8 +33,6 @@ import java.util.stream.Collectors;
 public class FlushServiceImpl implements FlushService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    private static final int MAX_ERROR_LENGTH = 1000;
 
     @Autowired
     private StorageService storageService;
@@ -58,25 +54,23 @@ public class FlushServiceImpl implements FlushService {
     }
 
     @Override
-    public void asyncWrite(String metaId, String event, boolean success, List<Map> data, String error) {
+    public void write(String metaId, String event, boolean success, List<Map> data, String error) {
         long now = Instant.now().toEpochMilli();
-        List<Map> list = data.parallelStream().map(r -> {
-            Map<String, Object> params = new HashMap();
-            params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
-            params.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
-            params.put(ConfigConstant.DATA_EVENT, event);
-            params.put(ConfigConstant.DATA_ERROR, StringUtil.substring(error, 0, MAX_ERROR_LENGTH));
+        data.forEach(r -> {
+            Map<String, Object> row = new HashMap();
+            row.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
+            row.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
+            row.put(ConfigConstant.DATA_EVENT, event);
+            row.put(ConfigConstant.DATA_ERROR, error);
             try {
-                params.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(r));
+                row.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(r));
             } catch (JSONException e) {
                 logger.warn("可能存在Blob或inputStream大文件类型, 无法序列化:{}", r);
-                params.put(ConfigConstant.CONFIG_MODEL_JSON, r.toString());
+                row.put(ConfigConstant.CONFIG_MODEL_JSON, r.toString());
             }
-            params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
-            return params;
-        }).collect(Collectors.toList());
-
-        storageBufferActuator.offer(new StorageRequest(metaId, list));
+            row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
+            storageBufferActuator.offer(new StorageRequest(metaId, row));
+        });
     }
 
 }

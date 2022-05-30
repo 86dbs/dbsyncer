@@ -1,15 +1,14 @@
 package org.dbsyncer.connector.sqlserver;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.model.PageSql;
-import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
+import org.dbsyncer.connector.model.PageSql;
+import org.dbsyncer.connector.model.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,10 +28,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getPageSql(PageSql config) {
-        if (StringUtil.isBlank(config.getPk())) {
-            logger.error("Table primary key can not be empty.");
-            throw new ConnectorException("Table primary key can not be empty.");
-        }
         return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, config.getPk(), config.getQuerySql());
     }
 
@@ -51,7 +46,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         Map<String, String> map = new HashMap<>();
 
         String query = ConnectorConstant.OPERTION_QUERY;
-        map.put(query, this.buildSql(query, table, commandConfig.getOriginalTable(), queryFilterSql));
+        map.put(query, this.buildSql(query, commandConfig, queryFilterSql));
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();

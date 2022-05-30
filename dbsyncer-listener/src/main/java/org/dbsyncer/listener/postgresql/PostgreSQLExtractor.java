@@ -1,11 +1,12 @@
 package org.dbsyncer.listener.postgresql;
 
+import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.BooleanUtil;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.util.DatabaseUtil;
-import org.dbsyncer.listener.AbstractExtractor;
+import org.dbsyncer.listener.AbstractDatabaseExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.postgresql.enums.MessageDecoderEnum;
 import org.postgresql.PGConnection;
@@ -35,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @version 1.0.0
  * @date 2022/4/10 22:36
  */
-public class PostgreSQLExtractor extends AbstractExtractor {
+public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -127,6 +128,11 @@ public class PostgreSQLExtractor extends AbstractExtractor {
         } catch (Exception e) {
             logger.error("关闭失败:{}", e.getMessage());
         }
+    }
+
+    @Override
+    protected void sendChangedEvent(RowChangedEvent event) {
+        changedEvent(event);
     }
 
     private void connect() throws SQLException {
@@ -278,7 +284,7 @@ public class PostgreSQLExtractor extends AbstractExtractor {
 
                     flushLsn(lsn);
                     // process decoder
-                    changedEvent(messageDecoder.processMessage(msg));
+                    sendChangedEvent(messageDecoder.processMessage(msg));
 
                     // feedback
                     stream.setAppliedLSN(lsn);

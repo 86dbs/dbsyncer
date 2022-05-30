@@ -19,13 +19,7 @@ public class SqlBuilderConfig {
     // 引号
     private String quotation;
 
-    public SqlBuilderConfig(String name, String pk) {
-        this.tableName = name;
-        this.pk = pk;
-    }
-
-    public SqlBuilderConfig(Database database, String tableName, String pk, List<Field> fields, String queryFilter,
-                            String quotation) {
+    public SqlBuilderConfig(Database database, String tableName, String pk, List<Field> fields, String queryFilter, String quotation) {
         this.database = database;
         this.tableName = tableName;
         this.pk = pk;

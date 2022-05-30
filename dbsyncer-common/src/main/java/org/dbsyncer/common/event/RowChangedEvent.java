@@ -68,8 +68,16 @@ public class RowChangedEvent {
         return beforeData;
     }
 
+    public void setBeforeData(List<Object> beforeData) {
+        this.beforeData = beforeData;
+    }
+
     public List<Object> getAfterData() {
         return afterData;
+    }
+
+    public void setAfterData(List<Object> afterData) {
+        this.afterData = afterData;
     }
 
     public Map<String, Object> getBefore() {

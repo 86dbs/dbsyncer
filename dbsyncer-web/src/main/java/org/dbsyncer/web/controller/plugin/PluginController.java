@@ -1,14 +1,14 @@
-package org.dbsyncer.web.controller.upload;
+package org.dbsyncer.web.controller.plugin;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,26 +21,23 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 
 @Controller
-@RequestMapping("/upload")
-public class UploadController {
+@RequestMapping("/plugin")
+public class PluginController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    /**
-     * 版本号
-     */
-    @Value(value = "${info.app.version}")
-    private String version;
+    @Autowired
+    private PluginService pluginService;
+
+    @Autowired
+    private AppConfig appConfig;
 
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("plugins", pluginService.getPluginAll());
-        model.put("version", version);
-        return "upload/upload";
+        model.put("version", appConfig.getVersion());
+        return "plugin/plugin";
     }
-
-    @Autowired
-    private PluginService pluginService;
 
     @PostMapping(value = "/upload")
     @ResponseBody
@@ -71,9 +68,9 @@ public class UploadController {
 
     @GetMapping("/download")
     public void download(HttpServletResponse response) {
-        String fileName = String.format("dbsyncer-common-%s.jar", version);
+        String fileName = String.format("dbsyncer-common-%s.jar", appConfig.getVersion());
         File file = new File(pluginService.getLibraryPath() + fileName);
-        if(!file.exists()){
+        if (!file.exists()) {
             write(response, RestResult.restFail("Could not find file", 404));
             return;
         }

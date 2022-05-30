@@ -7,7 +7,7 @@ import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
-import org.dbsyncer.listener.AbstractExtractor;
+import org.dbsyncer.listener.AbstractDatabaseExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.enums.TableOperationEnum;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @Author AE86
  * @Date 2021-06-18 01:20
  */
-public class SqlServerExtractor extends AbstractExtractor {
+public class SqlServerExtractor extends AbstractDatabaseExtractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -49,8 +49,8 @@ public class SqlServerExtractor extends AbstractExtractor {
     private static final int OFFSET_COLUMNS = 4;
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
-    private static Set<String> tables;
-    private static Set<SqlServerChangeTable> changeTables;
+    private Set<String> tables;
+    private Set<SqlServerChangeTable> changeTables;
     private DatabaseConnectorMapper connectorMapper;
     private Worker worker;
     private Lsn lastLsn;
@@ -100,6 +100,11 @@ public class SqlServerExtractor extends AbstractExtractor {
             }
             connected = false;
         }
+    }
+
+    @Override
+    protected void sendChangedEvent(RowChangedEvent event) {
+        changedEvent(event);
     }
 
     private void close(AutoCloseable closeable) {
@@ -245,17 +250,17 @@ public class SqlServerExtractor extends AbstractExtractor {
         for (CDCEvent event : list) {
             int code = event.getCode();
             if (TableOperationEnum.isUpdateAfter(code)) {
-                changedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, event.getRow()));
+                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, event.getRow()));
                 continue;
             }
 
             if (TableOperationEnum.isInsert(code)) {
-                changedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, event.getRow()));
+                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, event.getRow()));
                 continue;
             }
 
             if (TableOperationEnum.isDelete(code)) {
-                changedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), Collections.EMPTY_LIST));
+                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), Collections.EMPTY_LIST));
             }
         }
     }

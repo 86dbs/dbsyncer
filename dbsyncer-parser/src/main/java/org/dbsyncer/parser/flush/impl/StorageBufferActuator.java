@@ -38,7 +38,7 @@ public class StorageBufferActuator extends AbstractBufferActuator<StorageRequest
     @Override
     protected void partition(StorageRequest request, StorageResponse response) {
         response.setMetaId(request.getMetaId());
-        response.getDataList().addAll(request.getList());
+        response.getDataList().add(request.getRow());
     }
 
     @Override

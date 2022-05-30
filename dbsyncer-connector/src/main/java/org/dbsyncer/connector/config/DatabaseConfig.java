@@ -11,35 +11,56 @@ import java.util.Map;
  */
 public class DatabaseConfig extends ConnectorConfig {
 
-    // 驱动com.mysql.jdbc.Driver
+    /**
+     * 驱动
+     */
     private String driverClassName;
 
-    // 连接地址
+    /**
+     * 连接地址
+     */
     private String url;
 
-    // 帐号
+    /**
+     * 帐号
+     */
     private String username;
 
-    // 密码
+    /**
+     * 密码
+     */
     private String password;
 
-    // 通过SQL获取表
+    /**
+     * 主表
+     */
     private String table;
 
-    // 通过SQL获取表信息
+    /**
+     * 主键
+     */
+    private String primaryKey;
+
+    /**
+     * SQL
+     */
     private String sql;
 
-    // 构架名
+    /**
+     * 构架名
+     */
     private String schema;
 
-    // 参数配置
+    /**
+     * 参数配置
+     */
     private Map<String, String> properties = new LinkedHashMap<>();
 
-    public String getProperty(String key){
+    public String getProperty(String key) {
         return properties.get(key);
     }
 
-    public String getProperty(String key, String defaultValue){
+    public String getProperty(String key, String defaultValue) {
         return properties.containsKey(key) ? properties.get(key) : defaultValue;
     }
 
@@ -81,6 +102,14 @@ public class DatabaseConfig extends ConnectorConfig {
 
     public void setTable(String table) {
         this.table = table;
+    }
+
+    public String getPrimaryKey() {
+        return primaryKey;
+    }
+
+    public void setPrimaryKey(String primaryKey) {
+        this.primaryKey = primaryKey;
     }
 
     public String getSql() {

@@ -237,4 +237,35 @@ public interface LogType {
         }
     }
 
+    /**
+     * 缓存配置信息7
+     */
+    enum CacheLog implements LogType {
+        IMPORT("70", "导入配置"),
+        EXPORT("71", "导出配置");
+
+        private String type;
+        private String message;
+
+        CacheLog(String type, String message) {
+            this.type = type;
+            this.message = message;
+        }
+
+        @Override
+        public String getName() {
+            return "插件";
+        }
+
+        @Override
+        public String getType() {
+            return type;
+        }
+
+        @Override
+        public String getMessage() {
+            return message;
+        }
+    }
+
 }

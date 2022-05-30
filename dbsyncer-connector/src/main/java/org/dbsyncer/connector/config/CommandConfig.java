@@ -24,13 +24,11 @@ public class CommandConfig {
 
     private ConnectorConfig connectorConfig;
 
-    public CommandConfig(String type, Table table, Table originalTable) {
-        this.type = type;
-        this.table = table;
-        this.originalTable = originalTable;
+    public CommandConfig(String type, Table table, Table originalTable, ConnectorConfig connectorConfig) {
+        this(type, table, originalTable, connectorConfig, null);
     }
 
-    public CommandConfig(String type, Table table, Table originalTable, List<Filter> filter, ConnectorConfig connectorConfig) {
+    public CommandConfig(String type, Table table, Table originalTable, ConnectorConfig connectorConfig, List<Filter> filter) {
         this.type = type;
         this.table = table;
         this.originalTable = originalTable;

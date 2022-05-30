@@ -1,5 +1,7 @@
 package org.dbsyncer.cache;
 
+import java.util.Map;
+
 /**
  * @author AE86
  * @version 1.0.0
@@ -49,5 +51,12 @@ public interface CacheService {
      * @return
      */
     <T> T get(String key, Class<T> valueType);
+
+    /**
+     * 获取缓存
+     *
+     * @return
+     */
+    Map<String, Object> getAll();
 
 }

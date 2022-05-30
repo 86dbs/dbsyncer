@@ -25,12 +25,12 @@ public class ThreadPoolConfig {
     /**
      * 最大工作线程数
      */
-    private int maxSize = 128;
+    private int maxSize = 64;
 
     /**
      * 工作线任务队列
      */
-    private int queueCapacity = 2000;
+    private int queueCapacity = 1000;
 
     @Bean("taskExecutor")
     public Executor taskExecutor() {

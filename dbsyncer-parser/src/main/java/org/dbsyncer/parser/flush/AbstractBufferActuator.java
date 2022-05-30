@@ -85,16 +85,14 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     @Override
     public void offer(BufferRequest request) {
-        int size = 0;
         if (running) {
             temp.offer((Request) request);
-            size = temp.size();
         } else {
             buffer.offer((Request) request);
-            size = buffer.size();
         }
 
         // TODO 临时解决方案：生产大于消费问题，限制生产速度
+        int size = temp.size() + buffer.size();
         if (size >= CAPACITY) {
             try {
                 TimeUnit.SECONDS.sleep(30);

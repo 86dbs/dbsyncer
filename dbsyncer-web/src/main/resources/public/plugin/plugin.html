@@ -136,24 +136,24 @@ public class MyPlugin implements ConvertService{
     $("#filePlugin").fileinput({
         theme: 'fas',
         language: 'zh',
-        uploadUrl: $basePath + '/upload/upload',
+        uploadUrl: $basePath + '/plugin/plugin',
         enctype: 'multipart/form-data',
-        removeFromPreviewOnError:true, //当选择的文件不符合规则时，例如不是指定后缀文件、大小超出配置等，选择的文件不会出现在预览框中，只会显示错误信息
+        removeFromPreviewOnError: true, //当选择的文件不符合规则时，例如不是指定后缀文件、大小超出配置等，选择的文件不会出现在预览框中，只会显示错误信息
         allowedFileExtensions: ['jar'],
         minFileCount: 0, //每次多次上载允许的最小文件数。如果设置为0，则表示文件数是可选的
         maxFileCount: 5, //表示允许同时上传的最大文件个数 如果设置为0，则表示允许的文件数不受限制
         showPreview: true,
-        showUpload:true,//不展示上传按钮
-        validateInitialCount:true,//是否在验证minFileCount和包含初始预览文件计数（服务器上载文件）maxFileCount
+        showUpload: true,//不展示上传按钮
+        validateInitialCount: true,//是否在验证minFileCount和包含初始预览文件计数（服务器上载文件）maxFileCount
     }).on("fileuploaded", function(event, data, previewId, index) {
         if (!data.response.success) {
             bootGrowl(data.response.resultValue, "danger");
         }
-        doLoader("/upload");
+        doLoader("/plugin");
     });
 
     function downLoad(){
-        window.open($basePath + "/upload/download");
+        window.open($basePath + "/plugin/download");
     }
 </script>
 </html>

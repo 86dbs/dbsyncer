@@ -12,13 +12,12 @@ import org.springframework.util.unit.DataSize;
 import javax.servlet.MultipartConfigElement;
 
 /**
- *
  * @author AE86
  * @version 1.0.0
  * @date 2019/9/10 23:07
  */
 @Configuration
-public class AppConfig {
+public class OpenApiConfig {
 
     /**
      * 发布服务接口

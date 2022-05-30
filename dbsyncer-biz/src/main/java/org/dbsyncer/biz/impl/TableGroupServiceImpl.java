@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -98,7 +99,11 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
-        return manager.getTableGroupAll(mappingId);
+        List<TableGroup> list = manager.getTableGroupAll(mappingId)
+                .stream()
+                .sorted(Comparator.comparing(TableGroup::getUpdateTime).reversed())
+                .collect(Collectors.toList());
+        return list;
     }
 
     private void mergeMappingColumn(String mappingId) {

@@ -164,10 +164,6 @@ public final class OperationTemplate extends AbstractTemplate {
             index.remove(e);
         }
 
-        public List<String> subList(int fromIndex, int toIndex) {
-            return index.subList(fromIndex, toIndex);
-        }
-
         public int size() {
             return index.size();
         }

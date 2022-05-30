@@ -6,7 +6,7 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.listener.AbstractExtractor;
+import org.dbsyncer.listener.AbstractDatabaseExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.config.Host;
 import org.slf4j.Logger;
@@ -28,7 +28,7 @@ import static java.util.regex.Pattern.compile;
  * @Author AE86
  * @Date 2020-05-12 21:14
  */
-public class MysqlExtractor extends AbstractExtractor {
+public class MysqlExtractor extends AbstractDatabaseExtractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -74,6 +74,11 @@ public class MysqlExtractor extends AbstractExtractor {
         } finally {
             connectLock.unlock();
         }
+    }
+
+    @Override
+    protected void sendChangedEvent(RowChangedEvent event) {
+        changedEvent(event);
     }
 
     private void run() throws Exception {
@@ -239,7 +244,7 @@ public class MysqlExtractor extends AbstractExtractor {
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m.getKey()).collect(Collectors.toList());
                         List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
-                        changedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, before, after));
+                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, before, after));
                     });
                 }
                 return;
@@ -250,7 +255,7 @@ public class MysqlExtractor extends AbstractExtractor {
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m).collect(Collectors.toList());
-                        changedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after));
+                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after));
                     });
                 }
                 return;
@@ -261,7 +266,7 @@ public class MysqlExtractor extends AbstractExtractor {
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m).collect(Collectors.toList());
-                        changedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST));
+                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST));
                     });
                 }
                 return;

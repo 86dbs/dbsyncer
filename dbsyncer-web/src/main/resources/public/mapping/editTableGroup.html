@@ -23,7 +23,8 @@
                                     </div>
                                     <div class="col-md-8">
                                         <p class="driver_break_word">[[${mapping?.sourceConnector?.name}]]</p>
-                                        <p>数据源表：[[${tableGroup?.sourceTable?.name}]]</p>
+                                        <p class="driver_hidden_word" th:title="${tableGroup?.sourceTable?.name}">
+                                            数据源表：[[${tableGroup?.sourceTable?.name}]]</p>
                                     </div>
                                 </div>
                             </div>
