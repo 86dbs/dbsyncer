@@ -93,6 +93,7 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
 
             database = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_DATABASE, String.class));
             messageDecoder = MessageDecoderEnum.getMessageDecoder(config.getProperty(PLUGIN_NAME));
+            messageDecoder.setMetaId(metaId);
             messageDecoder.setConfig(config);
             messageDecoder.postProcessBeforeInitialization(connectorFactory, connectorMapper);
             dropSlotOnClose = BooleanUtil.toBoolean(config.getProperty(DROP_SLOT_ON_CLOSE, "true"));

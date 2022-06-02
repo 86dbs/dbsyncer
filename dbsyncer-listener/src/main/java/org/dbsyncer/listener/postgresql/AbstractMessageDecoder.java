@@ -16,6 +16,8 @@ import java.nio.ByteBuffer;
  */
 public abstract class AbstractMessageDecoder implements MessageDecoder {
 
+    protected String metaId;
+
     protected DatabaseConfig config;
 
     private ColumnValue value = new PgColumnValue();
@@ -49,7 +51,12 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
 
     @Override
     public String getSlotName() {
-        return String.format("dbs_slot_%s_%s", config.getSchema(), config.getUsername());
+        return String.format("dbs_slot_%s_%s_%s", config.getSchema(), config.getUsername(), metaId);
+    }
+
+    @Override
+    public void setMetaId(String metaId) {
+        this.metaId = metaId;
     }
 
     @Override
