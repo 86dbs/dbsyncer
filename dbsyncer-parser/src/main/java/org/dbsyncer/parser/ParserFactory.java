@@ -330,12 +330,11 @@ public class ParserFactory implements Parser {
         String event = batchWriter.getEvent();
         Map<String, String> command = batchWriter.getCommand();
         List<Field> fields = batchWriter.getFields();
-        boolean forceUpdate = batchWriter.isForceUpdate();
         // 总数
         int total = dataList.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, dataList, forceUpdate));
+            return connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, dataList));
         }
 
         // 批量任务, 拆分
@@ -358,7 +357,7 @@ public class ParserFactory implements Parser {
 
             taskExecutor.execute(() -> {
                 try {
-                    Result w = connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, data, forceUpdate));
+                    Result w = connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, data));
                     result.addSuccessData(w.getSuccessData());
                     result.addFailData(w.getFailData());
                     result.getError().append(w.getError());

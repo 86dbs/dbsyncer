@@ -22,7 +22,7 @@ public class ScheduleConfig implements SchedulingConfigurer {
 
     @Bean(name = "taskScheduler", destroyMethod = "shutdown")
     public ThreadPoolTaskScheduler taskScheduler() {
-        int poolSize = Runtime.getRuntime().availableProcessors() * 2;
+        int poolSize = Runtime.getRuntime().availableProcessors();
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         //核心线程池大小
         scheduler.setPoolSize(poolSize);
