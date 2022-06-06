@@ -9,8 +9,6 @@ import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -26,8 +24,6 @@ import java.util.stream.Stream;
  */
 @Service
 public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroupService {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private Checker tableGroupChecker;

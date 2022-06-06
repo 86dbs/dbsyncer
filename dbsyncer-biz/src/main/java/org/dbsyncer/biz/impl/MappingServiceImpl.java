@@ -10,7 +10,6 @@ import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.monitor.Monitor;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
@@ -33,9 +32,6 @@ import java.util.stream.Collectors;
  */
 @Service
 public class MappingServiceImpl extends BaseServiceImpl implements MappingService {
-
-    @Autowired
-    private Monitor monitor;
 
     @Autowired
     private MappingChecker mappingChecker;
