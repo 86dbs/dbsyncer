@@ -56,13 +56,13 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
     public void execute(PreloadConfig config) {
         Query query = new Query();
         query.setType(StorageEnum.CONFIG);
-        String filterType = config.getFilterType();
-        query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, filterType);
+        String modelType = config.getConfigModelType();
+        query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, modelType);
 
         int pageNum = 1;
         int pageSize = 20;
         long total = 0;
-        for(;;){
+        for (; ; ) {
             query.setPageNum(pageNum);
             query.setPageSize(pageSize);
             Paging paging = storageService.query(query);
@@ -83,7 +83,7 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
             pageNum ++;
         }
 
-        logger.info("PreLoad {}:{}", filterType, total);
+        logger.info("PreLoad {}:{}", modelType, total);
     }
 
     @Override

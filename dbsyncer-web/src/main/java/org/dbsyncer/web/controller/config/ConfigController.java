@@ -1,5 +1,6 @@
 package org.dbsyncer.web.controller.config;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.biz.ConfigService;
 import org.dbsyncer.biz.vo.RestResult;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
@@ -69,17 +71,20 @@ public class ConfigController {
     public RestResult upload(MultipartFile[] files) {
         try {
             if (files != null && files.length > 0) {
-                MultipartFile file = null;
                 for (int i = 0; i < files.length; i++) {
-                    file = files[i];
-                    if (file != null) {
-                        String filename = file.getOriginalFilename();
-                        // TODO checkFileSuffix(filename);
-                        logger.info(filename);
-                        String msg = String.format("导入配置文件%s。", filename);
-                        logger.info(msg);
-                        logService.log(LogType.CacheLog.IMPORT, msg);
+                    if (files[i] == null) {
+                        continue;
                     }
+                    String filename = files[i].getOriginalFilename();
+                    configService.checkFileSuffix(filename);
+                    String tmpdir = System.getProperty("java.io.tmpdir");
+                    File dest = new File(tmpdir + filename);
+                    FileUtils.deleteQuietly(dest);
+                    FileUtils.copyInputStreamToFile(files[i].getInputStream(), dest);
+                    configService.refreshConfig(dest);
+                    String msg = String.format("导入配置文件%s。", filename);
+                    logger.info(msg);
+                    logService.log(LogType.CacheLog.IMPORT, msg);
                 }
             }
             return RestResult.restSuccess("ok");

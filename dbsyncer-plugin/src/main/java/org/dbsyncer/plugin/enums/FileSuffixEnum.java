@@ -14,7 +14,12 @@ public enum FileSuffixEnum {
     /**
      * jar
      */
-    JAR("jar");
+    JAR("jar"),
+
+    /**
+     * JSON
+     */
+    JSON("json");
 
     private String name;
 

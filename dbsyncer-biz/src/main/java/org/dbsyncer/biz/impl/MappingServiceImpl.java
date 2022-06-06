@@ -15,14 +15,15 @@ import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -32,8 +33,6 @@ import java.util.stream.Collectors;
  */
 @Service
 public class MappingServiceImpl extends BaseServiceImpl implements MappingService {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private Monitor monitor;
@@ -56,7 +55,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         // 匹配相似表 on
         String autoMatchTable = params.get("autoMatchTable");
-        if(StringUtil.isNotBlank(autoMatchTable)){
+        if (StringUtil.isNotBlank(autoMatchTable)) {
             matchSimilarTable(model);
         }
 
