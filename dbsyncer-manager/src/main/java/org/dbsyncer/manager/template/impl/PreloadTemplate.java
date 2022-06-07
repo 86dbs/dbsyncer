@@ -97,10 +97,12 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         reload(map, HandlerEnum.PRELOAD_CONFIG);
         // Load connectors
         reload(map, HandlerEnum.PRELOAD_CONNECTOR);
-        // Load metas
-        reload(map, HandlerEnum.PRELOAD_META);
         // Load mappings
         reload(map, HandlerEnum.PRELOAD_MAPPING);
+        // Load metas
+        reload(map, HandlerEnum.PRELOAD_META);
+
+        launch();
     }
 
     private void reload(Map<String, JSONObject> map, HandlerEnum handlerEnum) {
@@ -132,18 +134,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         }
     }
 
-    @Override
-    public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
-        // Load configModels
-        Arrays.stream(HandlerEnum.values()).filter(handlerEnum -> handlerEnum.isPreload()).forEach(handlerEnum -> execute(handlerEnum));
-
-        // Load plugins
-        manager.loadPlugins();
-
-        // Check connectors status
-        manager.checkAllConnectorStatus();
-
-        // Launch drivers
+    private void launch() {
         Meta meta = new Meta();
         meta.setType(ConfigConstant.META);
         QueryConfig<Meta> queryConfig = new QueryConfig<>(meta);
@@ -159,6 +150,21 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 }
             });
         }
+    }
+
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
+        // Load configModels
+        Arrays.stream(HandlerEnum.values()).filter(handlerEnum -> handlerEnum.isPreload()).forEach(handlerEnum -> execute(handlerEnum));
+
+        // Load plugins
+        manager.loadPlugins();
+
+        // Check connectors status
+        manager.checkAllConnectorStatus();
+
+        // Launch drivers
+        launch();
     }
 
 }
