@@ -2,6 +2,7 @@ package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.parser.flush.binlog.BinlogRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
+ * 任务缓存执行器
+ * <p>1. 任务优先进入缓存队列
+ * <p>2. 任务数超过队列阈值80%时，序列化写入磁盘
+ * <p>3. 内置定时同步线程，在队列空闲时，将磁盘数据刷入缓存
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2022/3/27 17:36
@@ -39,10 +45,13 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     private volatile boolean running;
 
-    private final static long MAX_BATCH_COUNT = 1000L;
+    private static final long MAX_BATCH_COUNT = 1000L;
+
+    private BinlogRecorder recorder;
 
     @PostConstruct
     private void init() {
+        recorder = new BinlogRecorder(getClass().getSimpleName(), buffer, scheduledTaskService);
         scheduledTaskService.start(getPeriod(), this);
     }
 
@@ -87,6 +96,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     public void offer(BufferRequest request) {
         if (running) {
             temp.offer((Request) request);
+            recorder.offer(request);
         } else {
             buffer.offer((Request) request);
         }
