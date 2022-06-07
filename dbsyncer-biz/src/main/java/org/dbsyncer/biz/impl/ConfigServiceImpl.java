@@ -5,7 +5,6 @@ import org.dbsyncer.biz.ConfigService;
 import org.dbsyncer.biz.checker.impl.config.ConfigChecker;
 import org.dbsyncer.biz.vo.ConfigVo;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.template.impl.PreloadTemplate;
 import org.dbsyncer.parser.logger.LogService;
@@ -14,8 +13,6 @@ import org.dbsyncer.parser.model.Config;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.plugin.enums.FileSuffixEnum;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,8 +34,6 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ConfigServiceImpl implements ConfigService {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private Manager manager;
@@ -109,20 +104,12 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public void refreshConfig(File file) {
         Assert.notNull(file, "the config file is null.");
-
         try {
             List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
             if (!CollectionUtils.isEmpty(lines)) {
                 StringBuilder json = new StringBuilder();
                 lines.forEach(line -> json.append(line));
-
-                Map<String, Object> map = JsonUtil.jsonToObj(json.toString(), Map.class);
-                if (!CollectionUtils.isEmpty(map)) {
-                    map.forEach((k, v) -> {
-                        // TODO 持久化配置
-                        logger.info("key:{} ,value:{}", k, v);
-                    });
-                }
+                preloadTemplate.reload(json.toString());
             }
         } catch (IOException e) {
             logService.log(LogType.CacheLog.IMPORT_ERROR);
