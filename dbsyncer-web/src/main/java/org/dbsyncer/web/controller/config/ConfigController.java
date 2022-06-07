@@ -82,7 +82,7 @@ public class ConfigController {
                     FileUtils.deleteQuietly(dest);
                     FileUtils.copyInputStreamToFile(files[i].getInputStream(), dest);
                     configService.refreshConfig(dest);
-                    String msg = String.format("导入配置文件%s。", filename);
+                    String msg = String.format("导入配置文件%s", filename);
                     logger.info(msg);
                     logService.log(LogType.CacheLog.IMPORT, msg);
                 }
@@ -106,7 +106,7 @@ public class ConfigController {
             String cache = JsonUtil.objToJson(cacheService.getAll());
             byte[] bytes = cache.getBytes(Charset.defaultCharset());
             int length = bytes.length;
-            String msg = String.format("导出配置文件%s，大小%dKB。", fileName, (length / 1024));
+            String msg = String.format("导出配置文件%s，大小%dKB", fileName, (length / 1024));
             logger.info(msg);
             logService.log(LogType.CacheLog.EXPORT, msg);
             outputStream.write(bytes, 0, length);
