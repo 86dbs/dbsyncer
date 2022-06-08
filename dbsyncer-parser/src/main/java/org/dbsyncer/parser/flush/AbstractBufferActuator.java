@@ -2,7 +2,6 @@ package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
-import org.dbsyncer.parser.flush.binlog.BinlogRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @version 1.0.0
  * @date 2022/3/27 17:36
  */
-public abstract class AbstractBufferActuator<Request, Response> implements BufferActuator, ScheduledTaskJob {
+public abstract class AbstractBufferActuator<Request, Response> extends AbstractBinlogRecorder implements BufferActuator, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -47,11 +46,8 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     private static final long MAX_BATCH_COUNT = 1000L;
 
-    private BinlogRecorder recorder;
-
     @PostConstruct
     private void init() {
-        recorder = new BinlogRecorder(getClass().getSimpleName(), buffer, scheduledTaskService);
         scheduledTaskService.start(getPeriod(), this);
     }
 
@@ -93,10 +89,20 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     protected abstract void pull(Response response);
 
     @Override
+    protected BufferActuator getBufferActuator() {
+        return this;
+    }
+
+    @Override
+    public Queue getBuffer() {
+        return buffer;
+    }
+
+    @Override
     public void offer(BufferRequest request) {
         if (running) {
             temp.offer((Request) request);
-            recorder.offer(request);
+            super.flush(request);
         } else {
             buffer.offer((Request) request);
         }

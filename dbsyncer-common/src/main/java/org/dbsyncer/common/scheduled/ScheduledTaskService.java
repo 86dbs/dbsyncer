@@ -17,11 +17,13 @@ public interface ScheduledTaskService {
      */
     void start(String key, String cron, ScheduledTaskJob job);
 
-    void start(String key, long period, ScheduledTaskJob job);
+    void start(String key, long period, ScheduledTaskJob job, String suffix);
 
     void start(String cron, ScheduledTaskJob job);
 
     void start(long period, ScheduledTaskJob job);
+
+    void start(long period, ScheduledTaskJob job, String suffix);
 
     void stop(String key);
 

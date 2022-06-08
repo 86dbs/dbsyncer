@@ -39,8 +39,8 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService, Disposabl
     }
 
     @Override
-    public void start(String key, long period, ScheduledTaskJob job) {
-        logger.info("[period={}], Started task [{}]", period, job.getClass().getName());
+    public void start(String key, long period, ScheduledTaskJob job, String suffix) {
+        logger.info("[period={}], Started task [{}{}]", period, job.getClass().getName(), suffix);
         apply(key, () -> taskScheduler.scheduleAtFixedRate(job, period));
     }
 
@@ -51,7 +51,12 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService, Disposabl
 
     @Override
     public void start(long period, ScheduledTaskJob job) {
-        start(UUIDUtil.getUUID(), period, job);
+        start(UUIDUtil.getUUID(), period, job, "");
+    }
+
+    @Override
+    public void start(long period, ScheduledTaskJob job, String suffix) {
+        start(UUIDUtil.getUUID(), period, job, suffix);
     }
 
     @Override
