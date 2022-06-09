@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @version 1.0.0
  * @date 2022/3/27 17:36
  */
-public abstract class AbstractBufferActuator<Request, Response> extends AbstractBinlogRecorder implements BufferActuator, ScheduledTaskJob {
+public abstract class AbstractBufferActuator<Request, Response> implements BufferActuator, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -36,7 +36,7 @@ public abstract class AbstractBufferActuator<Request, Response> extends Abstract
 
     private static final int CAPACITY = 10_0000;
 
-    private Queue<Request> buffer = new LinkedBlockingQueue(CAPACITY);
+    protected Queue<Request> buffer = new LinkedBlockingQueue(CAPACITY);
 
     private Queue<Request> temp = new LinkedBlockingQueue(CAPACITY);
 
@@ -89,20 +89,9 @@ public abstract class AbstractBufferActuator<Request, Response> extends Abstract
     protected abstract void pull(Response response);
 
     @Override
-    protected BufferActuator getBufferActuator() {
-        return this;
-    }
-
-    @Override
-    public Queue getBuffer() {
-        return buffer;
-    }
-
-    @Override
     public void offer(BufferRequest request) {
         if (running) {
             temp.offer((Request) request);
-            super.flush(request);
         } else {
             buffer.offer((Request) request);
         }
