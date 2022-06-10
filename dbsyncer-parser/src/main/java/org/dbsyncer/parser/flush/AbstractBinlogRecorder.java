@@ -12,9 +12,11 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
+import java.lang.reflect.ParameterizedType;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author AE86
@@ -25,17 +27,23 @@ public abstract class AbstractBinlogRecorder implements BinlogRecorder, Disposab
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final long PERIOD = 1000;
-
     private static final long BINLOG_MAX_SIZE = 512 * 1024 * 1024;
 
     private static final int BINLOG_EXPIRE_DAYS = 7;
+
+    private static final String LINE_SEPARATOR = System.lineSeparator();
+
+    private static final Charset DEFAULT_CHARSET = Charset.defaultCharset();
 
     private static final String BINLOG = "binlog";
 
     private static final String BINLOG_INDEX = BINLOG + ".index";
 
     private static final String BINLOG_CONFIG = BINLOG + ".config";
+
+    private static final int MAX_CYCLE = 100;
+
+    private final AtomicInteger cycle = new AtomicInteger();
 
     private String path;
 
@@ -45,14 +53,13 @@ public abstract class AbstractBinlogRecorder implements BinlogRecorder, Disposab
 
     private Pipeline pipeline;
 
-    private OutputStream writer;
+    private OutputStream out;
 
-    private static final String LINE_SEPARATOR = System.lineSeparator();
-
-    private static final Charset DEFAULT_CHARSET = Charset.defaultCharset();
+    private Class<?> requestClazz;
 
     @PostConstruct
     private void init() throws IOException {
+        requestClazz = (Class<?>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
         // /data/binlog/{BufferActuator}/
         path = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar)
                 .append("data").append(File.separatorChar)
@@ -67,20 +74,36 @@ public abstract class AbstractBinlogRecorder implements BinlogRecorder, Disposab
         initPipeline();
     }
 
-    protected abstract Queue getBuffer();
+    /**
+     * 获取缓存队列
+     *
+     * @return
+     */
+    protected abstract Queue getQueue();
 
-    public void run() {
-        // 如果缓冲繁忙，继续等待
-        if (getBuffer().size() > 500) {
+    /**
+     * 解析binlog
+     */
+    protected void parseBinlog() {
+        if (!getQueue().isEmpty()) {
             return;
         }
+        if (getQueue().isEmpty()) {
+            cycle.getAndAdd(1);
+            if (cycle.get() < MAX_CYCLE) {
+                return;
+            }
+        }
+
+        cycle.set(0);
 
         try {
             String line;
             boolean hasLine = false;
             while (null != (line = pipeline.readLine())) {
                 if (StringUtil.isNotBlank(line)) {
-                    logger.info(line);
+                    // TODO 替换序列化方案
+                    getQueue().offer(JsonUtil.jsonToObj(line, requestClazz));
                     hasLine = true;
                 }
             }
@@ -95,9 +118,10 @@ public abstract class AbstractBinlogRecorder implements BinlogRecorder, Disposab
     }
 
     @Override
-    public void flush(BufferRequest request) {
+    public void flushBinlog(BufferRequest request) {
         try {
-            writeLine(writer, JsonUtil.objToJson(request));
+            // TODO 替换序列化方案
+            writeLine(out, JsonUtil.objToJson(request));
         } catch (IOException e) {
             logger.error(e.getMessage());
         }
@@ -105,7 +129,7 @@ public abstract class AbstractBinlogRecorder implements BinlogRecorder, Disposab
 
     @Override
     public void destroy() {
-        IOUtils.closeQuietly(writer);
+        IOUtils.closeQuietly(out);
         IOUtils.closeQuietly(pipeline.raf);
     }
 
@@ -132,7 +156,7 @@ public abstract class AbstractBinlogRecorder implements BinlogRecorder, Disposab
         final RandomAccessFile raf = new BufferedRandomAccessFile(binlogFile, "r");
         raf.seek(binlog.getPos());
         pipeline = new Pipeline(raf);
-        writer = new FileOutputStream(binlogFile, true);
+        out = new FileOutputStream(binlogFile, true);
     }
 
     private void writeLine(final OutputStream output, final String line) throws IOException {

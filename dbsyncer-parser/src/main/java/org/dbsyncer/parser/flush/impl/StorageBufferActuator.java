@@ -1,7 +1,6 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
-import org.dbsyncer.parser.flush.BufferResponse;
 import org.dbsyncer.parser.flush.model.StorageRequest;
 import org.dbsyncer.parser.flush.model.StorageResponse;
 import org.dbsyncer.storage.StorageService;
@@ -19,16 +18,6 @@ public class StorageBufferActuator extends AbstractBufferActuator<StorageRequest
 
     @Autowired
     private StorageService storageService;
-
-    @Override
-    protected long getPeriod() {
-        return 500;
-    }
-
-    @Override
-    protected BufferResponse getValue() {
-        return new StorageResponse();
-    }
 
     @Override
     protected String getPartitionKey(StorageRequest bufferTask) {

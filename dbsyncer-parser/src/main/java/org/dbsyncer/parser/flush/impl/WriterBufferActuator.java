@@ -7,7 +7,6 @@ import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.parser.ParserFactory;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
-import org.dbsyncer.parser.flush.BufferResponse;
 import org.dbsyncer.parser.flush.FlushStrategy;
 import org.dbsyncer.parser.flush.model.WriterRequest;
 import org.dbsyncer.parser.flush.model.WriterResponse;
@@ -40,16 +39,6 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     private CacheService cacheService;
 
     private final static int BATCH_SIZE = 100;
-
-    @Override
-    protected long getPeriod() {
-        return 300;
-    }
-
-    @Override
-    protected BufferResponse getValue() {
-        return new WriterResponse();
-    }
 
     @Override
     protected String getPartitionKey(WriterRequest request) {

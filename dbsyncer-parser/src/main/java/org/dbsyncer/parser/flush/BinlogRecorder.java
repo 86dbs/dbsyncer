@@ -12,6 +12,6 @@ public interface BinlogRecorder {
      *
      * @param request
      */
-    void flush(BufferRequest request);
+    void flushBinlog(BufferRequest request);
 
 }
