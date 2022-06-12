@@ -22,7 +22,7 @@ import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.FlushStrategy;
-import org.dbsyncer.parser.flush.model.WriterRequest;
+import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
