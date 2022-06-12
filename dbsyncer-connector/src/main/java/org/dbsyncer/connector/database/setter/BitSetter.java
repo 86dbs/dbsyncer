@@ -26,6 +26,11 @@ public class BitSetter extends AbstractSetter<byte[]> {
             ps.setInt(i, integer);
             return;
         }
+        if (val instanceof Boolean) {
+            Boolean b = (Boolean) val;
+            ps.setBoolean(i, b);
+            return;
+        }
         throw new ConnectorException(String.format("BitSetter can not find type [%s], val [%s]", type, val));
     }
 
