@@ -7,7 +7,7 @@ import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
-import org.dbsyncer.listener.AbstractExtractor;
+import org.dbsyncer.listener.AbstractDatabaseExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.enums.TableOperationEnum;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @Author AE86
  * @Date 2021-06-18 01:20
  */
-public class SqlServerExtractor extends AbstractExtractor {
+public class SqlServerExtractor extends AbstractDatabaseExtractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -102,6 +102,7 @@ public class SqlServerExtractor extends AbstractExtractor {
         }
     }
 
+    @Override
     protected void sendChangedEvent(RowChangedEvent event) {
         changedEvent(event);
     }

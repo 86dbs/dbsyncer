@@ -1,13 +1,13 @@
-package org.dbsyncer.listener.sqlserver;
+package org.dbsyncer.listener.mysql;
 
 import org.dbsyncer.common.event.RowChangedEvent;
 
 /**
  * @author AE86
  * @version 1.0.0
- * @date 2022/5/22 22:56
+ * @date 2022/5/28 22:02
  */
-public class DqlSqlServerExtractor extends SqlServerExtractor {
+public class DqlMysqlExtractor extends MysqlExtractor {
 
     @Override
     public void start() {
@@ -16,7 +16,7 @@ public class DqlSqlServerExtractor extends SqlServerExtractor {
     }
 
     @Override
-    public void changedEvent(RowChangedEvent event) {
+    public void sendChangedEvent(RowChangedEvent event) {
         super.sendDqlChangedEvent(event);
     }
 }

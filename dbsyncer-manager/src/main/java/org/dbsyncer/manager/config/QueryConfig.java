@@ -7,7 +7,7 @@ public class QueryConfig<T> {
 
     private ConfigModel configModel;
 
-    private GroupStrategyEnum groupStrategyEnum;
+    private GroupStrategyEnum groupStrategyEnum = GroupStrategyEnum.DEFAULT;
 
     public QueryConfig(ConfigModel configModel) {
         this.configModel = configModel;

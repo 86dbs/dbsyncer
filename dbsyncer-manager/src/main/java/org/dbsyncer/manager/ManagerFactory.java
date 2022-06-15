@@ -93,12 +93,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public String addConnector(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD.getHandler()));
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD));
     }
 
     @Override
     public String editConnector(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT.getHandler()));
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT));
     }
 
     @Override
@@ -137,12 +137,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public String addMapping(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD.getHandler()));
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD));
     }
 
     @Override
     public String editMapping(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT.getHandler()));
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT));
     }
 
     @Override
@@ -166,12 +166,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public String addTableGroup(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, GroupStrategyEnum.TABLE, HandlerEnum.OPR_ADD.getHandler()));
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD, GroupStrategyEnum.TABLE));
     }
 
     @Override
     public String editTableGroup(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, GroupStrategyEnum.TABLE, HandlerEnum.OPR_EDIT.getHandler()));
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT, GroupStrategyEnum.TABLE));
     }
 
     @Override
@@ -206,12 +206,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public String addMeta(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD.getHandler()));
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD));
     }
 
     @Override
     public String editMeta(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT.getHandler()));
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT));
     }
 
     @Override
@@ -234,12 +234,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public String addConfig(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD.getHandler()));
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD));
     }
 
     @Override
     public String editConfig(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT.getHandler()));
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT));
     }
 
     @Override

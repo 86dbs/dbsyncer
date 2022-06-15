@@ -8,7 +8,6 @@ import org.dbsyncer.manager.config.OperationCallBack;
 import org.dbsyncer.manager.config.OperationConfig;
 import org.dbsyncer.manager.config.QueryConfig;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
-import org.dbsyncer.manager.template.AbstractTemplate;
 import org.dbsyncer.manager.template.GroupStrategy;
 import org.dbsyncer.manager.template.Handler;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -22,7 +21,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 操作配置模板
@@ -32,7 +35,7 @@ import java.util.*;
  * @date 2019/9/16 23:59
  */
 @Component
-public final class OperationTemplate extends AbstractTemplate {
+public final class OperationTemplate {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -44,10 +47,10 @@ public final class OperationTemplate extends AbstractTemplate {
 
     public <T> List<T> queryAll(QueryConfig<T> query) {
         ConfigModel model = query.getConfigModel();
-        String groupId = getGroupId(model, getDefaultStrategy(query));
+        String groupId = getGroupId(model, query.getGroupStrategyEnum());
         Group group = cacheService.get(groupId, Group.class);
         if (null != group) {
-            List<String> index = group.getAll();
+            List<String> index = group.getIndex();
             if (!CollectionUtils.isEmpty(index)) {
                 List<T> list = new ArrayList<>();
                 Class<? extends ConfigModel> clazz = model.getClass();
@@ -84,8 +87,7 @@ public final class OperationTemplate extends AbstractTemplate {
         handler.execute(new OperationCallBack(storageService, StorageEnum.CONFIG, params));
 
         // 3、缓存
-        GroupStrategyEnum strategy = getDefaultStrategy(config);
-        cache(model, strategy);
+        cache(model, config.getGroupStrategyEnum());
         return model.getId();
     }
 
@@ -108,7 +110,7 @@ public final class OperationTemplate extends AbstractTemplate {
         Assert.hasText(id, "ID can not be empty.");
         // 删除分组
         ConfigModel model = cacheService.get(id, ConfigModel.class);
-        String groupId = getGroupId(model, getDefaultStrategy(config));
+        String groupId = getGroupId(model, config.getGroupStrategyEnum());
         Group group = cacheService.get(groupId, Group.class);
         if (null != group) {
             group.remove(id);
@@ -120,7 +122,7 @@ public final class OperationTemplate extends AbstractTemplate {
         storageService.remove(StorageEnum.CONFIG, id);
     }
 
-    private String getGroupId(ConfigModel model, GroupStrategyEnum strategy) {
+    public String getGroupId(ConfigModel model, GroupStrategyEnum strategy) {
         Assert.notNull(model, "ConfigModel can not be null.");
         Assert.notNull(strategy, "GroupStrategyEnum can not be null.");
         GroupStrategy groupStrategy = strategy.getGroupStrategy();
@@ -146,7 +148,7 @@ public final class OperationTemplate extends AbstractTemplate {
         }
     }
 
-    class Group {
+    static class Group {
 
         private List<String> index;
 
@@ -164,18 +166,17 @@ public final class OperationTemplate extends AbstractTemplate {
             index.remove(e);
         }
 
-        public List<String> subList(int fromIndex, int toIndex) {
-            return index.subList(fromIndex, toIndex);
-        }
-
         public int size() {
             return index.size();
         }
 
-        public List<String> getAll() {
+        public List<String> getIndex() {
             return Collections.unmodifiableList(index);
         }
 
+        public void setIndex(List<String> index) {
+            this.index = index;
+        }
     }
 
 }

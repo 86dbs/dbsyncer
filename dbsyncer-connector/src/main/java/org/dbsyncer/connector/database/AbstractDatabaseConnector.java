@@ -92,7 +92,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         Collections.addAll(config.getArgs(), getPageArgs(config.getPageIndex(), config.getPageSize()));
 
         // 3、执行SQL
-        List<Map<String, Object>> list = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
+        List<Map<String, Object>> list = connectorMapper.execute(
+                databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
 
         // 4、返回结果集
         return new Result(list);
@@ -120,6 +121,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         if (!isInsert(event)) {
             if (isDelete(event)) {
                 fields.clear();
+            } else if (isUpdate(event)) {
+                fields.remove(pkField);
             }
             fields.add(pkField);
         }
@@ -142,19 +145,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
                     })
             );
         } catch (Exception e) {
-            result.addFailData(data);
-            result.getError().append(e.getMessage());
+            logger.error(e.getMessage());
+            data.forEach(row -> forceUpdate(result, connectorMapper, config, pkField, row));
         }
 
         if (null != execute) {
             int batchSize = execute.length;
             for (int i = 0; i < batchSize; i++) {
                 if (execute[i] == 0) {
-                    if (config.isForceUpdate()) {
-                        forceUpdate(result, connectorMapper, config, pkField, data.get(i));
-                    } else {
-                        result.getFailData().add(data.get(i));
-                    }
+                    forceUpdate(result, connectorMapper, config, pkField, data.get(i));
                     continue;
                 }
                 result.getSuccessData().add(data.get(i));
@@ -205,7 +204,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         // 获取查询数据行是否存在
         String quotation = buildSqlWithQuotation();
         String pk = findOriginalTablePrimaryKey(commandConfig, quotation);
-        StringBuilder queryCount = new StringBuilder().append("SELECT COUNT(1) FROM ").append(quotation).append(commandConfig.getTable().getName()).append(
+        StringBuilder queryCount = new StringBuilder().append("SELECT COUNT(1) FROM ").append(quotation).append(
+                commandConfig.getTable().getName()).append(
                 quotation).append(" WHERE ").append(pk).append(" = ?");
         String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
         map.put(queryCountExist, queryCount.toString());
@@ -509,6 +509,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         if (!isInsert(event)) {
             if (isDelete(event)) {
                 fields.clear();
+            } else if (isUpdate(event)) {
+                fields.remove(pkField);
             }
             fields.add(pkField);
         }
@@ -534,7 +536,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     private boolean existRow(DatabaseConnectorMapper connectorMapper, String sql, Object value) {
         int rowNum = 0;
         try {
-            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[]{value}, Integer.class));
+            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[] {value}, Integer.class));
         } catch (Exception e) {
             logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
         }

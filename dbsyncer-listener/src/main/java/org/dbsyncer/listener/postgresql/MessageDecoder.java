@@ -29,6 +29,8 @@ public interface MessageDecoder {
 
     void withSlotOption(ChainedLogicalStreamBuilder builder);
 
+    void setMetaId(String metaId);
+
     void setConfig(DatabaseConfig config);
 
 }

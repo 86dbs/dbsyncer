@@ -1,7 +1,8 @@
 package org.dbsyncer.listener.oracle;
 
+import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.listener.AbstractExtractor;
+import org.dbsyncer.listener.AbstractDatabaseExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.oracle.dcn.DBChangeNotification;
 import org.slf4j.Logger;
@@ -12,7 +13,7 @@ import org.slf4j.LoggerFactory;
  * @Author AE86
  * @Date 2020-05-12 21:14
  */
-public class OracleExtractor extends AbstractExtractor {
+public class OracleExtractor extends AbstractDatabaseExtractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -27,7 +28,7 @@ public class OracleExtractor extends AbstractExtractor {
             String url = config.getUrl();
             client = new DBChangeNotification(username, password, url);
             client.setFilterTable(filterTable);
-            client.addRowEventListener((e) -> changedEvent(e));
+            client.addRowEventListener((e) -> sendChangedEvent(e));
             client.start();
         } catch (Exception e) {
             logger.error("启动失败:{}", e.getMessage());
@@ -40,6 +41,11 @@ public class OracleExtractor extends AbstractExtractor {
         if (null != client) {
             client.close();
         }
+    }
+
+    @Override
+    protected void sendChangedEvent(RowChangedEvent event) {
+        changedEvent(event);
     }
 
 }

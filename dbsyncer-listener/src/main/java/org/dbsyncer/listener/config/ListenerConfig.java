@@ -35,9 +35,6 @@ public class ListenerConfig {
     // 删除事件
     private String delete = "D";
 
-    // 表别名
-    private String tableLabel = "T1";
-
     public ListenerConfig() {
     }
 
@@ -91,14 +88,6 @@ public class ListenerConfig {
 
     public void setDelete(String delete) {
         this.delete = delete;
-    }
-
-    public String getTableLabel() {
-        return tableLabel;
-    }
-
-    public void setTableLabel(String tableLabel) {
-        this.tableLabel = tableLabel;
     }
 
     public String getCron() {

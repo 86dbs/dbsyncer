@@ -41,8 +41,11 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
 
     private Map<String, Shard> map = new ConcurrentHashMap();
 
-    // 相对路径：./data/
-    private static final String PATH = "data" + File.separator;
+    /**
+     * 相对路径/data/
+     */
+    private static final String PATH = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar).append("data")
+            .append(File.separatorChar).toString();
 
     @PostConstruct
     private void init() {

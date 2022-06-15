@@ -2,6 +2,7 @@ package org.dbsyncer.cache;
 
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -38,6 +39,11 @@ public class CacheServiceImpl implements CacheService {
     @Override
     public <T> T get(String key, Class<T> valueType) {
         return (T) cache.get(key);
+    }
+
+    @Override
+    public Map<String, Object> getAll() {
+        return Collections.unmodifiableMap(cache);
     }
 
 }

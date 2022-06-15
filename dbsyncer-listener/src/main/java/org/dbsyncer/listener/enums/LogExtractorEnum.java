@@ -5,8 +5,11 @@ import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.file.FileExtractor;
 import org.dbsyncer.listener.kafka.KafkaExtractor;
+import org.dbsyncer.listener.mysql.DqlMysqlExtractor;
 import org.dbsyncer.listener.mysql.MysqlExtractor;
+import org.dbsyncer.listener.oracle.DqlOracleExtractor;
 import org.dbsyncer.listener.oracle.OracleExtractor;
+import org.dbsyncer.listener.postgresql.DqlPostgreSQLExtractor;
 import org.dbsyncer.listener.postgresql.PostgreSQLExtractor;
 import org.dbsyncer.listener.sqlserver.DqlSqlServerExtractor;
 import org.dbsyncer.listener.sqlserver.SqlServerExtractor;
@@ -45,9 +48,21 @@ public enum LogExtractorEnum {
      */
     FILE(ConnectorEnum.FILE.getType(), FileExtractor.class),
     /**
+     * DqlMysql
+     */
+    DQL_MYSQL(ConnectorEnum.DQL_MYSQL.getType(), DqlMysqlExtractor.class),
+    /**
+     * DqlOracle
+     */
+    DQL_ORACLE(ConnectorEnum.DQL_ORACLE.getType(), DqlOracleExtractor.class),
+    /**
      * DqlSqlServer
      */
-    DQL_SQL_SERVER(ConnectorEnum.DQL_SQL_SERVER.getType(), DqlSqlServerExtractor.class);
+    DQL_SQL_SERVER(ConnectorEnum.DQL_SQL_SERVER.getType(), DqlSqlServerExtractor.class),
+    /**
+     * DqlPostgreSQL
+     */
+    DQL_POSTGRE_SQL(ConnectorEnum.DQL_POSTGRE_SQL.getType(), DqlPostgreSQLExtractor.class);
 
     private String type;
     private Class clazz;
