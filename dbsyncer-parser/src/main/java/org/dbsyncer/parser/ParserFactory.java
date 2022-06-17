@@ -303,8 +303,8 @@ public class ParserFactory implements Parser {
         // 1、获取映射字段
         final String eventName = event.getEvent();
         Map<String, Object> data = StringUtil.equals(ConnectorConstant.OPERTION_DELETE, eventName) ? event.getBefore() : event.getAfter();
-        Picker picker = new Picker(tableGroup.getFieldMapping(), data);
-        Map target = picker.getTargetMap();
+        Picker picker = new Picker(tableGroup.getFieldMapping());
+        Map target = picker.pickData(data);
 
         // 2、参数转换
         ConvertUtil.convert(tableGroup.getConvert(), target);
