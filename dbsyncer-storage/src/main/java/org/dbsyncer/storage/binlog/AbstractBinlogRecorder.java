@@ -1,10 +1,10 @@
-package org.dbsyncer.parser.flush;
+package org.dbsyncer.storage.binlog;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.dbsyncer.common.file.BufferedRandomAccessFile;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.listener.file.BufferedRandomAccessFile;
+import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -12,7 +12,6 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
-import java.lang.reflect.ParameterizedType;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Queue;
@@ -55,11 +54,8 @@ public abstract class AbstractBinlogRecorder implements BinlogRecorder, Disposab
 
     private OutputStream out;
 
-    private Class<?> requestClazz;
-
     @PostConstruct
     private void init() throws IOException {
-        requestClazz = (Class<?>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
         // /data/binlog/{BufferActuator}/
         path = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar)
                 .append("data").append(File.separatorChar)
@@ -98,14 +94,13 @@ public abstract class AbstractBinlogRecorder implements BinlogRecorder, Disposab
         cycle.set(0);
 
         try {
-            String line;
+            byte[] line;
             boolean hasLine = false;
             while (null != (line = pipeline.readLine())) {
-                if (StringUtil.isNotBlank(line)) {
-                    // TODO 替换序列化方案
-                    getQueue().offer(JsonUtil.jsonToObj(line, requestClazz));
-                    hasLine = true;
-                }
+                BinlogMessage message = BinlogMessage.parseFrom(line);
+                logger.info("parse message:{}", message.toString());
+//                getQueue().offer(message);
+                hasLine = true;
             }
 
             if (hasLine) {
@@ -118,10 +113,10 @@ public abstract class AbstractBinlogRecorder implements BinlogRecorder, Disposab
     }
 
     @Override
-    public void flushBinlog(BufferRequest request) {
+    public void flushBinlog(BinlogMessage message) {
         try {
-            // TODO 替换序列化方案
-            writeLine(out, JsonUtil.objToJson(request));
+            out.write(message.toByteArray());
+            out.write(LINE_SEPARATOR.getBytes(DEFAULT_CHARSET));
         } catch (IOException e) {
             logger.error(e.getMessage());
         }
@@ -159,16 +154,6 @@ public abstract class AbstractBinlogRecorder implements BinlogRecorder, Disposab
         out = new FileOutputStream(binlogFile, true);
     }
 
-    private void writeLine(final OutputStream output, final String line) throws IOException {
-        if (line == null) {
-            return;
-        }
-        if (line != null) {
-            output.write(line.getBytes(DEFAULT_CHARSET));
-        }
-        output.write(LINE_SEPARATOR.getBytes(DEFAULT_CHARSET));
-    }
-
     private String createBinlogName(int index) {
         return String.format("%s.%06d", BINLOG, index <= 0 ? 1 : index);
     }
@@ -182,7 +167,7 @@ public abstract class AbstractBinlogRecorder implements BinlogRecorder, Disposab
             this.raf = raf;
         }
 
-        public String readLine() throws IOException {
+        public byte[] readLine() throws IOException {
             this.filePointer = raf.getFilePointer();
             if (filePointer >= raf.length()) {
                 b = new byte[0];
@@ -208,7 +193,7 @@ public abstract class AbstractBinlogRecorder implements BinlogRecorder, Disposab
             byte[] _b = stream.toByteArray();
             stream.close();
             stream = null;
-            return new String(_b, DEFAULT_CHARSET);
+            return _b;
         }
     }
 

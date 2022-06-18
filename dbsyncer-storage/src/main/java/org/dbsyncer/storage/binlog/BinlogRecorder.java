@@ -1,4 +1,6 @@
-package org.dbsyncer.parser.flush;
+package org.dbsyncer.storage.binlog;
+
+import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 
 /**
  * @author AE86
@@ -10,8 +12,8 @@ public interface BinlogRecorder {
     /**
      * 将任务序列化刷入磁盘
      *
-     * @param request
+     * @param message
      */
-    void flushBinlog(BufferRequest request);
+    void flushBinlog(BinlogMessage message);
 
 }
