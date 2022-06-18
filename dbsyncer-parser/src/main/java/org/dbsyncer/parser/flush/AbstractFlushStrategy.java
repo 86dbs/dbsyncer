@@ -5,6 +5,7 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 

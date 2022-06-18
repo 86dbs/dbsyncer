@@ -43,14 +43,14 @@ public final class BinlogMessageProto {
 
     static {
         java.lang.String[] descriptorData = {
-                "\n\030BinlogMessageProto.proto\"S\n\rBinlogMess" +
-                        "age\022\026\n\016table_group_id\030\001 \001(\t\022\025\n\005event\030\002 \001" +
-                        "(\0162\006.Event\022\023\n\004data\030\003 \003(\0132\005.Data\"O\n\004Data\022" +
-                        "\033\n\003row\030\001 \003(\0132\016.Data.RowEntry\032*\n\010RowEntry" +
-                        "\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\014:\0028\001*+\n\005Even" +
-                        "t\022\n\n\006UPDATE\020\000\022\n\n\006INSERT\020\001\022\n\n\006DELETE\020\002B;\n" +
-                        "!org.dbsyncer.storage.binlog.protoB\022Binl" +
-                        "ogMessageProtoH\001P\001b\006proto3"
+                "\n\030BinlogMessageProto.proto\"W\n\rBinlogMess" +
+                        "age\022\026\n\016table_group_id\030\001 \001(\t\022\031\n\005event\030\002 \001" +
+                        "(\0162\n.EventEnum\022\023\n\004data\030\003 \003(\0132\005.Data\"O\n\004D" +
+                        "ata\022\033\n\003row\030\001 \003(\0132\016.Data.RowEntry\032*\n\010RowE" +
+                        "ntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\014:\0028\001*/\n\t" +
+                        "EventEnum\022\n\n\006UPDATE\020\000\022\n\n\006INSERT\020\001\022\n\n\006DEL" +
+                        "ETE\020\002B;\n!org.dbsyncer.storage.binlog.pro" +
+                        "toB\022BinlogMessageProtoH\001P\001b\006proto3"
         };
         descriptor = com.google.protobuf.Descriptors.FileDescriptor
                 .internalBuildGeneratedFileFrom(descriptorData,

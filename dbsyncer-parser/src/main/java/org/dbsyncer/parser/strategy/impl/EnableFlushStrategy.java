@@ -1,4 +1,4 @@
-package org.dbsyncer.parser.flush.impl;
+package org.dbsyncer.parser.strategy.impl;
 
 import org.dbsyncer.parser.flush.AbstractFlushStrategy;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

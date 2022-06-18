@@ -7,11 +7,11 @@ option optimize_for = SPEED;
 
 message BinlogMessage {
     string table_group_id = 1;
-    Event event = 2;
+    EventEnum event = 2;
     repeated Data data = 3;
 }
 
-enum Event {
+enum EventEnum {
     UPDATE = 0;
     INSERT = 1;
     DELETE = 2;

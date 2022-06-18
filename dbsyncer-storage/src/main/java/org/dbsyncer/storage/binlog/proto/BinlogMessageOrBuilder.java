@@ -23,18 +23,18 @@ public interface BinlogMessageOrBuilder extends
     getTableGroupIdBytes();
 
     /**
-     * <code>.Event event = 2;</code>
+     * <code>.EventEnum event = 2;</code>
      *
      * @return The enum numeric value on the wire for event.
      */
     int getEventValue();
 
     /**
-     * <code>.Event event = 2;</code>
+     * <code>.EventEnum event = 2;</code>
      *
      * @return The event.
      */
-    org.dbsyncer.storage.binlog.proto.Event getEvent();
+    org.dbsyncer.storage.binlog.proto.EventEnum getEvent();
 
     /**
      * <code>repeated .Data data = 3;</code>

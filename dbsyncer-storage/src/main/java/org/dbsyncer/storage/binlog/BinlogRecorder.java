@@ -14,6 +14,6 @@ public interface BinlogRecorder {
      *
      * @param message
      */
-    void flushBinlog(BinlogMessage message);
+    void flush(BinlogMessage message);
 
 }

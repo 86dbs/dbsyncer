@@ -4,9 +4,9 @@
 package org.dbsyncer.storage.binlog.proto;
 
 /**
- * Protobuf enum {@code Event}
+ * Protobuf enum {@code EventEnum}
  */
-public enum Event
+public enum EventEnum
         implements com.google.protobuf.ProtocolMessageEnum {
   /**
    * <code>UPDATE = 0;</code>
@@ -51,7 +51,7 @@ public enum Event
    * @deprecated Use {@link #forNumber(int)} instead.
    */
   @java.lang.Deprecated
-  public static Event valueOf(int value) {
+  public static EventEnum valueOf(int value) {
     return forNumber(value);
   }
 
@@ -59,7 +59,7 @@ public enum Event
    * @param value The numeric wire value of the corresponding enum entry.
    * @return The enum associated with the given numeric wire value.
    */
-  public static Event forNumber(int value) {
+  public static EventEnum forNumber(int value) {
     switch (value) {
       case 0:
         return UPDATE;
@@ -72,16 +72,16 @@ public enum Event
     }
   }
 
-  public static com.google.protobuf.Internal.EnumLiteMap<Event>
+  public static com.google.protobuf.Internal.EnumLiteMap<EventEnum>
   internalGetValueMap() {
     return internalValueMap;
   }
 
   private static final com.google.protobuf.Internal.EnumLiteMap<
-          Event> internalValueMap =
-          new com.google.protobuf.Internal.EnumLiteMap<Event>() {
-            public Event findValueByNumber(int number) {
-              return Event.forNumber(number);
+          EventEnum> internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<EventEnum>() {
+            public EventEnum findValueByNumber(int number) {
+              return EventEnum.forNumber(number);
             }
           };
 
@@ -104,9 +104,9 @@ public enum Event
     return org.dbsyncer.storage.binlog.proto.BinlogMessageProto.getDescriptor().getEnumTypes().get(0);
   }
 
-  private static final Event[] VALUES = values();
+  private static final EventEnum[] VALUES = values();
 
-  public static Event valueOf(
+  public static EventEnum valueOf(
           com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
     if (desc.getType() != getDescriptor()) {
       throw new java.lang.IllegalArgumentException(
@@ -120,10 +120,10 @@ public enum Event
 
   private final int value;
 
-  private Event(int value) {
+  private EventEnum(int value) {
     this.value = value;
   }
 
-  // @@protoc_insertion_point(enum_scope:Event)
+  // @@protoc_insertion_point(enum_scope:EventEnum)
 }
 

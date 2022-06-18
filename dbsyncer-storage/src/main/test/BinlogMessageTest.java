@@ -3,7 +3,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.binlog.proto.Data;
-import org.dbsyncer.storage.binlog.proto.Event;
+import org.dbsyncer.storage.binlog.proto.EventEnum;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +26,7 @@ public class BinlogMessageTest {
 
         BinlogMessage build = BinlogMessage.newBuilder()
                 .setTableGroupId("123456788888")
-                .setEvent(Event.UPDATE)
+                .setEvent(EventEnum.UPDATE)
                 .addData(Data.newBuilder().putRow("aaa", ByteString.copyFromUtf8("hello,中国")).putRow("aaa111", ByteString.copyFromUtf8(s)))
                 .build();
 
