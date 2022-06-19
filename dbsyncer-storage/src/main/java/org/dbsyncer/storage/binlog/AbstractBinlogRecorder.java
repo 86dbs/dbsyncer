@@ -126,7 +126,6 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
         if (null != message) {
             try {
                 message.writeDelimitedTo(out);
-                out.write(LINE_SEPARATOR.getBytes(DEFAULT_CHARSET));
             } catch (IOException e) {
                 logger.error(e.getMessage());
             }

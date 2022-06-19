@@ -1,11 +1,7 @@
 package org.dbsyncer.storage.binlog;
 
-import com.google.protobuf.AbstractMessageLite;
-import com.google.protobuf.CodedInputStream;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
@@ -33,6 +29,7 @@ public class BinlogPipeline {
             b = new byte[(int) (raf.length() - filePointer)];
         }
 
+        // TODO readRawVarint32
         int firstByte = raf.read(b);
         if ((firstByte & 0x80) != 0) {
             firstByte = firstByte & 0x7f;
@@ -55,10 +52,6 @@ public class BinlogPipeline {
 
     public RandomAccessFile getRaf() {
         return raf;
-    }
-
-    public byte[] getBytes() {
-        return b;
     }
 
     public long getFilePointer() {
