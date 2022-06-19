@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.strategy.impl;
 
 import com.google.protobuf.ByteString;
+import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;
@@ -26,6 +27,9 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
 
     @Autowired
     private BufferActuator writerBufferActuator;
+
+    @Autowired
+    private CacheService cacheService;
 
     @Override
     public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent event) {

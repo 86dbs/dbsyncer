@@ -16,7 +16,6 @@ import org.springframework.util.Assert;
 import javax.annotation.PostConstruct;
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.Queue;
 
 /**
@@ -53,7 +52,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
     private Binlog binlog;
 
-    private Pipeline pipeline;
+    private BinlogPipeline pipeline;
 
     private OutputStream out;
 
@@ -114,7 +113,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
             }
 
             if (hasLine) {
-                binlog.setPos(pipeline.filePointer);
+                binlog.setPos(pipeline.getFilePointer());
                 FileUtils.writeStringToFile(configPath, JsonUtil.objToJson(binlog), DEFAULT_CHARSET);
             }
         } catch (IOException e) {
@@ -126,7 +125,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
     public void flush(BinlogMessage message) {
         if (null != message) {
             try {
-                out.write(message.toByteArray());
+                message.writeDelimitedTo(out);
                 out.write(LINE_SEPARATOR.getBytes(DEFAULT_CHARSET));
             } catch (IOException e) {
                 logger.error(e.getMessage());
@@ -137,7 +136,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
     @Override
     public void destroy() {
         IOUtils.closeQuietly(out);
-        IOUtils.closeQuietly(pipeline.raf);
+        IOUtils.closeQuietly(pipeline.getRaf());
     }
 
     private void initPipeline() throws IOException {
@@ -162,7 +161,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
         final RandomAccessFile raf = new BufferedRandomAccessFile(binlogFile, "r");
         raf.seek(binlog.getPos());
-        pipeline = new Pipeline(raf);
+        pipeline = new BinlogPipeline(raf);
         out = new FileOutputStream(binlogFile, true);
     }
 
@@ -170,65 +169,4 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
         return String.format("%s.%06d", BINLOG, index <= 0 ? 1 : index);
     }
 
-    final class Pipeline {
-        RandomAccessFile raf;
-        byte[] b;
-        long filePointer;
-
-        public Pipeline(RandomAccessFile raf) {
-            this.raf = raf;
-        }
-
-        public byte[] readLine() throws IOException {
-            this.filePointer = raf.getFilePointer();
-            if (filePointer >= raf.length()) {
-                b = new byte[0];
-                return null;
-            }
-            if (b == null || b.length == 0) {
-                b = new byte[(int) (raf.length() - filePointer)];
-            }
-            raf.read(b);
-
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            int read = 0;
-            for (int i = 0; i < b.length; i++) {
-                read++;
-                if (b[i] == '\n' || b[i] == '\r') {
-                    break;
-                }
-                stream.write(b[i]);
-            }
-            b = Arrays.copyOfRange(b, read, b.length);
-
-            raf.seek(this.filePointer + read);
-            byte[] _b = stream.toByteArray();
-            stream.close();
-            stream = null;
-            return _b;
-        }
-    }
-
-    static class Binlog {
-        private String binlog;
-        private long pos = 0;
-
-        public String getBinlog() {
-            return binlog;
-        }
-
-        public Binlog setBinlog(String binlog) {
-            this.binlog = binlog;
-            return this;
-        }
-
-        public long getPos() {
-            return pos;
-        }
-
-        public Binlog setPos(long pos) {
-            this.pos = pos;
-            return this;
-        }
-    }
 }

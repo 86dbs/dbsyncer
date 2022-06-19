@@ -7,4 +7,5 @@ import org.dbsyncer.parser.model.TableGroup;
 public interface ParserStrategy {
 
     void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent event);
+
 }
