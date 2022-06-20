@@ -1,5 +1,6 @@
 package org.dbsyncer.storage.binlog;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
@@ -8,7 +9,7 @@ import java.io.RandomAccessFile;
  * @version 1.0.0
  * @date 2022/6/19 23:36
  */
-public class BinlogPipeline {
+public class BinlogPipeline implements Closeable {
     private final RandomAccessFile raf;
     private final byte[] h = new byte[1];
     private byte[] b;
@@ -36,5 +37,16 @@ public class BinlogPipeline {
 
     public long getFilePointer() {
         return filePointer;
+    }
+
+    @Override
+    public void close() throws IOException {
+        if(null != raf){
+            raf.close();
+        }
+    }
+
+    public void write(byte[] bytes) throws IOException {
+        raf.write(bytes);
     }
 }
