@@ -2,7 +2,6 @@ import com.google.protobuf.ByteString;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.file.BufferedRandomAccessFile;
-import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.storage.binlog.Binlog;
 import org.dbsyncer.storage.binlog.BinlogPipeline;
@@ -17,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.time.LocalTime;
 
 /**
  * @author AE86
@@ -61,25 +59,27 @@ public class BinlogMessageTest {
 
     @Test
     public void testBinlogMessage() throws IOException {
-        LocalTime localTime = DateFormatUtil.stringToLocalTime("2022-06-18 22:59:59");
-        String s = localTime.toString();
-
-        BinlogMessage build = BinlogMessage.newBuilder()
-                .setTableGroupId("123456700000")
-                .setEvent(EventEnum.UPDATE)
-                .addData(Data.newBuilder().putRow("aaa", ByteString.copyFromUtf8("hello,中国")).putRow("aaa111", ByteString.copyFromUtf8(s)))
-                .build();
-        byte[] bytes = build.toByteArray();
-        logger.info("序列化长度：{}", bytes.length);
-        logger.info("{}", bytes);
-
-//        build.writeDelimitedTo(out);
+        write("123456", "abc");
+        write("000111", "xyz");
+        write("888999", "jkl");
 
         byte[] line;
         while (null != (line = pipeline.readLine())) {
             BinlogMessage binlogMessage = BinlogMessage.parseFrom(line);
             logger.info(binlogMessage.toString());
         }
+    }
+
+    private void write(String tableGroupId, String key) throws IOException {
+        BinlogMessage build = BinlogMessage.newBuilder()
+                .setTableGroupId(tableGroupId)
+                .setEvent(EventEnum.UPDATE)
+                .addData(Data.newBuilder().putRow(key, ByteString.copyFromUtf8("hello,中国")).build())
+                .build();
+        byte[] bytes = build.toByteArray();
+        logger.info("序列化长度：{}", bytes.length);
+        logger.info("{}", bytes);
+        build.writeDelimitedTo(out);
     }
 
 }
