@@ -1,8 +1,10 @@
 package org.dbsyncer.storage.binlog;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import org.apache.commons.io.IOUtils;
+import org.dbsyncer.common.file.BufferedRandomAccessFile;
+import org.dbsyncer.storage.binlog.proto.BinlogMessage;
+
+import java.io.*;
 
 /**
  * @author AE86
@@ -11,42 +13,42 @@ import java.io.RandomAccessFile;
  */
 public class BinlogPipeline implements Closeable {
     private final RandomAccessFile raf;
+    private final OutputStream out;
     private final byte[] h = new byte[1];
     private byte[] b;
-    private long filePointer;
+    private long offset;
 
-    public BinlogPipeline(RandomAccessFile raf) {
-        this.raf = raf;
+    public BinlogPipeline(File binlogFile, long pos) throws IOException {
+        this.raf = new BufferedRandomAccessFile(binlogFile, "r");
+        this.out = new FileOutputStream(binlogFile, true);
+        raf.seek(pos);
     }
 
     public byte[] readLine() throws IOException {
-        this.filePointer = raf.getFilePointer();
-        if (filePointer >= raf.length()) {
+        this.offset = raf.getFilePointer();
+        if (offset >= raf.length()) {
             return null;
         }
         raf.read(h);
         b = new byte[Byte.toUnsignedInt(h[0])];
         raf.read(b);
-        raf.seek(this.filePointer + (h.length + b.length));
+        raf.seek(this.offset + (h.length + b.length));
         return b;
     }
 
-    public RandomAccessFile getRaf() {
-        return raf;
-    }
-
-    public long getFilePointer() {
-        return filePointer;
-    }
-
-    @Override
-    public void close() throws IOException {
-        if(null != raf){
-            raf.close();
+    public void write(BinlogMessage message) throws IOException {
+        if(null != message){
+            message.writeDelimitedTo(out);
         }
     }
 
-    public void write(byte[] bytes) throws IOException {
-        raf.write(bytes);
+    public long getOffset() {
+        return offset;
+    }
+
+    @Override
+    public void close() {
+        IOUtils.closeQuietly(out);
+        IOUtils.closeQuietly(raf);
     }
 }

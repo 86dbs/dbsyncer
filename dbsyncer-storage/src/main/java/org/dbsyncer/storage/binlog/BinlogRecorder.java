@@ -2,6 +2,8 @@ package org.dbsyncer.storage.binlog;
 
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 
+import java.io.IOException;
+
 /**
  * @author AE86
  * @version 1.0.0
@@ -14,6 +16,6 @@ public interface BinlogRecorder {
      *
      * @param message
      */
-    void flush(BinlogMessage message);
+    void flush(BinlogMessage message) throws IOException;
 
 }
