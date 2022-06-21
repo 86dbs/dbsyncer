@@ -1,7 +1,6 @@
 import com.google.protobuf.ByteString;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.dbsyncer.common.file.BufferedRandomAccessFile;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.storage.binlog.Binlog;
 import org.dbsyncer.storage.binlog.BinlogPipeline;
@@ -14,7 +13,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 
 /**
@@ -26,16 +26,12 @@ public class BinlogMessageTest {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private String path;
-
-    private OutputStream out;
-
     private BinlogPipeline pipeline;
 
     @Before
     public void init() throws IOException {
         File dir = new File(System.getProperty("user.dir")).getParentFile();
-        path = new StringBuilder(dir.getAbsolutePath()).append(File.separatorChar)
+        String path = new StringBuilder(dir.getAbsolutePath()).append(File.separatorChar)
                 .append("data").append(File.separatorChar)
                 .append("binlog").append(File.separatorChar)
                 .append("WriterBinlog").append(File.separatorChar)
@@ -43,18 +39,12 @@ public class BinlogMessageTest {
         File configPath = new File(path + "binlog.config");
         String configJson = FileUtils.readFileToString(configPath, Charset.defaultCharset());
         Binlog binlog = JsonUtil.jsonToObj(configJson, Binlog.class);
-        File binlogFile = new File(path + binlog.getBinlog());
-        out = new FileOutputStream(binlogFile, true);
-
-        final RandomAccessFile raf = new BufferedRandomAccessFile(binlogFile, "r");
-        raf.seek(binlog.getPos());
-        pipeline = new BinlogPipeline(raf);
+        pipeline = new BinlogPipeline(new File(path + binlog.getBinlog()), binlog.getPos());
     }
 
     @After
     public void close() {
-        IOUtils.closeQuietly(out);
-        IOUtils.closeQuietly(pipeline.getRaf());
+        IOUtils.closeQuietly(pipeline);
     }
 
     @Test
@@ -79,7 +69,7 @@ public class BinlogMessageTest {
         byte[] bytes = build.toByteArray();
         logger.info("序列化长度：{}", bytes.length);
         logger.info("{}", bytes);
-        build.writeDelimitedTo(out);
+        pipeline.write(build);
     }
 
 }
