@@ -89,11 +89,12 @@ public class BinlogContext implements Closeable {
         if (!binlogFile.exists()) {
             // 过期/误删
             logger.warn("The binlog file '{}' is expired or deleted.", binlog.getBinlog());
-            write(binlogFile, "", false);
 
+            // binlog.000002
             binlog = new Binlog().setBinlog(createNewBinlogName(getBinlogIndex(binlog.getBinlog())));
-            write(indexFile, binlog.getBinlog() + LINE_SEPARATOR, true);
             binlogFile = new File(path + binlog.getBinlog());
+            write(binlogFile, "", false);
+            write(indexFile, binlog.getBinlog() + LINE_SEPARATOR, true);
         }
 
         // read index
@@ -170,6 +171,8 @@ public class BinlogContext implements Closeable {
      * @throws IOException
      */
     public void flush() throws IOException {
+        binlog.setBinlog(pipeline.getBinlogName());
+        binlog.setPos(pipeline.getOffset());
         FileUtils.writeStringToFile(configFile, JsonUtil.objToJson(binlog), DEFAULT_CHARSET);
     }
 
