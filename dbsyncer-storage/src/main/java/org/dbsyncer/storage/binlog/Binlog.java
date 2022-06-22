@@ -6,24 +6,24 @@ package org.dbsyncer.storage.binlog;
  * @date 2022/6/19 23:03
  */
 public final class Binlog {
-    private String binlog;
-    private long pos = 0;
+    private String fileName;
+    private long position = 0;
 
-    public String getBinlog() {
-        return binlog;
+    public String getFileName() {
+        return fileName;
     }
 
-    public Binlog setBinlog(String binlog) {
-        this.binlog = binlog;
+    public Binlog setFileName(String fileName) {
+        this.fileName = fileName;
         return this;
     }
 
-    public long getPos() {
-        return pos;
+    public long getPosition() {
+        return position;
     }
 
-    public Binlog setPos(long pos) {
-        this.pos = pos;
+    public Binlog setPosition(long position) {
+        this.position = position;
         return this;
     }
 }

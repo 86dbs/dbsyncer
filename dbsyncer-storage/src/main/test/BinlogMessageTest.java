@@ -39,7 +39,7 @@ public class BinlogMessageTest {
         File configPath = new File(path + "binlog.config");
         String configJson = FileUtils.readFileToString(configPath, Charset.defaultCharset());
         Binlog binlog = JsonUtil.jsonToObj(configJson, Binlog.class);
-        pipeline = new BinlogPipeline(new File(path + binlog.getBinlog()), binlog.getPos());
+        pipeline = new BinlogPipeline(new File(path + binlog.getFileName()), binlog.getPosition());
     }
 
     @After
