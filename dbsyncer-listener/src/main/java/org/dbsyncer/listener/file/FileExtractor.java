@@ -2,7 +2,7 @@ package org.dbsyncer.listener.file;
 
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.event.RowChangedEvent;
-import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.file.BufferedRandomAccessFile;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.common.util.StringUtil;

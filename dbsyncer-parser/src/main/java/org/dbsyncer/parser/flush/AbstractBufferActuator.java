@@ -21,14 +21,13 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * 任务缓存执行器
  * <p>1. 任务优先进入缓存队列
- * <p>2. 任务数超过队列阈值75%时，序列化写入磁盘
- * <p>3. 内置定时同步线程，在队列空闲时，将磁盘数据刷入缓存
+ * <p>2. 将任务分区合并，批量执行
  *
  * @author AE86
  * @version 1.0.0
  * @date 2022/3/27 17:36
  */
-public abstract class AbstractBufferActuator<Request, Response> extends AbstractBinlogRecorder implements BufferActuator, ScheduledTaskJob {
+public abstract class AbstractBufferActuator<Request, Response> implements BufferActuator, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -81,18 +80,12 @@ public abstract class AbstractBufferActuator<Request, Response> extends Abstract
     protected abstract void pull(Response response);
 
     @Override
-    protected Queue getQueue() {
+    public Queue getQueue() {
         return buffer;
     }
 
     @Override
     public void offer(BufferRequest request) {
-//        if (running || buffer.size() >= (CAPACITY * BUFFER_THRESHOLD)) {
-//            flushBinlog(request);
-//        } else {
-//            buffer.offer((Request) request);
-//        }
-
         buffer.offer((Request) request);
 
         // TODO 临时解决方案：生产大于消费问题，限制生产速度
@@ -129,8 +122,6 @@ public abstract class AbstractBufferActuator<Request, Response> extends Abstract
                 bufferLock.unlock();
             }
         }
-
-//        parseBinlog();
     }
 
     private void flush(Queue<Request> queue) throws IllegalAccessException, InstantiationException {
