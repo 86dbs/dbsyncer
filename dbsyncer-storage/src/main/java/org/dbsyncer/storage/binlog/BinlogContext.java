@@ -146,7 +146,7 @@ public class BinlogContext implements Closeable {
     }
 
     private String createNewBinlogName(int index) {
-        return String.format("%s.%06d", BINLOG, index <= 0 ? 1 : index + 1);
+        return String.format("%s.%06d", BINLOG, index % 999999 + 1);
     }
 
     private int getBinlogIndex(String binlogName) {

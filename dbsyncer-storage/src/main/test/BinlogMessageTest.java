@@ -36,6 +36,9 @@ public class BinlogMessageTest {
                 .append("binlog").append(File.separatorChar)
                 .append("WriterBinlog").append(File.separatorChar)
                 .toString();
+        if (!dir.exists()) {
+            FileUtils.forceMkdir(dir);
+        }
         File configPath = new File(path + "binlog.config");
         String configJson = FileUtils.readFileToString(configPath, Charset.defaultCharset());
         Binlog binlog = JsonUtil.jsonToObj(configJson, Binlog.class);
@@ -49,9 +52,14 @@ public class BinlogMessageTest {
 
     @Test
     public void testBinlogMessage() throws IOException {
-        write("123456", "abc");
-        write("000111", "xyz");
-        write("888999", "jkl");
+        for (int i = 0; i <= 9; i++) {
+            String s = String.format("%s.%06d", "BINLOG", i % 999999 + 1);
+            logger.info("{} {}", i, s);
+        }
+
+        //write("123456", "abc");
+        //write("000111", "xyz");
+        //write("888999", "jkl");
 
         byte[] line;
         while (null != (line = pipeline.readLine())) {
