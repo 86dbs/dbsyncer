@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractExtractor implements Extractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    protected String metaId;
     protected Executor taskExecutor;
     protected ConnectorFactory connectorFactory;
     protected ScheduledTaskService scheduledTaskService;
@@ -79,6 +80,10 @@ public abstract class AbstractExtractor implements Extractor {
         } catch (InterruptedException e) {
             logger.info(e.getMessage());
         }
+    }
+
+    public void setMetaId(String metaId) {
+        this.metaId = metaId;
     }
 
     public void setTaskExecutor(Executor taskExecutor) {

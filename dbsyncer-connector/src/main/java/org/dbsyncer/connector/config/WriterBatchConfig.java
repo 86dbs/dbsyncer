@@ -27,22 +27,13 @@ public class WriterBatchConfig {
      * 集合数据
      */
     private List<Map> data;
-    /**
-     * 强制更新
-     */
-    private boolean isForceUpdate;
 
     public WriterBatchConfig(String tableName, String event, Map<String, String> command, List<Field> fields, List<Map> data) {
-        this(tableName, event, command, fields, data, false);
-    }
-
-    public WriterBatchConfig(String tableName, String event, Map<String, String> command, List<Field> fields, List<Map> data, boolean isForceUpdate) {
         this.tableName = tableName;
         this.event = event;
         this.command = command;
         this.fields = fields;
         this.data = data;
-        this.isForceUpdate = isForceUpdate;
     }
 
     public String getTableName() {
@@ -65,7 +56,4 @@ public class WriterBatchConfig {
         return data;
     }
 
-    public boolean isForceUpdate() {
-        return isForceUpdate;
-    }
 }

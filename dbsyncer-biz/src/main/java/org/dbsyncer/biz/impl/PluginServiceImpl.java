@@ -15,6 +15,7 @@ import org.dbsyncer.plugin.enums.FileSuffixEnum;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,14 +71,14 @@ public class PluginServiceImpl implements PluginService {
 
     @Override
     public void checkFileSuffix(String filename) {
-        if (StringUtil.isNotBlank(filename)) {
-            String suffix = filename.substring(filename.lastIndexOf(".") + 1, filename.length());
-            if (null == FileSuffixEnum.getFileSuffix(suffix)) {
-                suffix = StringUtil.join(FileSuffixEnum.values(), ",").toLowerCase();
-                String msg = String.format("不正确的文件扩展名 \"%s\"，只支持 \"%s\" 的文件扩展名。", filename, suffix);
-                logService.log(LogType.PluginLog.CHECK_ERROR, msg);
-                throw new BizException(msg);
-            }
+        Assert.hasText(filename, "the plugin filename is null.");
+        String suffix = filename.substring(filename.lastIndexOf(".") + 1, filename.length());
+        FileSuffixEnum fileSuffix = FileSuffixEnum.getFileSuffix(suffix);
+        Assert.notNull(fileSuffix, "Illegal file suffix");
+        if (FileSuffixEnum.JAR != fileSuffix) {
+            String msg = String.format("不正确的文件扩展名 \"%s\"，只支持 \"%s\" 的文件扩展名。", filename, FileSuffixEnum.JAR.getName());
+            logService.log(LogType.PluginLog.CHECK_ERROR, msg);
+            throw new BizException(msg);
         }
     }
 

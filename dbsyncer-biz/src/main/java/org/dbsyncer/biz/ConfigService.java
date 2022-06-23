@@ -3,6 +3,7 @@ package org.dbsyncer.biz;
 import org.dbsyncer.biz.vo.ConfigVo;
 import org.dbsyncer.parser.model.ConfigModel;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -48,4 +49,17 @@ public interface ConfigService {
      */
     List<ConfigModel> getConfigModelAll();
 
+    /**
+     * 校验文件格式
+     *
+     * @param filename
+     */
+    void checkFileSuffix(String filename);
+
+    /**
+     * 更新配置
+     *
+     * @param file
+     */
+    void refreshConfig(File file);
 }

@@ -7,10 +7,9 @@ import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.parser.ParserFactory;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
-import org.dbsyncer.parser.flush.BufferResponse;
-import org.dbsyncer.parser.flush.FlushStrategy;
-import org.dbsyncer.parser.flush.model.WriterRequest;
-import org.dbsyncer.parser.flush.model.WriterResponse;
+import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.parser.model.WriterRequest;
+import org.dbsyncer.parser.model.WriterResponse;
 import org.dbsyncer.parser.model.BatchWriter;
 import org.dbsyncer.parser.model.Connector;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,16 +41,6 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     private final static int BATCH_SIZE = 100;
 
     @Override
-    protected long getPeriod() {
-        return 300;
-    }
-
-    @Override
-    protected BufferResponse getValue() {
-        return new WriterResponse();
-    }
-
-    @Override
     protected String getPartitionKey(WriterRequest request) {
         return new StringBuilder(request.getTableGroupId()).append("-").append(request.getEvent()).toString();
     }
@@ -76,7 +65,7 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     protected void pull(WriterResponse response) {
         ConnectorMapper targetConnectorMapper = connectorFactory.connect(getConnectorConfig(response.getTargetConnectorId()));
         Result result = parserFactory.writeBatch(new BatchWriter(targetConnectorMapper, response.getCommand(), response.getTargetTableName(), response.getEvent(),
-                response.getFields(), response.getDataList(), BATCH_SIZE, true));
+                response.getFields(), response.getDataList(), BATCH_SIZE));
         flushStrategy.flushIncrementData(response.getMetaId(), result, response.getEvent());
     }
 

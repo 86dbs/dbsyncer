@@ -242,7 +242,8 @@ public interface LogType {
      */
     enum CacheLog implements LogType {
         IMPORT("70", "导入配置"),
-        EXPORT("71", "导出配置");
+        IMPORT_ERROR("71", "导入配置异常"),
+        EXPORT("72", "导出配置");
 
         private String type;
         private String message;

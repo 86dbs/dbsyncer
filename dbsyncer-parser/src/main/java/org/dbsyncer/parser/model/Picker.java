@@ -3,24 +3,17 @@ package org.dbsyncer.parser.model;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.model.Field;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Picker {
 
     private List<Field> sourceFields;
     private List<Field> targetFields;
-    private List<Map>   targetMapList;
 
     public Picker(List<FieldMapping> fieldMapping) {
-        pickFields(fieldMapping);
-    }
-
-    public Picker(List<FieldMapping> fieldMapping, Map<String, Object> data) {
-        pickFields(fieldMapping);
-        pickData(data);
-    }
-
-    public void pickFields(List<FieldMapping> fieldMapping) {
         sourceFields = new ArrayList<>();
         targetFields = new ArrayList<>();
         if (!CollectionUtils.isEmpty(fieldMapping)) {
@@ -32,7 +25,7 @@ public class Picker {
     }
 
     public List<Map> pickData(List<Map> data) {
-        targetMapList = new ArrayList<>();
+        List<Map> targetMapList = new ArrayList<>();
         if (!CollectionUtils.isEmpty(data)) {
             final int size = data.size();
             final int sFieldSize = sourceFields.size();
@@ -46,13 +39,12 @@ public class Picker {
         return targetMapList;
     }
 
-    public void pickData(Map<String, Object> data) {
-        targetMapList = new ArrayList<>();
+    public Map pickData(Map<String, Object> data) {
+        Map targetMap = new HashMap<>();
         if (!CollectionUtils.isEmpty(data)) {
-            Map targetMap = new HashMap<>();
             exchange(sourceFields.size(), sourceFields, targetFields, data, targetMap);
-            targetMapList.add(targetMap);
         }
+        return targetMap;
     }
 
     private void exchange(int sFieldSize, List<Field> sFields, List<Field> tFields, Map<String, Object> source,
@@ -70,16 +62,8 @@ public class Picker {
         }
     }
 
-    public Map getTargetMap() {
-        return CollectionUtils.isEmpty(targetMapList) ? Collections.EMPTY_MAP : targetMapList.get(0);
-    }
-
     public List<Field> getTargetFields() {
         return targetFields;
-    }
-
-    public List<Map> getTargetMapList() {
-        return targetMapList;
     }
 
 }

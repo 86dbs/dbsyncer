@@ -1,4 +1,4 @@
-package org.dbsyncer.parser.flush.model;
+package org.dbsyncer.parser.model;
 
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.parser.flush.BufferRequest;

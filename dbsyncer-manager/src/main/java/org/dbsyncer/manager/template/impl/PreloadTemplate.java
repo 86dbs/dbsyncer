@@ -1,15 +1,16 @@
 package org.dbsyncer.manager.template.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.manager.config.OperationConfig;
 import org.dbsyncer.manager.config.PreloadCallBack;
-import org.dbsyncer.manager.config.PreloadConfig;
 import org.dbsyncer.manager.config.QueryConfig;
-import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.manager.enums.HandlerEnum;
-import org.dbsyncer.manager.template.AbstractTemplate;
 import org.dbsyncer.manager.template.Handler;
+import org.dbsyncer.manager.template.impl.OperationTemplate.Group;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -26,6 +27,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -37,7 +39,7 @@ import java.util.Map;
  * @date 2019/9/16 23:59
  */
 @Component
-public final class PreloadTemplate extends AbstractTemplate implements ApplicationListener<ContextRefreshedEvent> {
+public final class PreloadTemplate implements ApplicationListener<ContextRefreshedEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -53,16 +55,16 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
     @Autowired
     private OperationTemplate operationTemplate;
 
-    public void execute(PreloadConfig config) {
+    public void execute(HandlerEnum handlerEnum) {
         Query query = new Query();
         query.setType(StorageEnum.CONFIG);
-        String filterType = config.getFilterType();
-        query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, filterType);
+        String modelType = handlerEnum.getModelType();
+        query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, modelType);
 
         int pageNum = 1;
         int pageSize = 20;
         long total = 0;
-        for(;;){
+        for (; ; ) {
             query.setPageNum(pageNum);
             query.setPageSize(pageSize);
             Paging paging = storageService.query(query);
@@ -70,44 +72,70 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
             if (CollectionUtils.isEmpty(data)) {
                 break;
             }
-            Handler handler = config.getHandlerEnum().getHandler();
-            GroupStrategyEnum strategy = getDefaultStrategy(config);
+            Handler handler = handlerEnum.getHandler();
             data.forEach(map -> {
                 String json = (String) map.get(ConfigConstant.CONFIG_MODEL_JSON);
                 ConfigModel model = (ConfigModel) handler.execute(new PreloadCallBack(parser, json));
                 if (null != model) {
-                    operationTemplate.cache(model, strategy);
+                    operationTemplate.cache(model, handlerEnum.getGroupStrategyEnum());
                 }
             });
             total += paging.getTotal();
-            pageNum ++;
+            pageNum++;
         }
 
-        logger.info("PreLoad {}:{}", filterType, total);
+        logger.info("PreLoad {}:{}", modelType, total);
     }
 
-    @Override
-    public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
-        // Load connectors
-        execute(new PreloadConfig(ConfigConstant.CONNECTOR, HandlerEnum.PRELOAD_CONNECTOR));
-        // Load mappings
-        execute(new PreloadConfig(ConfigConstant.MAPPING, HandlerEnum.PRELOAD_MAPPING));
-        // Load tableGroups
-        execute(new PreloadConfig(ConfigConstant.TABLE_GROUP, GroupStrategyEnum.TABLE, HandlerEnum.PRELOAD_TABLE_GROUP));
-        // Load metas
-        execute(new PreloadConfig(ConfigConstant.META, HandlerEnum.PRELOAD_META));
+    public void reload(String json) {
+        Map<String, JSONObject> map = JsonUtil.jsonToObj(json, Map.class);
+        if (CollectionUtils.isEmpty(map)) {
+            return;
+        }
+
         // Load configs
-        execute(new PreloadConfig(ConfigConstant.CONFIG, HandlerEnum.PRELOAD_CONFIG));
+        reload(map, HandlerEnum.PRELOAD_CONFIG);
+        // Load connectors
+        reload(map, HandlerEnum.PRELOAD_CONNECTOR);
+        // Load mappings
+        reload(map, HandlerEnum.PRELOAD_MAPPING);
+        // Load metas
+        reload(map, HandlerEnum.PRELOAD_META);
         // Load projectGroups
-        execute(new PreloadConfig(ConfigConstant.PROJECT_GROUP, HandlerEnum.PRELOAD_PROJECT_GROUP));
+        reload(map, HandlerEnum.PRELOAD_PROJECT_GROUP);
+        launch();
+    }
 
-        // Load plugins
-        manager.loadPlugins();
+    private void reload(Map<String, JSONObject> map, HandlerEnum handlerEnum) {
+        reload(map, handlerEnum, handlerEnum.getModelType());
+    }
 
-        // Check connectors status
-        manager.checkAllConnectorStatus();
+    private void reload(Map<String, JSONObject> map, HandlerEnum handlerEnum, String groupId) {
+        JSONObject config = map.get(groupId);
+        Group group = JsonUtil.jsonToObj(config.toJSONString(), Group.class);
+        if (null == group) {
+            return;
+        }
 
-        // Launch drivers
+        List<String> index = group.getIndex();
+        if (CollectionUtils.isEmpty(index)) {
+            return;
+        }
+
+        Handler handler = handlerEnum.getHandler();
+        for (String e : index) {
+            JSONObject m = map.get(e);
+            ConfigModel model = (ConfigModel) handler.execute(new PreloadCallBack(parser, m.toJSONString()));
+            operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD, handlerEnum.getGroupStrategyEnum()));
+            // Load tableGroups
+            if (HandlerEnum.PRELOAD_MAPPING == handlerEnum) {
+                handlerEnum = HandlerEnum.PRELOAD_TABLE_GROUP;
+                reload(map, handlerEnum, operationTemplate.getGroupId(model, handlerEnum.getGroupStrategyEnum()));
+            }
+        }
+    }
+
+    private void launch() {
         Meta meta = new Meta();
         meta.setType(ConfigConstant.META);
         QueryConfig<Meta> queryConfig = new QueryConfig<>(meta);
@@ -123,6 +151,21 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
                 }
             });
         }
+    }
+
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
+        // Load configModels
+        Arrays.stream(HandlerEnum.values()).filter(handlerEnum -> handlerEnum.isPreload()).forEach(handlerEnum -> execute(handlerEnum));
+
+        // Load plugins
+        manager.loadPlugins();
+
+        // Check connectors status
+        manager.checkAllConnectorStatus();
+
+        // Launch drivers
+        launch();
     }
 
 }

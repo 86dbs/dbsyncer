@@ -5,10 +5,12 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.config.ReaderConfig;
+import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
@@ -20,12 +22,11 @@ import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
-import org.dbsyncer.parser.flush.BufferActuator;
-import org.dbsyncer.parser.flush.FlushStrategy;
-import org.dbsyncer.parser.flush.model.WriterRequest;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.parser.strategy.ParserStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
@@ -81,7 +82,7 @@ public class ParserFactory implements Parser {
     private ApplicationContext applicationContext;
 
     @Autowired
-    private BufferActuator writerBufferActuator;
+    private ParserStrategy parserStrategy;
 
     @Override
     public ConnectorMapper connect(ConnectorConfig config) {
@@ -300,20 +301,7 @@ public class ParserFactory implements Parser {
         logger.info("Table[{}] {}, before:{}, after:{}", event.getSourceTableName(), event.getEvent(),
                 event.getBefore(), event.getAfter());
 
-        // 1、获取映射字段
-        final String eventName = event.getEvent();
-        Map<String, Object> data = StringUtil.equals(ConnectorConstant.OPERTION_DELETE, eventName) ? event.getBefore() : event.getAfter();
-        Picker picker = new Picker(tableGroup.getFieldMapping(), data);
-        Map target = picker.getTargetMap();
-
-        // 2、参数转换
-        ConvertUtil.convert(tableGroup.getConvert(), target);
-
-        // 3、插件转换
-        pluginFactory.convert(tableGroup.getPlugin(), eventName, data, target);
-
-        // 4、写入缓冲执行器
-        writerBufferActuator.offer(new WriterRequest(tableGroup.getId(), target, mapping.getMetaId(), mapping.getTargetConnectorId(), event.getSourceTableName(), event.getTargetTableName(), eventName, picker.getTargetFields(), tableGroup.getCommand()));
+        parserStrategy.execute(mapping, tableGroup, event);
     }
 
     /**
@@ -330,12 +318,11 @@ public class ParserFactory implements Parser {
         String event = batchWriter.getEvent();
         Map<String, String> command = batchWriter.getCommand();
         List<Field> fields = batchWriter.getFields();
-        boolean forceUpdate = batchWriter.isForceUpdate();
         // 总数
         int total = dataList.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, dataList, forceUpdate));
+            return connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, dataList));
         }
 
         // 批量任务, 拆分
@@ -358,7 +345,7 @@ public class ParserFactory implements Parser {
 
             taskExecutor.execute(() -> {
                 try {
-                    Result w = connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, data, forceUpdate));
+                    Result w = connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, data));
                     result.addSuccessData(w.getSuccessData());
                     result.addFailData(w.getFailData());
                     result.getError().append(w.getError());

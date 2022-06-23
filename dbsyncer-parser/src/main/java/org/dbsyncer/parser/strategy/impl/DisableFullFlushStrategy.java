@@ -1,4 +1,4 @@
-package org.dbsyncer.parser.flush.impl;
+package org.dbsyncer.parser.strategy.impl;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
