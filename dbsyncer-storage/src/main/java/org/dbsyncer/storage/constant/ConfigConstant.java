@@ -16,7 +16,7 @@ public class ConfigConstant {
     public static final String CONFIG_MODEL_CREATE_TIME = "createTime";
     public static final String CONFIG_MODEL_UPDATE_TIME = "updateTime";
     public static final String CONFIG_MODEL_JSON = "json";
-    public static final String PROJECT_GROUP = "projectGroup";
+
     /**
      * 配置类型
      */
@@ -25,6 +25,7 @@ public class ConfigConstant {
     public static final String TABLE_GROUP = "tableGroup";
     public static final String META = "meta";
     public static final String CONFIG = "config";
+    public static final String PROJECT_GROUP = "projectGroup";
 
     /**
      * 数据

@@ -68,12 +68,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public String addProjectGroup(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD.getHandler()));
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD));
     }
 
     @Override
     public String editProjectGroup(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT.getHandler()));
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT));
     }
 
     @Override
