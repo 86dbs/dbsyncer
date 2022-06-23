@@ -94,7 +94,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
     @Override
     public void flush(BinlogMessage message) throws IOException {
-        context.getBinlogPipeline().write(message);
+        context.write(message);
     }
 
     @Override
@@ -105,8 +105,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
     private void doParse() throws IOException {
         byte[] line;
         AtomicInteger batchCounter = new AtomicInteger();
-        final BinlogPipeline pipeline = context.getBinlogPipeline();
-        while (batchCounter.get() < MAX_BATCH_COUNT && null != (line = pipeline.readLine())) {
+        while (batchCounter.get() < MAX_BATCH_COUNT && null != (line = context.readLine())) {
             deserialize(BinlogMessage.parseFrom(line));
             // getQueue().offer(deserialize(message));
             batchCounter.getAndAdd(1);

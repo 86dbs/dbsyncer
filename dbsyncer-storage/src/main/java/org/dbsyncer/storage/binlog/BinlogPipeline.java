@@ -16,13 +16,13 @@ public class BinlogPipeline implements Closeable {
     private final OutputStream out;
     private final byte[] h = new byte[1];
     private byte[] b;
+    private File file;
     private long offset;
-    private File binlogFile;
 
-    public BinlogPipeline(File binlogFile, long pos) throws IOException {
-        this.binlogFile = binlogFile;
-        this.raf = new BufferedRandomAccessFile(binlogFile, "r");
-        this.out = new FileOutputStream(binlogFile, true);
+    public BinlogPipeline(File file, long pos) throws IOException {
+        this.file = file;
+        this.raf = new BufferedRandomAccessFile(file, "r");
+        this.out = new FileOutputStream(file, true);
         raf.seek(pos);
     }
 
@@ -49,7 +49,7 @@ public class BinlogPipeline implements Closeable {
     }
 
     public String getBinlogName() {
-        return binlogFile.getName();
+        return file.getName();
     }
 
     @Override
