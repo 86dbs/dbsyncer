@@ -98,6 +98,8 @@ public final class PreloadTemplate extends AbstractTemplate implements Applicati
         execute(new PreloadConfig(ConfigConstant.META, HandlerEnum.PRELOAD_META));
         // Load configs
         execute(new PreloadConfig(ConfigConstant.CONFIG, HandlerEnum.PRELOAD_CONFIG));
+        // Load projectGroups
+        execute(new PreloadConfig(ConfigConstant.PROJECT_GROUP, HandlerEnum.PRELOAD_PROJECT_GROUP));
 
         // Load plugins
         manager.loadPlugins();

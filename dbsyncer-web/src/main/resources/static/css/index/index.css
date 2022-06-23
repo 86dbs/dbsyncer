@@ -1,13 +1,7 @@
 @charset "UTF-8";
-.connectorList img {
-    width: 65px;
-    height: 65px;
-    border-radius: 20%;
-}
-
-.connectorList .well-sign-red {
-    color: #ff0000;
-}
+.groupBtn{display: block; margin-bottom: 10px;}
+.connectorList img{width: 65px;height: 65px; border-radius: 20%;}
+.connectorList .well-sign-red{color: #ff0000;}
 .connectorList .well-sign-operation{color: #999999; border-radius: 50%; }
 .connectorList .well-sign-operation:hover {color: #333333;}
 .connectorList .dropdown {position: absolute; right:16px; top: 0px;}
@@ -29,3 +23,11 @@
 .mappingList .dropdown {position: absolute; right:0px; top: 0px;}
 .mappingList .dropdown-menu {right: 12px;left: auto; top: 28px;}
 .mappingList .dropdown-menu i{font-size: 20px;}
+
+.dbsyncer_block_increment {
+  background: -webkit-linear-gradient(left, #ffffff, #dffbdc);
+}
+
+.dbsyncer_block_full {
+  background: -webkit-linear-gradient(left, #ffffff, #dcf5fb);
+}
