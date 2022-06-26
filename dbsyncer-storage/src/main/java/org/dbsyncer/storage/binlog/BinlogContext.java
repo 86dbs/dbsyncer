@@ -5,6 +5,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.storage.binlog.impl.BinlogPipeline;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.model.BinlogConfig;
@@ -43,7 +44,7 @@ public class BinlogContext implements Closeable {
 
     private static final String BINLOG_CONFIG = BINLOG + ".config";
 
-    private List<BinlogIndex> index = new LinkedList<>();
+    private List<BinlogIndex> indexList = new LinkedList<>();
 
     private String path;
 
@@ -88,28 +89,28 @@ public class BinlogContext implements Closeable {
         }
 
         // no index
-        if (CollectionUtils.isEmpty(index)) {
+        if (CollectionUtils.isEmpty(indexList)) {
             // binlog.000002
             config = initBinlogConfig(createNewBinlogName(getBinlogIndex(config.getFileName())));
             readIndex();
         }
 
         // 配置文件已失效，取最早的索引文件
-        int indexOf = index.indexOf(config.getFileName());
-        if (-1 == indexOf) {
+        BinlogIndex binlogIndex = getBinlogIndexByName(config.getFileName());
+        if (null == binlogIndex) {
             logger.warn("The binlog file '{}' is expired.", config.getFileName());
-            config = new BinlogConfig().setFileName(index.get(0).getFileName());
+            config = new BinlogConfig().setFileName(binlogIndex.getFileName());
             write(configFile, JsonUtil.objToJson(config), false);
         }
 
-        pipeline = new BinlogPipeline(index, new File(path + config.getFileName()), config.getPosition());
+        pipeline = new BinlogPipeline(this);
         logger.info("BinlogContext initialized with config:{}", JsonUtil.objToJson(config));
     }
 
     private void readIndex() throws IOException {
         List<String> indexNames = FileUtils.readLines(indexFile, DEFAULT_CHARSET);
         if (!CollectionUtils.isEmpty(indexNames)) {
-            index.addAll(indexNames.stream().map(indexName -> new BinlogIndex(indexName)).collect(Collectors.toList()));
+            indexList.addAll(indexNames.stream().map(indexName -> new BinlogIndex(indexName)).collect(Collectors.toList()));
         }
     }
 
@@ -122,11 +123,11 @@ public class BinlogContext implements Closeable {
     }
 
     private void deleteExpiredIndexFile() throws IOException {
-        if (CollectionUtils.isEmpty(index)) {
+        if (CollectionUtils.isEmpty(indexList)) {
             return;
         }
         boolean delete = false;
-        Iterator<BinlogIndex> iterator = index.iterator();
+        Iterator<BinlogIndex> iterator = indexList.iterator();
         while (iterator.hasNext()) {
             BinlogIndex next = iterator.next();
             if (null == next) {
@@ -149,7 +150,7 @@ public class BinlogContext implements Closeable {
 
         if (delete) {
             StringBuilder indexBuilder = new StringBuilder();
-            index.forEach(i -> indexBuilder.append(i.getFileName()).append(LINE_SEPARATOR));
+            indexList.forEach(i -> indexBuilder.append(i.getFileName()).append(LINE_SEPARATOR));
             write(indexFile, indexBuilder.toString(), false);
         }
     }
@@ -169,7 +170,7 @@ public class BinlogContext implements Closeable {
     }
 
     public void flush() throws IOException {
-        config.setFileName(pipeline.getBinlogName());
+        config.setFileName(pipeline.getFileName());
         config.setPosition(pipeline.getOffset());
         write(configFile, JsonUtil.objToJson(config), false);
     }
@@ -189,5 +190,22 @@ public class BinlogContext implements Closeable {
     @Override
     public void close() {
         pipeline.close();
+    }
+
+    public BinlogIndex getLastBinlogIndex() {
+        return indexList.get(indexList.size() - 1);
+    }
+
+    public BinlogIndex getBinlogIndexByName(String fileName) {
+        Map<String, BinlogIndex> binlogIndex = indexList.stream().collect(Collectors.toMap(BinlogIndex::getFileName, i -> i, (k1, k2) -> k1));
+        return binlogIndex.get(fileName);
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public BinlogConfig getConfig() {
+        return config;
     }
 }

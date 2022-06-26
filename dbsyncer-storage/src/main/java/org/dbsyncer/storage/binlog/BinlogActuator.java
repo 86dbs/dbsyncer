@@ -1,5 +1,7 @@
 package org.dbsyncer.storage.binlog;
 
+import org.dbsyncer.storage.model.BinlogIndex;
+
 import java.io.Closeable;
 
 /**
@@ -9,5 +11,9 @@ import java.io.Closeable;
  */
 public interface BinlogActuator extends Closeable {
 
+    void initBinlogIndex(BinlogIndex binlogIndex);
 
+    void refreshBinlogIndexUpdateTime();
+
+    BinlogIndex getBinlogIndex();
 }

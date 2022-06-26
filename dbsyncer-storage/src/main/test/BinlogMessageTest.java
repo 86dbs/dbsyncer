@@ -1,8 +1,6 @@
 import com.google.protobuf.ByteString;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.storage.model.BinlogConfig;
+import org.dbsyncer.storage.binlog.BinlogContext;
 import org.dbsyncer.storage.binlog.impl.BinlogPipeline;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.binlog.proto.Data;
@@ -13,9 +11,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 
 /**
  * @author AE86
@@ -26,28 +22,16 @@ public class BinlogMessageTest {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private BinlogPipeline pipeline;
+    private BinlogContext context;
 
     @Before
     public void init() throws IOException {
-        File dir = new File(System.getProperty("user.dir")).getParentFile();
-        String path = new StringBuilder(dir.getAbsolutePath()).append(File.separatorChar)
-                .append("data").append(File.separatorChar)
-                .append("binlog").append(File.separatorChar)
-                .append("WriterBinlog").append(File.separatorChar)
-                .toString();
-        if (!dir.exists()) {
-            FileUtils.forceMkdir(dir);
-        }
-        File configPath = new File(path + "binlog.config");
-        String configJson = FileUtils.readFileToString(configPath, Charset.defaultCharset());
-        BinlogConfig binlogConfig = JsonUtil.jsonToObj(configJson, BinlogConfig.class);
-        pipeline = new BinlogPipeline(new File(path + binlogConfig.getFileName()), binlogConfig.getPosition());
+        context = new BinlogContext("WriterBinlog");
     }
 
     @After
     public void close() {
-        IOUtils.closeQuietly(pipeline);
+        IOUtils.closeQuietly(context);
     }
 
     @Test
@@ -62,7 +46,7 @@ public class BinlogMessageTest {
         //write("888999", "jkl");
 
         byte[] line;
-        while (null != (line = pipeline.readLine())) {
+        while (null != (line = context.readLine())) {
             BinlogMessage binlogMessage = BinlogMessage.parseFrom(line);
             logger.info(binlogMessage.toString());
         }
@@ -77,7 +61,7 @@ public class BinlogMessageTest {
         byte[] bytes = build.toByteArray();
         logger.info("序列化长度：{}", bytes.length);
         logger.info("{}", bytes);
-        pipeline.write(build);
+        context.write(build);
     }
 
 }
