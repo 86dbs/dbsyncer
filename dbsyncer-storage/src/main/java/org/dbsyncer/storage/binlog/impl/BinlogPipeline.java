@@ -1,10 +1,12 @@
-package org.dbsyncer.storage.binlog;
+package org.dbsyncer.storage.binlog.impl;
 
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.file.BufferedRandomAccessFile;
+import org.dbsyncer.storage.model.BinlogIndex;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 
 import java.io.*;
+import java.util.List;
 
 /**
  * @author AE86
@@ -18,8 +20,10 @@ public class BinlogPipeline implements Closeable {
     private byte[] b;
     private File file;
     private long offset;
+    private List<BinlogIndex> index;
 
-    public BinlogPipeline(File file, long pos) throws IOException {
+    public BinlogPipeline(List<BinlogIndex> index, File file, long pos) throws IOException {
+        this.index = index;
         this.file = file;
         this.raf = new BufferedRandomAccessFile(file, "r");
         this.out = new FileOutputStream(file, true);

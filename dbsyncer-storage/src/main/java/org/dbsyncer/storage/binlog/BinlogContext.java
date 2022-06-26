@@ -5,7 +5,10 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.storage.binlog.impl.BinlogPipeline;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
+import org.dbsyncer.storage.model.BinlogConfig;
+import org.dbsyncer.storage.model.BinlogIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -19,10 +22,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class BinlogContext implements Closeable {
 
@@ -42,7 +43,7 @@ public class BinlogContext implements Closeable {
 
     private static final String BINLOG_CONFIG = BINLOG + ".config";
 
-    private List<String> index = new LinkedList<>();
+    private List<BinlogIndex> index = new LinkedList<>();
 
     private String path;
 
@@ -50,7 +51,7 @@ public class BinlogContext implements Closeable {
 
     private File indexFile;
 
-    private Binlog config;
+    private BinlogConfig config;
 
     private BinlogPipeline pipeline;
 
@@ -76,37 +77,44 @@ public class BinlogContext implements Closeable {
 
         // read index
         Assert.isTrue(indexFile.exists(), String.format("The index file '%s' is not exist.", indexFile.getName()));
-        index.addAll(FileUtils.readLines(indexFile, DEFAULT_CHARSET));
+        readIndex();
 
         // delete index file
         deleteExpiredIndexFile();
 
         // {"binlog":"binlog.000001","pos":0}
         if (null == config) {
-            config = JsonUtil.jsonToObj(FileUtils.readFileToString(configFile, DEFAULT_CHARSET), Binlog.class);
+            config = JsonUtil.jsonToObj(FileUtils.readFileToString(configFile, DEFAULT_CHARSET), BinlogConfig.class);
         }
 
         // no index
         if (CollectionUtils.isEmpty(index)) {
             // binlog.000002
             config = initBinlogConfig(createNewBinlogName(getBinlogIndex(config.getFileName())));
-            index.addAll(FileUtils.readLines(indexFile, DEFAULT_CHARSET));
+            readIndex();
         }
 
         // 配置文件已失效，取最早的索引文件
         int indexOf = index.indexOf(config.getFileName());
         if (-1 == indexOf) {
             logger.warn("The binlog file '{}' is expired.", config.getFileName());
-            config = new Binlog().setFileName(index.get(0));
+            config = new BinlogConfig().setFileName(index.get(0).getFileName());
             write(configFile, JsonUtil.objToJson(config), false);
         }
 
-        pipeline = new BinlogPipeline(new File(path + config.getFileName()), config.getPosition());
+        pipeline = new BinlogPipeline(index, new File(path + config.getFileName()), config.getPosition());
         logger.info("BinlogContext initialized with config:{}", JsonUtil.objToJson(config));
     }
 
-    private Binlog initBinlogConfig(String binlogName) throws IOException {
-        Binlog config = new Binlog().setFileName(binlogName);
+    private void readIndex() throws IOException {
+        List<String> indexNames = FileUtils.readLines(indexFile, DEFAULT_CHARSET);
+        if (!CollectionUtils.isEmpty(indexNames)) {
+            index.addAll(indexNames.stream().map(indexName -> new BinlogIndex(indexName)).collect(Collectors.toList()));
+        }
+    }
+
+    private BinlogConfig initBinlogConfig(String binlogName) throws IOException {
+        BinlogConfig config = new BinlogConfig().setFileName(binlogName);
         write(configFile, JsonUtil.objToJson(config), false);
         write(indexFile, binlogName + LINE_SEPARATOR, false);
         write(new File(path + binlogName), "", false);
@@ -117,24 +125,31 @@ public class BinlogContext implements Closeable {
         if (CollectionUtils.isEmpty(index)) {
             return;
         }
-        Set<String> shouldDelete = new HashSet<>();
-        for (String name : index) {
-            File file = new File(path + name);
+        boolean delete = false;
+        Iterator<BinlogIndex> iterator = index.iterator();
+        while (iterator.hasNext()) {
+            BinlogIndex next = iterator.next();
+            if (null == next) {
+                continue;
+            }
+            File file = new File(path + next.getFileName());
             if (!file.exists()) {
-                shouldDelete.add(name);
-                logger.info("Delete invalid binlog file '{}'.", name);
+                logger.info("Delete invalid binlog file '{}'.", next.getFileName());
+                iterator.remove();
+                delete = true;
                 continue;
             }
             if (isExpiredFile(file)) {
                 FileUtils.forceDelete(file);
-                shouldDelete.add(name);
-                logger.info("Delete expired binlog file '{}'.", name);
+                iterator.remove();
+                delete = true;
+                logger.info("Delete expired binlog file '{}'.", next.getFileName());
             }
         }
-        if (!CollectionUtils.isEmpty(shouldDelete)) {
-            index.removeAll(shouldDelete);
+
+        if (delete) {
             StringBuilder indexBuilder = new StringBuilder();
-            index.forEach(name -> indexBuilder.append(name).append(LINE_SEPARATOR));
+            index.forEach(i -> indexBuilder.append(i.getFileName()).append(LINE_SEPARATOR));
             write(indexFile, indexBuilder.toString(), false);
         }
     }

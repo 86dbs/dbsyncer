@@ -2,8 +2,8 @@ import com.google.protobuf.ByteString;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.storage.binlog.Binlog;
-import org.dbsyncer.storage.binlog.BinlogPipeline;
+import org.dbsyncer.storage.model.BinlogConfig;
+import org.dbsyncer.storage.binlog.impl.BinlogPipeline;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.binlog.proto.Data;
 import org.dbsyncer.storage.binlog.proto.EventEnum;
@@ -41,8 +41,8 @@ public class BinlogMessageTest {
         }
         File configPath = new File(path + "binlog.config");
         String configJson = FileUtils.readFileToString(configPath, Charset.defaultCharset());
-        Binlog binlog = JsonUtil.jsonToObj(configJson, Binlog.class);
-        pipeline = new BinlogPipeline(new File(path + binlog.getFileName()), binlog.getPosition());
+        BinlogConfig binlogConfig = JsonUtil.jsonToObj(configJson, BinlogConfig.class);
+        pipeline = new BinlogPipeline(new File(path + binlogConfig.getFileName()), binlogConfig.getPosition());
     }
 
     @After
