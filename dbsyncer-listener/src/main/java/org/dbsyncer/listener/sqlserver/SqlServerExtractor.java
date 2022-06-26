@@ -49,8 +49,8 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     private static final int OFFSET_COLUMNS = 4;
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
-    private Set<String> tables;
-    private Set<SqlServerChangeTable> changeTables;
+    private static Set<String> tables;
+    private static Set<SqlServerChangeTable> changeTables;
     private DatabaseConnectorMapper connectorMapper;
     private Worker worker;
     private Lsn lastLsn;
@@ -329,10 +329,10 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
                         continue;
                     }
 
+                    pull(stopLsn);
+
                     lastLsn = stopLsn;
                     snapshot.put(LSN_POSITION, lastLsn.toString());
-
-                    pull(stopLsn);
                 } catch (Exception e) {
                     logger.error(e.getMessage());
                     sleepInMills(1000L);
