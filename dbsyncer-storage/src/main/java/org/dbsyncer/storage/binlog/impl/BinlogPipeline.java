@@ -1,6 +1,5 @@
 package org.dbsyncer.storage.binlog.impl;
 
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.storage.binlog.BinlogContext;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.model.BinlogConfig;
@@ -8,7 +7,6 @@ import org.dbsyncer.storage.model.BinlogIndex;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.List;
 
 /**
  * @author AE86
@@ -24,7 +22,8 @@ public class BinlogPipeline implements Closeable {
         this.context = context;
         this.binlogWriter = new BinlogWriter(context.getPath(), context.getLastBinlogIndex());
         final BinlogConfig config = context.getConfig();
-        this.binlogReader = new BinlogReader(context.getPath(), context.getBinlogIndexByName(config.getFileName()), config.getPosition());
+        final BinlogIndex startIndex = context.getBinlogIndexByName(config.getFileName());
+        this.binlogReader = new BinlogReader(context.getPath(), startIndex, config.getPosition());
     }
 
     public void write(BinlogMessage message) throws IOException {

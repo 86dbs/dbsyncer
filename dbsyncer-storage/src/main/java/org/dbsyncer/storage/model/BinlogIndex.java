@@ -3,7 +3,7 @@ package org.dbsyncer.storage.model;
 import org.dbsyncer.storage.binlog.BinlogActuator;
 import org.dbsyncer.storage.enums.BinlogStatusEnum;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,26 +13,25 @@ import java.util.Set;
  * @date 2022/6/26 22:48
  */
 public class BinlogIndex {
-
     private String fileName;
     private BinlogStatusEnum status;
     private Set<BinlogActuator> lock;
-    private long createTime;
-    private long updateTime;
+    private LocalDateTime createTime;
+    private LocalDateTime updateTime;
 
-    public BinlogIndex(String fileName) {
+    public BinlogIndex(String fileName, LocalDateTime createTime) {
         this.fileName = fileName;
-        status = BinlogStatusEnum.CLOSED;
-        lock = new HashSet<>();
-        createTime = Instant.now().toEpochMilli();
-        updateTime = Instant.now().toEpochMilli();
+        this.status = BinlogStatusEnum.CLOSED;
+        this.lock = new HashSet<>();
+        this.createTime = createTime;
+        this.updateTime = LocalDateTime.now();
     }
 
-    public void add(BinlogActuator binlogActuator) {
+    public void addLock(BinlogActuator binlogActuator) {
         this.lock.add(binlogActuator);
     }
 
-    public void remove(BinlogActuator binlogActuator) {
+    public void removeLock(BinlogActuator binlogActuator) {
         this.lock.remove(binlogActuator);
     }
 
@@ -56,19 +55,19 @@ public class BinlogIndex {
         return lock;
     }
 
-    public long getCreateTime() {
+    public LocalDateTime getCreateTime() {
         return createTime;
     }
 
-    public void setCreateTime(long createTime) {
+    public void setCreateTime(LocalDateTime createTime) {
         this.createTime = createTime;
     }
 
-    public long getUpdateTime() {
+    public LocalDateTime getUpdateTime() {
         return updateTime;
     }
 
-    public void setUpdateTime(long updateTime) {
+    public void setUpdateTime(LocalDateTime updateTime) {
         this.updateTime = updateTime;
     }
 }

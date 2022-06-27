@@ -5,7 +5,6 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.storage.binlog.impl.BinlogPipeline;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.model.BinlogConfig;
@@ -20,10 +19,12 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.time.ZoneId;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class BinlogContext implements Closeable {
@@ -108,9 +109,13 @@ public class BinlogContext implements Closeable {
     }
 
     private void readIndex() throws IOException {
+        indexList.clear();
         List<String> indexNames = FileUtils.readLines(indexFile, DEFAULT_CHARSET);
         if (!CollectionUtils.isEmpty(indexNames)) {
-            indexList.addAll(indexNames.stream().map(indexName -> new BinlogIndex(indexName)).collect(Collectors.toList()));
+            for (String indexName : indexNames) {
+                LocalDateTime createTime = getFileCreateDateTime(new File(path + indexName)).atZone(ZoneId.systemDefault()).toLocalDateTime();
+                indexList.add(new BinlogIndex(indexName, createTime));
+            }
         }
     }
 
@@ -156,9 +161,13 @@ public class BinlogContext implements Closeable {
     }
 
     private boolean isExpiredFile(File file) throws IOException {
+        final LocalDateTime createTime = getFileCreateDateTime(file);
+        return createTime.isBefore(LocalDateTime.now().minusDays(BINLOG_EXPIRE_DAYS));
+    }
+
+    private LocalDateTime getFileCreateDateTime(File file) throws IOException {
         BasicFileAttributes attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
-        Instant instant = attr.creationTime().toInstant();
-        return Timestamp.from(instant).getTime() < Timestamp.valueOf(LocalDateTime.now().minusDays(BINLOG_EXPIRE_DAYS)).getTime();
+        return attr.creationTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
 
     private String createNewBinlogName(int index) {

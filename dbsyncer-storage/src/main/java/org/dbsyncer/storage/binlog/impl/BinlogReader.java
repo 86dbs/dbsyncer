@@ -20,9 +20,9 @@ public class BinlogReader extends AbstractBinlogActuator {
     private byte[] b;
     private long offset;
 
-    public BinlogReader(String path, BinlogIndex beginIndex, long position) throws IOException {
-        initBinlogIndex(beginIndex);
-        this.raf = new BufferedRandomAccessFile(new File(path + beginIndex.getFileName()), "r");
+    public BinlogReader(String path, BinlogIndex binlogIndex, long position) throws IOException {
+        initBinlogIndex(binlogIndex);
+        this.raf = new BufferedRandomAccessFile(new File(path + binlogIndex.getFileName()), "r");
         raf.seek(position);
     }
 
