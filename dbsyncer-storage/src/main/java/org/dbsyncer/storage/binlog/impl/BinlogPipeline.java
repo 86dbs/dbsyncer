@@ -47,4 +47,12 @@ public class BinlogPipeline implements Closeable {
         binlogWriter.close();
         binlogReader.close();
     }
+
+    public BinlogWriter getBinlogWriter() {
+        return binlogWriter;
+    }
+
+    public BinlogReader getBinlogReader() {
+        return binlogReader;
+    }
 }

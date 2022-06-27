@@ -1,6 +1,7 @@
 package org.dbsyncer.storage.binlog;
 
 import org.apache.commons.io.FileUtils;
+import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
@@ -25,9 +26,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
-public class BinlogContext implements Closeable {
+public class BinlogContext implements ScheduledTaskJob, Closeable {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -56,6 +59,10 @@ public class BinlogContext implements Closeable {
     private BinlogConfig config;
 
     private BinlogPipeline pipeline;
+
+    private final Lock lock = new ReentrantLock(true);
+
+    private volatile boolean running;
 
     public BinlogContext(String taskName) throws IOException {
         path = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar)
@@ -106,6 +113,64 @@ public class BinlogContext implements Closeable {
 
         pipeline = new BinlogPipeline(this);
         logger.info("BinlogContext initialized with config:{}", JsonUtil.objToJson(config));
+    }
+
+    @Override
+    public void run() {
+        if (running) {
+            return;
+        }
+
+        final Lock binlogLock = lock;
+        boolean locked = false;
+        try {
+            locked = binlogLock.tryLock();
+            if (locked) {
+                running = true;
+                doCheck();
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        } finally {
+            if (locked) {
+                running = false;
+                binlogLock.unlock();
+            }
+        }
+    }
+
+    @Override
+    public void close() {
+        pipeline.close();
+    }
+
+    public void flush() throws IOException {
+        config.setFileName(pipeline.getFileName());
+        config.setPosition(pipeline.getOffset());
+        write(configFile, JsonUtil.objToJson(config), false);
+    }
+
+    public byte[] readLine() throws IOException {
+        return pipeline.readLine();
+    }
+
+    public void write(BinlogMessage message) throws IOException {
+        pipeline.write(message);
+    }
+
+    /**
+     * <p>1. 生成新索引（超过限制大小 ｜ 过期）</p>
+     * <p>2. 关闭索引流（状态运行 & 无锁 & 30s未用）</p>
+     * <p>3. 删除旧索引（状态关闭 & 过期）</p>
+     */
+    private void doCheck() {
+        // TODO Try to save the world ..
+        logger.info("test");
+        createNewBinlogIndex();
+    }
+
+    private void createNewBinlogIndex() {
+        pipeline.getBinlogWriter();
     }
 
     private void readIndex() throws IOException {
@@ -178,27 +243,8 @@ public class BinlogContext implements Closeable {
         return NumberUtil.toInt(StringUtil.substring(binlogName, BINLOG.length() + 1));
     }
 
-    public void flush() throws IOException {
-        config.setFileName(pipeline.getFileName());
-        config.setPosition(pipeline.getOffset());
-        write(configFile, JsonUtil.objToJson(config), false);
-    }
-
-    public byte[] readLine() throws IOException {
-        return pipeline.readLine();
-    }
-
-    public void write(BinlogMessage message) throws IOException {
-        pipeline.write(message);
-    }
-
     private void write(File file, String line, boolean append) throws IOException {
         FileUtils.write(file, line, DEFAULT_CHARSET, append);
-    }
-
-    @Override
-    public void close() {
-        pipeline.close();
     }
 
     public BinlogIndex getLastBinlogIndex() {
@@ -217,4 +263,5 @@ public class BinlogContext implements Closeable {
     public BinlogConfig getConfig() {
         return config;
     }
+
 }

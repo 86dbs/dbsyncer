@@ -31,6 +31,8 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
     private static final long PERIOD = 3000;
 
+    private static final long CONTEXT_PERIOD = 10_000;
+
     private final Lock lock = new ReentrantLock(true);
 
     private volatile boolean running;
@@ -42,6 +44,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
         // /data/binlog/WriterBinlog/
         context = new BinlogContext(getTaskName());
         scheduledTaskService.start(PERIOD, this);
+        scheduledTaskService.start(CONTEXT_PERIOD, context);
     }
 
     /**
