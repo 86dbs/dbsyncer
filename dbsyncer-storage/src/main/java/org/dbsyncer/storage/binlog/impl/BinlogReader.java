@@ -43,10 +43,6 @@ public class BinlogReader extends AbstractBinlogActuator {
         return offset;
     }
 
-    public String getFileName() {
-        return getBinlogIndex().getFileName();
-    }
-
     @Override
     public void close() {
         IOUtils.closeQuietly(raf);

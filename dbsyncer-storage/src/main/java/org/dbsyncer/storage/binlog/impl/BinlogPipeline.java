@@ -34,12 +34,16 @@ public class BinlogPipeline implements Closeable {
         return binlogReader.readLine();
     }
 
-    public String getFileName() {
-        return binlogReader.getFileName();
+    public long getReaderOffset() {
+        return binlogReader.getOffset();
     }
 
-    public long getOffset() {
-        return binlogReader.getOffset();
+    public String getReaderFileName() {
+        return binlogReader.getBinlogIndex().getFileName();
+    }
+
+    public String getWriterFileName() {
+        return binlogWriter.getBinlogIndex().getFileName();
     }
 
     @Override
@@ -48,16 +52,8 @@ public class BinlogPipeline implements Closeable {
         binlogReader.close();
     }
 
-    public BinlogWriter getBinlogWriter() {
-        return binlogWriter;
-    }
-
     public void setBinlogWriter(BinlogWriter binlogWriter) {
         this.binlogWriter = binlogWriter;
-    }
-
-    public BinlogReader getBinlogReader() {
-        return binlogReader;
     }
 
     public void setBinlogReader(BinlogReader binlogReader) {
