@@ -52,7 +52,15 @@ public class BinlogPipeline implements Closeable {
         return binlogWriter;
     }
 
+    public void setBinlogWriter(BinlogWriter binlogWriter) {
+        this.binlogWriter = binlogWriter;
+    }
+
     public BinlogReader getBinlogReader() {
         return binlogReader;
+    }
+
+    public void setBinlogReader(BinlogReader binlogReader) {
+        this.binlogReader = binlogReader;
     }
 }

@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.storage.binlog.impl.BinlogPipeline;
+import org.dbsyncer.storage.binlog.impl.BinlogWriter;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.model.BinlogConfig;
 import org.dbsyncer.storage.model.BinlogIndex;
@@ -163,14 +164,20 @@ public class BinlogContext implements ScheduledTaskJob, Closeable {
      * <p>2. 关闭索引流（状态运行 & 无锁 & 30s未用）</p>
      * <p>3. 删除旧索引（状态关闭 & 过期）</p>
      */
-    private void doCheck() {
+    private void doCheck() throws IOException {
         // TODO Try to save the world ..
         logger.info("test");
         createNewBinlogIndex();
     }
 
-    private void createNewBinlogIndex() {
-        pipeline.getBinlogWriter();
+    private void createNewBinlogIndex() throws IOException {
+        BinlogWriter binlogWriter = pipeline.getBinlogWriter();
+        BinlogIndex lastIndex = binlogWriter.getBinlogIndex();
+        File file = new File(path + lastIndex.getFileName());
+        long length = file.length();
+        if(length > BINLOG_MAX_SIZE || isExpiredFile(file)){
+            
+        }
     }
 
     private void readIndex() throws IOException {

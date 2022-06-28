@@ -44,7 +44,7 @@ public class BinlogReader extends AbstractBinlogActuator {
     }
 
     public String getFileName() {
-        return binlogIndex.getFileName();
+        return getBinlogIndex().getFileName();
     }
 
     @Override

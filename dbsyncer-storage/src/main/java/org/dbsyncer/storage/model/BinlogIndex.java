@@ -28,11 +28,17 @@ public class BinlogIndex {
     }
 
     public void addLock(BinlogActuator binlogActuator) {
-        this.lock.add(binlogActuator);
+        synchronized (lock){
+            this.lock.add(binlogActuator);
+            this.status = BinlogStatusEnum.RUNNING;
+        }
     }
 
     public void removeLock(BinlogActuator binlogActuator) {
-        this.lock.remove(binlogActuator);
+        synchronized (lock) {
+            this.lock.remove(binlogActuator);
+            this.status = lock.isEmpty() ? BinlogStatusEnum.CLOSED : status;
+        }
     }
 
     public String getFileName() {
