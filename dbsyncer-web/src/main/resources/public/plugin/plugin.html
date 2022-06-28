@@ -136,7 +136,7 @@ public class MyPlugin implements ConvertService{
     $("#filePlugin").fileinput({
         theme: 'fas',
         language: 'zh',
-        uploadUrl: $basePath + '/plugin/plugin',
+        uploadUrl: $basePath + '/plugin/upload',
         enctype: 'multipart/form-data',
         removeFromPreviewOnError: true, //当选择的文件不符合规则时，例如不是指定后缀文件、大小超出配置等，选择的文件不会出现在预览框中，只会显示错误信息
         allowedFileExtensions: ['jar'],
