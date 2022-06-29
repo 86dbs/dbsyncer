@@ -1,9 +1,6 @@
 package org.dbsyncer.storage.binlog.impl;
 
-import org.dbsyncer.storage.binlog.BinlogContext;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
-import org.dbsyncer.storage.model.BinlogConfig;
-import org.dbsyncer.storage.model.BinlogIndex;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -14,23 +11,19 @@ import java.io.IOException;
  * @date 2022/6/19 23:36
  */
 public class BinlogPipeline implements Closeable {
-    private final BinlogContext context;
     private BinlogWriter binlogWriter;
     private BinlogReader binlogReader;
 
-    public BinlogPipeline(BinlogContext context) throws IOException {
-        this.context = context;
-        this.binlogWriter = new BinlogWriter(context.getPath(), context.getLastBinlogIndex());
-        final BinlogConfig config = context.getConfig();
-        final BinlogIndex startIndex = context.getBinlogIndexByName(config.getFileName());
-        this.binlogReader = new BinlogReader(context.getPath(), startIndex, config.getPosition());
+    public BinlogPipeline(BinlogWriter binlogWriter, BinlogReader binlogReader) {
+        this.binlogWriter = binlogWriter;
+        this.binlogReader = binlogReader;
     }
 
     public void write(BinlogMessage message) throws IOException {
         binlogWriter.write(message);
     }
 
-    public byte[] readLine() throws IOException{
+    public byte[] readLine() throws IOException {
         return binlogReader.readLine();
     }
 
@@ -39,11 +32,11 @@ public class BinlogPipeline implements Closeable {
     }
 
     public String getReaderFileName() {
-        return binlogReader.getBinlogIndex().getFileName();
+        return binlogReader.getFileName();
     }
 
     public String getWriterFileName() {
-        return binlogWriter.getBinlogIndex().getFileName();
+        return binlogWriter.getFileName();
     }
 
     @Override
@@ -52,8 +45,16 @@ public class BinlogPipeline implements Closeable {
         binlogReader.close();
     }
 
+    public BinlogWriter getBinlogWriter() {
+        return binlogWriter;
+    }
+
     public void setBinlogWriter(BinlogWriter binlogWriter) {
         this.binlogWriter = binlogWriter;
+    }
+
+    public BinlogReader getBinlogReader() {
+        return binlogReader;
     }
 
     public void setBinlogReader(BinlogReader binlogReader) {

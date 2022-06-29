@@ -1,7 +1,5 @@
 package org.dbsyncer.storage.binlog;
 
-import org.dbsyncer.storage.model.BinlogIndex;
-
 import java.io.Closeable;
 
 /**
@@ -11,9 +9,22 @@ import java.io.Closeable;
  */
 public interface BinlogActuator extends Closeable {
 
-    void initBinlogIndex(BinlogIndex binlogIndex);
+    /**
+     * 获取索引文件名
+     *
+     * @return
+     */
+    String getFileName();
 
-    void refreshBinlogIndexUpdateTime();
+    /**
+     * 状态是否为运行中
+     *
+     * @return
+     */
+    boolean isRunning();
 
-    BinlogIndex getBinlogIndex();
+    /**
+     * 标记为停止状态
+     */
+    void stop();
 }

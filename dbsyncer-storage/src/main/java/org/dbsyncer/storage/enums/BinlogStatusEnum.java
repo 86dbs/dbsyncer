@@ -3,7 +3,7 @@ package org.dbsyncer.storage.enums;
 /**
  * @author AE86
  * @version 1.0.0
- * @date 2019/11/16 20:31
+ * @date 2022/6/29 20:31
  */
 public enum BinlogStatusEnum {
 
@@ -12,7 +12,7 @@ public enum BinlogStatusEnum {
      */
     RUNNING,
     /**
-     * 关闭
+     * 停止
      */
-    CLOSED;
+    STOP
 }

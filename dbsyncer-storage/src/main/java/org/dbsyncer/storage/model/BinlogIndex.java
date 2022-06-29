@@ -1,10 +1,11 @@
 package org.dbsyncer.storage.model;
 
 import org.dbsyncer.storage.binlog.BinlogActuator;
-import org.dbsyncer.storage.enums.BinlogStatusEnum;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -14,59 +15,49 @@ import java.util.Set;
  */
 public class BinlogIndex {
     private String fileName;
-    private BinlogStatusEnum status;
     private Set<BinlogActuator> lock;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
     public BinlogIndex(String fileName, LocalDateTime createTime) {
         this.fileName = fileName;
-        this.status = BinlogStatusEnum.CLOSED;
         this.lock = new HashSet<>();
         this.createTime = createTime;
         this.updateTime = LocalDateTime.now();
     }
 
     public void addLock(BinlogActuator binlogActuator) {
-        synchronized (lock){
-            this.lock.add(binlogActuator);
-            this.status = BinlogStatusEnum.RUNNING;
+        this.lock.add(binlogActuator);
+    }
+
+    public void removeAllLock() throws IOException {
+        Iterator<BinlogActuator> iterator = lock.iterator();
+        while (iterator.hasNext()){
+            BinlogActuator next = iterator.next();
+            next.close();
+            iterator.remove();
         }
     }
 
-    public void removeLock(BinlogActuator binlogActuator) {
-        synchronized (lock) {
-            this.lock.remove(binlogActuator);
-            this.status = lock.isEmpty() ? BinlogStatusEnum.CLOSED : status;
+    public boolean isRunning() {
+        for (BinlogActuator actuator : lock){
+            if(actuator.isRunning()){
+                return true;
+            }
         }
+        return false;
+    }
+
+    public boolean isFreeLock() {
+        return lock.isEmpty();
     }
 
     public String getFileName() {
         return fileName;
     }
 
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
-
-    public BinlogStatusEnum getStatus() {
-        return status;
-    }
-
-    public void setStatus(BinlogStatusEnum status) {
-        this.status = status;
-    }
-
-    public Set<BinlogActuator> getLock() {
-        return lock;
-    }
-
     public LocalDateTime getCreateTime() {
         return createTime;
-    }
-
-    public void setCreateTime(LocalDateTime createTime) {
-        this.createTime = createTime;
     }
 
     public LocalDateTime getUpdateTime() {

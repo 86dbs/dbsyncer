@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.storage.binlog.impl.BinlogPipeline;
+import org.dbsyncer.storage.binlog.impl.BinlogReader;
 import org.dbsyncer.storage.binlog.impl.BinlogWriter;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.model.BinlogConfig;
@@ -26,11 +27,27 @@ import java.time.ZoneId;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
+/**
+ * <p>组件介绍</p>
+ * <ol>
+ *     <li>BinlogPipeline（提供文件流读写）</li>
+ *     <li>定时器（维护索引文件状态，回收文件流）</li>
+ *     <li>索引</li>
+ * </ol>
+ * <p>定时器</p>
+ * <ol>
+ *     <li>生成新索引（超过限制大小｜过期）</li>
+ *     <li>关闭索引流（有锁 & 读写状态关闭 & 30s未用）</li>
+ *     <li>删除旧索引（无锁 & 过期）</li>
+ * </ol>
+ *
+ * @author AE86
+ * @version 1.0.0
+ * @date 2022/6/29 1:28
+ */
 public class BinlogContext implements ScheduledTaskJob, Closeable {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -38,6 +55,8 @@ public class BinlogContext implements ScheduledTaskJob, Closeable {
     private static final long BINLOG_MAX_SIZE = 256 * 1024 * 1024;
 
     private static final int BINLOG_EXPIRE_DAYS = 7;
+
+    private static final int BINLOG_ACTUATOR_CLOSE_DELAYED_SECONDS = 30;
 
     private static final String LINE_SEPARATOR = System.lineSeparator();
 
@@ -58,6 +77,8 @@ public class BinlogContext implements ScheduledTaskJob, Closeable {
     private final File indexFile;
 
     private final BinlogPipeline pipeline;
+
+    private final Lock readerLock = new ReentrantLock(true);
 
     private final Lock lock = new ReentrantLock(true);
 
@@ -82,12 +103,12 @@ public class BinlogContext implements ScheduledTaskJob, Closeable {
         configFile = new File(path + BINLOG_CONFIG);
         if (!configFile.exists()) {
             // binlog.000001
-            config = initBinlogConfig(createNewBinlogName(0));
+            config = initBinlogConfigAndIndex(createNewBinlogName(0));
         }
 
         // read index
         Assert.isTrue(indexFile.exists(), String.format("The index file '%s' is not exist.", indexFile.getName()));
-        readIndex();
+        readIndexFromDisk();
 
         // delete index file
         deleteExpiredIndexFile();
@@ -100,19 +121,22 @@ public class BinlogContext implements ScheduledTaskJob, Closeable {
         // no index
         if (CollectionUtils.isEmpty(indexList)) {
             // binlog.000002
-            config = initBinlogConfig(createNewBinlogName(getBinlogIndex(config.getFileName())));
-            readIndex();
+            config = initBinlogConfigAndIndex(createNewBinlogName(config.getFileName()));
+            readIndexFromDisk();
         }
 
         // 配置文件已失效，取最早的索引文件
-        BinlogIndex binlogIndex = getBinlogIndexByName(config.getFileName());
-        if (null == binlogIndex) {
+        BinlogIndex startBinlogIndex = getBinlogIndexByFileName(config.getFileName());
+        if (null == startBinlogIndex) {
             logger.warn("The binlog file '{}' is expired.", config.getFileName());
-            config = new BinlogConfig().setFileName(config.getFileName());
+            startBinlogIndex = indexList.get(0);
+            config = new BinlogConfig().setFileName(startBinlogIndex.getFileName());
             write(configFile, JsonUtil.objToJson(config), false);
         }
 
-        pipeline = new BinlogPipeline(this);
+        final BinlogWriter binlogWriter = new BinlogWriter(path, indexList.get(indexList.size() - 1));
+        final BinlogReader binlogReader = new BinlogReader(path, startBinlogIndex, config.getPosition());
+        pipeline = new BinlogPipeline(binlogWriter, binlogReader);
         logger.info("BinlogContext initialized with config:{}", JsonUtil.objToJson(config));
     }
 
@@ -128,7 +152,9 @@ public class BinlogContext implements ScheduledTaskJob, Closeable {
             locked = binlogLock.tryLock();
             if (locked) {
                 running = true;
-                doCheck();
+                createNewBinlogIndex();
+                closeFreeBinlogIndex();
+                deleteOldBinlogIndex();
             }
         } catch (Exception e) {
             logger.error(e.getMessage());
@@ -152,30 +178,97 @@ public class BinlogContext implements ScheduledTaskJob, Closeable {
     }
 
     public byte[] readLine() throws IOException {
-        return pipeline.readLine();
+        byte[] line = pipeline.readLine();
+        if(null == line){
+            switchNextBinlogIndex();
+        }
+        return line;
     }
 
     public void write(BinlogMessage message) throws IOException {
         pipeline.write(message);
     }
 
-    /**
-     * <p>1. 生成新索引（超过限制大小 ｜ 过期）</p>
-     * <p>2. 关闭索引流（状态运行 & 无锁 & 30s未用）</p>
-     * <p>3. 删除旧索引（状态关闭 & 过期）</p>
-     */
-    private void doCheck() throws IOException {
-        createNewBinlogIndex();
+    public BinlogIndex getBinlogIndexByFileName(String fileName) {
+        BinlogIndex index = null;
+        for (BinlogIndex binlogIndex : indexList) {
+            if (StringUtil.equals(binlogIndex.getFileName(), fileName)) {
+                index = binlogIndex;
+                break;
+            }
+        }
+        return index;
+    }
+
+    private void switchNextBinlogIndex() {
+        // 有新索引文件
+        if(!isCreatedNewBinlogIndex()){
+            return;
+        }
+        boolean locked = false;
+        try {
+            locked = readerLock.tryLock();
+            if (locked) {
+                // 有新索引文件
+                if(isCreatedNewBinlogIndex()){
+                    String newBinlogName = createNewBinlogName(pipeline.getReaderFileName());
+                    BinlogIndex startBinlogIndex = getBinlogIndexByFileName(newBinlogName);
+                    final BinlogReader binlogReader = pipeline.getBinlogReader();
+                    config = new BinlogConfig().setFileName(startBinlogIndex.getFileName());
+                    write(configFile, JsonUtil.objToJson(config), false);
+                    pipeline.setBinlogReader(new BinlogReader(path, startBinlogIndex, config.getPosition()));
+                    binlogReader.stop();
+                    logger.info("Switch to new file {}.", newBinlogName);
+                }
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        } finally {
+            if (locked) {
+                readerLock.unlock();
+            }
+        }
+    }
+
+    private boolean isCreatedNewBinlogIndex() {
+        return !StringUtil.equals(pipeline.getReaderFileName(), pipeline.getWriterFileName());
     }
 
     private void createNewBinlogIndex() throws IOException {
         final String writerFileName = pipeline.getWriterFileName();
         File file = new File(path + writerFileName);
+        // 超过限制大小｜过期
         if (file.length() > BINLOG_MAX_SIZE || isExpiredFile(file)) {
-            String newBinlogName = createNewBinlogName(getBinlogIndex(writerFileName));
-            logger.info("文件大小已达到{}MB, 超过限制{}MB, 准备切换新文件{}.", getMB(file.length()), getMB(BINLOG_MAX_SIZE), newBinlogName);
-            indexList.add(new BinlogIndex(newBinlogName, getFileCreateDateTime(new File(path + newBinlogName))));
-            pipeline.setBinlogWriter(new BinlogWriter(path, getLastBinlogIndex()));
+            final BinlogWriter binlogWriter = pipeline.getBinlogWriter();
+            String newBinlogName = createNewBinlogName(writerFileName);
+            logger.info("The file size has reached {}MB, exceeding the limit of {}MB, switching to a new file {}.", getMB(file.length()), getMB(BINLOG_MAX_SIZE), newBinlogName);
+            write(indexFile, newBinlogName + LINE_SEPARATOR, true);
+            BinlogIndex newBinlogIndex = new BinlogIndex(newBinlogName, getFileCreateDateTime(new File(path + newBinlogName)));
+            indexList.add(newBinlogIndex);
+            pipeline.setBinlogWriter(new BinlogWriter(path, newBinlogIndex));
+            binlogWriter.stop();
+        }
+    }
+
+    private void closeFreeBinlogIndex() throws IOException {
+        Iterator<BinlogIndex> iterator = indexList.iterator();
+        while (iterator.hasNext()) {
+            BinlogIndex next = iterator.next();
+            // 有锁 & 读写状态关闭 & 30s未用
+            if (!next.isFreeLock() && !next.isRunning() && next.getUpdateTime().isBefore(LocalDateTime.now().minusSeconds(BINLOG_ACTUATOR_CLOSE_DELAYED_SECONDS))) {
+                next.removeAllLock();
+            }
+        }
+    }
+
+    private void deleteOldBinlogIndex() throws IOException {
+        Iterator<BinlogIndex> iterator = indexList.iterator();
+        while (iterator.hasNext()) {
+            BinlogIndex next = iterator.next();
+            // 无锁 & 过期
+            if (next.isFreeLock() && isExpiredFile(new File(next.getFileName()))) {
+                iterator.remove();
+            }
         }
     }
 
@@ -183,7 +276,7 @@ public class BinlogContext implements ScheduledTaskJob, Closeable {
         return size / 1024 / 1024;
     }
 
-    private void readIndex() throws IOException {
+    private void readIndexFromDisk() throws IOException {
         indexList.clear();
         List<String> indexNames = FileUtils.readLines(indexFile, DEFAULT_CHARSET);
         if (!CollectionUtils.isEmpty(indexNames)) {
@@ -193,7 +286,7 @@ public class BinlogContext implements ScheduledTaskJob, Closeable {
         }
     }
 
-    private BinlogConfig initBinlogConfig(String binlogName) throws IOException {
+    private BinlogConfig initBinlogConfigAndIndex(String binlogName) throws IOException {
         BinlogConfig config = new BinlogConfig().setFileName(binlogName);
         write(configFile, JsonUtil.objToJson(config), false);
         write(indexFile, binlogName + LINE_SEPARATOR, false);
@@ -248,29 +341,11 @@ public class BinlogContext implements ScheduledTaskJob, Closeable {
         return String.format("%s.%06d", BINLOG, index % 999999 + 1);
     }
 
-    private int getBinlogIndex(String binlogName) {
-        return NumberUtil.toInt(StringUtil.substring(binlogName, BINLOG.length() + 1));
+    private String createNewBinlogName(String binlogName) {
+        return createNewBinlogName(NumberUtil.toInt(StringUtil.substring(binlogName, BINLOG.length() + 1)));
     }
 
     private void write(File file, String line, boolean append) throws IOException {
         FileUtils.write(file, line, DEFAULT_CHARSET, append);
     }
-
-    public BinlogIndex getLastBinlogIndex() {
-        return indexList.get(indexList.size() - 1);
-    }
-
-    public BinlogIndex getBinlogIndexByName(String fileName) {
-        Map<String, BinlogIndex> binlogIndex = indexList.stream().collect(Collectors.toMap(BinlogIndex::getFileName, i -> i, (k1, k2) -> k1));
-        return binlogIndex.get(fileName);
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public BinlogConfig getConfig() {
-        return config;
-    }
-
 }
