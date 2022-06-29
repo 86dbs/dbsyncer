@@ -8,7 +8,7 @@ option optimize_for = SPEED;
 message BinlogMessage {
     string table_group_id = 1;
     EventEnum event = 2;
-    repeated Data data = 3;
+    Map data = 3;
 }
 
 enum EventEnum {
@@ -17,6 +17,6 @@ enum EventEnum {
     DELETE = 2;
 }
 
-message Data {
+message Map {
     map<string, bytes> row = 1;
 }

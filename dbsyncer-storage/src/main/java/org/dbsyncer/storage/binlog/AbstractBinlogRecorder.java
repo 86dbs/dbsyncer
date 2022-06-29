@@ -109,8 +109,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
         byte[] line;
         AtomicInteger batchCounter = new AtomicInteger();
         while (batchCounter.get() < MAX_BATCH_COUNT && null != (line = context.readLine())) {
-            deserialize(BinlogMessage.parseFrom(line));
-            // getQueue().offer(deserialize(message));
+            getQueue().offer(deserialize(BinlogMessage.parseFrom(line)));
             batchCounter.getAndAdd(1);
         }
 
