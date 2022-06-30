@@ -145,7 +145,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
                 } catch (Exception e) {
                     logger.error("[{}]异常{}", key);
                 }
-                logger.info("[{}]{}条，耗时{}秒", key, flushTask.getTaskSize(), (Instant.now().toEpochMilli() - now) / 1000);
+                logger.info("[{}]{}条，耗时{}毫秒", key, flushTask.getTaskSize(), (Instant.now().toEpochMilli() - now));
             });
             map.clear();
         }

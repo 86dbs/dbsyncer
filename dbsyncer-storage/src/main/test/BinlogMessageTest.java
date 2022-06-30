@@ -49,6 +49,7 @@ public class BinlogMessageTest {
             BinlogMessage binlogMessage = BinlogMessage.parseFrom(line);
             logger.info(binlogMessage.toString());
         }
+        context.flush();
     }
 
     private void write(String tableGroupId, String key) throws IOException {

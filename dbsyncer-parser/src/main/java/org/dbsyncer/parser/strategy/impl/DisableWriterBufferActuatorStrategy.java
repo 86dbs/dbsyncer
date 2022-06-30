@@ -3,8 +3,10 @@ package org.dbsyncer.parser.strategy.impl;
 import com.google.protobuf.ByteString;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
@@ -69,25 +71,39 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
 
     @Override
     protected WriterRequest deserialize(BinlogMessage message) {
-        String tableGroupId = message.getTableGroupId();
-        TableGroup tableGroup = cacheService.get(tableGroupId, TableGroup.class);
-        Mapping mapping = cacheService.get(tableGroup.getMappingId(), Mapping.class);
+        if (CollectionUtils.isEmpty(message.getData().getRowMap())) {
+            return null;
+        }
 
-        // 1、获取映射字段
-        String event = message.getEvent().name();
-        String sourceTableName = tableGroup.getSourceTable().getName();
-        String targetTableName = tableGroup.getTargetTable().getName();
+        // 1、获取配置信息
+        final String tableGroupId = message.getTableGroupId();
+        final TableGroup tableGroup = cacheService.get(tableGroupId, TableGroup.class);
+        final Mapping mapping = cacheService.get(tableGroup.getMappingId(), Mapping.class);
+        final String event = message.getEvent().name();
+        final String sourceTableName = tableGroup.getSourceTable().getName();
+        final String targetTableName = tableGroup.getTargetTable().getName();
 
+        // 2、反序列数据
+        final Picker picker = new Picker(tableGroup.getFieldMapping());
+        final Map<String, Field> fieldMap = picker.getSourceFieldMap();
         Map<String, Object> data = new HashMap<>();
-        Picker picker = new Picker(tableGroup.getFieldMapping());
+        message.getData().getRowMap().forEach((k, v) -> {
+            if (fieldMap.containsKey(k)) {
+                data.put(k, resolveValue(fieldMap.get(k).getType(), v));
+            }
+        });
+
+
+        // 3、获取目标源数据集合
         Map target = picker.pickData(data);
 
-        // 2、参数转换
+        // 4、参数转换
         ConvertUtil.convert(tableGroup.getConvert(), target);
 
-        // 3、插件转换
+        // 5、插件转换
         pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
 
         return new WriterRequest(tableGroupId, target, mapping.getMetaId(), mapping.getTargetConnectorId(), sourceTableName, targetTableName, event, picker.getTargetFields(), tableGroup.getCommand());
     }
+
 }
