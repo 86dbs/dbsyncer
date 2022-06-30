@@ -1,9 +1,8 @@
 import com.google.protobuf.ByteString;
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.storage.binlog.BinlogContext;
-import org.dbsyncer.storage.binlog.impl.BinlogPipeline;
+import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
-import org.dbsyncer.storage.binlog.proto.Data;
 import org.dbsyncer.storage.binlog.proto.EventEnum;
 import org.junit.After;
 import org.junit.Before;
@@ -41,9 +40,9 @@ public class BinlogMessageTest {
             logger.info("{} {}", i, s);
         }
 
-        //write("123456", "abc");
-        //write("000111", "xyz");
-        //write("888999", "jkl");
+        write("123456", "abc");
+        write("000111", "xyz");
+        write("888999", "jkl");
 
         byte[] line;
         while (null != (line = context.readLine())) {
@@ -56,7 +55,7 @@ public class BinlogMessageTest {
         BinlogMessage build = BinlogMessage.newBuilder()
                 .setTableGroupId(tableGroupId)
                 .setEvent(EventEnum.UPDATE)
-                .addData(Data.newBuilder().putRow(key, ByteString.copyFromUtf8("hello,中国")).build())
+                .setData(BinlogMap.newBuilder().putRow(key, ByteString.copyFromUtf8("hello,中国")))
                 .build();
         byte[] bytes = build.toByteArray();
         logger.info("序列化长度：{}", bytes.length);

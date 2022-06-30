@@ -14,8 +14,8 @@ import org.dbsyncer.parser.strategy.ParserStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.storage.binlog.AbstractBinlogRecorder;
+import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
-import org.dbsyncer.storage.binlog.proto.Data;
 import org.dbsyncer.storage.binlog.proto.EventEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +48,7 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
                     .setEvent(eventEnum);
             data.forEach((k, v) -> {
                 if (null != v && v instanceof String) {
-                    builder.addData(Data.newBuilder().putRow(k, ByteString.copyFromUtf8((String) v)));
+                    builder.setData(BinlogMap.newBuilder().putRow(k, ByteString.copyFromUtf8((String) v)));
                 }
             });
             flush(builder.build());
