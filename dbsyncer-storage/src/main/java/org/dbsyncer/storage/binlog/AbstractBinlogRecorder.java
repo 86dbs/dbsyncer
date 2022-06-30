@@ -126,6 +126,19 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
         }
     }
 
+    protected ByteString serializeValue(Object v) {
+        // 字符串
+        if (v instanceof String) {
+            return ByteString.copyFromUtf8((String) v);
+        }
+
+        // 时间
+        // 数字
+        // 布尔
+        // 字节
+        return null;
+    }
+
     /**
      * Resolve value
      *
