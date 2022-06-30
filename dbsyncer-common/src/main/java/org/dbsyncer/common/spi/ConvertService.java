@@ -16,19 +16,21 @@ public interface ConvertService {
     /**
      * 全量同步
      *
-     * @param source 数据源
-     * @param target 目标源
+     * @param context Spring上下文
+     * @param source  数据源
+     * @param target  目标源
      */
-    void convert(List<Map> source, List<Map> target);
+    void convert(ProxyApplicationContext context, List<Map> source, List<Map> target);
 
     /**
      * 增量同步
      *
-     * @param event  事件（INSERT/UPDATE/DELETE）
-     * @param source 数据源
-     * @param target 目标源
+     * @param context Spring上下文
+     * @param event   事件（INSERT/UPDATE/DELETE）
+     * @param source  数据源
+     * @param target  目标源
      */
-    void convert(String event, Map source, Map target);
+    void convert(ProxyApplicationContext context, String event, Map source, Map target);
 
     /**
      * 版本号

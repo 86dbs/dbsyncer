@@ -2,6 +2,7 @@ package org.dbsyncer.plugin.service;
 
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.spi.ConvertService;
+import org.dbsyncer.common.spi.ProxyApplicationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +20,11 @@ public class DemoConvertServiceImpl implements ConvertService {
     private AppConfig appConfig;
 
     @Override
-    public void convert(List<Map> source, List<Map> target) {
+    public void convert(ProxyApplicationContext context, List<Map> source, List<Map> target) {
     }
 
     @Override
-    public void convert(String event, Map source, Map target) {
+    public void convert(ProxyApplicationContext context, String event, Map source, Map target) {
         logger.info("插件正在处理同步数据，事件:{}，数据:{}", event, source);
     }
 
