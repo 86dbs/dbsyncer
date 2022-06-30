@@ -1,7 +1,7 @@
 package org.dbsyncer.common.spi;
 
-import java.util.List;
-import java.util.Map;
+import org.dbsyncer.common.model.FullConvertContext;
+import org.dbsyncer.common.model.IncrementConvertContext;
 
 /**
  * 插件扩展服务接口
@@ -16,21 +16,16 @@ public interface ConvertService {
     /**
      * 全量同步
      *
-     * @param context Spring上下文
-     * @param source  数据源
-     * @param target  目标源
+     * @param context 上下文
      */
-    void convert(ProxyApplicationContext context, List<Map> source, List<Map> target);
+    void convert(FullConvertContext context);
 
     /**
      * 增量同步
      *
-     * @param context Spring上下文
-     * @param event   事件（INSERT/UPDATE/DELETE）
-     * @param source  数据源
-     * @param target  目标源
+     * @param context 上下文
      */
-    void convert(ProxyApplicationContext context, String event, Map source, Map target);
+    void convert(IncrementConvertContext context);
 
     /**
      * 版本号
