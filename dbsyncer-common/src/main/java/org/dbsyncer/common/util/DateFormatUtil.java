@@ -73,6 +73,10 @@ public abstract class DateFormatUtil {
         return date.toLocalDate().format(DATE_FORMATTER);
     }
 
+    public static String timestampToString(Timestamp timestamp) {
+        return timestamp.toLocalDateTime().format(CHINESE_STANDARD_TIME_FORMATTER);
+    }
+
     public static Date stringToDate(String s) {
         return Date.valueOf(LocalDate.parse(s, DATE_FORMATTER));
     }
