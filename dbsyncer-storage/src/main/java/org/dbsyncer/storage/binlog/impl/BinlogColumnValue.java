@@ -2,8 +2,10 @@ package org.dbsyncer.storage.binlog.impl;
 
 import com.google.protobuf.ByteString;
 import org.dbsyncer.common.column.AbstractColumnValue;
+import org.dbsyncer.common.util.DateFormatUtil;
 
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -22,56 +24,68 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
 
     @Override
     public byte[] asByteArray() {
-        return new byte[0];
+        return getValue().toByteArray();
     }
 
     @Override
     public Short asShort() {
-        return null;
+        final ByteBuffer buffer = ByteBuffer.allocate(32);
+        buffer.put(getValue().toByteArray());
+        return buffer.asShortBuffer().get();
     }
 
     @Override
     public Integer asInteger() {
-        return null;
+        final ByteBuffer buffer = ByteBuffer.allocate(32);
+        buffer.put(getValue().toByteArray());
+        return buffer.asIntBuffer().get();
     }
 
     @Override
     public Long asLong() {
-        return null;
+        final ByteBuffer buffer = ByteBuffer.allocate(32);
+        buffer.put(getValue().toByteArray());
+        return buffer.asLongBuffer().get();
     }
 
     @Override
     public Float asFloat() {
-        return null;
+        final ByteBuffer buffer = ByteBuffer.allocate(32);
+        buffer.put(getValue().toByteArray());
+        return buffer.asFloatBuffer().get();
     }
 
     @Override
     public Double asDouble() {
-        return null;
+        final ByteBuffer buffer = ByteBuffer.allocate(32);
+        buffer.put(getValue().toByteArray());
+        return buffer.asDoubleBuffer().get();
     }
 
     @Override
     public Boolean asBoolean() {
-        return null;
+        final ByteBuffer buffer = ByteBuffer.allocate(32);
+        buffer.put(getValue().toByteArray());
+        return buffer.asShortBuffer().get() == 1;
     }
 
     @Override
     public BigDecimal asDecimal() {
-        return null;
+        return new BigDecimal(asString());
     }
 
     @Override
     public Date asDate() {
-        return null;
+        return DateFormatUtil.stringToDate(asString());
     }
 
     @Override
     public Timestamp asTimestamp() {
-        return null;
+        return new Timestamp(asLong());
     }
 
     @Override
     public Time asTime() {
-        return Time.valueOf(getValue().toStringUtf8());
+        return Time.valueOf(asString());
     }
 }

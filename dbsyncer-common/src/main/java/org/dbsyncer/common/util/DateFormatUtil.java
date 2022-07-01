@@ -65,18 +65,12 @@ public abstract class DateFormatUtil {
             .optionalEnd()
             .toFormatter();
 
-    private static ZoneId zoneId = ZoneId.systemDefault();
-
     public static String getCurrentTime() {
         return LocalDateTime.now().format(TIME_FORMATTER);
     }
 
     public static String dateToString(Date date) {
-        return date.toInstant().atZone(zoneId).toLocalDate().format(DATE_FORMATTER);
-    }
-
-    public static String dateToChineseStandardTimeString(Date date) {
-        return date.toInstant().atZone(zoneId).toLocalDateTime().format(CHINESE_STANDARD_TIME_FORMATTER);
+        return date.toLocalDate().format(DATE_FORMATTER);
     }
 
     public static Date stringToDate(String s) {

@@ -18,7 +18,7 @@ public class DateToChineseStandardTimeHandler extends AbstractHandler {
     public Object convert(String args, Object value) {
         if (value instanceof Date) {
             Date d = (Date) value;
-            value = DateFormatUtil.dateToChineseStandardTimeString(d);
+            value = DateFormatUtil.dateToString(d);
         }
         return value;
     }

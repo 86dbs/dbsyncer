@@ -90,7 +90,6 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
             }
         });
 
-
         // 3、获取目标源数据集合
         Map target = picker.pickData(data);
 

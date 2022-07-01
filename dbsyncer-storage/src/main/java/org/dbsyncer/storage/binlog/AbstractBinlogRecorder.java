@@ -3,6 +3,7 @@ package org.dbsyncer.storage.binlog;
 import com.google.protobuf.ByteString;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.storage.binlog.impl.BinlogColumnValue;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.slf4j.Logger;
@@ -12,6 +13,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -126,16 +132,86 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
         }
     }
 
+    /**
+     * Java语言提供了八种基本类型，六种数字类型（四个整数型，两个浮点型），一种字符类型，一种布尔型。
+     * <p>
+     * <ol>
+     *     <li>整数：包括int,short,byte,long</li>
+     *     <li>浮点型：float,double</li>
+     *     <li>字符：char</li>
+     *     <li>布尔：boolean</li>
+     * </ol>
+     *
+     * <pre>
+     * 类型     长度     大小      最小值     最大值
+     * byte     1Byte    8-bit     -128       +127
+     * short    2Byte    16-bit    -2^15      +2^15-1
+     * int      4Byte    32-bit    -2^31      +2^31-1
+     * long     8Byte    64-bit    -2^63      +2^63-1
+     * float    4Byte    32-bit    IEEE754    IEEE754
+     * double   8Byte    64-bit    IEEE754    IEEE754
+     * char     2Byte    16-bit    Unicode 0  Unicode 2^16-1
+     * boolean  8Byte    64-bit
+     * </pre>
+     *
+     * @param v
+     * @return
+     */
     protected ByteString serializeValue(Object v) {
+        // 字节
+        if (v instanceof byte[]) {
+            return ByteString.copyFrom((byte[]) v);
+        }
+
         // 字符串
         if (v instanceof String) {
             return ByteString.copyFromUtf8((String) v);
         }
 
+        final ByteBuffer buffer = ByteBuffer.allocate(32);
+
         // 时间
+        if (v instanceof Timestamp) {
+            Timestamp timestamp = (Timestamp) v;
+            return ByteString.copyFrom(buffer.putLong(timestamp.getTime()).array());
+        }
+        if (v instanceof Date) {
+            Date date = (Date) v;
+            return ByteString.copyFromUtf8(DateFormatUtil.dateToString(date));
+        }
+        if (v instanceof Time) {
+            Time time = (Time) v;
+            return ByteString.copyFromUtf8(time.toString());
+        }
+
         // 数字
-        // 布尔
-        // 字节
+        if (v instanceof Integer) {
+            return ByteString.copyFrom(buffer.putInt((Integer) v).array());
+        }
+        if (v instanceof Long) {
+            return ByteString.copyFrom(buffer.putLong((Long) v).array());
+        }
+        if (v instanceof Short) {
+            return ByteString.copyFrom(buffer.putShort((Short) v).array());
+        }
+        if (v instanceof Float) {
+            return ByteString.copyFrom(buffer.putFloat((Float) v).array());
+        }
+        if (v instanceof Double) {
+            return ByteString.copyFrom(buffer.putDouble((Double) v).array());
+        }
+        if (v instanceof BigDecimal) {
+            BigDecimal bigDecimal = (BigDecimal) v;
+            return ByteString.copyFromUtf8(bigDecimal.toString());
+        }
+
+        // 布尔(1为true;0为false)
+        if (v instanceof Boolean) {
+            Boolean b = (Boolean) v;
+            return ByteString.copyFrom(buffer.putShort((short) (b ? 1 : 0)).array());
+        }
+
+        logger.error("Unsupported serialize value type:{}", v.getClass().getSimpleName());
         return null;
     }
 
@@ -143,11 +219,11 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
      * Resolve value
      *
      * @param type
-     * @param columnValue
+     * @param v
      * @return
      */
-    protected Object resolveValue(int type, ByteString columnValue) {
-        value.setValue(columnValue);
+    protected Object resolveValue(int type, ByteString v) {
+        value.setValue(v);
 
         if (value.isNull()) {
             return null;
@@ -165,6 +241,8 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
             // 时间
             case Types.TIMESTAMP:
                 return value.asTimestamp();
+            case Types.TIME:
+                return value.asTime();
             case Types.DATE:
                 return value.asDate();
 
