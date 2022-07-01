@@ -17,6 +17,11 @@ import java.sql.Timestamp;
  */
 public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
 
+    private final ByteBuffer oneBytes = ByteBuffer.allocate(1);
+    private final ByteBuffer twoBytes = ByteBuffer.allocate(2);
+    private final ByteBuffer fourBytes = ByteBuffer.allocate(4);
+    private final ByteBuffer eightBytes = ByteBuffer.allocate(8);
+
     @Override
     public String asString() {
         return getValue().toStringUtf8();
@@ -29,16 +34,15 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
 
     @Override
     public Short asShort() {
-        final ByteBuffer buffer = ByteBuffer.allocate(32);
-        buffer.put(getValue().toByteArray());
-        return buffer.asShortBuffer().get();
+        oneBytes.clear();
+        oneBytes.put(getValue().toByteArray(), 0, oneBytes.capacity());
+        return oneBytes.asShortBuffer().get();
     }
 
     @Override
     public Integer asInteger() {
-        final ByteBuffer buffer = ByteBuffer.allocate(32);
-        buffer.put(getValue().toByteArray());
-        return buffer.asIntBuffer().get();
+        fourBytes.put(getValue().toByteArray(), 0, fourBytes.capacity());
+        return fourBytes.asIntBuffer().get();
     }
 
     @Override
