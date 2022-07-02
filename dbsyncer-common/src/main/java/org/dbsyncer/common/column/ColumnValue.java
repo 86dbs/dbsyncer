@@ -30,7 +30,7 @@ public interface ColumnValue {
 
     Boolean asBoolean();
 
-    BigDecimal asDecimal();
+    BigDecimal asBigDecimal();
 
     Date asDate();
 

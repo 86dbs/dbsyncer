@@ -17,10 +17,7 @@ import java.sql.Timestamp;
  */
 public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
 
-    private final ByteBuffer oneBytes = ByteBuffer.allocate(1);
-    private final ByteBuffer twoBytes = ByteBuffer.allocate(2);
-    private final ByteBuffer fourBytes = ByteBuffer.allocate(4);
-    private final ByteBuffer eightBytes = ByteBuffer.allocate(8);
+    private final ByteBuffer buffer = ByteBuffer.allocate(8);
 
     @Override
     public String asString() {
@@ -34,53 +31,60 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
 
     @Override
     public Short asShort() {
-        oneBytes.clear();
-        oneBytes.put(getValue().toByteArray(), 0, oneBytes.capacity());
-        return oneBytes.asShortBuffer().get();
+        buffer.clear();
+        buffer.put(asByteArray(), 0, 2);
+        buffer.flip();
+        return buffer.asShortBuffer().get();
     }
 
     @Override
     public Integer asInteger() {
-        fourBytes.put(getValue().toByteArray(), 0, fourBytes.capacity());
-        return fourBytes.asIntBuffer().get();
+        buffer.clear();
+        buffer.put(asByteArray(), 0, 4);
+        buffer.flip();
+        return buffer.asIntBuffer().get();
     }
 
     @Override
     public Long asLong() {
-        final ByteBuffer buffer = ByteBuffer.allocate(32);
-        buffer.put(getValue().toByteArray());
+        buffer.clear();
+        buffer.put(asByteArray(), 0, 8);
+        buffer.flip();
         return buffer.asLongBuffer().get();
     }
 
     @Override
     public Float asFloat() {
-        final ByteBuffer buffer = ByteBuffer.allocate(32);
-        buffer.put(getValue().toByteArray());
+        buffer.clear();
+        buffer.put(asByteArray(), 0, 4);
+        buffer.flip();
         return buffer.asFloatBuffer().get();
     }
 
     @Override
     public Double asDouble() {
-        final ByteBuffer buffer = ByteBuffer.allocate(32);
-        buffer.put(getValue().toByteArray());
+        buffer.clear();
+        buffer.put(asByteArray(), 0, 8);
+        buffer.flip();
         return buffer.asDoubleBuffer().get();
     }
 
     @Override
     public Boolean asBoolean() {
-        final ByteBuffer buffer = ByteBuffer.allocate(32);
-        buffer.put(getValue().toByteArray());
+        buffer.clear();
+        buffer.put(asByteArray(), 0, 2);
+        buffer.flip();
         return buffer.asShortBuffer().get() == 1;
     }
 
     @Override
-    public BigDecimal asDecimal() {
+    public BigDecimal asBigDecimal() {
         return new BigDecimal(asString());
     }
 
     @Override
     public Date asDate() {
-        return DateFormatUtil.stringToDate(asString());
+        return new Date(asLong());
     }
 
     @Override
@@ -90,6 +94,6 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
 
     @Override
     public Time asTime() {
-        return Time.valueOf(asString());
+        return new Time(asLong());
     }
 }

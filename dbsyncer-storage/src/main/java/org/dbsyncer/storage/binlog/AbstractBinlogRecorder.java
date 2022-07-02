@@ -178,10 +178,17 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
                 buffer.flip();
                 return ByteString.copyFrom(buffer, 8);
             case "java.sql.Date":
-                return ByteString.copyFromUtf8(DateFormatUtil.dateToString((Date) v));
+                buffer.clear();
+                Date date = (Date) v;
+                buffer.putLong(date.getTime());
+                buffer.flip();
+                return ByteString.copyFrom(buffer, 8);
             case "java.sql.Time":
+                buffer.clear();
                 Time time = (Time) v;
-                return ByteString.copyFromUtf8(time.toString());
+                buffer.putLong(time.getTime());
+                buffer.flip();
+                return ByteString.copyFrom(buffer, 8);
 
             // 数字
             case "java.lang.Integer":
@@ -272,7 +279,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
                 return value.asDouble();
             case Types.DECIMAL:
             case Types.NUMERIC:
-                return value.asDecimal();
+                return value.asBigDecimal();
 
             // 布尔
             case Types.BOOLEAN:

@@ -64,7 +64,7 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
     }
 
     @Override
-    public BigDecimal asDecimal() {
+    public BigDecimal asBigDecimal() {
         return new BigDecimal(getValue());
     }
 
