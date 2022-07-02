@@ -111,7 +111,7 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
 
             case "numeric":
             case "decimal":
-                return value.asDecimal();
+                return value.asBigDecimal();
 
             case "character":
             case "char":

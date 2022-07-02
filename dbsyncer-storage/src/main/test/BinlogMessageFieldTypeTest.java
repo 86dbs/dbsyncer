@@ -81,6 +81,15 @@ public class BinlogMessageFieldTypeTest {
         value.setValue(bigDecimalBytes);
         BigDecimal b2 = value.asBigDecimal();
         logger.info("bigDecimal2:{}", b2);
+
+        // boolean
+        boolean bool = true;
+        logger.info("bool1:{}", bool);
+        ByteString boolBytes = messageTest.serializeValue(bool);
+        logger.info("bytes:{}", boolBytes.toByteArray());
+        value.setValue(boolBytes);
+        Boolean bool2 = value.asBoolean();
+        logger.info("bool2:{}", bool2);
     }
 
     @Test
