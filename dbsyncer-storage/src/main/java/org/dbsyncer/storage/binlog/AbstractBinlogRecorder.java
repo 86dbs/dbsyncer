@@ -3,7 +3,6 @@ package org.dbsyncer.storage.binlog;
 import com.google.protobuf.ByteString;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
-import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.storage.binlog.impl.BinlogColumnValue;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.slf4j.Logger;
@@ -202,10 +201,8 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
                 buffer.flip();
                 return ByteString.copyFrom(buffer, 8);
             case "java.lang.Short":
-                buffer.clear();
-                buffer.putShort((Short) v);
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 2);
+                Short aShort = (Short) v;
+                return ByteString.copyFromUtf8(aShort.toString());
             case "java.lang.Float":
                 buffer.clear();
                 buffer.putFloat((Float) v);
