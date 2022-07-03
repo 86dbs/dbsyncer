@@ -36,7 +36,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     private static final int CAPACITY = 10_0000;
 
-    private static final double BUFFER_THRESHOLD = 0.75;
+    private static final double BUFFER_THRESHOLD = 0.8;
 
     private static final long MAX_BATCH_COUNT = 1000L;
 
@@ -93,7 +93,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
         if (size >= (CAPACITY * BUFFER_THRESHOLD)) {
             try {
                 TimeUnit.SECONDS.sleep(30);
-                logger.warn("当前任务队列大小{}已达上限{}，请稍等{}秒", size, CAPACITY, 30);
+                logger.warn("当前任务队列大小{}已达上限{}，请稍等{}秒", size, CAPACITY * BUFFER_THRESHOLD, 30);
             } catch (InterruptedException e) {
                 logger.error(e.getMessage());
             }
