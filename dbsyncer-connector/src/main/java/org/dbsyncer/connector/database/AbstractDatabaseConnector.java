@@ -63,9 +63,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     @Override
     public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableName) {
         String quotation = buildSqlWithQuotation();
-        StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).append(
-                " WHERE 1 != 1");
-        return connectorMapper.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql.toString(), tableName));
+        DatabaseConfig config = connectorMapper.getConfig();
+        StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ");
+        if (StringUtil.isNotBlank(config.getSchema())) {
+            queryMetaSql.append(quotation).append(config.getSchema()).append(quotation).append(".");
+        }
+        queryMetaSql.append(quotation).append(tableName).append(quotation).append(" WHERE 1!=1");
+
+        return connectorMapper.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql.toString(), config.getSchema(), tableName));
     }
 
     @Override
@@ -368,10 +373,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
      *
      * @param databaseTemplate
      * @param metaSql          查询元数据
+     * @param schema           架构名
      * @param tableName        表名
      * @return
      */
-    protected MetaInfo getMetaInfo(DatabaseTemplate databaseTemplate, String metaSql, String tableName) throws SQLException {
+    protected MetaInfo getMetaInfo(DatabaseTemplate databaseTemplate, String metaSql, String schema, String tableName) throws SQLException {
         SqlRowSet sqlRowSet = databaseTemplate.queryForRowSet(metaSql);
         ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
         SqlRowSetMetaData metaData = rowSet.getMetaData();
@@ -384,7 +390,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         List<Field> fields = new ArrayList<>(columnCount);
         Map<String, List<String>> tables = new HashMap<>();
         try {
-            DatabaseMetaData md = databaseTemplate.getConnection().getMetaData();
+            Connection connection = databaseTemplate.getConnection();
+            DatabaseMetaData md = connection.getMetaData();
+            final String catalog = connection.getCatalog();
+            schema = StringUtil.isNotBlank(schema) ? schema : null;
             String name = null;
             String label = null;
             String typeName = null;
@@ -394,7 +403,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             for (int i = 1; i <= columnCount; i++) {
                 table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
                 if (null == tables.get(table)) {
-                    tables.putIfAbsent(table, findTablePrimaryKeys(md, table));
+                    tables.putIfAbsent(table, findTablePrimaryKeys(md, catalog, schema, table));
                 }
                 name = metaData.getColumnName(i);
                 label = metaData.getColumnLabel(i);
@@ -441,16 +450,18 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
      * 返回表主键
      *
      * @param md
+     * @param catalog
+     * @param schema
      * @param tableName
      * @return
      * @throws SQLException
      */
-    private List<String> findTablePrimaryKeys(DatabaseMetaData md, String tableName) throws SQLException {
+    private List<String> findTablePrimaryKeys(DatabaseMetaData md, String catalog, String schema, String tableName) throws SQLException {
         //根据表名获得主键结果集
         ResultSet rs = null;
         List<String> primaryKeys = new ArrayList<>();
         try {
-            rs = md.getPrimaryKeys(null, null, tableName);
+            rs = md.getPrimaryKeys(catalog, schema, tableName);
             while (rs.next()) {
                 primaryKeys.add(rs.getString("COLUMN_NAME"));
             }
