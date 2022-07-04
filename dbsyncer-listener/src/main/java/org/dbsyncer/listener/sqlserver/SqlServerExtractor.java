@@ -34,7 +34,6 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     private static final String STATEMENTS_PLACEHOLDER = "#";
     private static final String GET_DATABASE_NAME = "SELECT db_name()";
     private static final String GET_TABLE_LIST = "SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('#') AND IS_MS_SHIPPED = 0";
-    private static final String IS_SERVER_AGENT_RUNNING = "EXEC master.#.xp_servicecontrol N'QUERYSTATE', N'SQLSERVERAGENT'";
     private static final String IS_DB_CDC_ENABLED = "SELECT is_cdc_enabled FROM sys.databases WHERE name = '#'";
     private static final String IS_TABLE_CDC_ENABLED = "SELECT COUNT(*) FROM sys.tables tb WHERE tb.is_tracked_by_cdc = 1 AND tb.name='#'";
     private static final String ENABLE_DB_CDC = "IF EXISTS(select 1 from sys.databases where name = '#' AND is_cdc_enabled=0) EXEC sys.sp_cdc_enable_db";
@@ -69,9 +68,6 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
             connect();
             readTables();
             Assert.notEmpty(tables, "No tables available");
-
-            boolean enabledServerAgent = queryAndMap(IS_SERVER_AGENT_RUNNING.replace(STATEMENTS_PLACEHOLDER, schema), rs -> "Running.".equals(rs.getString(1)));
-            Assert.isTrue(enabledServerAgent, "Please ensure that the SQL Server Agent is running");
 
             enableDBCDC();
             enableTableCDC();
