@@ -18,6 +18,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.util.BitSet;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
@@ -162,8 +163,8 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
         String type = v.getClass().getName();
         switch (type) {
             // 字节
-//            case "[B":
-//            return ByteString.copyFrom((byte[]) v);
+            case "[B":
+            return ByteString.copyFrom((byte[]) v);
 
             // 字符串
             case "java.lang.String":
@@ -201,8 +202,10 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
                 buffer.flip();
                 return ByteString.copyFrom(buffer, 8);
             case "java.lang.Short":
-                Short aShort = (Short) v;
-                return ByteString.copyFromUtf8(aShort.toString());
+                buffer.clear();
+                buffer.putShort((Short) v);
+                buffer.flip();
+                return ByteString.copyFrom(buffer, 2);
             case "java.lang.Float":
                 buffer.clear();
                 buffer.putFloat((Float) v);
@@ -216,6 +219,9 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
             case "java.math.BigDecimal":
                 BigDecimal bigDecimal = (BigDecimal) v;
                 return ByteString.copyFromUtf8(bigDecimal.toString());
+            case "java.util.BitSet":
+                BitSet bitSet = (BitSet) v;
+                return ByteString.copyFrom(bitSet.toByteArray());
 
             // 布尔(1为true;0为false)
             case "java.lang.Boolean":

@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -55,21 +56,26 @@ public class BinlogMessageTest {
 
         byte[] line;
         while (null != (line = context.readLine())) {
-            BinlogMessage binlogMessage = BinlogMessage.parseFrom(line);
-            logger.info(binlogMessage.toString());
+            logger.info("size:{}, {}", line.length, line);
+            BinlogMessage message = BinlogMessage.parseFrom(line);
+            logger.info(message.toString());
         }
         context.flush();
     }
 
     private void write(String tableGroupId, String key) throws IOException {
         Map<String, Object> data = new HashMap<>();
-        data.put("id", 1);
+        data.put("id", 1L);
         data.put("name", key + "中文");
         data.put("age", 88);
-        data.put("number", 123456789L);
+        data.put("bd", new BigDecimal(88));
+        data.put("sex", 1);
         data.put("f", 88.88f);
         data.put("d", 999.99d);
         data.put("b", true);
+        short ss = 32767;
+        data.put("ss", ss);
+        data.put("bytes", "中文666".getBytes(Charset.defaultCharset()));
         data.put("create_date", new Date(Timestamp.valueOf(LocalDateTime.now()).getTime()));
         data.put("update_time", Timestamp.valueOf(LocalDateTime.now()).getTime());
 

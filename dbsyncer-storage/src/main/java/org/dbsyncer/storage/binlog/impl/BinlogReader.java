@@ -1,5 +1,6 @@
 package org.dbsyncer.storage.binlog.impl;
 
+import com.google.protobuf.CodedInputStream;
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.file.BufferedRandomAccessFile;
 import org.dbsyncer.storage.binlog.AbstractBinlogActuator;
@@ -16,9 +17,10 @@ import java.io.RandomAccessFile;
  */
 public class BinlogReader extends AbstractBinlogActuator {
     private final RandomAccessFile raf;
-    private final byte[] h = new byte[1];
+    private final byte[] h = new byte[4];
     private byte[] b;
     private long offset;
+    private CodedInputStream cis;
 
     public BinlogReader(String path, BinlogIndex binlogIndex, long position) throws IOException {
         initBinlogIndex(binlogIndex);
@@ -32,7 +34,8 @@ public class BinlogReader extends AbstractBinlogActuator {
             return null;
         }
         raf.read(h);
-        b = new byte[Byte.toUnsignedInt(h[0])];
+        cis = CodedInputStream.newInstance(h);
+        b = new byte[cis.readFixed32()];
         raf.read(b);
         raf.seek(this.offset + (h.length + b.length));
         refreshBinlogIndexUpdateTime();
