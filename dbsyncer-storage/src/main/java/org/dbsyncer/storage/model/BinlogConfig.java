@@ -1,11 +1,11 @@
-package org.dbsyncer.storage.binlog;
+package org.dbsyncer.storage.model;
 
 /**
  * @author AE86
  * @version 1.0.0
  * @date 2022/6/19 23:03
  */
-public final class Binlog {
+public final class BinlogConfig {
     private String fileName;
     private long position = 0;
 
@@ -13,7 +13,7 @@ public final class Binlog {
         return fileName;
     }
 
-    public Binlog setFileName(String fileName) {
+    public BinlogConfig setFileName(String fileName) {
         this.fileName = fileName;
         return this;
     }
@@ -22,7 +22,7 @@ public final class Binlog {
         return position;
     }
 
-    public Binlog setPosition(long position) {
+    public BinlogConfig setPosition(long position) {
         this.position = position;
         return this;
     }

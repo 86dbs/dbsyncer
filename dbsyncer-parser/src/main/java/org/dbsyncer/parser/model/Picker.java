@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Picker {
 
@@ -66,4 +67,7 @@ public class Picker {
         return targetFields;
     }
 
+    public Map<String, Field> getSourceFieldMap() {
+        return sourceFields.stream().collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
+    }
 }

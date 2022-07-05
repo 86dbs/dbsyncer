@@ -1,7 +1,10 @@
 package org.dbsyncer.plugin;
 
 import org.apache.commons.io.FileUtils;
+import org.dbsyncer.common.model.FullConvertContext;
+import org.dbsyncer.common.model.IncrementConvertContext;
 import org.dbsyncer.common.spi.ConvertService;
+import org.dbsyncer.common.spi.ProxyApplicationContext;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.plugin.config.Plugin;
 import org.slf4j.Logger;
@@ -44,6 +47,9 @@ public class PluginFactory {
 
     @Autowired
     private Map<String, ConvertService> service;
+
+    @Autowired
+    private ProxyApplicationContext applicationContextProxy;
 
     @PostConstruct
     private void init() {
@@ -92,13 +98,13 @@ public class PluginFactory {
 
     public void convert(Plugin plugin, List<Map> source, List<Map> target) {
         if (null != plugin && service.containsKey(plugin.getClassName())) {
-            service.get(plugin.getClassName()).convert(source, target);
+            service.get(plugin.getClassName()).convert(new FullConvertContext(applicationContextProxy, source, target));
         }
     }
 
     public void convert(Plugin plugin, String event, Map<String, Object> source, Map<String, Object> target) {
         if (null != plugin && service.containsKey(plugin.getClassName())) {
-            service.get(plugin.getClassName()).convert(event, source, target);
+            service.get(plugin.getClassName()).convert(new IncrementConvertContext(applicationContextProxy, event, source, target));
         }
     }
 

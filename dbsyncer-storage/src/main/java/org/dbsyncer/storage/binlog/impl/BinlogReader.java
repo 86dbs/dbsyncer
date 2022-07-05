@@ -1,29 +1,29 @@
-package org.dbsyncer.storage.binlog;
+package org.dbsyncer.storage.binlog.impl;
 
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.file.BufferedRandomAccessFile;
-import org.dbsyncer.storage.binlog.proto.BinlogMessage;
+import org.dbsyncer.storage.binlog.AbstractBinlogActuator;
+import org.dbsyncer.storage.model.BinlogIndex;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 
 /**
  * @author AE86
  * @version 1.0.0
- * @date 2022/6/19 23:36
+ * @date 2022/6/26 23:25
  */
-public class BinlogPipeline implements Closeable {
+public class BinlogReader extends AbstractBinlogActuator {
     private final RandomAccessFile raf;
-    private final OutputStream out;
     private final byte[] h = new byte[1];
     private byte[] b;
-    private File file;
     private long offset;
 
-    public BinlogPipeline(File file, long pos) throws IOException {
-        this.file = file;
-        this.raf = new BufferedRandomAccessFile(file, "r");
-        this.out = new FileOutputStream(file, true);
-        raf.seek(pos);
+    public BinlogReader(String path, BinlogIndex binlogIndex, long position) throws IOException {
+        initBinlogIndex(binlogIndex);
+        this.raf = new BufferedRandomAccessFile(new File(path + binlogIndex.getFileName()), "r");
+        raf.seek(position);
     }
 
     public byte[] readLine() throws IOException {
@@ -35,26 +35,16 @@ public class BinlogPipeline implements Closeable {
         b = new byte[Byte.toUnsignedInt(h[0])];
         raf.read(b);
         raf.seek(this.offset + (h.length + b.length));
+        refreshBinlogIndexUpdateTime();
         return b;
-    }
-
-    public void write(BinlogMessage message) throws IOException {
-        if(null != message){
-            message.writeDelimitedTo(out);
-        }
     }
 
     public long getOffset() {
         return offset;
     }
 
-    public String getBinlogName() {
-        return file.getName();
-    }
-
     @Override
     public void close() {
-        IOUtils.closeQuietly(out);
         IOUtils.closeQuietly(raf);
     }
 }

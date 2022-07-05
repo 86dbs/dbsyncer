@@ -35,7 +35,7 @@ public class SqlBuilderInsert extends AbstractSqlBuilder {
             }
         }
         // INSERT INTO "USER"("USERNAME","AGE") VALUES (?,?)
-        sql.insert(0, "INSERT INTO ").append(quotation).append(tableName).append(quotation).append("(").append(fs).append(") VALUES (")
+        sql.insert(0, "INSERT INTO ").append(config.getSchema()).append(quotation).append(tableName).append(quotation).append("(").append(fs).append(") VALUES (")
                 .append(vs).append(")");
         return sql.toString();
     }

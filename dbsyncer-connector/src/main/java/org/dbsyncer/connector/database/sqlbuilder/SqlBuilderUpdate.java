@@ -21,7 +21,7 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
         StringBuilder sql = new StringBuilder();
         int size = fields.size();
         int end = size - 1;
-        sql.append("UPDATE ").append(quotation).append(tableName).append(quotation).append(" SET ");
+        sql.append("UPDATE ").append(config.getSchema()).append(quotation).append(tableName).append(quotation).append(" SET ");
         for (int i = 0; i < size; i++) {
             // skip pk
             if(fields.get(i).isPk()){

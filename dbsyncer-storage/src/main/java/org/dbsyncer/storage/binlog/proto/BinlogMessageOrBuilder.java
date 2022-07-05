@@ -7,60 +7,51 @@ public interface BinlogMessageOrBuilder extends
         // @@protoc_insertion_point(interface_extends:BinlogMessage)
         com.google.protobuf.MessageOrBuilder {
 
-    /**
-     * <code>string table_group_id = 1;</code>
-     *
-     * @return The tableGroupId.
-     */
-    java.lang.String getTableGroupId();
+  /**
+   * <code>string table_group_id = 1;</code>
+   *
+   * @return The tableGroupId.
+   */
+  String getTableGroupId();
 
-    /**
-     * <code>string table_group_id = 1;</code>
-     *
-     * @return The bytes for tableGroupId.
-     */
-    com.google.protobuf.ByteString
-    getTableGroupIdBytes();
+  /**
+   * <code>string table_group_id = 1;</code>
+   *
+   * @return The bytes for tableGroupId.
+   */
+  com.google.protobuf.ByteString
+  getTableGroupIdBytes();
 
-    /**
-     * <code>.EventEnum event = 2;</code>
-     *
-     * @return The enum numeric value on the wire for event.
-     */
-    int getEventValue();
+  /**
+   * <code>.EventEnum event = 2;</code>
+   *
+   * @return The enum numeric value on the wire for event.
+   */
+  int getEventValue();
 
-    /**
-     * <code>.EventEnum event = 2;</code>
-     *
-     * @return The event.
-     */
-    org.dbsyncer.storage.binlog.proto.EventEnum getEvent();
+  /**
+   * <code>.EventEnum event = 2;</code>
+   *
+   * @return The event.
+   */
+  EventEnum getEvent();
 
-    /**
-     * <code>repeated .Data data = 3;</code>
-     */
-    java.util.List<org.dbsyncer.storage.binlog.proto.Data>
-    getDataList();
+  /**
+   * <code>.BinlogMap data = 3;</code>
+   *
+   * @return Whether the data field is set.
+   */
+  boolean hasData();
 
-    /**
-     * <code>repeated .Data data = 3;</code>
-     */
-    org.dbsyncer.storage.binlog.proto.Data getData(int index);
+  /**
+   * <code>.BinlogMap data = 3;</code>
+   *
+   * @return The data.
+   */
+  BinlogMap getData();
 
-    /**
-     * <code>repeated .Data data = 3;</code>
-     */
-    int getDataCount();
-
-    /**
-     * <code>repeated .Data data = 3;</code>
-     */
-    java.util.List<? extends org.dbsyncer.storage.binlog.proto.DataOrBuilder>
-    getDataOrBuilderList();
-
-    /**
-     * <code>repeated .Data data = 3;</code>
-     */
-    org.dbsyncer.storage.binlog.proto.DataOrBuilder getDataOrBuilder(
-            int index);
+  /**
+   * <code>.BinlogMap data = 3;</code>
+   */
+  BinlogMapOrBuilder getDataOrBuilder();
 }

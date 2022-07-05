@@ -9,16 +9,12 @@ import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public final class SqlServerConnector extends AbstractDatabaseConnector {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
@@ -43,15 +39,16 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
         // 获取查询SQL
         Table table = commandConfig.getTable();
+        String schema = getSchema(commandConfig, buildSqlWithQuotation());
         Map<String, String> map = new HashMap<>();
 
         String query = ConnectorConstant.OPERTION_QUERY;
-        map.put(query, this.buildSql(query, commandConfig, queryFilterSql));
+        map.put(query, this.buildSql(query, commandConfig, schema, queryFilterSql));
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
         if (StringUtil.isNotBlank(queryFilterSql)) {
-            queryCount.append("SELECT COUNT(*) FROM ").append(table.getName()).append(queryFilterSql);
+            queryCount.append("SELECT COUNT(*) FROM ").append(schema).append(table.getName()).append(queryFilterSql);
         } else {
             DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
             // 从存储过程查询（定时更新总数，可能存在误差）

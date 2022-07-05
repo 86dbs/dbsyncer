@@ -14,7 +14,8 @@
 
                 <p>如何开发插件？</p>
                 <ol>
-                    <li>新建java或maven工程，比如app</li>
+                    <li>新建java或maven工程，或者下载 <a href="https://gitee.com/ghi/dbsyncer-plugin-demo" title="提供开发者编写插件的示例项目"
+                                               target='_blank'>示例项目</a></li>
                     <li>导入开发包：
                         <ul>
                             <li>方式1：导入jar <a onClick="downLoad()" href="javascript:;" title="下载开发包">dbsyncer-common-[[${version}]].jar</a></li>
@@ -136,7 +137,7 @@ public class MyPlugin implements ConvertService{
     $("#filePlugin").fileinput({
         theme: 'fas',
         language: 'zh',
-        uploadUrl: $basePath + '/plugin/plugin',
+        uploadUrl: $basePath + '/plugin/upload',
         enctype: 'multipart/form-data',
         removeFromPreviewOnError: true, //当选择的文件不符合规则时，例如不是指定后缀文件、大小超出配置等，选择的文件不会出现在预览框中，只会显示错误信息
         allowedFileExtensions: ['jar'],

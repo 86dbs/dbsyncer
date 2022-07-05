@@ -63,9 +63,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     @Override
     public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableName) {
         String quotation = buildSqlWithQuotation();
-        StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ").append(quotation).append(tableName).append(quotation).append(
-                " WHERE 1 != 1");
-        return connectorMapper.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql.toString(), tableName));
+        DatabaseConfig config = connectorMapper.getConfig();
+        StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ");
+        if (StringUtil.isNotBlank(config.getSchema())) {
+            queryMetaSql.append(quotation).append(config.getSchema()).append(quotation).append(".");
+        }
+        queryMetaSql.append(quotation).append(tableName).append(quotation).append(" WHERE 1!=1");
+
+        return connectorMapper.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql.toString(), config.getSchema(), tableName));
     }
 
     @Override
@@ -173,13 +178,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         Map<String, String> map = new HashMap<>();
 
         String query = ConnectorConstant.OPERTION_QUERY;
-        map.put(query, buildSql(query, commandConfig, queryFilterSql));
+        String quotation = buildSqlWithQuotation();
+        String schema = getSchema(commandConfig, quotation);
+        map.put(query, buildSql(query, commandConfig, schema, queryFilterSql));
 
         // 获取查询总数SQL
-        String quotation = buildSqlWithQuotation();
         String pk = findOriginalTablePrimaryKey(commandConfig, quotation);
         StringBuilder queryCount = new StringBuilder();
-        queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(quotation).append(table.getName()).append(quotation);
+        queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table.getName()).append(quotation);
         if (StringUtil.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
@@ -190,23 +196,24 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
+        String quotation = buildSqlWithQuotation();
+        String schema = getSchema(commandConfig, quotation);
+
         // 获取增删改SQL
         Map<String, String> map = new HashMap<>();
         String insert = SqlBuilderEnum.INSERT.getName();
-        map.put(insert, buildSql(insert, commandConfig, null));
+        map.put(insert, buildSql(insert, commandConfig, schema, null));
 
         String update = SqlBuilderEnum.UPDATE.getName();
-        map.put(update, buildSql(update, commandConfig, null));
+        map.put(update, buildSql(update, commandConfig, schema, null));
 
         String delete = SqlBuilderEnum.DELETE.getName();
-        map.put(delete, buildSql(delete, commandConfig, null));
+        map.put(delete, buildSql(delete, commandConfig, schema, null));
 
         // 获取查询数据行是否存在
-        String quotation = buildSqlWithQuotation();
         String pk = findOriginalTablePrimaryKey(commandConfig, quotation);
-        StringBuilder queryCount = new StringBuilder().append("SELECT COUNT(1) FROM ").append(quotation).append(
-                commandConfig.getTable().getName()).append(
-                quotation).append(" WHERE ").append(pk).append(" = ?");
+        StringBuilder queryCount = new StringBuilder().append("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(
+                commandConfig.getTable().getName()).append(quotation).append(" WHERE ").append(pk).append(" = ?");
         String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
         map.put(queryCountExist, queryCount.toString());
         return map;
@@ -228,6 +235,22 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
      */
     protected String buildSqlWithQuotation() {
         return "";
+    }
+
+    /**
+     * 获取架构名
+     *
+     * @param commandConfig
+     * @param quotation
+     * @return
+     */
+    protected String getSchema(CommandConfig commandConfig, String quotation) {
+        DatabaseConfig config = (DatabaseConfig) commandConfig.getConnectorConfig();
+        StringBuilder schema = new StringBuilder();
+        if (StringUtil.isNotBlank(config.getSchema())) {
+            schema.append(quotation).append(config.getSchema()).append(quotation).append(".");
+        }
+        return schema.toString();
     }
 
     /**
@@ -317,10 +340,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
      *
      * @param type           {@link SqlBuilderEnum}
      * @param commandConfig
+     * @param schema
      * @param queryFilterSQL
      * @return
      */
-    protected String buildSql(String type, CommandConfig commandConfig, String queryFilterSQL) {
+    protected String buildSql(String type, CommandConfig commandConfig, String schema, String queryFilterSQL) {
         Table table = commandConfig.getTable();
         if (null == table) {
             logger.error("Table can not be null.");
@@ -359,7 +383,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             pk = findOriginalTablePrimaryKey(commandConfig, "");
         }
 
-        SqlBuilderConfig config = new SqlBuilderConfig(this, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());
+        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());
         return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
     }
 
@@ -368,10 +392,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
      *
      * @param databaseTemplate
      * @param metaSql          查询元数据
+     * @param schema           架构名
      * @param tableName        表名
      * @return
      */
-    protected MetaInfo getMetaInfo(DatabaseTemplate databaseTemplate, String metaSql, String tableName) throws SQLException {
+    protected MetaInfo getMetaInfo(DatabaseTemplate databaseTemplate, String metaSql, String schema, String tableName) throws SQLException {
         SqlRowSet sqlRowSet = databaseTemplate.queryForRowSet(metaSql);
         ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
         SqlRowSetMetaData metaData = rowSet.getMetaData();
@@ -384,7 +409,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         List<Field> fields = new ArrayList<>(columnCount);
         Map<String, List<String>> tables = new HashMap<>();
         try {
-            DatabaseMetaData md = databaseTemplate.getConnection().getMetaData();
+            Connection connection = databaseTemplate.getConnection();
+            DatabaseMetaData md = connection.getMetaData();
+            final String catalog = connection.getCatalog();
+            schema = StringUtil.isNotBlank(schema) ? schema : null;
             String name = null;
             String label = null;
             String typeName = null;
@@ -394,7 +422,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             for (int i = 1; i <= columnCount; i++) {
                 table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
                 if (null == tables.get(table)) {
-                    tables.putIfAbsent(table, findTablePrimaryKeys(md, table));
+                    tables.putIfAbsent(table, findTablePrimaryKeys(md, catalog, schema, table));
                 }
                 name = metaData.getColumnName(i);
                 label = metaData.getColumnLabel(i);
@@ -441,16 +469,18 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
      * 返回表主键
      *
      * @param md
+     * @param catalog
+     * @param schema
      * @param tableName
      * @return
      * @throws SQLException
      */
-    private List<String> findTablePrimaryKeys(DatabaseMetaData md, String tableName) throws SQLException {
+    private List<String> findTablePrimaryKeys(DatabaseMetaData md, String catalog, String schema, String tableName) throws SQLException {
         //根据表名获得主键结果集
         ResultSet rs = null;
         List<String> primaryKeys = new ArrayList<>();
         try {
-            rs = md.getPrimaryKeys(null, null, tableName);
+            rs = md.getPrimaryKeys(catalog, schema, tableName);
             while (rs.next()) {
                 primaryKeys.add(rs.getString("COLUMN_NAME"));
             }
