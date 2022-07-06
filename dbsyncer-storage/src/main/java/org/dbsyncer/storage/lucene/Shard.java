@@ -115,24 +115,21 @@ public class Shard {
         return analyzer;
     }
 
-    public List<Map> query(Query query) throws IOException {
-        final IndexSearcher searcher = getSearcher();
-        final TopDocs topDocs = searcher.search(query, MAX_SIZE);
-        return search(searcher, topDocs, new Option(), 1, 20);
-    }
-
-    public Paging query(Query query, Sort sort) throws IOException {
-        return query(new Option(query), 1, 20, sort);
-    }
-
     public Paging query(Option option, int pageNum, int pageSize, Sort sort) throws IOException {
         final IndexSearcher searcher = getSearcher();
-        final TopDocs topDocs = searcher.search(option.getQuery(), MAX_SIZE, sort);
+        final TopDocs topDocs = getTopDocs(searcher, option.getQuery(), MAX_SIZE, sort);
         Paging paging = new Paging(pageNum, pageSize);
         List<Map> data = search(searcher, topDocs, option, pageNum, pageSize);
         paging.setTotal(topDocs.totalHits);
         paging.setData(data);
         return paging;
+    }
+
+    private TopDocs getTopDocs(IndexSearcher searcher, Query query, int maxSize, Sort sort) throws IOException {
+        if (null != sort) {
+            return searcher.search(query, maxSize, sort);
+        }
+        return searcher.search(query, maxSize);
     }
 
     /**

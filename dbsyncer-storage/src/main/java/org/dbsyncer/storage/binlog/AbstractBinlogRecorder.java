@@ -42,6 +42,8 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
     private static final long CONTEXT_PERIOD = 10_000;
 
+    private static final ByteBuffer buffer = ByteBuffer.allocate(8);
+
     private static final BinlogColumnValue value = new BinlogColumnValue();
 
     private final Lock lock = new ReentrantLock(true);
@@ -84,7 +86,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
     @Override
     public void run() {
-        if (running || !getQueue().isEmpty()) {
+        if (running || getQueue().size() > 500) {
             return;
         }
 
@@ -131,8 +133,6 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
             context.flush();
         }
     }
-
-    private final ByteBuffer buffer = ByteBuffer.allocate(8);
 
     /**
      * Java语言提供了八种基本类型，六种数字类型（四个整数型，两个浮点型），一种字符类型，一种布尔型。

@@ -12,6 +12,7 @@ import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
+import org.apache.lucene.util.BytesRef;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -155,7 +156,7 @@ public class LuceneFactoryTest {
         BooleanQuery query = new BooleanQuery.Builder()
                 .add(IntPoint.newRangeQuery("age", 1, 100), BooleanClause.Occur.MUST)
                 .build();
-        Paging paging = shard.query(query, new Sort(new SortField("createTime", SortField.Type.LONG, true)));
+        Paging paging = shard.query(new Option(query), 1, 20, new Sort(new SortField("createTime", SortField.Type.LONG, true)));
         paging.getData().forEach(m -> System.out.println(m));
 
         // 清空
@@ -165,7 +166,7 @@ public class LuceneFactoryTest {
     @Test
     public void testCURD() throws IOException {
         System.out.println("测试前：");
-        List<Map> maps = shard.query(new MatchAllDocsQuery());
+        List<Map> maps = query(new MatchAllDocsQuery());
         maps.forEach(m -> System.out.println(m));
         check();
 
@@ -176,7 +177,7 @@ public class LuceneFactoryTest {
         doc.add(new TextField("content", "这是一款大规模数据处理软件，名字叫做Apache Spark", Field.Store.YES));
         shard.insert(doc);
         System.out.println("新增后：");
-        maps = shard.query(new MatchAllDocsQuery());
+        maps = query(new MatchAllDocsQuery());
         maps.forEach(m -> System.out.println(m));
         check();
 
@@ -184,15 +185,41 @@ public class LuceneFactoryTest {
         doc.add(new TextField("content", "这是一款大规模数据处理软件，名字叫做Apache Spark[已修改]", Field.Store.YES));
         shard.update(new Term("id", id), doc);
         System.out.println("修改后：");
-        maps = shard.query(new MatchAllDocsQuery());
+        maps = query(new MatchAllDocsQuery());
         maps.forEach(m -> System.out.println(m));
         check();
 
         // 删除
         shard.delete(new Term("id", id));
         System.out.println("删除后：");
-        maps = shard.query(new MatchAllDocsQuery());
+        maps = query(new MatchAllDocsQuery());
         maps.forEach(m -> System.out.println(m));
+        check();
+
+        // 清空
+        shard.deleteAll();
+    }
+
+    @Test
+    public void testBinary() throws IOException {
+        System.out.println("测试前：");
+        List<Map> maps = query(new MatchAllDocsQuery());
+        maps.forEach(m -> System.out.println(m));
+        check();
+
+        // 新增
+        Document doc = new Document();
+        String id = "100";
+        doc.add(new StringField("id", id, Field.Store.YES));
+        BytesRef bytesRef = new BytesRef("中文".getBytes());
+        doc.add(new StoredField("content", bytesRef));
+        shard.insert(doc);
+        System.out.println("新增后：");
+        maps = query(new MatchAllDocsQuery());
+        maps.forEach(m -> {
+            m.get("content");
+            System.out.println(m);
+        });
         check();
 
         // 清空
@@ -214,7 +241,7 @@ public class LuceneFactoryTest {
         TermQuery query = new TermQuery(new Term(searchField, "Spark"));
 
         //执行查询，并打印查询到的记录数
-        shard.query(query);
+        query(query);
     }
 
     /**
@@ -254,7 +281,7 @@ public class LuceneFactoryTest {
         BooleanQuery query = builder.build();
 
         //执行查询，并打印查询到的记录数
-        shard.query(query);
+        query(query);
     }
 
     /**
@@ -272,7 +299,7 @@ public class LuceneFactoryTest {
         Query query = new PrefixQuery(term);
 
         //执行查询，并打印查询到的记录数
-        shard.query(query);
+        query(query);
     }
 
     /**
@@ -297,7 +324,7 @@ public class LuceneFactoryTest {
         PhraseQuery phraseQuery = builder.build();
 
         //执行查询，并打印查询到的记录数
-        shard.query(phraseQuery);
+        query(phraseQuery);
     }
 
     /**
@@ -315,7 +342,7 @@ public class LuceneFactoryTest {
         Query query = new FuzzyQuery(t);
 
         //执行查询，并打印查询到的记录数
-        shard.query(query);
+        query(query);
     }
 
     /**
@@ -332,7 +359,7 @@ public class LuceneFactoryTest {
         Query query = new WildcardQuery(term);
 
         //执行查询，并打印查询到的记录数
-        shard.query(query);
+        query(query);
     }
 
     /**
@@ -354,7 +381,7 @@ public class LuceneFactoryTest {
         Query query = parser.parse("Spark");
 
         //执行查询，并打印查询到的记录数
-        shard.query(query);
+        query(query);
     }
 
     /**
@@ -414,6 +441,11 @@ public class LuceneFactoryTest {
             tokenStream.close();
             analyzer.close();
         }
+    }
+
+    private List<Map> query(Query query) throws IOException {
+        Paging paging = shard.query(new Option(query), 1, 20, null);
+        return (List<Map>) paging.getData();
     }
 
     private void check() throws IOException {

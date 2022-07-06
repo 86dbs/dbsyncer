@@ -1,4 +1,5 @@
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.storage.binlog.AbstractBinlogRecorder;
 import org.dbsyncer.storage.binlog.BinlogContext;
@@ -50,16 +51,27 @@ public class BinlogMessageTest {
 
     @Test
     public void testBinlogMessage() throws IOException {
-        write("123456", "abc");
-        write("000111", "xyz");
-        write("888999", "jkl");
+        for (int i = 0; i < 10000; i++) {
+            write("123456", i+"");
+        }
+        //write("000111", "xyz");
+        //write("888999", "jkl");
 
         byte[] line;
+        int count = 0;
         while (null != (line = context.readLine())) {
-            logger.info("size:{}, {}", line.length, line);
-            BinlogMessage message = BinlogMessage.parseFrom(line);
-            logger.info(message.toString());
+            //logger.info("size:{}, {}", line.length, line);
+            try {
+                BinlogMessage message = BinlogMessage.parseFrom(line);
+                if(null != message){
+                    count ++;
+                    message.getData();
+                }
+            } catch (InvalidProtocolBufferException e) {
+                logger.info("{} : {}", line.length, line);
+            }
         }
+        logger.info("总条数：{}", count);
         context.flush();
     }
 
@@ -94,9 +106,9 @@ public class BinlogMessageTest {
                 .setEvent(EventEnum.UPDATE)
                 .setData(builder.build())
                 .build();
-        byte[] bytes = build.toByteArray();
-        logger.info("序列化长度：{}", bytes.length);
-        logger.info("{}", bytes);
+        //byte[] bytes = build.toByteArray();
+        //logger.info("序列化长度：{}", bytes.length);
+        //logger.info("{}", bytes);
         context.write(build);
     }
 
