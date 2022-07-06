@@ -83,6 +83,12 @@ public class Shard {
         }
     }
 
+    public void deleteBatch(Term... terms) throws IOException {
+        if (null != terms) {
+            execute(terms, () -> indexWriter.deleteDocuments(terms));
+        }
+    }
+
     public void deleteAll() throws IOException {
         // Fix Bug: this IndexReader is closed. 直接删除文件
         close();
