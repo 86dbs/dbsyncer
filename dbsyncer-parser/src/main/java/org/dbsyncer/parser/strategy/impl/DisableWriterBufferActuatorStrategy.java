@@ -45,10 +45,21 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
         try {
             EventEnum eventEnum = EventEnum.valueOf(event.getEvent());
             Map<String, Object> data = StringUtil.equals(ConnectorConstant.OPERTION_DELETE, eventEnum.name()) ? event.getBefore() : event.getAfter();
+
+            BinlogMap.Builder dataBuilder = BinlogMap.newBuilder();
+            data.forEach((k, v) -> {
+                if (null != v) {
+                    ByteString bytes = serializeValue(v);
+                    if (null != bytes) {
+                        dataBuilder.putRow(k, bytes);
+                    }
+                }
+            });
+
             BinlogMessage builder = BinlogMessage.newBuilder()
                     .setTableGroupId(tableGroup.getId())
                     .setEvent(eventEnum)
-                    .setData(serialize(data))
+                    .setData(dataBuilder.build())
                     .build();
             flush(builder);
         } catch (Exception e) {
@@ -100,19 +111,6 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
         pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
 
         return new WriterRequest(tableGroupId, target, mapping.getMetaId(), mapping.getTargetConnectorId(), sourceTableName, targetTableName, event, picker.getTargetFields(), tableGroup.getCommand());
-    }
-
-    private BinlogMap serialize(Map<String, Object> data) {
-        BinlogMap.Builder builder = BinlogMap.newBuilder();
-        data.forEach((k, v) -> {
-            if (null != v) {
-                ByteString bytes = serializeValue(v);
-                if (null != bytes) {
-                    builder.putRow(k, bytes);
-                }
-            }
-        });
-        return builder.build();
     }
 
 }
