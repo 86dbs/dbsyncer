@@ -181,7 +181,8 @@ public class Shard {
                     }
                 }
 
-                r.put(f.name(), f.stringValue());
+                // 解析value类型
+                r.put(f.name(), option.getFieldResolver(f.name()).getValue(f));
             }
             list.add(r);
         }

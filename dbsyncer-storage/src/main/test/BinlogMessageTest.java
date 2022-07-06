@@ -29,15 +29,13 @@ import java.util.Queue;
  * @version 1.0.0
  * @date 2022/6/18 23:46
  */
-public class BinlogMessageTest {
+public class BinlogMessageTest extends AbstractBinlogRecorder {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private BinlogContext context;
 
     private BinlogColumnValue value = new BinlogColumnValue();
-
-    private MessageTest messageTest = new MessageTest();
 
     @Before
     public void init() throws IOException {
@@ -94,7 +92,7 @@ public class BinlogMessageTest {
         BinlogMap.Builder builder = BinlogMap.newBuilder();
         data.forEach((k, v) -> {
             if (null != v) {
-                ByteString bytes = messageTest.serializeValue(v);
+                ByteString bytes = serializeValue(v);
                 if (null != bytes) {
                     builder.putRow(k, bytes);
                 }
@@ -117,7 +115,7 @@ public class BinlogMessageTest {
         // short
         short s = 32767;
         logger.info("short1:{}", s);
-        ByteString shortBytes = messageTest.serializeValue(s);
+        ByteString shortBytes = serializeValue(s);
         logger.info("bytes:{}", shortBytes.toByteArray());
         value.setValue(shortBytes);
         short s2 = value.asShort();
@@ -126,7 +124,7 @@ public class BinlogMessageTest {
         // int
         int i = 1999999999;
         logger.info("int1:{}", i);
-        ByteString intBytes = messageTest.serializeValue(i);
+        ByteString intBytes = serializeValue(i);
         logger.info("bytes:{}", intBytes.toByteArray());
         value.setValue(intBytes);
         int i2 = value.asInteger();
@@ -135,7 +133,7 @@ public class BinlogMessageTest {
         // long
         long l = 8999999999999999999L;
         logger.info("long1:{}", l);
-        ByteString longBytes = messageTest.serializeValue(l);
+        ByteString longBytes = serializeValue(l);
         logger.info("bytes:{}", longBytes.toByteArray());
         value.setValue(longBytes);
         long l2 = value.asLong();
@@ -144,7 +142,7 @@ public class BinlogMessageTest {
         // float
         float f = 99999999999999999999999999999999999.99999999999999999999999999999999999f;
         logger.info("float1:{}", f);
-        ByteString floatBytes = messageTest.serializeValue(f);
+        ByteString floatBytes = serializeValue(f);
         logger.info("bytes:{}", floatBytes.toByteArray());
         value.setValue(floatBytes);
         float f2 = value.asFloat();
@@ -153,7 +151,7 @@ public class BinlogMessageTest {
         // double
         double d = 999999.9999999999999999999999999d;
         logger.info("double1:{}", d);
-        ByteString doubleBytes = messageTest.serializeValue(d);
+        ByteString doubleBytes = serializeValue(d);
         logger.info("bytes:{}", doubleBytes.toByteArray());
         value.setValue(doubleBytes);
         double d2 = value.asDouble();
@@ -162,7 +160,7 @@ public class BinlogMessageTest {
         // double
         BigDecimal b = new BigDecimal(8888888.888888888888888f);
         logger.info("bigDecimal1:{}", b);
-        ByteString bigDecimalBytes = messageTest.serializeValue(b);
+        ByteString bigDecimalBytes = serializeValue(b);
         logger.info("bytes:{}", bigDecimalBytes.toByteArray());
         value.setValue(bigDecimalBytes);
         BigDecimal b2 = value.asBigDecimal();
@@ -171,7 +169,7 @@ public class BinlogMessageTest {
         // boolean
         boolean bool = true;
         logger.info("bool1:{}", bool);
-        ByteString boolBytes = messageTest.serializeValue(bool);
+        ByteString boolBytes = serializeValue(bool);
         logger.info("bytes:{}", boolBytes.toByteArray());
         value.setValue(boolBytes);
         Boolean bool2 = value.asBoolean();
@@ -183,7 +181,7 @@ public class BinlogMessageTest {
         // timestamp
         Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
         logger.info("timestamp1:{}, l:{}", timestamp, timestamp.getTime());
-        ByteString timestampBytes = messageTest.serializeValue(timestamp);
+        ByteString timestampBytes = serializeValue(timestamp);
         logger.info("bytes:{}", timestampBytes.toByteArray());
         value.setValue(timestampBytes);
         Timestamp timestamp2 = value.asTimestamp();
@@ -192,7 +190,7 @@ public class BinlogMessageTest {
         // date
         Date date = new Date(timestamp.getTime());
         logger.info("date1:{}, l:{}", date, date.getTime());
-        ByteString dateBytes = messageTest.serializeValue(date);
+        ByteString dateBytes = serializeValue(date);
         logger.info("bytes:{}", dateBytes.toByteArray());
         value.setValue(dateBytes);
         Date date2 = value.asDate();
@@ -201,33 +199,31 @@ public class BinlogMessageTest {
         // time
         Time time = new Time(timestamp.getTime());
         logger.info("time1:{}, l:{}", time, time.getTime());
-        ByteString timeBytes = messageTest.serializeValue(time);
+        ByteString timeBytes = serializeValue(time);
         logger.info("bytes:{}", timeBytes.toByteArray());
         value.setValue(timeBytes);
         Time time2 = value.asTime();
         logger.info("time2:{}, l:{}", time2, time2.getTime());
     }
 
-    final class MessageTest extends AbstractBinlogRecorder {
-        @Override
-        protected Queue getQueue() {
-            return null;
-        }
+    @Override
+    protected Queue getQueue() {
+        return null;
+    }
 
-        @Override
-        protected Object deserialize(BinlogMessage message) {
-            return null;
-        }
+    @Override
+    protected Object deserialize(BinlogMessage message) {
+        return null;
+    }
 
-        @Override
-        protected Object resolveValue(int type, ByteString v) {
-            return super.resolveValue(type, v);
-        }
+    @Override
+    protected Object resolveValue(int type, ByteString v) {
+        return super.resolveValue(type, v);
+    }
 
-        @Override
-        protected ByteString serializeValue(Object v) {
-            return super.serializeValue(v);
-        }
+    @Override
+    protected ByteString serializeValue(Object v) {
+        return super.serializeValue(v);
     }
 
 }

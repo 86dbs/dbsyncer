@@ -5,8 +5,12 @@ import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
+import org.dbsyncer.storage.lucene.IndexFieldResolver;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,13 +21,15 @@ import java.util.stream.Collectors;
  */
 public class Option {
 
-    private Query       query;
+    private Query query;
+
     private Set<String> highLightKeys;
-    private boolean     enableHighLightSearch;
+
+    private boolean enableHighLightSearch;
+
     private Highlighter highlighter = null;
 
-    public Option() {
-    }
+    private Map<String, IndexFieldResolverEnum> fieldResolvers = new LinkedHashMap<>();
 
     public Option(Query query) {
         this.query = query;
@@ -38,10 +44,21 @@ public class Option {
                     .collect(Collectors.toSet());
         }
         if (!CollectionUtils.isEmpty(highLightKeys)) {
-            enableHighLightSearch = true;
+            this.enableHighLightSearch = true;
             SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<span style='color:red'>", "</span>");
             highlighter = new Highlighter(formatter, new QueryScorer(query));
         }
+    }
+
+    public IndexFieldResolver getFieldResolver(String name){
+        if(fieldResolvers.containsKey(name)){
+            return fieldResolvers.get(name).getIndexFieldResolver();
+        }
+        return IndexFieldResolverEnum.STRING.getIndexFieldResolver();
+    }
+
+    public void addIndexFieldResolverEnum(String name, IndexFieldResolverEnum fieldResolver){
+        fieldResolvers.putIfAbsent(name, fieldResolver);
     }
 
     public Query getQuery() {
