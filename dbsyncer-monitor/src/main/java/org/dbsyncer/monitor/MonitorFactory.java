@@ -1,6 +1,5 @@
 package org.dbsyncer.monitor;
 
-import org.dbsyncer.common.config.ThreadPoolConfig;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -8,10 +7,12 @@ import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.monitor.enums.StatisticEnum;
+import org.dbsyncer.monitor.enums.TaskMetricEnum;
 import org.dbsyncer.monitor.enums.ThreadPoolMetricEnum;
 import org.dbsyncer.monitor.model.AppReportMetric;
 import org.dbsyncer.monitor.model.MetricResponse;
 import org.dbsyncer.monitor.model.Sample;
+import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -25,7 +26,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,7 +46,10 @@ public class MonitorFactory implements Monitor {
     private Executor taskExecutor;
 
     @Autowired
-    private ThreadPoolConfig threadPoolConfig;
+    private BufferActuator writerBufferActuator;
+
+    @Autowired
+    private BufferActuator storageBufferActuator;
 
     @Override
     public Mapping getMapping(String mappingId) {
@@ -105,16 +108,18 @@ public class MonitorFactory implements Monitor {
     }
 
     @Override
-    public List<MetricResponse> getThreadPoolInfo() {
+    public List<MetricResponse> getMetricInfo() {
         ThreadPoolTaskExecutor threadTask = (ThreadPoolTaskExecutor) taskExecutor;
         ThreadPoolExecutor pool = threadTask.getThreadPoolExecutor();
 
         List<MetricResponse> list = new ArrayList<>();
-        list.add(createMetricResponse(ThreadPoolMetricEnum.TASK_SUBMITTED, pool.getTaskCount()));
-        list.add(createMetricResponse(ThreadPoolMetricEnum.QUEUE_UP, pool.getQueue().size()));
-        list.add(createMetricResponse(ThreadPoolMetricEnum.ACTIVE, pool.getActiveCount()));
-        list.add(createMetricResponse(ThreadPoolMetricEnum.COMPLETED, pool.getCompletedTaskCount()));
-        list.add(createMetricResponse(ThreadPoolMetricEnum.REMAINING_CAPACITY, pool.getQueue().remainingCapacity()));
+        list.add(createTaskMetricResponse(TaskMetricEnum.STORAGE_ACTIVE, storageBufferActuator.getQueue().size()));
+        list.add(createTaskMetricResponse(TaskMetricEnum.STORAGE_REMAINING_CAPACITY, storageBufferActuator.getQueueCapacity() - storageBufferActuator.getQueue().size()));
+        list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.TASK_SUBMITTED, pool.getTaskCount()));
+        list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.QUEUE_UP, pool.getQueue().size()));
+        list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.ACTIVE, pool.getActiveCount()));
+        list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.COMPLETED, pool.getCompletedTaskCount()));
+        list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.REMAINING_CAPACITY, pool.getQueue().remainingCapacity()));
         return list;
     }
 
@@ -127,13 +132,8 @@ public class MonitorFactory implements Monitor {
         report.setInsert(getMappingInsert(metaAll));
         report.setUpdate(getMappingUpdate(metaAll));
         report.setDelete(getMappingDelete(metaAll));
-
-        // 线程池使用情况
-        ThreadPoolTaskExecutor threadTask = (ThreadPoolTaskExecutor) taskExecutor;
-        ThreadPoolExecutor pool = threadTask.getThreadPoolExecutor();
-        BlockingQueue<Runnable> queue = pool.getQueue();
-        report.setQueueUp(queue.size());
-        report.setQueueCapacity(threadPoolConfig.getQueueCapacity());
+        report.setQueueUp(writerBufferActuator.getQueue().size());
+        report.setQueueCapacity(writerBufferActuator.getQueueCapacity());
         return report;
     }
 
@@ -187,7 +187,11 @@ public class MonitorFactory implements Monitor {
         return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DATA_EVENT, ConnectorConstant.OPERTION_DELETE));
     }
 
-    private MetricResponse createMetricResponse(ThreadPoolMetricEnum metricEnum, Object value) {
+    private MetricResponse createThreadPoolMetricResponse(ThreadPoolMetricEnum metricEnum, Object value) {
+        return new MetricResponse(metricEnum.getCode(), metricEnum.getGroup(), metricEnum.getMetricName(), Arrays.asList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), value)));
+    }
+
+    private MetricResponse createTaskMetricResponse(TaskMetricEnum metricEnum, Object value) {
         return new MetricResponse(metricEnum.getCode(), metricEnum.getGroup(), metricEnum.getMetricName(), Arrays.asList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), value)));
     }
 

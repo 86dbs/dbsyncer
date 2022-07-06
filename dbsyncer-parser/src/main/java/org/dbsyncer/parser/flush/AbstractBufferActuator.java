@@ -38,11 +38,11 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     private static final double BUFFER_THRESHOLD = 0.8;
 
-    private static final long MAX_BATCH_COUNT = 1000L;
+    private static final int MAX_BATCH_COUNT = 1000;
 
-    private static final long PERIOD = 300;
+    private static final int PERIOD = 300;
 
-    private Queue<Request> buffer = new LinkedBlockingQueue(CAPACITY);
+    private Queue<Request> buffer;
 
     private final Lock lock = new ReentrantLock(true);
 
@@ -53,6 +53,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     @PostConstruct
     private void init() {
         responseClazz = (Class<Response>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[1];
+        buffer = new LinkedBlockingQueue(getQueueCapacity());
         scheduledTaskService.start(PERIOD, this);
     }
 
@@ -82,6 +83,11 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     @Override
     public Queue getQueue() {
         return buffer;
+    }
+
+    @Override
+    public int getQueueCapacity() {
+        return CAPACITY;
     }
 
     @Override
