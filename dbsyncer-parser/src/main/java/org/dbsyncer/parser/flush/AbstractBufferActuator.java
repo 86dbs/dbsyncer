@@ -13,7 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -36,9 +35,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     private static final int CAPACITY = 10_0000;
 
-    private static final double BUFFER_THRESHOLD = 0.8;
-
-    private static final int MAX_BATCH_COUNT = 3000;
+    private static final int MAX_BATCH_COUNT = 2000;
 
     private static final int PERIOD = 300;
 
@@ -93,17 +90,6 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     @Override
     public void offer(BufferRequest request) {
         buffer.offer((Request) request);
-
-        // TODO 临时解决方案：生产大于消费问题，限制生产速度
-        int size = buffer.size();
-        if (size >= (CAPACITY * BUFFER_THRESHOLD)) {
-            try {
-                TimeUnit.SECONDS.sleep(30);
-                logger.warn("当前任务队列大小{}已达上限{}，请稍等{}秒", size, CAPACITY * BUFFER_THRESHOLD, 30);
-            } catch (InterruptedException e) {
-                logger.error(e.getMessage());
-            }
-        }
     }
 
     @Override
