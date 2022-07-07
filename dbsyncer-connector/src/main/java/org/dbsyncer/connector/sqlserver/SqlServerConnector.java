@@ -39,7 +39,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
         // 获取查询SQL
         Table table = commandConfig.getTable();
-        String schema = getSchema(commandConfig, buildSqlWithQuotation());
+        String schema = getSchema((DatabaseConfig) commandConfig.getConnectorConfig(), buildSqlWithQuotation());
         Map<String, String> map = new HashMap<>();
 
         String query = ConnectorConstant.OPERTION_QUERY;
