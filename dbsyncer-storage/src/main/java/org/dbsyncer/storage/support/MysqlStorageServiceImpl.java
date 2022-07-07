@@ -66,6 +66,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     private static final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
     private static final String TABLE_CREATE_TIME = "create_time";
     private static final String TABLE_UPDATE_TIME = "update_time";
+    private final Object LOCK = new Object();
 
     @Autowired
     private ConnectorFactory connectorFactory;
@@ -114,20 +115,22 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public Paging select(Query query) {
-        Executor executor = getExecutor(query.getType(), query.getCollection());
-        List<Object> queryArgs = new ArrayList<>();
-        List<Object> queryCountArgs = new ArrayList<>();
-        String querySql = buildQuerySql(query, executor, queryArgs);
-        String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
+        synchronized (LOCK){
+            Executor executor = getExecutor(query.getType(), query.getCollection());
+            List<Object> queryArgs = new ArrayList<>();
+            List<Object> queryCountArgs = new ArrayList<>();
+            String querySql = buildQuerySql(query, executor, queryArgs);
+            String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
 
-        List<Map<String, Object>> data = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
-        replaceHighLight(query, data);
-        Long total = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
+            List<Map<String, Object>> data = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
+            replaceHighLight(query, data);
+            Long total = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
 
-        Paging paging = new Paging(query.getPageNum(), query.getPageSize());
-        paging.setData(data);
-        paging.setTotal(total);
-        return paging;
+            Paging paging = new Paging(query.getPageNum(), query.getPageSize());
+            paging.setData(data);
+            paging.setTotal(total);
+            return paging;
+        }
     }
 
     @Override
@@ -155,17 +158,19 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void deleteAll(StorageEnum type, String table) {
-        Executor executor = getExecutor(type, table);
-        if (executor.isSystemType()) {
-            String sql = String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(table));
-            executeSql(sql);
-            return;
-        }
+        synchronized (LOCK){
+            Executor executor = getExecutor(type, table);
+            if (executor.isSystemType()) {
+                String sql = String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(table));
+                executeSql(sql);
+                return;
+            }
 
-        if (tables.containsKey(table)) {
-            tables.remove(table);
-            String sql = String.format(DROP_TABLE, PREFIX_TABLE.concat(table));
-            executeSql(sql);
+            if (tables.containsKey(table)) {
+                tables.remove(table);
+                String sql = String.format(DROP_TABLE, PREFIX_TABLE.concat(table));
+                executeSql(sql);
+            }
         }
     }
 
