@@ -1,9 +1,7 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.parser.flush.BufferRequest;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -13,24 +11,12 @@ import java.util.Map;
  */
 public class WriterRequest extends AbstractWriter implements BufferRequest {
 
-    private String tableGroupId;
-
     private Map row;
 
-    public WriterRequest(String tableGroupId, Map row, String metaId, String targetConnectorId, String sourceTableName, String targetTableName, String event, List<Field> fields, Map<String, String> command) {
-        setMetaId(metaId);
-        setTargetConnectorId(targetConnectorId);
-        setSourceTableName(sourceTableName);
-        setTargetTableName(targetTableName);
+    public WriterRequest(String tableGroupId, String event, Map row) {
+        setTableGroupId(tableGroupId);
         setEvent(event);
-        setFields(fields);
-        setCommand(command);
-        this.tableGroupId = tableGroupId;
         this.row = row;
-    }
-
-    public String getTableGroupId() {
-        return tableGroupId;
     }
 
     public Map getRow() {

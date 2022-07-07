@@ -38,7 +38,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     private static final double BUFFER_THRESHOLD = 0.8;
 
-    private static final int MAX_BATCH_COUNT = 1000;
+    private static final int MAX_BATCH_COUNT = 3000;
 
     private static final int PERIOD = 300;
 

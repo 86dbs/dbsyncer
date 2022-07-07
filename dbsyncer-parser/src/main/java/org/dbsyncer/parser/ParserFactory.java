@@ -5,6 +5,7 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.CommandConfig;
@@ -300,7 +301,19 @@ public class ParserFactory implements Parser {
     public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent event) {
         logger.debug("Table[{}] {}, before:{}, after:{}", event.getSourceTableName(), event.getEvent(), event.getBefore(), event.getAfter());
 
-        parserStrategy.execute(mapping, tableGroup, event);
+        // 1、获取映射字段
+        final Map<String, Object> data = StringUtil.equals(ConnectorConstant.OPERTION_DELETE, event.getEvent()) ? event.getBefore() : event.getAfter();
+        final Picker picker = new Picker(tableGroup.getFieldMapping());
+        final Map target = picker.pickData(data);
+
+        // 2、参数转换
+        ConvertUtil.convert(tableGroup.getConvert(), target);
+
+        // 3、插件转换
+        pluginFactory.convert(tableGroup.getPlugin(), event.getEvent(), data, target);
+
+        // 4、处理数据
+        parserStrategy.execute(tableGroup.getId(), event.getEvent(), target);
     }
 
     /**

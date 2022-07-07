@@ -35,17 +35,11 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
     private BufferActuator writerBufferActuator;
 
     @Autowired
-    private PluginFactory pluginFactory;
-
-    @Autowired
     private CacheService cacheService;
 
     @Override
-    public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent event) {
+    public void execute(String tableGroupId, String event, Map<String, Object> data) {
         try {
-            EventEnum eventEnum = EventEnum.valueOf(event.getEvent());
-            Map<String, Object> data = StringUtil.equals(ConnectorConstant.OPERTION_DELETE, eventEnum.name()) ? event.getBefore() : event.getAfter();
-
             BinlogMap.Builder dataBuilder = BinlogMap.newBuilder();
             data.forEach((k, v) -> {
                 if (null != v) {
@@ -57,8 +51,8 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
             });
 
             BinlogMessage builder = BinlogMessage.newBuilder()
-                    .setTableGroupId(tableGroup.getId())
-                    .setEvent(eventEnum)
+                    .setTableGroupId(tableGroupId)
+                    .setEvent(EventEnum.valueOf(event))
                     .setData(dataBuilder.build())
                     .build();
             flush(builder);
@@ -91,10 +85,6 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
         // 1、获取配置信息
         final String tableGroupId = message.getTableGroupId();
         final TableGroup tableGroup = cacheService.get(tableGroupId, TableGroup.class);
-        final Mapping mapping = cacheService.get(tableGroup.getMappingId(), Mapping.class);
-        final String event = message.getEvent().name();
-        final String sourceTableName = tableGroup.getSourceTable().getName();
-        final String targetTableName = tableGroup.getTargetTable().getName();
 
         // 2、反序列数据
         final Picker picker = new Picker(tableGroup.getFieldMapping());
@@ -106,16 +96,7 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
             }
         });
 
-        // 3、获取目标源数据集合
-        Map target = picker.pickData(data);
-
-        // 4、参数转换
-        ConvertUtil.convert(tableGroup.getConvert(), target);
-
-        // 5、插件转换
-        pluginFactory.convert(tableGroup.getPlugin(), event, data, target);
-
-        return new WriterRequest(tableGroupId, target, mapping.getMetaId(), mapping.getTargetConnectorId(), sourceTableName, targetTableName, event, picker.getTargetFields(), tableGroup.getCommand());
+        return new WriterRequest(message.getTableGroupId(), message.getEvent().name(), data);
     }
 
 }

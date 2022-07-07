@@ -1,11 +1,9 @@
 package org.dbsyncer.parser.strategy;
 
-import org.dbsyncer.common.event.RowChangedEvent;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.TableGroup;
+import java.util.Map;
 
 public interface ParserStrategy {
 
-    void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent event);
+    void execute(String tableGroupId, String event, Map<String, Object> data);
 
 }
