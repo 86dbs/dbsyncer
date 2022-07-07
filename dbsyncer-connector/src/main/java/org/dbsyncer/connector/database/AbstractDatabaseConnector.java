@@ -64,13 +64,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableName) {
         String quotation = buildSqlWithQuotation();
         DatabaseConfig config = connectorMapper.getConfig();
-        StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ");
-        if (StringUtil.isNotBlank(config.getSchema())) {
-            queryMetaSql.append(quotation).append(config.getSchema()).append(quotation).append(".");
-        }
-        queryMetaSql.append(quotation).append(tableName).append(quotation).append(" WHERE 1!=1");
+        String queryMetaSql = new StringBuilder("SELECT * FROM ").append(getSchema(config, quotation)).append(quotation).append(tableName)
+                .append(quotation).append(" WHERE 1!=1").toString();
 
-        return connectorMapper.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql.toString(), config.getSchema(), tableName));
+        return connectorMapper.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql, config.getSchema(), tableName));
     }
 
     @Override
@@ -179,7 +176,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
 
         String query = ConnectorConstant.OPERTION_QUERY;
         String quotation = buildSqlWithQuotation();
-        String schema = getSchema(commandConfig, quotation);
+        String schema = getSchema((DatabaseConfig) commandConfig.getConnectorConfig(), quotation);
         map.put(query, buildSql(query, commandConfig, schema, queryFilterSql));
 
         // 获取查询总数SQL
@@ -197,7 +194,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         String quotation = buildSqlWithQuotation();
-        String schema = getSchema(commandConfig, quotation);
+        String schema = getSchema((DatabaseConfig) commandConfig.getConnectorConfig(), quotation);
 
         // 获取增删改SQL
         Map<String, String> map = new HashMap<>();
@@ -240,12 +237,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     /**
      * 获取架构名
      *
-     * @param commandConfig
+     * @param config
      * @param quotation
      * @return
      */
-    protected String getSchema(CommandConfig commandConfig, String quotation) {
-        DatabaseConfig config = (DatabaseConfig) commandConfig.getConnectorConfig();
+    protected String getSchema(DatabaseConfig config, String quotation) {
         StringBuilder schema = new StringBuilder();
         if (StringUtil.isNotBlank(config.getSchema())) {
             schema.append(quotation).append(config.getSchema()).append(quotation).append(".");

@@ -298,8 +298,7 @@ public class ParserFactory implements Parser {
 
     @Override
     public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent event) {
-        logger.info("Table[{}] {}, before:{}, after:{}", event.getSourceTableName(), event.getEvent(),
-                event.getBefore(), event.getAfter());
+        logger.debug("Table[{}] {}, before:{}, after:{}", event.getSourceTableName(), event.getEvent(), event.getBefore(), event.getAfter());
 
         parserStrategy.execute(mapping, tableGroup, event);
     }
