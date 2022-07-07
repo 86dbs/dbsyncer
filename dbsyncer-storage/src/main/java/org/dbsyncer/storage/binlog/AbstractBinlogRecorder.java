@@ -35,7 +35,6 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -44,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @version 1.0.0
  * @date 2022/6/8 0:53
  */
-public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder, ScheduledTaskJob, DisposableBean {
+public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder, DisposableBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -58,35 +57,29 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
     private static final String BINLOG_CONTENT = "c";
 
-    private static final int MAX_COUNT_SIZE = 20000;
-
     private static final int SUBMIT_COUNT = 1000;
 
-    private static final int PERIOD = 3000;
-
-    private Queue<BinlogMessage> queue = new LinkedBlockingQueue(MAX_COUNT_SIZE);
+    private static final Queue<BinlogMessage> queue = new LinkedBlockingQueue(10000);
 
     private static final ByteBuffer buffer = ByteBuffer.allocate(8);
 
     private static final BinlogColumnValue value = new BinlogColumnValue();
 
-    private final Lock lock = new ReentrantLock(true);
-
-    private volatile boolean running;
-
-    /**
-     * 相对路径/data/binlog/
-     */
     private static final String PATH = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar)
             .append("data").append(File.separatorChar).append("data").append(File.separatorChar).toString();
 
     private Shard shard;
 
+    private WriterTask writerTask = new WriterTask();
+
+    private ReaderTask readerTask = new ReaderTask();
+
     @PostConstruct
     private void init() throws IOException {
-        // /data/binlog/WriterBinlog/
+        // /data/data/WriterBinlog/
         shard = new Shard(PATH + getTaskName());
-        scheduledTaskService.start(PERIOD, this);
+        scheduledTaskService.start(500, writerTask);
+        scheduledTaskService.start(2000, readerTask);
     }
 
     /**
@@ -99,44 +92,12 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
     }
 
     /**
-     * 获取缓存队列
-     *
-     * @return
-     */
-    protected abstract Queue getQueue();
-
-    /**
      * 反序列化任务
      *
      * @param message
      * @return
      */
     protected abstract Message deserialize(BinlogMessage message);
-
-    @Override
-    public void run() {
-        if (running || getQueue().size() > (MAX_COUNT_SIZE - SUBMIT_COUNT)) {
-            return;
-        }
-
-        final Lock binlogLock = lock;
-        boolean locked = false;
-        try {
-            locked = binlogLock.tryLock();
-            if (locked) {
-                running = true;
-                flushMessage();
-                doParse();
-            }
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-        } finally {
-            if (locked) {
-                running = false;
-                binlogLock.unlock();
-            }
-        }
-    }
 
     @Override
     public void flush(BinlogMessage message) {
@@ -172,30 +133,6 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
             }
         }
         shard.deleteBatch(terms);
-    }
-
-    private void flushMessage() throws IOException {
-        if(queue.isEmpty()){
-            return;
-        }
-
-        List<Document> tasks = new ArrayList<>();
-        AtomicLong batchCounter = new AtomicLong();
-        Document doc;
-        while (!queue.isEmpty() && batchCounter.get() < SUBMIT_COUNT) {
-            BinlogMessage message = queue.poll();
-            if(null != message){
-                doc = new Document();
-                doc.add(new StringField(BINLOG_ID, String.valueOf(snowflakeIdWorker.nextId()), Field.Store.YES));
-                doc.add(new StoredField(BINLOG_CONTENT, new BytesRef(message.toByteArray())));
-                tasks.add(doc);
-            }
-            batchCounter.incrementAndGet();
-        }
-
-        if(!CollectionUtils.isEmpty(tasks)){
-            shard.insertBatch(tasks);
-        }
     }
 
     /**
@@ -371,6 +308,75 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
             default:
                 return null;
+        }
+    }
+
+    /**
+     * 合并缓存队列任务到磁盘
+     */
+    final class WriterTask implements ScheduledTaskJob {
+
+        @Override
+        public void run() {
+            if (queue.isEmpty()) {
+                return;
+            }
+
+            List<Document> tasks = new ArrayList<>();
+            int count = 0;
+            Document doc;
+            while (!queue.isEmpty() && count < SUBMIT_COUNT) {
+                BinlogMessage message = queue.poll();
+                if (null != message) {
+                    doc = new Document();
+                    doc.add(new StringField(BINLOG_ID, String.valueOf(snowflakeIdWorker.nextId()), Field.Store.YES));
+                    doc.add(new StoredField(BINLOG_CONTENT, new BytesRef(message.toByteArray())));
+                    tasks.add(doc);
+                }
+                count++;
+            }
+
+            if (!CollectionUtils.isEmpty(tasks)) {
+                try {
+                    shard.insertBatch(tasks);
+                } catch (IOException e) {
+                    logger.error(e.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * 从磁盘读取日志到任务队列
+     */
+    final class ReaderTask implements ScheduledTaskJob {
+
+        private final Lock lock = new ReentrantLock(true);
+
+        private volatile boolean running;
+
+        @Override
+        public void run() {
+            if (running || (SUBMIT_COUNT * 2) + getQueue().size() >= getQueueCapacity()) {
+                return;
+            }
+
+            final Lock binlogLock = lock;
+            boolean locked = false;
+            try {
+                locked = binlogLock.tryLock();
+                if (locked) {
+                    running = true;
+                    doParse();
+                }
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+            } finally {
+                if (locked) {
+                    running = false;
+                    binlogLock.unlock();
+                }
+            }
         }
     }
 

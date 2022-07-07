@@ -207,23 +207,18 @@ public class BinlogMessageTest extends AbstractBinlogRecorder {
     }
 
     @Override
-    protected Queue getQueue() {
+    public Queue getQueue() {
         return null;
+    }
+
+    @Override
+    public int getQueueCapacity() {
+        return 0;
     }
 
     @Override
     protected Object deserialize(BinlogMessage message) {
         return null;
-    }
-
-    @Override
-    protected Object resolveValue(int type, ByteString v) {
-        return super.resolveValue(type, v);
-    }
-
-    @Override
-    protected ByteString serializeValue(Object v) {
-        return super.serializeValue(v);
     }
 
 }

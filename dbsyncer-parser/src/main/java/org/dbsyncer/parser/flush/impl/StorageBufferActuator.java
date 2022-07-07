@@ -21,7 +21,7 @@ public class StorageBufferActuator extends AbstractBufferActuator<StorageRequest
 
     @Override
     public int getQueueCapacity() {
-        return 1_0000;
+        return super.getQueueCapacity() / 4;
     }
 
     @Override

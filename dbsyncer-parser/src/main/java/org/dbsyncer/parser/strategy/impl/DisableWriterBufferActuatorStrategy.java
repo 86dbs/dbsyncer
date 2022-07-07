@@ -68,13 +68,18 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
     }
 
     @Override
-    protected String getTaskName() {
-        return "WriterBinlog";
+    public Queue getQueue() {
+        return writerBufferActuator.getQueue();
     }
 
     @Override
-    protected Queue getQueue() {
-        return writerBufferActuator.getQueue();
+    public int getQueueCapacity() {
+        return writerBufferActuator.getQueueCapacity();
+    }
+
+    @Override
+    protected String getTaskName() {
+        return "WriterBinlog";
     }
 
     @Override

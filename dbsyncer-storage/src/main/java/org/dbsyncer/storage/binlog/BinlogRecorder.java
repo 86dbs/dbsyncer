@@ -3,6 +3,7 @@ package org.dbsyncer.storage.binlog;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 
 import java.io.IOException;
+import java.util.Queue;
 
 /**
  * @author AE86
@@ -17,5 +18,19 @@ public interface BinlogRecorder {
      * @param message
      */
     void flush(BinlogMessage message) throws IOException;
+
+    /**
+     * 获取缓存队列
+     *
+     * @return
+     */
+    Queue getQueue();
+
+    /**
+     * 获取缓存队列容量
+     *
+     * @return
+     */
+    int getQueueCapacity();
 
 }
