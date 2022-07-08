@@ -13,10 +13,10 @@ import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.Database;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
-import org.dbsyncer.connector.database.ds.SimpleConnection;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
+import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -34,8 +34,6 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -87,27 +85,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         config.setConnectorType(ConnectorEnum.MYSQL.getType());
         connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(config);
         connector = (Database) connectorFactory.getConnector(connectorMapper);
-
-        // 获取数据库名称
-        database = connectorMapper.execute(databaseTemplate -> {
-            Connection conn = databaseTemplate.getConnection();
-            DatabaseMetaData metaData = conn.getMetaData();
-            String driverVersion = metaData.getDriverVersion();
-            String databaseProductVersion = metaData.getDatabaseProductVersion();
-            boolean driverThanMysql8 = StringUtil.startsWith(driverVersion, "mysql-connector-java-8");
-            boolean dbThanMysql8 = StringUtil.startsWith(databaseProductVersion, "8");
-            Assert.isTrue(driverThanMysql8 == dbThanMysql8, String.format("当前驱动%s和数据库%s版本不一致.", driverVersion, databaseProductVersion));
-
-            if(conn instanceof SimpleConnection){
-                SimpleConnection simpleConnection = (SimpleConnection) conn;
-                conn = simpleConnection.getConnection();
-            }
-            Class clazz = dbThanMysql8 ? conn.getClass() : conn.getClass().getSuperclass();
-            java.lang.reflect.Field field = clazz.getDeclaredField("database");
-            field.setAccessible(true);
-            Object value = field.get(conn);
-            return String.valueOf(value);
-        });
+        database = DatabaseUtil.getDatabaseName(config.getUrl());
 
         // 初始化表
         initTable();
