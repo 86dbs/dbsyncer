@@ -2,7 +2,6 @@ package org.dbsyncer.listener;
 
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
@@ -39,7 +38,7 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
             switch (event.getEvent()){
                 case ConnectorConstant.OPERTION_UPDATE:
                 case ConnectorConstant.OPERTION_INSERT:
-                    event.setAfterData(queryData(event.getAfterData()));
+                    event.setDataList(queryData(event.getDataList()));
                     break;
                 default:
                     break;

@@ -251,7 +251,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             final FieldPicker picker = tablePicker.get(rowChangedEvent.getTableGroupIndex());
             TableGroup tableGroup = picker.getTableGroup();
             rowChangedEvent.setSourceTableName(tableGroup.getSourceTable().getName());
-            rowChangedEvent.setTargetTableName(tableGroup.getTargetTable().getName());
 
             // 处理过程有异常向上抛
             parser.execute(mapping, tableGroup, rowChangedEvent);
@@ -310,12 +309,9 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             List<FieldPicker> pickers = tablePicker.get(rowChangedEvent.getSourceTableName());
             if (!CollectionUtils.isEmpty(pickers)) {
                 pickers.forEach(picker -> {
-                    final Map<String, Object> before = picker.getColumns(rowChangedEvent.getBeforeData());
-                    final Map<String, Object> after = picker.getColumns(rowChangedEvent.getAfterData());
-                    if (picker.filter(StringUtil.equals(ConnectorConstant.OPERTION_DELETE, rowChangedEvent.getEvent()) ? before : after)) {
-                        rowChangedEvent.setBefore(before);
-                        rowChangedEvent.setAfter(after);
-                        rowChangedEvent.setTargetTableName(picker.getTableGroup().getTargetTable().getName());
+                    final Map<String, Object> dataMap = picker.getColumns(rowChangedEvent.getDataList());
+                    if (picker.filter(dataMap)) {
+                        rowChangedEvent.setDataMap(dataMap);
                         parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);
                     }
                 });

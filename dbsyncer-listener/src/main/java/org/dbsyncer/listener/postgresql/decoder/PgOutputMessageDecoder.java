@@ -138,10 +138,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
                 case "O":
                     List<Object> data = new ArrayList<>();
                     readTupleData(tableId, buffer, data);
-                    if (MessageTypeEnum.DELETE == type) {
-                        return new RowChangedEvent(tableId.tableName, type.name(), data, Collections.EMPTY_LIST);
-                    }
-                    return new RowChangedEvent(tableId.tableName, type.name(), Collections.EMPTY_LIST, data);
+                    return new RowChangedEvent(tableId.tableName, type.name(), data);
 
                 default:
                     logger.info("N, K, O not set, got instead {}", newTuple);

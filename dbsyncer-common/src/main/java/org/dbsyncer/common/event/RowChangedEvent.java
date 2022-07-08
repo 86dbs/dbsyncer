@@ -19,25 +19,20 @@ public class RowChangedEvent {
 
     private int tableGroupIndex;
     private String sourceTableName;
-    private String targetTableName;
     private String event;
-    private List<Object> beforeData;
-    private List<Object> afterData;
-    private Map<String, Object> before;
-    private Map<String, Object> after;
+    private List<Object> dataList;
+    private Map<String, Object> dataMap;
 
-    public RowChangedEvent(int tableGroupIndex, String event, Map<String, Object> before, Map<String, Object> after) {
+    public RowChangedEvent(int tableGroupIndex, String event, Map<String, Object> data) {
         this.tableGroupIndex = tableGroupIndex;
         this.event = event;
-        this.before = before;
-        this.after = after;
+        this.dataMap = data;
     }
 
-    public RowChangedEvent(String sourceTableName, String event, List<Object> beforeData, List<Object> afterData) {
+    public RowChangedEvent(String sourceTableName, String event, List<Object> data) {
         this.sourceTableName = sourceTableName;
         this.event = event;
-        this.beforeData = beforeData;
-        this.afterData = afterData;
+        this.dataList = data;
     }
 
     public int getTableGroupIndex() {
@@ -52,48 +47,24 @@ public class RowChangedEvent {
         this.sourceTableName = sourceTableName;
     }
 
-    public String getTargetTableName() {
-        return targetTableName;
-    }
-
-    public void setTargetTableName(String targetTableName) {
-        this.targetTableName = targetTableName;
-    }
-
     public String getEvent() {
         return event;
     }
 
-    public List<Object> getBeforeData() {
-        return beforeData;
+    public List<Object> getDataList() {
+        return dataList;
     }
 
-    public void setBeforeData(List<Object> beforeData) {
-        this.beforeData = beforeData;
+    public void setDataList(List<Object> dataList) {
+        this.dataList = dataList;
     }
 
-    public List<Object> getAfterData() {
-        return afterData;
+    public Map<String, Object> getDataMap() {
+        return dataMap;
     }
 
-    public void setAfterData(List<Object> afterData) {
-        this.afterData = afterData;
-    }
-
-    public Map<String, Object> getBefore() {
-        return before;
-    }
-
-    public void setBefore(Map<String, Object> before) {
-        this.before = before;
-    }
-
-    public Map<String, Object> getAfter() {
-        return after;
-    }
-
-    public void setAfter(Map<String, Object> after) {
-        this.after = after;
+    public void setDataMap(Map<String, Object> dataMap) {
+        this.dataMap = dataMap;
     }
 
     @Override

@@ -13,7 +13,6 @@ import org.dbsyncer.listener.AbstractExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -113,21 +112,21 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
             Object event = null;
             for (Map<String, Object> row : data) {
                 if(StringUtil.isBlank(eventFieldName)){
-                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_MAP, row));
+                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
                     continue;
                 }
 
                 event = row.get(eventFieldName);
                 if (update.contains(event)) {
-                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_MAP, row));
+                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
                     continue;
                 }
                 if (insert.contains(event)) {
-                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_MAP, row));
+                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_INSERT, row));
                     continue;
                 }
                 if (delete.contains(event)) {
-                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_DELETE, row, Collections.EMPTY_MAP));
+                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_DELETE, row));
                     continue;
                 }
 
