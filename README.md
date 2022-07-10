@@ -27,7 +27,7 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
                 <td>Oracle</td>
                 <td>✔</td>
                 <td>✔</td>
-                <td>10g以上</td>
+                <td>Oracle 10gR2 -11g</td>
             </tr>
             <tr>
                 <td>SqlServer</td>
@@ -102,7 +102,17 @@ replicate-do-db=test
 * CDN注册订阅。监听增删改事件，得到rowid，根据rowid执行SQL查询，得到变化数据。
 > 授予账号监听权限, 同时要求目标源表必须定义一个长度为18的varchar字段，通过接收rowid值实现增删改操作。
 ```roomsql
-grant change notification to 你的账号
+-- 创建测试用户 dbsyncer
+create user dbsyncer identified by 123;
+
+-- 授予用户登录，查询系统字典，监听通知变更权限
+grant create session, select any dictionary, change notification to dbsyncer;
+
+-- 授予用户表查询权限
+GRANT SELECT ON AE86."my_user" to dbsyncer;
+
+-- 查看
+select * from user_sys_privs;
 ```
 
 ##### SqlServer
