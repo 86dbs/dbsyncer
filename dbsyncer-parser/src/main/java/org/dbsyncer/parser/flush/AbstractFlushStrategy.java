@@ -5,6 +5,7 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
@@ -46,16 +47,11 @@ public abstract class AbstractFlushStrategy implements FlushStrategy {
     }
 
     protected void refreshTotal(String metaId, Result writer) {
-        Meta meta = getMeta(metaId);
-        meta.getFail().getAndAdd(writer.getFailData().size());
-        meta.getSuccess().getAndAdd(writer.getSuccessData().size());
-    }
-
-    protected Meta getMeta(String metaId) {
         Assert.hasText(metaId, "Meta id can not be empty.");
         Meta meta = cacheService.get(metaId, Meta.class);
         Assert.notNull(meta, "Meta can not be null.");
-        return meta;
+        meta.getFail().getAndAdd(writer.getFailData().size());
+        meta.getSuccess().getAndAdd(writer.getSuccessData().size());
     }
 
 }

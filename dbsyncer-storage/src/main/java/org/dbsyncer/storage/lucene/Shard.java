@@ -83,6 +83,12 @@ public class Shard {
         }
     }
 
+    public void deleteBatch(Term... terms) throws IOException {
+        if (null != terms) {
+            execute(terms, () -> indexWriter.deleteDocuments(terms));
+        }
+    }
+
     public void deleteAll() throws IOException {
         // Fix Bug: this IndexReader is closed. 直接删除文件
         close();
@@ -115,24 +121,21 @@ public class Shard {
         return analyzer;
     }
 
-    public List<Map> query(Query query) throws IOException {
-        final IndexSearcher searcher = getSearcher();
-        final TopDocs topDocs = searcher.search(query, MAX_SIZE);
-        return search(searcher, topDocs, new Option(), 1, 20);
-    }
-
-    public Paging query(Query query, Sort sort) throws IOException {
-        return query(new Option(query), 1, 20, sort);
-    }
-
     public Paging query(Option option, int pageNum, int pageSize, Sort sort) throws IOException {
         final IndexSearcher searcher = getSearcher();
-        final TopDocs topDocs = searcher.search(option.getQuery(), MAX_SIZE, sort);
+        final TopDocs topDocs = getTopDocs(searcher, option.getQuery(), MAX_SIZE, sort);
         Paging paging = new Paging(pageNum, pageSize);
         List<Map> data = search(searcher, topDocs, option, pageNum, pageSize);
         paging.setTotal(topDocs.totalHits);
         paging.setData(data);
         return paging;
+    }
+
+    private TopDocs getTopDocs(IndexSearcher searcher, Query query, int maxSize, Sort sort) throws IOException {
+        if (null != sort) {
+            return searcher.search(query, maxSize, sort);
+        }
+        return searcher.search(query, maxSize);
     }
 
     /**
@@ -184,7 +187,8 @@ public class Shard {
                     }
                 }
 
-                r.put(f.name(), f.stringValue());
+                // 解析value类型
+                r.put(f.name(), option.getFieldResolver(f.name()).getValue(f));
             }
             list.add(r);
         }

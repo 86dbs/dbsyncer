@@ -1,5 +1,7 @@
 package org.dbsyncer.parser.flush;
 
+import java.util.Queue;
+
 /**
  * @author AE86
  * @version 1.0.0
@@ -7,6 +9,25 @@ package org.dbsyncer.parser.flush;
  */
 public interface BufferActuator {
 
+    /**
+     * 获取缓存队列
+     *
+     * @return
+     */
+    Queue getQueue();
+
+    /**
+     * 获取缓存队列容量
+     *
+     * @return
+     */
+    int getQueueCapacity();
+
+    /**
+     * 提交任务
+     *
+     * @param request
+     */
     void offer(BufferRequest request);
 
 }

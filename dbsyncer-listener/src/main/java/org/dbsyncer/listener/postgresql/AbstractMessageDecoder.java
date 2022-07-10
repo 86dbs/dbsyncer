@@ -1,7 +1,6 @@
 package org.dbsyncer.listener.postgresql;
 
 import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.listener.postgresql.column.ColumnValue;
 import org.dbsyncer.listener.postgresql.column.PgColumnValue;
 import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
 import org.postgresql.replication.LogSequenceNumber;
@@ -16,9 +15,11 @@ import java.nio.ByteBuffer;
  */
 public abstract class AbstractMessageDecoder implements MessageDecoder {
 
+    protected String metaId;
+
     protected DatabaseConfig config;
 
-    private ColumnValue value = new PgColumnValue();
+    private static final PgColumnValue value = new PgColumnValue();
 
     @Override
     public boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn) {
@@ -49,7 +50,12 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
 
     @Override
     public String getSlotName() {
-        return String.format("dbs_slot_%s_%s", config.getSchema(), config.getUsername());
+        return String.format("dbs_slot_%s_%s_%s", config.getSchema(), config.getUsername(), metaId);
+    }
+
+    @Override
+    public void setMetaId(String metaId) {
+        this.metaId = metaId;
     }
 
     @Override
@@ -58,7 +64,7 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
     }
 
     /**
-     * Resolve the value of a {@link ColumnValue}.
+     * Resolve value
      *
      * @param typeName
      * @param columnValue
@@ -105,7 +111,7 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
 
             case "numeric":
             case "decimal":
-                return value.asDecimal();
+                return value.asBigDecimal();
 
             case "character":
             case "char":

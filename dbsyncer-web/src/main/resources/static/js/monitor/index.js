@@ -55,9 +55,9 @@ function bindQueryErrorDetailEvent() {
 }
 
 // 清空数据
-function bindClearEvent($btn, $title, $msg, $url){
+function bindClearEvent($btn, $title, $msg, $url, $callback){
     $btn.click(function () {
-        var $id = $(this).attr("id");
+        var $id = null != $callback ? $callback() : $(this).attr("id");
         var data = {"id": $id};
         BootstrapDialog.show({
             title: "警告",
@@ -453,7 +453,9 @@ $(function () {
     bindQueryDataMoreEvent();
     bindQueryDataDetailEvent();
     bindQueryErrorDetailEvent();
-    bindClearEvent($(".clearDataBtn"), "确认清空数据？", "清空数据成功!", "/monitor/clearData");
+    bindClearEvent($(".clearDataBtn"), "确认清空数据？", "清空数据成功!", "/monitor/clearData", function () {
+        return $("#searchMetaData").selectpicker("val");
+    });
     bindClearEvent($(".clearLogBtn"), "确认清空日志？", "清空日志成功!", "/monitor/clearLog");
 
     createTimer();

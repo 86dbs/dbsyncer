@@ -1,7 +1,9 @@
 package org.dbsyncer.parser.config;
 
-import org.dbsyncer.parser.flush.FlushStrategy;
-import org.dbsyncer.parser.flush.impl.DisableFullFlushStrategy;
+import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.parser.strategy.ParserStrategy;
+import org.dbsyncer.parser.strategy.impl.DisableFullFlushStrategy;
+import org.dbsyncer.parser.strategy.impl.DisableWriterBufferActuatorStrategy;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,12 +14,18 @@ import org.springframework.context.annotation.Configuration;
  * @date 2021/11/18 21:36
  */
 @Configuration
-public class ParserFlushStrategyConfiguration {
+public class ParserStrategyConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
     public FlushStrategy flushStrategy() {
         return new DisableFullFlushStrategy();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ParserStrategy parserStrategy() {
+        return new DisableWriterBufferActuatorStrategy();
     }
 
 }

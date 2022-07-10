@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.dbsyncer.storage.binlog.proto";
+option java_outer_classname = "BinlogMessageProto";
+option optimize_for = SPEED;
+
+message BinlogMessage {
+    string table_group_id = 1;
+    EventEnum event = 2;
+    BinlogMap data = 3;
+}
+
+enum EventEnum {
+    UPDATE = 0;
+    INSERT = 1;
+    DELETE = 2;
+}
+
+message BinlogMap {
+    map<string, bytes> row = 1;
+}

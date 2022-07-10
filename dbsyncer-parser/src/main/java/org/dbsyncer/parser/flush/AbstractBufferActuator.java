@@ -7,17 +7,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
+import java.lang.reflect.ParameterizedType;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
+ * 任务缓存执行器
+ * <p>1. 任务优先进入缓存队列
+ * <p>2. 将任务分区合并，批量执行
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2022/3/27 17:36
@@ -31,34 +35,24 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     private static final int CAPACITY = 10_0000;
 
-    private Queue<Request> buffer = new LinkedBlockingQueue(CAPACITY);
+    private static final int MAX_BATCH_COUNT = 2000;
 
-    private Queue<Request> temp = new LinkedBlockingQueue(CAPACITY);
+    private static final int PERIOD = 300;
+
+    private Queue<Request> buffer;
 
     private final Lock lock = new ReentrantLock(true);
 
     private volatile boolean running;
 
-    private final static long MAX_BATCH_COUNT = 1000L;
+    private Class<Response> responseClazz;
 
     @PostConstruct
     private void init() {
-        scheduledTaskService.start(getPeriod(), this);
+        responseClazz = (Class<Response>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[1];
+        buffer = new LinkedBlockingQueue(getQueueCapacity());
+        scheduledTaskService.start(PERIOD, this);
     }
-
-    /**
-     * 获取定时间隔（毫秒）
-     *
-     * @return
-     */
-    protected abstract long getPeriod();
-
-    /**
-     * 生成缓存value
-     *
-     * @return
-     */
-    protected abstract BufferResponse getValue();
 
     /**
      * 生成分区key
@@ -84,23 +78,18 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     protected abstract void pull(Response response);
 
     @Override
-    public void offer(BufferRequest request) {
-        if (running) {
-            temp.offer((Request) request);
-        } else {
-            buffer.offer((Request) request);
-        }
+    public Queue getQueue() {
+        return buffer;
+    }
 
-        // TODO 临时解决方案：生产大于消费问题，限制生产速度
-        int size = temp.size() + buffer.size();
-        if (size >= CAPACITY) {
-            try {
-                TimeUnit.SECONDS.sleep(30);
-                logger.warn("当前任务队列大小{}已达上限{}，请稍等{}秒", size, CAPACITY, 30);
-            } catch (InterruptedException e) {
-                logger.error(e.getMessage());
-            }
-        }
+    @Override
+    public int getQueueCapacity() {
+        return CAPACITY;
+    }
+
+    @Override
+    public void offer(BufferRequest request) {
+        buffer.offer((Request) request);
     }
 
     @Override
@@ -116,8 +105,6 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
             if (locked) {
                 running = true;
                 flush(buffer);
-                running = false;
-                flush(temp);
             }
         } catch (Exception e) {
             logger.error(e.getMessage());
@@ -129,7 +116,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
         }
     }
 
-    private void flush(Queue<Request> queue) {
+    private void flush(Queue<Request> queue) throws IllegalAccessException, InstantiationException {
         if (!queue.isEmpty()) {
             AtomicLong batchCounter = new AtomicLong();
             final Map<String, BufferResponse> map = new LinkedHashMap<>();
@@ -137,7 +124,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
                 Request poll = queue.poll();
                 String key = getPartitionKey(poll);
                 if (!map.containsKey(key)) {
-                    map.putIfAbsent(key, getValue());
+                    map.putIfAbsent(key, (BufferResponse) responseClazz.newInstance());
                 }
                 partition(poll, (Response) map.get(key));
                 batchCounter.incrementAndGet();
@@ -150,7 +137,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
                 } catch (Exception e) {
                     logger.error("[{}]异常{}", key);
                 }
-                logger.info("[{}]{}条，耗时{}秒", key, flushTask.getTaskSize(), (Instant.now().toEpochMilli() - now) / 1000);
+                logger.info("[{}]{}条，耗时{}毫秒", key, flushTask.getTaskSize(), (Instant.now().toEpochMilli() - now));
             });
             map.clear();
         }

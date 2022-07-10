@@ -11,9 +11,9 @@ public interface ScheduledTaskService {
      * 第六位，星期，取值1-7
      * [秒 分 时 日 月 星期]
      *
-     * @param key 任务唯一key
+     * @param key  任务唯一key
      * @param cron 任务表达式
-     * @param job 任务实现
+     * @param job  任务实现
      */
     void start(String key, String cron, ScheduledTaskJob job);
 

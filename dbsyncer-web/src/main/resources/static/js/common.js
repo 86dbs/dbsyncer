@@ -41,6 +41,10 @@ function beautifySql(){
 function initSelectIndex($select, $selectedIndex){
     initSelect($select);
 
+    if($selectedIndex < 0){
+        return;
+    }
+
     $.each($select, function () {
         var v = $(this).selectpicker('val');
         if (undefined == v || '' == v) {

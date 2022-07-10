@@ -2,7 +2,7 @@ package org.dbsyncer.listener.file;
 
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.event.RowChangedEvent;
-import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.file.BufferedRandomAccessFile;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.*;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -149,7 +148,7 @@ public class FileExtractor extends AbstractExtractor {
                 snapshot.put(filePosKey, String.valueOf(raf.getFilePointer()));
                 if (StringUtil.isNotBlank(line)) {
                     List<Object> row = fileResolver.parseList(pipelineResolver.fields, separator, line);
-                    changedEvent(new RowChangedEvent(fileName, ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, row));
+                    changedEvent(new RowChangedEvent(fileName, ConnectorConstant.OPERTION_UPDATE, row));
                 }
             }
 
