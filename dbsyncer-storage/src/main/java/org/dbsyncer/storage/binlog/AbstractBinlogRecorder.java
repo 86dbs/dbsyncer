@@ -2,6 +2,10 @@ package org.dbsyncer.storage.binlog;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import oracle.sql.BLOB;
+import oracle.sql.CLOB;
+import oracle.sql.TIMESTAMP;
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
@@ -27,12 +31,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.sql.*;
 import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.sql.Types;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.Lock;
@@ -231,6 +234,22 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
                 buffer.putShort((short) (b ? 1 : 0));
                 buffer.flip();
                 return ByteString.copyFrom(buffer, 2);
+            case "oracle.sql.TIMESTAMP":
+                buffer.clear();
+                TIMESTAMP timeStamp = (TIMESTAMP) v;
+                try {
+                    buffer.putLong(timeStamp.timestampValue().getTime());
+                } catch (SQLException e) {
+                    logger.error(e.getMessage());
+                }
+                buffer.flip();
+                return ByteString.copyFrom(buffer, 8);
+            case "oracle.sql.BLOB":
+                BLOB blob = (BLOB) v;
+                return ByteString.copyFrom(getBytes(blob));
+            case "oracle.sql.CLOB":
+                CLOB clob = (CLOB) v;
+                return ByteString.copyFrom(getBytes(clob));
 
             default:
                 logger.error("Unsupported serialize value type:{}", type);
@@ -296,11 +315,11 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
             case Types.LONGVARBINARY:
                 return value.asByteArray();
 
-            // TODO 待实现
+            // 二进制对象
             case Types.NCLOB:
             case Types.CLOB:
             case Types.BLOB:
-                return null;
+                return value.asByteArray();
 
             // 暂不支持
             case Types.ROWID:
@@ -378,6 +397,38 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
                 }
             }
         }
+    }
+
+    private byte[] getBytes(BLOB blob) {
+        InputStream is = null;
+        byte[] b = null;
+        try {
+            is = blob.getBinaryStream();
+            b = new byte[(int) blob.length()];
+            is.read(b);
+            return b;
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        } finally {
+            IOUtils.closeQuietly(is);
+        }
+        return b;
+    }
+
+    private byte[] getBytes(CLOB clob) {
+        InputStream is = null;
+        byte[] b = null;
+        try {
+            is = clob.binaryStreamValue();
+            b = new byte[(int) clob.length()];
+            is.read(b);
+            return b;
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        } finally {
+            IOUtils.closeQuietly(is);
+        }
+        return b;
     }
 
 }
