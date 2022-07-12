@@ -88,7 +88,7 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
 
         // 2、反序列数据
         final Picker picker = new Picker(tableGroup.getFieldMapping());
-        final Map<String, Field> fieldMap = picker.getSourceFieldMap();
+        final Map<String, Field> fieldMap = picker.getTargetFieldMap();
         Map<String, Object> data = new HashMap<>();
         message.getData().getRowMap().forEach((k, v) -> {
             if (fieldMap.containsKey(k)) {

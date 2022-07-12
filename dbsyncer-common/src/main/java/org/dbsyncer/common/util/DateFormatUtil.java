@@ -89,6 +89,10 @@ public abstract class DateFormatUtil {
         return Timestamp.valueOf(LocalDateTime.from(TS_FORMAT.parse(s)));
     }
 
+    public static Timestamp stringToTimestamp(String s, String pattern) {
+        return Timestamp.valueOf(LocalDateTime.from(DateTimeFormatter.ofPattern(pattern).parse(s)));
+    }
+
     public static OffsetTime timeWithTimeZone(String s) {
         return OffsetTime.parse(s, TIME_TZ_FORMAT).withOffsetSameInstant(ZoneOffset.UTC);
     }
