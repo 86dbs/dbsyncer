@@ -45,7 +45,7 @@ public enum ConvertEnum {
     /**
      * String转Timestamp
      */
-    STRING_TO_TIMESTAMP("STRING_TO_TIMESTAMP", "String转Timestamp(参数格式yyyy-MM-dd HH:mm:ss)", 1, new StringToTimestampHandler()),
+    STRING_TO_TIMESTAMP("STRING_TO_TIMESTAMP", "String转Timestamp", 0, new StringToTimestampHandler()),
     /**
      * Byte[]转String
      */

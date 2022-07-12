@@ -2,19 +2,13 @@ package org.dbsyncer.parser.strategy.impl;
 
 import com.google.protobuf.ByteString;
 import org.dbsyncer.cache.CacheService;
-import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.parser.flush.BufferActuator;
-import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.parser.strategy.ParserStrategy;
-import org.dbsyncer.parser.util.ConvertUtil;
-import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.storage.binlog.AbstractBinlogRecorder;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
@@ -89,14 +83,18 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
         // 2、反序列数据
         final Picker picker = new Picker(tableGroup.getFieldMapping());
         final Map<String, Field> fieldMap = picker.getTargetFieldMap();
-        Map<String, Object> data = new HashMap<>();
-        message.getData().getRowMap().forEach((k, v) -> {
-            if (fieldMap.containsKey(k)) {
-                data.put(k, resolveValue(fieldMap.get(k).getType(), v));
-            }
-        });
-
-        return new WriterRequest(message.getTableGroupId(), message.getEvent().name(), data);
+        try {
+            Map<String, Object> data = new HashMap<>();
+            message.getData().getRowMap().forEach((k, v) -> {
+                if (fieldMap.containsKey(k)) {
+                    data.put(k, resolveValue(fieldMap.get(k).getType(), v));
+                }
+            });
+            return new WriterRequest(message.getTableGroupId(), message.getEvent().name(), data);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        }
+        return null;
     }
 
 }

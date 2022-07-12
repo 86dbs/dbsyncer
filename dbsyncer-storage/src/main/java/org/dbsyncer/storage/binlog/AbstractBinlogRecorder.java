@@ -291,8 +291,9 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
             // 数字
             case Types.INTEGER:
             case Types.TINYINT:
-            case Types.SMALLINT:
                 return value.asInteger();
+            case Types.SMALLINT:
+                return value.asShort();
             case Types.BIGINT:
                 return value.asLong();
             case Types.FLOAT:
