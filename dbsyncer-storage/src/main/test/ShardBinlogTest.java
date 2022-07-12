@@ -1,9 +1,7 @@
 import com.google.protobuf.ByteString;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.BytesRef;
@@ -53,12 +51,20 @@ public class ShardBinlogTest extends AbstractBinlogRecorder {
     @Test
     public void testBinlogMessage() throws IOException {
         List<Document> list = new ArrayList<>();
-        for (int i = 1; i <= 10000; i++) {
+        for (int i = 1; i <= 10; i++) {
             BinlogMessage message = genMessage("123456", i + "");
             Document doc = new Document();
-            doc.add(new StringField("id", String.valueOf(i), Field.Store.YES));
-            BytesRef bytesRef = new BytesRef(message.toByteArray());
-            doc.add(new StoredField("content", bytesRef));
+            doc.add(new LongPoint("id", i));
+            doc.add(new StoredField("id", i));
+            doc.add(new NumericDocValuesField("id", i));
+
+            doc.add(new IntPoint("s", 0));
+            doc.add(new StoredField("s", 0));
+            doc.add(new NumericDocValuesField("s", 0));
+
+            BytesRef ref = new BytesRef(message.toByteArray());
+            doc.add(new BinaryDocValuesField("content", ref));
+            doc.add(new StoredField("content", ref));
             list.add(doc);
 
             if (i % 1000 == 0) {
@@ -71,17 +77,32 @@ public class ShardBinlogTest extends AbstractBinlogRecorder {
             shard.insertBatch(list);
         }
         check();
+        Document doc = new Document();
+        doc.add(new LongPoint("id", 1));
+        doc.add(new StoredField("id", 1));
+        doc.add(new NumericDocValuesField("id", 1));
+
+        doc.add(new IntPoint("s", 1));
+        doc.add(new StoredField("s", 1));
+        doc.add(new NumericDocValuesField("s", 1));
+        shard.update(new Term("id", "1"), doc);
 
         Option option = new Option(new MatchAllDocsQuery());
+        option.addIndexFieldResolverEnum("id", IndexFieldResolverEnum.LONG);
+        option.addIndexFieldResolverEnum("s", IndexFieldResolverEnum.INT);
         option.addIndexFieldResolverEnum("content", IndexFieldResolverEnum.BINARY);
         Paging paging = shard.query(option, 1, 10001, null);
         List<Map> maps = (List<Map>) paging.getData();
         for (Map m : maps) {
+            Long id = (Long) m.get("id");
+            Long tid = (Long) m.get("tid");
+            Integer s = (Integer) m.get("s");
             BytesRef ref = (BytesRef) m.get("content");
             BinlogMessage message = BinlogMessage.parseFrom(ref.bytes);
             Map<String, ByteString> rowMap = message.getData().getRowMap();
-            logger.info(rowMap.get("name").toStringUtf8());
+            logger.info("id:{}, tid:{}, s:{}, message:{}", id, tid, s, rowMap.get("name").toStringUtf8());
         }
+
         logger.info("总条数：{}", paging.getTotal());
     }
 

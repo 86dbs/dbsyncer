@@ -4,6 +4,10 @@ import org.dbsyncer.storage.lucene.IndexFieldResolver;
 
 public enum IndexFieldResolverEnum {
 
+    LONG((f) -> f.numericValue().longValue()),
+
+    INT((f) -> f.numericValue().intValue()),
+
     STRING((f) -> f.stringValue()),
 
     BINARY((f) -> f.binaryValue());
