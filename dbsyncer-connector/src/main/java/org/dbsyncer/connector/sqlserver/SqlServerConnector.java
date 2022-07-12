@@ -16,7 +16,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
         DatabaseConfig config = connectorMapper.getConfig();
-        return super.getTable(connectorMapper, String.format("SELECT NAME FROM SYS.TABLES WHERE SCHEMA_ID = SCHEMA_ID('%s') AND IS_MS_SHIPPED = 0", config.getSchema()));
+        return super.getTable(connectorMapper, String.format("select name from sys.tables where schema_id = schema_id('%s') and is_ms_shipped = 0", config.getSchema()));
     }
 
     @Override
@@ -39,6 +39,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         String table = commandConfig.getTable().getName();
         DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
         // 从存储过程查询（定时更新总数，可能存在误差）
-        return String.format("SELECT ROWS FROM SYSINDEXES WHERE ID = OBJECT_ID('%s.%s') AND INDID IN (0, 1)", cfg.getSchema(), table);
+        return String.format("select rows from sysindexes where id = object_id('%s.%s') and indid in (0, 1)", cfg.getSchema(), table);
     }
 }
