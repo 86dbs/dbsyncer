@@ -34,8 +34,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.sql.*;
+import java.nio.charset.Charset;
 import java.sql.Date;
+import java.sql.*;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.Lock;
@@ -250,7 +251,6 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
             case "oracle.sql.CLOB":
                 CLOB clob = (CLOB) v;
                 return ByteString.copyFrom(getBytes(clob));
-
             default:
                 logger.error("Unsupported serialize value type:{}", type);
                 return null;
@@ -417,19 +417,15 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
     }
 
     private byte[] getBytes(CLOB clob) {
-        InputStream is = null;
-        byte[] b = null;
         try {
-            is = clob.binaryStreamValue();
-            b = new byte[(int) clob.length()];
-            is.read(b);
-            return b;
-        } catch (Exception e) {
+            long length = clob.length();
+            if (length > 0) {
+                return clob.getSubString(1, (int) length).getBytes(Charset.defaultCharset());
+            }
+        } catch (SQLException e) {
             logger.error(e.getMessage());
-        } finally {
-            IOUtils.closeQuietly(is);
         }
-        return b;
+        return null;
     }
 
 }

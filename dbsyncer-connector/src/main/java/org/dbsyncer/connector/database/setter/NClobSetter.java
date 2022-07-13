@@ -17,9 +17,7 @@ public class NClobSetter extends AbstractSetter<NClob> {
     @Override
     protected void setIfValueTypeNotMatch(PreparedFieldMapper mapper, PreparedStatement ps, int i, int type, Object val) throws SQLException {
         if (val instanceof byte[]) {
-            byte[] bytes = (byte[]) val;
-            NClob nClob = mapper.getNClob(bytes);
-            ps.setNClob(i, nClob);
+            ps.setNClob(i, mapper.getNClob((byte[]) val));
             return;
         }
         throw new ConnectorException(String.format("NClobSetter can not find type [%s], val [%s]", type, val));
