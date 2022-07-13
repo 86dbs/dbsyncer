@@ -13,6 +13,7 @@ import org.dbsyncer.storage.binlog.AbstractBinlogRecorder;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.binlog.proto.EventEnum;
+import org.dbsyncer.storage.util.BinlogMessageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
             BinlogMap.Builder dataBuilder = BinlogMap.newBuilder();
             data.forEach((k, v) -> {
                 if (null != v) {
-                    ByteString bytes = serializeValue(v);
+                    ByteString bytes = BinlogMessageUtil.serializeValue(v);
                     if (null != bytes) {
                         dataBuilder.putRow(k, bytes);
                     }
@@ -50,7 +51,7 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
                     .setEvent(EventEnum.valueOf(event))
                     .setData(dataBuilder.build())
                     .build();
-            flush(builder);
+            super.flush(builder);
         } catch (Exception e) {
             logger.error(e.getMessage());
         }
@@ -93,7 +94,7 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
             Map<String, Object> data = new HashMap<>();
             message.getData().getRowMap().forEach((k, v) -> {
                 if (fieldMap.containsKey(k)) {
-                    data.put(k, resolveValue(fieldMap.get(k).getType(), v));
+                    data.put(k, BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v));
                 }
             });
             return new WriterRequest(messageId, message.getTableGroupId(), message.getEvent().name(), data);
