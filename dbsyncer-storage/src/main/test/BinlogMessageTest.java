@@ -7,6 +7,7 @@ import org.dbsyncer.storage.binlog.impl.BinlogColumnValue;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.binlog.proto.EventEnum;
+import org.dbsyncer.storage.util.BinlogMessageUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,6 +24,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
+
+import static org.dbsyncer.storage.util.BinlogMessageUtil.serializeValue;
 
 /**
  * @author AE86
