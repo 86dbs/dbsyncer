@@ -1,6 +1,8 @@
 package org.dbsyncer.storage.util;
 
 import org.apache.lucene.document.*;
+import org.apache.lucene.util.BytesRef;
+import org.dbsyncer.storage.constant.BinlogConstant;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.springframework.util.Assert;
 
@@ -106,6 +108,22 @@ public abstract class ParamsUtil {
         doc.add(new LongPoint(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
         doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
         doc.add(new NumericDocValuesField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
+        return doc;
+    }
+
+    public static Document convertBinlog2Doc(String messageId, int status, BytesRef bytes, long updateTime) {
+        Document doc = new Document();
+        doc.add(new StringField(BinlogConstant.BINLOG_ID, messageId, Field.Store.YES));
+
+        doc.add(new IntPoint(BinlogConstant.BINLOG_STATUS, status));
+        doc.add(new StoredField(BinlogConstant.BINLOG_STATUS, status));
+
+        doc.add(new BinaryDocValuesField(BinlogConstant.BINLOG_CONTENT, bytes));
+        doc.add(new StoredField(BinlogConstant.BINLOG_CONTENT, bytes));
+
+        doc.add(new LongPoint(BinlogConstant.BINLOG_TIME, updateTime));
+        doc.add(new StoredField(BinlogConstant.BINLOG_TIME, updateTime));
+        doc.add(new NumericDocValuesField(BinlogConstant.BINLOG_TIME, updateTime));
         return doc;
     }
 

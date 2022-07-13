@@ -217,7 +217,7 @@ public class BinlogMessageTest extends AbstractBinlogRecorder {
     }
 
     @Override
-    protected Object deserialize(BinlogMessage message) {
+    protected Object deserialize(String messageId, BinlogMessage message) {
         return null;
     }
 

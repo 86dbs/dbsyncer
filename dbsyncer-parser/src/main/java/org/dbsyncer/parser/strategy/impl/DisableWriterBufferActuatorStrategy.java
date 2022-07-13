@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -56,6 +57,11 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
     }
 
     @Override
+    public void complete(List<String> messageIds) {
+        super.completeMessage(messageIds);
+    }
+
+    @Override
     public Queue getQueue() {
         return writerBufferActuator.getQueue();
     }
@@ -71,7 +77,7 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
     }
 
     @Override
-    protected WriterRequest deserialize(BinlogMessage message) {
+    protected WriterRequest deserialize(String messageId, BinlogMessage message) {
         if (CollectionUtils.isEmpty(message.getData().getRowMap())) {
             return null;
         }
@@ -90,7 +96,7 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
                     data.put(k, resolveValue(fieldMap.get(k).getType(), v));
                 }
             });
-            return new WriterRequest(message.getTableGroupId(), message.getEvent().name(), data);
+            return new WriterRequest(messageId, message.getTableGroupId(), message.getEvent().name(), data);
         } catch (Exception e) {
             logger.error(e.getMessage());
         }

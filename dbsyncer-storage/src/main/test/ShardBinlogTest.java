@@ -151,7 +151,7 @@ public class ShardBinlogTest extends AbstractBinlogRecorder {
     }
 
     @Override
-    protected Object deserialize(BinlogMessage message) {
+    protected Object deserialize(String messageId, BinlogMessage message) {
         return null;
     }
 

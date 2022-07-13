@@ -2,6 +2,7 @@ package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
@@ -9,6 +10,7 @@ import org.dbsyncer.parser.ParserFactory;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.parser.strategy.ParserStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -31,6 +33,9 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     private FlushStrategy flushStrategy;
 
     @Autowired
+    private ParserStrategy parserStrategy;
+
+    @Autowired
     private CacheService cacheService;
 
     private final static int BATCH_SIZE = 100;
@@ -43,6 +48,9 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     @Override
     protected void partition(WriterRequest request, WriterResponse response) {
         response.getDataList().add(request.getRow());
+        if(StringUtil.isNotBlank(request.getMessageId())){
+            response.getMessageIds().add(request.getMessageId());
+        }
         if (response.isMerged()) {
             return;
         }
@@ -66,6 +74,9 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
 
         // 3、持久化同步结果
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
+
+        // 4、消息处理完成
+        parserStrategy.complete(response.getMessageIds());
     }
 
     /**

@@ -14,6 +14,7 @@ import java.util.Map;
 public class WriterResponse extends AbstractWriter implements BufferResponse {
 
     private List<Map> dataList = new LinkedList<>();
+    private List<String> messageIds = new LinkedList<>();
 
     private boolean isMerged;
 
@@ -26,8 +27,8 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
         return dataList;
     }
 
-    public void setDataList(List<Map> dataList) {
-        this.dataList = dataList;
+    public List<String> getMessageIds() {
+        return messageIds;
     }
 
     public boolean isMerged() {

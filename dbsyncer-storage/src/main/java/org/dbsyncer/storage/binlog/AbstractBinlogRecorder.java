@@ -7,11 +7,10 @@ import oracle.sql.CLOB;
 import oracle.sql.TIMESTAMP;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.util.BytesRef;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
@@ -20,9 +19,11 @@ import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.storage.binlog.impl.BinlogColumnValue;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
+import org.dbsyncer.storage.constant.BinlogConstant;
 import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
 import org.dbsyncer.storage.lucene.Shard;
 import org.dbsyncer.storage.query.Option;
+import org.dbsyncer.storage.util.ParamsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -37,6 +38,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.sql.Date;
 import java.sql.*;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.Lock;
@@ -56,10 +58,6 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
     @Autowired
     private SnowflakeIdWorker snowflakeIdWorker;
-
-    private static final String BINLOG_ID = "id";
-
-    private static final String BINLOG_CONTENT = "c";
 
     private static final int SUBMIT_COUNT = 1000;
 
@@ -101,7 +99,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
      * @param message
      * @return
      */
-    protected abstract Message deserialize(BinlogMessage message);
+    protected abstract Message deserialize(String messageId, BinlogMessage message);
 
     @Override
     public void flush(BinlogMessage message) {
@@ -114,8 +112,12 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
     }
 
     private void doParse() throws IOException {
-        Option option = new Option(new MatchAllDocsQuery());
-        option.addIndexFieldResolverEnum(BINLOG_CONTENT, IndexFieldResolverEnum.BINARY);
+        BooleanQuery query = new BooleanQuery.Builder()
+                .add(IntPoint.newSetQuery(BinlogConstant.BINLOG_STATUS, BinlogConstant.READY), BooleanClause.Occur.MUST)
+                .build();
+        Option option = new Option(query);
+        option.addIndexFieldResolverEnum(BinlogConstant.BINLOG_ID, IndexFieldResolverEnum.STRING);
+        option.addIndexFieldResolverEnum(BinlogConstant.BINLOG_CONTENT, IndexFieldResolverEnum.BINARY);
         Paging paging = shard.query(option, 1, SUBMIT_COUNT, null);
         if (CollectionUtils.isEmpty(paging.getData())) {
             return;
@@ -123,20 +125,38 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
         List<Map> list = (List<Map>) paging.getData();
         int size = list.size();
-        Term[] terms = new Term[size];
+        List<Message> messageList = new ArrayList<>();
+        long now = Instant.now().toEpochMilli();
         for (int i = 0; i < size; i++) {
             try {
-                BytesRef ref = (BytesRef) list.get(i).get(BINLOG_CONTENT);
-                Message message = deserialize(BinlogMessage.parseFrom(ref.bytes));
+                String id = (String) list.get(i).get(BinlogConstant.BINLOG_ID);
+                BytesRef ref = (BytesRef) list.get(i).get(BinlogConstant.BINLOG_CONTENT);
+                Message message = deserialize(id, BinlogMessage.parseFrom(ref.bytes));
                 if (null != message) {
-                    getQueue().offer(message);
+                    messageList.add(message);
                 }
-                terms[i] = new Term(BINLOG_ID, (String) list.get(i).get(BINLOG_ID));
+                shard.update(new Term(BinlogConstant.BINLOG_ID, String.valueOf(id)), ParamsUtil.convertBinlog2Doc(id, BinlogConstant.PROCESSING, ref, now));
             } catch (InvalidProtocolBufferException e) {
                 logger.error(e.getMessage());
             }
         }
-        shard.deleteBatch(terms);
+
+        getQueue().addAll(messageList);
+    }
+
+    protected void completeMessage(List<String> messageIds) {
+        if (!CollectionUtils.isEmpty(messageIds)) {
+            try {
+                int size = messageIds.size();
+                Term[] terms = new Term[size];
+                for (int i = 0; i < size; i++) {
+                    terms[i] = new Term(BinlogConstant.BINLOG_ID, messageIds.get(i));
+                }
+                shard.deleteBatch(terms);
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+            }
+        }
     }
 
     /**
@@ -331,6 +351,34 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
         }
     }
 
+    private byte[] getBytes(BLOB blob) {
+        InputStream is = null;
+        byte[] b = null;
+        try {
+            is = blob.getBinaryStream();
+            b = new byte[(int) blob.length()];
+            is.read(b);
+            return b;
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        } finally {
+            IOUtils.closeQuietly(is);
+        }
+        return b;
+    }
+
+    private byte[] getBytes(CLOB clob) {
+        try {
+            long length = clob.length();
+            if (length > 0) {
+                return clob.getSubString(1, (int) length).getBytes(Charset.defaultCharset());
+            }
+        } catch (SQLException e) {
+            logger.error(e.getMessage());
+        }
+        return null;
+    }
+
     /**
      * 合并缓存队列任务到磁盘
      */
@@ -344,14 +392,12 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
             List<Document> tasks = new ArrayList<>();
             int count = 0;
-            Document doc;
+            long now = Instant.now().toEpochMilli();
             while (!queue.isEmpty() && count < SUBMIT_COUNT) {
                 BinlogMessage message = queue.poll();
                 if (null != message) {
-                    doc = new Document();
-                    doc.add(new StringField(BINLOG_ID, String.valueOf(snowflakeIdWorker.nextId()), Field.Store.YES));
-                    doc.add(new StoredField(BINLOG_CONTENT, new BytesRef(message.toByteArray())));
-                    tasks.add(doc);
+                    tasks.add(ParamsUtil.convertBinlog2Doc(String.valueOf(snowflakeIdWorker.nextId()), BinlogConstant.READY,
+                            new BytesRef(message.toByteArray()), now));
                 }
                 count++;
             }
@@ -398,34 +444,6 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
                 }
             }
         }
-    }
-
-    private byte[] getBytes(BLOB blob) {
-        InputStream is = null;
-        byte[] b = null;
-        try {
-            is = blob.getBinaryStream();
-            b = new byte[(int) blob.length()];
-            is.read(b);
-            return b;
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-        } finally {
-            IOUtils.closeQuietly(is);
-        }
-        return b;
-    }
-
-    private byte[] getBytes(CLOB clob) {
-        try {
-            long length = clob.length();
-            if (length > 0) {
-                return clob.getSubString(1, (int) length).getBytes(Charset.defaultCharset());
-            }
-        } catch (SQLException e) {
-            logger.error(e.getMessage());
-        }
-        return null;
     }
 
 }
