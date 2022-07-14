@@ -73,11 +73,6 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
     }
 
     @Override
-    protected String getTaskName() {
-        return "WriterBinlog";
-    }
-
-    @Override
     protected WriterRequest deserialize(String messageId, BinlogMessage message) {
         if (CollectionUtils.isEmpty(message.getData().getRowMap())) {
             return null;

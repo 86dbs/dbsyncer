@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
-@ConditionalOnProperty(value = "dbsyncer.parser.writer.buffer.actuator.enabled", havingValue = "true")
+@ConditionalOnProperty(value = "dbsyncer.parser.flush.buffer.actuator.speed.enabled", havingValue = "true")
 public final class EnableWriterBufferActuatorStrategy implements ParserStrategy {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());

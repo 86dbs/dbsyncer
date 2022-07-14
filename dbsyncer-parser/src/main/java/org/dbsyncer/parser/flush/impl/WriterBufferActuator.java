@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.cache.CacheService;
+import org.dbsyncer.common.config.BufferActuatorConfig;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
@@ -38,7 +39,8 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     @Autowired
     private CacheService cacheService;
 
-    private final static int BATCH_SIZE = 100;
+    @Autowired
+    private BufferActuatorConfig bufferActuatorConfig;
 
     @Override
     protected String getPartitionKey(WriterRequest request) {
@@ -70,7 +72,7 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
         // 2、批量执行同步
         ConnectorMapper targetConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
         Result result = parserFactory.writeBatch(new BatchWriter(targetConnectorMapper, tableGroup.getCommand(), targetTableName, response.getEvent(),
-                picker.getTargetFields(), response.getDataList(), BATCH_SIZE));
+                picker.getTargetFields(), response.getDataList(), bufferActuatorConfig.getWriterBatchCount()));
 
         // 3、持久化同步结果
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
