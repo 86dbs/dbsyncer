@@ -3,16 +3,18 @@ package org.dbsyncer.storage.binlog;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.storage.binlog.impl.BinlogColumnValue;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.constant.BinlogConstant;
 import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
@@ -27,7 +29,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -53,9 +57,12 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
     private static final int SUBMIT_COUNT = 1000;
 
+    private static final int MAX_PROCESSING_SECONDS = 60;
+
     private static final Queue<BinlogMessage> queue = new LinkedBlockingQueue(10000);
 
-    private static final String PATH = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar).append("data").append(File.separatorChar).append("data").append(File.separatorChar).toString();
+    private static final String PATH = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar).append("data").append(
+            File.separatorChar).append("data").append(File.separatorChar).toString();
 
     private Shard shard;
 
@@ -135,7 +142,8 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
             while (!queue.isEmpty() && count < SUBMIT_COUNT) {
                 BinlogMessage message = queue.poll();
                 if (null != message) {
-                    tasks.add(ParamsUtil.convertBinlog2Doc(String.valueOf(snowflakeIdWorker.nextId()), BinlogConstant.READY, new BytesRef(message.toByteArray()), now));
+                    tasks.add(ParamsUtil.convertBinlog2Doc(String.valueOf(snowflakeIdWorker.nextId()), BinlogConstant.READY,
+                            new BytesRef(message.toByteArray()), now));
                 }
                 count++;
             }
@@ -184,10 +192,23 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
         }
 
         private void doParse() throws IOException {
-            BooleanQuery query = new BooleanQuery.Builder().add(IntPoint.newSetQuery(BinlogConstant.BINLOG_STATUS, BinlogConstant.READY), BooleanClause.Occur.MUST).build();
+            //  查询[待处理] 或 [处理中 & 处理超时]
+            long maxProcessingSeconds = Timestamp.valueOf(LocalDateTime.now().minusSeconds(MAX_PROCESSING_SECONDS)).getTime();
+            BooleanQuery query = new BooleanQuery.Builder()
+                    .add(new BooleanQuery.Builder()
+                            .add(IntPoint.newExactQuery(BinlogConstant.BINLOG_STATUS, BinlogConstant.READY), BooleanClause.Occur.MUST)
+                            .build(), BooleanClause.Occur.SHOULD)
+                    .add(new BooleanQuery.Builder()
+                            .add(IntPoint.newExactQuery(BinlogConstant.BINLOG_STATUS, BinlogConstant.PROCESSING), BooleanClause.Occur.MUST)
+                            .add(LongPoint.newRangeQuery(BinlogConstant.BINLOG_TIME, Long.MIN_VALUE, maxProcessingSeconds), BooleanClause.Occur.MUST)
+                            .build(), BooleanClause.Occur.SHOULD)
+                    .build();
             Option option = new Option(query);
             option.addIndexFieldResolverEnum(BinlogConstant.BINLOG_CONTENT, IndexFieldResolverEnum.BINARY);
-            Paging paging = shard.query(option, 1, SUBMIT_COUNT, null);
+
+            // 优先处理最早记录
+            Sort sort = new Sort(new SortField(BinlogConstant.BINLOG_TIME, SortField.Type.LONG));
+            Paging paging = shard.query(option, 1, SUBMIT_COUNT, sort);
             if (CollectionUtils.isEmpty(paging.getData())) {
                 return;
             }
@@ -195,6 +216,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
             List<Map> list = (List<Map>) paging.getData();
             int size = list.size();
             List<Message> messageList = new ArrayList<>();
+            List<Document> docs = new ArrayList<>();
             long now = Instant.now().toEpochMilli();
             Map row = null;
             for (int i = 0; i < size; i++) {
@@ -206,12 +228,13 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
                     if (null != message) {
                         messageList.add(message);
                     }
-                    shard.update(new Term(BinlogConstant.BINLOG_ID, String.valueOf(id)), ParamsUtil.convertBinlog2Doc(id, BinlogConstant.PROCESSING, ref, now));
+                    docs.add(ParamsUtil.convertBinlog2Doc(id, BinlogConstant.PROCESSING, ref, now));
                 } catch (InvalidProtocolBufferException e) {
                     logger.error(e.getMessage());
                 }
             }
 
+            shard.insertBatch(docs);
             getQueue().addAll(messageList);
         }
     }
