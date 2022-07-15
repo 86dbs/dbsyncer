@@ -15,10 +15,9 @@ public interface ParserStrategy {
     void execute(String tableGroupId, String event, Map<String, Object> data);
 
     /**
-     * 完成同步后，执行回调
+     * 完成同步后，执行回调删除消息
      *
      * @param messageIds
      */
-    default void complete(List<String> messageIds) {
-    }
+    void complete(List<String> messageIds);
 }

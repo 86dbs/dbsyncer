@@ -16,7 +16,6 @@ import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.constant.BinlogConstant;
 import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
@@ -51,8 +50,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String PATH = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar).append("data").append(
-            File.separatorChar).append("data").append(File.separatorChar).toString();
+    private static final String PATH = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar).append("data").append(File.separatorChar).append("data").append(File.separatorChar).toString();
 
     @Autowired
     private ScheduledTaskService scheduledTaskService;
@@ -74,13 +72,13 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
     @PostConstruct
     private void init() throws IOException {
         queue = new LinkedBlockingQueue(binlogRecorderConfig.getQueueCapacity());
-        shard = new Shard(PATH + binlogRecorderConfig.getTaskName());
+        shard = new Shard(PATH + getTaskName());
         scheduledTaskService.start(binlogRecorderConfig.getWriterPeriodMillisecond(), writerTask);
         scheduledTaskService.start(binlogRecorderConfig.getReaderPeriodMillisecond(), readerTask);
     }
 
     /**
-     * 反序列化任务
+     * 反序列化消息
      *
      * @param message
      * @return
@@ -97,12 +95,8 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
         shard.close();
     }
 
-    /**
-     * 消息同步完成后，删除消息记录
-     *
-     * @param messageIds
-     */
-    protected void completeMessage(List<String> messageIds) {
+    @Override
+    public void complete(List<String> messageIds) {
         if (!CollectionUtils.isEmpty(messageIds)) {
             try {
                 int size = messageIds.size();
@@ -216,7 +210,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
                 String id = (String) row.get(BinlogConstant.BINLOG_ID);
                 Integer status = (Integer) row.get(BinlogConstant.BINLOG_STATUS);
                 BytesRef ref = (BytesRef) row.get(BinlogConstant.BINLOG_CONTENT);
-                if(BinlogConstant.PROCESSING == status){
+                if (BinlogConstant.PROCESSING == status) {
                     logger.warn("存在超时未处理数据，正在重试，建议优化配置参数[max-processing-seconds={}].", binlogRecorderConfig.getMaxProcessingSeconds());
                 }
                 deleteIds[i] = new Term(BinlogConstant.BINLOG_ID, id);

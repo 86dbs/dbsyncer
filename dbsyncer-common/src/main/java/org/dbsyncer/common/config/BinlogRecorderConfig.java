@@ -13,11 +13,6 @@ import org.springframework.context.annotation.Configuration;
 public class BinlogRecorderConfig {
 
     /**
-     * 任务名称
-     */
-    private String taskName = "BinlogRecorder";
-
-    /**
      * 批量同步数
      */
     private int batchCount = 1000;
@@ -41,14 +36,6 @@ public class BinlogRecorderConfig {
      * 读磁盘间隔（毫秒）
      */
     private int readerPeriodMillisecond = 2000;
-
-    public String getTaskName() {
-        return taskName;
-    }
-
-    public void setTaskName(String taskName) {
-        this.taskName = taskName;
-    }
 
     public int getBatchCount() {
         return batchCount;
