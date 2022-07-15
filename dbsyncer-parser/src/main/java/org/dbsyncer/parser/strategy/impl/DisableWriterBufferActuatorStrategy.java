@@ -79,13 +79,12 @@ public final class DisableWriterBufferActuatorStrategy extends AbstractBinlogRec
         }
 
         // 1、获取配置信息
-        final String tableGroupId = message.getTableGroupId();
-        final TableGroup tableGroup = cacheService.get(tableGroupId, TableGroup.class);
+        final TableGroup tableGroup = cacheService.get(message.getTableGroupId(), TableGroup.class);
 
         // 2、反序列数据
-        final Picker picker = new Picker(tableGroup.getFieldMapping());
-        final Map<String, Field> fieldMap = picker.getTargetFieldMap();
         try {
+            final Picker picker = new Picker(tableGroup.getFieldMapping());
+            final Map<String, Field> fieldMap = picker.getTargetFieldMap();
             Map<String, Object> data = new HashMap<>();
             message.getData().getRowMap().forEach((k, v) -> {
                 if (fieldMap.containsKey(k)) {
