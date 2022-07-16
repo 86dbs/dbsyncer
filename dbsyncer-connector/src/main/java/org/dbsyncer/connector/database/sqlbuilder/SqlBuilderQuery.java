@@ -53,7 +53,7 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
             }
         }
         // SELECT "ID","NAME" FROM "USER"
-        sql.insert(0, "SELECT ").append(" FROM ").append(quotation).append(tableName).append(quotation);
+        sql.insert(0, "SELECT ").append(" FROM ").append(config.getSchema()).append(quotation).append(tableName).append(quotation);
         // 解析查询条件
         if (StringUtil.isNotBlank(queryFilter)) {
             sql.append(queryFilter);

@@ -1,6 +1,9 @@
 package org.dbsyncer.connector.oracle;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.constant.DatabaseConstant;
@@ -42,5 +45,18 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     @Override
     protected String getValidationQuery() {
         return "select 1 from dual";
+    }
+
+    @Override
+    protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
+        // 有过滤条件，走默认方式
+        if (StringUtil.isNotBlank(queryFilterSql)) {
+            return super.getQueryCountSql(commandConfig, schema, quotation, queryFilterSql);
+        }
+
+        // 从系统表查询
+        final String table = commandConfig.getTable().getName();
+        DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
+        return String.format("SELECT NUM_ROWS FROM ALL_TABLES WHERE OWNER = '%s' AND TABLE_NAME = '%s'", cfg.getUsername().toUpperCase(), table);
     }
 }

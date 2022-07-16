@@ -33,7 +33,7 @@ public interface Monitor {
 
     List<MetricEnum> getMetricEnumAll();
 
-    List<MetricResponse> getThreadPoolInfo();
+    List<MetricResponse> getMetricInfo();
 
     AppReportMetric getAppReportMetric();
 

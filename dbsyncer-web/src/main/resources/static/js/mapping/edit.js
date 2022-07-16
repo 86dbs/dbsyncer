@@ -200,7 +200,7 @@ $(function () {
     bindMappingTableGroupDelClick();
 
     // 初始化select插件
-    initSelectIndex($(".select-control-table"), 0);
+    initSelectIndex($(".select-control-table"), -1);
 
     // 保存
     $("#mappingSubmitBtn").click(function () {

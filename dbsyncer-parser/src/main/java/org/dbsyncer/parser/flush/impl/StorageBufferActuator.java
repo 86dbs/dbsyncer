@@ -20,6 +20,11 @@ public class StorageBufferActuator extends AbstractBufferActuator<StorageRequest
     private StorageService storageService;
 
     @Override
+    public int getQueueCapacity() {
+        return super.getQueueCapacity() / 4;
+    }
+
+    @Override
     protected String getPartitionKey(StorageRequest bufferTask) {
         return bufferTask.getMetaId();
     }

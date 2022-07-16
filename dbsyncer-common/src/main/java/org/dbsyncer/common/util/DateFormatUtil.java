@@ -55,28 +55,17 @@ public abstract class DateFormatUtil {
             .appendText(ChronoField.ERA, TextStyle.SHORT)
             .optionalEnd()
             .toFormatter();
-    private static final DateTimeFormatter TS_FORMAT = new DateTimeFormatterBuilder()
-            .append(NON_ISO_LOCAL_DATE)
-            .appendLiteral(' ')
-            .append(DateTimeFormatter.ISO_LOCAL_TIME)
-            .optionalStart()
-            .appendLiteral(" ")
-            .appendText(ChronoField.ERA, TextStyle.SHORT)
-            .optionalEnd()
-            .toFormatter();
-
-    private static ZoneId zoneId = ZoneId.systemDefault();
 
     public static String getCurrentTime() {
         return LocalDateTime.now().format(TIME_FORMATTER);
     }
 
     public static String dateToString(Date date) {
-        return date.toInstant().atZone(zoneId).toLocalDate().format(DATE_FORMATTER);
+        return date.toLocalDate().format(DATE_FORMATTER);
     }
 
-    public static String dateToChineseStandardTimeString(Date date) {
-        return date.toInstant().atZone(zoneId).toLocalDateTime().format(CHINESE_STANDARD_TIME_FORMATTER);
+    public static String timestampToString(Timestamp timestamp) {
+        return timestamp.toLocalDateTime().format(CHINESE_STANDARD_TIME_FORMATTER);
     }
 
     public static Date stringToDate(String s) {
@@ -88,9 +77,8 @@ public abstract class DateFormatUtil {
     }
 
     public static Timestamp stringToTimestamp(String s) {
-        return Timestamp.valueOf(LocalDateTime.from(TS_FORMAT.parse(s)));
+        return Timestamp.valueOf(LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(s)));
     }
-
     public static OffsetTime timeWithTimeZone(String s) {
         return OffsetTime.parse(s, TIME_TZ_FORMAT).withOffsetSameInstant(ZoneOffset.UTC);
     }

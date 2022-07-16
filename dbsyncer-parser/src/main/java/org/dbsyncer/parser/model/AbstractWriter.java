@@ -1,10 +1,5 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.connector.model.Field;
-
-import java.util.List;
-import java.util.Map;
-
 /**
  * @author AE86
  * @version 1.0.0
@@ -12,66 +7,16 @@ import java.util.Map;
  */
 public abstract class AbstractWriter {
 
-    private String metaId;
-
-    private String targetConnectorId;
-
-    private String sourceTableName;
-
-    private String targetTableName;
-
-    private List<Field> fields;
-
-    private Map<String, String> command;
+    private String tableGroupId;
 
     private String event;
 
-    public String getMetaId() {
-        return metaId;
+    public String getTableGroupId() {
+        return tableGroupId;
     }
 
-    public void setMetaId(String metaId) {
-        this.metaId = metaId;
-    }
-
-    public String getTargetConnectorId() {
-        return targetConnectorId;
-    }
-
-    public void setTargetConnectorId(String targetConnectorId) {
-        this.targetConnectorId = targetConnectorId;
-    }
-
-    public String getSourceTableName() {
-        return sourceTableName;
-    }
-
-    public void setSourceTableName(String sourceTableName) {
-        this.sourceTableName = sourceTableName;
-    }
-
-    public String getTargetTableName() {
-        return targetTableName;
-    }
-
-    public void setTargetTableName(String targetTableName) {
-        this.targetTableName = targetTableName;
-    }
-
-    public List<Field> getFields() {
-        return fields;
-    }
-
-    public void setFields(List<Field> fields) {
-        this.fields = fields;
-    }
-
-    public Map<String, String> getCommand() {
-        return command;
-    }
-
-    public void setCommand(Map<String, String> command) {
-        this.command = command;
+    public void setTableGroupId(String tableGroupId) {
+        this.tableGroupId = tableGroupId;
     }
 
     public String getEvent() {

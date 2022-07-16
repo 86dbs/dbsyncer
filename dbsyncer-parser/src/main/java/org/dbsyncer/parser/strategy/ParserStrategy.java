@@ -1,11 +1,23 @@
 package org.dbsyncer.parser.strategy;
 
-import org.dbsyncer.common.event.RowChangedEvent;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.TableGroup;
+import java.util.List;
+import java.util.Map;
 
 public interface ParserStrategy {
 
-    void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent event);
+    /**
+     * 同步消息
+     *
+     * @param tableGroupId
+     * @param event
+     * @param data
+     */
+    void execute(String tableGroupId, String event, Map<String, Object> data);
 
+    /**
+     * 完成同步后，执行回调删除消息
+     *
+     * @param messageIds
+     */
+    void complete(List<String> messageIds);
 }

@@ -13,10 +13,10 @@ import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.Database;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
-import org.dbsyncer.connector.database.ds.SimpleConnection;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
+import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -34,8 +34,6 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -66,6 +64,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     private static final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
     private static final String TABLE_CREATE_TIME = "create_time";
     private static final String TABLE_UPDATE_TIME = "update_time";
+    private final Object LOCK = new Object();
 
     @Autowired
     private ConnectorFactory connectorFactory;
@@ -86,27 +85,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         config.setConnectorType(ConnectorEnum.MYSQL.getType());
         connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(config);
         connector = (Database) connectorFactory.getConnector(connectorMapper);
-
-        // 获取数据库名称
-        database = connectorMapper.execute(databaseTemplate -> {
-            Connection conn = databaseTemplate.getConnection();
-            DatabaseMetaData metaData = conn.getMetaData();
-            String driverVersion = metaData.getDriverVersion();
-            String databaseProductVersion = metaData.getDatabaseProductVersion();
-            boolean driverThanMysql8 = StringUtil.startsWith(driverVersion, "mysql-connector-java-8");
-            boolean dbThanMysql8 = StringUtil.startsWith(databaseProductVersion, "8");
-            Assert.isTrue(driverThanMysql8 == dbThanMysql8, String.format("当前驱动%s和数据库%s版本不一致.", driverVersion, databaseProductVersion));
-
-            if(conn instanceof SimpleConnection){
-                SimpleConnection simpleConnection = (SimpleConnection) conn;
-                conn = simpleConnection.getConnection();
-            }
-            Class clazz = dbThanMysql8 ? conn.getClass() : conn.getClass().getSuperclass();
-            java.lang.reflect.Field field = clazz.getDeclaredField("database");
-            field.setAccessible(true);
-            Object value = field.get(conn);
-            return String.valueOf(value);
-        });
+        database = DatabaseUtil.getDatabaseName(config.getUrl());
 
         // 初始化表
         initTable();
@@ -114,20 +93,22 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public Paging select(Query query) {
-        Executor executor = getExecutor(query.getType(), query.getCollection());
-        List<Object> queryArgs = new ArrayList<>();
-        List<Object> queryCountArgs = new ArrayList<>();
-        String querySql = buildQuerySql(query, executor, queryArgs);
-        String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
+        synchronized (LOCK){
+            Executor executor = getExecutor(query.getType(), query.getCollection());
+            List<Object> queryArgs = new ArrayList<>();
+            List<Object> queryCountArgs = new ArrayList<>();
+            String querySql = buildQuerySql(query, executor, queryArgs);
+            String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
 
-        List<Map<String, Object>> data = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
-        replaceHighLight(query, data);
-        Long total = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
+            List<Map<String, Object>> data = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
+            replaceHighLight(query, data);
+            Long total = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
 
-        Paging paging = new Paging(query.getPageNum(), query.getPageSize());
-        paging.setData(data);
-        paging.setTotal(total);
-        return paging;
+            Paging paging = new Paging(query.getPageNum(), query.getPageSize());
+            paging.setData(data);
+            paging.setTotal(total);
+            return paging;
+        }
     }
 
     @Override
@@ -155,17 +136,19 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     public void deleteAll(StorageEnum type, String table) {
-        Executor executor = getExecutor(type, table);
-        if (executor.isSystemType()) {
-            String sql = String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(table));
-            executeSql(sql);
-            return;
-        }
+        synchronized (LOCK){
+            Executor executor = getExecutor(type, table);
+            if (executor.isSystemType()) {
+                String sql = String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(table));
+                executeSql(sql);
+                return;
+            }
 
-        if (tables.containsKey(table)) {
-            tables.remove(table);
-            String sql = String.format(DROP_TABLE, PREFIX_TABLE.concat(table));
-            executeSql(sql);
+            if (tables.containsKey(table)) {
+                tables.remove(table);
+                String sql = String.format(DROP_TABLE, PREFIX_TABLE.concat(table));
+                executeSql(sql);
+            }
         }
     }
 
@@ -321,7 +304,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         }
 
         List<Field> fields = executor.getFieldPairs().stream().map(p -> new Field(p.columnName, p.labelName)).collect(Collectors.toList());
-        final SqlBuilderConfig config = new SqlBuilderConfig(connector, table, ConfigConstant.CONFIG_MODEL_ID, fields, "", "");
+        final SqlBuilderConfig config = new SqlBuilderConfig(connector, "", table, ConfigConstant.CONFIG_MODEL_ID, fields, "", "");
 
         String query = SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config);
         String insert = SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(config);

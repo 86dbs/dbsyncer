@@ -29,7 +29,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final LocalDateTime PG_EPOCH = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
-    private static final String GET_TABLE_SCHEMA = "select oid,relname as tableName from pg_class t inner join (select ns.oid as nspoid, ns.nspname from pg_namespace ns where ns.nspname = (select (current_schemas(false))[s.r] from generate_series(1, array_upper(current_schemas(false), 1)) as s(r))) as n on n.nspoid = t.relnamespace where relkind = 'r'";
+    private static final String GET_TABLE_SCHEMA = "select oid,relname as tableName from pg_class t inner join (select ns.oid as nspoid, ns.nspname from pg_namespace ns where ns.nspname = '%s') as n on n.nspoid = t.relnamespace where relkind = 'r'";
     private static final Map<Integer, TableId> tables = new LinkedHashMap<>();
     private ConnectorFactory connectorFactory;
     private DatabaseConnectorMapper connectorMapper;
@@ -114,7 +114,8 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     }
 
     private void readSchema() {
-        List<Map> schemas = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(GET_TABLE_SCHEMA));
+        final String querySchema = String.format(GET_TABLE_SCHEMA, config.getSchema());
+        List<Map> schemas = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySchema));
         if (!CollectionUtils.isEmpty(schemas)) {
             schemas.forEach(map -> {
                 Long oid = (Long) map.get("oid");
@@ -137,10 +138,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
                 case "O":
                     List<Object> data = new ArrayList<>();
                     readTupleData(tableId, buffer, data);
-                    if (MessageTypeEnum.DELETE == type) {
-                        return new RowChangedEvent(tableId.tableName, type.name(), data, Collections.EMPTY_LIST);
-                    }
-                    return new RowChangedEvent(tableId.tableName, type.name(), Collections.EMPTY_LIST, data);
+                    return new RowChangedEvent(tableId.tableName, type.name(), data);
 
                 default:
                     logger.info("N, K, O not set, got instead {}", newTuple);

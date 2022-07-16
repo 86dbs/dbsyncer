@@ -2,7 +2,7 @@ package org.dbsyncer.biz.impl;
 
 import org.apache.commons.io.FileUtils;
 import org.dbsyncer.biz.ConfigService;
-import org.dbsyncer.biz.checker.impl.config.ConfigChecker;
+import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.ConfigVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.Manager;
@@ -39,7 +39,7 @@ public class ConfigServiceImpl implements ConfigService {
     private Manager manager;
 
     @Autowired
-    private ConfigChecker configChecker;
+    private Checker configChecker;
 
     @Autowired
     private PreloadTemplate preloadTemplate;

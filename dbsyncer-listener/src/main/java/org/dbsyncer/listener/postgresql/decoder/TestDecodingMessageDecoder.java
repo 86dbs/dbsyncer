@@ -81,11 +81,8 @@ public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
         switch (eventType) {
             case ConnectorConstant.OPERTION_UPDATE:
             case ConnectorConstant.OPERTION_INSERT:
-                event = new RowChangedEvent(table, eventType, Collections.EMPTY_LIST, data);
-                break;
-
             case ConnectorConstant.OPERTION_DELETE:
-                event = new RowChangedEvent(table, eventType, data, Collections.EMPTY_LIST);
+                event = new RowChangedEvent(table, eventType, data);
                 break;
 
             default:

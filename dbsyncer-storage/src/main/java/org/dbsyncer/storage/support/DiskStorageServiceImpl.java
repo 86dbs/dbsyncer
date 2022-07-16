@@ -16,7 +16,7 @@ import org.dbsyncer.storage.lucene.Shard;
 import org.dbsyncer.storage.query.Option;
 import org.dbsyncer.storage.query.Param;
 import org.dbsyncer.storage.query.Query;
-import org.dbsyncer.storage.util.ParamsUtil;
+import org.dbsyncer.storage.util.DocumentUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,14 +99,14 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
     @Override
     public void insert(StorageEnum type, String collection, Map params) throws IOException {
         createShardIfNotExist(collection);
-        Document doc = ParamsUtil.convertConfig2Doc(params);
+        Document doc = DocumentUtil.convertConfig2Doc(params);
         map.get(collection).insert(doc);
     }
 
     @Override
     public void update(StorageEnum type, String collection, Map params) throws IOException {
         createShardIfNotExist(collection);
-        Document doc = ParamsUtil.convertConfig2Doc(params);
+        Document doc = DocumentUtil.convertConfig2Doc(params);
         IndexableField field = doc.getField(ConfigConstant.CONFIG_MODEL_ID);
         map.get(collection).update(new Term(ConfigConstant.CONFIG_MODEL_ID, field.stringValue()), doc);
     }
@@ -131,14 +131,14 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
     @Override
     public void insertLog(StorageEnum type, String collection, Map<String, Object> params) throws IOException {
         createShardIfNotExist(collection);
-        Document doc = ParamsUtil.convertLog2Doc(params);
+        Document doc = DocumentUtil.convertLog2Doc(params);
         map.get(collection).insert(doc);
     }
 
     @Override
     public void insertData(StorageEnum type, String collection, List<Map> list) throws IOException {
         createShardIfNotExist(collection);
-        List<Document> docs = list.stream().map(r -> ParamsUtil.convertData2Doc(r)).collect(Collectors.toList());
+        List<Document> docs = list.stream().map(r -> DocumentUtil.convertData2Doc(r)).collect(Collectors.toList());
         map.get(collection).insertBatch(docs);
     }
 

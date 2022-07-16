@@ -28,7 +28,7 @@ public class DBChangeNotificationTest {
 
         final DBChangeNotification dcn = new DBChangeNotification(username, password, url);
         dcn.addRowEventListener((e) ->
-            logger.info("{}触发{}, before:{}, after:{}", e.getSourceTableName(), e.getEvent(), e.getBeforeData(), e.getAfterData())
+            logger.info("{}触发{}, data:{}", e.getSourceTableName(), e.getEvent(), e.getDataList())
         );
         dcn.start();
 
