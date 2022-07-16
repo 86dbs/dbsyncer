@@ -21,7 +21,7 @@ import org.dbsyncer.storage.constant.BinlogConstant;
 import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
 import org.dbsyncer.storage.lucene.Shard;
 import org.dbsyncer.storage.query.Option;
-import org.dbsyncer.storage.util.ParamsUtil;
+import org.dbsyncer.storage.util.DocumentUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -128,7 +128,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
             while (!queue.isEmpty() && count < binlogRecorderConfig.getBatchCount()) {
                 BinlogMessage message = queue.poll();
                 if (null != message) {
-                    tasks.add(ParamsUtil.convertBinlog2Doc(String.valueOf(snowflakeIdWorker.nextId()), BinlogConstant.READY, new BytesRef(message.toByteArray()), now));
+                    tasks.add(DocumentUtil.convertBinlog2Doc(String.valueOf(snowflakeIdWorker.nextId()), BinlogConstant.READY, new BytesRef(message.toByteArray()), now));
                 }
                 count++;
             }
@@ -219,7 +219,7 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
                     Message message = deserialize(newId, BinlogMessage.parseFrom(ref.bytes));
                     if (null != message) {
                         messages.add(message);
-                        updateDocs.add(ParamsUtil.convertBinlog2Doc(newId, BinlogConstant.PROCESSING, ref, Instant.now().toEpochMilli()));
+                        updateDocs.add(DocumentUtil.convertBinlog2Doc(newId, BinlogConstant.PROCESSING, ref, Instant.now().toEpochMilli()));
                     }
                 } catch (InvalidProtocolBufferException e) {
                     logger.error(e.getMessage());

@@ -42,8 +42,9 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2019/11/19 22:07
  */
-public abstract class ParamsUtil {
-    private ParamsUtil(){}
+public abstract class DocumentUtil {
+    private DocumentUtil() {
+    }
 
     public static Document convertConfig2Doc(Map params) {
         Assert.notNull(params, "Params can not be null.");

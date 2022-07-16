@@ -16,7 +16,7 @@ import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
 import org.dbsyncer.storage.lucene.Shard;
 import org.dbsyncer.storage.query.Option;
 import org.dbsyncer.storage.util.BinlogMessageUtil;
-import org.dbsyncer.storage.util.ParamsUtil;
+import org.dbsyncer.storage.util.DocumentUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -88,7 +88,7 @@ public class ShardBinlogTest {
             String id = (String) row.get(BinlogConstant.BINLOG_ID);
             BytesRef ref = (BytesRef) row.get(BinlogConstant.BINLOG_CONTENT);
             try {
-                shard.update(new Term(BinlogConstant.BINLOG_ID, String.valueOf(id)), ParamsUtil.convertBinlog2Doc(id, BinlogConstant.PROCESSING, ref, updateTime));
+                shard.update(new Term(BinlogConstant.BINLOG_ID, String.valueOf(id)), DocumentUtil.convertBinlog2Doc(id, BinlogConstant.PROCESSING, ref, updateTime));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -102,7 +102,7 @@ public class ShardBinlogTest {
         while (i < size) {
             BinlogMessage message = genMessage("123456", i + "");
             BytesRef bytes = new BytesRef(message.toByteArray());
-            list.add(ParamsUtil.convertBinlog2Doc(String.valueOf(i), BinlogConstant.READY, bytes, now));
+            list.add(DocumentUtil.convertBinlog2Doc(String.valueOf(i), BinlogConstant.READY, bytes, now));
 
             if (i % 1000 == 0) {
                 shard.insertBatch(list);
