@@ -8,7 +8,6 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.storage.binlog.AbstractBinlogRecorder;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.binlog.proto.EventEnum;
@@ -31,7 +30,10 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -39,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  * @version 1.0.0
  * @date 2022/6/18 23:46
  */
-public class ShardBinlogTest extends AbstractBinlogRecorder {
+public class ShardBinlogTest {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -97,7 +99,7 @@ public class ShardBinlogTest extends AbstractBinlogRecorder {
         List<Document> list = new ArrayList<>();
         long now = Instant.now().toEpochMilli();
         int size = i + 5;
-        while (i < size){
+        while (i < size) {
             BinlogMessage message = genMessage("123456", i + "");
             BytesRef bytes = new BytesRef(message.toByteArray());
             list.add(ParamsUtil.convertBinlog2Doc(String.valueOf(i), BinlogConstant.READY, bytes, now));
@@ -180,21 +182,6 @@ public class ShardBinlogTest extends AbstractBinlogRecorder {
 
         BinlogMessage build = BinlogMessage.newBuilder().setTableGroupId(tableGroupId).setEvent(EventEnum.UPDATE).setData(builder.build()).build();
         return build;
-    }
-
-    @Override
-    public Queue getQueue() {
-        return null;
-    }
-
-    @Override
-    public int getQueueCapacity() {
-        return 0;
-    }
-
-    @Override
-    protected Object deserialize(String messageId, BinlogMessage message) {
-        return null;
     }
 
     private void check() throws IOException {

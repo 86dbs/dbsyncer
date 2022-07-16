@@ -5,7 +5,7 @@ import oracle.sql.BLOB;
 import oracle.sql.CLOB;
 import oracle.sql.TIMESTAMP;
 import org.apache.commons.io.IOUtils;
-import org.dbsyncer.storage.binlog.impl.BinlogColumnValue;
+import org.dbsyncer.storage.binlog.BinlogColumnValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
