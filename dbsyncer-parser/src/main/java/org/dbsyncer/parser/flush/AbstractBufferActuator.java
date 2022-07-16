@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.flush;
 
+import org.dbsyncer.common.config.BufferActuatorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.slf4j.Logger;
@@ -33,11 +34,8 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     @Autowired
     private ScheduledTaskService scheduledTaskService;
 
-    private static final int CAPACITY = 10_0000;
-
-    private static final int MAX_BATCH_COUNT = 2000;
-
-    private static final int PERIOD = 300;
+    @Autowired
+    private BufferActuatorConfig bufferActuatorConfig;
 
     private Queue<Request> buffer;
 
@@ -45,13 +43,12 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     private volatile boolean running;
 
-    private Class<Response> responseClazz;
+    private final Class<Response> responseClazz = (Class<Response>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[1];
 
     @PostConstruct
     private void init() {
-        responseClazz = (Class<Response>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[1];
         buffer = new LinkedBlockingQueue(getQueueCapacity());
-        scheduledTaskService.start(PERIOD, this);
+        scheduledTaskService.start(bufferActuatorConfig.getPeriodMillisecond(), this);
     }
 
     /**
@@ -84,7 +81,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     @Override
     public int getQueueCapacity() {
-        return CAPACITY;
+        return bufferActuatorConfig.getQueueCapacity();
     }
 
     @Override
@@ -120,7 +117,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
         if (!queue.isEmpty()) {
             AtomicLong batchCounter = new AtomicLong();
             final Map<String, BufferResponse> map = new LinkedHashMap<>();
-            while (!queue.isEmpty() && batchCounter.get() < MAX_BATCH_COUNT) {
+            while (!queue.isEmpty() && batchCounter.get() < bufferActuatorConfig.getBatchCount()) {
                 Request poll = queue.poll();
                 String key = getPartitionKey(poll);
                 if (!map.containsKey(key)) {

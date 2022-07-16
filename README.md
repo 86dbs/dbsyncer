@@ -27,7 +27,7 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
                 <td>Oracle</td>
                 <td>✔</td>
                 <td>✔</td>
-                <td>10g以上</td>
+                <td>Oracle 10gR2 -11g</td>
             </tr>
             <tr>
                 <td>SqlServer</td>
@@ -100,10 +100,15 @@ replicate-do-db=test
 
 ##### Oracle
 * CDN注册订阅。监听增删改事件，得到rowid，根据rowid执行SQL查询，得到变化数据。
-> 授予账号监听权限, 同时要求目标源表必须定义一个长度为18的varchar字段，通过接收rowid值实现增删改操作。
+> 1、授予账号监听权限, 同时要求目标源表必须定义一个长度为18的varchar字段，通过接收rowid值实现增删改操作。
 ```roomsql
 grant change notification to 你的账号
 ```
+> 2、账号必须是监听表的OWNER
+```roomsql
+SELECT OBJECT_ID, OBJECT_NAME, OWNER FROM ALL_OBJECTS WHERE OBJECT_TYPE = 'TABLE' AND OWNER='你的账号';
+```
+![DCN账号](https://images.gitee.com/uploads/images/2022/0717/001127_fb4049b6_376718.png "DCN账号.png")
 
 ##### SqlServer
 * SQL Server 2008提供了内建的方法变更数据捕获（Change Data Capture 即CDC）以实现异步跟踪用户表的数据修改。

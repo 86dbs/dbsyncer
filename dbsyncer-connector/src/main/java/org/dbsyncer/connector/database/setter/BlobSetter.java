@@ -16,13 +16,15 @@ public class BlobSetter extends AbstractSetter<Blob> {
 
     @Override
     protected void setIfValueTypeNotMatch(PreparedFieldMapper mapper, PreparedStatement ps, int i, int type, Object val) throws SQLException {
-        // 存放jpg等文件
         if (val instanceof Blob) {
             Blob blob = (Blob) val;
             ps.setBlob(i, blob);
             return;
         }
+        if (val instanceof byte[]) {
+            ps.setBlob(i, mapper.getBlob((byte[]) val));
+            return;
+        }
         throw new ConnectorException(String.format("BlobSetter can not find type [%s], val [%s]", type, val));
     }
-
 }

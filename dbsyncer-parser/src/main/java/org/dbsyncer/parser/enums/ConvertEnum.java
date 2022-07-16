@@ -43,6 +43,10 @@ public enum ConvertEnum {
      */
     LONG_TO_TIMESTAMP("LONG_TO_TIMESTAMP", "Long转Timestamp", 0, new LongToTimestampHandler()),
     /**
+     * String转Timestamp
+     */
+    STRING_TO_TIMESTAMP("STRING_TO_TIMESTAMP", "String转Timestamp", 0, new StringToTimestampHandler()),
+    /**
      * Byte[]转String
      */
     BYTES_TO_STRING("BYTES_TO_STRING", "Byte[]转String", 0, new BytesToStringHandler()),

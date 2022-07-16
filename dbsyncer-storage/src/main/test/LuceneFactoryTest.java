@@ -22,7 +22,7 @@ import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.lucene.Shard;
 import org.dbsyncer.storage.query.Option;
-import org.dbsyncer.storage.util.ParamsUtil;
+import org.dbsyncer.storage.util.DocumentUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,7 +68,7 @@ public class LuceneFactoryTest {
                     // 模拟操作
                     System.out.println(String.format("%s:%s", Thread.currentThread().getName(), k));
 
-                    Document data = ParamsUtil.convertData2Doc(createMap(k));
+                    Document data = DocumentUtil.convertData2Doc(createMap(k));
                     //IndexableField field = data.getField(ConfigConstant.CONFIG_MODEL_ID);
                     //shard.update(new Term(ConfigConstant.CONFIG_MODEL_ID, field.stringValue()), data);
                     shard.insert(data);
