@@ -1,13 +1,14 @@
-package org.dbsyncer.biz.checker.impl.projectgroup;
+package org.dbsyncer.biz.checker.impl.group;
 
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.ProjectGroup;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,8 +25,8 @@ import static org.dbsyncer.storage.constant.ConfigConstant.PROJECT_GROUP;
 @Component
 public class ProjectGroupChecker extends AbstractChecker {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
+    @Autowired
+    private Manager manager;
 
     /**
      * 新增配置
@@ -44,7 +45,6 @@ public class ProjectGroupChecker extends AbstractChecker {
         projectGroup.setType(PROJECT_GROUP);
         projectGroup.setName(name);
 
-
         // 修改基本配置
         this.modifyConfigModel(projectGroup, params);
 
@@ -60,15 +60,10 @@ public class ProjectGroupChecker extends AbstractChecker {
     @Override
     public ConfigModel checkEditConfigModel(Map<String, String> params) {
         String id = params.get(CONFIG_MODEL_ID);
-        String mappingIds = params.get("mappingIds");
-        String connectorIds = params.get("connectorIds");
-        String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
-        ProjectGroup projectGroup = new ProjectGroup();
-        projectGroup.setMappingIds(StringUtil.isBlank(mappingIds) ? Collections.emptyList() : Arrays.asList(mappingIds.split(",")));
-        projectGroup.setConnectorIds(StringUtil.isBlank(connectorIds) ? Collections.emptyList() : Arrays.asList(connectorIds.split(",")));
-        projectGroup.setType(PROJECT_GROUP);
-        projectGroup.setName(name);
-        projectGroup.setId(id);
+        ProjectGroup projectGroup = manager.getProjectGroup(id);
+        Assert.notNull(projectGroup, "Can not find project group.");
+
+        // TODO
 
         // 修改基本配置
         this.modifyConfigModel(projectGroup, params);

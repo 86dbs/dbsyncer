@@ -2,50 +2,50 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<!-- Connector Mapping -->
+<!-- ProjectGroup Connector Mapping -->
 <div class="container-fluid">
     <div class="row">
         <form class="form-horizontal" role="form" method="post">
-            <!-- 项目组管理 -->
+            <!-- 分组管理 -->
             <div class="col-md-12">
-                <!-- 项目组开始位置 -->
+                <!-- 分组开始位置 -->
                 <div class="form-group">
                     <div class="col-md-12">
-                        <button type="button" class="btn btn-primary" id="addGroupBtn">
-                            <span class="fa fa-plus"></span>添加项目组([[${groups?.size()} ?: 0]])
+                        <button type="button" class="btn btn-primary" id="addProjectGroupBtn">
+                            <span class="fa fa-plus"></span>添加分组([[${projectGroups?.size()} ?: 0]])
                         </button>
                     </div>
                 </div>
-                <!-- 显示项目组 -->
-                <div class="row" th:if="${groups?.size() gt 0}">
+                <!-- 显示分组 -->
+                <div class="row" th:if="${projectGroups?.size() gt 0}">
                     <div class="col-md-12">
                         <div class="panel panel-default">
                             <div class="panel-body">
                                 <div class="row">
                                     <div class="col-md-4">
-                                        <select id="group" name="group" class="form-control select-control">
+                                        <select id="projectGroup" name="projectGroup"
+                                                class="form-control select-control">
                                             <option value="" th:text="全部" selected/>
-                                            <option th:each="t,s:${groups}" th:value="${t?.id}" th:text="${t?.name}" />
+                                            <option th:each="t,s:${projectGroups}" th:value="${t?.id}"
+                                                    th:text="${t?.name}"/>
                                         </select>
-                                         <input id="selectedGroup" type="hidden" th:value="${selectedGroup}"/>
                                     </div>
                                     <div class="col-md-4">
-                                        <button type="button" class="btn btn-primary" id="editGroupBtn">
-                                            <span class="fa fa-pencil"></span>编辑项目组
+                                        <button type="button" class="btn btn-primary" id="editProjectGroupBtn">
+                                            <span class="fa fa-pencil"></span>修改
                                         </button>
-                                        <button type="button" class="btn btn-primary" id="delGroupBtn">
-                                            <span class="fa fa-times"></span>删除项目组
+                                        <button type="button" class="btn btn-primary" id="removeProjectGroupBtn">
+                                            <span class="fa fa-times"></span>删除
                                         </button>
                                     </div>
-                                    <div class="col-md-4">
-
-                                    </div>
+                                    <div class="col-md-4"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
             <!-- 连接管理 -->
             <div class="col-md-12">
                 <!-- 连接开始位置 -->

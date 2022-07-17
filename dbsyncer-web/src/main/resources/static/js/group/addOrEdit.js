@@ -6,7 +6,7 @@ function submit(data) {
     if (data["id"]) {
         doPoster("/projectGroup/edit", data, function (data) {
             if (data.success == true) {
-                bootGrowl("修改项目组成功!", "success");
+                bootGrowl("修改分组成功!", "success");
                 backIndexPage();
             } else {
                 bootGrowl(data.resultValue, "danger");
@@ -15,7 +15,7 @@ function submit(data) {
     } else {
         doPoster("/projectGroup/add", data, function (data) {
             if (data.success == true) {
-                bootGrowl("新增项目组成功!", "success");
+                bootGrowl("新增分组成功!", "success");
                 backIndexPage();
             } else {
                 bootGrowl(data.resultValue, "danger");

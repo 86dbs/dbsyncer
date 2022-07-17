@@ -1,33 +1,29 @@
-// 添加项目组
-function bindAddGroup() {
-    $("#addGroupBtn").click(function () {
+// 添加分组
+function bindAddProjectGroup() {
+    $("#addProjectGroupBtn").click(function () {
         doLoader("/projectGroup/page/add");
     });
 }
-// 编辑项目组
-function bindEditGroup() {
-    $("#editGroupBtn").click(function () {
-        var $id = $('#group').val();
-        if (isBlank($id)) {
-            bootGrowl("请选择有效项目组", "danger");
-            return false;
+
+// 修改分组
+function bindEditProjectGroup($projectGroupSelect) {
+    $("#editProjectGroupBtn").click(function () {
+        var $id = $projectGroupSelect.selectpicker('val');
+        if (!isBlank($id)) {
+            doLoader('/projectGroup/page/edit?id=' + $id);
+            return;
         }
-        doGetter('/projectGroup/get', {id: $id}, function (data) {
-            if (data.success) {
-                doLoader('/projectGroup/page/edit?id=' + $id);
-            } else {
-                bootGrowl(data.resultValue, 'danger');
-            }
-        });
+        bootGrowl("请选择有效分组", "danger");
     });
 }
-// 删除项目组
-function bindRemoveGroup() {
-    $("#delGroupBtn").click(function () {
-        var $id = $('#group').val();
+
+// 删除分组
+function bindRemoveProjectGroup($projectGroupSelect) {
+    $("#removeProjectGroupBtn").click(function () {
+        var $id = $projectGroupSelect.selectpicker('val');
         if (isBlank($id)) {
-            bootGrowl("请选择有效项目组", "danger");
-            return false;
+            bootGrowl("请选择分组", "danger");
+            return;
         }
         BootstrapDialog.show({
             title: "警告",
@@ -45,7 +41,6 @@ function bindRemoveGroup() {
                         } else {
                             bootGrowl(data.resultValue, "danger");
                         }
-                        $.cookie("groupID", '');
                     });
                     dialog.close();
                 }
@@ -58,21 +53,14 @@ function bindRemoveGroup() {
         });
     });
 }
-// 项目组筛选
-function bindGroupChange() {
-    var $group = $('#group');
-    // 绑定选择事件
-    $group.on('change, changed.bs.select', function () {
-        var groupID = $(this).val();
-        $.cookie("groupID", groupID);
-        searchByGroup(groupID);
-    });
-}
 
-// 根据项目组查询
-function searchByGroup(groupID) {
-    $.loadingT(true);
-    doLoader("/index?projectGroupId=" + groupID);
+// 给分组下拉绑定事件
+function bindProjectGroupSelect($projectGroupSelect) {
+    // 绑定选择事件
+    $projectGroupSelect.on('change, changed.bs.select', function () {
+        $.loadingT(true);
+        doLoader("/index?projectGroupId=" + $(this).val());
+    });
 }
 
 // 添加连接
@@ -192,21 +180,13 @@ function doPost(url) {
 }
 
 $(function () {
-    $(".select-control").selectpicker({
-        "style":'dbsyncer_btn-info',
-        "title":"全部",
-        "actionsBox":true,
-        "liveSearch":true,
-        "noneResultsText":"没有找到 {0}",
-        "selectedTextFormat":"count > 10"
-    });
-    // 初始化group
-    $('#group').selectpicker('val', $('#selectedGroup').val());
-
-    bindAddGroup();
-    bindEditGroup();
-    bindRemoveGroup();
-    bindGroupChange();
+    // 初始化select插件
+    initSelectIndex($(".select-control"), 1);
+    bindAddProjectGroup();
+    var $projectGroupSelect = $("#projectGroup");
+    bindEditProjectGroup($projectGroupSelect);
+    bindRemoveProjectGroup($projectGroupSelect);
+    bindProjectGroupSelect($projectGroupSelect);
 
     bindAddConnector();
     bindEditConnector();

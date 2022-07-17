@@ -15,7 +15,6 @@ $.loadingT = {
 		var content = '<i class="fa fa-spin fa-3x fa-refresh"></i>';
 		var $loadingT = $(".loadingT");
 		$loadingT.html("<div class='loading-indicator' unselectable='on' onselectstart='return false;'>"+title+content+"</div>");
-		// $loadingT.css({ "height":$(document.body).height()+'px' });
 		var $indicato = $(".loading-indicator");
 		$indicato.css({ "margin-top":($(window).height() / 2) -($indicato.height() / 2) });
 	}
@@ -28,7 +27,6 @@ jQuery.extend({
 		if(a){ $(".loadingT").fadeIn(300);}else{$(".loadingT").fadeOut(300);}
 	},
 	resetIndicato:function(){
-		// $(".loadingT").css({ "height":$(document.body).height()+'px' });
 		var $indicato = $(".loading-indicator");
 		$indicato.css({ "margin-top":($(window).height() / 2) -($indicato.height() / 2) });
 	}

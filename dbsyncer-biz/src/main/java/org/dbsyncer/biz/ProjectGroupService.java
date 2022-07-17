@@ -1,12 +1,13 @@
 package org.dbsyncer.biz;
 
+import org.dbsyncer.biz.vo.ProjectGroupVo;
 import org.dbsyncer.parser.model.ProjectGroup;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * 项目组
+ * 分组管理服务
  *
  * @author xinpeng.Fu
  * @version 1.0.0
@@ -15,46 +16,39 @@ import java.util.Map;
 public interface ProjectGroupService {
 
     /**
-     * 新增项目组
+     * 新增分组
      *
      * @param params
      */
     String add(Map<String, String> params);
 
     /**
-     * 修改项目组
+     * 修改分组
      *
      * @param params
      */
     String edit(Map<String, String> params);
 
     /**
-     * 删除项目组
+     * 删除分组
      *
      * @param id
      */
     String remove(String id);
 
     /**
-     * 获取项目组
+     * 获取分组
      *
      * @param id
      * @return
      */
-    ProjectGroup getProjectGroup(String id);
+    ProjectGroupVo getProjectGroup(String id);
 
     /**
-     * 获取所有项目组
+     * 获取所有分组
      *
      * @return
      */
     List<ProjectGroup> getProjectGroupAll();
-
-    /**
-     * 获取项目组详细
-     *
-     * @return
-     */
-    ProjectGroup getProjectGroupDetail(String projectGroupId);
 
 }

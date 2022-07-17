@@ -21,8 +21,7 @@ function bootGrowl(data, type) {
 // 跳转主页
 function backIndexPage() {
     // 加载页面
-    var groupID = isBlank($.cookie("groupID")) ? "" : $.cookie("groupID");
-    doLoader("/index?projectGroupId="+ groupID + "&refresh=" + new Date().getTime());
+    doLoader("/index?refresh=" + new Date().getTime());
 }
 
 // 美化SQL
@@ -89,12 +88,12 @@ $.fn.serializeJson = function () {
 // 全局加载页面
 function doLoader(url){
     // 加载页面
-    $initContainer.load($basePath + url, function (response,status,xhr) {
+    $initContainer.load($basePath + url, function (response, status, xhr) {
         if (status != 'success') {
             bootGrowl(response);
         }
+        $.loadingT(false);
     });
-    $.loadingT(false);
 }
 
 // 异常请求
@@ -154,23 +153,7 @@ function doGetWithoutLoading(url, params, action) {
  *
  */
 function isBlank(str) {
-    return str === undefined || str === null || str === false || str.length === 0 || str.replaceAll(' ', '').length === 0;
-}
-
-/**
- * 移除数组中的空元素
- *
- * @param args 原数组
- *
- * @return Array
- *
-*/
-function filterEmptyElements(args) {
-    if ($.isEmptyObject(args)) {
-        return [];
-    }
-    args = args.filter(e => !isBlank(e));
-    return args;
+    return str === undefined || str === null || str === false || str.length === 0 || str.replace(' ', '').length === 0;
 }
 
 /**
@@ -178,13 +161,10 @@ function filterEmptyElements(args) {
  *
  * @param str 带切分字符
  * @param delimiter 分隔符
- *
  * @return Array
- *
  */
 function splitStrByDelimiter(str, delimiter) {
-    if (isBlank(str)) {
-        return;
+    if (!isBlank(str)) {
+        return str.split(delimiter);
     }
-    return str.split(delimiter);
 }

@@ -5,24 +5,26 @@ import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.ProjectGroupService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.MappingVo;
+import org.dbsyncer.biz.vo.ProjectGroupVo;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.ProjectGroup;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 项目组
+ * 分组
  *
  * @author xinpeng.Fu
  * @version 1.0.0
@@ -30,8 +32,6 @@ import java.util.stream.Collectors;
  **/
 @Service
 public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectGroupService {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private ConnectorService connectorService;
@@ -65,14 +65,49 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
     public String remove(String id) {
         ProjectGroup projectGroup = manager.getProjectGroup(id);
         log(LogType.ConnectorLog.DELETE, projectGroup);
-        Assert.notNull(projectGroup, "该项目组已被删除");
+        Assert.notNull(projectGroup, "该分组已被删除");
         manager.removeProjectGroup(id);
-        return "删除项目组成功!";
+        return "删除分组成功!";
     }
 
     @Override
-    public ProjectGroup getProjectGroup(String id) {
-        return StringUtil.isNotBlank(id) ? manager.getProjectGroup(id) : null;
+    public ProjectGroupVo getProjectGroup(String id) {
+        ProjectGroupVo vo = new ProjectGroupVo();
+        if (StringUtil.isBlank(id)) {
+            vo.setConnectors(connectorService.getConnectorAll());
+            vo.setMappings(mappingService.getMappingAll());
+            return vo;
+        }
+
+        ProjectGroup projectGroup = manager.getProjectGroup(id);
+        Assert.notNull(projectGroup, "该分组已被删除");
+
+        // 过滤连接器
+        List<String> connectorIds = projectGroup.getConnectorIds();
+        if (!CollectionUtils.isEmpty(connectorIds)) {
+            Set<String> connectorIdSet = new HashSet<>(connectorIds);
+            List<Connector> connectors = connectorService.getConnectorAll();
+            if (!CollectionUtils.isEmpty(connectors)) {
+                vo.setConnectors(connectors.stream()
+                        .filter((connector -> connectorIdSet.contains(connector.getId())))
+                        .collect(Collectors.toList())
+                );
+            }
+        }
+
+        // 过滤驱动
+        List<String> mappingIds = projectGroup.getMappingIds();
+        if (!CollectionUtils.isEmpty(mappingIds)) {
+            Set<String> mappingIdSet = new HashSet<>(mappingIds);
+            List<MappingVo> mappings = mappingService.getMappingAll();
+            if (!CollectionUtils.isEmpty(mappings)) {
+                vo.setMappings(mappings.stream()
+                        .filter((mapping -> mappingIdSet.contains(mapping.getId())))
+                        .collect(Collectors.toList())
+                );
+            }
+        }
+        return vo;
     }
 
     @Override
@@ -81,35 +116,4 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
         return list;
     }
 
-    @Override
-    public ProjectGroup getProjectGroupDetail(String projectGroupId) {
-        ProjectGroup projectGroup = this.getProjectGroup(projectGroupId);
-        if(null == projectGroup){
-            return null;
-        }
-        // 过滤出已经选择的
-        List<String> connectorIds = projectGroup.getConnectorIds();
-        if(CollectionUtils.isEmpty(connectorIds)){
-            projectGroup.setConnectors(Collections.emptyList());
-        }else{
-            Set<String> connectorIdSet = new HashSet<>(connectorIds);
-            List<Connector> connectors = connectorService.getConnectorAll();
-            projectGroup.setConnectors(connectors.stream()
-                    .filter((connector -> connectorIdSet.contains(connector.getId())))
-                    .collect(Collectors.toList())
-            );
-        }
-        List<String> mappingIds = projectGroup.getMappingIds();
-        if(CollectionUtils.isEmpty(mappingIds)){
-            projectGroup.setMappings(Collections.emptyList());
-        }else{
-            Set<String> mappingIdSet = new HashSet<>(mappingIds);
-            List<MappingVo> mappings = mappingService.getMappingAll();
-            projectGroup.setMappings(mappings.stream()
-                    .filter((mapping -> mappingIdSet.contains(mapping.getId())))
-                    .collect(Collectors.toList())
-            );
-        }
-        return projectGroup;
-    }
 }
