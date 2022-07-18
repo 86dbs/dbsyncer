@@ -2,10 +2,7 @@ package org.dbsyncer.manager.config;
 
 import org.dbsyncer.manager.template.Callback;
 import org.dbsyncer.parser.Parser;
-import org.dbsyncer.parser.model.Config;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.*;
 
 public class PreloadCallBack implements Callback {
 
@@ -38,4 +35,7 @@ public class PreloadCallBack implements Callback {
         return parser.parseObject(json, Config.class);
     }
 
+    public Object parseProjectGroup() {
+        return parser.parseObject(json, ProjectGroup.class);
+    }
 }

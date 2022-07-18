@@ -1,3 +1,68 @@
+// 添加分组
+function bindAddProjectGroup() {
+    $("#addProjectGroupBtn").click(function () {
+        doLoader("/projectGroup/page/add");
+    });
+}
+
+// 修改分组
+function bindEditProjectGroup($projectGroupSelect) {
+    $("#editProjectGroupBtn").click(function () {
+        var $id = $projectGroupSelect.selectpicker('val');
+        if (!isBlank($id)) {
+            doLoader('/projectGroup/page/edit?id=' + $id);
+            return;
+        }
+        bootGrowl("请选择分组", "danger");
+    });
+}
+
+// 删除分组
+function bindRemoveProjectGroup($projectGroupSelect) {
+    $("#removeProjectGroupBtn").click(function () {
+        var $id = $projectGroupSelect.selectpicker('val');
+        if (isBlank($id)) {
+            bootGrowl("请选择分组", "danger");
+            return;
+        }
+        BootstrapDialog.show({
+            title: "提示",
+            type: BootstrapDialog.TYPE_INFO,
+            message: "确认删除分组？",
+            size: BootstrapDialog.SIZE_NORMAL,
+            buttons: [{
+                label: "确定",
+                action: function (dialog) {
+                    doPoster('/projectGroup/remove',{id: $id}, function (data) {
+                        if (data.success == true) {
+                            // 显示主页
+                            backIndexPage();
+                            bootGrowl(data.resultValue, "success");
+                        } else {
+                            bootGrowl(data.resultValue, "danger");
+                        }
+                    });
+                    dialog.close();
+                }
+            }, {
+                label: "取消",
+                action: function (dialog) {
+                    dialog.close();
+                }
+            }]
+        });
+    });
+}
+
+// 给分组下拉绑定事件
+function bindProjectGroupSelect($projectGroupSelect) {
+    // 绑定选择事件
+    $projectGroupSelect.on('change, changed.bs.select', function () {
+        $.loadingT(true);
+        doLoader("/index?projectGroupId=" + $(this).val());
+    });
+}
+
 // 添加连接
 function bindAddConnector() {
     // 绑定添加连接按钮点击事件
@@ -50,7 +115,7 @@ function bindConnectorDropdownMenu() {
         BootstrapDialog.show({
             title: "警告",
             type: BootstrapDialog.TYPE_DANGER,
-            message: "确认删除？",
+            message: "确认删除连接？",
             size: BootstrapDialog.SIZE_NORMAL,
             buttons: [{
                 label: "确定",
@@ -115,6 +180,13 @@ function doPost(url) {
 }
 
 $(function () {
+    // 初始化select插件
+    initSelectIndex($(".select-control"), 1);
+    bindAddProjectGroup();
+    var $projectGroupSelect = $("#projectGroup");
+    bindEditProjectGroup($projectGroupSelect);
+    bindRemoveProjectGroup($projectGroupSelect);
+    bindProjectGroupSelect($projectGroupSelect);
 
     bindAddConnector();
     bindEditConnector();

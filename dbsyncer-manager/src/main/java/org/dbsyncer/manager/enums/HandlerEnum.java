@@ -82,6 +82,16 @@ public enum HandlerEnum {
         protected Object preload(PreloadCallBack preloadCallBack) {
             return preloadCallBack.parseConfig();
         }
+    }),
+
+    /**
+     * 预加载ProjectGroup
+     */
+    PRELOAD_PROJECT_GROUP(ConfigConstant.PROJECT_GROUP, true, new AbstractPreloadHandler(){
+        @Override
+        protected Object preload(PreloadCallBack preloadCallBack) {
+            return preloadCallBack.parseProjectGroup();
+        }
     });
 
     private String modelType;
