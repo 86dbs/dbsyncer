@@ -67,6 +67,35 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     private Map<String, Puller> map;
 
     @Override
+    public String addProjectGroup(ConfigModel model) {
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD));
+    }
+
+    @Override
+    public String editProjectGroup(ConfigModel model) {
+        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT));
+    }
+
+    @Override
+    public ProjectGroup getProjectGroup(String id) {
+        return operationTemplate.queryObject(ProjectGroup.class, id);
+    }
+
+    @Override
+    public void removeProjectGroup(String id) {
+        operationTemplate.remove(new OperationConfig(id));
+    }
+
+    @Override
+    public List<ProjectGroup> getProjectGroupAll() {
+        ProjectGroup projectGroup = new ProjectGroup();
+        projectGroup.setType(ConfigConstant.PROJECT_GROUP);
+        QueryConfig<ProjectGroup> queryConfig = new QueryConfig<>(projectGroup);
+        List<ProjectGroup> groups = operationTemplate.queryAll(queryConfig);
+        return groups;
+    }
+
+    @Override
     public ConnectorMapper connect(ConnectorConfig config) {
         return parser.connect(config);
     }

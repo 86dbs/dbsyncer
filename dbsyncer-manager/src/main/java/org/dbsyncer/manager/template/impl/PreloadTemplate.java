@@ -101,7 +101,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         reload(map, HandlerEnum.PRELOAD_MAPPING);
         // Load metas
         reload(map, HandlerEnum.PRELOAD_META);
-
+        // Load projectGroups
+        reload(map, HandlerEnum.PRELOAD_PROJECT_GROUP);
         launch();
     }
 
