@@ -39,7 +39,6 @@ public class ProjectGroupController extends BaseController {
 
     @GetMapping("/page/add")
     public String pageAdd(HttpServletRequest request, ModelMap model) {
-        model.put("projectGroup", projectGroupService.getProjectGroup(null));
         model.put("connectors", connectorService.getConnectorAll());
         model.put("mappings", mappingService.getMappingAll());
         return "group/save";
