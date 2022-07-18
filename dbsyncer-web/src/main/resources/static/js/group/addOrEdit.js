@@ -24,36 +24,30 @@ function submit(data) {
     }
 }
 
-function initSelectByValueOrDefault($select, $selectedValue) {
-
-    $.each($select, function () {
-        var values = splitStrByDelimiter($selectedValue, ",");
-        $(this).selectpicker('val', values);
-    });
-}
-
 $(function () {
     // 初始化select插件
     initSelect($(".select-control-table"));
 
-    initSelectByValueOrDefault($("#connectorIds"), $("#selectedConnectors").val());
-    initSelectByValueOrDefault($("#mappingIds"), $("#selectedMappings").val());
+    $("#connectorIds").selectpicker('val', splitStrByDelimiter($("#selectedConnectorIds").val(), ","));
+    $("#mappingIds").selectpicker('val', splitStrByDelimiter($("#selectedMappingIds").val(), ","));
 
     //保存
-    $("#groupSubmitBtn").click(function () {
-        var $form = $("#groupAddForm");
+    $("#projectGroupSubmitBtn").click(function () {
+        var $form = $("#projectGroupAddForm");
         if ($form.formValidate() == true) {
             var data = $form.serializeJson();
-            var connectorIds = data['connectorIds'];
-            var mappingIds = data['mappingIds'];
-            data['connectorIds'] = (connectorIds instanceof Array) ? connectorIds.join(',') : connectorIds;
-            data['mappingIds'] = (mappingIds instanceof Array) ? mappingIds.join(',') : mappingIds;
+            if (data.connectorIds instanceof Array) {
+                data.connectorIds = data.connectorIds.join('|');
+            }
+            if (data.mappingIds instanceof Array) {
+                data.mappingIds = data.mappingIds.join('|');
+            }
             submit(data);
         }
     });
 
     //返回
-    $("#groupBackBtn").click(function () {
+    $("#projectGroupBackBtn").click(function () {
         backIndexPage();
     });
 })

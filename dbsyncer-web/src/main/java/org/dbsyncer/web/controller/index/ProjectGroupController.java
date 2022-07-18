@@ -29,16 +29,17 @@ public class ProjectGroupController extends BaseController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
+    private ProjectGroupService projectGroupService;
+
+    @Autowired
     private ConnectorService connectorService;
 
     @Autowired
     private MappingService mappingService;
 
-    @Autowired
-    private ProjectGroupService projectGroupService;
-
     @GetMapping("/page/add")
     public String pageAdd(HttpServletRequest request, ModelMap model) {
+        model.put("projectGroup", projectGroupService.getProjectGroup(null));
         model.put("connectors", connectorService.getConnectorAll());
         model.put("mappings", mappingService.getMappingAll());
         return "group/save";
@@ -46,18 +47,14 @@ public class ProjectGroupController extends BaseController {
 
     @GetMapping("/page/edit")
     public String pageEdit(HttpServletRequest request, ModelMap model, String id) {
-        ProjectGroupVo projectGroup = projectGroupService.getProjectGroup(id);
-        model.put("projectGroup", projectGroup);
+        model.put("projectGroup", projectGroupService.getProjectGroup(id));
         model.put("connectors", connectorService.getConnectorAll());
         model.put("mappings", mappingService.getMappingAll());
         return "group/save";
     }
 
     /**
-     * 参数：
-     * name(必)
-     * mappingIds
-     * connectorIds
+     * 参数： name(必) mappingIds connectorIds
      *
      * @param request
      * @return org.dbsyncer.biz.vo.RestResult
@@ -77,11 +74,7 @@ public class ProjectGroupController extends BaseController {
     }
 
     /**
-     * 参数：
-     * id(必)
-     * name(必)
-     * mappingIds
-     * connectorIds
+     * 参数： id(必) name(必) mappingIds connectorIds
      *
      * @param request
      * @return org.dbsyncer.biz.vo.RestResult
@@ -101,8 +94,7 @@ public class ProjectGroupController extends BaseController {
     }
 
     /**
-     * 参数：
-     * id(必)
+     * 参数： id(必)
      *
      * @param request
      * @return org.dbsyncer.biz.vo.RestResult

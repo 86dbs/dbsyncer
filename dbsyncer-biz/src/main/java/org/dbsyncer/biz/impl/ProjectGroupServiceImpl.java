@@ -13,14 +13,12 @@ import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.ProjectGroup;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -81,6 +79,9 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
 
         ProjectGroup projectGroup = manager.getProjectGroup(id);
         Assert.notNull(projectGroup, "该分组已被删除");
+        BeanUtils.copyProperties(projectGroup, vo);
+        vo.setConnectors(Collections.EMPTY_LIST);
+        vo.setMappings(Collections.EMPTY_LIST);
 
         // 过滤连接器
         List<String> connectorIds = projectGroup.getConnectorIds();
@@ -112,8 +113,7 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
 
     @Override
     public List<ProjectGroup> getProjectGroupAll() {
-        List<ProjectGroup> list = manager.getProjectGroupAll();
-        return list;
+        return manager.getProjectGroupAll();
     }
 
 }

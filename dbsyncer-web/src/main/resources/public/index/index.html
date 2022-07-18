@@ -26,19 +26,20 @@
                                         <select id="projectGroup" name="projectGroup"
                                                 class="form-control select-control">
                                             <option value="" th:text="全部" selected/>
-                                            <option th:each="t,s:${projectGroups}" th:value="${t?.id}"
-                                                    th:text="${t?.name}"/>
+                                            <option th:each="g,s:${projectGroups}" th:value="${g?.id}" th:text="${g?.name}" th:selected="${g?.id eq projectGroupId}"/>
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
-                                        <button type="button" class="btn btn-primary" id="editProjectGroupBtn">
-                                            <span class="fa fa-pencil"></span>修改
-                                        </button>
-                                        <button type="button" class="btn btn-primary" id="removeProjectGroupBtn">
-                                            <span class="fa fa-times"></span>删除
-                                        </button>
+                                    <div class="col-md-6"></div>
+                                    <div class="col-md-2 text-right">
+                                        <div th:if="${not #strings.isEmpty(projectGroupId) }">
+                                            <button type="button" class="btn btn-primary" id="editProjectGroupBtn">
+                                                <span class="fa fa-pencil"></span>修改
+                                            </button>
+                                            <button type="button" class="btn btn-default" id="removeProjectGroupBtn">
+                                                <span class="fa fa-times"></span>删除
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div class="col-md-4"></div>
                                 </div>
                             </div>
                         </div>
@@ -203,7 +204,7 @@
                                                 <!-- 运行中 -->
                                                 <li th:if="${m?.meta?.state eq 1}" th:url="'/mapping/stop?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-times-circle-o well-sign-red"></i>&nbsp;&nbsp;停止</a></li>
                                                 <!-- 未运行 -->
-                                                <li th:if="${m?.meta?.state ne 1}" th:url="'/mapping/remove?id='+${m?.id}" confirm="true" confirmMessage="确认删除?"><a href="javascript:;"><i class="fa fa-trash well-sign-red"></i>&nbsp;&nbsp;删除</a></li>
+                                                <li th:if="${m?.meta?.state ne 1}" th:url="'/mapping/remove?id='+${m?.id}" confirm="true" confirmMessage="确认删除驱动?"><a href="javascript:;"><i class="fa fa-trash well-sign-red"></i>&nbsp;&nbsp;删除</a></li>
                                             </ul>
                                         </div>
                                     </div>

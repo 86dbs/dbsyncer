@@ -1,6 +1,7 @@
 package org.dbsyncer.biz.checker.impl.group;
 
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -13,9 +14,6 @@ import org.springframework.util.Assert;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-
-import static org.dbsyncer.storage.constant.ConfigConstant.CONFIG_MODEL_ID;
-import static org.dbsyncer.storage.constant.ConfigConstant.PROJECT_GROUP;
 
 /**
  * @author xinpeng.Fu
@@ -36,14 +34,12 @@ public class ProjectGroupChecker extends AbstractChecker {
      */
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
-        String mappingIds = params.get("mappingIds");
-        String connectorIds = params.get("connectorIds");
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         ProjectGroup projectGroup = new ProjectGroup();
-        projectGroup.setMappingIds(StringUtil.isBlank(mappingIds) ? Collections.emptyList() : Arrays.asList(mappingIds.split(",")));
-        projectGroup.setConnectorIds(StringUtil.isBlank(connectorIds) ? Collections.emptyList() : Arrays.asList(connectorIds.split(",")));
-        projectGroup.setType(PROJECT_GROUP);
+        projectGroup.setType(ConfigConstant.PROJECT_GROUP);
         projectGroup.setName(name);
+
+        modifyProjectGroup(projectGroup, params);
 
         // 修改基本配置
         this.modifyConfigModel(projectGroup, params);
@@ -59,15 +55,25 @@ public class ProjectGroupChecker extends AbstractChecker {
      */
     @Override
     public ConfigModel checkEditConfigModel(Map<String, String> params) {
-        String id = params.get(CONFIG_MODEL_ID);
+        String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         ProjectGroup projectGroup = manager.getProjectGroup(id);
         Assert.notNull(projectGroup, "Can not find project group.");
 
-        // TODO
+        modifyProjectGroup(projectGroup, params);
 
         // 修改基本配置
         this.modifyConfigModel(projectGroup, params);
-
         return projectGroup;
     }
+
+    private void modifyProjectGroup(ProjectGroup projectGroup, Map<String, String> params) {
+        String[] connectorIds = StringUtil.split(params.get("connectorIds"), "|");
+        String[] mappingIds = StringUtil.split(params.get("mappingIds"), "|");
+        boolean exist = (connectorIds != null && connectorIds.length > 0) | (mappingIds != null && mappingIds.length > 0);
+        Assert.isTrue(exist, "请选择连接或驱动.");
+
+        projectGroup.setConnectorIds(CollectionUtils.isEmpty(connectorIds) ? Collections.EMPTY_LIST : Arrays.asList(connectorIds));
+        projectGroup.setMappingIds(CollectionUtils.isEmpty(mappingIds) ? Collections.EMPTY_LIST : Arrays.asList(mappingIds));
+    }
+
 }

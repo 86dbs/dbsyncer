@@ -1,6 +1,7 @@
 package org.dbsyncer.biz.vo;
 
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.ProjectGroup;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
  * @version 1.0.0
  * @date 2022/7/18 0:25
  */
-public class ProjectGroupVo {
+public class ProjectGroupVo extends ProjectGroup {
 
     private List<Connector> connectors = new ArrayList<>();
 

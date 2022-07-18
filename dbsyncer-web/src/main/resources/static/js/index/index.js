@@ -13,7 +13,7 @@ function bindEditProjectGroup($projectGroupSelect) {
             doLoader('/projectGroup/page/edit?id=' + $id);
             return;
         }
-        bootGrowl("请选择有效分组", "danger");
+        bootGrowl("请选择分组", "danger");
     });
 }
 
@@ -26,9 +26,9 @@ function bindRemoveProjectGroup($projectGroupSelect) {
             return;
         }
         BootstrapDialog.show({
-            title: "警告",
-            type: BootstrapDialog.TYPE_DANGER,
-            message: "确认删除？",
+            title: "提示",
+            type: BootstrapDialog.TYPE_INFO,
+            message: "确认删除分组？",
             size: BootstrapDialog.SIZE_NORMAL,
             buttons: [{
                 label: "确定",
@@ -115,7 +115,7 @@ function bindConnectorDropdownMenu() {
         BootstrapDialog.show({
             title: "警告",
             type: BootstrapDialog.TYPE_DANGER,
-            message: "确认删除？",
+            message: "确认删除连接？",
             size: BootstrapDialog.SIZE_NORMAL,
             buttons: [{
                 label: "确定",

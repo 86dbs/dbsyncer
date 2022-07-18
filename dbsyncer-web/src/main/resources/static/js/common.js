@@ -150,10 +150,10 @@ function doGetWithoutLoading(url, params, action) {
  * @eg '' true
  * @eg ' ' true
  * @eg '1' false
- *
+ * @return Boolean
  */
 function isBlank(str) {
-    return str === undefined || str === null || str === false || str.length === 0 || str.replace(' ', '').length === 0;
+    return str === undefined || str === null || str === false || str.length === 0;
 }
 
 /**
@@ -164,7 +164,5 @@ function isBlank(str) {
  * @return Array
  */
 function splitStrByDelimiter(str, delimiter) {
-    if (!isBlank(str)) {
-        return str.split(delimiter);
-    }
+    return isBlank(str) ? [] : str.split(delimiter);
 }
