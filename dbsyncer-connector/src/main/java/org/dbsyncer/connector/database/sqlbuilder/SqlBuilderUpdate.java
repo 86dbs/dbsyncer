@@ -24,13 +24,15 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
         sql.append("UPDATE ").append(config.getSchema()).append(quotation).append(tableName).append(quotation).append(" SET ");
         for (int i = 0; i < size; i++) {
             // skip pk
-            if(fields.get(i).isPk()){
-               continue;
+            if (fields.get(i).isPk()) {
+                if (i == end) {
+                    sql.deleteCharAt(sql.length() - 1);
+                }
+                continue;
             }
 
             // "USERNAME"=?
             sql.append(quotation).append(fields.get(i).getName()).append(quotation).append("=?");
-            //如果不是最后一个字段
             if (i < end) {
                 sql.append(",");
             }
