@@ -67,7 +67,7 @@ public class Picker {
         return targetFields;
     }
 
-    public Map<String, Field> getSourceFieldMap() {
-        return sourceFields.stream().collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
+    public Map<String, Field> getTargetFieldMap() {
+        return targetFields.stream().collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
     }
 }

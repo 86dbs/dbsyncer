@@ -1,6 +1,8 @@
 package org.dbsyncer.connector.postgresql;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
@@ -45,5 +47,18 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     @Override
     protected String buildSqlWithQuotation() {
         return "\"";
+    }
+
+    @Override
+    protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
+        // 有过滤条件，走默认方式
+        if (StringUtil.isNotBlank(queryFilterSql)) {
+            return super.getQueryCountSql(commandConfig, schema, quotation, queryFilterSql);
+        }
+
+        // 从系统表查询
+        final String table = commandConfig.getTable().getName();
+        DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
+        return String.format("SELECT N_LIVE_TUP FROM PG_STAT_USER_TABLES WHERE SCHEMANAME='%s' AND RELNAME='%s'", cfg.getSchema(), table);
     }
 }

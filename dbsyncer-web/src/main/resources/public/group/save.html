@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="container-fluid">
+  <div class="container">
+    <form id="projectGroupAddForm" class="form-horizontal" role="form" method="post">
+      <!-- 标题 -->
+      <div class="row text-center">
+        <div class="page-header">
+          <h3>添加分组</h3>
+        </div>
+      </div>
+
+      <!-- 操作 -->
+      <div class="form-group">
+        <div class="col-md-10"></div>
+        <div class="col-md-2 text-right">
+          <button id="projectGroupSubmitBtn" type="button" class="btn btn-primary">
+            <span class="fa fa-save"></span>保存
+          </button>
+          <button id="projectGroupBackBtn" type="button" class="btn btn-default">
+            <span class="fa fa-reply"></span>返回
+          </button>
+        </div>
+      </div>
+
+      <!-- 配置 -->
+      <div class="row">
+        <div class="col-md-12">
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <h3 class="panel-title">分组配置</h3>
+            </div>
+
+            <div class="panel-body">
+              <!-- 名称 -->
+              <div class="form-group">
+                <label class="col-sm-2 control-label">名称 <strong class="driverVerifcateRequired">*</strong></label>
+                <div class="col-sm-10">
+                  <input type="hidden" name="id" id="id" th:value="${projectGroup?.id}">
+                  <input class="form-control" name="name" type="text" maxlength="50" dbsyncer-valid="require" placeholder="名称" th:value="${projectGroup?.name}"/>
+                </div>
+              </div>
+
+              <!-- 选择连接 -->
+              <div class="form-group">
+                <label class="col-sm-2 control-label">连接</label>
+                <div class="col-sm-10">
+                  <select id="connectorIds" name="connectorIds" class="form-control select-control-table" multiple="multiple">
+                    <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name}" />
+                  </select>
+                  <input id="selectedConnectorIds" type="hidden" th:value="${#strings.listJoin(projectGroup?.connectorIds,',')}"/>
+                </div>
+              </div>
+
+              <!-- 选择驱动 -->
+              <div class="form-group">
+                <label class="col-sm-2 control-label">驱动</label>
+                <div class="col-sm-10">
+                  <select id="mappingIds" name="mappingIds" class="form-control select-control-table" multiple="multiple">
+                    <option th:each="m,s:${mappings}" th:value="${m?.id}" th:text="${m?.name}" />
+                  </select>
+                  <input id="selectedMappingIds" type="hidden" th:value="${#strings.listJoin(projectGroup?.mappingIds,',')}"/>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script th:src="@{/js/group/addOrEdit.js}"></script>
+</html>

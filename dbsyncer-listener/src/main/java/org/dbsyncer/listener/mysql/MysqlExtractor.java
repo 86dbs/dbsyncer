@@ -6,6 +6,7 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.listener.AbstractDatabaseExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.config.Host;
@@ -86,7 +87,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
         if (StringUtil.isBlank(config.getUrl())) {
             throw new ListenerException("url is invalid");
         }
-        database = readDatabaseName(config.getUrl());
+        database = DatabaseUtil.getDatabaseName(config.getUrl());
         cluster = readNodes(config.getUrl());
         Assert.notEmpty(cluster, "Mysql连接地址有误.");
 
@@ -102,21 +103,6 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
         client.registerLifecycleListener(new MysqlLifecycleListener());
 
         client.connect();
-    }
-
-    private String readDatabaseName(String url) {
-        Matcher matcher = compile("(//)(?!(\\?)).+?(\\?)").matcher(url);
-        while (matcher.find()) {
-            url = matcher.group(0);
-            break;
-        }
-        int s = url.lastIndexOf("/");
-        int e = url.lastIndexOf("?");
-        if (s > 0 && e > 0) {
-            return StringUtil.substring(url, s + 1, e);
-        }
-
-        throw new ListenerException("database is invalid");
     }
 
     private List<Host> readNodes(String url) {
@@ -242,9 +228,8 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                 UpdateRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
-                        List<Object> before = Stream.of(m.getKey()).collect(Collectors.toList());
                         List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
-                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, before, after));
+                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, after));
                     });
                 }
                 return;
@@ -255,7 +240,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m).collect(Collectors.toList());
-                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, after));
+                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, after));
                     });
                 }
                 return;
@@ -266,7 +251,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m).collect(Collectors.toList());
-                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, Collections.EMPTY_LIST));
+                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before));
                     });
                 }
                 return;

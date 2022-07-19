@@ -28,6 +28,8 @@
                         <simple>新建一个类，比如MyPlugin，实现接口ConvertService方法</simple>
 <pre>package org.test;
 
+import org.dbsyncer.common.model.FullConvertContext;
+import org.dbsyncer.common.model.IncrementConvertContext;
 import org.dbsyncer.common.spi.ConvertService;
 
 import java.util.List;
@@ -38,23 +40,30 @@ public class MyPlugin implements ConvertService{
     /**
     * 全量同步
     *
-    * @param source 数据源
-    * @param target 目标源
+    * @param context
     */
     @Override
-    public void convert(List&lt;Map&gt; source, List&lt;Map&gt; target) {
+    public void convert(FullConvertContext context) {
+        // 数据源
+        List<Map> sourceList = context.getSourceList();
+        // 目标源
+        List<Map> targetList = context.getTargetList();
         // TODO 消费或处理数据
     }
 
     /**
     * 增量同步
     *
-    * @param event  事件（INSERT/UPDATE/DELETE）
-    * @param source 数据源
-    * @param target 目标源
+    * @param context
     */
     @Override
-    public void convert(String event, Map source, Map target) {
+    public void convert(IncrementConvertContext context) {
+        // 事件（INSERT/UPDATE/DELETE）
+        String event = context.getEvent();
+        // 数据源
+        Map source = context.getSource();
+        // 目标源
+        Map target = context.getTarget();
         // TODO 消费或处理数据
     }
 

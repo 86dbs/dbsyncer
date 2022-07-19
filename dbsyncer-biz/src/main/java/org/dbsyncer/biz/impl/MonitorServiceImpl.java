@@ -12,6 +12,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.monitor.Monitor;
 import org.dbsyncer.monitor.enums.DiskMetricEnum;
 import org.dbsyncer.monitor.enums.MetricEnum;
+import org.dbsyncer.monitor.enums.TaskMetricEnum;
 import org.dbsyncer.monitor.enums.ThreadPoolMetricEnum;
 import org.dbsyncer.monitor.model.AppReportMetric;
 import org.dbsyncer.monitor.model.MetricResponse;
@@ -47,6 +48,8 @@ public class MonitorServiceImpl implements MonitorService {
 
     @PostConstruct
     private void init() {
+        metricDetailFormatterMap.putIfAbsent(TaskMetricEnum.STORAGE_ACTIVE.getCode(), new ValueMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(TaskMetricEnum.STORAGE_REMAINING_CAPACITY.getCode(), new ValueMetricDetailFormatter());
         metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.TASK_SUBMITTED.getCode(), new ValueMetricDetailFormatter());
         metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.QUEUE_UP.getCode(), new ValueMetricDetailFormatter());
         metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.ACTIVE.getCode(), new ValueMetricDetailFormatter());
@@ -167,7 +170,7 @@ public class MonitorServiceImpl implements MonitorService {
 
     private List<MetricResponseVo> getMetrics(List<MetricResponse> metrics) {
         // 线程池状态
-        List<MetricResponse> metricList = monitor.getThreadPoolInfo();
+        List<MetricResponse> metricList = monitor.getMetricInfo();
         // 系统指标
         metricList.addAll(metrics);
 

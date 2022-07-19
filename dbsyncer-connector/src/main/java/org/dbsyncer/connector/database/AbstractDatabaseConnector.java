@@ -64,13 +64,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableName) {
         String quotation = buildSqlWithQuotation();
         DatabaseConfig config = connectorMapper.getConfig();
-        StringBuilder queryMetaSql = new StringBuilder("SELECT * FROM ");
-        if (StringUtil.isNotBlank(config.getSchema())) {
-            queryMetaSql.append(quotation).append(config.getSchema()).append(quotation).append(".");
-        }
-        queryMetaSql.append(quotation).append(tableName).append(quotation).append(" WHERE 1!=1");
+        String queryMetaSql = new StringBuilder("SELECT * FROM ").append(getSchema(config, quotation)).append(quotation).append(tableName)
+                .append(quotation).append(" WHERE 1!=1").toString();
 
-        return connectorMapper.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql.toString(), config.getSchema(), tableName));
+        return connectorMapper.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql, config.getSchema(), tableName));
     }
 
     @Override
@@ -170,34 +167,22 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
         // 获取过滤SQL
-        List<Filter> filter = commandConfig.getFilter();
-        String queryFilterSql = getQueryFilterSql(filter);
+        final String queryFilterSql = getQueryFilterSql(commandConfig.getFilter());
+        final String quotation = buildSqlWithQuotation();
 
         // 获取查询SQL
-        Table table = commandConfig.getTable();
         Map<String, String> map = new HashMap<>();
-
-        String query = ConnectorConstant.OPERTION_QUERY;
-        String quotation = buildSqlWithQuotation();
-        String schema = getSchema(commandConfig, quotation);
-        map.put(query, buildSql(query, commandConfig, schema, queryFilterSql));
-
+        String schema = getSchema((DatabaseConfig) commandConfig.getConnectorConfig(), quotation);
+        map.put(ConnectorConstant.OPERTION_QUERY, buildSql(ConnectorConstant.OPERTION_QUERY, commandConfig, schema, queryFilterSql));
         // 获取查询总数SQL
-        String pk = findOriginalTablePrimaryKey(commandConfig, quotation);
-        StringBuilder queryCount = new StringBuilder();
-        queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table.getName()).append(quotation);
-        if (StringUtil.isNotBlank(queryFilterSql)) {
-            queryCount.append(queryFilterSql);
-        }
-        queryCount.append(" GROUP BY ").append(pk).append(") DBSYNCER_T");
-        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
+        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, getQueryCountSql(commandConfig, schema, quotation, queryFilterSql));
         return map;
     }
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         String quotation = buildSqlWithQuotation();
-        String schema = getSchema(commandConfig, quotation);
+        String schema = getSchema((DatabaseConfig) commandConfig.getConnectorConfig(), quotation);
 
         // 获取增删改SQL
         Map<String, String> map = new HashMap<>();
@@ -240,12 +225,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     /**
      * 获取架构名
      *
-     * @param commandConfig
+     * @param config
      * @param quotation
      * @return
      */
-    protected String getSchema(CommandConfig commandConfig, String quotation) {
-        DatabaseConfig config = (DatabaseConfig) commandConfig.getConnectorConfig();
+    protected String getSchema(DatabaseConfig config, String quotation) {
         StringBuilder schema = new StringBuilder();
         if (StringUtil.isNotBlank(config.getSchema())) {
             schema.append(quotation).append(config.getSchema()).append(quotation).append(".");
@@ -266,6 +250,27 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             return tableNames.stream().map(name -> new Table(name)).collect(Collectors.toList());
         }
         return Collections.EMPTY_LIST;
+    }
+
+    /**
+     * 获取查询总数SQL
+     *
+     * @param commandConfig
+     * @param schema
+     * @param quotation
+     * @param queryFilterSql
+     * @return
+     */
+    protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
+        String table = commandConfig.getTable().getName();
+        String pk = findOriginalTablePrimaryKey(commandConfig, quotation);
+        StringBuilder queryCount = new StringBuilder();
+        queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
+        if (StringUtil.isNotBlank(queryFilterSql)) {
+            queryCount.append(queryFilterSql);
+        }
+        queryCount.append(" GROUP BY ").append(pk).append(") DBSYNCER_T");
+        return queryCount.toString();
     }
 
     /**

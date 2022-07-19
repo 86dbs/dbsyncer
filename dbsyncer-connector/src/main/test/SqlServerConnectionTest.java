@@ -1,9 +1,16 @@
+import oracle.jdbc.OracleConnection;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
+import org.dbsyncer.connector.database.ds.SimpleConnection;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 
+import java.nio.charset.Charset;
+import java.sql.Clob;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.concurrent.*;
 
@@ -15,6 +22,43 @@ import java.util.concurrent.*;
 public class SqlServerConnectionTest {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Test
+    public void testByte() {
+        DatabaseConfig config = new DatabaseConfig();
+        config.setUrl("jdbc:oracle:thin:@127.0.0.1:1521:XE");
+        config.setUsername("ae86");
+        config.setPassword("123");
+        config.setDriverClassName("oracle.jdbc.OracleDriver");
+        final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(config);
+
+        String executeSql="UPDATE \"my_user\" SET \"name\"=?,\"clo\"=? WHERE \"id\"=?";
+        int[] execute = connectorMapper.execute(databaseTemplate ->
+                databaseTemplate.batchUpdate(executeSql, new BatchPreparedStatementSetter() {
+                    @Override
+                    public void setValues(PreparedStatement ps, int i) {
+                        try {
+                            SimpleConnection connection = (SimpleConnection) databaseTemplate.getConnection();
+                            OracleConnection conn = (OracleConnection) connection.getConnection();
+                            Clob clob = conn.createClob();
+                            clob.setString(1, new String("中文888".getBytes(Charset.defaultCharset())));
+
+                            ps.setString(1, "hello888");
+                            ps.setClob(2, clob);
+                            ps.setInt(3, 2);
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public int getBatchSize() {
+                        return 1;
+                    }
+                })
+        );
+        logger.info("execute:{}", execute);
+    }
 
     @Test
     public void testConnection() throws InterruptedException {

@@ -37,10 +37,10 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -176,16 +176,17 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
     }
 
     abstract class AbstractListener implements Event {
+        private static final int FLUSH_DELAYED_SECONDS = 30;
         protected Mapping mapping;
         protected String metaId;
-        protected AtomicBoolean changed = new AtomicBoolean();
+        private LocalDateTime updateTime = LocalDateTime.now();
 
         @Override
         public void flushEvent(Map<String, String> map) {
-            // 如果有变更，执行更新
-            if (changed.compareAndSet(true, false)) {
+            // 30s内更新，执行写入
+            if (updateTime.isAfter(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS))) {
                 if (!CollectionUtils.isEmpty(map)) {
-                    logger.info("{}", map);
+                    logger.debug("{}", map);
                 }
                 forceFlushEvent(map);
             }
@@ -198,6 +199,11 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
                 meta.setMap(map);
                 manager.editMeta(meta);
             }
+        }
+
+        @Override
+        public void refreshFlushEventUpdateTime() {
+            updateTime = LocalDateTime.now();
         }
 
         @Override
@@ -245,13 +251,12 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             final FieldPicker picker = tablePicker.get(rowChangedEvent.getTableGroupIndex());
             TableGroup tableGroup = picker.getTableGroup();
             rowChangedEvent.setSourceTableName(tableGroup.getSourceTable().getName());
-            rowChangedEvent.setTargetTableName(tableGroup.getTargetTable().getName());
 
             // 处理过程有异常向上抛
             parser.execute(mapping, tableGroup, rowChangedEvent);
 
             // 标记有变更记录
-            changed.compareAndSet(false, true);
+            refreshFlushEventUpdateTime();
         }
     }
 
@@ -304,17 +309,14 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             List<FieldPicker> pickers = tablePicker.get(rowChangedEvent.getSourceTableName());
             if (!CollectionUtils.isEmpty(pickers)) {
                 pickers.forEach(picker -> {
-                    final Map<String, Object> before = picker.getColumns(rowChangedEvent.getBeforeData());
-                    final Map<String, Object> after = picker.getColumns(rowChangedEvent.getAfterData());
-                    if (picker.filter(StringUtil.equals(ConnectorConstant.OPERTION_DELETE, rowChangedEvent.getEvent()) ? before : after)) {
-                        rowChangedEvent.setBefore(before);
-                        rowChangedEvent.setAfter(after);
-                        rowChangedEvent.setTargetTableName(picker.getTableGroup().getTargetTable().getName());
+                    final Map<String, Object> dataMap = picker.getColumns(rowChangedEvent.getDataList());
+                    if (picker.filter(dataMap)) {
+                        rowChangedEvent.setDataMap(dataMap);
                         parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);
                     }
                 });
                 // 标记有变更记录
-                changed.compareAndSet(false, true);
+                refreshFlushEventUpdateTime();
                 eventCounter.set(0);
                 return;
             }

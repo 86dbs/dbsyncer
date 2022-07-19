@@ -353,15 +353,15 @@ public class DBChangeNotification {
             List<Object> data = new ArrayList<>();
             if (event.getCode() == TableChangeDescription.TableOperation.UPDATE.getCode()) {
                 read(event.getTableName(), event.getRowId(), data);
-                listeners.forEach(listener -> listener.onEvents(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, Collections.EMPTY_LIST, data)));
+                listeners.forEach(listener -> listener.onEvents(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, data)));
 
             } else if (event.getCode() == TableChangeDescription.TableOperation.INSERT.getCode()) {
                 read(event.getTableName(), event.getRowId(), data);
-                listeners.forEach(listener -> listener.onEvents(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, Collections.EMPTY_LIST, data)));
+                listeners.forEach(listener -> listener.onEvents(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, data)));
 
             } else {
                 data.add(event.getRowId());
-                listeners.forEach(listener -> listener.onEvents(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, data, Collections.EMPTY_LIST)));
+                listeners.forEach(listener -> listener.onEvents(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, data)));
             }
         }
     }

@@ -13,7 +13,7 @@ var timer;
 function bootGrowl(data, type) {
     $.bootstrapGrowl(data, { // data为提示信息
         type: type == undefined ? 'success' : type,// type指提示类型
-        delay: 1000,// 提示框显示时间
+        delay: 3000,// 提示框显示时间
         allow_dismiss: true // 显示取消提示框
     });
 }
@@ -88,7 +88,12 @@ $.fn.serializeJson = function () {
 // 全局加载页面
 function doLoader(url){
     // 加载页面
-    $initContainer.load($basePath + url);
+    $initContainer.load($basePath + url, function (response, status, xhr) {
+        if (status != 'success') {
+            bootGrowl(response);
+        }
+        $.loadingT(false);
+    });
 }
 
 // 异常请求
@@ -136,4 +141,28 @@ function doGetter(url, params, action, loading) {
 // 全局Ajax get, 不显示加载动画
 function doGetWithoutLoading(url, params, action) {
     doGetter(url, params, action, false);
+}
+
+/**
+ * 判断字符串是否为空串
+ * @eg undefined true
+ * @eg null true
+ * @eg '' true
+ * @eg ' ' true
+ * @eg '1' false
+ * @return Boolean
+ */
+function isBlank(str) {
+    return str === undefined || str === null || str === false || str.length === 0;
+}
+
+/**
+ * 按照指定分隔符切分字符串
+ *
+ * @param str 带切分字符
+ * @param delimiter 分隔符
+ * @return Array
+ */
+function splitStrByDelimiter(str, delimiter) {
+    return isBlank(str) ? [] : str.split(delimiter);
 }

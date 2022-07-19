@@ -1,8 +1,7 @@
-package org.dbsyncer.storage.binlog.impl;
+package org.dbsyncer.storage.binlog;
 
 import com.google.protobuf.ByteString;
 import org.dbsyncer.common.column.AbstractColumnValue;
-import org.dbsyncer.common.util.DateFormatUtil;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;

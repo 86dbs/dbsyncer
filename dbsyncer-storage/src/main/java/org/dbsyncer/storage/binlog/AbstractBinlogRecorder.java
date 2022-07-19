@@ -1,25 +1,43 @@
 package org.dbsyncer.storage.binlog;
 
-import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
+import org.dbsyncer.common.config.BinlogRecorderConfig;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
-import org.dbsyncer.storage.binlog.impl.BinlogColumnValue;
+import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
+import org.dbsyncer.storage.constant.BinlogConstant;
+import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
+import org.dbsyncer.storage.lucene.Shard;
+import org.dbsyncer.storage.query.Option;
+import org.dbsyncer.storage.util.DocumentUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.nio.ByteBuffer;
-import java.sql.Date;
-import java.sql.Time;
 import java.sql.Timestamp;
-import java.sql.Types;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -28,279 +46,190 @@ import java.util.concurrent.locks.ReentrantLock;
  * @version 1.0.0
  * @date 2022/6/8 0:53
  */
-public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder, ScheduledTaskJob, DisposableBean {
+public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder, DisposableBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private static final String PATH = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar).append("data").append(File.separatorChar).append("data").append(File.separatorChar).toString();
 
     @Autowired
     private ScheduledTaskService scheduledTaskService;
 
-    private static final long MAX_BATCH_COUNT = 100L;
+    @Autowired
+    private SnowflakeIdWorker snowflakeIdWorker;
 
-    private static final long PERIOD = 3000;
+    @Autowired
+    private BinlogRecorderConfig binlogRecorderConfig;
 
-    private static final long CONTEXT_PERIOD = 10_000;
+    private static Queue<BinlogMessage> queue;
 
-    private static final BinlogColumnValue value = new BinlogColumnValue();
+    private static Shard shard;
 
-    private final Lock lock = new ReentrantLock(true);
+    private WriterTask writerTask = new WriterTask();
 
-    private volatile boolean running;
-
-    private BinlogContext context;
+    private ReaderTask readerTask = new ReaderTask();
 
     @PostConstruct
     private void init() throws IOException {
-        // /data/binlog/WriterBinlog/
-        context = new BinlogContext(getTaskName());
-        scheduledTaskService.start(PERIOD, this);
-        scheduledTaskService.start(CONTEXT_PERIOD, context);
+        queue = new LinkedBlockingQueue(binlogRecorderConfig.getQueueCapacity());
+        shard = new Shard(PATH + getTaskName());
+        scheduledTaskService.start(binlogRecorderConfig.getWriterPeriodMillisecond(), writerTask);
+        scheduledTaskService.start(binlogRecorderConfig.getReaderPeriodMillisecond(), readerTask);
     }
 
     /**
-     * 获取任务名称
-     *
-     * @return
-     */
-    protected String getTaskName() {
-        return getClass().getSimpleName();
-    }
-
-    /**
-     * 获取缓存队列
-     *
-     * @return
-     */
-    protected abstract Queue getQueue();
-
-    /**
-     * 反序列化任务
+     * 反序列化消息
      *
      * @param message
      * @return
      */
-    protected abstract Message deserialize(BinlogMessage message);
+    protected abstract Message deserialize(String messageId, BinlogMessage message);
 
     @Override
-    public void run() {
-        if (running || !getQueue().isEmpty()) {
-            return;
-        }
-
-        final Lock binlogLock = lock;
-        boolean locked = false;
-        try {
-            locked = binlogLock.tryLock();
-            if (locked) {
-                running = true;
-                doParse();
-            }
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-        } finally {
-            if (locked) {
-                running = false;
-                binlogLock.unlock();
-            }
-        }
+    public void flush(BinlogMessage message) {
+        queue.offer(message);
     }
 
     @Override
-    public void flush(BinlogMessage message) throws IOException {
-        context.write(message);
+    public void destroy() throws IOException {
+        shard.close();
     }
 
     @Override
-    public void destroy() {
-        context.close();
-    }
-
-    private void doParse() throws IOException {
-        byte[] line;
-        AtomicInteger batchCounter = new AtomicInteger();
-        while (batchCounter.get() < MAX_BATCH_COUNT && null != (line = context.readLine())) {
-            Message message = deserialize(BinlogMessage.parseFrom(line));
-            if (null != message) {
-                getQueue().offer(message);
+    public void complete(List<String> messageIds) {
+        if (!CollectionUtils.isEmpty(messageIds)) {
+            try {
+                int size = messageIds.size();
+                Term[] terms = new Term[size];
+                for (int i = 0; i < size; i++) {
+                    terms[i] = new Term(BinlogConstant.BINLOG_ID, messageIds.get(i));
+                }
+                shard.deleteBatch(terms);
+            } catch (IOException e) {
+                logger.error(e.getMessage());
             }
-            batchCounter.getAndAdd(1);
-        }
-
-        if (batchCounter.get() > 0) {
-            context.flush();
-        }
-    }
-
-    private final ByteBuffer buffer = ByteBuffer.allocate(8);
-
-    /**
-     * Java语言提供了八种基本类型，六种数字类型（四个整数型，两个浮点型），一种字符类型，一种布尔型。
-     * <p>
-     * <ol>
-     *     <li>整数：包括int,short,byte,long</li>
-     *     <li>浮点型：float,double</li>
-     *     <li>字符：char</li>
-     *     <li>布尔：boolean</li>
-     * </ol>
-     *
-     * <pre>
-     * 类型     长度     大小      最小值     最大值
-     * byte     1Byte    8-bit     -128       +127
-     * short    2Byte    16-bit    -2^15      +2^15-1
-     * int      4Byte    32-bit    -2^31      +2^31-1
-     * long     8Byte    64-bit    -2^63      +2^63-1
-     * float    4Byte    32-bit    IEEE754    IEEE754
-     * double   8Byte    64-bit    IEEE754    IEEE754
-     * char     2Byte    16-bit    Unicode 0  Unicode 2^16-1
-     * boolean  8Byte    64-bit
-     * </pre>
-     *
-     * @param v
-     * @return
-     */
-    protected ByteString serializeValue(Object v) {
-        String type = v.getClass().getName();
-        switch (type) {
-            // 字节
-//            case "[B":
-//            return ByteString.copyFrom((byte[]) v);
-
-            // 字符串
-            case "java.lang.String":
-                return ByteString.copyFromUtf8((String) v);
-
-            // 时间
-            case "java.sql.Timestamp":
-                buffer.clear();
-                Timestamp timestamp = (Timestamp) v;
-                buffer.putLong(timestamp.getTime());
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 8);
-            case "java.sql.Date":
-                buffer.clear();
-                Date date = (Date) v;
-                buffer.putLong(date.getTime());
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 8);
-            case "java.sql.Time":
-                buffer.clear();
-                Time time = (Time) v;
-                buffer.putLong(time.getTime());
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 8);
-
-            // 数字
-            case "java.lang.Integer":
-                buffer.clear();
-                buffer.putInt((Integer) v);
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 4);
-            case "java.lang.Long":
-                buffer.clear();
-                buffer.putLong((Long) v);
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 8);
-            case "java.lang.Short":
-                Short aShort = (Short) v;
-                return ByteString.copyFromUtf8(aShort.toString());
-            case "java.lang.Float":
-                buffer.clear();
-                buffer.putFloat((Float) v);
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 4);
-            case "java.lang.Double":
-                buffer.clear();
-                buffer.putDouble((Double) v);
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 8);
-            case "java.math.BigDecimal":
-                BigDecimal bigDecimal = (BigDecimal) v;
-                return ByteString.copyFromUtf8(bigDecimal.toString());
-
-            // 布尔(1为true;0为false)
-            case "java.lang.Boolean":
-                buffer.clear();
-                Boolean b = (Boolean) v;
-                buffer.putShort((short) (b ? 1 : 0));
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 2);
-
-            default:
-                logger.error("Unsupported serialize value type:{}", type);
-                return null;
         }
     }
 
     /**
-     * Resolve value
-     *
-     * @param type
-     * @param v
-     * @return
+     * 合并缓存队列任务到磁盘
      */
-    protected Object resolveValue(int type, ByteString v) {
-        value.setValue(v);
+    final class WriterTask implements ScheduledTaskJob {
 
-        if (value.isNull()) {
-            return null;
+        @Override
+        public void run() {
+            if (queue.isEmpty()) {
+                return;
+            }
+
+            List<Document> tasks = new ArrayList<>();
+            int count = 0;
+            long now = Instant.now().toEpochMilli();
+            while (!queue.isEmpty() && count < binlogRecorderConfig.getBatchCount()) {
+                BinlogMessage message = queue.poll();
+                if (null != message) {
+                    tasks.add(DocumentUtil.convertBinlog2Doc(String.valueOf(snowflakeIdWorker.nextId()), BinlogConstant.READY, new BytesRef(message.toByteArray()), now));
+                }
+                count++;
+            }
+
+            if (!CollectionUtils.isEmpty(tasks)) {
+                try {
+                    shard.insertBatch(tasks);
+                } catch (IOException e) {
+                    logger.error(e.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * 从磁盘读取日志到任务队列
+     */
+    final class ReaderTask implements ScheduledTaskJob {
+
+        private final Lock lock = new ReentrantLock(true);
+
+        private volatile boolean running;
+
+        @Override
+        public void run() {
+            if (running || (binlogRecorderConfig.getBatchCount() * 2) + getQueue().size() >= getQueueCapacity()) {
+                return;
+            }
+
+            final Lock binlogLock = lock;
+            boolean locked = false;
+            try {
+                locked = binlogLock.tryLock();
+                if (locked) {
+                    running = true;
+                    doParse();
+                }
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+            } finally {
+                if (locked) {
+                    running = false;
+                    binlogLock.unlock();
+                }
+            }
         }
 
-        switch (type) {
-            // 字符串
-            case Types.VARCHAR:
-            case Types.LONGVARCHAR:
-            case Types.NVARCHAR:
-            case Types.NCHAR:
-            case Types.CHAR:
-                return value.asString();
+        private void doParse() throws IOException {
+            //  查询[待处理] 或 [处理中 & 处理超时]
+            long maxProcessingSeconds = Timestamp.valueOf(LocalDateTime.now().minusSeconds(binlogRecorderConfig.getMaxProcessingSeconds())).getTime();
+            BooleanQuery query = new BooleanQuery.Builder()
+                    .add(new BooleanQuery.Builder()
+                            .add(IntPoint.newExactQuery(BinlogConstant.BINLOG_STATUS, BinlogConstant.READY), BooleanClause.Occur.MUST)
+                            .build(), BooleanClause.Occur.SHOULD)
+                    .add(new BooleanQuery.Builder()
+                            .add(IntPoint.newExactQuery(BinlogConstant.BINLOG_STATUS, BinlogConstant.PROCESSING), BooleanClause.Occur.MUST)
+                            .add(LongPoint.newRangeQuery(BinlogConstant.BINLOG_TIME, Long.MIN_VALUE, maxProcessingSeconds), BooleanClause.Occur.MUST)
+                            .build(), BooleanClause.Occur.SHOULD)
+                    .build();
+            Option option = new Option(query);
+            option.addIndexFieldResolverEnum(BinlogConstant.BINLOG_STATUS, IndexFieldResolverEnum.INT);
+            option.addIndexFieldResolverEnum(BinlogConstant.BINLOG_CONTENT, IndexFieldResolverEnum.BINARY);
+            option.addIndexFieldResolverEnum(BinlogConstant.BINLOG_TIME, IndexFieldResolverEnum.LONG);
 
-            // 时间
-            case Types.TIMESTAMP:
-                return value.asTimestamp();
-            case Types.TIME:
-                return value.asTime();
-            case Types.DATE:
-                return value.asDate();
+            // 优先处理最早记录
+            Sort sort = new Sort(new SortField(BinlogConstant.BINLOG_TIME, SortField.Type.LONG));
+            Paging paging = shard.query(option, 1, binlogRecorderConfig.getBatchCount(), sort);
+            if (CollectionUtils.isEmpty(paging.getData())) {
+                return;
+            }
 
-            // 数字
-            case Types.INTEGER:
-            case Types.TINYINT:
-            case Types.SMALLINT:
-                return value.asInteger();
-            case Types.BIGINT:
-                return value.asLong();
-            case Types.FLOAT:
-            case Types.REAL:
-                return value.asFloat();
-            case Types.DOUBLE:
-                return value.asDouble();
-            case Types.DECIMAL:
-            case Types.NUMERIC:
-                return value.asBigDecimal();
+            List<Map> list = (List<Map>) paging.getData();
+            final int size = list.size();
+            final List<Message> messages = new ArrayList<>(size);
+            final List<Document> updateDocs = new ArrayList<>(size);
+            final Term[] deleteIds = new Term[size];
+            for (int i = 0; i < size; i++) {
+                Map row = list.get(i);
+                String id = (String) row.get(BinlogConstant.BINLOG_ID);
+                Integer status = (Integer) row.get(BinlogConstant.BINLOG_STATUS);
+                BytesRef ref = (BytesRef) row.get(BinlogConstant.BINLOG_CONTENT);
+                if (BinlogConstant.PROCESSING == status) {
+                    logger.warn("存在超时未处理数据，正在重试，建议优化配置参数[max-processing-seconds={}].", binlogRecorderConfig.getMaxProcessingSeconds());
+                }
+                deleteIds[i] = new Term(BinlogConstant.BINLOG_ID, id);
+                String newId = String.valueOf(snowflakeIdWorker.nextId());
+                try {
+                    Message message = deserialize(newId, BinlogMessage.parseFrom(ref.bytes));
+                    if (null != message) {
+                        messages.add(message);
+                        updateDocs.add(DocumentUtil.convertBinlog2Doc(newId, BinlogConstant.PROCESSING, ref, Instant.now().toEpochMilli()));
+                    }
+                } catch (InvalidProtocolBufferException e) {
+                    logger.error(e.getMessage());
+                }
+            }
 
-            // 布尔
-            case Types.BOOLEAN:
-                return value.asBoolean();
-
-            // 字节
-            case Types.BIT:
-            case Types.BINARY:
-            case Types.VARBINARY:
-            case Types.LONGVARBINARY:
-                return value.asByteArray();
-
-            // TODO 待实现
-            case Types.NCLOB:
-            case Types.CLOB:
-            case Types.BLOB:
-                return null;
-
-            // 暂不支持
-            case Types.ROWID:
-                return null;
-
-            default:
-                return null;
+            // 如果在更新消息状态的过程中服务被中止，为保证数据的安全性，重启后消息可能会同步2次）
+            shard.insertBatch(updateDocs);
+            shard.deleteBatch(deleteIds);
+            getQueue().addAll(messages);
         }
     }
 

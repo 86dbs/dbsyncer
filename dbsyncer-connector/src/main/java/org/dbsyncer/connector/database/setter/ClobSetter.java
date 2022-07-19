@@ -15,10 +15,14 @@ public class ClobSetter extends AbstractSetter<Clob> {
     }
 
     @Override
-    protected void setIfValueTypeNotMatch(PreparedFieldMapper mapper, PreparedStatement ps, int i, int type, Object val) throws SQLException {
-        if(val instanceof Clob) {
-            Clob clob = (Clob) val;
-            ps.setClob(i, clob);
+    protected void setIfValueTypeNotMatch(PreparedFieldMapper mapper, PreparedStatement ps, int i, int type, Object val)
+            throws SQLException {
+        if (val instanceof Clob) {
+            ps.setClob(i, (Clob) val);
+            return;
+        }
+        if (val instanceof byte[]) {
+            ps.setClob(i, mapper.getClob((byte[]) val));
             return;
         }
         throw new ConnectorException(String.format("ClobSetter can not find type [%s], val [%s]", type, val));

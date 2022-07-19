@@ -27,6 +27,17 @@ import java.util.Map;
  */
 public interface Manager extends Executor {
 
+    // project group
+    String addProjectGroup(ConfigModel model);
+
+    String editProjectGroup(ConfigModel model);
+
+    ProjectGroup getProjectGroup(String id);
+
+    void removeProjectGroup(String id);
+
+    List<ProjectGroup> getProjectGroupAll();
+
     // Connector
     ConnectorMapper connect(ConnectorConfig config);
 

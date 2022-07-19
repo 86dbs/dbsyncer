@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.flush;
 
+import org.dbsyncer.common.config.BufferActuatorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.slf4j.Logger;
@@ -13,7 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -34,26 +34,21 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     @Autowired
     private ScheduledTaskService scheduledTaskService;
 
-    private static final int CAPACITY = 10_0000;
+    @Autowired
+    private BufferActuatorConfig bufferActuatorConfig;
 
-    private static final double BUFFER_THRESHOLD = 0.8;
-
-    private static final long MAX_BATCH_COUNT = 1000L;
-
-    private static final long PERIOD = 300;
-
-    private Queue<Request> buffer = new LinkedBlockingQueue(CAPACITY);
+    private Queue<Request> buffer;
 
     private final Lock lock = new ReentrantLock(true);
 
     private volatile boolean running;
 
-    private Class<Response> responseClazz;
+    private final Class<Response> responseClazz = (Class<Response>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[1];
 
     @PostConstruct
     private void init() {
-        responseClazz = (Class<Response>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[1];
-        scheduledTaskService.start(PERIOD, this);
+        buffer = new LinkedBlockingQueue(getQueueCapacity());
+        scheduledTaskService.start(bufferActuatorConfig.getPeriodMillisecond(), this);
     }
 
     /**
@@ -85,19 +80,13 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     }
 
     @Override
+    public int getQueueCapacity() {
+        return bufferActuatorConfig.getQueueCapacity();
+    }
+
+    @Override
     public void offer(BufferRequest request) {
         buffer.offer((Request) request);
-
-        // TODO 临时解决方案：生产大于消费问题，限制生产速度
-        int size = buffer.size();
-        if (size >= (CAPACITY * BUFFER_THRESHOLD)) {
-            try {
-                TimeUnit.SECONDS.sleep(30);
-                logger.warn("当前任务队列大小{}已达上限{}，请稍等{}秒", size, CAPACITY * BUFFER_THRESHOLD, 30);
-            } catch (InterruptedException e) {
-                logger.error(e.getMessage());
-            }
-        }
     }
 
     @Override
@@ -128,7 +117,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
         if (!queue.isEmpty()) {
             AtomicLong batchCounter = new AtomicLong();
             final Map<String, BufferResponse> map = new LinkedHashMap<>();
-            while (!queue.isEmpty() && batchCounter.get() < MAX_BATCH_COUNT) {
+            while (!queue.isEmpty() && batchCounter.get() < bufferActuatorConfig.getBatchCount()) {
                 Request poll = queue.poll();
                 String key = getPartitionKey(poll);
                 if (!map.containsKey(key)) {
