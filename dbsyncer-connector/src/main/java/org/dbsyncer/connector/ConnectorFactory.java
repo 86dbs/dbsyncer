@@ -125,7 +125,7 @@ public class ConnectorFactory implements DisposableBean {
         }
 
         Map tCmd = getConnector(tType).getTargetCommand(targetCommandConfig);
-        if (!CollectionUtils.isEmpty(sCmd)) {
+        if (!CollectionUtils.isEmpty(tCmd)) {
             map.putAll(tCmd);
         }
         return map;
