@@ -33,7 +33,15 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
         // 有过滤条件，走默认方式
         if (StringUtil.isNotBlank(queryFilterSql)) {
-            return super.getQueryCountSql(commandConfig, schema, quotation, queryFilterSql);
+            String table = commandConfig.getTable().getName();
+            String pk = findOriginalTablePrimaryKey(commandConfig, quotation);
+            StringBuilder queryCount = new StringBuilder();
+            queryCount.append("SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
+            if (StringUtil.isNotBlank(queryFilterSql)) {
+                queryCount.append(queryFilterSql);
+            }
+            queryCount.append(" GROUP BY ").append(pk);
+            return queryCount.toString();
         }
 
         String table = commandConfig.getTable().getName();
