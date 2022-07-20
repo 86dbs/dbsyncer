@@ -6,7 +6,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
 import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
@@ -16,6 +15,7 @@ import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
+import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
@@ -100,8 +100,11 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             String querySql = buildQuerySql(query, executor, queryArgs);
             String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
 
-            List<Map<String, Object>> data = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
-            replaceHighLight(query, data);
+            List<Map<String, Object>> data = new ArrayList<>();
+            if (!query.isQueryMappingMetricCount()) {
+                data = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
+                replaceHighLight(query, data);
+            }
             Long total = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
 
             Paging paging = new Paging(query.getPageNum(), query.getPageSize());
