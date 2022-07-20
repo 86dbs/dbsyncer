@@ -30,7 +30,7 @@ public class Query {
     /**
      * 查询应用性能，不用排序查询，只用查询总量即可
      */
-    private boolean queryMappingMetricCount;
+    private boolean queryTotal;
 
     public Query() {
         this.params = new ArrayList<>();
@@ -101,11 +101,11 @@ public class Query {
         return enableHighLightSearch;
     }
 
-    public boolean isQueryMappingMetricCount() {
-        return queryMappingMetricCount;
+    public boolean isQueryTotal() {
+        return queryTotal;
     }
 
-    public void setQueryMappingMetricCount(boolean queryMappingMetricCount) {
-        this.queryMappingMetricCount = queryMappingMetricCount;
+    public void setQueryTotal(boolean queryTotal) {
+        this.queryTotal = queryTotal;
     }
 }

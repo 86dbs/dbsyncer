@@ -201,7 +201,7 @@ public class MonitorFactory implements Monitor {
             Query query = new Query(1, 1);
             operation.apply(query);
             metaAll.forEach(meta -> {
-                query.setQueryMappingMetricCount(true);
+                query.setQueryTotal(true);
                 Paging paging = manager.queryData(query, meta.getId());
                 total.getAndAdd(paging.getTotal());
             });

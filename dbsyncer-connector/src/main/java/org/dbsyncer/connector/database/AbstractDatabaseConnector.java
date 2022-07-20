@@ -269,7 +269,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         if (StringUtil.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
-        queryCount/*.append(" GROUP BY ").append(pk)*/.append(") DBSYNCER_T");
+        queryCount.append(" GROUP BY ").append(pk).append(") DBSYNCER_T");
         return queryCount.toString();
     }
 

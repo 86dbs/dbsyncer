@@ -34,10 +34,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -95,19 +92,20 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     public Paging select(Query query) {
         synchronized (LOCK){
             Executor executor = getExecutor(query.getType(), query.getCollection());
-            List<Object> queryArgs = new ArrayList<>();
-            List<Object> queryCountArgs = new ArrayList<>();
-            String querySql = buildQuerySql(query, executor, queryArgs);
-            String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
-
-            List<Map<String, Object>> data = new ArrayList<>();
-            if (!query.isQueryMappingMetricCount()) {
-                data = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
-                replaceHighLight(query, data);
-            }
-            Long total = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
-
             Paging paging = new Paging(query.getPageNum(), query.getPageSize());
+            List<Object> queryCountArgs = new ArrayList<>();
+            String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
+            Long total = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
+            if (query.isQueryTotal()) {
+                paging.setTotal(total);
+                paging.setData(Collections.EMPTY_LIST);
+                return paging;
+            }
+
+            List<Object> queryArgs = new ArrayList<>();
+            String querySql = buildQuerySql(query, executor, queryArgs);
+            List<Map<String, Object>> data = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
+            replaceHighLight(query, data);
             paging.setData(data);
             paging.setTotal(total);
             return paging;

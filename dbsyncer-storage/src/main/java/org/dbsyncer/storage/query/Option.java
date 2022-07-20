@@ -29,14 +29,20 @@ public class Option {
 
     private Highlighter highlighter = null;
 
-    private Map<String, IndexFieldResolverEnum> fieldResolvers = new LinkedHashMap<>();
+    /**
+     * 只查总数
+     */
+    private boolean queryTotal;
+
+    private final Map<String, IndexFieldResolverEnum> fieldResolvers = new LinkedHashMap<>();
 
     public Option(Query query) {
         this.query = query;
     }
 
-    public Option(Query query, List<Param> params) {
+    public Option(Query query, boolean queryTotal, List<Param> params) {
         this.query = query;
+        this.queryTotal = queryTotal;
         if (!CollectionUtils.isEmpty(params)) {
             this.highLightKeys = params.stream()
                     .filter(p -> p.isHighlighter())
@@ -63,6 +69,14 @@ public class Option {
 
     public Query getQuery() {
         return query;
+    }
+
+    public boolean isQueryTotal() {
+        return queryTotal;
+    }
+
+    public void setQueryTotal(boolean queryTotal) {
+        this.queryTotal = queryTotal;
     }
 
     public Set<String> getHighLightKeys() {
