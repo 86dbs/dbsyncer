@@ -6,6 +6,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 public class TimestampSetter extends AbstractSetter<Timestamp> {
 
@@ -19,6 +20,10 @@ public class TimestampSetter extends AbstractSetter<Timestamp> {
         if(val instanceof Date){
             Date date = (Date) val;
             ps.setTimestamp(i, new Timestamp(date.getTime()));
+            return;
+        } else if (val instanceof LocalDateTime) {
+            LocalDateTime dateTime = (LocalDateTime) val;
+            ps.setTimestamp(i, Timestamp.valueOf(dateTime));
             return;
         }
         ps.setTimestamp(i, Timestamp.valueOf(String.valueOf(val)));

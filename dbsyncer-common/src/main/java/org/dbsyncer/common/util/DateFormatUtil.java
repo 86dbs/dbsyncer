@@ -93,4 +93,9 @@ public abstract class DateFormatUtil {
         return OffsetDateTime.from(parsedTimestamp).withOffsetSameInstant(ZoneOffset.UTC);
     }
 
+    private static ZoneId zoneId = ZoneId.systemDefault();
+
+    public static String dateToChineseStandardTimeString(java.util.Date date) {
+        return date.toInstant().atZone(zoneId).toLocalDateTime().format(CHINESE_STANDARD_TIME_FORMATTER);
+    }
 }
