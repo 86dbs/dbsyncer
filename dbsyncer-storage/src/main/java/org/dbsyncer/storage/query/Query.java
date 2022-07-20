@@ -27,6 +27,11 @@ public class Query {
 
     private boolean enableHighLightSearch;
 
+    /**
+     * 查询应用性能，不用排序查询，只用查询总量即可
+     */
+    private boolean queryTotal;
+
     public Query() {
         this.params = new ArrayList<>();
     }
@@ -94,5 +99,13 @@ public class Query {
 
     public boolean isEnableHighLightSearch() {
         return enableHighLightSearch;
+    }
+
+    public boolean isQueryTotal() {
+        return queryTotal;
+    }
+
+    public void setQueryTotal(boolean queryTotal) {
+        this.queryTotal = queryTotal;
     }
 }

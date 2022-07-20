@@ -1,4 +1,4 @@
-package org.dbsyncer.parser.config;
+package org.dbsyncer.parser;
 
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.strategy.ParserStrategy;

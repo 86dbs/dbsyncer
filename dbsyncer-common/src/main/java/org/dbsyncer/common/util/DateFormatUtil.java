@@ -21,6 +21,10 @@ public abstract class DateFormatUtil {
      * HH:mm:ss
      */
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+    /**
+     * 默认时区
+     */
+    private static final ZoneId zoneId = ZoneId.systemDefault();
 
     private static final DateTimeFormatter TIME_TZ_FORMAT = new DateTimeFormatterBuilder()
             .append(DateTimeFormatter.ISO_LOCAL_TIME)
@@ -64,12 +68,16 @@ public abstract class DateFormatUtil {
         return date.toLocalDate().format(DATE_FORMATTER);
     }
 
-    public static String timestampToString(Timestamp timestamp) {
-        return timestamp.toLocalDateTime().format(CHINESE_STANDARD_TIME_FORMATTER);
+    public static String dateToString(java.util.Date date) {
+        return date.toInstant().atZone(zoneId).toLocalDateTime().format(CHINESE_STANDARD_TIME_FORMATTER);
     }
 
     public static Date stringToDate(String s) {
         return Date.valueOf(LocalDate.parse(s, DATE_FORMATTER));
+    }
+
+    public static String timestampToString(Timestamp timestamp) {
+        return timestamp.toLocalDateTime().format(CHINESE_STANDARD_TIME_FORMATTER);
     }
 
     public static LocalTime stringToLocalTime(String s) {

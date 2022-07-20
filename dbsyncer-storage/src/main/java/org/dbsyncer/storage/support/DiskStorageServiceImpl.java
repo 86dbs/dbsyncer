@@ -73,6 +73,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         if (null != shard) {
             int pageNum = query.getPageNum() <= 0 ? 1 : query.getPageNum();
             int pageSize = query.getPageSize() <= 0 ? 20 : query.getPageSize();
+            boolean queryTotal = query.isQueryTotal();
             // 根据修改时间 > 创建时间排序
             Sort sort = new Sort(new SortField(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortField.Type.LONG, true),
                     new SortField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SortField.Type.LONG, true));
@@ -88,10 +89,10 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
                     }
                 });
                 BooleanQuery q = builder.build();
-                return shard.query(new Option(q, params), pageNum, pageSize, sort);
+                return shard.query(new Option(q, queryTotal, params), pageNum, pageSize, sort);
             }
 
-            return shard.query(new Option(new MatchAllDocsQuery()), pageNum, pageSize, sort);
+            return shard.query(new Option(new MatchAllDocsQuery(), queryTotal, null), pageNum, pageSize, sort);
         }
         return new Paging(query.getPageNum(), query.getPageSize());
     }
