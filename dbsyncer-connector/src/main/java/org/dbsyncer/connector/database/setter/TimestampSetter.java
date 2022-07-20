@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.database.setter;
 
+import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.database.AbstractSetter;
 
 import java.sql.Date;
@@ -21,12 +22,21 @@ public class TimestampSetter extends AbstractSetter<Timestamp> {
             Date date = (Date) val;
             ps.setTimestamp(i, new Timestamp(date.getTime()));
             return;
-        } else if (val instanceof LocalDateTime) {
+        }
+
+        if (val instanceof LocalDateTime) {
             LocalDateTime dateTime = (LocalDateTime) val;
             ps.setTimestamp(i, Timestamp.valueOf(dateTime));
             return;
         }
-        ps.setTimestamp(i, Timestamp.valueOf(String.valueOf(val)));
+
+        if (val instanceof String) {
+            String s = (String) val;
+            ps.setTimestamp(i, Timestamp.valueOf(s));
+            return;
+        }
+
+        throw new ConnectorException(String.format("TimestampSetter can not find type [%s], val [%s]", type, val));
     }
 
 }
