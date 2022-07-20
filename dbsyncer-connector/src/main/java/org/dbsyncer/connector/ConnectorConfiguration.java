@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
  * @date 2019/9/19 23:17
  */
 @Configuration
-public class AutoConfiguration {
+public class ConnectorConfiguration {
 
     @Bean
     public ConnectorFactory connectorFactory() {

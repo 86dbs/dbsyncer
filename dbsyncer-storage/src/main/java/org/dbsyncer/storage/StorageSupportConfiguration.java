@@ -1,6 +1,5 @@
-package org.dbsyncer.storage.config;
+package org.dbsyncer.storage;
 
-import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.support.DiskStorageServiceImpl;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
