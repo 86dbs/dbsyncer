@@ -4,6 +4,8 @@ import org.dbsyncer.common.column.Lexer;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.parser.convert.AbstractHandler;
 
+import java.text.ParseException;
+
 /**
  * 字符串转Timestamp
  *
@@ -14,19 +16,29 @@ import org.dbsyncer.parser.convert.AbstractHandler;
 public class StringToTimestampHandler extends AbstractHandler {
 
     @Override
-    public Object convert(String args, Object value) {
+    public Object convert(String args, Object value) throws ParseException {
         if (value instanceof String) {
             String s = (String) value;
             // 2020-7-12 00:00:00
-            if(s.length() < 19){
-                s = format(s);
+            if (s.length() < 19) {
+                return DateFormatUtil.stringToTimestamp(format(s));
             }
-            value = DateFormatUtil.stringToTimestamp(s);
+
+            // 2022-07-21T05:35:34.000+0800
+            if (s.length() == 28) {
+                return DateFormatUtil.stringToTimestamp(s, DateFormatUtil.GMT_FORMATTER);
+            }
+
+            // 2022-07-21T05:35:34.000+08:00
+            if (s.length() == 29) {
+                s = s.replaceAll(":[^:]*$", "00");
+                return DateFormatUtil.stringToTimestamp(s, DateFormatUtil.GMT_FORMATTER);
+            }
         }
         return value;
     }
 
-    private String format(String s){
+    private String format(String s) {
         StringBuilder buf = new StringBuilder();
         Lexer lexer = new Lexer(s);
         char comma = '-';
@@ -53,13 +65,13 @@ public class StringToTimestampHandler extends AbstractHandler {
 
     private void nextToken(Lexer lexer, StringBuilder buf, char comma, boolean appendComma) {
         buf.append(fillZero(lexer.nextToken(comma)));
-        if(appendComma){
+        if (appendComma) {
             buf.append(comma);
         }
     }
 
-    private String fillZero(String s){
-        if(s.length() < 2){
+    private String fillZero(String s) {
+        if (s.length() < 2) {
             return String.format("%02d", Integer.parseInt(s));
         }
         return s;
