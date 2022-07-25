@@ -1,36 +1,15 @@
 @CHARSET "UTF-8";
-
-.dbsyncer_img {
-    border-radius: 5%;
-}
-
-.dbsyncer_pointer {
-    cursor: pointer;
-}
+.dbsyncer_img {border-radius: 5%;}
+.dbsyncer_pointer {cursor: pointer;}
 .dbsyncer_over_hidden{overflow: hidden; text-overflow:ellipsis; white-space: nowrap;}
 .dbsyncer_block {border:1px solid #ffffff;}
 .dbsyncer_block:hover { cursor:pointer; background-color: #EBEBEB; -moz-box-shadow:2px 2px 5px; -webkit-box-shadow:2px 2px 5px; box-shadow:2px 2px 5px; -webkit-transform:translateY(-3px); transform: translateY(-3px); transition: all 0.3s ease-in-out;}
 .driverVerifcateRequired{color:#d9534f;}
 .dbsyncerVerifcateError{border-color: #b94a48;}
 .footerContainer{width:100%;position:relative;bottom:0;background-color:white;}
-/**
- * 强制单词换行
- */
-.driver_break_word {
-    word-break: break-all;
-    word-wrap: break-word;
-    white-space: normal
-}
-
-.driver_hidden_word {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis
-}
-
-.fa_gray {
-    color: gray
-}
+.driver_break_word {word-break: break-all; word-wrap: break-word;white-space: normal}
+.driver_hidden_word {white-space: nowrap; overflow: hidden; text-overflow: ellipsis}
+.fa_gray {color: gray}
 .fa_blueviolet {color: blueviolet}
 .dbsyncer_btn-info { background-color: #E7EDF8;}
 .dbsyncer_btn-info.active, .dbsyncer_btn-info.focus, .dbsyncer_btn-info:active, .dbsyncer_btn-info:focus, .dbsyncer_btn-info:hover, .open>.dropdown-toggle.dbsyncer_btn-info {background-color: #D4DDED;}
