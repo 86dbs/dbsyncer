@@ -13,9 +13,19 @@ import java.util.List;
  */
 public class ProjectGroupVo extends ProjectGroup {
 
+    private int connectorSize;
+
     private List<Connector> connectors = new ArrayList<>();
 
     private List<MappingVo> mappings = new ArrayList<>();
+
+    public int getConnectorSize() {
+        return connectorSize;
+    }
+
+    public void setConnectorSize(int connectorSize) {
+        this.connectorSize = connectorSize;
+    }
 
     public List<Connector> getConnectors() {
         return connectors;

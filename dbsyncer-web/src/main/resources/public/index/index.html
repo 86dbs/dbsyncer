@@ -7,53 +7,47 @@
     <div class="row">
         <form class="form-horizontal" role="form" method="post">
             <!-- 分组管理 -->
-            <div class="col-md-12">
-                <!-- 分组开始位置 -->
+            <div class="col-md-12" th:if="${projectGroups?.size() gt 0}">
+                <!-- 显示分组开始位置 -->
                 <div class="form-group">
                     <div class="col-md-12">
-                        <button type="button" class="btn btn-primary" id="addProjectGroupBtn">
-                            <span class="fa fa-plus"></span>添加分组([[${projectGroups?.size()} ?: 0]])
-                        </button>
-                    </div>
-                </div>
-                <!-- 显示分组 -->
-                <div class="row" th:if="${projectGroups?.size() gt 0}">
-                    <div class="col-md-12">
-                        <div class="panel panel-default">
-                            <div class="panel-body">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <select id="projectGroup" name="projectGroup"
-                                                class="form-control select-control">
-                                            <option value="" th:text="全部" selected/>
-                                            <option th:each="g,s:${projectGroups}" th:value="${g?.id}" th:text="${g?.name}" th:selected="${g?.id eq projectGroupId}"/>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6"></div>
-                                    <div class="col-md-2 text-right">
-                                        <div th:if="${not #strings.isEmpty(projectGroupId) }">
-                                            <button type="button" class="btn btn-primary" id="editProjectGroupBtn">
-                                                <span class="fa fa-pencil"></span>修改
-                                            </button>
-                                            <button type="button" class="btn btn-default" id="removeProjectGroupBtn">
-                                                <span class="fa fa-times"></span>删除
-                                            </button>
-                                        </div>
-                                    </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <select id="projectGroup" name="projectGroup" class="form-control select-control">
+                                    <option value="" th:text="全部" selected/>
+                                    <option th:each="g,s:${projectGroups}" th:value="${g?.id}" th:text="${g?.name}" th:selected="${g?.id eq projectGroupId}"/>
+                                </select>
+                            </div>
+                            <div class="col-md-6"></div>
+                            <div class="col-md-2 text-right">
+                                <div th:if="${not #strings.isEmpty(projectGroupId) }">
+                                    <button type="button" class="btn btn-primary" id="editProjectGroupBtn">
+                                        <span class="fa fa-pencil"></span>修改
+                                    </button>
+                                    <button type="button" class="btn btn-default" id="removeProjectGroupBtn">
+                                        <span class="fa fa-times"></span>删除
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <hr class="simple" color="#6f5499" />
+                <!-- 显示分组结束位置 -->
             </div>
 
             <!-- 连接管理 -->
             <div class="col-md-12">
                 <!-- 连接开始位置 -->
                 <div class="form-group">
-                    <div class="col-md-12">
+                    <div class="col-md-10">
                         <button type="button" class="btn btn-primary" id="indexAddConnectorBtn">
                             <span class="fa fa-plus"></span>添加连接([[${connectors?.size()} ?: 0]])
+                        </button>
+                    </div>
+                    <div class="col-md-2 text-right">
+                        <button type="button" class="btn btn-default" id="addProjectGroupBtn" th:if="${connectorSize gt 0}">
+                            <span class="fa fa-plus"></span>添加分组([[${projectGroups?.size()} ?: 0]])
                         </button>
                     </div>
                 </div>
@@ -96,7 +90,7 @@
             <!-- 驱动管理 -->
             <div class="col-md-12">
                 <!-- 驱动开始位置 -->
-                <div class="form-group" th:if="${connectors?.size() gt 0}">
+                <div class="form-group" th:if="${connectorSize gt 0}">
                     <div class="col-md-12">
                         <button type="button" class="btn btn-primary" id="indexAddMappingBtn">
                             <span class="fa fa-plus"></span>添加驱动([[${mappings?.size()} ?: 0]])
