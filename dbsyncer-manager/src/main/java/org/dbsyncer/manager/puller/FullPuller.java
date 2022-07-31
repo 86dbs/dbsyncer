@@ -20,6 +20,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 全量同步
@@ -45,28 +47,11 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
     private Map<String, Task> map = new ConcurrentHashMap<>();
 
     @Override
-    public void asyncStart(Mapping mapping) {
-        final String mappingId = mapping.getId();
-        final String metaId = mapping.getMetaId();
-        map.putIfAbsent(metaId, new Task(metaId));
-
-        try {
-            List<TableGroup> list = manager.getTableGroupAll(mappingId);
-            Assert.notEmpty(list, "映射关系不能为空");
-
-            // 执行任务
-            logger.info("启动任务:{}", metaId);
-            Task task = map.get(metaId);
-            doTask(task, mapping, list);
-
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-            logService.log(LogType.SystemLog.ERROR, e.getMessage());
-        } finally {
-            map.remove(metaId);
-            publishClosedEvent(metaId);
-            logger.info("结束任务:{}", metaId);
-        }
+    public void start(Mapping mapping) {
+        FullWorker worker = new FullWorker(mapping);
+        worker.setName(new StringBuilder("full-worker-").append(mapping.getId()).toString());
+        worker.setDaemon(false);
+        worker.start();
     }
 
     @Override
@@ -83,7 +68,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         flush(event.getTask());
     }
 
-    private void doTask(Task task, Mapping mapping, List<TableGroup> list) {
+    private void doTask(Task task, Mapping mapping, List<TableGroup> list, ExecutorService executorService) {
         // 记录开始时间
         long now = Instant.now().toEpochMilli();
         task.setBeginTime(now);
@@ -94,7 +79,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
             if (!task.isRunning()) {
                 break;
             }
-            parser.execute(task, mapping, t);
+            parser.execute(task, mapping, t, executorService);
         }
 
         // 记录结束时间
@@ -109,6 +94,36 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         meta.setBeginTime(task.getBeginTime());
         meta.setEndTime(task.getEndTime());
         manager.editMeta(meta);
+    }
+
+    final class FullWorker extends Thread {
+        Mapping mapping;
+        List<TableGroup> list;
+
+        public FullWorker(Mapping mapping) {
+            this.mapping = mapping;
+            this.list = manager.getTableGroupAll(mapping.getId());
+            Assert.notEmpty(list, "映射关系不能为空");
+        }
+
+        @Override
+        public void run() {
+            final String metaId = mapping.getMetaId();
+            logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
+            try {
+                map.putIfAbsent(metaId, new Task(metaId));
+                final ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());
+                Task task = map.get(metaId);
+                doTask(task, mapping, list, executor);
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+                logService.log(LogType.SystemLog.ERROR, e.getMessage());
+            } finally {
+                map.remove(metaId);
+                publishClosedEvent(metaId);
+                logger.info("结束全量同步：{}, {}", metaId, mapping.getName());
+            }
+        }
     }
 
 }

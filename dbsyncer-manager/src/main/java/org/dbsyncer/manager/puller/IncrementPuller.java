@@ -5,12 +5,10 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
@@ -86,32 +84,34 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
     }
 
     @Override
-    public void asyncStart(Mapping mapping) {
+    public void start(Mapping mapping) {
         final String mappingId = mapping.getId();
         final String metaId = mapping.getMetaId();
-        try {
-            Connector connector = manager.getConnector(mapping.getSourceConnectorId());
-            Assert.notNull(connector, "连接器不能为空.");
-            List<TableGroup> list = manager.getTableGroupAll(mappingId);
-            Assert.notEmpty(list, "映射关系不能为空.");
-            Meta meta = manager.getMeta(metaId);
-            Assert.notNull(meta, "Meta不能为空.");
-            AbstractExtractor extractor = getExtractor(mapping, connector, list, meta);
+        logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
+        Connector connector = manager.getConnector(mapping.getSourceConnectorId());
+        Assert.notNull(connector, "连接器不能为空.");
+        List<TableGroup> list = manager.getTableGroupAll(mappingId);
+        Assert.notEmpty(list, "映射关系不能为空.");
+        Meta meta = manager.getMeta(metaId);
+        Assert.notNull(meta, "Meta不能为空.");
 
-            long now = Instant.now().toEpochMilli();
-            meta.setBeginTime(now);
-            meta.setEndTime(now);
-            manager.editMeta(meta);
-            map.putIfAbsent(metaId, extractor);
-
-            // 执行任务
-            logger.info("启动成功:{}", metaId);
-            map.get(metaId).start();
-        } catch (Exception e) {
-            close(metaId);
-            logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
-            logger.error("运行异常，结束任务{}:{}", metaId, e.getMessage());
-        }
+        Thread worker = new Thread(()->{
+            try {
+                long now = Instant.now().toEpochMilli();
+                meta.setBeginTime(now);
+                meta.setEndTime(now);
+                manager.editMeta(meta);
+                map.putIfAbsent(metaId, getExtractor(mapping, connector, list, meta));
+                map.get(metaId).start();
+            } catch (Exception e) {
+                close(metaId);
+                logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
+                logger.error("运行异常，结束增量同步{}:{}", metaId, e.getMessage());
+            }
+        });
+        worker.setName(new StringBuilder("increment-worker-").append(mapping.getId()).toString());
+        worker.setDaemon(false);
+        worker.start();
     }
 
     @Override

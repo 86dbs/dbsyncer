@@ -369,7 +369,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
         // 标记运行中
         changeMetaState(mapping.getMetaId(), MetaEnum.RUNNING);
 
-        puller.asyncStart(mapping);
+        puller.start(mapping);
     }
 
     @Override
