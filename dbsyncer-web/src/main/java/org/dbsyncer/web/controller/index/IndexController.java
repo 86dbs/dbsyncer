@@ -27,6 +27,7 @@ public class IndexController {
     @GetMapping("")
     public String index(HttpServletRequest request, ModelMap model, String projectGroupId) {
         ProjectGroupVo projectGroup = projectGroupService.getProjectGroup(projectGroupId);
+        model.put("connectorSize", projectGroup.getConnectorSize());
         model.put("connectors", projectGroup.getConnectors());
         model.put("mappings", projectGroup.getMappings());
         model.put("projectGroupId", projectGroupId);
@@ -41,4 +42,3 @@ public class IndexController {
     }
 
 }
-

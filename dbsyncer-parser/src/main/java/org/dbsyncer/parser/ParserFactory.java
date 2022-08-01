@@ -5,7 +5,6 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.CommandConfig;
@@ -49,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author AE86
@@ -227,7 +227,7 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(Task task, Mapping mapping, TableGroup tableGroup) {
+    public void execute(Task task, Mapping mapping, TableGroup tableGroup, ExecutorService executorService) {
         final String metaId = task.getId();
         final String sourceConnectorId = mapping.getSourceConnectorId();
         final String targetConnectorId = mapping.getTargetConnectorId();
@@ -280,7 +280,8 @@ public class ParserFactory implements Parser {
             pluginFactory.convert(group.getPlugin(), data, target);
 
             // 5、写入目标源
-            Result writer = writeBatch(new BatchWriter(tConnectorMapper, command, sTableName, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize));
+            BatchWriter batchWriter = new BatchWriter(tConnectorMapper, command, sTableName, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize);
+            Result writer = writeBatch(batchWriter, executorService);
 
             // 6、更新结果
             flush(task, writer);
@@ -288,11 +289,12 @@ public class ParserFactory implements Parser {
             // 7、判断尾页
             if (data.size() < pageSize) {
                 params.clear();
-                logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
+                logger.info("完成全量:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
                 break;
             }
 
             // 8、更新分页数
+            // TODO 记录表offset
             params.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(++pageIndex));
         }
     }
@@ -323,6 +325,17 @@ public class ParserFactory implements Parser {
      */
     @Override
     public Result writeBatch(BatchWriter batchWriter) {
+        return writeBatch(batchWriter, taskExecutor);
+    }
+
+    /**
+     * 批量写入
+     *
+     * @param batchWriter
+     * @param taskExecutor
+     * @return
+     */
+    private Result writeBatch(BatchWriter batchWriter, Executor taskExecutor) {
         List<Map> dataList = batchWriter.getDataList();
         int batchSize = batchWriter.getBatchSize();
         String tableName = batchWriter.getTableName();

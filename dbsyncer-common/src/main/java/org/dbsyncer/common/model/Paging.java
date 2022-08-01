@@ -4,16 +4,14 @@ import java.util.Collection;
 import java.util.Collections;
 
 public class Paging {
-
     private long total;
     private int pageNum;
     private int pageSize;
-    private Collection data;
+    private Collection data = Collections.EMPTY_LIST;
 
     public Paging(int pageNum, int pageSize) {
         this.pageNum = pageNum;
         this.pageSize = pageSize;
-        this.data = Collections.EMPTY_LIST;
     }
 
     public long getTotal() {

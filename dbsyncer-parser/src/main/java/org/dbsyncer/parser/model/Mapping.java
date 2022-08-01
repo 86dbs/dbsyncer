@@ -46,6 +46,11 @@ public class Mapping extends AbstractConfigModel {
     // 单次写入
     private int batchNum = 1000;
 
+    /**
+     * 线程数
+     */
+    private int threadNum = Runtime.getRuntime().availableProcessors() * 2;
+
     public String getSourceConnectorId() {
         return sourceConnectorId;
     }
@@ -118,9 +123,15 @@ public class Mapping extends AbstractConfigModel {
         return batchNum;
     }
 
-    public Mapping setBatchNum(int batchNum) {
+    public void setBatchNum(int batchNum) {
         this.batchNum = batchNum;
-        return this;
     }
 
+    public int getThreadNum() {
+        return threadNum;
+    }
+
+    public void setThreadNum(int threadNum) {
+        this.threadNum = threadNum;
+    }
 }

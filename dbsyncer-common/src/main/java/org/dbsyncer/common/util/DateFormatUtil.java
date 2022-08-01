@@ -2,6 +2,9 @@ package org.dbsyncer.common.util;
 
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.*;
 import java.time.temporal.ChronoField;
@@ -13,6 +16,10 @@ public abstract class DateFormatUtil {
      * yyyy-MM-dd HH:mm:ss
      */
     public static final DateTimeFormatter CHINESE_STANDARD_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    /**
+     * yyyy-MM-dd'T'HH:mm:ss.SSSz
+     */
+    public static final DateFormat GMT_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSz");
     /**
      * yyyy-MM-dd
      */
@@ -87,6 +94,11 @@ public abstract class DateFormatUtil {
     public static Timestamp stringToTimestamp(String s) {
         return Timestamp.valueOf(LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(s)));
     }
+
+    public static Timestamp stringToTimestamp(String s, DateFormat formatter) throws ParseException {
+        return new Timestamp(formatter.parse(s).getTime());
+    }
+
     public static OffsetTime timeWithTimeZone(String s) {
         return OffsetTime.parse(s, TIME_TZ_FORMAT).withOffsetSameInstant(ZoneOffset.UTC);
     }

@@ -23,5 +23,6 @@
 .mappingList .dropdown-menu {right: 12px;left: auto; top: 28px;}
 .mappingList .dropdown-menu i{font-size: 20px;}
 
+.dbsyncer_driver_name { margin-bottom: 5px;}
 .dbsyncer_block_increment { background: -webkit-linear-gradient(left, #ffffff, #dffbdc);}
 .dbsyncer_block_full { background: -webkit-linear-gradient(left, #ffffff, #dcf5fb);}

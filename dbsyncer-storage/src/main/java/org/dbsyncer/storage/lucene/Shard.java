@@ -127,7 +127,6 @@ public class Shard {
         Paging paging = new Paging(pageNum, pageSize);
         paging.setTotal(topDocs.totalHits);
         if(option.isQueryTotal()){
-            paging.setData(Collections.EMPTY_LIST);
             return paging;
         }
 
