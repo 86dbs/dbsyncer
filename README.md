@@ -176,10 +176,10 @@ $ ./build.sh
 ## 🐞常见问题
 * Mysql无法连接。默认使用的驱动版本为5.1.40，如果为mysql8需要手动替换驱动 [mysql-connector-java-8.0.21.jar](https://gitee.com/ghi/dbsyncer/attach_files) 
 * 有其他问题、建议或需求（如想支持某中间件，记得补充使用的版本号），欢迎大家提[【issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!
-* 在linux系统中，打包后，在bin文件夹下运行startup.sh前，要使用vim操作
+* 启动脚本编码格式有误，在linux系统中，打包后，在bin文件夹下运行startup.sh前，要使用vi操作
 ```bash
-vim startup.sh
-:set ff=unix 
+vi startup.sh
+:set ff=unix
 :wq
 ```
 再运行startup.sh
