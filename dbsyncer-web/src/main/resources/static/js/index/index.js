@@ -181,7 +181,7 @@ function doPost(url) {
 
 $(function () {
     // 初始化select插件
-    initSelectIndex($(".select-control"), 1);
+    initSelectIndex($(".select-control"));
     bindAddProjectGroup();
     var $projectGroupSelect = $("#projectGroup");
     bindEditProjectGroup($projectGroupSelect);

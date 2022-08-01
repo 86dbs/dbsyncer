@@ -14,6 +14,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author AE86
@@ -23,6 +25,10 @@ import java.util.Map;
 public abstract class AbstractStorageService implements StorageService, DisposableBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final Lock lock = new ReentrantLock(true);
+
+    private volatile boolean tryDeleteAll;
 
     @Autowired
     private Map<String, Strategy> map;
@@ -55,14 +61,27 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     @Override
     public Paging query(Query query) {
+        if(tryDeleteAll){
+            return new Paging(query.getPageNum(), query.getPageSize());
+        }
+
+        boolean locked = false;
         try {
-            String collection = getCollection(query.getType(), query.getCollection());
-            query.setCollection(collection);
-            return select(query);
-        } catch (IOException e) {
+            locked = lock.tryLock();
+            if (locked) {
+                String collection = getCollection(query.getType(), query.getCollection());
+                query.setCollection(collection);
+                return select(query);
+            }
+        } catch (Exception e) {
             logger.error("query collectionId:{}, params:{}, failed:{}", query.getCollection(), query.getParams(), e.getMessage());
             throw new StorageException(e);
+        } finally {
+            if (locked) {
+                lock.unlock();
+            }
         }
+        return new Paging(query.getPageNum(), query.getPageSize());
     }
 
     @Override
@@ -143,12 +162,21 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     @Override
     public void clear(StorageEnum type, String collectionId) {
+        boolean locked = false;
         try {
-            String collection = getCollection(type, collectionId);
-            deleteAll(type, collection);
-        } catch (IOException e) {
+            locked = lock.tryLock();
+            if (locked) {
+                tryDeleteAll = true;
+                deleteAll(type, getCollection(type, collectionId));
+            }
+        } catch (Exception e) {
             logger.error("clear collectionId:{}, failed:{}", collectionId, e.getMessage());
             throw new StorageException(e);
+        } finally {
+            if (locked) {
+                tryDeleteAll = false;
+                lock.unlock();
+            }
         }
     }
 

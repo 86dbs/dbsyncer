@@ -93,6 +93,7 @@ public class MappingChecker extends AbstractChecker {
         // 全量配置
         mapping.setReadNum(NumberUtil.toInt(params.get("readNum"), mapping.getReadNum()));
         mapping.setBatchNum(NumberUtil.toInt(params.get("batchNum"), mapping.getBatchNum()));
+        mapping.setThreadNum(NumberUtil.toInt(params.get("threadNum"), mapping.getThreadNum()));
 
         // 增量配置(日志/定时)
         String incrementStrategy = params.get("incrementStrategy");

@@ -71,8 +71,11 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
     @Override
     public ProjectGroupVo getProjectGroup(String id) {
         ProjectGroupVo vo = new ProjectGroupVo();
+        List<Connector> connectors = connectorService.getConnectorAll();
+        vo.setConnectorSize(CollectionUtils.isEmpty(connectors) ? 0 : connectors.size());
+
         if (StringUtil.isBlank(id)) {
-            vo.setConnectors(connectorService.getConnectorAll());
+            vo.setConnectors(connectors);
             vo.setMappings(mappingService.getMappingAll());
             return vo;
         }
@@ -87,7 +90,6 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
         List<String> connectorIds = projectGroup.getConnectorIds();
         if (!CollectionUtils.isEmpty(connectorIds)) {
             Set<String> connectorIdSet = new HashSet<>(connectorIds);
-            List<Connector> connectors = connectorService.getConnectorAll();
             if (!CollectionUtils.isEmpty(connectors)) {
                 vo.setConnectors(connectors.stream()
                         .filter((connector -> connectorIdSet.contains(connector.getId())))
