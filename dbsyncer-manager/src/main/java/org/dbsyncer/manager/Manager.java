@@ -83,6 +83,10 @@ public interface Manager extends Executor {
 
     List<TableGroup> getTableGroupAll(String mappingId);
 
+    List<TableGroup> getSortedTableGroupAll(String mappingId);
+
+    int getTableGroupCount(String mappingId);
+
     Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup);
 
     long getCount(String connectorId, Map<String, String> command);

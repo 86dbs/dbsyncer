@@ -13,8 +13,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -33,26 +36,28 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         String mappingId = params.get("mappingId");
         assertRunning(manager.getMapping(mappingId));
 
-        // table1, table2
-        String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), "|");
-        String[] targetTableArray = StringUtil.split(params.get("targetTable"), "|");
-        int tableSize = sourceTableArray.length;
-        Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
+        synchronized (LOCK){
+            // table1, table2
+            String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), "|");
+            String[] targetTableArray = StringUtil.split(params.get("targetTable"), "|");
+            int tableSize = sourceTableArray.length;
+            Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
 
-        String id = null;
-        for (int i = 0; i < tableSize; i++) {
-            params.put("sourceTable", sourceTableArray[i]);
-            params.put("targetTable", targetTableArray[i]);
-            TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
-            log(LogType.TableGroupLog.INSERT, model);
+            String id = null;
+            for (int i = 0; i < tableSize; i++) {
+                params.put("sourceTable", sourceTableArray[i]);
+                params.put("targetTable", targetTableArray[i]);
+                TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
+                log(LogType.TableGroupLog.INSERT, model);
+                int tableGroupCount = manager.getTableGroupCount(mappingId);
+                model.setIndex(tableGroupCount + 1);
+                id = manager.addTableGroup(model);
+            }
 
-            id = manager.addTableGroup(model);
+            // 合并驱动公共字段
+            mergeMappingColumn(mappingId);
+            return 1 < tableSize ? String.valueOf(tableSize) : id;
         }
-
-        // 合并驱动公共字段
-        mergeMappingColumn(mappingId);
-
-        return 1 < tableSize ? String.valueOf(tableSize) : id;
     }
 
     @Override
@@ -83,6 +88,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
         // 合并驱动公共字段
         mergeMappingColumn(mappingId);
+
+        // 重置排序
+        resetTableGroupAllIndex(mappingId);
         return true;
     }
 
@@ -95,11 +103,21 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
-        List<TableGroup> list = manager.getTableGroupAll(mappingId)
-                .stream()
-                .sorted(Comparator.comparing(TableGroup::getUpdateTime).reversed())
-                .collect(Collectors.toList());
-        return list;
+        return manager.getSortedTableGroupAll(mappingId);
+    }
+
+    private void resetTableGroupAllIndex(String mappingId) {
+        synchronized (LOCK) {
+            List<TableGroup> list = manager.getSortedTableGroupAll(mappingId);
+            int size = list.size();
+            int i = size;
+            while (i > 0) {
+                TableGroup g = list.get(size - i);
+                g.setIndex(i);
+                manager.editTableGroup(g);
+                i--;
+            }
+        }
     }
 
     private void mergeMappingColumn(String mappingId) {

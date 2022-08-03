@@ -119,7 +119,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
 
         public FullWorker(Mapping mapping) {
             this.mapping = mapping;
-            this.list = manager.getTableGroupAll(mapping.getId());
+            this.list = manager.getSortedTableGroupAll(mapping.getId());
             Assert.notEmpty(list, "映射关系不能为空");
         }
 

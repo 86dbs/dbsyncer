@@ -90,7 +90,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
         Connector connector = manager.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
-        List<TableGroup> list = manager.getTableGroupAll(mappingId);
+        List<TableGroup> list = manager.getSortedTableGroupAll(mappingId);
         Assert.notEmpty(list, "映射关系不能为空.");
         Meta meta = manager.getMeta(metaId);
         Assert.notNull(meta, "Meta不能为空.");
