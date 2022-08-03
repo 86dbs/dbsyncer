@@ -1,7 +1,9 @@
 package org.dbsyncer.manager.puller;
 
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.Parser;
+import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
@@ -73,17 +75,29 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         long now = Instant.now().toEpochMilli();
         task.setBeginTime(now);
         task.setEndTime(now);
+
+        // 获取上次同步点
+        Meta meta = manager.getMeta(task.getId());
+        Map<String, String> snapshot = meta.getSnapshot();
+        task.setPageIndex(NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()), ParserEnum.PAGE_INDEX.getDefaultValue()));
+        task.setTableGroupIndex(NumberUtil.toInt(snapshot.get(ParserEnum.TABLE_GROUP_INDEX.getCode()), ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
         flush(task);
 
-        for (TableGroup t : list) {
+        int i = task.getTableGroupIndex();
+        while (i < list.size()){
             if (!task.isRunning()) {
                 break;
             }
-            parser.execute(task, mapping, t, executorService);
+            parser.execute(task, mapping, list.get(i), executorService);
+            task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
+            task.setTableGroupIndex(++i);
+            flush(task);
         }
 
         // 记录结束时间
         task.setEndTime(Instant.now().toEpochMilli());
+        task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
+        task.setTableGroupIndex(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
         flush(task);
     }
 
@@ -93,6 +107,9 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
 
         meta.setBeginTime(task.getBeginTime());
         meta.setEndTime(task.getEndTime());
+        Map<String, String> snapshot = meta.getSnapshot();
+        snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(task.getPageIndex()));
+        snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(task.getTableGroupIndex()));
         manager.editMeta(meta);
     }
 

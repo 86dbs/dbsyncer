@@ -19,16 +19,16 @@ public interface Event {
     /**
      * 写入增量点事件
      *
-     * @param map
+     * @param snapshot
      */
-    void flushEvent(Map<String, String> map);
+    void flushEvent(Map<String, String> snapshot);
 
     /**
      * 强制写入增量点事件
      *
-     * @param map
+     * @param snapshot
      */
-    void forceFlushEvent(Map<String,String> map);
+    void forceFlushEvent(Map<String,String> snapshot);
 
     /**
      * 刷新事件变更时间

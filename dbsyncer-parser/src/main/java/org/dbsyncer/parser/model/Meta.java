@@ -27,7 +27,7 @@ public class Meta extends ConfigModel {
     private AtomicLong total;
     private AtomicLong success;
     private AtomicLong fail;
-    private Map<String, String> map;
+    private Map<String, String> snapshot;
     private long beginTime;
     private long endTime;
 
@@ -47,7 +47,7 @@ public class Meta extends ConfigModel {
         this.total = new AtomicLong(0);
         this.success = new AtomicLong(0);
         this.fail = new AtomicLong(0);
-        this.map = new LinkedHashMap<>();
+        this.snapshot = new LinkedHashMap<>();
         this.beginTime = 0L;
         this.endTime = 0L;
     }
@@ -92,12 +92,12 @@ public class Meta extends ConfigModel {
         this.fail = fail;
     }
 
-    public Map<String, String> getMap() {
-        return map;
+    public Map<String, String> getSnapshot() {
+        return snapshot;
     }
 
-    public void setMap(Map<String, String> map) {
-        this.map = map;
+    public void setSnapshot(Map<String, String> snapshot) {
+        this.snapshot = snapshot;
     }
 
     public long getBeginTime() {

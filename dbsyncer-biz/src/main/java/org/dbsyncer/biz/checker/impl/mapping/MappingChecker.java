@@ -139,7 +139,7 @@ public class MappingChecker extends AbstractChecker {
         if(StringUtil.isNotBlank(metaSnapshot)){
             Map snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
             if(!CollectionUtils.isEmpty(snapshot)){
-                meta.setMap(snapshot);
+                meta.setSnapshot(snapshot);
             }
         }
 
