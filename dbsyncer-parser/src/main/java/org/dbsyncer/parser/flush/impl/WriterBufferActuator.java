@@ -45,7 +45,7 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
 
     @Override
     protected String getPartitionKey(WriterRequest request) {
-        return new StringBuilder(request.getTableGroupId()).append("-").append(request.getEvent()).toString();
+        return request.getTableGroupId();
     }
 
     @Override
@@ -83,9 +83,9 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     }
 
     @Override
-    protected boolean skipPartition(WriterRequest request) {
-        // 并发场景，同一条数据可能连续触发Insert > Delete > Insert，出现Delete事件跳过分区处理
-        return ConnectorConstant.OPERTION_DELETE.equals(request.getEvent());
+    protected boolean skipPartition(WriterRequest nextRequest, WriterResponse response) {
+        // 并发场景，同一条数据可能连续触发Insert > Delete > Insert，批处理任务中出现不同事件时，跳过分区处理
+        return !StringUtil.equals(nextRequest.getEvent(), response.getEvent());
     }
 
     /**
