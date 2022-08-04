@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.parser.ParserFactory;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.*;
@@ -79,6 +80,12 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
 
         // 4、消息处理完成
         parserStrategy.complete(response.getMessageIds());
+    }
+
+    @Override
+    protected boolean skipPartition(WriterRequest request) {
+        // 并发场景，同一条数据可能连续触发Insert > Delete > Insert，出现Delete事件跳过分区处理
+        return ConnectorConstant.OPERTION_DELETE.equals(request.getEvent());
     }
 
     /**

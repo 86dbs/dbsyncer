@@ -74,6 +74,16 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
      */
     protected abstract void pull(Response response);
 
+    /**
+     * 是否跳过分区处理
+     *
+     * @param request
+     * @return
+     */
+    protected boolean skipPartition(Request request){
+        return false;
+    }
+
     @Override
     public Queue getQueue() {
         return buffer;
@@ -125,6 +135,10 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
                 }
                 partition(poll, (Response) map.get(key));
                 batchCounter.incrementAndGet();
+
+                if(skipPartition(poll)){
+                    break;
+                }
             }
 
             map.forEach((key, flushTask) -> {
