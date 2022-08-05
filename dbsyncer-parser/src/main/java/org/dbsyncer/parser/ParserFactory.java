@@ -20,7 +20,6 @@ import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
-import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
@@ -246,9 +245,6 @@ public class ParserFactory implements Parser {
         // 获取同步字段
         Picker picker = new Picker(fieldMapping);
 
-        // 检查分页参数
-        Map<String, String> params = getMeta(metaId).getMap();
-        params.putIfAbsent(ParserEnum.PAGE_INDEX.getCode(), ParserEnum.PAGE_INDEX.getDefaultValue());
         int pageSize = mapping.getReadNum();
         int batchSize = mapping.getBatchNum();
         ConnectorMapper sConnectorMapper = connectorFactory.connect(sConfig);
@@ -261,11 +257,9 @@ public class ParserFactory implements Parser {
             }
 
             // 1、获取数据源数据
-            int pageIndex = Integer.parseInt(params.get(ParserEnum.PAGE_INDEX.getCode()));
-            Result reader = connectorFactory.reader(sConnectorMapper, new ReaderConfig(command, new ArrayList<>(), pageIndex, pageSize));
+            Result reader = connectorFactory.reader(sConnectorMapper, new ReaderConfig(command, new ArrayList<>(), task.getPageIndex(), pageSize));
             List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
-                params.clear();
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
                 break;
             }
@@ -284,18 +278,14 @@ public class ParserFactory implements Parser {
             Result writer = writeBatch(batchWriter, executorService);
 
             // 6、更新结果
+            task.setPageIndex(task.getPageIndex() + 1);
             flush(task, writer);
 
             // 7、判断尾页
             if (data.size() < pageSize) {
-                params.clear();
                 logger.info("完成全量:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
                 break;
             }
-
-            // 8、更新分页数
-            // TODO 记录表offset
-            params.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(++pageIndex));
         }
     }
 
@@ -400,19 +390,6 @@ public class ParserFactory implements Parser {
         // 发布刷新事件给FullExtractor
         task.setEndTime(Instant.now().toEpochMilli());
         applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
-    }
-
-    /**
-     * 获取Meta(注: 没有bean拷贝, 便于直接更新缓存)
-     *
-     * @param metaId
-     * @return
-     */
-    private Meta getMeta(String metaId) {
-        Assert.hasText(metaId, "Meta id can not be empty.");
-        Meta meta = cacheService.get(metaId, Meta.class);
-        Assert.notNull(meta, "Meta can not be null.");
-        return meta;
     }
 
     /**

@@ -6,6 +6,10 @@ public class Task {
 
     private StateEnum state;
 
+    private int tableGroupIndex;
+
+    private int pageIndex;
+
     private long beginTime;
 
     private long endTime;
@@ -32,6 +36,22 @@ public class Task {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public int getTableGroupIndex() {
+        return tableGroupIndex;
+    }
+
+    public void setTableGroupIndex(int tableGroupIndex) {
+        this.tableGroupIndex = tableGroupIndex;
+    }
+
+    public int getPageIndex() {
+        return pageIndex;
+    }
+
+    public void setPageIndex(int pageIndex) {
+        this.pageIndex = pageIndex;
     }
 
     public long getBeginTime() {

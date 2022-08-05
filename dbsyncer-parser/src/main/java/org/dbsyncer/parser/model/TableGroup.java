@@ -12,6 +12,9 @@ import java.util.Map;
  */
 public class TableGroup extends AbstractConfigModel {
 
+    // 排序索引
+    private int index;
+
     // 驱动映射关系ID
     private String mappingId;
 
@@ -26,6 +29,14 @@ public class TableGroup extends AbstractConfigModel {
 
     // 执行命令，例SQL等
     private Map<String, String> command;
+
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
 
     public String getMappingId() {
         return mappingId;

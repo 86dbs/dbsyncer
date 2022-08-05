@@ -14,4 +14,10 @@ public interface BufferResponse {
      */
     int getTaskSize();
 
+    /**
+     * 获取后缀名称
+     *
+     * @return
+     */
+    String getSuffixName();
 }

@@ -74,6 +74,17 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
      */
     protected abstract void pull(Response response);
 
+    /**
+     * 是否跳过分区处理
+     *
+     * @param nextRequest
+     * @param response
+     * @return
+     */
+    protected boolean skipPartition(Request nextRequest, Response response){
+        return false;
+    }
+
     @Override
     public Queue getQueue() {
         return buffer;
@@ -116,25 +127,32 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     private void flush(Queue<Request> queue) throws IllegalAccessException, InstantiationException {
         if (!queue.isEmpty()) {
             AtomicLong batchCounter = new AtomicLong();
-            final Map<String, BufferResponse> map = new LinkedHashMap<>();
+            final Map<String, Response> map = new LinkedHashMap<>();
             while (!queue.isEmpty() && batchCounter.get() < bufferActuatorConfig.getBatchCount()) {
                 Request poll = queue.poll();
                 String key = getPartitionKey(poll);
                 if (!map.containsKey(key)) {
-                    map.putIfAbsent(key, (BufferResponse) responseClazz.newInstance());
+                    map.putIfAbsent(key, responseClazz.newInstance());
                 }
-                partition(poll, (Response) map.get(key));
+                Response response = map.get(key);
+                partition(poll, response);
                 batchCounter.incrementAndGet();
+
+                Request next = queue.peek();
+                if(null != next && skipPartition(next, response)){
+                    break;
+                }
             }
 
             map.forEach((key, flushTask) -> {
                 long now = Instant.now().toEpochMilli();
                 try {
-                    pull((Response) flushTask);
+                    pull(flushTask);
                 } catch (Exception e) {
                     logger.error("[{}]异常{}", key);
                 }
-                logger.info("[{}]{}条，耗时{}毫秒", key, flushTask.getTaskSize(), (Instant.now().toEpochMilli() - now));
+                final BufferResponse task = (BufferResponse) flushTask;
+                logger.info("[{}{}]{}条，耗时{}毫秒", key, task.getSuffixName(), task.getTaskSize(), (Instant.now().toEpochMilli() - now));
             });
             map.clear();
         }

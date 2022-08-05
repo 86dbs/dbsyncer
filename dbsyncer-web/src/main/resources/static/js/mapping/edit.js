@@ -96,6 +96,19 @@ function bindMappingTableGroupListClick() {
     $tableGroupList.find("tr").bind('click', function () {
         doLoader('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
     });
+
+    // 绑定表格拖拽事件
+    $tableGroupList.tableDnD({
+        onDragClass: "reorder_rows_onDragClass",
+        onDrop: function(table, row) {
+            var newData = [];
+            var $trList = $(table).find("tr");
+            $.each($trList, function () {
+                newData.push($(this).attr('id'));
+            });
+            $("#sortedTableGroupIds").val(newData.join('|'));
+        }
+    });
 }
 
 // 绑定下拉选择事件自动匹配相似表事件

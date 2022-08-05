@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
  * @author AE86
@@ -139,7 +140,7 @@ public class MappingChecker extends AbstractChecker {
         if(StringUtil.isNotBlank(metaSnapshot)){
             Map snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
             if(!CollectionUtils.isEmpty(snapshot)){
-                meta.setMap(snapshot);
+                meta.setSnapshot(snapshot);
             }
         }
 
@@ -153,10 +154,28 @@ public class MappingChecker extends AbstractChecker {
      * 合并关联的映射关系配置
      *
      * @param mapping
+     * @param params
      */
-    public void batchMergeTableGroupConfig(Mapping mapping) {
+    public void batchMergeTableGroupConfig(Mapping mapping, Map<String, String> params) {
         List<TableGroup> groupAll = manager.getTableGroupAll(mapping.getId());
         if (!CollectionUtils.isEmpty(groupAll)) {
+            // 手动排序
+            String[] sortedTableGroupIds = StringUtil.split(params.get("sortedTableGroupIds"), "|");
+            if(null != sortedTableGroupIds){
+                Map<String, TableGroup> tableGroupMap = groupAll.stream().collect(Collectors.toMap(TableGroup::getId, f -> f, (k1, k2) -> k1));
+                groupAll.clear();
+                int size = sortedTableGroupIds.length;
+                int i = size;
+                while (i > 0){
+                    TableGroup g = tableGroupMap.get(sortedTableGroupIds[size - i]);
+                    Assert.notNull(g, "Invalid sorted tableGroup.");
+                    g.setIndex(i);
+                    groupAll.add(g);
+                    i--;
+                }
+            }
+
+            // 合并配置
             for (TableGroup g : groupAll) {
                 tableGroupChecker.mergeConfig(mapping, g);
                 manager.editTableGroup(g);

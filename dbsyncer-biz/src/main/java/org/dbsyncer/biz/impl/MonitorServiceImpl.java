@@ -50,6 +50,7 @@ public class MonitorServiceImpl implements MonitorService {
     private void init() {
         metricDetailFormatterMap.putIfAbsent(TaskMetricEnum.STORAGE_ACTIVE.getCode(), new ValueMetricDetailFormatter());
         metricDetailFormatterMap.putIfAbsent(TaskMetricEnum.STORAGE_REMAINING_CAPACITY.getCode(), new ValueMetricDetailFormatter());
+        metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.CORE_SIZE.getCode(), new ValueMetricDetailFormatter());
         metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.TASK_SUBMITTED.getCode(), new ValueMetricDetailFormatter());
         metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.QUEUE_UP.getCode(), new ValueMetricDetailFormatter());
         metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.ACTIVE.getCode(), new ValueMetricDetailFormatter());

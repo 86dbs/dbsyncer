@@ -13,6 +13,7 @@ import java.util.Map;
  */
 public class WriterResponse extends AbstractWriter implements BufferResponse {
 
+    private static final String SYMBOL = "-";
     private List<Map> dataList = new LinkedList<>();
     private List<String> messageIds = new LinkedList<>();
 
@@ -21,6 +22,11 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
     @Override
     public int getTaskSize() {
         return dataList.size();
+    }
+
+    @Override
+    public String getSuffixName() {
+        return SYMBOL.concat(getEvent());
     }
 
     public List<Map> getDataList() {

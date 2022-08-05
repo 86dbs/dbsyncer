@@ -13,6 +13,7 @@ import java.util.Map;
  */
 public class StorageResponse implements BufferResponse {
 
+    private static final String EMPTY = "";
     private String metaId;
     private List<Map> dataList = new LinkedList<>();
 
@@ -35,5 +36,10 @@ public class StorageResponse implements BufferResponse {
     @Override
     public int getTaskSize() {
         return dataList.size();
+    }
+
+    @Override
+    public String getSuffixName() {
+        return EMPTY;
     }
 }

@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.parser.ParserFactory;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.*;
@@ -44,7 +45,7 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
 
     @Override
     protected String getPartitionKey(WriterRequest request) {
-        return new StringBuilder(request.getTableGroupId()).append("-").append(request.getEvent()).toString();
+        return request.getTableGroupId();
     }
 
     @Override
@@ -79,6 +80,12 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
 
         // 4、消息处理完成
         parserStrategy.complete(response.getMessageIds());
+    }
+
+    @Override
+    protected boolean skipPartition(WriterRequest nextRequest, WriterResponse response) {
+        // 并发场景，同一条数据可能连续触发Insert > Delete > Insert，批处理任务中出现不同事件时，跳过分区处理
+        return !StringUtil.equals(nextRequest.getEvent(), response.getEvent());
     }
 
     /**

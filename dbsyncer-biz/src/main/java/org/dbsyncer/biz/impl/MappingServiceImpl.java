@@ -67,7 +67,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
             log(LogType.MappingLog.UPDATE, model);
 
-            mappingChecker.batchMergeTableGroupConfig(model);
+            mappingChecker.batchMergeTableGroupConfig(model, params);
             return manager.editMapping(model);
         }
     }

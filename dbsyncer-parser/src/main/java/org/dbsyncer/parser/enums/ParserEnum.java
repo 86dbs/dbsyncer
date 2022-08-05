@@ -12,18 +12,24 @@ public enum ParserEnum {
     /**
      * 页数
      */
-    PAGE_INDEX("pageIndex", "1");
+    PAGE_INDEX("pageIndex", 1),
+
+    /**
+     * 执行的表映射关系索引
+     */
+    TABLE_GROUP_INDEX("tableGroupIndex", 0);
 
     /**
      * 编码
      */
     private String code;
+
     /**
      * 默认值
      */
-    private String defaultValue;
+    private int defaultValue;
 
-    ParserEnum(String code, String defaultValue) {
+    ParserEnum(String code, int defaultValue) {
         this.code = code;
         this.defaultValue = defaultValue;
     }
@@ -32,15 +38,8 @@ public enum ParserEnum {
         return code;
     }
 
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getDefaultValue() {
+    public int getDefaultValue() {
         return defaultValue;
     }
 
-    public void setDefaultValue(String defaultValue) {
-        this.defaultValue = defaultValue;
-    }
 }

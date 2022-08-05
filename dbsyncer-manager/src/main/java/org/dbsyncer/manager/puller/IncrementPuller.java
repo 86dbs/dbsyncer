@@ -90,7 +90,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
         Connector connector = manager.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
-        List<TableGroup> list = manager.getTableGroupAll(mappingId);
+        List<TableGroup> list = manager.getSortedTableGroupAll(mappingId);
         Assert.notEmpty(list, "映射关系不能为空.");
         Meta meta = manager.getMeta(metaId);
         Assert.notNull(meta, "Meta不能为空.");
@@ -145,7 +145,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             AbstractQuartzExtractor extractor = listener.getExtractor(ListenerTypeEnum.TIMING, connectorConfig.getConnectorType(), AbstractQuartzExtractor.class);
             List<Map<String, String>> commands = list.stream().map(t -> t.getCommand()).collect(Collectors.toList());
             extractor.setCommands(commands);
-            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), new QuartzListener(mapping, list));
+            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getSnapshot(), new QuartzListener(mapping, list));
             return extractor;
         }
 
@@ -156,7 +156,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             LogListener logListener = new LogListener(mapping, list, extractor);
             logListener.getTablePicker().forEach((k, fieldPickers) -> filterTable.add(k));
             extractor.setFilterTable(filterTable);
-            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getMap(), logListener);
+            setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getSnapshot(), logListener);
             return extractor;
         }
 
@@ -182,21 +182,21 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         private LocalDateTime updateTime = LocalDateTime.now();
 
         @Override
-        public void flushEvent(Map<String, String> map) {
+        public void flushEvent(Map<String, String> snapshot) {
             // 30s内更新，执行写入
             if (updateTime.isAfter(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS))) {
-                if (!CollectionUtils.isEmpty(map)) {
-                    logger.debug("{}", map);
+                if (!CollectionUtils.isEmpty(snapshot)) {
+                    logger.debug("{}", snapshot);
                 }
-                forceFlushEvent(map);
+                forceFlushEvent(snapshot);
             }
         }
 
         @Override
-        public void forceFlushEvent(Map<String, String> map) {
+        public void forceFlushEvent(Map<String, String> snapshot) {
             Meta meta = manager.getMeta(metaId);
             if (null != meta) {
-                meta.setMap(map);
+                meta.setSnapshot(snapshot);
                 manager.editMeta(meta);
             }
         }

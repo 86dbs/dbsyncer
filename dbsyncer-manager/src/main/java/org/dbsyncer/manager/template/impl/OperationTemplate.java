@@ -66,6 +66,13 @@ public final class OperationTemplate {
         return Collections.EMPTY_LIST;
     }
 
+    public int queryCount(QueryConfig query) {
+        ConfigModel model = query.getConfigModel();
+        String groupId = getGroupId(model, query.getGroupStrategyEnum());
+        Group group = cacheService.get(groupId, Group.class);
+        return null != group ? group.getIndex().size() : 0;
+    }
+
     public <T> T queryObject(Class<T> clazz, String id) {
         if (StringUtil.isBlank(id)) {
             return null;

@@ -37,8 +37,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author AE86
@@ -221,6 +223,24 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
         QueryConfig<TableGroup> queryConfig = new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE);
         List<TableGroup> tableGroups = operationTemplate.queryAll(queryConfig);
         return tableGroups;
+    }
+
+    @Override
+    public List<TableGroup> getSortedTableGroupAll(String mappingId) {
+        List<TableGroup> list = getTableGroupAll(mappingId)
+                .stream()
+                .sorted(Comparator.comparing(TableGroup::getIndex).reversed())
+                .collect(Collectors.toList());
+        return list;
+    }
+
+    @Override
+    public int getTableGroupCount(String mappingId) {
+        TableGroup tableGroup = new TableGroup();
+        tableGroup.setType(ConfigConstant.TABLE_GROUP);
+        tableGroup.setMappingId(mappingId);
+        QueryConfig queryConfig = new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE);
+        return operationTemplate.queryCount(queryConfig);
     }
 
     @Override

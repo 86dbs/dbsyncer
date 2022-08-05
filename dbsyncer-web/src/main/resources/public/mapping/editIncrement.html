@@ -26,7 +26,7 @@
                 <input id="metaSnapshot" name="metaSnapshot" class="form-control hidden" type="text"/>
             </div>
             <div class="col-md-11">
-                <table th:if="${mapping?.meta?.map?.size() gt 0}" class="table table-hover">
+                <table th:if="${mapping?.meta?.snapshot?.size() gt 0}" class="table table-hover">
                     <thead>
                     <tr>
                         <th>Key</th>
@@ -35,7 +35,7 @@
                     </tr>
                     </thead>
                     <tbody id="mappingMetaSnapshotConfig">
-                    <tr th:each="item,entry:${mapping?.meta?.map}">
+                    <tr th:each="item,entry:${mapping?.meta?.snapshot}">
                         <td th:text="${entry.current.key}"></td>
                         <td th:text="${entry.current.value}"></td>
                         <td><i th:title="修改" class="fa fa-edit well-sign-green dbsyncer_pointer metaSnapshotModify"></i></td>
