@@ -12,6 +12,10 @@ public enum ThreadPoolMetricEnum {
     /**
      * 已提交
      */
+    CORE_SIZE("thread.pool.core.size", "线程池", "核心数"),
+    /**
+     * 已提交
+     */
     TASK_SUBMITTED("thread.pool.task.submitted", "线程池", "已提交"),
     /**
      * 排队中

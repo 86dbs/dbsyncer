@@ -42,7 +42,8 @@
         <commons-io.version>2.5</commons-io.version>
         <lucene-analyzers-smartcn.version>7.7.0</lucene-analyzers-smartcn.version>
         <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
-        <mysql.version>5.1.40</mysql.version>
+        <!--<mysql.version>5.1.40</mysql.version>-->
+        <mysql.version>8.0.21</mysql.version>
         <mysql-binlog.version>0.21.0</mysql-binlog.version>
         <mssql-jdbc.version>7.4.1.jre8</mssql-jdbc.version>
         <postgresql.version>42.3.3</postgresql.version>
