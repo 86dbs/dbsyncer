@@ -299,7 +299,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         }
 
         List<Field> fields = executor.getFieldPairs().stream().map(p -> new Field(p.columnName, p.labelName)).collect(Collectors.toList());
-        final SqlBuilderConfig config = new SqlBuilderConfig(connector, "", table, ConfigConstant.CONFIG_MODEL_ID, fields, "", "");
+        final SqlBuilderConfig config = new SqlBuilderConfig(connector, null, "", table, ConfigConstant.CONFIG_MODEL_ID, fields, "", "");
 
         String query = SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config);
         String insert = SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(config);

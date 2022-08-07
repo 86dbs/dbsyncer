@@ -388,7 +388,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             pk = findOriginalTablePrimaryKey(commandConfig, "");
         }
 
-        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());
+        SqlBuilderConfig config = new SqlBuilderConfig(this, commandConfig, schema, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());
         return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
     }
 
