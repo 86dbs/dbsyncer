@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.database;
 
+import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.model.PageSql;
 
 public interface Database {
@@ -13,12 +14,21 @@ public interface Database {
     String getPageSql(PageSql config);
 
     /**
-     * 获取分页SQL
+     * 获取分页游标SQL
      *
-     * @param pageIndex
-     * @param pageSize
+     * @param pageSql
      * @return
      */
-    Object[] getPageArgs(int pageIndex, int pageSize);
+    default String getPageCursorSql(PageSql pageSql) {
+        return "";
+    }
+
+    /**
+     * 获取分页SQL
+     *
+     * @param config
+     * @return
+     */
+    Object[] getPageArgs(ReaderConfig config);
 
 }

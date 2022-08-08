@@ -3,6 +3,7 @@ package org.dbsyncer.connector.sqlserver;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
@@ -25,7 +26,9 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Object[] getPageArgs(int pageIndex, int pageSize) {
+    public Object[] getPageArgs(ReaderConfig config) {
+        int pageSize = config.getPageSize();
+        int pageIndex = config.getPageIndex();
         return new Object[] {(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
     }
 

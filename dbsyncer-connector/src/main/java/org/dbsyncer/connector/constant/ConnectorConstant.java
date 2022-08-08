@@ -28,6 +28,11 @@ public class ConnectorConstant {
     public static final String OPERTION_QUERY = "QUERY";
 
     /**
+     * 查询游标
+     */
+    public static final String OPERTION_QUERY_CURSOR = "QUERY_CURSOR";
+
+    /**
      * 查询过滤条件
      */
     public static final String OPERTION_QUERY_FILTER = "QUERY_FILTER";

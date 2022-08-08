@@ -8,7 +8,6 @@ import java.util.List;
 public class SqlBuilderConfig {
 
     private Database database;
-    private CommandConfig commandConfig;
     // 架构名
     private String schema;
     // 表名
@@ -22,9 +21,8 @@ public class SqlBuilderConfig {
     // 引号
     private String quotation;
 
-    public SqlBuilderConfig(Database database, CommandConfig commandConfig, String schema, String tableName, String pk, List<Field> fields, String queryFilter, String quotation) {
+    public SqlBuilderConfig(Database database, String schema, String tableName, String pk, List<Field> fields, String queryFilter, String quotation) {
         this.database = database;
-        this.commandConfig = commandConfig;
         this.schema = schema;
         this.tableName = tableName;
         this.pk = pk;
@@ -35,10 +33,6 @@ public class SqlBuilderConfig {
 
     public Database getDatabase() {
         return database;
-    }
-
-    public CommandConfig getCommandConfig() {
-        return commandConfig;
     }
 
     public String getSchema() {

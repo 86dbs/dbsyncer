@@ -80,6 +80,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         Meta meta = manager.getMeta(task.getId());
         Map<String, String> snapshot = meta.getSnapshot();
         task.setPageIndex(NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()), ParserEnum.PAGE_INDEX.getDefaultValue()));
+        task.setCursor(snapshot.get(ParserEnum.CURSOR.getCode()));
         task.setTableGroupIndex(NumberUtil.toInt(snapshot.get(ParserEnum.TABLE_GROUP_INDEX.getCode()), ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
         flush(task);
 
@@ -90,6 +91,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
             }
             parser.execute(task, mapping, list.get(i), executorService);
             task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
+            task.setCursor("");
             task.setTableGroupIndex(++i);
             flush(task);
         }
@@ -97,6 +99,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         // 记录结束时间
         task.setEndTime(Instant.now().toEpochMilli());
         task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
+        task.setCursor("");
         task.setTableGroupIndex(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
         flush(task);
     }

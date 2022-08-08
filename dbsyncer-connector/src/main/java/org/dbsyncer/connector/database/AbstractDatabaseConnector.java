@@ -87,15 +87,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     @Override
     public Result reader(DatabaseConnectorMapper connectorMapper, ReaderConfig config) {
         // 1、获取select SQL
-        String querySql = config.getCommand().get(SqlBuilderEnum.QUERY.getName());
+        String queryKey = enableCursor() && StringUtil.isBlank(config.getCursor()) ? ConnectorConstant.OPERTION_QUERY_CURSOR : SqlBuilderEnum.QUERY.getName();
+        String querySql = config.getCommand().get(queryKey);
         Assert.hasText(querySql, "查询语句不能为空.");
 
         // 2、设置参数
-        Collections.addAll(config.getArgs(), getPageArgs(config.getPageIndex(), config.getPageSize()));
+        Collections.addAll(config.getArgs(), getPageArgs(config));
 
         // 3、执行SQL
-        List<Map<String, Object>> list = connectorMapper.execute(
-                databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
+        List<Map<String, Object>> list = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
 
         // 4、返回结果集
         return new Result(list);
@@ -174,6 +174,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         Map<String, String> map = new HashMap<>();
         String schema = getSchema((DatabaseConfig) commandConfig.getConnectorConfig(), quotation);
         map.put(ConnectorConstant.OPERTION_QUERY, buildSql(ConnectorConstant.OPERTION_QUERY, commandConfig, schema, queryFilterSql));
+        // 是否支持游标
+        if(enableCursor()){
+            map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, buildSql(ConnectorConstant.OPERTION_QUERY_CURSOR, commandConfig, schema, queryFilterSql));
+        }
         // 获取查询总数SQL
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, getQueryCountSql(commandConfig, schema, quotation, queryFilterSql));
         return map;
@@ -202,6 +206,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
         String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
         map.put(queryCountExist, queryCount.toString());
         return map;
+    }
+
+    /**
+     * 是否支持游标查询
+     *
+     * @return
+     */
+    protected boolean enableCursor(){
+        return false;
     }
 
     /**
@@ -238,6 +251,34 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
     }
 
     /**
+     * 返回主键名称
+     *
+     * @param commandConfig
+     * @param quotation
+     * @return
+     */
+    protected String findOriginalTablePrimaryKey(CommandConfig commandConfig, String quotation) {
+        Table table = commandConfig.getOriginalTable();
+        if (null != table) {
+            List<Field> column = table.getColumn();
+            if (!CollectionUtils.isEmpty(column)) {
+                for (Field c : column) {
+                    if (c.isPk()) {
+                        return new StringBuilder(quotation).append(c.getName()).append(quotation).toString();
+                    }
+                }
+            }
+        }
+
+        DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
+        if (StringUtil.isBlank(cfg.getPrimaryKey())) {
+            throw new ConnectorException("Table primary key can not be empty.");
+        }
+
+        return new StringBuilder(quotation).append(cfg.getPrimaryKey()).append(quotation).toString();
+    }
+
+    /**
      * 获取表列表
      *
      * @param connectorMapper
@@ -250,6 +291,74 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             return tableNames.stream().map(name -> new Table(name)).collect(Collectors.toList());
         }
         return Collections.EMPTY_LIST;
+    }
+
+    /**
+     * 获取数据库表元数据信息
+     *
+     * @param databaseTemplate
+     * @param metaSql          查询元数据
+     * @param schema           架构名
+     * @param tableName        表名
+     * @return
+     */
+    protected MetaInfo getMetaInfo(DatabaseTemplate databaseTemplate, String metaSql, String schema, String tableName) throws SQLException {
+        SqlRowSet sqlRowSet = databaseTemplate.queryForRowSet(metaSql);
+        ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
+        SqlRowSetMetaData metaData = rowSet.getMetaData();
+
+        // 查询表字段信息
+        int columnCount = metaData.getColumnCount();
+        if (1 > columnCount) {
+            throw new ConnectorException("查询表字段不能为空.");
+        }
+        List<Field> fields = new ArrayList<>(columnCount);
+        Map<String, List<String>> tables = new HashMap<>();
+        try {
+            Connection connection = databaseTemplate.getConnection();
+            DatabaseMetaData md = connection.getMetaData();
+            final String catalog = connection.getCatalog();
+            schema = StringUtil.isNotBlank(schema) ? schema : null;
+            String name = null;
+            String label = null;
+            String typeName = null;
+            String table = null;
+            int columnType;
+            boolean pk;
+            for (int i = 1; i <= columnCount; i++) {
+                table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
+                if (null == tables.get(table)) {
+                    tables.putIfAbsent(table, findTablePrimaryKeys(md, catalog, schema, table));
+                }
+                name = metaData.getColumnName(i);
+                label = metaData.getColumnLabel(i);
+                typeName = metaData.getColumnTypeName(i);
+                columnType = metaData.getColumnType(i);
+                pk = isPk(tables, table, name);
+                fields.add(new Field(label, typeName, columnType, pk));
+            }
+        } finally {
+            tables.clear();
+        }
+        return new MetaInfo().setColumn(fields);
+    }
+
+    /**
+     * 获取查询游标SQL
+     *
+     * @param commandConfig
+     * @return
+     */
+    protected String getQueryCursorSql(CommandConfig commandConfig) {
+        final String table = commandConfig.getTable().getName();
+        final String quotation = buildSqlWithQuotation();
+        final String pk = findOriginalTablePrimaryKey(commandConfig, quotation);
+        final String schema = getSchema((DatabaseConfig) commandConfig.getConnectorConfig(), quotation);
+
+        // select `id` from test.`my_user` order by `id` limit ?
+        StringBuilder queryCursor = new StringBuilder();
+        queryCursor.append("SELECT").append(pk).append(" FROM ").append(schema).append(table).append(" ORDER BY ").append(pk).append(" LIMIT 1");
+        return queryCursor.toString();
     }
 
     /**
@@ -349,7 +458,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
      * @param queryFilterSQL
      * @return
      */
-    protected String buildSql(String type, CommandConfig commandConfig, String schema, String queryFilterSQL) {
+    private String buildSql(String type, CommandConfig commandConfig, String schema, String queryFilterSQL) {
         Table table = commandConfig.getTable();
         if (null == table) {
             logger.error("Table can not be null.");
@@ -388,86 +497,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             pk = findOriginalTablePrimaryKey(commandConfig, "");
         }
 
-        SqlBuilderConfig config = new SqlBuilderConfig(this, commandConfig, schema, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());
+        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());
         return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
-    }
-
-    /**
-     * 获取数据库表元数据信息
-     *
-     * @param databaseTemplate
-     * @param metaSql          查询元数据
-     * @param schema           架构名
-     * @param tableName        表名
-     * @return
-     */
-    protected MetaInfo getMetaInfo(DatabaseTemplate databaseTemplate, String metaSql, String schema, String tableName) throws SQLException {
-        SqlRowSet sqlRowSet = databaseTemplate.queryForRowSet(metaSql);
-        ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
-        SqlRowSetMetaData metaData = rowSet.getMetaData();
-
-        // 查询表字段信息
-        int columnCount = metaData.getColumnCount();
-        if (1 > columnCount) {
-            throw new ConnectorException("查询表字段不能为空.");
-        }
-        List<Field> fields = new ArrayList<>(columnCount);
-        Map<String, List<String>> tables = new HashMap<>();
-        try {
-            Connection connection = databaseTemplate.getConnection();
-            DatabaseMetaData md = connection.getMetaData();
-            final String catalog = connection.getCatalog();
-            schema = StringUtil.isNotBlank(schema) ? schema : null;
-            String name = null;
-            String label = null;
-            String typeName = null;
-            String table = null;
-            int columnType;
-            boolean pk;
-            for (int i = 1; i <= columnCount; i++) {
-                table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
-                if (null == tables.get(table)) {
-                    tables.putIfAbsent(table, findTablePrimaryKeys(md, catalog, schema, table));
-                }
-                name = metaData.getColumnName(i);
-                label = metaData.getColumnLabel(i);
-                typeName = metaData.getColumnTypeName(i);
-                columnType = metaData.getColumnType(i);
-                pk = isPk(tables, table, name);
-                fields.add(new Field(label, typeName, columnType, pk));
-            }
-        } finally {
-            tables.clear();
-        }
-        return new MetaInfo().setColumn(fields);
-    }
-
-    /**
-     * 返回主键名称
-     *
-     * @param commandConfig
-     * @param quotation
-     * @return
-     */
-    protected String findOriginalTablePrimaryKey(CommandConfig commandConfig, String quotation) {
-        Table table = commandConfig.getOriginalTable();
-        if (null != table) {
-            List<Field> column = table.getColumn();
-            if (!CollectionUtils.isEmpty(column)) {
-                for (Field c : column) {
-                    if (c.isPk()) {
-                        return new StringBuilder(quotation).append(c.getName()).append(quotation).toString();
-                    }
-                }
-            }
-        }
-
-        DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
-        if (StringUtil.isBlank(cfg.getPrimaryKey())) {
-            throw new ConnectorException("Table primary key can not be empty.");
-        }
-
-        return new StringBuilder(quotation).append(cfg.getPrimaryKey()).append(quotation).toString();
     }
 
     /**

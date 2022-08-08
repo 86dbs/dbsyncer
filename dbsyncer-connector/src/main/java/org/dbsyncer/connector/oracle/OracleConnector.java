@@ -4,11 +4,12 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.model.PageSql;
-import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
+import org.dbsyncer.connector.model.PageSql;
+import org.dbsyncer.connector.model.Table;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +34,9 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Object[] getPageArgs(int pageIndex, int pageSize) {
+    public Object[] getPageArgs(ReaderConfig config) {
+        int pageSize = config.getPageSize();
+        int pageIndex = config.getPageIndex();
         return new Object[]{pageIndex * pageSize, (pageIndex - 1) * pageSize};
     }
 

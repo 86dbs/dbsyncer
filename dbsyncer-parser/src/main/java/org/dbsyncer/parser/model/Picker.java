@@ -2,6 +2,7 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.model.Field;
+import org.dbsyncer.parser.ParserException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,6 +62,15 @@ public class Picker {
                 target.put(tField.getName(), v);
             }
         }
+    }
+
+    public String getSourcePrimaryKeyName() {
+        for (Field f : sourceFields) {
+            if (f.isPk()) {
+                return f.getName();
+            }
+        }
+        throw new ParserException("主键为空");
     }
 
     public List<Field> getTargetFields() {

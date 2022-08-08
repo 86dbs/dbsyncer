@@ -1,7 +1,8 @@
 package org.dbsyncer.connector.sql;
 
-import org.dbsyncer.connector.model.PageSql;
+import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.constant.DatabaseConstant;
+import org.dbsyncer.connector.model.PageSql;
 
 public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
 
@@ -11,7 +12,9 @@ public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
     }
 
     @Override
-    public Object[] getPageArgs(int pageIndex, int pageSize) {
+    public Object[] getPageArgs(ReaderConfig config) {
+        int pageSize = config.getPageSize();
+        int pageIndex = config.getPageIndex();
         return new Object[]{pageSize, (pageIndex - 1) * pageSize};
     }
 

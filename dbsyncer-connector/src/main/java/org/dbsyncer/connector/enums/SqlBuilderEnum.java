@@ -4,7 +4,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.sqlbuilder.*;
-import org.dbsyncer.connector.database.sqlbuilder.SqlBuilder;
 
 /**
  * @author AE86
@@ -28,7 +27,11 @@ public enum SqlBuilderEnum {
     /**
      * 查询SQL生成器
      */
-    QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery());
+    QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery()),
+    /**
+     * 查询游标SQL生成器
+     */
+    QUERY_CURSOR(ConnectorConstant.OPERTION_QUERY_CURSOR, new SqlBuilderQueryCursor());
 
     /**
      * SQL构造器名称

@@ -1,6 +1,7 @@
 package org.dbsyncer.connector.mysql;
 
-import org.dbsyncer.connector.constant.DatabaseConstant;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.model.PageSql;
@@ -17,16 +18,47 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getPageSql(PageSql config) {
-        return config.getQuerySql() + DatabaseConstant.MYSQL_PAGE_SQL;
+        final String quotation = buildSqlWithQuotation();
+        final String pk = config.getPk();
+        // select * from test.`my_user` where `id` > ? order by `id` limit ?
+        StringBuilder querySql = new StringBuilder(config.getQuerySql());
+        String queryFilter = config.getSqlBuilderConfig().getQueryFilter();
+        if (StringUtil.isNotBlank(queryFilter)) {
+            querySql.append(" AND ");
+        }else {
+            querySql.append(" WHERE ");
+        }
+        querySql.append(" ").append(quotation).append(pk).append(quotation).append(" > ? ORDER BY ").append(quotation).append(pk).append(quotation).append(" limit ?");
+        return querySql.toString();
     }
 
     @Override
-    public Object[] getPageArgs(int pageIndex, int pageSize) {
-        return new Object[] {(pageIndex - 1) * pageSize, pageSize};
+    public String getPageCursorSql(PageSql config){
+        final String quotation = buildSqlWithQuotation();
+        final String pk = config.getPk();
+        // select * from test.`my_user` order by `id` limit ?
+        StringBuilder querySql = new StringBuilder(config.getQuerySql()).append(" ORDER BY ").append(quotation).append(pk).append(quotation).append(" limit ?");
+        return querySql.toString();
+    }
+
+    @Override
+    public Object[] getPageArgs(ReaderConfig config) {
+        int pageSize = config.getPageSize();
+        String cursor = config.getCursor();
+        if (StringUtil.isBlank(cursor)) {
+            return new Object[]{pageSize};
+        }
+        return new Object[]{cursor, pageSize};
+    }
+
+    @Override
+    protected boolean enableCursor() {
+        return true;
     }
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
         return super.getTable(connectorMapper, "show tables");
     }
+
 }
