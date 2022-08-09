@@ -29,8 +29,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class AbstractDatabaseConnector extends AbstractConnector
-        implements Connector<DatabaseConnectorMapper, DatabaseConfig>, Database {
+public abstract class AbstractDatabaseConnector extends AbstractConnector implements Connector<DatabaseConnectorMapper, DatabaseConfig>, Database {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -341,24 +340,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector
             tables.clear();
         }
         return new MetaInfo().setColumn(fields);
-    }
-
-    /**
-     * 获取查询游标SQL
-     *
-     * @param commandConfig
-     * @return
-     */
-    protected String getQueryCursorSql(CommandConfig commandConfig) {
-        final String table = commandConfig.getTable().getName();
-        final String quotation = buildSqlWithQuotation();
-        final String pk = findOriginalTablePrimaryKey(commandConfig, quotation);
-        final String schema = getSchema((DatabaseConfig) commandConfig.getConnectorConfig(), quotation);
-
-        // select `id` from test.`my_user` order by `id` limit ?
-        StringBuilder queryCursor = new StringBuilder();
-        queryCursor.append("SELECT").append(pk).append(" FROM ").append(schema).append(table).append(" ORDER BY ").append(pk).append(" LIMIT 1");
-        return queryCursor.toString();
     }
 
     /**

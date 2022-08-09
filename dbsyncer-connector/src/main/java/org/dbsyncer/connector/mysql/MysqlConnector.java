@@ -28,7 +28,7 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
         }else {
             querySql.append(" WHERE ");
         }
-        querySql.append(" ").append(quotation).append(pk).append(quotation).append(" > ? ORDER BY ").append(quotation).append(pk).append(quotation).append(" limit ?");
+        querySql.append(quotation).append(pk).append(quotation).append(" > ? ORDER BY ").append(quotation).append(pk).append(quotation).append(" LIMIT ?");
         return querySql.toString();
     }
 
@@ -37,7 +37,7 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
         final String quotation = buildSqlWithQuotation();
         final String pk = config.getPk();
         // select * from test.`my_user` order by `id` limit ?
-        StringBuilder querySql = new StringBuilder(config.getQuerySql()).append(" ORDER BY ").append(quotation).append(pk).append(quotation).append(" limit ?");
+        StringBuilder querySql = new StringBuilder(config.getQuerySql()).append(" ORDER BY ").append(quotation).append(pk).append(quotation).append(" LIMIT ?");
         return querySql.toString();
     }
 
@@ -46,9 +46,9 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
         int pageSize = config.getPageSize();
         String cursor = config.getCursor();
         if (StringUtil.isBlank(cursor)) {
-            return new Object[]{pageSize};
+            return new Object[] {pageSize};
         }
-        return new Object[]{cursor, pageSize};
+        return new Object[] {cursor, pageSize};
     }
 
     @Override
