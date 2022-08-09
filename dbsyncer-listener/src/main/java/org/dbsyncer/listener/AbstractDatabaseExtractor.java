@@ -70,7 +70,7 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
             }
         }
         Assert.isTrue(findPkIndex, "The primaryKey is invalid.");
-        String sql = new StringBuilder(cfg.getSql()).append(" AND ").append(cfg.getPrimaryKey()).append("=?").toString();
+        String sql = new StringBuilder(cfg.getSql()).append(" AND ").append(primaryKey).append("=?").toString();
 
         dqlMapper = new DqlMapper(mapper, tableName, column, pkIndex, sql);
     }

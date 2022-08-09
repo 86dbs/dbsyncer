@@ -1,8 +1,9 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.parser.ParserException;
+import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,13 +65,16 @@ public class Picker {
         }
     }
 
-    public String getSourcePrimaryKeyName() {
+    public String getSourcePrimaryKeyName(ConnectorConfig config) {
         for (Field f : sourceFields) {
             if (f.isPk()) {
                 return f.getName();
             }
         }
-        throw new ParserException("主键为空");
+
+        String primaryKey = config.getPrimaryKey();
+        Assert.hasText(primaryKey, "主键为空");
+        return primaryKey;
     }
 
     public List<Field> getTargetFields() {

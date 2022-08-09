@@ -245,7 +245,7 @@ public class ParserFactory implements Parser {
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
         // 获取同步字段
         Picker picker = new Picker(fieldMapping);
-        String pk = picker.getSourcePrimaryKeyName();
+        String pk = picker.getSourcePrimaryKeyName(sConfig);
 
         int pageSize = mapping.getReadNum();
         int batchSize = mapping.getBatchNum();

@@ -345,6 +345,8 @@ public class DBChangeNotification {
                     }
                 } catch (InterruptedException e) {
                     break;
+                } catch (Exception e) {
+                    logger.error(e.getMessage());
                 }
             }
         }

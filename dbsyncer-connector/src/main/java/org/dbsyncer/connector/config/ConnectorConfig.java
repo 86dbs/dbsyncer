@@ -26,4 +26,8 @@ public abstract class ConnectorConfig {
         return this;
     }
 
+    public String getPrimaryKey() {
+        return "";
+    }
+
 }
