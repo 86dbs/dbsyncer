@@ -11,13 +11,6 @@ public class ReaderConfig {
     private int pageIndex;
     private int pageSize;
 
-    public ReaderConfig(Map<String, String> command, List<Object> args, int pageIndex, int pageSize) {
-        this.command = command;
-        this.args = args;
-        this.pageIndex = pageIndex;
-        this.pageSize = pageSize;
-    }
-
     public ReaderConfig(Map<String,String> command, List<Object> args, String cursor, int pageIndex, int pageSize) {
         this.command = command;
         this.args = args;
