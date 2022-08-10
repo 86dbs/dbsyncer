@@ -10,6 +10,11 @@ package org.dbsyncer.parser.enums;
 public enum ParserEnum {
 
     /**
+     * 游标
+     */
+    CURSOR("cursor", 0),
+
+    /**
      * 页数
      */
     PAGE_INDEX("pageIndex", 1),

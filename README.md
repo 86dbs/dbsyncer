@@ -182,7 +182,13 @@ vi startup.sh
 :set ff=unix
 :wq
 ```
-再运行startup.sh
+
+## 🏆性能测试
+|  类型 | 耗时 | 数据量 |  机器配置 |
+|---|---|---|---|
+|  MySQL全量同步MySQL | 202s  |  1000w |  MacBook Pro 2.4 GHz 四核Intel Core i5 16 GB 2133 MHz LPDDR3 |
+
+<img src="https://foruda.gitee.com/images/1660034515191434708/屏幕截图.png" width="200" height="200" />
 
 ## 💕了解更多
 * 使用说明：[博客地址](https://my.oschina.net/dbsyncer "https://my.oschina.net/dbsyncer")
@@ -191,4 +197,5 @@ vi startup.sh
 ## 🤝贡献支持
 * 为了能让项目得到更好的可持续的发展，我们期望获得更多的支持者，我们将把所得款项用于项目研发和推广。您可以通过如下方式支持我们:
 我们会把详细的捐赠记录登记在[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C)。
-- <img src="https://images.gitee.com/uploads/images/2021/1110/001937_717dfb9d_376718.png" title="DBSyncer款项用于研发推广" width="200" height="200" />
+
+<img src="https://images.gitee.com/uploads/images/2021/1110/001937_717dfb9d_376718.png" title="DBSyncer款项用于研发推广" width="200" height="200" />

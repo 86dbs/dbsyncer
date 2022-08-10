@@ -56,12 +56,14 @@ public final class DatabaseQuartzExtractor extends AbstractQuartzExtractor {
         Point point = new Point();
         // 存在系统参数，替换
         String replaceQuery = query;
+        String replaceQueryCursor = command.get(ConnectorConstant.OPERTION_QUERY_CURSOR);
         for (QuartzFilterEnum quartzFilter : filterEnums) {
             final String type = quartzFilter.getType();
             final QuartzFilter f = quartzFilter.getQuartzFilter();
 
             // 替换字符
-            replaceQuery = StringUtil.replace(replaceQuery, "'" + type + "'", "?");
+            replaceQuery = replaceType(replaceQuery, type);
+            replaceQueryCursor = replaceType(replaceQueryCursor, type);
 
             // 创建参数索引key
             final String key = index + type;
@@ -88,11 +90,18 @@ public final class DatabaseQuartzExtractor extends AbstractQuartzExtractor {
             point.setBeginValue(f.toString(val));
         }
         point.setCommand(ConnectorConstant.OPERTION_QUERY, replaceQuery);
+        if (StringUtil.isNotBlank(replaceQueryCursor)) {
+            point.setCommand(ConnectorConstant.OPERTION_QUERY_CURSOR, replaceQueryCursor);
+        }
         if (reversed.get()) {
             point.reverseArgs();
         }
 
         return point;
+    }
+
+    private String replaceType(String replaceQuery, String type) {
+        return StringUtil.isNotBlank(replaceQuery) ? StringUtil.replace(replaceQuery, "'" + type + "'", "?") : replaceQuery;
     }
 
 }

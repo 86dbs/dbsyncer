@@ -10,6 +10,8 @@ public class Task {
 
     private int pageIndex;
 
+    private String cursor;
+
     private long beginTime;
 
     private long endTime;
@@ -52,6 +54,14 @@ public class Task {
 
     public void setPageIndex(int pageIndex) {
         this.pageIndex = pageIndex;
+    }
+
+    public String getCursor() {
+        return cursor;
+    }
+
+    public void setCursor(String cursor) {
+        this.cursor = cursor;
     }
 
     public long getBeginTime() {

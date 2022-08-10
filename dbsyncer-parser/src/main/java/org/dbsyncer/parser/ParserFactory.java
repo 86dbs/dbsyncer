@@ -78,6 +78,7 @@ public class ParserFactory implements Parser {
     @Qualifier("taskExecutor")
     private Executor taskExecutor;
 
+    @Qualifier("webApplicationContext")
     @Autowired
     private ApplicationContext applicationContext;
 
@@ -244,11 +245,14 @@ public class ParserFactory implements Parser {
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
         // 获取同步字段
         Picker picker = new Picker(fieldMapping);
+        String pk = picker.getSourcePrimaryKeyName(sConfig);
 
         int pageSize = mapping.getReadNum();
         int batchSize = mapping.getBatchNum();
         ConnectorMapper sConnectorMapper = connectorFactory.connect(sConfig);
         ConnectorMapper tConnectorMapper = connectorFactory.connect(tConfig);
+        String cursor = task.getCursor();
+        int pageIndex = task.getPageIndex();
 
         for (; ; ) {
             if (!task.isRunning()) {
@@ -257,7 +261,7 @@ public class ParserFactory implements Parser {
             }
 
             // 1、获取数据源数据
-            Result reader = connectorFactory.reader(sConnectorMapper, new ReaderConfig(command, new ArrayList<>(), task.getPageIndex(), pageSize));
+            Result reader = connectorFactory.reader(sConnectorMapper, new ReaderConfig(command, new ArrayList<>(), cursor, pageIndex, pageSize));
             List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
@@ -278,7 +282,9 @@ public class ParserFactory implements Parser {
             Result writer = writeBatch(batchWriter, executorService);
 
             // 6、更新结果
-            task.setPageIndex(task.getPageIndex() + 1);
+            cursor = getLastCursor(data, pk);
+            task.setPageIndex(pageIndex + 1);
+            task.setCursor(cursor);
             flush(task, writer);
 
             // 7、判断尾页
@@ -413,6 +419,21 @@ public class ParserFactory implements Parser {
      */
     private ConnectorConfig getConnectorConfig(String connectorId) {
         return getConnector(connectorId).getConfig();
+    }
+
+    /**
+     * 获取最新游标值
+     *
+     * @param data
+     * @param pk
+     * @return
+     */
+    private String getLastCursor(List<Map> data, String pk) {
+        if(CollectionUtils.isEmpty(data)){
+            return "";
+        }
+        Object value = data.get(data.size() - 1).get(pk);
+        return value == null ? "" : String.valueOf(value);
     }
 
 }

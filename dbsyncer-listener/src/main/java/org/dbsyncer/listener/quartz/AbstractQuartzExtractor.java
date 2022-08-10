@@ -31,10 +31,8 @@ import java.util.stream.Stream;
 public abstract class AbstractQuartzExtractor extends AbstractExtractor implements ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    private List<Map<String, String>> commands;
-    private int commandSize;
-
+    private static final String CURSOR = "cursor";
+    private List<TableGroupCommand> commands;
     private int readNum;
     private String eventFieldName;
     private Set<String> update;
@@ -55,8 +53,6 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
     @Override
     public void start() {
-        commandSize = commands.size();
-
         readNum = listenerConfig.getReadNum();
         eventFieldName = listenerConfig.getEventFieldName();
         update = Stream.of(listenerConfig.getUpdate().split(",")).collect(Collectors.toSet());
@@ -77,7 +73,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         try {
             locked = taskLock.tryLock();
             if (locked) {
-                for (int i = 0; i < commandSize; i++) {
+                for (int i = 0; i < commands.size(); i++) {
                     execute(commands.get(i), i);
                 }
             }
@@ -97,13 +93,17 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         running = false;
     }
 
-    private void execute(Map<String, String> command, int index) {
+    private void execute(TableGroupCommand tableGroupCommand, int index) {
+        final Map<String, String> command = tableGroupCommand.getCommand();
+        final String pk = tableGroupCommand.getPk();
+
         // 检查增量点
         ConnectorMapper connectionMapper = connectorFactory.connect(connectorConfig);
         Point point = checkLastPoint(command, index);
         int pageIndex = 1;
+        String cursor = snapshot.get(index + CURSOR);
         while (running) {
-            Result reader = connectorFactory.reader(connectionMapper, new ReaderConfig(point.getCommand(), point.getArgs(), pageIndex++, readNum));
+            Result reader = connectorFactory.reader(connectionMapper, new ReaderConfig(point.getCommand(), point.getArgs(), cursor, pageIndex++, readNum));
             List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
                 break;
@@ -111,7 +111,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
             Object event = null;
             for (Map<String, Object> row : data) {
-                if(StringUtil.isBlank(eventFieldName)){
+                if (StringUtil.isBlank(eventFieldName)) {
                     changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
                     continue;
                 }
@@ -132,6 +132,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
             }
             // 更新记录点
+            cursor = getLastCursor(data, pk);
             point.refresh();
 
             if (data.size() < readNum) {
@@ -143,12 +144,21 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         // 持久化
         if (point.refreshed()) {
             snapshot.putAll(point.getPosition());
+            snapshot.put(index + CURSOR, cursor);
         }
 
     }
 
-    public void setCommands(List<Map<String, String>> commands) {
+    public void setCommands(List<TableGroupCommand> commands) {
         this.commands = commands;
+    }
+
+    private String getLastCursor(List<Map> data, String pk) {
+        if (!CollectionUtils.isEmpty(data)) {
+            Object value = data.get(data.size() - 1).get(pk);
+            return value == null ? "" : String.valueOf(value);
+        }
+        return "";
     }
 
 }
