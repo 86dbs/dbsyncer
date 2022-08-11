@@ -1,6 +1,9 @@
 package org.dbsyncer.listener.oracle;
 
 import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.connector.model.Field;
+
+import java.util.List;
 
 /**
  * @author AE86
@@ -16,7 +19,14 @@ public class DqlOracleExtractor extends OracleExtractor {
     }
 
     @Override
-    public void changedEvent(RowChangedEvent event) {
+    public void sendChangedEvent(RowChangedEvent event) {
         super.sendDqlChangedEvent(event);
     }
+
+    @Override
+    protected int getPKIndex(List<Field> column, String primaryKey) {
+        // ROW_ID
+        return 0;
+    }
+
 }
