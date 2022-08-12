@@ -32,9 +32,10 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private static final String CURSOR = "cursor";
+    private static final int READ_NUM = 1000;
     private List<TableGroupCommand> commands;
-    private int readNum;
     private String eventFieldName;
+    private boolean forceUpdate;
     private Set<String> update;
     private Set<String> insert;
     private Set<String> delete;
@@ -53,8 +54,8 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
     @Override
     public void start() {
-        readNum = listenerConfig.getReadNum();
         eventFieldName = listenerConfig.getEventFieldName();
+        forceUpdate = StringUtil.isBlank(listenerConfig.getEventFieldName());
         update = Stream.of(listenerConfig.getUpdate().split(",")).collect(Collectors.toSet());
         insert = Stream.of(listenerConfig.getInsert().split(",")).collect(Collectors.toSet());
         delete = Stream.of(listenerConfig.getDelete().split(",")).collect(Collectors.toSet());
@@ -103,7 +104,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         int pageIndex = 1;
         String cursor = snapshot.get(index + CURSOR);
         while (running) {
-            Result reader = connectorFactory.reader(connectionMapper, new ReaderConfig(point.getCommand(), point.getArgs(), cursor, pageIndex++, readNum));
+            Result reader = connectorFactory.reader(connectionMapper, new ReaderConfig(point.getCommand(), point.getArgs(), cursor, pageIndex++, READ_NUM));
             List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
                 break;
@@ -111,7 +112,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
             Object event = null;
             for (Map<String, Object> row : data) {
-                if (StringUtil.isBlank(eventFieldName)) {
+                if (forceUpdate) {
                     changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
                     continue;
                 }
@@ -135,7 +136,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
             cursor = getLastCursor(data, pk);
             point.refresh();
 
-            if (data.size() < readNum) {
+            if (data.size() < READ_NUM) {
                 break;
             }
 

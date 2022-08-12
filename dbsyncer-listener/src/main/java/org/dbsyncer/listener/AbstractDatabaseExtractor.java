@@ -27,7 +27,9 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
      *
      * @param event
      */
-    protected abstract void sendChangedEvent(RowChangedEvent event);
+    protected void sendChangedEvent(RowChangedEvent event){
+        changedEvent(event);
+    }
 
     /**
      * 发送DQL增量事件
@@ -39,7 +41,7 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
             switch (event.getEvent()) {
                 case ConnectorConstant.OPERTION_UPDATE:
                 case ConnectorConstant.OPERTION_INSERT:
-                    event.setDataList(queryData(event.getDataList()));
+                    event.setDataList(queryDqlData(event.getDataList()));
                     break;
                 default:
                     break;
@@ -97,7 +99,7 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
         return pkIndex;
     }
 
-    private List<Object> queryData(List<Object> data) {
+    private List<Object> queryDqlData(List<Object> data) {
         if (!CollectionUtils.isEmpty(data)) {
             Map<String, Object> row = dqlMapper.mapper.execute(databaseTemplate -> databaseTemplate.queryForMap(dqlMapper.sql, data.get(dqlMapper.pkIndex)));
             if (!CollectionUtils.isEmpty(row)) {

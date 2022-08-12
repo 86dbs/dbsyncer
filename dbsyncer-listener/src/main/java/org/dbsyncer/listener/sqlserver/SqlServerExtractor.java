@@ -98,11 +98,6 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
         }
     }
 
-    @Override
-    protected void sendChangedEvent(RowChangedEvent event) {
-        changedEvent(event);
-    }
-
     private void close(AutoCloseable closeable) {
         if (null != closeable) {
             try {

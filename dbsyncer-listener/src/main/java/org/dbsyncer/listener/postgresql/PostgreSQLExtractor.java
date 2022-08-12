@@ -1,6 +1,5 @@
 package org.dbsyncer.listener.postgresql;
 
-import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.BooleanUtil;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -129,11 +128,6 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
         } catch (Exception e) {
             logger.error("关闭失败:{}", e.getMessage());
         }
-    }
-
-    @Override
-    protected void sendChangedEvent(RowChangedEvent event) {
-        changedEvent(event);
     }
 
     private void connect() throws SQLException {

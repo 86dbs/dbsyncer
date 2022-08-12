@@ -1,15 +1,9 @@
 package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.dbsyncer.biz.checker.MappingConfigChecker;
-import org.dbsyncer.biz.checker.MappingLogConfigChecker;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
-import org.dbsyncer.manager.Manager;
-import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -25,22 +19,8 @@ import java.util.Map;
 @Component
 public class LogConfigChecker implements MappingConfigChecker {
 
-    @Autowired
-    private Manager manager;
-
-    @Autowired
-    private Map<String, MappingLogConfigChecker> map;
-
     @Override
     public void modify(Mapping mapping, Map<String, String> params) {
-        String connectorId = mapping.getSourceConnectorId();
-        Connector connector = manager.getConnector(connectorId);
-        ConnectorConfig config = connector.getConfig();
-        String type = StringUtil.toLowerCaseFirstOne(config.getConnectorType()).concat("LogConfigChecker");
-        MappingLogConfigChecker checker = map.get(type);
-        if (null != checker) {
-            checker.modify(mapping, params);
-        }
         ListenerConfig listener = mapping.getListener();
         Assert.notNull(listener, "ListenerConfig can not be null.");
 

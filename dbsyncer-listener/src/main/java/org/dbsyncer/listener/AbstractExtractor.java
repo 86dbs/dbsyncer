@@ -5,6 +5,7 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,22 @@ public abstract class AbstractExtractor implements Extractor {
     @Override
     public void changedEvent(RowChangedEvent event) {
         if(null != event){
-            watcher.forEach(w -> w.changedEvent(event));
+            switch (event.getEvent()) {
+                case ConnectorConstant.OPERTION_UPDATE:
+                    // 是否支持监听修改事件
+                    processEvent(!listenerConfig.isBanUpdate(), event);
+                    break;
+                case ConnectorConstant.OPERTION_INSERT:
+                    // 是否支持监听新增事件
+                    processEvent(!listenerConfig.isBanInsert(), event);
+                    break;
+                case ConnectorConstant.OPERTION_DELETE:
+                    // 是否支持监听删除事件
+                    processEvent(!listenerConfig.isBanDelete(), event);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
@@ -79,6 +95,18 @@ public abstract class AbstractExtractor implements Extractor {
             TimeUnit.MILLISECONDS.sleep(timeout);
         } catch (InterruptedException e) {
             logger.info(e.getMessage());
+        }
+    }
+
+    /**
+     * 如果允许监听该事件，则触发事件通知
+     *
+     * @param permitEvent
+     * @param event
+     */
+    private void processEvent(boolean permitEvent, RowChangedEvent event) {
+        if(permitEvent){
+            watcher.forEach(w -> w.changedEvent(event));
         }
     }
 

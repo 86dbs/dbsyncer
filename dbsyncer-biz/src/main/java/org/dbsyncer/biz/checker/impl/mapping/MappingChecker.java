@@ -3,6 +3,7 @@ package org.dbsyncer.biz.checker.impl.mapping;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
+import org.dbsyncer.common.util.BooleanUtil;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
@@ -104,6 +105,9 @@ public class MappingChecker extends AbstractChecker {
         Assert.notNull(checker, "Checker can not be null.");
         checker.modify(mapping, params);
 
+        // 自定义监听事件配置
+        updateListenerConfig(mapping.getListener(), params);
+
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(mapping, params);
 
@@ -121,33 +125,6 @@ public class MappingChecker extends AbstractChecker {
      */
     public void updateMeta(Mapping mapping) {
         updateMeta(mapping, null);
-    }
-
-    /**
-     * 更新元信息
-     *
-     * @param mapping
-     * @param metaSnapshot
-     */
-    private void updateMeta(Mapping mapping, String metaSnapshot) {
-        Meta meta = manager.getMeta(mapping.getMetaId());
-        Assert.notNull(meta, "驱动meta不存在.");
-
-        // 清空状态
-        meta.clear();
-
-        // 手动配置增量点
-        if(StringUtil.isNotBlank(metaSnapshot)){
-            Map snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
-            if(!CollectionUtils.isEmpty(snapshot)){
-                meta.setSnapshot(snapshot);
-            }
-        }
-
-        getMetaTotal(meta, mapping.getModel());
-
-        meta.setUpdateTime(Instant.now().toEpochMilli());
-        manager.editMeta(meta);
     }
 
     /**
@@ -181,6 +158,50 @@ public class MappingChecker extends AbstractChecker {
                 manager.editTableGroup(g);
             }
         }
+    }
+
+    /**
+     * 修改监听器配置
+     *
+     * @param listener
+     * @param params
+     */
+    private void updateListenerConfig(ListenerConfig listener, Map<String, String> params) {
+        Assert.notNull(listener, "ListenerConfig can not be null.");
+        String banUpdate = StringUtil.isNotBlank(params.get("banUpdate")) ? "true" : "false";
+        String banInsert = StringUtil.isNotBlank(params.get("banInsert")) ? "true" : "false";
+        String banDelete = StringUtil.isNotBlank(params.get("banDelete")) ? "true" : "false";
+
+        listener.setBanUpdate(BooleanUtil.toBoolean(banUpdate));
+        listener.setBanInsert(BooleanUtil.toBoolean(banInsert));
+        listener.setBanDelete(BooleanUtil.toBoolean(banDelete));
+    }
+
+    /**
+     * 更新元信息
+     *
+     * @param mapping
+     * @param metaSnapshot
+     */
+    private void updateMeta(Mapping mapping, String metaSnapshot) {
+        Meta meta = manager.getMeta(mapping.getMetaId());
+        Assert.notNull(meta, "驱动meta不存在.");
+
+        // 清空状态
+        meta.clear();
+
+        // 手动配置增量点
+        if(StringUtil.isNotBlank(metaSnapshot)){
+            Map snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
+            if(!CollectionUtils.isEmpty(snapshot)){
+                meta.setSnapshot(snapshot);
+            }
+        }
+
+        getMetaTotal(meta, mapping.getModel());
+
+        meta.setUpdateTime(Instant.now().toEpochMilli());
+        manager.editMeta(meta);
     }
 
     private void addMeta(Mapping mapping) {

@@ -16,24 +16,44 @@ public class ListenerConfig {
     private String listenerType;
 
     /**
-     * 每次读取数
+     * 定时表达式, 格式: [秒] [分] [小时] [日] [月] [周]
      */
-    private int readNum = 1000;
-
-    // 定时表达式, 格式: [秒] [分] [小时] [日] [月] [周]
     private String cron = "*/30 * * * * ?";
 
-    // 事件字段
+    /**
+     * 事件字段
+     */
     private String eventFieldName = "";
 
-    // 修改事件, 例如当eventFieldName值等于U 或 update时，判定该条数据为修改操作
+    /**
+     * 修改事件, 例如当eventFieldName值等于U 或 update时，判定该条数据为修改操作
+     */
     private String update = "U";
 
-    // 插入事件
+    /**
+     * 插入事件
+     */
     private String insert = "I";
 
-    // 删除事件
+    /**
+     * 删除事件
+     */
     private String delete = "D";
+
+    /**
+     * 禁用修改事件
+     */
+    private boolean banUpdate;
+
+    /**
+     * 禁用插入事件
+     */
+    private boolean banInsert;
+
+    /**
+     * 禁用删除事件
+     */
+    private boolean banDelete;
 
     public ListenerConfig() {
     }
@@ -48,14 +68,6 @@ public class ListenerConfig {
 
     public void setListenerType(String listenerType) {
         this.listenerType = listenerType;
-    }
-
-    public int getReadNum() {
-        return readNum;
-    }
-
-    public void setReadNum(int readNum) {
-        this.readNum = readNum;
     }
 
     public String getEventFieldName() {
@@ -96,5 +108,29 @@ public class ListenerConfig {
 
     public void setCron(String cron) {
         this.cron = cron;
+    }
+
+    public boolean isBanUpdate() {
+        return banUpdate;
+    }
+
+    public void setBanUpdate(boolean banUpdate) {
+        this.banUpdate = banUpdate;
+    }
+
+    public boolean isBanInsert() {
+        return banInsert;
+    }
+
+    public void setBanInsert(boolean banInsert) {
+        this.banInsert = banInsert;
+    }
+
+    public boolean isBanDelete() {
+        return banDelete;
+    }
+
+    public void setBanDelete(boolean banDelete) {
+        this.banDelete = banDelete;
     }
 }

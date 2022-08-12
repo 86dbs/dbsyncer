@@ -1,6 +1,5 @@
 package org.dbsyncer.listener.oracle;
 
-import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.listener.AbstractDatabaseExtractor;
 import org.dbsyncer.listener.ListenerException;
@@ -41,11 +40,6 @@ public class OracleExtractor extends AbstractDatabaseExtractor {
         if (null != client) {
             client.close();
         }
-    }
-
-    @Override
-    protected void sendChangedEvent(RowChangedEvent event) {
-        changedEvent(event);
     }
 
 }

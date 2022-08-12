@@ -49,6 +49,17 @@ function bindMappingMetaSnapshotModifyClick(){
     })
 }
 
+// 绑定监听配置事件开关切换事件
+function bindMappingListenerConfigSwitchClick(){
+    $('.banEventSwitch').bootstrapSwitch({
+        onText: "禁用",
+        offText: "支持",
+        onColor: "warning",
+        offColor: "info",
+        size: "small"
+    });
+}
+
 // 生成增量点配置参数
 function createMetaSnapshotParams(){
     var snapshot = {};
@@ -63,6 +74,8 @@ function createMetaSnapshotParams(){
 $(function() {
     // 绑定增量策略切换事件
     bindMappingIncrementStrategyConfigChange();
+    // 绑定监听配置事件开关切换事件
+    bindMappingListenerConfigSwitchClick();
     // 绑定增量点配置修改事件
     bindMappingMetaSnapshotModifyClick();
 });
