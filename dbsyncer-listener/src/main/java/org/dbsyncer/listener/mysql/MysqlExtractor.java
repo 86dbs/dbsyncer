@@ -77,11 +77,6 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
         }
     }
 
-    @Override
-    protected void sendChangedEvent(RowChangedEvent event) {
-        changedEvent(event);
-    }
-
     private void run() throws Exception {
         final DatabaseConfig config = (DatabaseConfig) connectorConfig;
         if (StringUtil.isBlank(config.getUrl())) {

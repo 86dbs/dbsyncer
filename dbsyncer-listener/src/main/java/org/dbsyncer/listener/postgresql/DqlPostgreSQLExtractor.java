@@ -16,7 +16,7 @@ public class DqlPostgreSQLExtractor extends PostgreSQLExtractor {
     }
 
     @Override
-    public void changedEvent(RowChangedEvent event) {
+    public void sendChangedEvent(RowChangedEvent event) {
         super.sendDqlChangedEvent(event);
     }
 }

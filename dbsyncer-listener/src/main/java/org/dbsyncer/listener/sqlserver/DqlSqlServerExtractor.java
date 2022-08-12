@@ -16,7 +16,7 @@ public class DqlSqlServerExtractor extends SqlServerExtractor {
     }
 
     @Override
-    public void changedEvent(RowChangedEvent event) {
+    public void sendChangedEvent(RowChangedEvent event) {
         super.sendDqlChangedEvent(event);
     }
 }

@@ -22,11 +22,11 @@ public class TimingConfigChecker implements MappingConfigChecker {
 
     @Override
     public void modify(Mapping mapping, Map<String, String> params) {
-        String cron = params.get("incrementStrategyTimingCronExpression");
-        String eventFieldName = params.get("incrementStrategyTimingEventFieldName");
-        String insert = params.get("incrementStrategyTimingInsert");
-        String update = params.get("incrementStrategyTimingUpdate");
-        String delete = params.get("incrementStrategyTimingDelete");
+        String cron = params.get("timingCronExpression");
+        String eventFieldName = params.get("timingEventFieldName");
+        String insert = params.get("timingInsert");
+        String update = params.get("timingUpdate");
+        String delete = params.get("timingDelete");
 
         ListenerConfig config = mapping.getListener();
         Assert.notNull(config, "ListenerConfig can not be null.");

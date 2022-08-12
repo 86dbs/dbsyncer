@@ -14,8 +14,8 @@ import java.util.concurrent.RejectedExecutionHandler;
  * @date 2020-04-26 23:40
  */
 @Configuration
-@ConfigurationProperties(prefix = "dbsyncer.web.thread.pool")
-public class ThreadPoolConfig {
+@ConfigurationProperties(prefix = "dbsyncer.web.task.executor")
+public class TaskExecutorConfig {
 
     /**
      * 工作线程数
