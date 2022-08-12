@@ -43,7 +43,7 @@ public class TaskSchedulerConfig implements SchedulingConfigurer {
         return scheduler;
     }
 
-    public RejectedExecutionHandler rejectedExecutionHandler() {
+    private RejectedExecutionHandler rejectedExecutionHandler() {
         return (r, executor) -> {
             try {
                 executor.getQueue().put(r);
@@ -51,5 +51,13 @@ public class TaskSchedulerConfig implements SchedulingConfigurer {
                 e.printStackTrace();
             }
         };
+    }
+
+    public int getPoolSize() {
+        return poolSize;
+    }
+
+    public void setPoolSize(int poolSize) {
+        this.poolSize = poolSize;
     }
 }
