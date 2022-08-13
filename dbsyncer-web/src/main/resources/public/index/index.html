@@ -154,32 +154,30 @@
 
                                             <div class="row">
                                                 <table class="table table-hover">
-                                                    <tbody>
-                                                    <tr>
-                                                        <td>同步方式> <span th:text="${m?.meta?.model}"></span></td>
-                                                    </tr>
+                                                    <tbody th:with="model=${m?.meta?.model},total=${m?.meta?.total},success=${m?.meta?.success},fail=${m?.meta?.fail},beginTime=${m?.meta?.beginTime},endTime=${m?.meta?.endTime}">
                                                     <tr>
                                                         <td class="text-left">
-                                                            同步结果>
-                                                            <span th:if="${m?.meta?.model eq '全量'}">
-                                                                总数:[[${m?.meta?.total}]]
-                                                                <span th:if="${m?.meta?.total gt 0 and (m?.meta?.success + m?.meta?.fail) gt 0}">
-                                                                ,进度:[[${#numbers.formatDecimal(((m?.meta?.success + m?.meta?.fail) / m?.meta?.total * 100.00),0 ,2)}]]%
+                                                            [[${model}]]同步>
+                                                            <span th:if="${model eq '全量'}">
+                                                                总数:[[${total}]]
+                                                                <span th:if="${total gt 0 and (success + fail) gt 0}">,进度:[[${#numbers.formatPercent(((success + fail) / total), 2, 2)}]]</span>
+                                                                ,耗时:
+                                                                <span th:with="seconds=${(endTime - beginTime) / 1000}">
+                                                                    <span th:if="${seconds lt 60}" th:text="${seconds + '秒'}" />
+                                                                    <span th:if="${seconds ge 60}" th:with="minutes=${seconds / 60}" th:text="${minutes + '分' + (seconds - minutes * 60) + '秒'}" />
                                                                 </span>
-                                                                ,耗时:[[${(m?.meta?.endTime - m?.meta?.beginTime) / 1000}]]秒
                                                             </span>
-                                                            <span th:if="${m?.meta?.model eq '增量'}">
-                                                                总数:[[${#numbers.formatDecimal((m?.meta?.success + m?.meta?.fail),0 ,0)}]]
+                                                            <span th:if="${model eq '增量'}">
+                                                                总数:[[${#numbers.formatDecimal((success + fail),0 ,0)}]]
                                                             </span>
-
-                                                            <span th:if="${m?.meta?.success gt 0}">,成功:[[${m?.meta?.success}]]</span>
-                                                            <span th:if="${m?.meta?.fail gt 0}">,失败:[[${m?.meta?.fail}]] <a th:id="${m?.meta?.id}" href="javascript:;" class="label label-danger queryData">日志</a></span>
+                                                            <span th:if="${success gt 0}">,成功:[[${success}]]</span>
+                                                            <span th:if="${fail gt 0}">,失败:[[${fail}]] <a th:id="${m?.meta?.id}" href="javascript:;" class="label label-danger queryData">日志</a></span>
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td class="text-left">
                                                             启动时间>
-                                                            <span th:if="${m?.meta?.beginTime gt 0}">[[${#dates.format(m?.meta?.beginTime, 'yyyy-MM-dd HH:mm:ss')}]]</span>
+                                                            <span th:if="${beginTime gt 0}">[[${#dates.format(beginTime, 'yyyy-MM-dd HH:mm:ss')}]]</span>
                                                         </td>
                                                     </tr>
                                                     </tbody>
