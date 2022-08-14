@@ -3,30 +3,7 @@ var $location = (window.location + '').split('/');
 var $path = document.location.pathname;
 var $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.substr(1).indexOf("/")+1);
 
-var $formHtml = "<dl class=\"admin_login\">\n" +
-    "\t<dt>\n" +
-    "\t\t<strong id=\"appName\"></strong>\n" +
-    "\t</dt>\n" +
-    "\t<div id=\"loginTip\" class=\"loginVerifcateTextError\"></div>\n" +
-    "\t<dd class=\"user_icon\">\n" +
-    "\t\t<input type=\"text\" name=\"username\" placeholder=\"请输入帐号\" class=\"login_txtbx required\" />\n" +
-    "\t</dd>\n" +
-    "\t<dd class=\"pwd_icon\">\n" +
-    "\t\t<input type=\"password\" name=\"password\" placeholder=\"请输入密码\" class=\"login_txtbx required\" />\n" +
-    "\t</dd>\n" +
-    "\t<dd>\n" +
-    "\t\t<input type=\"button\" value=\"登录\" class=\"submit_btn\" id=\"loginSubmitBtn\" />\n" +
-    "\t</dd>\n" +
-    "</dl>";
-
 $(document).ready(function () {
-    // 会话过期
-    var html = $("#appName").html();
-    if (html != undefined && html != null) {
-        location.href = $basePath;
-        return;
-    }
-
     // 兼容IE PlaceHolder
     $('input[type="text"],input[type="password"]').PlaceHolder({
         zIndex: '0',
@@ -36,12 +13,10 @@ $(document).ready(function () {
         color: '#999'
     });
 
-    var $form = $("#loginForm");
-    $form.html($formHtml);
     // 提交表单
     var $loginSubBtn = $("#loginSubmitBtn");
     $loginSubBtn.click(function () {
-        login($form);
+        login($("#loginForm"));
     });
     $("input").keydown(function (e) {
         if (e.which == 13) {

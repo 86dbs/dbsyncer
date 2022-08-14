@@ -1,4 +1,6 @@
 ## 介绍
+![logo](dbsyncer-web/src/main/resources/static/img/logo.png)
+
 DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServer、PostgreSQL、Elasticsearch(ES)、Kafka、File、SQL等同步场景。支持上传插件自定义同步转换业务，提供监控全量和增量数据统计图、应用性能预警等。
 
 > 特点
