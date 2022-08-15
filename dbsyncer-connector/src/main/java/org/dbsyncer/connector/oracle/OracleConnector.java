@@ -1,6 +1,5 @@
 package org.dbsyncer.connector.oracle;
 
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -11,21 +10,14 @@ import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public final class OracleConnector extends AbstractDatabaseConnector {
 
     @Override
-    public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
-        final String sql = "SELECT TABLE_NAME,TABLE_TYPE FROM USER_TAB_COMMENTS";
-        List<Map<String, Object>> list = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql));
-        if (!CollectionUtils.isEmpty(list)) {
-            return list.stream().map(r -> new Table(r.get("TABLE_NAME").toString(), r.get("TABLE_TYPE").toString())).collect(Collectors.toList());
-        }
-        return Collections.EMPTY_LIST;
+    public List<Table> getTable(DatabaseConnectorMapper config) {
+        DatabaseConfig cfg = config.getConfig();
+        return super.getTable(config, null, cfg.getUsername().toUpperCase(), null);
     }
 
     @Override

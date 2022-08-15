@@ -17,7 +17,7 @@ public class Table {
     private String name;
 
     /**
-     * 表类型[TABLE、VIEW]
+     * 表类型[TABLE、VIEW、MATERIALIZED VIEW]
      */
     private String type;
 

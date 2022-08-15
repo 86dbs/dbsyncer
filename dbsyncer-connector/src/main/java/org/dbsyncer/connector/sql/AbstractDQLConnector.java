@@ -1,7 +1,8 @@
 package org.dbsyncer.connector.sql;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
@@ -10,7 +11,6 @@ import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,9 +25,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
     @Override
     public List<Table> getTable(DatabaseConnectorMapper config) {
         DatabaseConfig cfg = config.getConfig();
-        List<Table> tables = new ArrayList<>();
-        tables.add(new Table(cfg.getTable()));
-        return tables;
+        return super.getTable(config, null, null, cfg.getTable());
     }
 
     @Override

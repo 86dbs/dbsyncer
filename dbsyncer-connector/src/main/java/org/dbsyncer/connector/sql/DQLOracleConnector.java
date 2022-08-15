@@ -1,10 +1,21 @@
 package org.dbsyncer.connector.sql;
 
+import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.constant.DatabaseConstant;
+import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.model.PageSql;
+import org.dbsyncer.connector.model.Table;
+
+import java.util.List;
 
 public final class DQLOracleConnector extends AbstractDQLConnector {
+
+    @Override
+    public List<Table> getTable(DatabaseConnectorMapper config) {
+        DatabaseConfig cfg = config.getConfig();
+        return super.getTable(config, null, cfg.getUsername().toUpperCase(), cfg.getTable());
+    }
 
     @Override
     public String getPageSql(PageSql config) {

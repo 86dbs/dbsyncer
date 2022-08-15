@@ -9,9 +9,11 @@ import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.connector.database.ds.SimpleConnection;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
+import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Filter;
 import org.dbsyncer.connector.model.MetaInfo;
@@ -57,6 +59,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     @Override
     public String getConnectorMapperCacheKey(DatabaseConfig config) {
         return String.format("%s-%s-%s", config.getConnectorType(), config.getUrl(), config.getUsername());
+    }
+
+    @Override
+    public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
+        return getTable(connectorMapper, null, null, null);
     }
 
     @Override
@@ -281,15 +288,27 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * 获取表列表
      *
      * @param connectorMapper
-     * @param sql
+     * @param catalog
+     * @param schema
+     * @param tableNamePattern
      * @return
      */
-    protected List<Table> getTable(DatabaseConnectorMapper connectorMapper, String sql) {
-        List<String> tableNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
-        if (!CollectionUtils.isEmpty(tableNames)) {
-            return tableNames.stream().map(name -> new Table(name)).collect(Collectors.toList());
-        }
-        return Collections.EMPTY_LIST;
+    protected List<Table> getTable(DatabaseConnectorMapper connectorMapper, String catalog, String schema, String tableNamePattern) {
+        return connectorMapper.execute(databaseTemplate -> {
+            List<Table> tables = new ArrayList<>();
+            SimpleConnection connection = (SimpleConnection) databaseTemplate.getConnection();
+            Connection conn = connection.getConnection();
+            String databaseCatalog = null == catalog ? conn.getCatalog() : catalog;
+            String schemaNamePattern = null == schema ? conn.getSchema() : schema;
+            String[] types = {TableTypeEnum.TABLE.getCode(), TableTypeEnum.VIEW.getCode(), TableTypeEnum.MATERIALIZED_VIEW.getCode()};
+            final ResultSet rs = conn.getMetaData().getTables(databaseCatalog, schemaNamePattern, tableNamePattern, types);
+            while (rs.next()) {
+                final String tableName = rs.getString("TABLE_NAME");
+                final String tableType = rs.getString("TABLE_TYPE");
+                tables.add(new Table(tableName, tableType));
+            }
+            return tables;
+        });
     }
 
     /**

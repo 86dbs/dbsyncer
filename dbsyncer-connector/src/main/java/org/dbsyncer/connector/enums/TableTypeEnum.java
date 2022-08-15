@@ -13,10 +13,16 @@ public enum TableTypeEnum {
      * 表
      */
     TABLE("TABLE"),
+
     /**
      * 视图
      */
-    VIEW("VIEW");
+    VIEW("VIEW"),
+
+    /**
+     * 物化视图
+     */
+    MATERIALIZED_VIEW("MATERIALIZED VIEW");
 
     private String code;
 
