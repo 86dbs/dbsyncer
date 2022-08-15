@@ -165,7 +165,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
     private void setExtractorConfig(AbstractExtractor extractor, ConnectorConfig connector, ListenerConfig listener,
                                     Map<String, String> snapshot, AbstractListener event) {
-        extractor.setTaskExecutor(taskExecutor);
         extractor.setConnectorFactory(connectorFactory);
         extractor.setScheduledTaskService(scheduledTaskService);
         extractor.setConnectorConfig(connector);

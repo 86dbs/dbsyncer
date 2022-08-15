@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,7 +25,6 @@ public abstract class AbstractExtractor implements Extractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     protected String metaId;
-    protected Executor taskExecutor;
     protected ConnectorFactory connectorFactory;
     protected ScheduledTaskService scheduledTaskService;
     protected ConnectorConfig connectorConfig;
@@ -49,7 +47,7 @@ public abstract class AbstractExtractor implements Extractor {
 
     @Override
     public void changedEvent(RowChangedEvent event) {
-        if(null != event){
+        if (null != event) {
             switch (event.getEvent()) {
                 case ConnectorConstant.OPERTION_UPDATE:
                     // 是否支持监听修改事件
@@ -105,17 +103,13 @@ public abstract class AbstractExtractor implements Extractor {
      * @param event
      */
     private void processEvent(boolean permitEvent, RowChangedEvent event) {
-        if(permitEvent){
+        if (permitEvent) {
             watcher.forEach(w -> w.changedEvent(event));
         }
     }
 
     public void setMetaId(String metaId) {
         this.metaId = metaId;
-    }
-
-    public void setTaskExecutor(Executor taskExecutor) {
-        this.taskExecutor = taskExecutor;
     }
 
     public void setConnectorFactory(ConnectorFactory connectorFactory) {
