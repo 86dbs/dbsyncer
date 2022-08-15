@@ -107,15 +107,14 @@ public class ConnectionTest {
         getTables(createOracleConfig(), "test", "AE86", "MY_ORG");
         getTables(createOracleConfig(), "test", "AE86", null);
 
-        getTables(createMysqlConfig());
+        getTables(createMysqlConfig(), "test", "root", "MY_ORG");
+        getTables(createMysqlConfig(), "test", "root", null);
 
-        getTables(createSqlServerConfig());
+        getTables(createSqlServerConfig(), "test", "dbo", "MY_ORG");
+        getTables(createSqlServerConfig(), "test", "dbo", null);
 
-        getTables(createPostgresConfig());
-    }
-
-    private List<Table> getTables(DatabaseConfig config) {
-        return getTables(config, null, null, null);
+        getTables(createPostgresConfig(), "postgres", "public", "MY_ORG");
+        getTables(createPostgresConfig(), "postgres", "public", null);
     }
 
     private List<Table> getTables(DatabaseConfig config, final String catalog, final String schema, final String tableNamePattern) {

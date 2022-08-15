@@ -63,7 +63,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
-        return getTable(connectorMapper, null, null, null);
+        return getTable(connectorMapper, null, getSchema(connectorMapper.getConfig()), null);
     }
 
     @Override
@@ -254,6 +254,16 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             schema.append(quotation).append(config.getSchema()).append(quotation).append(".");
         }
         return schema.toString();
+    }
+
+    /**
+     * 获取架构名
+     *
+     * @param config
+     * @return
+     */
+    protected String getSchema(DatabaseConfig config) {
+        return config.getSchema();
     }
 
     /**

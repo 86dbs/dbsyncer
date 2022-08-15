@@ -6,19 +6,9 @@ import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
-import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.model.PageSql;
-import org.dbsyncer.connector.model.Table;
-
-import java.util.List;
 
 public final class OracleConnector extends AbstractDatabaseConnector {
-
-    @Override
-    public List<Table> getTable(DatabaseConnectorMapper config) {
-        DatabaseConfig cfg = config.getConfig();
-        return super.getTable(config, null, cfg.getUsername().toUpperCase(), null);
-    }
 
     @Override
     public String getPageSql(PageSql config) {
@@ -53,5 +43,10 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         final String table = commandConfig.getTable().getName();
         DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
         return String.format("SELECT NUM_ROWS FROM ALL_TABLES WHERE OWNER = '%s' AND TABLE_NAME = '%s'", cfg.getUsername().toUpperCase(), table);
+    }
+
+    @Override
+    protected String getSchema(DatabaseConfig config) {
+        return config.getUsername().toUpperCase();
     }
 }

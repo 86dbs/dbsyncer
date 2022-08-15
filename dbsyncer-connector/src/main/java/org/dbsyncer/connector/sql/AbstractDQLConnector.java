@@ -25,7 +25,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
     @Override
     public List<Table> getTable(DatabaseConnectorMapper config) {
         DatabaseConfig cfg = config.getConfig();
-        return super.getTable(config, null, null, cfg.getTable());
+        return super.getTable(config, null, getSchema(cfg), cfg.getTable());
     }
 
     @Override
