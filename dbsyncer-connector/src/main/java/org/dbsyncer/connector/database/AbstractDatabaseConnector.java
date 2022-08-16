@@ -258,21 +258,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * 获取架构名
      *
      * @param config
-     * @param quotation
-     * @return
-     */
-    protected String getSchema(DatabaseConfig config, String quotation) {
-        StringBuilder schema = new StringBuilder();
-        if (StringUtil.isNotBlank(config.getSchema())) {
-            schema.append(quotation).append(config.getSchema()).append(quotation).append(".");
-        }
-        return schema.toString();
-    }
-
-    /**
-     * 获取架构名
-     *
-     * @param config
      * @return
      */
     protected String getSchema(DatabaseConfig config) {
@@ -525,6 +510,21 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
+     * 获取架构名
+     *
+     * @param config
+     * @param quotation
+     * @return
+     */
+    private String getSchema(DatabaseConfig config, String quotation) {
+        StringBuilder schema = new StringBuilder();
+        if (StringUtil.isNotBlank(config.getSchema())) {
+            schema.append(quotation).append(config.getSchema()).append(quotation).append(".");
+        }
+        return schema.toString();
+    }
+
+    /**
      * 返回表主键
      *
      * @param md
@@ -550,6 +550,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
+     * 数据转换
+     *
      * @param connection 连接
      * @param ps         参数构造器
      * @param fields     同步字段，例如[{name=ID, type=4}, {name=NAME, type=12}]
