@@ -116,8 +116,6 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
 
         // 记录结束时间
         task.setEndTime(Instant.now().toEpochMilli());
-        task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
-        task.setCursor("");
         task.setTableGroupIndex(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
         flush(task);
     }

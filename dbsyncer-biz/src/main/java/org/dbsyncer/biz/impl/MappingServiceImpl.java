@@ -215,7 +215,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Meta meta = manager.getMeta(metaId);
         Assert.notNull(meta, "Mapping meta can not be null.");
         if (meta.getTotal().get() >= (meta.getSuccess().get() + meta.getFail().get())) {
-            meta.clear();
+            meta.getFail().set(0);
+            meta.getSuccess().set(0);
             manager.editMeta(meta);
         }
     }
