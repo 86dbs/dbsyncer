@@ -3,6 +3,7 @@ import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.database.ds.SimpleConnection;
 import org.dbsyncer.connector.enums.TableTypeEnum;
+import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Table;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -115,6 +116,29 @@ public class ConnectionTest {
 
         getTables(createPostgresConfig(), "postgres", "public", "MY_ORG");
         getTables(createPostgresConfig(), "postgres", "public", null);
+    }
+
+    @Test
+    public void testGetColumnsDetails() {
+        final String schema = "root";
+        final String tableNamePattern = "sw_test";
+        final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(createMysqlConfig());
+        connectorMapper.execute(databaseTemplate -> {
+            SimpleConnection connection = (SimpleConnection) databaseTemplate.getConnection();
+            Connection conn = connection.getConnection();
+            String databaseCatalog = conn.getCatalog();
+            String schemaNamePattern = null == schema ? conn.getSchema() : schema;
+            List<Field> fields = new ArrayList<>();
+            DatabaseMetaData metaData = conn.getMetaData();
+            ResultSet columnMetadata = metaData.getColumns(databaseCatalog, schemaNamePattern, tableNamePattern, null);
+            while (columnMetadata.next()) {
+                String columnName = columnMetadata.getString(4);
+                int columnType = columnMetadata.getInt(5);
+                String typeName = columnMetadata.getString(6);
+                fields.add(new Field(columnName, typeName, columnType));
+            }
+            return fields;
+        });
     }
 
     private List<Table> getTables(DatabaseConfig config, final String catalog, final String schema, final String tableNamePattern) {

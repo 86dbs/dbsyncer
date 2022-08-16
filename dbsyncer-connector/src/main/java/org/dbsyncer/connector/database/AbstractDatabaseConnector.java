@@ -67,13 +67,26 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableName) {
-        String quotation = buildSqlWithQuotation();
-        DatabaseConfig config = connectorMapper.getConfig();
-        String queryMetaSql = new StringBuilder("SELECT * FROM ").append(getSchema(config, quotation)).append(quotation).append(tableName)
-                .append(quotation).append(" WHERE 1!=1").toString();
-
-        return connectorMapper.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql, config.getSchema(), tableName));
+    public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableNamePattern) {
+        List<Field> fields = new ArrayList<>();
+        final String schema = getSchema(connectorMapper.getConfig());
+        connectorMapper.execute(databaseTemplate -> {
+            SimpleConnection connection = (SimpleConnection) databaseTemplate.getConnection();
+            Connection conn = connection.getConnection();
+            String catalog = conn.getCatalog();
+            String schemaNamePattern = null == schema ? conn.getSchema() : schema;
+            DatabaseMetaData metaData = conn.getMetaData();
+            List<String> primaryKeys = findTablePrimaryKeys(metaData, catalog, schemaNamePattern, tableNamePattern);
+            ResultSet columnMetadata = metaData.getColumns(catalog, schemaNamePattern, tableNamePattern, null);
+            while (columnMetadata.next()) {
+                String columnName = columnMetadata.getString(4);
+                int columnType = columnMetadata.getInt(5);
+                String typeName = columnMetadata.getString(6);
+                fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName)));
+            }
+            return fields;
+        });
+        return new MetaInfo().setColumn(fields);
     }
 
     @Override

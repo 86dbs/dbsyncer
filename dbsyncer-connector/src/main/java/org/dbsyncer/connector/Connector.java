@@ -62,10 +62,10 @@ public interface Connector<M, C> {
      * 获取表元信息
      *
      * @param connectorMapper
-     * @param tableName
+     * @param tableNamePattern
      * @return
      */
-    MetaInfo getMetaInfo(M connectorMapper, String tableName);
+    MetaInfo getMetaInfo(M connectorMapper, String tableNamePattern);
 
     /**
      * 获取总数
