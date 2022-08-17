@@ -124,6 +124,12 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         Meta meta = manager.getMeta(task.getId());
         Assert.notNull(meta, "检查meta为空.");
 
+        // 全量的过程中，有新数据则更新总数
+        long finished = meta.getSuccess().get() + meta.getFail().get();
+        if(meta.getTotal().get() < finished){
+            meta.getTotal().set(finished);
+        }
+
         meta.setBeginTime(task.getBeginTime());
         meta.setEndTime(task.getEndTime());
         Map<String, String> snapshot = meta.getSnapshot();

@@ -279,16 +279,16 @@ public class ParserFactory implements Parser {
             BatchWriter batchWriter = new BatchWriter(tConnectorMapper, command, sTableName, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize);
             Result writer = writeBatch(batchWriter, executorService);
 
-            // 6、判断尾页
+            // 6、更新结果
+            task.setPageIndex(task.getPageIndex() + 1);
+            task.setCursor(getLastCursor(data, pk));
+            flush(task, writer);
+
+            // 7、判断尾页
             if (data.size() < pageSize) {
                 logger.info("完成全量:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
                 break;
             }
-
-            // 7、更新结果
-            task.setPageIndex(task.getPageIndex() + 1);
-            task.setCursor(getLastCursor(data, pk));
-            flush(task, writer);
         }
     }
 
