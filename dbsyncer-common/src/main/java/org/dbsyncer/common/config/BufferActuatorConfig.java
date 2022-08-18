@@ -20,7 +20,7 @@ public class BufferActuatorConfig {
     /**
      * 批量同步数
      */
-    private int batchCount = 2000;
+    private int batchCount = 1000;
 
     /**
      * 工作线任务队列
