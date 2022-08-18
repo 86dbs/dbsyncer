@@ -116,8 +116,6 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
 
         // 记录结束时间
         task.setEndTime(Instant.now().toEpochMilli());
-        task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
-        task.setCursor("");
         task.setTableGroupIndex(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
         flush(task);
     }
@@ -125,6 +123,12 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
     private void flush(Task task) {
         Meta meta = manager.getMeta(task.getId());
         Assert.notNull(meta, "检查meta为空.");
+
+        // 全量的过程中，有新数据则更新总数
+        long finished = meta.getSuccess().get() + meta.getFail().get();
+        if(meta.getTotal().get() < finished){
+            meta.getTotal().set(finished);
+        }
 
         meta.setBeginTime(task.getBeginTime());
         meta.setEndTime(task.getEndTime());

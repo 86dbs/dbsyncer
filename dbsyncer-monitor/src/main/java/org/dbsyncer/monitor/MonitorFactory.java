@@ -1,6 +1,8 @@
 package org.dbsyncer.monitor;
 
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.scheduled.ScheduledTaskJob;
+import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;
@@ -10,6 +12,7 @@ import org.dbsyncer.monitor.enums.StatisticEnum;
 import org.dbsyncer.monitor.enums.TaskMetricEnum;
 import org.dbsyncer.monitor.enums.ThreadPoolMetricEnum;
 import org.dbsyncer.monitor.model.AppReportMetric;
+import org.dbsyncer.monitor.model.MappingReportMetric;
 import org.dbsyncer.monitor.model.MetricResponse;
 import org.dbsyncer.monitor.model.Sample;
 import org.dbsyncer.parser.flush.BufferActuator;
@@ -18,11 +21,15 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.query.Query;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +43,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * @date 2020/04/23 11:30
  */
 @Component
-public class MonitorFactory implements Monitor {
+public class MonitorFactory implements Monitor, ScheduledTaskJob {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private Manager manager;
@@ -50,6 +59,20 @@ public class MonitorFactory implements Monitor {
 
     @Autowired
     private BufferActuator storageBufferActuator;
+
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
+
+    private volatile boolean running;
+
+    private LocalDateTime queryTime;
+
+    private final MappingReportMetric mappingReportMetric = new MappingReportMetric();
+
+    @PostConstruct
+    private void init() {
+        scheduledTaskService.start(5000, this);
+    }
 
     @Override
     public Mapping getMapping(String mappingId) {
@@ -126,16 +149,42 @@ public class MonitorFactory implements Monitor {
 
     @Override
     public AppReportMetric getAppReportMetric() {
-        final List<Meta> metaAll = manager.getMetaAll();
+        queryTime = LocalDateTime.now();
         AppReportMetric report = new AppReportMetric();
-        report.setSuccess(getMappingSuccess(metaAll));
-        report.setFail(getMappingFail(metaAll));
-        report.setInsert(getMappingInsert(metaAll));
-        report.setUpdate(getMappingUpdate(metaAll));
-        report.setDelete(getMappingDelete(metaAll));
+        report.setSuccess(mappingReportMetric.getSuccess());
+        report.setFail(mappingReportMetric.getFail());
+        report.setInsert(mappingReportMetric.getInsert());
+        report.setUpdate(mappingReportMetric.getUpdate());
+        report.setDelete(mappingReportMetric.getDelete());
         report.setQueueUp(writerBufferActuator.getQueue().size());
         report.setQueueCapacity(writerBufferActuator.getQueueCapacity());
         return report;
+    }
+
+    @Override
+    public void run() {
+        if (running || null == queryTime) {
+            return;
+        }
+        // 非活动时间范围(30s内)
+        if (LocalDateTime.now().minusSeconds(30).isAfter(queryTime)) {
+            return;
+        }
+
+        // 刷新报表
+        try {
+            running = true;
+            final List<Meta> metaAll = manager.getMetaAll();
+            mappingReportMetric.setSuccess(getMappingSuccess(metaAll));
+            mappingReportMetric.setFail(getMappingFail(metaAll));
+            mappingReportMetric.setInsert(getMappingInsert(metaAll));
+            mappingReportMetric.setUpdate(getMappingUpdate(metaAll));
+            mappingReportMetric.setDelete(getMappingDelete(metaAll));
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        } finally {
+            running = false;
+        }
     }
 
     /**

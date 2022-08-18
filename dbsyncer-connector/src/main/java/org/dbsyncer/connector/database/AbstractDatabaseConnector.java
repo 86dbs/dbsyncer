@@ -9,9 +9,11 @@ import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.connector.database.ds.SimpleConnection;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
+import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Filter;
 import org.dbsyncer.connector.model.MetaInfo;
@@ -60,13 +62,31 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableName) {
-        String quotation = buildSqlWithQuotation();
-        DatabaseConfig config = connectorMapper.getConfig();
-        String queryMetaSql = new StringBuilder("SELECT * FROM ").append(getSchema(config, quotation)).append(quotation).append(tableName)
-                .append(quotation).append(" WHERE 1!=1").toString();
+    public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
+        return getTable(connectorMapper, null, getSchema(connectorMapper.getConfig()), null);
+    }
 
-        return connectorMapper.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql, config.getSchema(), tableName));
+    @Override
+    public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableNamePattern) {
+        List<Field> fields = new ArrayList<>();
+        final String schema = getSchema(connectorMapper.getConfig());
+        connectorMapper.execute(databaseTemplate -> {
+            SimpleConnection connection = (SimpleConnection) databaseTemplate.getConnection();
+            Connection conn = connection.getConnection();
+            String catalog = conn.getCatalog();
+            String schemaNamePattern = null == schema ? conn.getSchema() : schema;
+            DatabaseMetaData metaData = conn.getMetaData();
+            List<String> primaryKeys = findTablePrimaryKeys(metaData, catalog, schemaNamePattern, tableNamePattern);
+            ResultSet columnMetadata = metaData.getColumns(catalog, schemaNamePattern, tableNamePattern, null);
+            while (columnMetadata.next()) {
+                String columnName = columnMetadata.getString(4);
+                int columnType = columnMetadata.getInt(5);
+                String typeName = columnMetadata.getString(6);
+                fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName)));
+            }
+            return fields;
+        });
+        return new MetaInfo().setColumn(fields);
     }
 
     @Override
@@ -238,15 +258,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * 获取架构名
      *
      * @param config
-     * @param quotation
      * @return
      */
-    protected String getSchema(DatabaseConfig config, String quotation) {
-        StringBuilder schema = new StringBuilder();
-        if (StringUtil.isNotBlank(config.getSchema())) {
-            schema.append(quotation).append(config.getSchema()).append(quotation).append(".");
-        }
-        return schema.toString();
+    protected String getSchema(DatabaseConfig config) {
+        return config.getSchema();
     }
 
     /**
@@ -281,15 +296,27 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * 获取表列表
      *
      * @param connectorMapper
-     * @param sql
+     * @param catalog
+     * @param schema
+     * @param tableNamePattern
      * @return
      */
-    protected List<Table> getTable(DatabaseConnectorMapper connectorMapper, String sql) {
-        List<String> tableNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
-        if (!CollectionUtils.isEmpty(tableNames)) {
-            return tableNames.stream().map(name -> new Table(name)).collect(Collectors.toList());
-        }
-        return Collections.EMPTY_LIST;
+    protected List<Table> getTable(DatabaseConnectorMapper connectorMapper, String catalog, String schema, String tableNamePattern) {
+        return connectorMapper.execute(databaseTemplate -> {
+            List<Table> tables = new ArrayList<>();
+            SimpleConnection connection = (SimpleConnection) databaseTemplate.getConnection();
+            Connection conn = connection.getConnection();
+            String databaseCatalog = null == catalog ? conn.getCatalog() : catalog;
+            String schemaNamePattern = null == schema ? conn.getSchema() : schema;
+            String[] types = {TableTypeEnum.TABLE.getCode(), TableTypeEnum.VIEW.getCode(), TableTypeEnum.MATERIALIZED_VIEW.getCode()};
+            final ResultSet rs = conn.getMetaData().getTables(databaseCatalog, schemaNamePattern, tableNamePattern, types);
+            while (rs.next()) {
+                final String tableName = rs.getString("TABLE_NAME");
+                final String tableType = rs.getString("TABLE_TYPE");
+                tables.add(new Table(tableName, tableType));
+            }
+            return tables;
+        });
     }
 
     /**
@@ -483,6 +510,21 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
+     * 获取架构名
+     *
+     * @param config
+     * @param quotation
+     * @return
+     */
+    private String getSchema(DatabaseConfig config, String quotation) {
+        StringBuilder schema = new StringBuilder();
+        if (StringUtil.isNotBlank(config.getSchema())) {
+            schema.append(quotation).append(config.getSchema()).append(quotation).append(".");
+        }
+        return schema.toString();
+    }
+
+    /**
      * 返回表主键
      *
      * @param md
@@ -508,6 +550,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
+     * 数据转换
+     *
      * @param connection 连接
      * @param ps         参数构造器
      * @param fields     同步字段，例如[{name=ID, type=4}, {name=NAME, type=12}]

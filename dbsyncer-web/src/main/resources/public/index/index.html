@@ -106,7 +106,7 @@
                                 <div class="row mappingList">
                                     <!-- 驱动__开始 -->
                                     <div class="col-md-4" th:each="m,state : ${mappings}">
-                                        <div th:id="${m?.id}" th:class="${m?.meta?.model eq '全量'} ? 'jumbotron dbsyncer_block dbsyncer_block_full' : 'jumbotron dbsyncer_block dbsyncer_block_increment'">
+                                        <div th:id="${m?.id}" th:class="${m?.model eq 'full'} ? 'jumbotron dbsyncer_block dbsyncer_block_full' : 'jumbotron dbsyncer_block dbsyncer_block_increment'">
                                             <!--驱动标题信息 -->
                                             <div class="row text-center dbsyncer_driver_name" th:text="${m?.name}" th:title="${m?.name}"></div>
 
@@ -154,11 +154,11 @@
 
                                             <div class="row">
                                                 <table class="table table-hover">
-                                                    <tbody th:with="model=${m?.meta?.model},total=${m?.meta?.total},success=${m?.meta?.success},fail=${m?.meta?.fail},beginTime=${m?.meta?.beginTime},endTime=${m?.meta?.endTime}">
+                                                    <tbody th:with="model=${m?.model},total=${m?.meta?.total},success=${m?.meta?.success},fail=${m?.meta?.fail},beginTime=${m?.meta?.beginTime},endTime=${m?.meta?.endTime}">
                                                     <tr>
                                                         <td class="text-left">
-                                                            [[${model}]]同步>
-                                                            <span th:if="${model eq '全量'}">
+                                                            [[${m?.meta?.model}]]同步>
+                                                            <span th:if="${model eq 'full'}">
                                                                 总数:[[${total}]]
                                                                 <span th:if="${total gt 0 and (success + fail) gt 0}">,进度:[[${#numbers.formatPercent(((success + fail) / total), 2, 2)}]]</span>
                                                                 ,耗时:
@@ -167,7 +167,7 @@
                                                                     <span th:if="${seconds ge 60}" th:with="minutes=${seconds / 60}" th:text="${minutes + '分' + (seconds - minutes * 60) + '秒'}" />
                                                                 </span>
                                                             </span>
-                                                            <span th:if="${model eq '增量'}">
+                                                            <span th:if="${model eq 'increment'}">
                                                                 总数:[[${#numbers.formatDecimal((success + fail),0 ,0)}]]
                                                             </span>
                                                             <span th:if="${success gt 0}">,成功:[[${success}]]</span>
