@@ -1,5 +1,5 @@
-package org.dbsyncer.parser;
-
+import com.alibaba.fastjson.JSONException;
+import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.io.FileUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.config.ConnectorConfig;
@@ -7,8 +7,6 @@ import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.Test;
 
 import java.io.File;
@@ -28,7 +26,7 @@ public class ConnectorParserTest {
         System.out.println(json);
 
         // 解析基本信息
-        JSONObject conn = new JSONObject(json);
+        JSONObject conn = JsonUtil.parseObject(json);
         JSONObject config = (JSONObject) conn.remove("config");
         Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
 
@@ -46,7 +44,7 @@ public class ConnectorParserTest {
         System.out.println(json);
 
         // 解析基本信息
-        JSONObject map = new JSONObject(json);
+        JSONObject map = JsonUtil.parseObject(json);
         Mapping mapping = JsonUtil.jsonToObj(map.toString(), Mapping.class);
         System.out.println(mapping);
     }
@@ -56,7 +54,7 @@ public class ConnectorParserTest {
         String json = readJson("TableGroup.json");
         System.out.println(json);
         // 解析基本信息
-        JSONObject group = new JSONObject(json);
+        JSONObject group = JsonUtil.parseObject(json);
         TableGroup tableGroup = JsonUtil.jsonToObj(group.toString(), TableGroup.class);
         System.out.println(tableGroup);
     }

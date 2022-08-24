@@ -1,5 +1,7 @@
 package org.dbsyncer.parser;
 
+import com.alibaba.fastjson.JSONException;
+import com.alibaba.fastjson.JSONObject;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.Result;
@@ -30,8 +32,6 @@ import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -174,7 +174,7 @@ public class ParserFactory implements Parser {
     @Override
     public Connector parseConnector(String json) {
         try {
-            JSONObject conn = new JSONObject(json);
+            JSONObject conn = JsonUtil.parseObject(json);
             JSONObject config = (JSONObject) conn.remove("config");
             Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
             Assert.notNull(connector, "Connector can not be null.");

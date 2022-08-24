@@ -1,9 +1,12 @@
 package org.dbsyncer.biz.checker.impl.tablegroup;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.MetaInfo;
@@ -16,9 +19,6 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -190,37 +190,32 @@ public class TableGroupChecker extends AbstractChecker {
      * @return
      */
     private void setFieldMapping(TableGroup tableGroup, String json) {
-        try {
-            JSONArray mapping = new JSONArray(json);
-            if (null == mapping) {
-                throw new BizException("映射关系不能为空");
-            }
-
-            final Map<String, Field> sMap = PickerUtil.convert2Map(tableGroup.getSourceTable().getColumn());
-            final Map<String, Field> tMap = PickerUtil.convert2Map(tableGroup.getTargetTable().getColumn());
-            int length = mapping.length();
-            List<FieldMapping> list = new ArrayList<>();
-            JSONObject row = null;
-            Field s = null;
-            Field t = null;
-            for (int i = 0; i < length; i++) {
-                row = mapping.getJSONObject(i);
-                s = sMap.get(row.getString("source"));
-                t = tMap.get(row.getString("target"));
-                if (null == s && null == t) {
-                    continue;
-                }
-
-                if (null != t) {
-                    t.setPk(row.getBoolean("pk"));
-                }
-                list.add(new FieldMapping(s, t));
-            }
-            tableGroup.setFieldMapping(list);
-        } catch (JSONException e) {
-            logger.error(e.getMessage());
-            throw new BizException(e.getMessage());
+        JSONArray mapping = JsonUtil.parseArray(json);
+        if (null == mapping) {
+            throw new BizException("映射关系不能为空");
         }
+
+        final Map<String, Field> sMap = PickerUtil.convert2Map(tableGroup.getSourceTable().getColumn());
+        final Map<String, Field> tMap = PickerUtil.convert2Map(tableGroup.getTargetTable().getColumn());
+        int length = mapping.size();
+        List<FieldMapping> list = new ArrayList<>();
+        JSONObject row = null;
+        Field s = null;
+        Field t = null;
+        for (int i = 0; i < length; i++) {
+            row = mapping.getJSONObject(i);
+            s = sMap.get(row.getString("source"));
+            t = tMap.get(row.getString("target"));
+            if (null == s && null == t) {
+                continue;
+            }
+
+            if (null != t) {
+                t.setPk(row.getBoolean("pk"));
+            }
+            list.add(new FieldMapping(s, t));
+        }
+        tableGroup.setFieldMapping(list);
     }
 
 }

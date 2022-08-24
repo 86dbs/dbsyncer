@@ -1,6 +1,8 @@
 package org.dbsyncer.biz.checker;
 
-import org.dbsyncer.biz.BizException;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -10,11 +12,7 @@ import org.dbsyncer.parser.model.AbstractConfigModel;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Convert;
 import org.dbsyncer.plugin.config.Plugin;
-import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
@@ -99,20 +97,16 @@ public abstract class AbstractChecker implements Checker {
     }
 
     private <T> List<T> jsonToList(String json, Class<T> valueType) {
-        try {
-            JSONArray array = new JSONArray(json);
-            if (null != array) {
-                List<T> list = new ArrayList<>();
-                int length = array.length();
-                for (int i = 0; i < length; i++) {
-                    JSONObject obj = array.getJSONObject(i);
-                    T t = JsonUtil.jsonToObj(obj.toString(), valueType);
-                    list.add(t);
-                }
-                return list;
+        JSONArray array = JsonUtil.parseArray(json);
+        if (null != array) {
+            List<T> list = new ArrayList<>();
+            int length = array.size();
+            for (int i = 0; i < length; i++) {
+                JSONObject obj = array.getJSONObject(i);
+                T t = JsonUtil.jsonToObj(obj.toString(), valueType);
+                list.add(t);
             }
-        } catch (JSONException e) {
-            throw new BizException(String.format("解析高级配置参数异常:%s", json));
+            return list;
         }
         return Collections.EMPTY_LIST;
     }
