@@ -18,7 +18,7 @@ import java.util.Date;
 public class VarcharValueMapper extends AbstractValueMapper<String> {
 
     @Override
-    protected Object convert(ConnectorMapper connectorMapper, Object val) {
+    protected String convert(ConnectorMapper connectorMapper, Object val) {
         if (val instanceof byte[]) {
             return new String((byte[]) val);
         }
@@ -35,6 +35,6 @@ public class VarcharValueMapper extends AbstractValueMapper<String> {
             return DateFormatUtil.dateToString((Date) val);
         }
 
-        throw new ConnectorException(String.format("VarcharValueMapper can not find type [%s], val [%s]", val.getClass(), val));
+        throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }

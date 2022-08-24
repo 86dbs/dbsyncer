@@ -16,5 +16,5 @@ public interface ValueMapper {
      * @param val
      * @return
      */
-    Object convertValue(ConnectorMapper connectorMapper, Object val);
+    Object convertValue(ConnectorMapper connectorMapper, Object val) throws Exception;
 }

@@ -20,15 +20,11 @@ public abstract class AbstractValueMapper<T> implements ValueMapper {
      *
      * @param val
      */
-    protected abstract Object convert(ConnectorMapper connectorMapper, Object val);
+    protected abstract T convert(ConnectorMapper connectorMapper, Object val) throws Exception;
 
     @Override
-    public Object convertValue(ConnectorMapper connectorMapper, Object val) {
-        if (null == val) {
-            return null;
-        }
-
+    public Object convertValue(ConnectorMapper connectorMapper, Object val) throws Exception {
         // 当数据类型不同时，返回转换值
-        return !val.getClass().equals(parameterClazz) ? convert(connectorMapper, val) : val;
+        return null != val && !val.getClass().equals(parameterClazz) ? convert(connectorMapper, val) : val;
     }
 }
