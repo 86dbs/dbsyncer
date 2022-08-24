@@ -2,7 +2,10 @@ package org.dbsyncer.connector;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.config.*;
+import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.ConnectorConfig;
+import org.dbsyncer.connector.config.ReaderConfig;
+import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
@@ -142,7 +145,14 @@ public class ConnectorFactory implements DisposableBean {
     }
 
     public Result writer(ConnectorMapper connectorMapper, WriterBatchConfig config) {
-        Result result = getConnector(connectorMapper).writer(connectorMapper, config);
+        Connector connector = getConnector(connectorMapper);
+        // TODO 统一schema待实现
+//        if(connector instanceof AbstractConnector){
+//            AbstractConnector conn = (AbstractConnector) connector;
+//            conn.convertProcessBeforeWriter(connectorMapper, config);
+//        }
+
+        Result result = connector.writer(connectorMapper, config);
         Assert.notNull(result, "Connector writer batch result can not null");
         return result;
     }
