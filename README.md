@@ -1,7 +1,7 @@
 ## 介绍
 ![logo](dbsyncer-web/src/main/resources/static/img/logo.png)
 
-DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServer、PostgreSQL、Elasticsearch(ES)、Kafka、File、SQL等同步场景。支持上传插件自定义同步转换业务，提供监控全量和增量数据统计图、应用性能预警等。
+DBSyncer是一款开源的数据同步中间件，提供MySQL、Oracle、SqlServer、PostgreSQL、Elasticsearch(ES)、Kafka、File、SQL等同步场景。支持上传插件自定义同步转换业务，提供监控全量和增量数据统计图、应用性能预警等。
 
 > 特点
 * 组合驱动，自定义库同步到库组合，关系型数据库与非关系型之间组合，任意搭配表同步映射关系
@@ -9,71 +9,17 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
 * 开发插件，自定义转化同步逻辑
 
 ## 🌈应用场景
-
-<div>
-    <table>
-        <tbody>
-            <tr>
-                <td>连接器</td>
-                <td>数据源</td>
-                <td>目标源</td>
-                <td>支持版本(包含以下)</td>
-            </tr>
-            <tr>
-                <td>Mysql</td>
-                <td>✔</td>
-                <td>✔</td>
-                <td>5.7.19以上</td>
-            </tr>
-            <tr>
-                <td>Oracle</td>
-                <td>✔</td>
-                <td>✔</td>
-                <td>Oracle 10gR2 -11g</td>
-            </tr>
-            <tr>
-                <td>SqlServer</td>
-                <td>✔</td>
-                <td>✔</td>
-                <td>2008以上</td>
-            </tr>
-            <tr>
-                <td>PostgreSQL</td>
-                <td>✔</td>
-                <td>✔</td>
-                <td>9.5.25以上</td>
-            </tr>
-            <tr>
-                <td>ES</td>
-                <td>✔</td>
-                <td>✔</td>
-                <td>6.0以上</td>
-            </tr>
-            <tr>
-                <td>Kafka</td>
-                <td>开发中</td>
-                <td>✔</td>
-                <td>2.10-0.9.0.0以上</td>
-            </tr>
-            <tr>
-                <td>File</td>
-                <td>✔</td>
-                <td>✔</td>
-                <td>*.txt, *.unl</td>
-            </tr>
-            <tr>
-                <td>SQL</td>
-                <td>✔</td>
-                <td></td>
-                <td>支持以上关系型数据库</td>
-            </tr>
-            <tr>
-                <td>后期计划</td>
-                <td colspan="3">Redis</td>
-            </tr>
-        </tbody>
-    </table>
-<div>
+| 连接器 | 数据源 | 目标源 | 支持版本(包含以下) |
+|---|---|---|---|
+| MySQL | ✔ |  ✔ | 5.7.19以上 |
+| Oracle | ✔ |  ✔ | 10gR2 -11g |
+| SqlServer | ✔ |  ✔ | 2008以上 |
+| PostgreSQL | ✔ |  ✔ | 9.5.25以上 |
+| ES | ✔ |  ✔ | 6.0以上 |
+| Kafka | 开发中 |  ✔ | 2.10-0.9.0.0以上 |
+| File | ✔ |  ✔ | *.txt, *.unl |
+| SQL | ✔ |  | 支持以上关系型数据库 |
+| 后期计划 | Redis | | |
 
 ## 📦安装配置
 #### 步骤
@@ -85,7 +31,7 @@ DBSyncer是一款开源的数据同步中间件，提供Mysql、Oracle、SqlServ
 
 #### 增量同步配置（源库）
 
-##### Mysql
+##### MySQL
 * Dump Binlog二进制日志。Master同步Slave, 创建IO线程读取数据，写入relaylog，基于消息订阅捕获增量数据。
 > 修改my.ini文件，重启服务
 ```bash
@@ -132,7 +78,7 @@ wal_level=logical
 > 账号具有访问权限。
 
 ##### 日志
-> 建议Mysql、SqlServer、PostgreSQL都使用日志
+> 建议MySQL、SqlServer、PostgreSQL都使用日志
 
 ![日志](https://images.gitee.com/uploads/images/2021/0906/181036_1f9a9e78_376718.png "日志.png")
 
@@ -176,19 +122,20 @@ $ ./build.sh
 ```
 
 ## 🐞常见问题
-* Mysql无法连接。默认使用的驱动版本为5.1.40，如果为mysql8需要手动替换驱动 [mysql-connector-java-8.0.21.jar](https://gitee.com/ghi/dbsyncer/attach_files) 
-* 有其他问题、建议或需求（如想支持某中间件，记得补充使用的版本号），欢迎大家提[【issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!
+* MySQL无法连接。默认使用的驱动版本为5.1.40，如果为mysql8需要手动替换驱动 [mysql-connector-java-8.0.21.jar](https://gitee.com/ghi/dbsyncer/attach_files) 
+* SQLServer无法连接。类似解决办法：[驱动程序无法通过使用安全套接字层(SSL)加密与 SQL Server 建立安全连接。错误:“The server selected protocol version TLS10 is not accepted by client preferences [TLS12]”](https://gitee.com/ghi/dbsyncer/issues/I4PL46?from=project-issue) 
 * 启动脚本编码格式有误，在linux系统中，打包后，在bin文件夹下运行startup.sh前，要使用vi操作
 ```bash
 vi startup.sh
 :set ff=unix
 :wq
 ```
+* 有其他问题、建议或需求（如想支持某中间件，记得补充使用的版本号），欢迎大家提[【issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!
 
 ## 🏆性能测试
 |  类型 | 耗时 | 数据量 |  机器配置 |
 |---|---|---|---|
-|  MySQL全量同步MySQL | 202s  |  1000w |  MacBook Pro 2.4 GHz 四核Intel Core i5 16 GB 2133 MHz LPDDR3 |
+|  MySQL全量同步 | 202s  |  1000w |  MacBook Pro 2.4 GHz 四核Intel Core i5 16 GB 2133 MHz LPDDR3 |
 
 <img src="https://foruda.gitee.com/images/1660034515191434708/屏幕截图.png" width="200" height="200" />
 
