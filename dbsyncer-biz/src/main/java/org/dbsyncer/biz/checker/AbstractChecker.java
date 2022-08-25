@@ -2,6 +2,7 @@ package org.dbsyncer.biz.checker;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import org.dbsyncer.biz.enums.SafeInfoEnum;
 import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -13,6 +14,8 @@ import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Convert;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
@@ -25,6 +28,10 @@ import java.util.*;
  * @date 2020/1/8 15:17
  */
 public abstract class AbstractChecker implements Checker {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private static final String SYMBOL = "*";
 
     @Autowired
     private Manager manager;
@@ -94,6 +101,33 @@ public abstract class AbstractChecker implements Checker {
             }
         }
         model.setPlugin(plugin);
+    }
+
+    /**
+     * 打印参数（数据脱敏）
+     *
+     * @param params
+     */
+    protected void printParams(Map<String, String> params) {
+        // 关键信息脱敏
+        final String code = SafeInfoEnum.PASSWORD.getCode();
+        if (params.containsKey(code)) {
+            HashMap<Object, Object> checkParams = new HashMap<>(params);
+            Object key = checkParams.get(code);
+            if (null != key) {
+                String s = key.toString();
+                StringBuilder k = new StringBuilder();
+                for (int i = 0; i < s.length(); i++) {
+                    k.append(SYMBOL);
+                }
+                checkParams.put(code, k.toString());
+            }
+
+            logger.info("params:{}", checkParams);
+            return;
+        }
+
+        logger.info("params:{}", params);
     }
 
     private <T> List<T> jsonToList(String json, Class<T> valueType) {
