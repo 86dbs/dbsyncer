@@ -14,7 +14,7 @@ import java.sql.RowId;
 public class RowIdValueMapper extends AbstractValueMapper<RowId> {
 
     @Override
-    protected RowId convert(ConnectorMapper connectorMapper, Object val) throws Exception {
+    protected RowId convert(ConnectorMapper connectorMapper, Object val) {
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }

@@ -12,7 +12,7 @@ import org.dbsyncer.connector.ConnectorMapper;
 public class RealValueMapper extends AbstractValueMapper<Float> {
 
     @Override
-    protected Float convert(ConnectorMapper connectorMapper, Object val) throws Exception {
+    protected Float convert(ConnectorMapper connectorMapper, Object val) {
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }

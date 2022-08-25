@@ -3,7 +3,8 @@ package org.dbsyncer.connector.schema;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.database.setter.PreparedFieldMapper;
+import org.dbsyncer.connector.database.DatabaseValueMapper;
+import org.dbsyncer.connector.database.ds.SimpleConnection;
 
 import java.sql.Clob;
 import java.sql.Connection;
@@ -20,7 +21,7 @@ public class ClobValueMapper extends AbstractValueMapper<Clob> {
         if (val instanceof byte[]) {
             Object connection = connectorMapper.getConnection();
             if (connection instanceof Connection) {
-                final PreparedFieldMapper mapper = new PreparedFieldMapper((Connection) connection);
+                final DatabaseValueMapper mapper = new DatabaseValueMapper((SimpleConnection) connection);
                 return mapper.getClob((byte[]) val);
             }
         }

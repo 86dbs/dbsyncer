@@ -13,6 +13,9 @@ public class LongVarcharValueMapper extends AbstractValueMapper<String> {
 
     @Override
     protected String convert(ConnectorMapper connectorMapper, Object val) {
+        if (val instanceof byte[]) {
+            return new String((byte[]) val);
+        }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }

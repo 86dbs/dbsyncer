@@ -146,11 +146,17 @@ public class ConnectorFactory implements DisposableBean {
 
     public Result writer(ConnectorMapper connectorMapper, WriterBatchConfig config) {
         Connector connector = getConnector(connectorMapper);
-        // TODO 统一schema待实现
-//        if(connector instanceof AbstractConnector){
-//            AbstractConnector conn = (AbstractConnector) connector;
-//            conn.convertProcessBeforeWriter(connectorMapper, config);
-//        }
+        if(connector instanceof AbstractConnector){
+            AbstractConnector conn = (AbstractConnector) connector;
+            try {
+                conn.convertProcessBeforeWriter(connectorMapper, config);
+            } catch (Exception e) {
+                Result result = new Result();
+                result.getError().append(e.getMessage());
+                result.addFailData(config.getData());
+                return result;
+            }
+        }
 
         Result result = connector.writer(connectorMapper, config);
         Assert.notNull(result, "Connector writer batch result can not null");
