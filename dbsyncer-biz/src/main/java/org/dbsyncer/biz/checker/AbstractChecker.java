@@ -31,7 +31,7 @@ public abstract class AbstractChecker implements Checker {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String SYMBOL = "*";
+    private static final String SYMBOL = "***";
 
     @Autowired
     private Manager manager;
@@ -109,25 +109,13 @@ public abstract class AbstractChecker implements Checker {
      * @param params
      */
     protected void printParams(Map<String, String> params) {
-        // 关键信息脱敏
-        final String code = SafeInfoEnum.PASSWORD.getCode();
-        if (params.containsKey(code)) {
-            HashMap<Object, Object> checkParams = new HashMap<>(params);
-            Object key = checkParams.get(code);
-            if (null != key) {
-                String s = key.toString();
-                StringBuilder k = new StringBuilder();
-                for (int i = 0; i < s.length(); i++) {
-                    k.append(SYMBOL);
-                }
-                checkParams.put(code, k.toString());
+        Map<Object, Object> checkParams = new HashMap<>(params);
+        for (SafeInfoEnum s : SafeInfoEnum.values()) {
+            if (params.containsKey(s.getCode())) {
+                checkParams.put(s.getCode(), SYMBOL);
             }
-
-            logger.info("params:{}", checkParams);
-            return;
         }
-
-        logger.info("params:{}", params);
+        logger.info("params:{}", checkParams);
     }
 
     private <T> List<T> jsonToList(String json, Class<T> valueType) {
