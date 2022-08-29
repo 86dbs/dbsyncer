@@ -5,6 +5,7 @@ import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * @author AE86
@@ -15,6 +16,18 @@ public class DecimalValueMapper extends AbstractValueMapper<BigDecimal> {
 
     @Override
     protected BigDecimal convert(ConnectorMapper connectorMapper, Object val) {
+        if (val instanceof Integer) {
+            Integer integer = (Integer) val;
+            return new BigDecimal(integer);
+        }
+        if (val instanceof Long) {
+            Long l = (Long) val;
+            return new BigDecimal(l);
+        }
+        if (val instanceof BigInteger) {
+            BigInteger bigInteger = (BigInteger) val;
+            return new BigDecimal(bigInteger);
+        }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }
