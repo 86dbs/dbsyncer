@@ -7,7 +7,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
-public class DatetimeV2Deserialize {
+public final class DatetimeV2Deserialize {
 
     public Serializable deserializeDatetimeV2(int meta, ByteArrayInputStream inputStream) throws IOException {
         long datetime = bigEndianLong(inputStream.read(5), 0, 5);

@@ -10,15 +10,18 @@ import java.util.Map;
 
 public class WriteDeserializer extends WriteRowsEventDataDeserializer {
 
-    private DatetimeV2Deserialize datetimeV2Deserialize;
+    private final DatetimeV2Deserialize datetimeV2Deserialize = new DatetimeV2Deserialize();
+    private final JsonBinaryDeserialize jsonBinaryDeserialize = new JsonBinaryDeserialize();
 
     public WriteDeserializer(Map<Long, TableMapEventData> tableMapEventByTableId) {
         super(tableMapEventByTableId);
-        datetimeV2Deserialize = new DatetimeV2Deserialize();
     }
 
     protected Serializable deserializeDatetimeV2(int meta, ByteArrayInputStream inputStream) throws IOException {
         return datetimeV2Deserialize.deserializeDatetimeV2(meta, inputStream);
     }
 
+    protected byte[] deserializeJson(int meta, ByteArrayInputStream inputStream) throws IOException {
+        return jsonBinaryDeserialize.deserializeJson(meta, inputStream);
+    }
 }
