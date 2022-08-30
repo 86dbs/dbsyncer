@@ -87,6 +87,7 @@ $.fn.serializeJson = function () {
 
 // 全局加载页面
 function doLoader(url){
+    clearInterval(timer);
     // 加载页面
     $initContainer.load($basePath + url, function (response, status, xhr) {
         if (status != 'success') {
