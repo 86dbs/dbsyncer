@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.MultipartConfigFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -23,7 +24,9 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.util.unit.DataSize;
 
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionEvent;
@@ -162,6 +165,18 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     @Override
     public void sessionDestroyed(HttpSessionEvent se) {
         logger.debug("销毁会话:{}", se.getSession().getId());
+    }
+
+    @Bean
+    public MultipartConfigElement multipartConfigElement() {
+        MultipartConfigFactory factory = new MultipartConfigFactory();
+        // 上传单个文件最大值MB
+        DataSize maxSize = DataSize.ofMegabytes(128);
+        DataSize requestMaxSize = DataSize.ofMegabytes(128);
+        factory.setMaxFileSize(maxSize);
+        // 设置一次上传文件的总大小
+        factory.setMaxRequestSize(requestMaxSize);
+        return factory.createMultipartConfig();
     }
 
     /**
