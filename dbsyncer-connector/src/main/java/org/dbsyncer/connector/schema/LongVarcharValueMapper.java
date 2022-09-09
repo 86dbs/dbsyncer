@@ -4,6 +4,8 @@ import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
 
+import java.sql.Date;
+
 /**
  * @author AE86
  * @version 1.0.0
@@ -15,6 +17,9 @@ public class LongVarcharValueMapper extends AbstractValueMapper<String> {
     protected String convert(ConnectorMapper connectorMapper, Object val) {
         if (val instanceof byte[]) {
             return new String((byte[]) val);
+        }
+        if (val instanceof Date) {
+            return String.valueOf(val);
         }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
