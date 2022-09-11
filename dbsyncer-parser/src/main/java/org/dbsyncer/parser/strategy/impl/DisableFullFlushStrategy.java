@@ -5,6 +5,8 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.parser.flush.AbstractFlushStrategy;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -16,6 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public final class DisableFullFlushStrategy extends AbstractFlushStrategy {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     @Autowired
     private LogService logService;
 
@@ -25,6 +29,7 @@ public final class DisableFullFlushStrategy extends AbstractFlushStrategy {
         refreshTotal(metaId, result);
 
         if (!CollectionUtils.isEmpty(result.getFailData())) {
+            logger.error(result.getError().toString());
             LogType logType = LogType.TableGroupLog.FULL_FAILED;
             logService.log(logType, "%s:%s", logType.getMessage(), result.getError().toString());
         }
