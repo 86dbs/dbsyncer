@@ -13,6 +13,10 @@ public class BinaryValueMapper extends AbstractValueMapper<byte[]> {
 
     @Override
     protected byte[] convert(ConnectorMapper connectorMapper, Object val) {
+        if(val instanceof String){
+            String s = (String) val;
+            return s.getBytes();
+        }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }
