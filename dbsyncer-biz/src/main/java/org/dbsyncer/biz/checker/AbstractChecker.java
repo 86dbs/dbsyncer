@@ -1,6 +1,9 @@
 package org.dbsyncer.biz.checker;
 
-import org.dbsyncer.biz.BizException;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import org.dbsyncer.biz.enums.SafeInfoEnum;
+import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -10,11 +13,9 @@ import org.dbsyncer.parser.model.AbstractConfigModel;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Convert;
 import org.dbsyncer.plugin.config.Plugin;
-import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
@@ -27,6 +28,10 @@ import java.util.*;
  * @date 2020/1/8 15:17
  */
 public abstract class AbstractChecker implements Checker {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private static final String SYMBOL = "***";
 
     @Autowired
     private Manager manager;
@@ -98,21 +103,32 @@ public abstract class AbstractChecker implements Checker {
         model.setPlugin(plugin);
     }
 
-    private <T> List<T> jsonToList(String json, Class<T> valueType) {
-        try {
-            JSONArray array = new JSONArray(json);
-            if (null != array) {
-                List<T> list = new ArrayList<>();
-                int length = array.length();
-                for (int i = 0; i < length; i++) {
-                    JSONObject obj = array.getJSONObject(i);
-                    T t = JsonUtil.jsonToObj(obj.toString(), valueType);
-                    list.add(t);
-                }
-                return list;
+    /**
+     * 打印参数（数据脱敏）
+     *
+     * @param params
+     */
+    protected void printParams(Map<String, String> params) {
+        Map<Object, Object> checkParams = new HashMap<>(params);
+        for (SafeInfoEnum s : SafeInfoEnum.values()) {
+            if (params.containsKey(s.getCode())) {
+                checkParams.put(s.getCode(), SYMBOL);
             }
-        } catch (JSONException e) {
-            throw new BizException(String.format("解析高级配置参数异常:%s", json));
+        }
+        logger.info("params:{}", checkParams);
+    }
+
+    private <T> List<T> jsonToList(String json, Class<T> valueType) {
+        JSONArray array = JsonUtil.parseArray(json);
+        if (null != array) {
+            List<T> list = new ArrayList<>();
+            int length = array.size();
+            for (int i = 0; i < length; i++) {
+                JSONObject obj = array.getJSONObject(i);
+                T t = JsonUtil.jsonToObj(obj.toString(), valueType);
+                list.add(t);
+            }
+            return list;
         }
         return Collections.EMPTY_LIST;
     }

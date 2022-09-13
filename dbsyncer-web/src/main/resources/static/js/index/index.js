@@ -179,6 +179,19 @@ function doPost(url) {
     });
 }
 
+// 创建定时器
+function createTimer(){
+    doGetWithoutLoading("/monitor/getRefreshInterval",{}, function (data) {
+        if (data.success == true) {
+            timer = setInterval(function(){
+                backIndexPage();
+            }, data.resultValue * 1000);
+        } else {
+            bootGrowl(data.resultValue, "danger");
+        }
+    });
+}
+
 $(function () {
     // 初始化select插件
     initSelectIndex($(".select-control"));
@@ -198,4 +211,5 @@ $(function () {
     bindConnectorDropdownMenu();
     bindMappingDropdownMenu();
 
+    createTimer();
 });

@@ -420,7 +420,6 @@ function showChartTable(){
 }
 // 创建定时器
 function createTimer(){
-    clearInterval(timer);
     showChartTable();
     doGetWithoutLoading("/monitor/getRefreshInterval",{}, function (data) {
         if (data.success == true) {

@@ -6,8 +6,8 @@ import org.dbsyncer.biz.checker.ConnectorConfigChecker;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.enums.ConnectorEnum;
+import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
@@ -44,7 +44,7 @@ public class ConnectorChecker extends AbstractChecker {
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
-        logger.info("params:{}", params);
+        printParams(params);
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         String connectorType = params.get("connectorType");
         Assert.hasText(name, "connector name is empty.");
@@ -73,7 +73,7 @@ public class ConnectorChecker extends AbstractChecker {
 
     @Override
     public ConfigModel checkEditConfigModel(Map<String, String> params) {
-        logger.info("params:{}", params);
+        printParams(params);
         Assert.notEmpty(params, "ConnectorChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Connector connector = manager.getConnector(id);

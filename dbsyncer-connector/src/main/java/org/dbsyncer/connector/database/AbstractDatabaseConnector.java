@@ -11,7 +11,6 @@ import org.dbsyncer.connector.config.*;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.ds.SimpleConnection;
 import org.dbsyncer.connector.enums.OperationEnum;
-import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
 import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.Field;
@@ -21,13 +20,15 @@ import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
 import org.springframework.util.Assert;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -152,19 +153,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         int[] execute = null;
         try {
             // 2、设置参数
-            execute = connectorMapper.execute(databaseTemplate ->
-                    databaseTemplate.batchUpdate(executeSql, new BatchPreparedStatementSetter() {
-                        @Override
-                        public void setValues(PreparedStatement preparedStatement, int i) {
-                            batchRowsSetter(databaseTemplate.getConnection(), preparedStatement, fields, data.get(i));
-                        }
-
-                        @Override
-                        public int getBatchSize() {
-                            return data.size();
-                        }
-                    })
-            );
+            execute = connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
         } catch (Exception e) {
             logger.error(e.getMessage());
             data.forEach(row -> forceUpdate(result, connectorMapper, config, pkField, row));
@@ -194,7 +183,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         String schema = getSchema((DatabaseConfig) commandConfig.getConnectorConfig(), quotation);
         map.put(ConnectorConstant.OPERTION_QUERY, buildSql(ConnectorConstant.OPERTION_QUERY, commandConfig, schema, queryFilterSql));
         // 是否支持游标
-        if(enableCursor()){
+        if (enableCursor()) {
             map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, buildSql(ConnectorConstant.OPERTION_QUERY_CURSOR, commandConfig, schema, queryFilterSql));
         }
         // 获取查询总数SQL
@@ -232,7 +221,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      *
      * @return
      */
-    protected boolean enableCursor(){
+    protected boolean enableCursor() {
         return false;
     }
 
@@ -549,45 +538,26 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return primaryKeys;
     }
 
-    /**
-     * 数据转换
-     *
-     * @param connection 连接
-     * @param ps         参数构造器
-     * @param fields     同步字段，例如[{name=ID, type=4}, {name=NAME, type=12}]
-     * @param row        同步字段对应的值，例如{ID=123, NAME=张三11}
-     */
-    private void batchRowsSetter(Connection connection, PreparedStatement ps, List<Field> fields, Map row) {
-        Field f = null;
-        int type;
-        Object val = null;
-        int size = fields.size();
+    private List<Object[]> batchRows(List<Field> fields, List<Map> data) {
+        return data.stream().map(row -> batchRow(fields, row)).collect(Collectors.toList());
+    }
+
+    private Object[] batchRow(List<Field> fields, Map row) {
+        final int size = fields.size();
+        Object[] args = new Object[size];
         for (int i = 0; i < size; i++) {
-            // 取出字段和对应值
-            f = fields.get(i);
-            type = f.getType();
-            val = row.get(f.getName());
-            SetterEnum.getSetter(type).set(connection, ps, i + 1, type, val);
+            args[i] = row.get(fields.get(i).getName());
         }
+        return args;
     }
 
     private void forceUpdate(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField,
                              Map row) {
-        // 不存在转insert
-        if (isUpdate(config.getEvent())) {
-            String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
-            if (!existRow(connectorMapper, queryCount, row.get(pkField.getName()))) {
-                logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTableName(), config.getEvent(), ConnectorConstant.OPERTION_INSERT, row);
-                writer(result, connectorMapper, config, pkField, row, ConnectorConstant.OPERTION_INSERT);
-            }
-            return;
-        }
-
-        // 存在转update
-        if (isInsert(config.getEvent())) {
-            logger.warn("{}表执行{}失败, 尝试执行{}, {}", config.getTableName(), config.getEvent(), ConnectorConstant.OPERTION_UPDATE, row);
-            writer(result, connectorMapper, config, pkField, row, ConnectorConstant.OPERTION_UPDATE);
-        }
+        // 存在执行覆盖更新，否则写入
+        final String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
+        final String event = existRow(connectorMapper, queryCount, row.get(pkField.getName())) ? ConnectorConstant.OPERTION_UPDATE : ConnectorConstant.OPERTION_INSERT;
+        logger.warn("{}表执行{}失败, 重新执行{}, {}", config.getTableName(), config.getEvent(), event, row);
+        writer(result, connectorMapper, config, pkField, row, event);
     }
 
     private void writer(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField, Map row,
@@ -608,9 +578,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         try {
             // 2、设置参数
-            int execute = connectorMapper.execute(databaseTemplate ->
-                    databaseTemplate.update(sql, (ps) -> batchRowsSetter(databaseTemplate.getConnection(), ps, fields, row))
-            );
+            int execute = connectorMapper.execute(databaseTemplate -> databaseTemplate.update(sql, batchRow(fields, row)));
             if (execute == 0) {
                 throw new ConnectorException(String.format("尝试执行[%s]失败", event));
             }
@@ -627,7 +595,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     private boolean existRow(DatabaseConnectorMapper connectorMapper, String sql, Object value) {
         int rowNum = 0;
         try {
-            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[] {value}, Integer.class));
+            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[]{value}, Integer.class));
         } catch (Exception e) {
             logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
         }

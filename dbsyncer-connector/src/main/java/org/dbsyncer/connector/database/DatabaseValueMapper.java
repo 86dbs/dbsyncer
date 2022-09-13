@@ -1,17 +1,20 @@
-package org.dbsyncer.connector.database.setter;
+package org.dbsyncer.connector.database;
 
 import oracle.jdbc.OracleConnection;
 import org.dbsyncer.connector.database.ds.SimpleConnection;
 
 import java.nio.charset.Charset;
-import java.sql.*;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.NClob;
+import java.sql.SQLException;
 
-public class PreparedFieldMapper {
+public class DatabaseValueMapper {
 
     private SimpleConnection connection;
 
-    public PreparedFieldMapper(Connection connection) {
-        this.connection = (SimpleConnection) connection;
+    public DatabaseValueMapper(SimpleConnection connection) {
+        this.connection = connection;
     }
 
     public NClob getNClob(byte[] bytes) throws SQLException {

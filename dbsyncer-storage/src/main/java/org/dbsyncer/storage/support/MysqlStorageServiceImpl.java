@@ -13,7 +13,6 @@ import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.Database;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.enums.ConnectorEnum;
-import org.dbsyncer.connector.enums.SetterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.util.DatabaseUtil;
@@ -34,6 +33,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -401,15 +401,15 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             fieldPairMap.putIfAbsent(ConfigConstant.DATA_EVENT, new FieldPair(ConfigConstant.DATA_EVENT));
             fieldPairMap.putIfAbsent(ConfigConstant.DATA_ERROR, new FieldPair(ConfigConstant.DATA_ERROR));
 
-            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_ID, new Field(ConfigConstant.CONFIG_MODEL_ID, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType(), true));
-            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_NAME, new Field(ConfigConstant.CONFIG_MODEL_NAME, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType()));
-            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_TYPE, new Field(ConfigConstant.CONFIG_MODEL_TYPE, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType()));
-            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_CREATE_TIME, new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SetterEnum.BIGINT.name(), SetterEnum.BIGINT.getType()));
-            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, new Field(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SetterEnum.BIGINT.name(), SetterEnum.BIGINT.getType()));
-            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_JSON, new Field(ConfigConstant.CONFIG_MODEL_JSON, SetterEnum.LONGVARCHAR.name(), SetterEnum.LONGVARCHAR.getType()));
-            fieldMap.putIfAbsent(ConfigConstant.DATA_SUCCESS, new Field(ConfigConstant.DATA_SUCCESS, SetterEnum.INTEGER.name(), SetterEnum.INTEGER.getType()));
-            fieldMap.putIfAbsent(ConfigConstant.DATA_EVENT, new Field(ConfigConstant.DATA_EVENT, SetterEnum.VARCHAR.name(), SetterEnum.VARCHAR.getType()));
-            fieldMap.putIfAbsent(ConfigConstant.DATA_ERROR, new Field(ConfigConstant.DATA_ERROR, SetterEnum.LONGVARCHAR.name(), SetterEnum.LONGVARCHAR.getType()));
+            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_ID, new Field(ConfigConstant.CONFIG_MODEL_ID, "VARCHAR", Types.VARCHAR, true));
+            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_NAME, new Field(ConfigConstant.CONFIG_MODEL_NAME, "VARCHAR", Types.VARCHAR));
+            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_TYPE, new Field(ConfigConstant.CONFIG_MODEL_TYPE, "VARCHAR", Types.VARCHAR));
+            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_CREATE_TIME, new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, "BIGINT", Types.BIGINT));
+            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, new Field(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, "BIGINT", Types.BIGINT));
+            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_JSON, new Field(ConfigConstant.CONFIG_MODEL_JSON, "LONGVARCHAR", Types.LONGVARCHAR));
+            fieldMap.putIfAbsent(ConfigConstant.DATA_SUCCESS, new Field(ConfigConstant.DATA_SUCCESS, "INTEGER", Types.INTEGER));
+            fieldMap.putIfAbsent(ConfigConstant.DATA_EVENT, new Field(ConfigConstant.DATA_EVENT, "VARCHAR", Types.VARCHAR));
+            fieldMap.putIfAbsent(ConfigConstant.DATA_ERROR, new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR));
         }
 
         public List<FieldPair> getFieldPairs() {
