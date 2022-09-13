@@ -42,6 +42,11 @@
             <artifactId>mssql-jdbc</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+        </dependency>
+
         <!-- postgresql -->
         <dependency>
             <groupId>org.postgresql</groupId>

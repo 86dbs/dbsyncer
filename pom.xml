@@ -154,6 +154,13 @@
                 <version>${mssql-jdbc.version}</version>
             </dependency>
 
+            <!-- antlr4-runtime -->
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-runtime</artifactId>
+                <version>4.7.2</version>
+            </dependency>
+
             <!-- postgresql -->
             <dependency>
                 <groupId>org.postgresql</groupId>
