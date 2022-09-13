@@ -28,6 +28,14 @@ public class DecimalValueMapper extends AbstractValueMapper<BigDecimal> {
             BigInteger bigInteger = (BigInteger) val;
             return new BigDecimal(bigInteger);
         }
+        if (val instanceof Short) {
+            Short s = (Short) val;
+            return new BigDecimal(s);
+        }
+        if (val instanceof Boolean) {
+            Boolean b = (Boolean) val;
+            return new BigDecimal(b ? 1 : 0);
+        }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }
