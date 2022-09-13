@@ -553,11 +553,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     private void forceUpdate(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField,
                              Map row) {
-        // 存在执行覆盖更新，否则写入
-        final String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
-        final String event = existRow(connectorMapper, queryCount, row.get(pkField.getName())) ? ConnectorConstant.OPERTION_UPDATE : ConnectorConstant.OPERTION_INSERT;
-        logger.warn("{}表执行{}失败, 重新执行{}, {}", config.getTableName(), config.getEvent(), event, row);
-        writer(result, connectorMapper, config, pkField, row, event);
+        if(isUpdate(config.getEvent()) || isInsert(config.getEvent())){
+            // 存在执行覆盖更新，否则写入
+            final String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
+            final String event = existRow(connectorMapper, queryCount, row.get(pkField.getName())) ? ConnectorConstant.OPERTION_UPDATE : ConnectorConstant.OPERTION_INSERT;
+            logger.warn("{}表执行{}失败, 重新执行{}, {}", config.getTableName(), config.getEvent(), event, row);
+            writer(result, connectorMapper, config, pkField, row, event);
+        }
     }
 
     private void writer(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField, Map row,
