@@ -67,7 +67,7 @@ public class Picker {
 
     public String getSourcePrimaryKeyName(ConnectorConfig config) {
         for (Field f : sourceFields) {
-            if (f.isPk()) {
+            if (null != f && f.isPk()) {
                 return f.getName();
             }
         }
