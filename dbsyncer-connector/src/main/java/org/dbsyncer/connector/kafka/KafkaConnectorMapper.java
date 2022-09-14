@@ -19,6 +19,11 @@ public final class KafkaConnectorMapper implements ConnectorMapper<KafkaConfig, 
     }
 
     @Override
+    public void setConfig(KafkaConfig config) {
+        this.config = config;
+    }
+
+    @Override
     public KafkaClient getConnection() {
         return client;
     }
@@ -26,5 +31,10 @@ public final class KafkaConnectorMapper implements ConnectorMapper<KafkaConfig, 
     @Override
     public void close() {
         KafkaUtil.close(client);
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

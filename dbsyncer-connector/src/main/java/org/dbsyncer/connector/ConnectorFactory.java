@@ -50,7 +50,14 @@ public class ConnectorFactory implements DisposableBean {
                 }
             }
         }
-        return connectorCache.get(cacheKey);
+        ConnectorMapper connectorMapper = connectorCache.get(cacheKey);
+        try {
+            ConnectorMapper clone = (ConnectorMapper)connectorMapper.clone();
+            clone.setConfig(config);
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

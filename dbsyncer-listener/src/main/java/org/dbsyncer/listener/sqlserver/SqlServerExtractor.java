@@ -18,6 +18,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -55,6 +56,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     private Lsn lastLsn;
     private String serverName;
     private String schema;
+    private LinkedBlockingQueue<Lsn> stopLsnQueue = new LinkedBlockingQueue<>();
 
     @Override
     public void start() {
@@ -78,6 +80,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
             worker.setName(new StringBuilder("cdc-parser-").append(serverName).append("_").append(RandomUtil.nextInt(1, 100)).toString());
             worker.setDaemon(false);
             worker.start();
+            LsnPuller.addExtractor(metaId, this);
         } catch (Exception e) {
             close();
             logger.error("启动失败:{}", e.getMessage());
@@ -90,6 +93,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     @Override
     public void close() {
         if (connected) {
+            LsnPuller.removeExtractor(metaId);
             if (null != worker && !worker.isInterrupted()) {
                 worker.interrupt();
                 worker = null;
@@ -308,15 +312,22 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
         return (T) execute;
     }
 
+    public Lsn getMaxLsn(){
+        return queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
+    }
+
     final class Worker extends Thread {
 
         @Override
         public void run() {
             while (!isInterrupted() && connected) {
                 try {
-                    Lsn stopLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
-                    if (null == stopLsn || !stopLsn.isAvailable() || stopLsn.compareTo(lastLsn) <= 0) {
-                        sleepInMills(500L);
+                    Lsn stopLsn = stopLsnQueue.take();
+                    Lsn poll;
+                    while((poll = stopLsnQueue.poll()) != null){
+                        stopLsn = poll;
+                    }
+                    if (!stopLsn.isAvailable() || stopLsn.compareTo(lastLsn) <= 0) {
                         continue;
                     }
 
@@ -332,5 +343,18 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
         }
 
     }
+    public DatabaseConfig getConnectorConfig(){
+        return (DatabaseConfig) connectorConfig;
+    }
 
+    public Lsn getLastLsn() {
+        return lastLsn;
+    }
+
+    public void pushStopLsn(Lsn stopLsn) {
+        if(stopLsnQueue.contains(stopLsn)){
+            return;
+        }
+        stopLsnQueue.offer(stopLsn);
+    }
 }

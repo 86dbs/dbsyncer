@@ -20,6 +20,11 @@ public final class ESConnectorMapper implements ConnectorMapper<ESConfig, RestHi
     }
 
     @Override
+    public void setConfig(ESConfig config) {
+        this.config = config;
+    }
+
+    @Override
     public RestHighLevelClient getConnection() {
         return client;
     }
@@ -27,5 +32,10 @@ public final class ESConnectorMapper implements ConnectorMapper<ESConfig, RestHi
     @Override
     public void close() {
         ESUtil.close(client);
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

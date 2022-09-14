@@ -42,6 +42,11 @@ public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, 
     }
 
     @Override
+    public void setConfig(DatabaseConfig config) {
+        this.config = config;
+    }
+
+    @Override
     public Connection getConnection() throws Exception {
         return dataSource.getConnection();
     }
@@ -49,6 +54,11 @@ public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, 
     @Override
     public void close() {
         dataSource.close();
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 
 }

@@ -42,6 +42,11 @@ public final class FileConnectorMapper implements ConnectorMapper<FileConfig, St
     }
 
     @Override
+    public void setConfig(FileConfig config) {
+        this.config = config;
+    }
+
+    @Override
     public String getConnection() {
         return config.getFileDir();
     }
@@ -49,6 +54,11 @@ public final class FileConnectorMapper implements ConnectorMapper<FileConfig, St
     @Override
     public void close() {
         fileSchemaMap.clear();
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 
     public List<FileSchema> getFileSchemaList() {

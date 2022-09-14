@@ -11,7 +11,7 @@ import org.dbsyncer.connector.config.ConnectorConfig;
  * @version 1.0.0
  * @date 2022/3/20 23:00
  */
-public interface ConnectorMapper<K, V> {
+public interface ConnectorMapper<K, V> extends Cloneable {
 
     default ConnectorConfig getOriginalConfig() {
         return (ConnectorConfig) getConfig();
@@ -23,7 +23,11 @@ public interface ConnectorMapper<K, V> {
 
     K getConfig();
 
+    void setConfig(K k);
+
     V getConnection() throws Exception;
 
     void close();
+
+    Object clone() throws CloneNotSupportedException ;
 }
