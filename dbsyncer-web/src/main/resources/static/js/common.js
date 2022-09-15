@@ -19,9 +19,10 @@ function bootGrowl(data, type) {
 }
 
 // 跳转主页
-function backIndexPage() {
+function backIndexPage(projectGroupId) {
     // 加载页面
-    doLoader("/index?refresh=" + new Date().getTime());
+    projectGroupId = projectGroupId == undefined ? '' : projectGroupId;
+    doLoader("/index?projectGroupId="+ projectGroupId +"&refresh=" + new Date().getTime());
 }
 
 // 美化SQL
