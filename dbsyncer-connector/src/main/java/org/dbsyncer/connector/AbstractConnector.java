@@ -14,7 +14,7 @@ import java.util.Map;
 
 public abstract class AbstractConnector {
 
-    private static Map<Integer, ValueMapper> values = new LinkedHashMap<>();
+    private static final Map<Integer, ValueMapper> values = new LinkedHashMap<>();
 
     static {
         // 常用类型
@@ -47,6 +47,7 @@ public abstract class AbstractConnector {
         values.putIfAbsent(Types.REAL, new RealValueMapper());
         values.putIfAbsent(Types.VARBINARY, new VarBinaryValueMapper());
         values.putIfAbsent(Types.LONGVARBINARY, new LongVarBinaryValueMapper());
+        values.putIfAbsent(Types.OTHER, new OtherValueMapper());
     }
 
     /**
