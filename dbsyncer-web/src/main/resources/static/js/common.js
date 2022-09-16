@@ -21,7 +21,7 @@ function bootGrowl(data, type) {
 // 跳转主页
 function backIndexPage(projectGroupId) {
     // 加载页面
-    projectGroupId = projectGroupId == undefined ? '' : projectGroupId;
+    projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
     doLoader("/index?projectGroupId="+ projectGroupId +"&refresh=" + new Date().getTime());
 }
 
