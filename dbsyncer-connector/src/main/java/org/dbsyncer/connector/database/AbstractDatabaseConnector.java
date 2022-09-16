@@ -101,7 +101,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         Assert.hasText(queryCountSql, "查询总数语句不能为空.");
 
         // 2、返回结果集
-        return connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, Long.class));
+        return connectorMapper.execute(databaseTemplate -> {
+            Long count = databaseTemplate.queryForObject(queryCountSql, Long.class);
+            return count == null ? 0 : count;
+        });
     }
 
     @Override
