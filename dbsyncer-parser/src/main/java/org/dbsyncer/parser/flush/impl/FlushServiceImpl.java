@@ -1,11 +1,12 @@
 package org.dbsyncer.parser.flush.impl;
 
 import com.alibaba.fastjson.JSONException;
+import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.FlushService;
 import org.dbsyncer.parser.model.StorageRequest;
-import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
@@ -48,7 +49,7 @@ public class FlushServiceImpl implements FlushService {
         Map<String, Object> params = new HashMap();
         params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
         params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
-        params.put(ConfigConstant.CONFIG_MODEL_JSON, error);
+        params.put(ConfigConstant.CONFIG_MODEL_JSON, substring(error));
         params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, Instant.now().toEpochMilli());
         storageService.addLog(StorageEnum.LOG, params);
     }
@@ -61,7 +62,7 @@ public class FlushServiceImpl implements FlushService {
             row.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             row.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
             row.put(ConfigConstant.DATA_EVENT, event);
-            row.put(ConfigConstant.DATA_ERROR, error);
+            row.put(ConfigConstant.DATA_ERROR, substring(error));
             try {
                 row.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(r));
             } catch (JSONException e) {
@@ -71,6 +72,16 @@ public class FlushServiceImpl implements FlushService {
             row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
             storageBufferActuator.offer(new StorageRequest(metaId, row));
         });
+    }
+
+    /**
+     * 限制记录异常信息长度
+     *
+     * @param error
+     * @return
+     */
+    private String substring(String error){
+        return StringUtil.isNotBlank(error) ? StringUtil.substring(error, 0, 2048) : error;
     }
 
 }
