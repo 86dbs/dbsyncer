@@ -50,7 +50,14 @@ public class ConnectorFactory implements DisposableBean {
                 }
             }
         }
-        return connectorCache.get(cacheKey);
+        ConnectorMapper connectorMapper = connectorCache.get(cacheKey);
+        try {
+            ConnectorMapper clone = (ConnectorMapper) connectorMapper.clone();
+            clone.setConfig(config);
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new ConnectorException(e);
+        }
     }
 
     /**
@@ -146,7 +153,7 @@ public class ConnectorFactory implements DisposableBean {
 
     public Result writer(ConnectorMapper connectorMapper, WriterBatchConfig config) {
         Connector connector = getConnector(connectorMapper);
-        if(connector instanceof AbstractConnector){
+        if (connector instanceof AbstractConnector) {
             AbstractConnector conn = (AbstractConnector) connector;
             try {
                 conn.convertProcessBeforeWriter(connectorMapper, config);

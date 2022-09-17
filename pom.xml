@@ -56,31 +56,17 @@
 
     <!-- 镜像仓库地址 -->
     <repositories>
+        <!-- DataNucleus仓库 -->
+        <repository>
+            <id>datanucleus</id>
+            <url>http://www.datanucleus.org/downloads/maven2/</url>
+        </repository>
+
         <!-- 阿里云仓库 -->
         <repository>
             <id>ali</id>
             <name>ali Repository</name>
-            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-
-        <!-- 中央仓库1 -->
-        <repository>
-            <id>repo1</id>
-            <name>Central Repository</name>
-            <url>https://repo1.maven.org/maven2/</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-
-        <!-- 中央仓库2 -->
-        <repository>
-            <id>repo2</id>
-            <name>Central Repository</name>
-            <url>https://repo2.maven.org/maven2/</url>
+            <url>https://maven.aliyun.com/repository/google</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
@@ -147,11 +133,24 @@
                 <version>${ojdbc6.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>oracle</groupId>
+                <artifactId>sdoapi</artifactId>
+                <version>11.2.0</version>
+            </dependency>
+
             <!-- sqlserver-driver -->
             <dependency>
                 <groupId>com.microsoft.sqlserver</groupId>
                 <artifactId>mssql-jdbc</artifactId>
                 <version>${mssql-jdbc.version}</version>
+            </dependency>
+
+            <!-- antlr4-runtime -->
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-runtime</artifactId>
+                <version>4.7.2</version>
             </dependency>
 
             <!-- postgresql -->

@@ -36,10 +36,20 @@
             <artifactId>ojdbc6</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>oracle</groupId>
+            <artifactId>sdoapi</artifactId>
+        </dependency>
+
         <!-- sqlserver-driver -->
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
         </dependency>
 
         <!-- postgresql -->

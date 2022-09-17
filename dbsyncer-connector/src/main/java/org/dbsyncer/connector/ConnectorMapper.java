@@ -11,19 +11,57 @@ import org.dbsyncer.connector.config.ConnectorConfig;
  * @version 1.0.0
  * @date 2022/3/20 23:00
  */
-public interface ConnectorMapper<K, V> {
+public interface ConnectorMapper<K, V> extends Cloneable {
 
+    /**
+     * 获取连接配置
+     *
+     * @return
+     */
     default ConnectorConfig getOriginalConfig() {
         return (ConnectorConfig) getConfig();
     }
 
+    /**
+     * 获取连接器类型
+     *
+     * @return
+     */
     default String getConnectorType() {
         return getOriginalConfig().getConnectorType();
     }
 
+    /**
+     * 获取连接配置
+     *
+     * @return
+     */
     K getConfig();
 
+    /**
+     * 设置
+     * @param k
+     */
+    void setConfig(K k);
+
+    /**
+     * 获取连接通道实例
+     *
+     * @return
+     * @throws Exception
+     */
     V getConnection() throws Exception;
 
+    /**
+     * 关闭连接器
+     */
     void close();
+
+    /**
+     * 浅拷贝连接器
+     *
+     * @return
+     * @throws CloneNotSupportedException
+     */
+    Object clone() throws CloneNotSupportedException;
 }
