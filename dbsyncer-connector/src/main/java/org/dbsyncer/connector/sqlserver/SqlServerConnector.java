@@ -44,16 +44,15 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
-        // 有过滤条件，走默认方式
-        if (StringUtil.isNotBlank(queryFilterSql)) {
-            String table = commandConfig.getTable().getName();
-            return new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(table).append(quotation).append(queryFilterSql).toString();
+        // 视图或有过滤条件，走默认方式
+        final Table table = commandConfig.getTable();
+        if (StringUtil.isNotBlank(queryFilterSql) || TableTypeEnum.isView(table.getType())) {
+            return new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(table.getName()).append(quotation).append(queryFilterSql).toString();
         }
 
-        String table = commandConfig.getTable().getName();
         DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
         // 从存储过程查询（定时更新总数，可能存在误差）
-        return String.format("select rows from sysindexes where id = object_id('%s.%s') and indid in (0, 1)", cfg.getSchema(), table);
+        return String.format("select rows from sysindexes where id = object_id('%s.%s') and indid in (0, 1)", cfg.getSchema(), table.getName());
     }
 
     private List<Table> getTables(DatabaseConnectorMapper connectorMapper, String sql, TableTypeEnum type) {

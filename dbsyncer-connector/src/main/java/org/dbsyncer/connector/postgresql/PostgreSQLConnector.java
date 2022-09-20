@@ -6,7 +6,9 @@ import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.PageSql;
+import org.dbsyncer.connector.model.Table;
 
 public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
@@ -29,14 +31,13 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     @Override
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
-        // 有过滤条件，走默认方式
-        if (StringUtil.isNotBlank(queryFilterSql)) {
+        final Table table = commandConfig.getTable();
+        if (StringUtil.isNotBlank(queryFilterSql) || TableTypeEnum.isView(table.getType())) {
             return super.getQueryCountSql(commandConfig, schema, quotation, queryFilterSql);
         }
 
         // 从系统表查询
-        final String table = commandConfig.getTable().getName();
         DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
-        return String.format("SELECT N_LIVE_TUP FROM PG_STAT_USER_TABLES WHERE SCHEMANAME='%s' AND RELNAME='%s'", cfg.getSchema(), table);
+        return String.format("SELECT N_LIVE_TUP FROM PG_STAT_USER_TABLES WHERE SCHEMANAME='%s' AND RELNAME='%s'", cfg.getSchema(), table.getName());
     }
 }

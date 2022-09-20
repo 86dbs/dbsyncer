@@ -17,12 +17,14 @@ public class TinyintValueMapper extends AbstractValueMapper<Integer> {
             Short s = (Short) val;
             return new Integer(s);
         }
-
         if (val instanceof Boolean) {
             Boolean b = (Boolean) val;
             return new Integer(b ? 1 : 0);
         }
-
+        if (val instanceof String) {
+            String s = (String) val;
+            return new Integer(s);
+        }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }
