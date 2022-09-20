@@ -98,7 +98,9 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         Meta meta = manager.getMeta(task.getId());
         Map<String, String> snapshot = meta.getSnapshot();
         task.setPageIndex(NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()), ParserEnum.PAGE_INDEX.getDefaultValue()));
-        task.setCursor(snapshot.get(ParserEnum.CURSOR.getCode()));
+        // 反序列化游标值类型(通常为数字或字符串类型)
+        String cursorValue = snapshot.get(ParserEnum.CURSOR.getCode());
+        task.setCursor(NumberUtil.isCreatable(cursorValue) ? NumberUtil.toLong(cursorValue) : cursorValue);
         task.setTableGroupIndex(NumberUtil.toInt(snapshot.get(ParserEnum.TABLE_GROUP_INDEX.getCode()), ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
         flush(task);
 
@@ -109,7 +111,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
             }
             parser.execute(task, mapping, list.get(i), executorService);
             task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
-            task.setCursor("");
+            task.setCursor(null);
             task.setTableGroupIndex(++i);
             flush(task);
         }
@@ -134,7 +136,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         meta.setEndTime(task.getEndTime());
         Map<String, String> snapshot = meta.getSnapshot();
         snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(task.getPageIndex()));
-        snapshot.put(ParserEnum.CURSOR.getCode(), task.getCursor());
+        snapshot.put(ParserEnum.CURSOR.getCode(), String.valueOf(task.getCursor()));
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(task.getTableGroupIndex()));
         manager.editMeta(meta);
     }

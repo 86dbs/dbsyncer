@@ -4,7 +4,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
-import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.PageSql;
@@ -13,20 +12,41 @@ import org.dbsyncer.connector.model.Table;
 public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     @Override
+    protected String buildSqlWithQuotation() {
+        return "\"";
+    }
+
+    @Override
     public String getPageSql(PageSql config) {
-        return config.getQuerySql() + DatabaseConstant.POSTGRESQL_PAGE_SQL;
+        final String quotation = buildSqlWithQuotation();
+        final String pk = config.getPk();
+        StringBuilder querySql = new StringBuilder(config.getQuerySql());
+        String queryFilter = config.getSqlBuilderConfig().getQueryFilter();
+        if (StringUtil.isNotBlank(queryFilter)) {
+            querySql.append(" AND ");
+        } else {
+            querySql.append(" WHERE ");
+        }
+        querySql.append(quotation).append(pk).append(quotation).append(" > ? ORDER BY ").append(quotation).append(pk).append(quotation).append(" LIMIT ?");
+        return querySql.toString();
+    }
+
+    @Override
+    public String getPageCursorSql(PageSql config) {
+        final String quotation = buildSqlWithQuotation();
+        final String pk = config.getPk();
+        StringBuilder querySql = new StringBuilder(config.getQuerySql()).append(" ORDER BY ").append(quotation).append(pk).append(quotation).append(" LIMIT ?");
+        return querySql.toString();
     }
 
     @Override
     public Object[] getPageArgs(ReaderConfig config) {
         int pageSize = config.getPageSize();
-        int pageIndex = config.getPageIndex();
-        return new Object[]{pageSize, (pageIndex - 1) * pageSize};
-    }
-
-    @Override
-    protected String buildSqlWithQuotation() {
-        return "\"";
+        Object cursor = config.getCursor();
+        if (null == cursor) {
+            return new Object[]{pageSize};
+        }
+        return new Object[]{cursor, pageSize};
     }
 
     @Override
@@ -40,4 +60,10 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
         DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
         return String.format("SELECT N_LIVE_TUP FROM PG_STAT_USER_TABLES WHERE SCHEMANAME='%s' AND RELNAME='%s'", cfg.getSchema(), table.getName());
     }
+
+    @Override
+    protected boolean enableCursor() {
+        return true;
+    }
+
 }

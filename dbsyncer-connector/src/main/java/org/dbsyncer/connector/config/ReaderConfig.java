@@ -7,11 +7,11 @@ public class ReaderConfig {
 
     private Map<String, String> command;
     private List<Object> args;
-    private String cursor;
+    private Object cursor;
     private int pageIndex;
     private int pageSize;
 
-    public ReaderConfig(Map<String,String> command, List<Object> args, String cursor, int pageIndex, int pageSize) {
+    public ReaderConfig(Map<String,String> command, List<Object> args, Object cursor, int pageIndex, int pageSize) {
         this.command = command;
         this.args = args;
         this.cursor = cursor;
@@ -27,7 +27,7 @@ public class ReaderConfig {
         return args;
     }
 
-    public String getCursor() {
+    public Object getCursor() {
         return cursor;
     }
 

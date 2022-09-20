@@ -21,7 +21,7 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
         String queryFilter = config.getSqlBuilderConfig().getQueryFilter();
         if (StringUtil.isNotBlank(queryFilter)) {
             querySql.append(" AND ");
-        }else {
+        } else {
             querySql.append(" WHERE ");
         }
         querySql.append(quotation).append(pk).append(quotation).append(" > ? ORDER BY ").append(quotation).append(pk).append(quotation).append(" LIMIT ?");
@@ -29,7 +29,7 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getPageCursorSql(PageSql config){
+    public String getPageCursorSql(PageSql config) {
         final String quotation = buildSqlWithQuotation();
         final String pk = config.getPk();
         // select * from test.`my_user` order by `id` limit ?
@@ -40,11 +40,11 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
     @Override
     public Object[] getPageArgs(ReaderConfig config) {
         int pageSize = config.getPageSize();
-        String cursor = config.getCursor();
-        if (StringUtil.isBlank(cursor)) {
-            return new Object[] {pageSize};
+        Object cursor = config.getCursor();
+        if (null == cursor) {
+            return new Object[]{pageSize};
         }
-        return new Object[] {cursor, pageSize};
+        return new Object[]{cursor, pageSize};
     }
 
     @Override

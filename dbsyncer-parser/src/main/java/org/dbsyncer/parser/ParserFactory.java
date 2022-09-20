@@ -276,7 +276,7 @@ public class ParserFactory implements Parser {
             pluginFactory.convert(group.getPlugin(), data, target);
 
             // 5、写入目标源
-            BatchWriter batchWriter = new BatchWriter(tConnectorMapper, command, sTableName, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize);
+            BatchWriter batchWriter = new BatchWriter(tConnectorMapper, command, tTableName, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize);
             Result writer = writeBatch(batchWriter, executorService);
 
             // 6、更新结果
@@ -425,12 +425,8 @@ public class ParserFactory implements Parser {
      * @param pk
      * @return
      */
-    private String getLastCursor(List<Map> data, String pk) {
-        if(CollectionUtils.isEmpty(data)){
-            return "";
-        }
-        Object value = data.get(data.size() - 1).get(pk);
-        return value == null ? "" : String.valueOf(value);
+    private Object getLastCursor(List<Map> data, String pk) {
+        return CollectionUtils.isEmpty(data) ? null : data.get(data.size() - 1).get(pk);
     }
 
 }
