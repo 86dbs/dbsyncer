@@ -75,6 +75,9 @@ public abstract class AbstractConnector {
         for (Map row : config.getData()) {
             // 根据目标字段类型转换值
             for (Field f : config.getFields()) {
+                if(null == f){
+                    continue;
+                }
                 // 根据字段类型转换值
                 final ValueMapper valueMapper = mappers.get(f.getType());
                 if (null != valueMapper) {
