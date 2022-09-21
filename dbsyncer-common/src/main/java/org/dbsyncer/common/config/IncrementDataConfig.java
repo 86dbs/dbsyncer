@@ -15,32 +15,32 @@ public class IncrementDataConfig {
     /**
      * 是否记录同步成功数据
      */
-    private boolean writeSuccess;
+    private boolean writerSuccess;
 
     /**
      * 是否记录同步失败数据
      */
-    private boolean writeFail;
+    private boolean writerFail;
 
     /**
      * 最大记录异常信息长度
      */
     private int maxErrorLength;
 
-    public boolean isWriteSuccess() {
-        return writeSuccess;
+    public boolean isWriterSuccess() {
+        return writerSuccess;
     }
 
-    public void setWriteSuccess(boolean writeSuccess) {
-        this.writeSuccess = writeSuccess;
+    public void setWriterSuccess(boolean writerSuccess) {
+        this.writerSuccess = writerSuccess;
     }
 
-    public boolean isWriteFail() {
-        return writeFail;
+    public boolean isWriterFail() {
+        return writerFail;
     }
 
-    public void setWriteFail(boolean writeFail) {
-        this.writeFail = writeFail;
+    public void setWriterFail(boolean writerFail) {
+        this.writerFail = writerFail;
     }
 
     public int getMaxErrorLength() {
