@@ -64,10 +64,10 @@ public abstract class AbstractWriterBinlog extends AbstractBinlogRecorder<Writer
         final TableGroup tableGroup = cacheService.get(message.getTableGroupId(), TableGroup.class);
 
         // 2、反序列数据
+        Map<String, Object> data = new HashMap<>();
         try {
             final Picker picker = new Picker(tableGroup.getFieldMapping());
             final Map<String, Field> fieldMap = picker.getTargetFieldMap();
-            Map<String, Object> data = new HashMap<>();
             message.getData().getRowMap().forEach((k, v) -> {
                 if (fieldMap.containsKey(k)) {
                     data.put(k, BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v));
@@ -75,7 +75,8 @@ public abstract class AbstractWriterBinlog extends AbstractBinlogRecorder<Writer
             });
             return new WriterRequest(messageId, message.getTableGroupId(), message.getEvent().name(), data);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            logger.error("messageId:{}, tableGroupId:{}, event:{}, data:{}", messageId, message.getTableGroupId(), message.getEvent().name(), data);
+            logger.error(messageId, e);
         }
         return null;
     }
