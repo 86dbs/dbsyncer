@@ -4,6 +4,7 @@ import com.google.protobuf.ByteString;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.model.Field;
+import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
@@ -75,7 +76,9 @@ public abstract class AbstractWriterBinlog extends AbstractBinlogRecorder<Writer
             });
             return new WriterRequest(messageId, message.getTableGroupId(), message.getEvent().name(), data);
         } catch (Exception e) {
-            logger.error("messageId:{}, tableGroupId:{}, event:{}, data:{}", messageId, message.getTableGroupId(), message.getEvent().name(), data);
+            Table sTable = tableGroup.getSourceTable();
+            Table tTable = tableGroup.getTargetTable();
+            logger.error("messageId:{}, sTable:{}, tTable:{}, event:{}, data:{}", messageId, sTable.getName(), tTable.getName(), message.getEvent().name(), data);
             logger.error(messageId, e);
         }
         return null;
