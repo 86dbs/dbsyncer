@@ -78,10 +78,10 @@ public class Picker {
     }
 
     public List<Field> getTargetFields() {
-        return targetFields;
+        return targetFields.stream().filter(f -> null != f).collect(Collectors.toList());
     }
 
     public Map<String, Field> getTargetFieldMap() {
-        return targetFields.stream().collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
+        return getTargetFields().stream().collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
     }
 }

@@ -12,6 +12,11 @@ import org.dbsyncer.connector.ConnectorMapper;
 public class LongVarBinaryValueMapper extends AbstractValueMapper<byte[]> {
 
     @Override
+    protected Object getDefaultVal(Object val) {
+        return null != val ? val : new byte[0];
+    }
+
+    @Override
     protected byte[] convert(ConnectorMapper connectorMapper, Object val) {
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }

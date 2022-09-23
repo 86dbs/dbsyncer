@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.flush.impl;
 
 import com.alibaba.fastjson.JSONException;
+import org.dbsyncer.common.config.IncrementDataConfig;
 import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -44,6 +45,9 @@ public class FlushServiceImpl implements FlushService {
     @Autowired
     private BufferActuator storageBufferActuator;
 
+    @Autowired
+    private IncrementDataConfig flushDataConfig;
+
     @Override
     public void asyncWrite(String type, String error) {
         Map<String, Object> params = new HashMap();
@@ -81,7 +85,7 @@ public class FlushServiceImpl implements FlushService {
      * @return
      */
     private String substring(String error){
-        return StringUtil.isNotBlank(error) ? StringUtil.substring(error, 0, 2048) : error;
+        return StringUtil.substring(error, 0, flushDataConfig.getMaxErrorLength());
     }
 
 }
