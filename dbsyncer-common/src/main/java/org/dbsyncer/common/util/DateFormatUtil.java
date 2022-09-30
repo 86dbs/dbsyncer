@@ -1,5 +1,8 @@
 package org.dbsyncer.common.util;
 
+import org.dbsyncer.common.CommonException;
+import org.dbsyncer.common.column.Lexer;
+
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.text.DateFormat;
@@ -92,7 +95,32 @@ public abstract class DateFormatUtil {
     }
 
     public static Timestamp stringToTimestamp(String s) {
-        return Timestamp.valueOf(LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(s)));
+        try {
+            // 2020-7-12 00:00:00
+            if (s.length() < 19) {
+                return Timestamp.valueOf(LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(format(s))));
+            }
+
+            // 2020-07-12 00:00:00
+            if (s.length() == 19) {
+                return Timestamp.valueOf(LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(s)));
+            }
+
+            // 2022-07-21T05:35:34.000+0800
+            if (s.length() == 28) {
+                return stringToTimestamp(s, GMT_FORMATTER);
+            }
+
+            // 2022-07-21T05:35:34.000+08:00
+            if (s.length() == 29) {
+                s = s.replaceAll(":[^:]*$", "00");
+                return stringToTimestamp(s, GMT_FORMATTER);
+            }
+
+            throw new CommonException(String.format("Can not parse val[%s] to Timestamp", s));
+        } catch (ParseException e) {
+            throw new CommonException(e);
+        }
     }
 
     public static Timestamp stringToTimestamp(String s, DateFormat formatter) throws ParseException {
@@ -111,6 +139,45 @@ public abstract class DateFormatUtil {
             parsedTimestamp = TS_TZ_WITH_SECONDS_FORMAT.parse(s);
         }
         return OffsetDateTime.from(parsedTimestamp).withOffsetSameInstant(ZoneOffset.UTC);
+    }
+
+    private static String format(String s) {
+        StringBuilder buf = new StringBuilder();
+        Lexer lexer = new Lexer(s);
+        char comma = '-';
+        // 年
+        nextToken(lexer, buf, comma);
+        // 月
+        nextToken(lexer, buf, comma);
+        // 日
+        comma = ' ';
+        nextToken(lexer, buf, comma);
+        // 时
+        comma = ':';
+        nextToken(lexer, buf, comma);
+        // 分
+        nextToken(lexer, buf, comma);
+        // 秒
+        nextToken(lexer, buf, comma, false);
+        return buf.toString();
+    }
+
+    private static void nextToken(Lexer lexer, StringBuilder buf, char comma) {
+        nextToken(lexer, buf, comma, true);
+    }
+
+    private static void nextToken(Lexer lexer, StringBuilder buf, char comma, boolean appendComma) {
+        buf.append(fillZero(lexer.nextToken(comma)));
+        if (appendComma) {
+            buf.append(comma);
+        }
+    }
+
+    private static String fillZero(String s) {
+        if (s.length() < 2) {
+            return String.format("%02d", Integer.parseInt(s));
+        }
+        return s;
     }
 
 }
