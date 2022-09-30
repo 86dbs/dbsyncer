@@ -295,19 +295,7 @@ public class ParserFactory implements Parser {
     @Override
     public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent event) {
         logger.debug("Table[{}] {}, data:{}", event.getSourceTableName(), event.getEvent(), event.getDataMap());
-
-        // 1、获取映射字段
-        final Picker picker = new Picker(tableGroup.getFieldMapping());
-        final Map target = picker.pickData(event.getDataMap());
-
-        // 2、参数转换
-        ConvertUtil.convert(tableGroup.getConvert(), target);
-
-        // 3、插件转换
-        pluginFactory.convert(tableGroup.getPlugin(), event.getEvent(), event.getDataMap(), target);
-
-        // 4、处理数据
-        parserStrategy.execute(tableGroup.getId(), event.getEvent(), target);
+        parserStrategy.execute(tableGroup.getId(), event.getEvent(), event.getDataMap());
     }
 
     /**
