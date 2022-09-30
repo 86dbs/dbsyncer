@@ -96,15 +96,21 @@ public class PluginFactory {
         return Collections.unmodifiableList(plugins);
     }
 
-    public void convert(Plugin plugin, List<Map> source, List<Map> target) {
+    public void convert(Plugin plugin, List<Map> sourceList, List<Map> targetList) {
         if (null != plugin && service.containsKey(plugin.getClassName())) {
-            service.get(plugin.getClassName()).convert(new FullConvertContext(applicationContextProxy, source, target));
+            service.get(plugin.getClassName()).convert(new FullConvertContext(applicationContextProxy, sourceList, targetList));
         }
     }
 
-    public void convert(Plugin plugin, String event, Map<String, Object> source, Map<String, Object> target) {
+    public void convert(Plugin plugin, String event, List<Map> sourceList, List<Map> targetList) {
         if (null != plugin && service.containsKey(plugin.getClassName())) {
-            service.get(plugin.getClassName()).convert(new IncrementConvertContext(applicationContextProxy, event, source, target));
+            ConvertService convertService = service.get(plugin.getClassName());
+            int size = sourceList.size();
+            if(size == targetList.size()){
+                for (int i = 0; i < size; i++) {
+                    convertService.convert(new IncrementConvertContext(applicationContextProxy, event, sourceList.get(i), targetList.get(i)));
+                }
+            }
         }
     }
 

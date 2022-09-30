@@ -42,14 +42,6 @@ public class Picker {
         return targetMapList;
     }
 
-    public Map pickData(Map<String, Object> data) {
-        Map targetMap = new HashMap<>();
-        if (!CollectionUtils.isEmpty(data)) {
-            exchange(sourceFields.size(), sourceFields, targetFields, data, targetMap);
-        }
-        return targetMap;
-    }
-
     private void exchange(int sFieldSize, List<Field> sFields, List<Field> tFields, Map<String, Object> source,
                           Map<String, Object> target) {
         Field sField = null;
@@ -77,11 +69,15 @@ public class Picker {
         return primaryKey;
     }
 
+    public List<Field> getSourceFields() {
+        return sourceFields.stream().filter(f -> null != f).collect(Collectors.toList());
+    }
+
     public List<Field> getTargetFields() {
         return targetFields.stream().filter(f -> null != f).collect(Collectors.toList());
     }
 
-    public Map<String, Field> getTargetFieldMap() {
-        return getTargetFields().stream().collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
+    public Map<String, Field> getSourceFieldMap() {
+        return getSourceFields().stream().collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
     }
 }
