@@ -4,7 +4,6 @@ import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.file.BufferedRandomAccessFile;
 import org.dbsyncer.common.util.NumberUtil;
-import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.FileConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
@@ -22,7 +21,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.file.*;
+import java.nio.file.ClosedWatchServiceException;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +82,7 @@ public class FileExtractor extends AbstractExtractor {
             forceFlushEvent();
 
             worker = new Worker();
-            worker.setName(new StringBuilder("file-parser-").append(mapperCacheKey).append("_").append(RandomUtil.nextInt(1, 100)).toString());
+            worker.setName(new StringBuilder("file-parser-").append(mapperCacheKey).append("_").append(worker.hashCode()).toString());
             worker.setDaemon(false);
             worker.start();
         } catch (Exception e) {
