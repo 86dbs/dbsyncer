@@ -1,7 +1,6 @@
 package org.dbsyncer.listener.postgresql;
 
 import org.dbsyncer.common.util.BooleanUtil;
-import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.util.DatabaseUtil;
@@ -101,7 +100,7 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
             connected = true;
 
             worker = new Worker();
-            worker.setName(new StringBuilder("wal-parser-").append(config.getUrl()).append("_").append(RandomUtil.nextInt(1, 100)).toString());
+            worker.setName(new StringBuilder("wal-parser-").append(config.getUrl()).append("_").append(worker.hashCode()).toString());
             worker.setDaemon(false);
             worker.start();
         } catch (Exception e) {

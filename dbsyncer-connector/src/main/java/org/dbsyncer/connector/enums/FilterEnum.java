@@ -37,7 +37,29 @@ public enum FilterEnum {
     /**
      * 小于等于
      */
-    LT_AND_EQUAL("<=", (value, filterValue) -> NumberUtil.toInt(value) <= NumberUtil.toInt(filterValue));
+    LT_AND_EQUAL("<=", (value, filterValue) -> NumberUtil.toInt(value) <= NumberUtil.toInt(filterValue)),
+    /**
+     * 模糊匹配
+     */
+    LIKE("like", (value, filterValue) -> {
+        boolean startsWith = StringUtil.startsWith(filterValue, "%") || StringUtil.startsWith(filterValue, "*");
+        boolean endsWith = StringUtil.endsWith(filterValue, "%") || StringUtil.endsWith(filterValue, "*");
+        String compareValue = StringUtil.replace(filterValue, "%", "");
+        compareValue = StringUtil.replace(compareValue, "*", "");
+        // 模糊匹配
+        if(startsWith && endsWith){
+            return StringUtil.contains(value, compareValue);
+        }
+        // 前缀匹配
+        if(endsWith){
+            return StringUtil.startsWith(value, compareValue);
+        }
+        // 后缀匹配
+        if(startsWith){
+            return StringUtil.endsWith(value, compareValue);
+        }
+        return false;
+    });
 
     // 运算符名称
     private String name;
