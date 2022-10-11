@@ -440,7 +440,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         for (int i = 0; i < size; i++) {
             c = list.get(i);
             // "USER" = 'zhangsan'
-            sql.append(quotation).append(c.getName()).append(quotation).append(c.getFilter()).append("'").append(c.getValue()).append("'");
+            sql.append(quotation).append(c.getName()).append(quotation).append(" ").append(c.getFilter()).append(" ").append("'").append(c.getValue()).append("'");
             if (i < end) {
                 sql.append(" ").append(queryOperator).append(" ");
             }
