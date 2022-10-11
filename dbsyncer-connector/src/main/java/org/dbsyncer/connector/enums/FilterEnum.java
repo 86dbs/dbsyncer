@@ -42,9 +42,10 @@ public enum FilterEnum {
      * 模糊匹配
      */
     LIKE("like", (value, filterValue) -> {
-        boolean startsWith = StringUtil.startsWith(filterValue, "%");
-        boolean endsWith = StringUtil.endsWith(filterValue, "%");
+        boolean startsWith = StringUtil.startsWith(filterValue, "%") || StringUtil.startsWith(filterValue, "*");
+        boolean endsWith = StringUtil.endsWith(filterValue, "%") || StringUtil.endsWith(filterValue, "*");
         String compareValue = StringUtil.replace(filterValue, "%", "");
+        compareValue = StringUtil.replace(compareValue, "*", "");
         // 模糊匹配
         if(startsWith && endsWith){
             return StringUtil.contains(value, compareValue);
