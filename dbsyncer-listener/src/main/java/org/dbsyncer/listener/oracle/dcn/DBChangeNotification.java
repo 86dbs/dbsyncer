@@ -310,22 +310,42 @@ public class DBChangeNotification {
 
         @Override
         public void onDatabaseChangeNotification(DatabaseChangeEvent event) {
-            for (TableChangeDescription td : event.getTableChangeDescription()) {
-                RowChangeDescription[] rds = td.getRowChangeDescription();
-                for (RowChangeDescription rd : rds) {
-                    String tableName = tables.get(td.getObjectNumber());
-                    if (!filterTable.contains(tableName)) {
-                        logger.info("Table[{}] {}", tableName, rd.getRowOperation().name());
-                        continue;
+            DatabaseChangeEvent.EventType eventType = event.getEventType();
+            if(eventType == DatabaseChangeEvent.EventType.OBJCHANGE){
+                for (TableChangeDescription td : event.getTableChangeDescription()) {
+                    RowChangeDescription[] rds = td.getRowChangeDescription();
+                    for (RowChangeDescription rd : rds) {
+                        String tableName = tables.get(td.getObjectNumber());
+                        if (!filterTable.contains(tableName)) {
+                            logger.info("Table[{}] {}", tableName, rd.getRowOperation().name());
+                            continue;
+                        }
+                        try {
+                            // 如果BlockQueue没有空间,则调用此方法的线程被阻断直到BlockingQueue里面有空间再继续
+                            queue.put(new DCNEvent(tableName, rd.getRowid().stringValue(),
+                                    rd.getRowOperation().getCode()));
+                        } catch (InterruptedException ex) {
+                            logger.error("Table[{}], RowId:{}, Code:{}, Error:{}", tableName,
+                                    rd.getRowid().stringValue(), rd.getRowOperation().getCode(), ex.getMessage());
+                        }
                     }
-                    try {
-                        // 如果BlockQueue没有空间,则调用此方法的线程被阻断直到BlockingQueue里面有空间再继续
-                        queue.put(new DCNEvent(tableName, rd.getRowid().stringValue(),
-                                rd.getRowOperation().getCode()));
-                    } catch (InterruptedException ex) {
-                        logger.error("Table[{}], RowId:{}, Code:{}, Error:{}", tableName,
-                                rd.getRowid().stringValue(), rd.getRowOperation().getCode(), ex.getMessage());
-                    }
+                }
+            }
+
+            // 断线
+            if(eventType == DatabaseChangeEvent.EventType.SHUTDOWN){
+                connected = false;
+                logger.error("连接中断，等待Oracle数据库重启中...");
+            }
+
+            // 重启
+            if(eventType == DatabaseChangeEvent.EventType.STARTUP){
+                try {
+                    conn = connect();
+                    connected = true;
+                    logger.info("重连成功");
+                } catch (SQLException e) {
+                    logger.error("重连异常", e);
                 }
             }
         }
