@@ -330,12 +330,14 @@ public class DBChangeNotification {
                         }
                     }
                 }
+                return;
             }
 
             // 断线
             if(eventType == DatabaseChangeEvent.EventType.SHUTDOWN){
                 connected = false;
                 logger.error("连接中断，等待Oracle数据库重启中...");
+                return;
             }
 
             // 重启
