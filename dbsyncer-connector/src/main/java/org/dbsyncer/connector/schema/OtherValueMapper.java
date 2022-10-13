@@ -1,6 +1,5 @@
 package org.dbsyncer.connector.schema;
 
-import oracle.sql.STRUCT;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
@@ -19,7 +18,7 @@ public class OtherValueMapper extends AbstractValueMapper<Struct> {
 
     @Override
     protected Struct convert(ConnectorMapper connectorMapper, Object val) throws Exception {
-        if (val instanceof STRUCT) {
+        if (val instanceof oracle.sql.STRUCT) {
             return (Struct) val;
         }
         // SqlServer Geometry
@@ -27,7 +26,7 @@ public class OtherValueMapper extends AbstractValueMapper<Struct> {
             Object connection = connectorMapper.getConnection();
             if (connection instanceof Connection) {
                 final DatabaseValueMapper mapper = new DatabaseValueMapper((SimpleConnection) connection);
-                return mapper.getSTRUCT((byte[]) val);
+                return mapper.getStruct((byte[]) val);
             }
         }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));

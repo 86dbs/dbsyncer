@@ -12,6 +12,11 @@ import org.dbsyncer.connector.ConnectorMapper;
 public class BinaryValueMapper extends AbstractValueMapper<byte[]> {
 
     @Override
+    protected Object getDefaultVal(Object val) {
+        return null != val ? val : new byte[0];
+    }
+
+    @Override
     protected byte[] convert(ConnectorMapper connectorMapper, Object val) {
         if(val instanceof String){
             String s = (String) val;

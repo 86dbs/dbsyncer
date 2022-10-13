@@ -7,15 +7,19 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.parser.ParserFactory;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.strategy.ParserStrategy;
+import org.dbsyncer.parser.util.ConvertUtil;
+import org.dbsyncer.plugin.PluginFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author AE86
@@ -30,6 +34,9 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
 
     @Autowired
     private ParserFactory parserFactory;
+
+    @Autowired
+    private PluginFactory pluginFactory;
 
     @Autowired
     private FlushStrategy flushStrategy;
@@ -68,17 +75,28 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
         final TableGroup tableGroup = cacheService.get(response.getTableGroupId(), TableGroup.class);
         final Mapping mapping = cacheService.get(tableGroup.getMappingId(), Mapping.class);
         final String targetTableName = tableGroup.getTargetTable().getName();
+        final String event = response.getEvent();
+        final List<Map> sourceDataList = response.getDataList();
+
+        // 2、映射字段
         final Picker picker = new Picker(tableGroup.getFieldMapping());
+        List<Map> targetDataList = picker.pickData(sourceDataList);
 
-        // 2、批量执行同步
+        // 3、参数转换
+        ConvertUtil.convert(tableGroup.getConvert(), targetDataList);
+
+        // 4、插件转换
+        pluginFactory.convert(tableGroup.getPlugin(), event, sourceDataList, targetDataList);
+
+        // 5、批量执行同步
         ConnectorMapper targetConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
-        Result result = parserFactory.writeBatch(new BatchWriter(targetConnectorMapper, tableGroup.getCommand(), targetTableName, response.getEvent(),
-                picker.getTargetFields(), response.getDataList(), bufferActuatorConfig.getWriterBatchCount()));
+        BatchWriter batchWriter = new BatchWriter(targetConnectorMapper, tableGroup.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, bufferActuatorConfig.getWriterBatchCount());
+        Result result = parserFactory.writeBatch(batchWriter);
 
-        // 3、持久化同步结果
-        flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
+        // 6、持久化同步结果
+        flushStrategy.flushIncrementData(mapping.getMetaId(), result, event);
 
-        // 4、消息处理完成
+        // 7、完成处理
         parserStrategy.complete(response.getMessageIds());
     }
 

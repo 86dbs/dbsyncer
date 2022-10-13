@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.cache.CacheService;
+import org.dbsyncer.common.config.IncrementDataConfig;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -16,13 +17,14 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractFlushStrategy implements FlushStrategy {
 
-    private static final int MAX_ERROR_LENGTH = 1000;
-
     @Autowired
     private FlushService flushService;
 
     @Autowired
     private CacheService cacheService;
+
+    @Autowired
+    private IncrementDataConfig flushDataConfig;
 
     @Override
     public void flushFullData(String metaId, Result result, String event) {
@@ -37,11 +39,13 @@ public abstract class AbstractFlushStrategy implements FlushStrategy {
     protected void flush(String metaId, Result result, String event) {
         refreshTotal(metaId, result);
 
-        if (!CollectionUtils.isEmpty(result.getFailData())) {
-            final String error = StringUtil.substring(result.getError().toString(), 0, MAX_ERROR_LENGTH);
+        if (flushDataConfig.isWriterFail() && !CollectionUtils.isEmpty(result.getFailData())) {
+            final String error = StringUtil.substring(result.getError().toString(), 0, flushDataConfig.getMaxErrorLength());
             flushService.write(metaId, event, false, result.getFailData(), error);
         }
-        if (!CollectionUtils.isEmpty(result.getSuccessData())) {
+
+        // 是否写增量数据
+        if (flushDataConfig.isWriterSuccess() && !CollectionUtils.isEmpty(result.getSuccessData())) {
             flushService.write(metaId, event, true, result.getSuccessData(), "");
         }
     }

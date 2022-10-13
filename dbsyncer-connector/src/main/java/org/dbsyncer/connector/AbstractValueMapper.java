@@ -22,9 +22,19 @@ public abstract class AbstractValueMapper<T> implements ValueMapper {
      */
     protected abstract T convert(ConnectorMapper connectorMapper, Object val) throws Exception;
 
+    /**
+     * 获取默认值
+     *
+     * @param val
+     * @return
+     */
+    protected Object getDefaultVal(Object val) throws Exception {
+        return val;
+    }
+
     @Override
     public Object convertValue(ConnectorMapper connectorMapper, Object val) throws Exception {
         // 当数据类型不同时，返回转换值
-        return null != val && !val.getClass().equals(parameterClazz) ? convert(connectorMapper, val) : val;
+        return null != val && !val.getClass().equals(parameterClazz) ? convert(connectorMapper, val) : getDefaultVal(val);
     }
 }

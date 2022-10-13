@@ -11,7 +11,9 @@ import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.connector.schema.GeometryValueMapper;
 
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +23,10 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     private static final String QUERY_VIEW = "select name from sysobjects where xtype in('v')";
 
     private static final String QUERY_TABLE = "select name from sys.tables where schema_id = schema_id('%s') and is_ms_shipped = 0";
+
+    static {
+        valueMappers.put(Types.VARBINARY, new GeometryValueMapper());
+    }
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
@@ -44,16 +50,15 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
-        // 有过滤条件，走默认方式
-        if (StringUtil.isNotBlank(queryFilterSql)) {
-            String table = commandConfig.getTable().getName();
-            return new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(table).append(quotation).append(queryFilterSql).toString();
+        // 视图或有过滤条件，走默认方式
+        final Table table = commandConfig.getTable();
+        if (StringUtil.isNotBlank(queryFilterSql) || TableTypeEnum.isView(table.getType())) {
+            return new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(table.getName()).append(quotation).append(queryFilterSql).toString();
         }
 
-        String table = commandConfig.getTable().getName();
         DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
         // 从存储过程查询（定时更新总数，可能存在误差）
-        return String.format("select rows from sysindexes where id = object_id('%s.%s') and indid in (0, 1)", cfg.getSchema(), table);
+        return String.format("select rows from sysindexes where id = object_id('%s.%s') and indid in (0, 1)", cfg.getSchema(), table.getName());
     }
 
     private List<Table> getTables(DatabaseConnectorMapper connectorMapper, String sql, TableTypeEnum type) {

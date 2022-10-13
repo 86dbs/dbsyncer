@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.schema;
 
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
@@ -29,7 +30,19 @@ public class TimestampValueMapper extends AbstractValueMapper<Timestamp> {
 
         if (val instanceof String) {
             String s = (String) val;
-            return Timestamp.valueOf(s);
+            Timestamp timestamp = DateFormatUtil.stringToTimestamp(s);
+            if (null != timestamp) {
+                return timestamp;
+            }
+        }
+
+        if (val instanceof byte[]) {
+            byte[] bytes = (byte[]) val;
+            String s = new String(bytes);
+            Timestamp timestamp = DateFormatUtil.stringToTimestamp(s);
+            if (null != timestamp) {
+                return timestamp;
+            }
         }
 
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));

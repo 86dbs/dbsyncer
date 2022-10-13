@@ -276,7 +276,7 @@ public class ParserFactory implements Parser {
             pluginFactory.convert(group.getPlugin(), data, target);
 
             // 5、写入目标源
-            BatchWriter batchWriter = new BatchWriter(tConnectorMapper, command, sTableName, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize);
+            BatchWriter batchWriter = new BatchWriter(tConnectorMapper, command, tTableName, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize);
             Result writer = writeBatch(batchWriter, executorService);
 
             // 6、更新结果
@@ -295,19 +295,7 @@ public class ParserFactory implements Parser {
     @Override
     public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent event) {
         logger.debug("Table[{}] {}, data:{}", event.getSourceTableName(), event.getEvent(), event.getDataMap());
-
-        // 1、获取映射字段
-        final Picker picker = new Picker(tableGroup.getFieldMapping());
-        final Map target = picker.pickData(event.getDataMap());
-
-        // 2、参数转换
-        ConvertUtil.convert(tableGroup.getConvert(), target);
-
-        // 3、插件转换
-        pluginFactory.convert(tableGroup.getPlugin(), event.getEvent(), event.getDataMap(), target);
-
-        // 4、处理数据
-        parserStrategy.execute(tableGroup.getId(), event.getEvent(), target);
+        parserStrategy.execute(tableGroup.getId(), event.getEvent(), event.getDataMap());
     }
 
     /**
@@ -425,12 +413,8 @@ public class ParserFactory implements Parser {
      * @param pk
      * @return
      */
-    private String getLastCursor(List<Map> data, String pk) {
-        if(CollectionUtils.isEmpty(data)){
-            return "";
-        }
-        Object value = data.get(data.size() - 1).get(pk);
-        return value == null ? "" : String.valueOf(value);
+    private Object getLastCursor(List<Map> data, String pk) {
+        return CollectionUtils.isEmpty(data) ? null : data.get(data.size() - 1).get(pk);
     }
 
 }

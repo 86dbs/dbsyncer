@@ -32,6 +32,7 @@ public final class EnableWriterBufferActuatorStrategy extends AbstractWriterBinl
     public void execute(String tableGroupId, String event, Map<String, Object> data) {
         if (getQueue().size() >= limit) {
             super.flush(tableGroupId, event, data);
+            return;
         }
         writerBufferActuator.offer(new WriterRequest(tableGroupId, event, data));
     }

@@ -38,8 +38,14 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
 
     @Override
     public Integer asInteger() {
+        byte[] bytes = asByteArray();
+        if (bytes.length == 2) {
+            Short aShort = asShort();
+            return new Integer(aShort);
+        }
+
         buffer.clear();
-        buffer.put(asByteArray(), 0, 4);
+        buffer.put(bytes, 0, 4);
         buffer.flip();
         return buffer.asIntBuffer().get();
     }

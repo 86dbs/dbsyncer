@@ -110,7 +110,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     @Override
     public Result reader(DatabaseConnectorMapper connectorMapper, ReaderConfig config) {
         // 1、获取select SQL
-        String queryKey = enableCursor() && StringUtil.isBlank(config.getCursor()) ? ConnectorConstant.OPERTION_QUERY_CURSOR : SqlBuilderEnum.QUERY.getName();
+        String queryKey = enableCursor() && null == config.getCursor() ? ConnectorConstant.OPERTION_QUERY_CURSOR : SqlBuilderEnum.QUERY.getName();
         String querySql = config.getCommand().get(queryKey);
         Assert.hasText(querySql, "查询语句不能为空.");
 
@@ -165,7 +165,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (null != execute) {
             int batchSize = execute.length;
             for (int i = 0; i < batchSize; i++) {
-                if (execute[i] == 0) {
+                if (execute[i] == 0 || execute[i] == -2) {
                     forceUpdate(result, connectorMapper, config, pkField, data.get(i));
                     continue;
                 }
@@ -440,7 +440,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         for (int i = 0; i < size; i++) {
             c = list.get(i);
             // "USER" = 'zhangsan'
-            sql.append(quotation).append(c.getName()).append(quotation).append(c.getFilter()).append("'").append(c.getValue()).append("'");
+            sql.append(quotation).append(c.getName()).append(quotation).append(" ").append(c.getFilter()).append(" ").append("'").append(c.getValue()).append("'");
             if (i < end) {
                 sql.append(" ").append(queryOperator).append(" ");
             }

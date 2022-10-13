@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 
 @Component
-@ConfigurationProperties(prefix = "dbsyncer.common.worker")
+@ConfigurationProperties(prefix = "dbsyncer.web.worker")
 public class SnowflakeIdWorker {
 
     /**

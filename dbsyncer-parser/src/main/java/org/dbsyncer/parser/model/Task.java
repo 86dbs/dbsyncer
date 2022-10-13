@@ -10,11 +10,13 @@ public class Task {
 
     private int pageIndex;
 
-    private String cursor;
+    private Object cursor;
 
     private long beginTime;
 
     private long endTime;
+
+    private boolean finished;
 
     public Task() {
     }
@@ -56,11 +58,11 @@ public class Task {
         this.pageIndex = pageIndex;
     }
 
-    public String getCursor() {
+    public Object getCursor() {
         return cursor;
     }
 
-    public void setCursor(String cursor) {
+    public void setCursor(Object cursor) {
         this.cursor = cursor;
     }
 
@@ -78,6 +80,14 @@ public class Task {
 
     public void setEndTime(long endTime) {
         this.endTime = endTime;
+    }
+
+    public boolean isFinished() {
+        return finished;
+    }
+
+    public void setFinished(boolean finished) {
+        this.finished = finished;
     }
 
     public enum StateEnum {
