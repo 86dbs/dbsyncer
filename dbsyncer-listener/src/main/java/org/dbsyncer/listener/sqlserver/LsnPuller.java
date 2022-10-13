@@ -1,6 +1,5 @@
 package org.dbsyncer.listener.sqlserver;
 
-import org.dbsyncer.connector.config.DatabaseConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.LinkedCaseInsensitiveMap;
@@ -18,20 +17,21 @@ import java.util.concurrent.TimeUnit;
 public class LsnPuller {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    /**
+     * 间隔拉取最新LSN时间（毫秒）
+     */
     private static final long DEFAULT_POLL_INTERVAL_MILLIS = 100;
-    private static final long WAIT_INTERVAL_MILLIS = 1000;
-    private Worker worker;
     private static volatile LsnPuller instance = null;
+    private final Map<String, SqlServerExtractor> map = new ConcurrentHashMap<>();
+    private Worker worker;
 
-    private Map<String, SqlServerExtractor> map = new ConcurrentHashMap<>();
-
-    private LsnPuller(){
+    private LsnPuller() {
         initWorker();
     }
 
-    private static LsnPuller getInstance(){
-        if(instance == null){
-            synchronized (LsnPuller.class){
+    private static LsnPuller getInstance() {
+        if (instance == null) {
+            synchronized (LsnPuller.class) {
                 if (instance == null) {
                     instance = new LsnPuller();
                 }
@@ -40,7 +40,6 @@ public class LsnPuller {
         return instance;
     }
 
-
     private void initWorker() {
         worker = new Worker();
         worker.setName("cdc-LsnPuller");
@@ -48,10 +47,9 @@ public class LsnPuller {
         worker.start();
     }
 
-    public static void addExtractor(String metaId, SqlServerExtractor extractor){
+    public static void addExtractor(String metaId, SqlServerExtractor extractor) {
         getInstance().map.put(metaId, extractor);
     }
-
 
     public static void removeExtractor(String metaId) {
         getInstance().map.remove(metaId);
@@ -59,40 +57,26 @@ public class LsnPuller {
 
     final class Worker extends Thread {
 
+        private final Map<String, Lsn> maxLsnSnapshot = new LinkedCaseInsensitiveMap<>();
+
         @Override
         public void run() {
             while (!isInterrupted()) {
                 try {
-                    if(map.isEmpty()){
-                        TimeUnit.MILLISECONDS.sleep(WAIT_INTERVAL_MILLIS);
+                    if (map.isEmpty()) {
+                        TimeUnit.SECONDS.sleep(1);
                         continue;
                     }
-                    Map<String, Lsn> dataBaseMaxLsn = new LinkedCaseInsensitiveMap<>();
+                    maxLsnSnapshot.clear();
+                    Lsn maxLsn = null;
                     for (SqlServerExtractor extractor : map.values()) {
-                        if(extractor.getLastLsn() == null){
-                            continue;
-                        }
-                        DatabaseConfig connectorConfig = extractor.getConnectorConfig();
-                        String url = connectorConfig.getUrl();
-                        Lsn maxLsn = null;
-                        if(dataBaseMaxLsn.containsKey(url)){
-                            maxLsn = dataBaseMaxLsn.get(url);
-                        }else{
-                            try{
-                                maxLsn = extractor.getMaxLsn();
-                                dataBaseMaxLsn.put(url, maxLsn);
-                            }catch (Exception e) {
-                                logger.error("获取maxLsn异常：", e);
-                            }
-                        }
+                        maxLsn = getMaxLsn(maxLsnSnapshot, extractor);
                         if (null != maxLsn && maxLsn.isAvailable() && maxLsn.compareTo(extractor.getLastLsn()) > 0) {
                             extractor.pushStopLsn(maxLsn);
                         }
                     }
                     TimeUnit.MILLISECONDS.sleep(DEFAULT_POLL_INTERVAL_MILLIS);
-                }catch (InterruptedException ex){
-                    logger.warn(ex.getMessage());
-                }catch (Exception e) {
+                } catch (Exception e) {
                     logger.error("异常", e);
                     try {
                         TimeUnit.SECONDS.sleep(1);
@@ -103,6 +87,17 @@ public class LsnPuller {
             }
         }
 
+    }
+
+    private Lsn getMaxLsn(Map<String, Lsn> maxLsnSnapshot, SqlServerExtractor extractor) {
+        final String url = extractor.getDatabaseConfigUrl();
+        if (maxLsnSnapshot.containsKey(url)) {
+            return maxLsnSnapshot.get(url);
+        }
+
+        Lsn maxLsn = extractor.getMaxLsn();
+        maxLsnSnapshot.put(url, maxLsn);
+        return maxLsn;
     }
 
 }

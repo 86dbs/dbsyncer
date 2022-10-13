@@ -341,10 +341,11 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
                 }
             }
         }
-
     }
-    public DatabaseConfig getConnectorConfig(){
-        return (DatabaseConfig) connectorConfig;
+
+    public String getDatabaseConfigUrl(){
+        DatabaseConfig config = (DatabaseConfig) connectorConfig;
+        return config.getUrl();
     }
 
     public Lsn getLastLsn() {

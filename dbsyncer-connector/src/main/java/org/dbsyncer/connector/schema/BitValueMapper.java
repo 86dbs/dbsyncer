@@ -23,23 +23,28 @@ public class BitValueMapper extends AbstractValueMapper<byte[]> {
             return bitSet.toByteArray();
         }
         if (val instanceof Integer) {
-            buffer.clear();
-            buffer.putInt((Integer) val);
-            buffer.flip();
-            byte[] bytes = new byte[4];
-            buffer.get(bytes);
-            return bytes;
+            synchronized (this){
+                buffer.clear();
+                buffer.putInt((Integer) val);
+                buffer.flip();
+                byte[] bytes = new byte[4];
+                buffer.get(bytes);
+                return bytes;
+            }
         }
         if (val instanceof Boolean) {
             Boolean b = (Boolean) val;
-            buffer.clear();
-            buffer.putShort((short) (b ? 1 : 0));
-            buffer.flip();
-            byte[] bytes = new byte[2];
-            buffer.get(bytes);
-            return bytes;
+            synchronized (this){
+                buffer.clear();
+                buffer.putShort((short) (b ? 1 : 0));
+                buffer.flip();
+                byte[] bytes = new byte[2];
+                buffer.get(bytes);
+                return bytes;
+            }
         }
 
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
+
 }

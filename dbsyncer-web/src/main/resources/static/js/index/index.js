@@ -180,11 +180,11 @@ function doPost(url) {
 }
 
 // 创建定时器
-function createTimer(){
+function createTimer($projectGroupSelect){
     doGetWithoutLoading("/monitor/getRefreshInterval",{}, function (data) {
         if (data.success == true) {
             timer = setInterval(function(){
-                backIndexPage();
+                backIndexPage($projectGroupSelect.selectpicker('val'));
             }, data.resultValue * 1000);
         } else {
             bootGrowl(data.resultValue, "danger");
@@ -200,6 +200,7 @@ $(function () {
     bindEditProjectGroup($projectGroupSelect);
     bindRemoveProjectGroup($projectGroupSelect);
     bindProjectGroupSelect($projectGroupSelect);
+    createTimer($projectGroupSelect);
 
     bindAddConnector();
     bindEditConnector();
@@ -210,6 +211,4 @@ $(function () {
 
     bindConnectorDropdownMenu();
     bindMappingDropdownMenu();
-
-    createTimer();
 });
