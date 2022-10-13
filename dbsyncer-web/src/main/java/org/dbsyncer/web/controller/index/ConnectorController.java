@@ -1,7 +1,10 @@
 package org.dbsyncer.web.controller.index;
 
+import com.alibaba.fastjson.JSONObject;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +40,24 @@ public class ConnectorController extends BaseController {
     public String pageEdit(HttpServletRequest request, ModelMap model, String id) {
         model.put("connector", connectorService.getConnector(id));
         return "connector/edit";
+    }
+
+    @PostMapping("/copy")
+    @ResponseBody
+    public RestResult add(@RequestParam("id")String id) {
+        try {
+            Connector connector = connectorService.getConnector(id);
+            JSONObject jsonObject = JSONObject.parseObject(JSONObject.toJSONString(connector));
+            JSONObject config = jsonObject.getJSONObject("config");
+            Map params = config.getInnerMap();
+            params.put(ConfigConstant.CONFIG_MODEL_NAME, connector.getName() + "(复制)");
+            params.put("connectorType", connector.getConfig().getConnectorType());
+            connectorService.add(params);
+            return RestResult.restSuccess("成功复制连接器[" + params.get(ConfigConstant.CONFIG_MODEL_NAME) + "]");
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e.getClass());
+            return RestResult.restFail(e.getMessage());
+        }
     }
 
     @PostMapping("/add")

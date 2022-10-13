@@ -109,7 +109,7 @@ function bindQueryData() {
 }
 
 function bindConnectorDropdownMenu() {
-    $(".connectorList .dropdown-menu li").click(function () {
+    $(".connectorList .dropdown-menu li.remove").click(function () {
         var $url = $(this).attr("url");
         // 如果当前为恢复状态
         BootstrapDialog.show({
@@ -130,6 +130,10 @@ function bindConnectorDropdownMenu() {
                 }
             }]
         });
+    });
+    $(".connectorList .dropdown-menu li:not(.remove)").click(function () {
+        var $url = $(this).attr("url");
+        doPost($url);
     });
 }
 
