@@ -4,16 +4,19 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,6 +45,20 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         log(LogType.ConnectorLog.INSERT, model);
 
         return manager.addConnector(model);
+    }
+
+    @Override
+    public String copy(String id) {
+        Connector connector = getConnector(id);
+        Assert.notNull(connector, "The connector id is invalid.");
+
+        Map params = JsonUtil.parseObject(JsonUtil.objToJson(connector.getConfig())).getInnerMap();
+        params.put(ConfigConstant.CONFIG_MODEL_NAME, connector.getName() + "(复制)");
+        ConfigModel model = connectorChecker.checkAddConfigModel(params);
+        log(LogType.ConnectorLog.COPY, model);
+        manager.addConnector(model);
+
+        return String.format("复制成功[%s]", model.getName());
     }
 
     @Override

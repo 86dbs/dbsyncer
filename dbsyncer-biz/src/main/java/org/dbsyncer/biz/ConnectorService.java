@@ -20,6 +20,14 @@ public interface ConnectorService {
     String add(Map<String, String> params);
 
     /**
+     * 复制连接器
+     *
+     * @param id
+     * @return
+     */
+    String copy(String id);
+
+    /**
      * 修改连接器
      *
      * @param params

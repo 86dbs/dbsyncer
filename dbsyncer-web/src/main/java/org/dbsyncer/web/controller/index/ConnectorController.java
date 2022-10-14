@@ -39,6 +39,17 @@ public class ConnectorController extends BaseController {
         return "connector/edit";
     }
 
+    @PostMapping("/copy")
+    @ResponseBody
+    public RestResult add(@RequestParam("id") String id) {
+        try {
+            return RestResult.restSuccess(connectorService.copy(id));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e.getClass());
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
     @PostMapping("/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {

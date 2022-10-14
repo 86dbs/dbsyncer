@@ -108,8 +108,10 @@ function bindQueryData() {
     });
 }
 
+// 给连接下拉菜单绑定事件
 function bindConnectorDropdownMenu() {
-    $(".connectorList .dropdown-menu li").click(function () {
+    // 绑定删除连接事件
+    $(".connectorList .dropdown-menu li.remove").click(function () {
         var $url = $(this).attr("url");
         // 如果当前为恢复状态
         BootstrapDialog.show({
@@ -130,6 +132,11 @@ function bindConnectorDropdownMenu() {
                 }
             }]
         });
+    });
+    // 绑定复制连接事件
+    $(".connectorList .dropdown-menu li.copy").click(function () {
+        var $url = $(this).attr("url");
+        doPost($url);
     });
 }
 
