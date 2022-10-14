@@ -1,6 +1,5 @@
 package org.dbsyncer.biz.impl;
 
-import com.alibaba.fastjson.JSONObject;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.checker.Checker;
@@ -53,9 +52,8 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         Connector connector = getConnector(id);
         Assert.notNull(connector, "The connector id is invalid.");
 
-        JSONObject config = JsonUtil.parseObject(JsonUtil.objToJson(connector.getConfig()));
-        Map params = config.getInnerMap();
-        params.put(ConfigConstant.CONFIG_MODEL_NAME,  connector.getName() + "(复制)");
+        Map params = JsonUtil.parseObject(JsonUtil.objToJson(connector.getConfig())).getInnerMap();
+        params.put(ConfigConstant.CONFIG_MODEL_NAME, connector.getName() + "(复制)");
         ConfigModel model = connectorChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.COPY, model);
         manager.addConnector(model);
