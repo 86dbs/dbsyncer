@@ -140,7 +140,7 @@ vi startup.sh
 <img src="https://foruda.gitee.com/images/1660034515191434708/屏幕截图.png" width="200" height="200" />
 
 ## 💕了解更多
-* 使用说明：[博客地址](https://my.oschina.net/dbsyncer "https://my.oschina.net/dbsyncer")
+* 使用说明：[博客地址](https://my.oschina.net/dbsyncer "https://my.oschina.net/dbsyncer")（小提示：现在需要先登录，才能查看完整的教程信息，包含截图等😂）
 * QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" /></a>
 
 ## 🤝贡献支持
