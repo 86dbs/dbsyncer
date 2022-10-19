@@ -42,7 +42,7 @@ public class DBChangeNotification {
 
     private static final String QUERY_ROW_DATA_SQL = "SELECT * FROM \"%s\" WHERE ROWID='%s'";
     private static final String QUERY_TABLE_ALL_SQL = "SELECT TABLE_NAME FROM USER_TAB_COMMENTS WHERE TABLE_TYPE='TABLE'";
-    private static final String QUERY_TABLE_ID_SQL = "SELECT OBJECT_ID FROM DBA_OBJECTS WHERE OBJECT_TYPE='TABLE' AND OBJECT_NAME='%s' AND OWNER='%s'";
+    private static final String QUERY_TABLE_ID_SQL = "SELECT OBJECT_ID FROM ALL_OBJECTS WHERE OBJECT_TYPE='TABLE' AND OBJECT_NAME='%s' AND OWNER='%s'";
     private static final String QUERY_TABLE_SQL = "SELECT 1 FROM \"%s\" WHERE 1=2";
     private static final String QUERY_CALLBACK_SQL = "SELECT REGID,CALLBACK FROM USER_CHANGE_NOTIFICATION_REGS";
     private static final String CALLBACK = "net8://(ADDRESS=(PROTOCOL=tcp)(HOST=%s)(PORT=%s))?PR=0";
