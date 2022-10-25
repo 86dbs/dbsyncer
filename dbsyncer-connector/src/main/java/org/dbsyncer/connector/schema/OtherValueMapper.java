@@ -17,6 +17,11 @@ import java.sql.Struct;
 public class OtherValueMapper extends AbstractValueMapper<Struct> {
 
     @Override
+    protected boolean skipConvert(Object val) {
+        return val instanceof String;
+    }
+
+    @Override
     protected Struct convert(ConnectorMapper connectorMapper, Object val) throws Exception {
         if (val instanceof oracle.sql.STRUCT) {
             return (Struct) val;

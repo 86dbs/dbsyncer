@@ -17,6 +17,11 @@ import java.sql.Connection;
 public class BlobValueMapper extends AbstractValueMapper<Blob> {
 
     @Override
+    protected boolean skipConvert(Object val) {
+        return val instanceof oracle.sql.BLOB;
+    }
+
+    @Override
     protected Blob convert(ConnectorMapper connectorMapper, Object val) throws Exception {
         if (val instanceof byte[]) {
             Object connection = connectorMapper.getConnection();

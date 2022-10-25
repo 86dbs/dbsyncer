@@ -17,6 +17,11 @@ import java.sql.Connection;
 public class ClobValueMapper extends AbstractValueMapper<Clob> {
 
     @Override
+    protected boolean skipConvert(Object val) {
+        return val instanceof oracle.sql.CLOB || val instanceof String;
+    }
+
+    @Override
     protected Clob convert(ConnectorMapper connectorMapper, Object val) throws Exception {
         if (val instanceof byte[]) {
             Object connection = connectorMapper.getConnection();
