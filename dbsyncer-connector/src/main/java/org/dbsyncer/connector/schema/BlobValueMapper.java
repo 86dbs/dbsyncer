@@ -3,11 +3,8 @@ package org.dbsyncer.connector.schema;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.database.DatabaseValueMapper;
-import org.dbsyncer.connector.database.ds.SimpleConnection;
 
 import java.sql.Blob;
-import java.sql.Connection;
 
 /**
  * @author AE86
@@ -18,19 +15,11 @@ public class BlobValueMapper extends AbstractValueMapper<Blob> {
 
     @Override
     protected boolean skipConvert(Object val) {
-        return val instanceof oracle.sql.BLOB;
+        return val instanceof oracle.sql.BLOB || val instanceof byte[];
     }
 
     @Override
-    protected Blob convert(ConnectorMapper connectorMapper, Object val) throws Exception {
-        if (val instanceof byte[]) {
-            Object connection = connectorMapper.getConnection();
-            if (connection instanceof Connection) {
-                final DatabaseValueMapper mapper = new DatabaseValueMapper((SimpleConnection) connection);
-                return mapper.getBlob((byte[]) val);
-            }
-        }
-
+    protected Blob convert(ConnectorMapper connectorMapper, Object val) {
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }

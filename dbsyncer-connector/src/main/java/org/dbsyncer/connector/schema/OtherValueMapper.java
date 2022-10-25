@@ -18,14 +18,11 @@ public class OtherValueMapper extends AbstractValueMapper<Struct> {
 
     @Override
     protected boolean skipConvert(Object val) {
-        return val instanceof String;
+        return val instanceof oracle.sql.STRUCT || val instanceof String;
     }
 
     @Override
     protected Struct convert(ConnectorMapper connectorMapper, Object val) throws Exception {
-        if (val instanceof oracle.sql.STRUCT) {
-            return (Struct) val;
-        }
         // SqlServer Geometry
         if (val instanceof byte[]) {
             Object connection = connectorMapper.getConnection();

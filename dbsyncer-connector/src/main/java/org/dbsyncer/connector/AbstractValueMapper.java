@@ -29,7 +29,7 @@ public abstract class AbstractValueMapper<T> implements ValueMapper {
      * @return
      */
     protected boolean skipConvert(Object val){
-        return val == null;
+        return false;
     }
 
     /**
@@ -44,20 +44,17 @@ public abstract class AbstractValueMapper<T> implements ValueMapper {
 
     @Override
     public Object convertValue(ConnectorMapper connectorMapper, Object val) throws Exception {
-        if(null == val){
-            return null;
-        }
+        if(null != val){
+            // 是否需要跳过转换
+            if(skipConvert(val)){
+                return val;
+            }
 
-        // 是否需要跳过转换
-        if(skipConvert(val)){
-            return val;
+            // 当数据类型不同时，返回转换值
+            if(!val.getClass().equals(parameterClazz)){
+                return convert(connectorMapper, val);
+            }
         }
-
-        // 当数据类型不同时，返回转换值
-        if(!val.getClass().equals(parameterClazz)){
-            return convert(connectorMapper, val);
-        }
-
         return getDefaultVal(val);
     }
 
