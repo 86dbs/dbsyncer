@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.flush.impl;
 
+import org.apache.commons.logging.Log;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.config.BufferActuatorConfig;
 import org.dbsyncer.common.model.Result;
@@ -14,10 +15,13 @@ import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.strategy.ParserStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.plugin.PluginFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +32,9 @@ import java.util.Map;
  */
 @Component
 public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, WriterResponse> {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
 
     @Autowired
     private ConnectorFactory connectorFactory;
@@ -87,14 +94,26 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
 
         // 4、插件转换
         pluginFactory.convert(tableGroup.getPlugin(), event, sourceDataList, targetDataList);
-
         // 5、批量执行同步
         ConnectorMapper targetConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
         BatchWriter batchWriter = new BatchWriter(targetConnectorMapper, tableGroup.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, bufferActuatorConfig.getWriterBatchCount());
         Result result = parserFactory.writeBatch(batchWriter);
 
+
         // 6、持久化同步结果
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, event);
+
+        //6.2、执行批量处理后的
+        //by wangxir @20221025
+        try {
+            if (targetConnectorMapper.getConnection() instanceof Connection)
+                pluginFactory.AfterConvert((Connection) targetConnectorMapper.getConnection(),targetTableName,mapping.getPlugin(), event, sourceDataList, targetDataList);
+
+        }
+        catch (Exception ex)
+        {
+            logger.error(ex.getMessage());
+        }
 
         // 7、完成处理
         parserStrategy.complete(response.getMessageIds());
