@@ -138,7 +138,7 @@ public class MappingChecker extends AbstractChecker {
         if (!CollectionUtils.isEmpty(groupAll)) {
             // 手动排序
             String[] sortedTableGroupIds = StringUtil.split(params.get("sortedTableGroupIds"), "|");
-            if(null != sortedTableGroupIds){
+            if(null != sortedTableGroupIds && sortedTableGroupIds.length>0){
                 Map<String, TableGroup> tableGroupMap = groupAll.stream().collect(Collectors.toMap(TableGroup::getId, f -> f, (k1, k2) -> k1));
                 groupAll.clear();
                 int size = sortedTableGroupIds.length;
