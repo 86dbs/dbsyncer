@@ -6,8 +6,8 @@ import oracle.jdbc.OracleConnection;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.database.ds.SimpleConnection;
 
-import java.nio.charset.Charset;
-import java.sql.*;
+import java.sql.SQLException;
+import java.sql.Struct;
 
 public class DatabaseValueMapper {
 
@@ -15,36 +15,6 @@ public class DatabaseValueMapper {
 
     public DatabaseValueMapper(SimpleConnection connection) {
         this.connection = connection;
-    }
-
-    public NClob getNClob(byte[] bytes) throws SQLException {
-        if (connection.getConnection() instanceof OracleConnection) {
-            OracleConnection conn = (OracleConnection) connection.getConnection();
-            NClob nClob = conn.createNClob();
-            nClob.setString(1, new String(bytes, Charset.defaultCharset()));
-            return nClob;
-        }
-        return connection.createNClob();
-    }
-
-    public Blob getBlob(byte[] bytes) throws SQLException {
-        if (connection.getConnection() instanceof OracleConnection) {
-            OracleConnection conn = (OracleConnection) connection.getConnection();
-            Blob blob = conn.createBlob();
-            blob.setBytes(1, bytes);
-            return blob;
-        }
-        return connection.createBlob();
-    }
-
-    public Clob getClob(byte[] bytes) throws SQLException {
-        if (connection.getConnection() instanceof OracleConnection) {
-            OracleConnection conn = (OracleConnection) connection.getConnection();
-            Clob clob = conn.createClob();
-            clob.setString(1, new String(bytes, Charset.defaultCharset()));
-            return clob;
-        }
-        return connection.createClob();
     }
 
     public Struct getStruct(byte[] val) throws SQLException {

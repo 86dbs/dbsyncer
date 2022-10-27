@@ -17,6 +17,11 @@ import java.time.LocalDateTime;
 public class TimestampValueMapper extends AbstractValueMapper<Timestamp> {
 
     @Override
+    protected boolean skipConvert(Object val) {
+        return val instanceof oracle.sql.TIMESTAMP;
+    }
+
+    @Override
     protected Timestamp convert(ConnectorMapper connectorMapper, Object val) {
         if (val instanceof Date) {
             Date date = (Date) val;
