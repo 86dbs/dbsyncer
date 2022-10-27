@@ -1,5 +1,7 @@
 package org.dbsyncer.connector;
 
+import org.dbsyncer.common.spi.ConnectorMapper;
+
 /**
  * 值转换器
  *

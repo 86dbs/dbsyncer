@@ -1,6 +1,6 @@
 package org.dbsyncer.connector.es;
 
-import org.dbsyncer.connector.ConnectorMapper;
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.config.ESConfig;
 import org.dbsyncer.connector.util.ESUtil;
 import org.elasticsearch.client.RestHighLevelClient;

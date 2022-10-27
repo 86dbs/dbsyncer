@@ -2,9 +2,9 @@ package org.dbsyncer.listener;
 
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ public abstract class AbstractExtractor implements Extractor {
     protected String metaId;
     protected ConnectorFactory connectorFactory;
     protected ScheduledTaskService scheduledTaskService;
-    protected ConnectorConfig connectorConfig;
+    protected AbstractConnectorConfig connectorConfig;
     protected ListenerConfig listenerConfig;
     protected Map<String, String> snapshot;
     protected Set<String> filterTable;
@@ -120,7 +120,7 @@ public abstract class AbstractExtractor implements Extractor {
         this.scheduledTaskService = scheduledTaskService;
     }
 
-    public void setConnectorConfig(ConnectorConfig connectorConfig) {
+    public void setConnectorConfig(AbstractConnectorConfig connectorConfig) {
         this.connectorConfig = connectorConfig;
     }
 

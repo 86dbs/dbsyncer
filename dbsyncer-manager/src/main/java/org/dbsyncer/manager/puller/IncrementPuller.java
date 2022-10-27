@@ -2,11 +2,11 @@ package org.dbsyncer.manager.puller;
 
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.AbstractExtractor;
@@ -132,7 +132,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
     private AbstractExtractor getExtractor(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta)
             throws InstantiationException, IllegalAccessException {
-        ConnectorConfig connectorConfig = connector.getConfig();
+        AbstractConnectorConfig connectorConfig = connector.getConfig();
         ListenerConfig listenerConfig = mapping.getListener();
 
         // timing/log
@@ -163,7 +163,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         throw new ManagerException("未知的监听配置.");
     }
 
-    private void setExtractorConfig(AbstractExtractor extractor, ConnectorConfig connector, ListenerConfig listener,
+    private void setExtractorConfig(AbstractExtractor extractor, AbstractConnectorConfig connector, ListenerConfig listener,
                                     Map<String, String> snapshot, AbstractListener event) {
         extractor.setConnectorFactory(connectorFactory);
         extractor.setScheduledTaskService(scheduledTaskService);

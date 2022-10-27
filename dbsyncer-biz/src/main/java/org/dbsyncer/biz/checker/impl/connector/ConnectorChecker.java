@@ -3,9 +3,9 @@ package org.dbsyncer.biz.checker.impl.connector;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
+import org.dbsyncer.common.model.AbstractConnectorConfig;
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.manager.Manager;
@@ -53,7 +53,7 @@ public class ConnectorChecker extends AbstractChecker {
         Connector connector = new Connector();
         connector.setName(name);
         connector.setType(ConfigConstant.CONNECTOR);
-        ConnectorConfig config = getConfig(connectorType);
+        AbstractConnectorConfig config = getConfig(connectorType);
         connector.setConfig(config);
 
         // 配置连接器配置
@@ -83,7 +83,7 @@ public class ConnectorChecker extends AbstractChecker {
         this.modifyConfigModel(connector, params);
 
         // 配置连接器配置
-        ConnectorConfig config = connector.getConfig();
+        AbstractConnectorConfig config = connector.getConfig();
         String type = StringUtil.toLowerCaseFirstOne(config.getConnectorType()).concat("ConfigChecker");
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
@@ -95,11 +95,11 @@ public class ConnectorChecker extends AbstractChecker {
         return connector;
     }
 
-    private ConnectorConfig getConfig(String connectorType) {
-        Class<ConnectorConfig> configClass = (Class<ConnectorConfig>) ConnectorEnum.getConfigClass(connectorType);
+    private AbstractConnectorConfig getConfig(String connectorType) {
+        Class<AbstractConnectorConfig> configClass = (Class<AbstractConnectorConfig>) ConnectorEnum.getConfigClass(connectorType);
         Assert.notNull(configClass, String.format("不支持该连接器类型:%s", connectorType));
         try {
-            ConnectorConfig config = configClass.newInstance();
+            AbstractConnectorConfig config = configClass.newInstance();
             config.setConnectorType(connectorType);
             return config;
         } catch (Exception e) {

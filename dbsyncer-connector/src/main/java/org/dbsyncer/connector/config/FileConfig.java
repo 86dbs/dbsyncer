@@ -1,11 +1,13 @@
 package org.dbsyncer.connector.config;
 
+import org.dbsyncer.common.model.AbstractConnectorConfig;
+
 /**
  * @author AE86
  * @version 1.0.0
  * @date 2022/5/5 23:19
  */
-public class FileConfig extends ConnectorConfig {
+public class FileConfig extends AbstractConnectorConfig {
 
     /**
      * 文件目录

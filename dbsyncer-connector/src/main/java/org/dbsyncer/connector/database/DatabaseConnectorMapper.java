@@ -1,7 +1,7 @@
 package org.dbsyncer.connector.database;
 
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.database.ds.SimpleDataSource;
 import org.dbsyncer.connector.util.DatabaseUtil;

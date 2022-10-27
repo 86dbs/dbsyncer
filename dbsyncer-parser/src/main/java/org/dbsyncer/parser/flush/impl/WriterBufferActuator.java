@@ -2,11 +2,11 @@ package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.config.BufferActuatorConfig;
+import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.parser.ParserFactory;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.*;
@@ -14,6 +14,7 @@ import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.strategy.ParserStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.plugin.config.Plugin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -86,10 +87,11 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
         ConvertUtil.convert(tableGroup.getConvert(), targetDataList);
 
         // 4、插件转换
-        pluginFactory.convert(tableGroup.getPlugin(), targetTableName, event, sourceDataList, targetDataList);
+        ConnectorMapper targetConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
+        Plugin plugin = tableGroup.getPlugin();
+        pluginFactory.convert(targetConnectorMapper, plugin, targetTableName, event, sourceDataList, targetDataList);
 
         // 5、批量执行同步
-        ConnectorMapper targetConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
         BatchWriter batchWriter = new BatchWriter(targetConnectorMapper, tableGroup.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, bufferActuatorConfig.getWriterBatchCount());
         Result result = parserFactory.writeBatch(batchWriter);
 
@@ -97,7 +99,7 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, event);
 
         // 7、执行批量处理后的
-        pluginFactory.postProcessAfter(tableGroup.getPlugin(), targetTableName, event, sourceDataList, targetDataList);
+        pluginFactory.postProcessAfter(targetConnectorMapper, plugin, targetTableName, event, sourceDataList, targetDataList);
 
         // 8、完成处理
         parserStrategy.complete(response.getMessageIds());
@@ -115,7 +117,7 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
      * @param connectorId
      * @return
      */
-    private ConnectorConfig getConnectorConfig(String connectorId) {
+    private AbstractConnectorConfig getConnectorConfig(String connectorId) {
         Assert.hasText(connectorId, "Connector id can not be empty.");
         Connector conn = cacheService.get(connectorId, Connector.class);
         Assert.notNull(conn, "Connector can not be null.");

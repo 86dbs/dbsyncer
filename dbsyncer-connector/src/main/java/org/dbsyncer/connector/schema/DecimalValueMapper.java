@@ -1,9 +1,9 @@
 package org.dbsyncer.connector.schema;
 
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.ConnectorMapper;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

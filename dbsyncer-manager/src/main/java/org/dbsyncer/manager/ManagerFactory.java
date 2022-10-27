@@ -1,15 +1,15 @@
 package org.dbsyncer.manager;
 
 import org.dbsyncer.common.event.ClosedEvent;
-import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.model.MetaInfo;
-import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.common.spi.ConnectorMapper;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.connector.model.MetaInfo;
+import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.manager.config.OperationConfig;
 import org.dbsyncer.manager.config.QueryConfig;
@@ -98,17 +98,17 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     }
 
     @Override
-    public ConnectorMapper connect(ConnectorConfig config) {
+    public ConnectorMapper connect(AbstractConnectorConfig config) {
         return parser.connect(config);
     }
 
     @Override
-    public boolean refreshConnectorConfig(ConnectorConfig config) {
+    public boolean refreshConnectorConfig(AbstractConnectorConfig config) {
         return parser.refreshConnectorConfig(config);
     }
 
     @Override
-    public boolean isAliveConnectorConfig(ConnectorConfig config) {
+    public boolean isAliveConnectorConfig(AbstractConnectorConfig config) {
         return parser.isAliveConnectorConfig(config);
     }
 

@@ -1,5 +1,6 @@
 package org.dbsyncer.common.model;
 
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.spi.ProxyApplicationContext;
 
 /**
@@ -7,12 +8,17 @@ import org.dbsyncer.common.spi.ProxyApplicationContext;
  * @version 1.0.0
  * @date 2022/6/30 16:00
  */
-public class ConvertContext {
+public abstract class AbstractConvertContext {
 
     /**
      * Spring上下文
      */
     protected ProxyApplicationContext context;
+
+    /**
+     * 目标源连接实例
+     */
+    protected ConnectorMapper targetConnectorMapper;
 
     /**
      * 目标表
@@ -25,5 +31,9 @@ public class ConvertContext {
 
     public String getTargetTableName() {
         return targetTableName;
+    }
+
+    public ConnectorMapper getTargetConnectorMapper() {
+        return targetConnectorMapper;
     }
 }

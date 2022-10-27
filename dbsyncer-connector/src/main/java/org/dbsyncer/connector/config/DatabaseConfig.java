@@ -1,5 +1,7 @@
 package org.dbsyncer.connector.config;
 
+import org.dbsyncer.common.model.AbstractConnectorConfig;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -9,7 +11,7 @@ import java.util.Map;
  * @Description: 数据库连接配置
  * @date: 2017年7月20日 下午3:40:59
  */
-public class DatabaseConfig extends ConnectorConfig {
+public class DatabaseConfig extends AbstractConnectorConfig {
 
     /**
      * 驱动
