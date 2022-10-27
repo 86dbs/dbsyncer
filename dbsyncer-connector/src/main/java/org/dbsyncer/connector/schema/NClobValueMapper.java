@@ -3,10 +3,7 @@ package org.dbsyncer.connector.schema;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.database.DatabaseValueMapper;
-import org.dbsyncer.connector.database.ds.SimpleConnection;
 
-import java.sql.Connection;
 import java.sql.NClob;
 
 /**
@@ -17,15 +14,12 @@ import java.sql.NClob;
 public class NClobValueMapper extends AbstractValueMapper<NClob> {
 
     @Override
-    protected NClob convert(ConnectorMapper connectorMapper, Object val) throws Exception {
-        if (val instanceof byte[]) {
-            Object connection = connectorMapper.getConnection();
-            if (connection instanceof Connection) {
-                final DatabaseValueMapper mapper = new DatabaseValueMapper((SimpleConnection) connection);
-                return mapper.getNClob((byte[]) val);
-            }
-        }
+    protected boolean skipConvert(Object val) {
+        return val instanceof oracle.sql.NCLOB || val instanceof byte[];
+    }
 
+    @Override
+    protected NClob convert(ConnectorMapper connectorMapper, Object val) {
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }

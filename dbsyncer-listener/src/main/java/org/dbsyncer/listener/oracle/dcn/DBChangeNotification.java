@@ -51,7 +51,6 @@ public class DBChangeNotification {
     private String password;
     private String url;
     private OracleConnection conn;
-    private OracleStatement statement;
     private DatabaseChangeRegistration dcr;
     private Map<Integer, String> tables;
     private Worker worker;
@@ -80,8 +79,8 @@ public class DBChangeNotification {
             }
             conn = connect();
             connected = true;
-            statement = (OracleStatement) conn.createStatement();
-            readTables();
+            OracleStatement statement = (OracleStatement) conn.createStatement();
+            readTables(statement);
 
             Properties prop = new Properties();
             prop.setProperty(OracleConnection.DCN_NOTIFY_ROWIDS, "true");
@@ -117,6 +116,7 @@ public class DBChangeNotification {
                     logger.debug("配置监听表异常:{}, {}", sql, e.getMessage());
                 }
             }
+            close(statement);
         } catch (SQLException ex) {
             // if an exception occurs, we need to close the registration in order
             // to interrupt the thread otherwise it will be hanging around.
@@ -145,7 +145,6 @@ public class DBChangeNotification {
             if (null != conn) {
                 conn.unregisterDatabaseChangeNotification(dcr);
             }
-            close(statement);
             close(conn);
         } catch (SQLException e) {
             logger.error(e.getMessage());
@@ -168,7 +167,7 @@ public class DBChangeNotification {
         OracleStatement os = null;
         ResultSet rs = null;
         try {
-            os = (OracleStatement) conn.createStatement();
+            os = createStatement();
             rs = os.executeQuery(String.format(QUERY_ROW_DATA_SQL, tableName, rowId));
             if (rs.next()) {
                 final int size = rs.getMetaData().getColumnCount();
@@ -187,15 +186,30 @@ public class DBChangeNotification {
         }
     }
 
-    private void readTables() {
-        tables = new LinkedHashMap<>();
-        List<String> tableList = queryForList(QUERY_TABLE_ALL_SQL, rs -> rs.getString(1));
-        Assert.notEmpty(tableList, "No tables available");
-        final String owner = username.toUpperCase();
-        tableList.forEach(tableName -> tables.put(queryForObject(String.format(QUERY_TABLE_ID_SQL, tableName, owner), rs -> rs.getInt(1)), tableName));
+    private OracleStatement createStatement() throws SQLException {
+        try {
+            OracleStatement statement = (OracleStatement) conn.createStatement();
+            Assert.notNull(statement, "Can't create statement, trying to reconnect.");
+            return statement;
+        } catch (Exception e) {
+            connected = false;
+            logger.error(e.getMessage());
+        }
+        conn = connect();
+        connected = true;
+        logger.info("重连成功");
+        return (OracleStatement) conn.createStatement();
     }
 
-    private <T> List<T> queryForList(String sql, ResultSetMapper<T> mapper) {
+    private void readTables(OracleStatement statement) {
+        tables = new LinkedHashMap<>();
+        List<String> tableList = queryForList(statement, QUERY_TABLE_ALL_SQL, rs -> rs.getString(1));
+        Assert.notEmpty(tableList, "No tables available");
+        final String owner = username.toUpperCase();
+        tableList.forEach(tableName -> tables.put(queryForObject(statement, String.format(QUERY_TABLE_ID_SQL, tableName, owner), rs -> rs.getInt(1)), tableName));
+    }
+
+    private <T> List<T> queryForList(OracleStatement statement, String sql, ResultSetMapper<T> mapper) {
         ResultSet rs = null;
         List<T> list = new ArrayList<>();
         try {
@@ -211,7 +225,7 @@ public class DBChangeNotification {
         return list;
     }
 
-    private <T> T queryForObject(String sql, ResultSetMapper<T> mapper) {
+    private <T> T queryForObject(OracleStatement statement, String sql, ResultSetMapper<T> mapper) {
         ResultSet rs = null;
         T apply = null;
         try {
