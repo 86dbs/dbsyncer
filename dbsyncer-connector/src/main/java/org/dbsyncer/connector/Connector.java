@@ -1,7 +1,10 @@
 package org.dbsyncer.connector;
 
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.connector.config.*;
+import org.dbsyncer.common.spi.ConnectorMapper;
+import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.ReaderConfig;
+import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
 

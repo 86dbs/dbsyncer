@@ -1,5 +1,6 @@
 package org.dbsyncer.common.model;
 
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.spi.ProxyApplicationContext;
 
 import java.util.Map;
@@ -9,7 +10,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2022/6/30 16:06
  */
-public class IncrementConvertContext extends ConvertContext {
+public class IncrementConvertContext extends AbstractConvertContext {
 
     /**
      * 增量同步，事件（INSERT/UPDATE/DELETE）
@@ -26,8 +27,10 @@ public class IncrementConvertContext extends ConvertContext {
      */
     private Map target;
 
-    public IncrementConvertContext(ProxyApplicationContext context, String event, Map source, Map target) {
+    public IncrementConvertContext(ProxyApplicationContext context, ConnectorMapper targetConnectorMapper, String targetTableName, String event, Map source, Map target) {
         this.context = context;
+        this.targetConnectorMapper = targetConnectorMapper;
+        this.targetTableName = targetTableName;
         this.event = event;
         this.source = source;
         this.target = target;

@@ -1,6 +1,6 @@
 package org.dbsyncer.connector.kafka;
 
-import org.dbsyncer.connector.ConnectorMapper;
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.config.KafkaConfig;
 import org.dbsyncer.connector.util.KafkaUtil;
 

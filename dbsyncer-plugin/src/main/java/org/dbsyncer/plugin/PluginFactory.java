@@ -3,6 +3,7 @@ package org.dbsyncer.plugin;
 import org.apache.commons.io.FileUtils;
 import org.dbsyncer.common.model.FullConvertContext;
 import org.dbsyncer.common.model.IncrementConvertContext;
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.spi.ConvertService;
 import org.dbsyncer.common.spi.ProxyApplicationContext;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -96,19 +97,41 @@ public class PluginFactory {
         return Collections.unmodifiableList(plugins);
     }
 
-    public void convert(Plugin plugin, List<Map> sourceList, List<Map> targetList) {
+    public void convert(ConnectorMapper targetConnectorMapper, Plugin plugin, String targetTableName, List<Map> sourceList, List<Map> targetList) {
         if (null != plugin && service.containsKey(plugin.getClassName())) {
-            service.get(plugin.getClassName()).convert(new FullConvertContext(applicationContextProxy, sourceList, targetList));
+            service.get(plugin.getClassName()).convert(new FullConvertContext(applicationContextProxy, targetConnectorMapper, targetTableName, sourceList, targetList));
         }
     }
 
-    public void convert(Plugin plugin, String event, List<Map> sourceList, List<Map> targetList) {
+    public void convert(ConnectorMapper targetConnectorMapper, Plugin plugin,String targetTableName, String event, List<Map> sourceList, List<Map> targetList) {
         if (null != plugin && service.containsKey(plugin.getClassName())) {
             ConvertService convertService = service.get(plugin.getClassName());
             int size = sourceList.size();
-            if(size == targetList.size()){
+            if (size == targetList.size()) {
                 for (int i = 0; i < size; i++) {
-                    convertService.convert(new IncrementConvertContext(applicationContextProxy, event, sourceList.get(i), targetList.get(i)));
+                    convertService.convert(new IncrementConvertContext(applicationContextProxy, targetConnectorMapper, targetTableName, event, sourceList.get(i), targetList.get(i)));
+                }
+            }
+        }
+    }
+
+    /**
+     * 完成同步后执行处理
+     *
+     * @param targetConnectorMapper
+     * @param plugin
+     * @param targetTableName
+     * @param event
+     * @param sourceList
+     * @param targetList
+     */
+    public void postProcessAfter(ConnectorMapper targetConnectorMapper, Plugin plugin, String targetTableName, String event, List<Map> sourceList, List<Map> targetList) {
+        if (null != plugin && service.containsKey(plugin.getClassName())) {
+            ConvertService convertService = service.get(plugin.getClassName());
+            int size = sourceList.size();
+            if (size == targetList.size()) {
+                for (int i = 0; i < size; i++) {
+                    convertService.postProcessAfter(new IncrementConvertContext(applicationContextProxy, targetConnectorMapper, targetTableName, event, sourceList.get(i), targetList.get(i)));
                 }
             }
         }

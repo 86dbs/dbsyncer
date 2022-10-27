@@ -35,7 +35,11 @@
             <groupId>com.oracle</groupId>
             <artifactId>ojdbc6</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>net.postgis</groupId>
+            <artifactId>postgis-jdbc</artifactId>
+            <version>2.5.1</version>
+        </dependency>
         <dependency>
             <groupId>oracle</groupId>
             <artifactId>sdoapi</artifactId>

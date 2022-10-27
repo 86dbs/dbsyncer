@@ -1,7 +1,7 @@
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.model.Field;
 import org.springframework.util.Assert;
 
@@ -57,7 +57,7 @@ public class Picker {
         }
     }
 
-    public String getSourcePrimaryKeyName(ConnectorConfig config) {
+    public String getSourcePrimaryKeyName(AbstractConnectorConfig config) {
         for (Field f : sourceFields) {
             if (null != f && f.isPk()) {
                 return f.getName();

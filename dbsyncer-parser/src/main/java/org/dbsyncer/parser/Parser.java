@@ -1,14 +1,14 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.connector.ConnectorMapper;
-import org.dbsyncer.connector.config.ConnectorConfig;
-import org.dbsyncer.connector.model.MetaInfo;
-import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.connector.model.MetaInfo;
+import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.*;
@@ -31,14 +31,14 @@ public interface Parser {
      * @param config
      * @return
      */
-    ConnectorMapper connect(ConnectorConfig config);
+    ConnectorMapper connect(AbstractConnectorConfig config);
 
     /**
      * 刷新连接配置
      *
      * @param config
      */
-    boolean refreshConnectorConfig(ConnectorConfig config);
+    boolean refreshConnectorConfig(AbstractConnectorConfig config);
 
     /**
      * 连接配置是否可用
@@ -46,7 +46,7 @@ public interface Parser {
      * @param config
      * @return
      */
-    boolean isAliveConnectorConfig(ConnectorConfig config);
+    boolean isAliveConnectorConfig(AbstractConnectorConfig config);
 
     /**
      * 获取连接器表
