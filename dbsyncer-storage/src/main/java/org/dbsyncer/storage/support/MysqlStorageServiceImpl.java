@@ -1,10 +1,10 @@
 package org.dbsyncer.storage.support;
 
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
 import org.dbsyncer.connector.config.WriterBatchConfig;

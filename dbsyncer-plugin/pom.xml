@@ -18,5 +18,12 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <!-- Connector 连接器 -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
     </dependencies>
 </project>

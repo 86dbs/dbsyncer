@@ -28,6 +28,16 @@ public interface ConvertService {
     void convert(IncrementConvertContext context);
 
     /**
+     * 数据插入后处理接口
+     *
+     * @param context 上下文
+     * @author wangxiri
+     * @date 2022/10/25
+     */
+    default void postProcessAfter(IncrementConvertContext context) {
+    }
+
+    /**
      * 版本号
      *
      * @return

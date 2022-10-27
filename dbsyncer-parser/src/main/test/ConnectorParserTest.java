@@ -1,8 +1,8 @@
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.io.FileUtils;
+import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -34,7 +34,7 @@ public class ConnectorParserTest {
         String connectorType = config.getString("connectorType");
         Class<?> configClass = ConnectorEnum.getConfigClass(connectorType);
         Object obj = JsonUtil.jsonToObj(config.toString(), configClass);
-        connector.setConfig((ConnectorConfig) obj);
+        connector.setConfig((AbstractConnectorConfig) obj);
         System.out.println(connector);
     }
 

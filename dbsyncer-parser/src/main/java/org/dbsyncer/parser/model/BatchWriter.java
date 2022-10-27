@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.connector.ConnectorMapper;
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.model.Field;
 
 import java.util.List;

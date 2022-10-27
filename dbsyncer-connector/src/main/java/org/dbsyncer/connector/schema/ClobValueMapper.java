@@ -1,8 +1,8 @@
 package org.dbsyncer.connector.schema;
 
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.ConnectorMapper;
 
 import java.sql.Clob;
 

@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.config;
 
+import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.connector.model.Filter;
 import org.dbsyncer.connector.model.Table;
 
@@ -22,13 +23,13 @@ public class CommandConfig {
 
     private List<Filter> filter;
 
-    private ConnectorConfig connectorConfig;
+    private AbstractConnectorConfig connectorConfig;
 
-    public CommandConfig(String type, Table table, Table originalTable, ConnectorConfig connectorConfig) {
+    public CommandConfig(String type, Table table, Table originalTable, AbstractConnectorConfig connectorConfig) {
         this(type, table, originalTable, connectorConfig, null);
     }
 
-    public CommandConfig(String type, Table table, Table originalTable, ConnectorConfig connectorConfig, List<Filter> filter) {
+    public CommandConfig(String type, Table table, Table originalTable, AbstractConnectorConfig connectorConfig, List<Filter> filter) {
         this.type = type;
         this.table = table;
         this.originalTable = originalTable;
@@ -52,7 +53,7 @@ public class CommandConfig {
         return originalTable;
     }
 
-    public ConnectorConfig getConnectorConfig() {
+    public AbstractConnectorConfig getConnectorConfig() {
         return connectorConfig;
     }
 }

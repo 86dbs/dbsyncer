@@ -1,13 +1,13 @@
 package org.dbsyncer.connector.es;
 
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.ConnectorMapper;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.ESConfig;
 import org.dbsyncer.connector.config.ReaderConfig;

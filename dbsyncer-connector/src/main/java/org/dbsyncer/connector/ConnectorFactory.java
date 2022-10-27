@@ -1,9 +1,10 @@
 package org.dbsyncer.connector;
 
+import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.ConnectorConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -39,7 +40,7 @@ public class ConnectorFactory implements DisposableBean {
      *
      * @param config
      */
-    public ConnectorMapper connect(ConnectorConfig config) {
+    public ConnectorMapper connect(AbstractConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
         Connector connector = getConnector(config.getConnectorType());
         String cacheKey = connector.getConnectorMapperCacheKey(config);
@@ -66,7 +67,7 @@ public class ConnectorFactory implements DisposableBean {
      * @param config
      * @return
      */
-    public boolean refresh(ConnectorConfig config) {
+    public boolean refresh(AbstractConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
         Connector connector = getConnector(config.getConnectorType());
         String cacheKey = connector.getConnectorMapperCacheKey(config);
@@ -84,7 +85,7 @@ public class ConnectorFactory implements DisposableBean {
      * @param config
      * @return
      */
-    public boolean isAlive(ConnectorConfig config) {
+    public boolean isAlive(AbstractConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
         Connector connector = getConnector(config.getConnectorType());
         String cacheKey = connector.getConnectorMapperCacheKey(config);

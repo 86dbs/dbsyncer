@@ -1,5 +1,6 @@
 package org.dbsyncer.connector;
 
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.WriterBatchConfig;
