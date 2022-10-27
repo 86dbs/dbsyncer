@@ -26,8 +26,9 @@ public class IncrementConvertContext extends ConvertContext {
      */
     private Map target;
 
-    public IncrementConvertContext(ProxyApplicationContext context, String event, Map source, Map target) {
+    public IncrementConvertContext(ProxyApplicationContext context, String targetTableName, String event, Map source, Map target) {
         this.context = context;
+        this.targetTableName = targetTableName;
         this.event = event;
         this.source = source;
         this.target = target;

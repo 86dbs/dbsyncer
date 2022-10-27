@@ -3,11 +3,7 @@ package org.dbsyncer.biz.checker.impl.mapping;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
-import org.dbsyncer.common.util.BooleanUtil;
-import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.NumberUtil;
-import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.common.util.*;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
 import org.dbsyncer.manager.Manager;
@@ -138,7 +134,7 @@ public class MappingChecker extends AbstractChecker {
         if (!CollectionUtils.isEmpty(groupAll)) {
             // 手动排序
             String[] sortedTableGroupIds = StringUtil.split(params.get("sortedTableGroupIds"), "|");
-            if(null != sortedTableGroupIds && sortedTableGroupIds.length>0){
+            if (null != sortedTableGroupIds && sortedTableGroupIds.length > 0) {
                 Map<String, TableGroup> tableGroupMap = groupAll.stream().collect(Collectors.toMap(TableGroup::getId, f -> f, (k1, k2) -> k1));
                 groupAll.clear();
                 int size = sortedTableGroupIds.length;

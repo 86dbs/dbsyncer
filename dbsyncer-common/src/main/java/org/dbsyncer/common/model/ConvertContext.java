@@ -14,8 +14,16 @@ public class ConvertContext {
      */
     protected ProxyApplicationContext context;
 
+    /**
+     * 目标表
+     */
+    protected String targetTableName;
+
     public ProxyApplicationContext getContext() {
         return context;
     }
 
+    public String getTargetTableName() {
+        return targetTableName;
+    }
 }

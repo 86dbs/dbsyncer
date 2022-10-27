@@ -7,7 +7,6 @@ import org.dbsyncer.common.spi.ConvertService;
 import org.dbsyncer.common.spi.ProxyApplicationContext;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.plugin.config.Plugin;
-//import org.postgresql.jdbc2.optional.SimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.sql.Connection;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -98,39 +96,44 @@ public class PluginFactory {
         return Collections.unmodifiableList(plugins);
     }
 
-    public void convert(Plugin plugin, List<Map> sourceList, List<Map> targetList) {
+    public void convert(Plugin plugin, String targetTableName, List<Map> sourceList, List<Map> targetList) {
         if (null != plugin && service.containsKey(plugin.getClassName())) {
-            service.get(plugin.getClassName()).convert(new FullConvertContext(applicationContextProxy, sourceList, targetList));
+            service.get(plugin.getClassName()).convert(new FullConvertContext(applicationContextProxy, targetTableName, sourceList, targetList));
         }
     }
 
-    public void convert(Plugin plugin, String event, List<Map> sourceList, List<Map> targetList) {
+    public void convert(Plugin plugin, String targetTableName, String event, List<Map> sourceList, List<Map> targetList) {
         if (null != plugin && service.containsKey(plugin.getClassName())) {
             ConvertService convertService = service.get(plugin.getClassName());
             int size = sourceList.size();
-            if(size == targetList.size()){
+            if (size == targetList.size()) {
                 for (int i = 0; i < size; i++) {
-                    convertService.convert(new IncrementConvertContext(applicationContextProxy, event, sourceList.get(i), targetList.get(i)));
+                    convertService.convert(new IncrementConvertContext(applicationContextProxy, targetTableName, event, sourceList.get(i), targetList.get(i)));
                 }
             }
         }
     }
 
-    public void AfterConvert(Connection connection, String targetTableName,Plugin plugin, String event, List<Map> sourceList, List<Map> targetList)
-    {
+    /**
+     * 完成同步后执行处理
+     *
+     * @param plugin
+     * @param targetTableName
+     * @param event
+     * @param sourceList
+     * @param targetList
+     */
+    public void postProcessAfter(Plugin plugin, String targetTableName, String event, List<Map> sourceList, List<Map> targetList) {
         if (null != plugin && service.containsKey(plugin.getClassName())) {
             ConvertService convertService = service.get(plugin.getClassName());
             int size = sourceList.size();
-            if(size == targetList.size()){
+            if (size == targetList.size()) {
                 for (int i = 0; i < size; i++) {
-//                    convertService.convert(new IncrementConvertContext(applicationContextProxy, event, sourceList.get(i), targetList.get(i)));
-                    convertService.AfterConvert(new IncrementConvertContext(applicationContextProxy, event, sourceList.get(i), targetList.get(i)),connection,targetTableName);
+                    convertService.postProcessAfter(new IncrementConvertContext(applicationContextProxy, targetTableName, event, sourceList.get(i), targetList.get(i)));
                 }
             }
         }
     }
-
-//    public void convert()
 
     /**
      * SPI, 扫描jar扩展接口实现，注册为本地服务

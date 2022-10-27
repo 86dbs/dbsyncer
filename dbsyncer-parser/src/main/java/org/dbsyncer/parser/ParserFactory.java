@@ -273,7 +273,7 @@ public class ParserFactory implements Parser {
             ConvertUtil.convert(group.getConvert(), target);
 
             // 4、插件转换
-            pluginFactory.convert(group.getPlugin(), data, target);
+            pluginFactory.convert(group.getPlugin(), tTableName, data, target);
 
             // 5、写入目标源
             BatchWriter batchWriter = new BatchWriter(tConnectorMapper, command, tTableName, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize);

@@ -22,8 +22,9 @@ public class FullConvertContext extends ConvertContext {
      */
     private List<Map> targetList;
 
-    public FullConvertContext(ProxyApplicationContext context, List<Map> sourceList, List<Map> targetList) {
+    public FullConvertContext(ProxyApplicationContext context, String targetTableName, List<Map> sourceList, List<Map> targetList) {
         this.context = context;
+        this.targetTableName = targetTableName;
         this.sourceList = sourceList;
         this.targetList = targetList;
     }
