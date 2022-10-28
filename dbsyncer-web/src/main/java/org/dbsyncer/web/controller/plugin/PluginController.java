@@ -67,8 +67,8 @@ public class PluginController {
     }
 
     @GetMapping("/download")
-    public void download(HttpServletResponse response) {
-        String fileName = String.format("dbsyncer-common-%s.jar", appConfig.getVersion());
+    public void download(HttpServletResponse response, String name) {
+        String fileName = String.format("dbsyncer-%s-%s.jar", name, appConfig.getVersion());
         File file = new File(pluginService.getLibraryPath() + fileName);
         if (!file.exists()) {
             write(response, RestResult.restFail("Could not find file", 404));
