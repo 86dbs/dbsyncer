@@ -253,13 +253,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * @return
      */
     protected String buildSqlFilterWithQuotation(String value) {
-        if(StringUtil.isNotBlank(value)){
-            // 支持Oracle日期函数
-            if(StringUtil.startsWith(value, "to_date(") && StringUtil.endsWith(value, ")")){
-                return "";
-            }
-        }
-
         return "'";
     }
 
