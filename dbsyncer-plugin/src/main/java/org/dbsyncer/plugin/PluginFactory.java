@@ -1,9 +1,8 @@
 package org.dbsyncer.plugin;
 
 import org.apache.commons.io.FileUtils;
-import org.dbsyncer.common.model.FullConvertContext;
-import org.dbsyncer.common.model.IncrementConvertContext;
-import org.dbsyncer.common.spi.ConnectorMapper;
+import org.dbsyncer.common.model.AbstractConvertContext;
+import org.dbsyncer.common.spi.ConvertContext;
 import org.dbsyncer.common.spi.ConvertService;
 import org.dbsyncer.common.spi.ProxyApplicationContext;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -19,7 +18,13 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 
 /**
@@ -78,7 +83,7 @@ public class PluginFactory {
         } catch (IOException e) {
             logger.error(e.getMessage());
         }
-        Collection<File> files = FileUtils.listFiles(new File(PLUGIN_PATH), new String[]{"jar"}, true);
+        Collection<File> files = FileUtils.listFiles(new File(PLUGIN_PATH), new String[] {"jar"}, true);
         if (!CollectionUtils.isEmpty(files)) {
             files.forEach(f -> loadPlugin(f));
         }
@@ -97,43 +102,31 @@ public class PluginFactory {
         return Collections.unmodifiableList(plugins);
     }
 
-    public void convert(ConnectorMapper targetConnectorMapper, Plugin plugin, String targetTableName, List<Map> sourceList, List<Map> targetList) {
+    /**
+     * 全量同步/增量同步
+     *
+     * @param plugin
+     * @param context
+     */
+    public void convert(Plugin plugin, ConvertContext context) {
         if (null != plugin && service.containsKey(plugin.getClassName())) {
-            service.get(plugin.getClassName()).convert(new FullConvertContext(applicationContextProxy, targetConnectorMapper, targetTableName, sourceList, targetList));
-        }
-    }
-
-    public void convert(ConnectorMapper targetConnectorMapper, Plugin plugin,String targetTableName, String event, List<Map> sourceList, List<Map> targetList) {
-        if (null != plugin && service.containsKey(plugin.getClassName())) {
-            ConvertService convertService = service.get(plugin.getClassName());
-            int size = sourceList.size();
-            if (size == targetList.size()) {
-                for (int i = 0; i < size; i++) {
-                    convertService.convert(new IncrementConvertContext(applicationContextProxy, targetConnectorMapper, targetTableName, event, sourceList.get(i), targetList.get(i)));
-                }
+            if (context instanceof AbstractConvertContext) {
+                AbstractConvertContext ctx = (AbstractConvertContext) context;
+                ctx.setContext(applicationContextProxy);
             }
+            service.get(plugin.getClassName()).convert(context);
         }
     }
 
     /**
-     * 完成同步后执行处理
+     * 全量同步/增量同步完成后执行处理
      *
-     * @param targetConnectorMapper
      * @param plugin
-     * @param targetTableName
-     * @param event
-     * @param sourceList
-     * @param targetList
+     * @param context
      */
-    public void postProcessAfter(ConnectorMapper targetConnectorMapper, Plugin plugin, String targetTableName, String event, List<Map> sourceList, List<Map> targetList) {
+    public void postProcessAfter(Plugin plugin, ConvertContext context) {
         if (null != plugin && service.containsKey(plugin.getClassName())) {
-            ConvertService convertService = service.get(plugin.getClassName());
-            int size = sourceList.size();
-            if (size == targetList.size()) {
-                for (int i = 0; i < size; i++) {
-                    convertService.postProcessAfter(new IncrementConvertContext(applicationContextProxy, targetConnectorMapper, targetTableName, event, sourceList.get(i), targetList.get(i)));
-                }
-            }
+            service.get(plugin.getClassName()).postProcessAfter(context);
         }
     }
 
@@ -146,7 +139,7 @@ public class PluginFactory {
         try {
             String fileName = jar.getName();
             URL url = jar.toURI().toURL();
-            URLClassLoader loader = new URLClassLoader(new URL[]{url}, Thread.currentThread().getContextClassLoader());
+            URLClassLoader loader = new URLClassLoader(new URL[] {url}, Thread.currentThread().getContextClassLoader());
             ServiceLoader<ConvertService> services = ServiceLoader.load(ConvertService.class, loader);
             for (ConvertService s : services) {
                 String className = s.getClass().getName();
@@ -159,5 +152,4 @@ public class PluginFactory {
         }
 
     }
-
 }
