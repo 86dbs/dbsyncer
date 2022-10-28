@@ -165,11 +165,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (null != execute) {
             int batchSize = execute.length;
             for (int i = 0; i < batchSize; i++) {
-                if (execute[i] == 0 || execute[i] == -2) {
-                    forceUpdate(result, connectorMapper, config, pkField, data.get(i));
+                if (execute[i] == 1 || execute[i] == -2) {
+                    result.getSuccessData().add(data.get(i));
                     continue;
                 }
-                result.getSuccessData().add(data.get(i));
+                forceUpdate(result, connectorMapper, config, pkField, data.get(i));
             }
         }
         return result;
