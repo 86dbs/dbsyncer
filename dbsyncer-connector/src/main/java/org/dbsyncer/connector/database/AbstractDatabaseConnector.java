@@ -247,6 +247,23 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
+     * 获取条件值引号
+     *
+     * @param value
+     * @return
+     */
+    protected String buildSqlFilterWithQuotation(String value) {
+        if(StringUtil.isNotBlank(value)){
+            // 支持Oracle日期函数
+            if(StringUtil.startsWith(value, "to_date(") && StringUtil.endsWith(value, ")")){
+                return "";
+            }
+        }
+
+        return "'";
+    }
+
+    /**
      * 获取架构名
      *
      * @param config
@@ -440,7 +457,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         for (int i = 0; i < size; i++) {
             c = list.get(i);
             // "USER" = 'zhangsan'
-            sql.append(quotation).append(c.getName()).append(quotation).append(" ").append(c.getFilter()).append(" ").append("'").append(c.getValue()).append("'");
+            sql.append(quotation).append(c.getName()).append(quotation);
+            sql.append(" ").append(c.getFilter()).append(" ");
+            // 如果使用了函数则不加引号
+            String filterValueQuotation = buildSqlFilterWithQuotation(c.getValue());
+            sql.append(filterValueQuotation).append(c.getValue()).append(filterValueQuotation);
             if (i < end) {
                 sql.append(" ").append(queryOperator).append(" ");
             }
