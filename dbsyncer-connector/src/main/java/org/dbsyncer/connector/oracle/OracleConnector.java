@@ -48,6 +48,6 @@ public final class OracleConnector extends AbstractDatabaseConnector {
 
     @Override
     protected String getSchema(DatabaseConfig config) {
-        return config.getUsername().toUpperCase();
+        return StringUtil.isBlank(config.getSchema())?config.getUsername().toUpperCase():config.getSchema().toUpperCase();
     }
 }
