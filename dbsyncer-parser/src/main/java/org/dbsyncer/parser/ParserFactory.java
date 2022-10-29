@@ -146,8 +146,8 @@ public class ParserFactory implements Parser {
         AbstractConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
-        Table sTable = new Table(sourceTable.getName(), sourceTable.getType(), new ArrayList<>());
-        Table tTable = new Table(targetTable.getName(), targetTable.getType(), new ArrayList<>());
+        Table sTable = new Table(sourceTable.getName(), sourceTable.getPrimaryKey(), sourceTable.getType(), new ArrayList<>());
+        Table tTable = new Table(targetTable.getName(), targetTable.getPrimaryKey(), targetTable.getType(), new ArrayList<>());
         List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
         if (!CollectionUtils.isEmpty(fieldMapping)) {
             fieldMapping.forEach(m -> {
@@ -246,7 +246,7 @@ public class ParserFactory implements Parser {
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
         // 获取同步字段
         Picker picker = new Picker(fieldMapping);
-        String pk = picker.getSourcePrimaryKeyName(sConfig);
+        String pk = picker.getSourcePrimaryKeyName(tableGroup);
 
         int pageSize = mapping.getReadNum();
         int batchSize = mapping.getBatchNum();

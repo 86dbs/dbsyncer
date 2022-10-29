@@ -57,14 +57,14 @@ public class Picker {
         }
     }
 
-    public String getSourcePrimaryKeyName(AbstractConnectorConfig config) {
+    public String getSourcePrimaryKeyName(TableGroup tableGroup) {
         for (Field f : sourceFields) {
             if (null != f && f.isPk()) {
                 return f.getName();
             }
         }
 
-        String primaryKey = config.getPrimaryKey();
+        String primaryKey = tableGroup.getSourceTable().getPrimaryKey();
         Assert.hasText(primaryKey, "主键为空");
         return primaryKey;
     }

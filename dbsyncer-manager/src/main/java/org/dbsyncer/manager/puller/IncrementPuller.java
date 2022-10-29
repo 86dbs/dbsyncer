@@ -143,7 +143,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             AbstractQuartzExtractor extractor = listener.getExtractor(ListenerTypeEnum.TIMING, connectorConfig.getConnectorType(), AbstractQuartzExtractor.class);
             extractor.setCommands(list.stream().map(t -> {
                 Picker picker = new Picker(t.getFieldMapping());
-                return new TableGroupCommand(picker.getSourcePrimaryKeyName(connectorConfig), t.getCommand());
+                return new TableGroupCommand(picker.getSourcePrimaryKeyName(t), t.getCommand());
             }).collect(Collectors.toList()));
             setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getSnapshot(), new QuartzListener(mapping, list));
             return extractor;

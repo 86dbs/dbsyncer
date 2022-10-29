@@ -211,7 +211,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         map.put(delete, buildSql(delete, commandConfig, schema, null));
 
         // 获取查询数据行是否存在
-        String pk = findOriginalTablePrimaryKey(commandConfig, quotation);
+        String pk = StringUtil.isNotBlank(commandConfig.getTable().getPrimaryKey())?commandConfig.getTable().getPrimaryKey(): findOriginalTablePrimaryKey(commandConfig, quotation);
         StringBuilder queryCount = new StringBuilder().append("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(
                 commandConfig.getTable().getName()).append(quotation).append(" WHERE ").append(pk).append(" = ?");
         String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
@@ -372,7 +372,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
         String table = commandConfig.getTable().getName();
-        String pk = findOriginalTablePrimaryKey(commandConfig, quotation);
+        String pk = StringUtil.isNotBlank(commandConfig.getTable().getPrimaryKey())?commandConfig.getTable().getPrimaryKey():findOriginalTablePrimaryKey(commandConfig, quotation);
         StringBuilder queryCount = new StringBuilder();
         queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
         if (StringUtil.isNotBlank(queryFilterSql)) {
@@ -494,7 +494,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             throw new ConnectorException("Table name can not be empty.");
         }
         if (StringUtil.isBlank(pk)) {
-            pk = findOriginalTablePrimaryKey(commandConfig, "");
+            pk = StringUtil.isNotBlank(commandConfig.getTable().getPrimaryKey())?commandConfig.getTable().getPrimaryKey():findOriginalTablePrimaryKey(commandConfig, "");
         }
 
         SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());

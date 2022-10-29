@@ -49,6 +49,8 @@ public class TableGroupChecker extends AbstractChecker {
         String mappingId = params.get("mappingId");
         String sourceTable = params.get("sourceTable");
         String targetTable = params.get("targetTable");
+        String sourceTablePrimary = params.get("sourceTablePrimary");
+        String targetTablePrimary = params.get("targetTablePrimary");
         Assert.hasText(mappingId, "tableGroup mappingId is empty.");
         Assert.hasText(sourceTable, "tableGroup sourceTable is empty.");
         Assert.hasText(targetTable, "tableGroup targetTable is empty.");
@@ -64,8 +66,8 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setName(ConfigConstant.TABLE_GROUP);
         tableGroup.setType(ConfigConstant.TABLE_GROUP);
         tableGroup.setMappingId(mappingId);
-        tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable));
-        tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable));
+        tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable, sourceTablePrimary));
+        tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable, targetTablePrimary));
         tableGroup.setParams(new HashMap<>());
 
         // 修改基本配置
@@ -134,6 +136,12 @@ public class TableGroupChecker extends AbstractChecker {
         MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接器表信息.");
         return new Table(tableName, metaInfo.getTableType(), metaInfo.getColumn());
+    }
+
+    private Table getTable(String connectorId, String tableName, String primaryKey) {
+        MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
+        Assert.notNull(metaInfo, "无法获取连接器表信息.");
+        return new Table(tableName, primaryKey, metaInfo.getTableType(), metaInfo.getColumn());
     }
 
     private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {

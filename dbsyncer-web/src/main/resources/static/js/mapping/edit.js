@@ -128,32 +128,36 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
     $addBtn.bind('click', function () {
         var m = {};
         m.mappingId = $(this).attr("mappingId");
-        m.sourceTable = $sourceSelect.selectpicker('val');
-        m.targetTable = $targetSelect.selectpicker('val');
-        if(undefined == m.sourceTable){
+
+        m.sourceTablePrimary = $("#sourceTablePrimary").val();
+        m.targetTablePrimary = $("#targetTablePrimary").val();
+
+        m.sourceTable = $sourceSelect.val();
+        m.targetTable = $targetSelect.val();
+        if(undefined == m.sourceTable || "" == m.sourceTable){
             bootGrowl("请选择数据源表", "danger");
             return;
         }
-        if(undefined == m.targetTable){
+        if(undefined == m.targetTable || "" == m.targetTable){
             bootGrowl("请选择目标源表", "danger");
             return;
         }
 
         // 如果存在多个选择，只筛选相似表
-        var sLen = m.sourceTable.length;
-        var tLen = m.targetTable.length;
-        if (1 < sLen || 1 < tLen) {
-            var mark = [];
-            for (j = 0; j < sLen; j++) {
-                if (-1 != m.targetTable.indexOf(m.sourceTable[j])) {
-                    mark.push(m.sourceTable[j]);
-                }
-            }
-            m.sourceTable = mark;
-            m.targetTable = mark;
-        }
-        m.sourceTable = m.sourceTable.join('|');
-        m.targetTable = m.targetTable.join('|');
+        // var sLen = m.sourceTable.length;
+        // var tLen = m.targetTable.length;
+        // if (1 < sLen || 1 < tLen) {
+        //     var mark = [];
+        //     for (j = 0; j < sLen; j++) {
+        //         if (-1 != m.targetTable.indexOf(m.sourceTable[j])) {
+        //             mark.push(m.sourceTable[j]);
+        //         }
+        //     }
+        //     m.sourceTable = mark;
+        //     m.targetTable = mark;
+        // }
+        // m.sourceTable = m.sourceTable.join('|');
+        // m.targetTable = m.targetTable.join('|');
 
         doPoster("/tableGroup/add", m, function (data) {
             if (data.success == true) {
