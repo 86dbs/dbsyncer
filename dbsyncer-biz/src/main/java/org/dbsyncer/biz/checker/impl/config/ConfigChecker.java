@@ -1,5 +1,6 @@
 package org.dbsyncer.biz.checker.impl.config;
 
+import org.apache.commons.lang3.StringUtils;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.NumberUtil;
@@ -82,6 +83,12 @@ public class ConfigChecker extends AbstractChecker {
         if (StringUtil.isNotBlank(refreshInterval)) {
             int time = NumberUtil.toInt(refreshInterval, 10);
             config.setRefreshInterval(time);
+        }
+
+        // 刷新邮箱配置
+        String email = params.get("email");
+        if (StringUtils.isNotBlank(email)){
+            config.setEmail(email);
         }
 
         // 修改基本配置

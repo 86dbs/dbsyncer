@@ -1,5 +1,8 @@
 package org.dbsyncer.manager.puller;
 
+import org.dbsyncer.common.mail.MailService;
+import org.dbsyncer.common.mail.entity.MailRequest;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.Parser;
@@ -7,10 +10,7 @@ import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.model.Task;
+import org.dbsyncer.parser.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,9 +48,25 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
 
     private Map<String, Task> map = new ConcurrentHashMap<>();
 
+    @Autowired
+    private MailService mailService;
+
+
     @Override
     public void start(Mapping mapping) {
-        Thread worker = new Thread(()->{
+
+        List<Config> all = manager.getConfigAll();
+        String email = null;
+        if (!CollectionUtils.isEmpty(all)) {
+            Config config = all.get(0);
+            email = config.getEmail();
+        }
+        MailRequest mailRequest = new MailRequest();
+        mailRequest.setReceiver(email);
+        mailRequest.setSubject("dbsyncer同步结果");
+        mailRequest.setText("数据库同步失败！！！");
+
+        Thread worker = new Thread(() -> {
             final String metaId = mapping.getMetaId();
             try {
                 List<TableGroup> list = manager.getSortedTableGroupAll(mapping.getId());
@@ -63,6 +79,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
             } catch (Exception e) {
                 logger.error(e.getMessage());
                 logService.log(LogType.SystemLog.ERROR, e.getMessage());
+                mailService.sendSimpleMail(mailRequest);
             } finally {
                 map.remove(metaId);
                 publishClosedEvent(metaId);
