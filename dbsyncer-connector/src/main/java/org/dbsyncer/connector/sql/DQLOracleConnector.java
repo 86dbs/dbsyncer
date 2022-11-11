@@ -1,6 +1,5 @@
 package org.dbsyncer.connector.sql;
 
-import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.model.PageSql;
@@ -29,8 +28,4 @@ public final class DQLOracleConnector extends AbstractDQLConnector {
         return "select 1 from dual";
     }
 
-    @Override
-    protected String getSchema(DatabaseConfig config) {
-        return config.getUsername().toUpperCase();
-    }
 }

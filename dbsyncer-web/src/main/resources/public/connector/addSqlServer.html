@@ -25,11 +25,7 @@
             <input class="form-control" name="schema" type="text" maxlength="32" dbsyncer-valid="require"
                    placeholder="dbo" th:value="${connector?.config?.schema} ?: 'dbo'"/>
         </div>
-        <label class="col-sm-2 control-label">主键 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="如果使用的表没有主键，可以自定义主键（大小写必须一致，添加表映射关系时，主键不能为空）。"></i></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="primaryKey" type="text" maxlength="32" placeholder="ID"
-                   th:value="${connector?.config?.primaryKey}"/>
-        </div>
+        <div class="col-sm-6"></div>
     </div>
     <div class="form-group">
         <label class="col-sm-2 control-label">驱动 </label>

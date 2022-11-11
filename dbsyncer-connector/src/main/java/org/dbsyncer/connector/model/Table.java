@@ -22,6 +22,11 @@ public class Table {
     private String type;
 
     /**
+     * 主键
+     */
+    private String primaryKey;
+
+    /**
      * 属性字段
      * 格式：[{"name":"ID","typeName":"INT","type":"4"},{"name":"NAME","typeName":"VARCHAR","type":"12"}]
      */
@@ -34,18 +39,17 @@ public class Table {
     }
 
     public Table(String name) {
-        this.name = name;
-        this.type = TableTypeEnum.TABLE.getCode();
+        this(name, TableTypeEnum.TABLE.getCode());
     }
 
     public Table(String name, String type) {
-        this.name = name;
-        this.type = type;
+        this(name, type, null, null);
     }
 
-    public Table(String name, String type, List<Field> column) {
+    public Table(String name, String type, String primaryKey, List<Field> column) {
         this.name = name;
         this.type = type;
+        this.primaryKey = primaryKey;
         this.column = column;
     }
 
@@ -65,6 +69,14 @@ public class Table {
     public Table setType(String type) {
         this.type = type;
         return this;
+    }
+
+    public String getPrimaryKey() {
+        return primaryKey;
+    }
+
+    public void setPrimaryKey(String primaryKey) {
+        this.primaryKey = primaryKey;
     }
 
     public List<Field> getColumn() {

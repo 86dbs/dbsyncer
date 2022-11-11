@@ -44,7 +44,7 @@ public class TableGroupController extends BaseController {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(tableGroupService.add(params));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
