@@ -5,8 +5,10 @@ import com.alibaba.fastjson.JSONObject;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
+import org.dbsyncer.common.model.FullConvertContext;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.spi.ConnectorMapper;
+import org.dbsyncer.common.spi.ConvertContext;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.ConnectorFactory;
@@ -25,13 +27,18 @@ import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.BatchWriter;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Picker;
+import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.strategy.ParserStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
-import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -252,6 +259,7 @@ public class ParserFactory implements Parser {
         int batchSize = mapping.getBatchNum();
         ConnectorMapper sConnectorMapper = connectorFactory.connect(sConfig);
         ConnectorMapper tConnectorMapper = connectorFactory.connect(tConfig);
+        final String event = ConnectorConstant.OPERTION_INSERT;
 
         for (; ; ) {
             if (!task.isRunning()) {
@@ -274,20 +282,22 @@ public class ParserFactory implements Parser {
             ConvertUtil.convert(group.getConvert(), target);
 
             // 4、插件转换
-            Plugin plugin = group.getPlugin();
-            pluginFactory.convert(tConnectorMapper, plugin, tTableName, data, target);
+            final FullConvertContext context = new FullConvertContext(tConnectorMapper, sTableName, tTableName, event, data, target);
+            pluginFactory.convert(group.getPlugin(), context);
 
             // 5、写入目标源
-            BatchWriter batchWriter = new BatchWriter(tConnectorMapper, command, tTableName, ConnectorConstant.OPERTION_INSERT, picker.getTargetFields(), target, batchSize);
-            Result writer = writeBatch(batchWriter, executorService);
+            BatchWriter batchWriter = new BatchWriter(tConnectorMapper, command, tTableName, event, picker.getTargetFields(), target, batchSize);
+            Result result = writeBatch(context, batchWriter, executorService);
 
-            // 6、执行批量处理后的
-            pluginFactory.postProcessAfter(tConnectorMapper, plugin, tTableName, ConnectorConstant.OPERTION_INSERT, data, target);
+            // 6、同步完成后通知插件做后置处理
+            pluginFactory.postProcessAfter(group.getPlugin(), context);
 
             // 7、更新结果
             task.setPageIndex(task.getPageIndex() + 1);
             task.setCursor(getLastCursor(data, pk));
-            flush(task, writer);
+            result.setTableGroupId(tableGroup.getId());
+            result.setTargetTableGroupName(tTableName);
+            flush(task, result);
 
             // 8、判断尾页
             if (data.size() < pageSize) {
@@ -306,22 +316,31 @@ public class ParserFactory implements Parser {
     /**
      * 批量写入
      *
+     * @param context
      * @param batchWriter
      * @return
      */
     @Override
-    public Result writeBatch(BatchWriter batchWriter) {
-        return writeBatch(batchWriter, taskExecutor);
+    public Result writeBatch(ConvertContext context, BatchWriter batchWriter) {
+        return writeBatch(context, batchWriter, taskExecutor);
     }
 
     /**
      * 批量写入
      *
+     * @param context
      * @param batchWriter
      * @param taskExecutor
      * @return
      */
-    private Result writeBatch(BatchWriter batchWriter, Executor taskExecutor) {
+    private Result writeBatch(ConvertContext context, BatchWriter batchWriter, Executor taskExecutor) {
+        final Result result = new Result();
+        // 终止同步数据到目标源库
+        if(context.isTerminated()){
+            result.getSuccessData().addAll(batchWriter.getDataList());
+            return result;
+        }
+
         List<Map> dataList = batchWriter.getDataList();
         int batchSize = batchWriter.getBatchSize();
         String tableName = batchWriter.getTableName();
@@ -338,7 +357,6 @@ public class ParserFactory implements Parser {
         // 批量任务, 拆分
         int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
 
-        final Result result = new Result();
         final CountDownLatch latch = new CountDownLatch(taskSize);
         int fromIndex = 0;
         int toIndex = batchSize;
@@ -378,10 +396,10 @@ public class ParserFactory implements Parser {
      * 更新缓存
      *
      * @param task
-     * @param writer
+     * @param result
      */
-    private void flush(Task task, Result writer) {
-        flushStrategy.flushFullData(task.getId(), writer, ConnectorConstant.OPERTION_INSERT);
+    private void flush(Task task, Result result) {
+        flushStrategy.flushFullData(task.getId(), result, ConnectorConstant.OPERTION_INSERT);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(Instant.now().toEpochMilli());

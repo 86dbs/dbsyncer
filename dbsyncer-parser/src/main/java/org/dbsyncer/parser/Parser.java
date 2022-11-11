@@ -4,6 +4,7 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.spi.ConnectorMapper;
+import org.dbsyncer.common.spi.ConvertContext;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
@@ -165,9 +166,10 @@ public interface Parser {
     /**
      * 批执行
      *
+     * @param context
      * @param batchWriter
      * @return
      */
-    Result writeBatch(BatchWriter batchWriter);
+    Result writeBatch(ConvertContext context, BatchWriter batchWriter);
 
 }

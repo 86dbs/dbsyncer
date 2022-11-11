@@ -18,9 +18,12 @@
                                                target='_blank'>示例项目</a></li>
                     <li>导入开发包：
                         <ul>
-                            <li>方式1：导入jar <a onClick="downLoad()" href="javascript:;" title="下载开发包">dbsyncer-common-[[${version}]].jar</a></li>
+                            <li>方式1：导入jar
+                                <p><a onClick="downLoad('common')" href="javascript:;" title="下载开发包">dbsyncer-common-[[${version}]].jar</a></p>
+                                <p><a onClick="downLoad('connector')" href="javascript:;" title="下载开发包">dbsyncer-connector-[[${version}]].jar</a> (非必须)</p>
+                            </li>
                             <li>方式2：引入pom（需要安装到本地）
-                                <pre>&lt;dependency&gt;<br/>&nbsp;&nbsp;&lt;groupId>org.ghi&lt;/groupId&gt;<br/>&nbsp;&nbsp;&lt;artifactId>dbsyncer-common&lt;/artifactId&gt;<br/>&nbsp;&nbsp;&lt;version>[[${version}]]&lt;/version&gt;<br/>&lt;/dependency&gt;</pre>
+                                <pre>&lt;dependency&gt;<br/>&nbsp;&nbsp;&lt;groupId>org.ghi&lt;/groupId&gt;<br/>&nbsp;&nbsp;&lt;artifactId>dbsyncer-common&lt;/artifactId&gt;<br/>&nbsp;&nbsp;&lt;version>[[${version}]]&lt;/version&gt;<br/>&lt;/dependency&gt;<br/>&lt;/&lt;dependency&gt;<br/>&nbsp;&nbsp;&lt;groupId>org.ghi&lt;/groupId&gt;<br/>&nbsp;&nbsp;&lt;artifactId>dbsyncer-connector&lt;/artifactId&gt;<br/>&nbsp;&nbsp;&lt;version>[[${version}]]&lt;/version&gt;<br/>&lt;/dependency&gt;</pre>
                             </li>
                         </ul>
                     </li>
@@ -28,63 +31,70 @@
                         <simple>新建一个类，比如MyPlugin，实现接口ConvertService方法</simple>
 <pre>package org.test;
 
-import org.dbsyncer.common.model.FullConvertContext;
-import org.dbsyncer.common.model.IncrementConvertContext;
+import org.dbsyncer.common.spi.ConvertContext;
 import org.dbsyncer.common.spi.ConvertService;
 
-import java.util.List;
-import java.util.Map;
-
-public class MyPlugin implements ConvertService{
+public class MyPlugin implements ConvertService {
 
     /**
-    * 全量同步
-    *
-    * @param context
-    */
+     * 全量同步/增量同步
+     *
+     * @param convertContext
+     */
     @Override
-    public void convert(FullConvertContext context) {
-        // 数据源
-        List<Map> sourceList = context.getSourceList();
-        // 目标源
-        List<Map> targetList = context.getTargetList();
+    public void convert(ConvertContext convertContext) {
         // TODO 消费或处理数据
+        System.out.println("插件消费数据中...");
+
+        // 是否终止同步到目标库开关，默认false
+        convertContext.setTerminated(false);
+
+        // 获取Spring上下文，当然也可获取dbs注册的bean对象
+        convertContext.getContext();
+
+        // 数据源表和目标源表
+        convertContext.getSourceTableName();
+        convertContext.getTargetTableName();
+
+        // 捕获的事件（INSERT/UPDATE/DELETE）
+        convertContext.getEvent();
+
+        // 数据源和目标源表全量或增量数据
+        convertContext.getSourceList();
+        convertContext.getTargetList();
+
+        // 获取目标库连接器实例（如果需要用到连接器，必须引入dbsyncer-connector-[[${version}]].jar）
+        convertContext.getTargetConnectorMapper();
     }
 
     /**
-    * 增量同步
-    *
-    * @param context
-    */
+     * 全量同步/增量同步完成后执行处理
+     *
+     * @param context
+     */
     @Override
-    public void convert(IncrementConvertContext context) {
-        // 事件（INSERT/UPDATE/DELETE）
-        String event = context.getEvent();
-        // 数据源
-        Map source = context.getSource();
-        // 目标源
-        Map target = context.getTarget();
-        // TODO 消费或处理数据
+    public void postProcessAfter(ConvertContext context) {
+        // 完成同步后调用该方法
     }
 
     /**
-    * 重写方法：设置版本号
-    *
-    * @return
-    */
+     * 重写方法：设置版本号
+     *
+     * @return
+     */
     @Override
     public String getVersion() {
         return "1.0.0";
     }
 
     /**
-    * 重写方法：设置插件名称
-    *
-    * @return
-    */
+     * 重写方法：设置插件名称
+     *
+     * @return
+     */
     @Override
     public String getName() {
-        return "MyPlugin";
+        return "我的插件";
     }
 }</pre>
                     </li>
@@ -162,8 +172,8 @@ public class MyPlugin implements ConvertService{
         doLoader("/plugin");
     });
 
-    function downLoad(){
-        window.open($basePath + "/plugin/download");
+    function downLoad(fileName){
+        window.open($basePath + "/plugin/download?name=" + fileName);
     }
 </script>
 </html>

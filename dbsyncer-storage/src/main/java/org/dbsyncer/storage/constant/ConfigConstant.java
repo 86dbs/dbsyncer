@@ -31,6 +31,8 @@ public class ConfigConstant {
      * 数据
      */
     public static final String DATA_SUCCESS = "success";
+    public static final String DATA_TABLE_GROUP_ID = "tableGroupId";
+    public static final String DATA_TARGET_TABLE_NAME = "targetTableName";
     public static final String DATA_EVENT = "event";
     public static final String DATA_ERROR = "error";
 

@@ -30,6 +30,18 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    protected String buildSqlFilterWithQuotation(String value) {
+        if (StringUtil.isNotBlank(value)) {
+            // 支持Oracle系统函数（to_char/to_date/to_timestamp/to_number）
+            String val = value.toLowerCase();
+            if (StringUtil.startsWith(val, "to_") && StringUtil.endsWith(val, ")")) {
+                return "";
+            }
+        }
+        return super.buildSqlFilterWithQuotation(value);
+    }
+
+    @Override
     protected String getValidationQuery() {
         return "select 1 from dual";
     }

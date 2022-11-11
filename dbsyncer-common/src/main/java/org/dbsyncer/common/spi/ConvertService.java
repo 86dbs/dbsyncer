@@ -1,8 +1,5 @@
 package org.dbsyncer.common.spi;
 
-import org.dbsyncer.common.model.FullConvertContext;
-import org.dbsyncer.common.model.IncrementConvertContext;
-
 /**
  * 插件扩展服务接口
  * <p>全量同步/增量同步,扩展转换</p>
@@ -14,27 +11,18 @@ import org.dbsyncer.common.model.IncrementConvertContext;
 public interface ConvertService {
 
     /**
-     * 全量同步
+     * 全量同步/增量同步
      *
      * @param context 上下文
      */
-    void convert(FullConvertContext context);
+    void convert(ConvertContext context);
 
     /**
-     * 增量同步
+     * 全量同步/增量同步完成后执行处理
      *
      * @param context 上下文
      */
-    void convert(IncrementConvertContext context);
-
-    /**
-     * 数据插入后处理接口
-     *
-     * @param context 上下文
-     * @author wangxiri
-     * @date 2022/10/25
-     */
-    default void postProcessAfter(IncrementConvertContext context) {
+    default void postProcessAfter(ConvertContext context) {
     }
 
     /**
