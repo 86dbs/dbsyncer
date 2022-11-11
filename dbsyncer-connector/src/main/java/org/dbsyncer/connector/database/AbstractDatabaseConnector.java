@@ -165,11 +165,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (null != execute) {
             int batchSize = execute.length;
             for (int i = 0; i < batchSize; i++) {
-                if (execute[i] == 0 || execute[i] == -2) {
-                    forceUpdate(result, connectorMapper, config, pkField, data.get(i));
+                if (execute[i] == 1 || execute[i] == -2) {
+                    result.getSuccessData().add(data.get(i));
                     continue;
                 }
-                result.getSuccessData().add(data.get(i));
+                forceUpdate(result, connectorMapper, config, pkField, data.get(i));
             }
         }
         return result;
@@ -244,6 +244,16 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String buildSqlWithQuotation() {
         return "";
+    }
+
+    /**
+     * 获取条件值引号
+     *
+     * @param value
+     * @return
+     */
+    protected String buildSqlFilterWithQuotation(String value) {
+        return "'";
     }
 
     /**
@@ -440,7 +450,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         for (int i = 0; i < size; i++) {
             c = list.get(i);
             // "USER" = 'zhangsan'
-            sql.append(quotation).append(c.getName()).append(quotation).append(" ").append(c.getFilter()).append(" ").append("'").append(c.getValue()).append("'");
+            sql.append(quotation).append(c.getName()).append(quotation);
+            sql.append(" ").append(c.getFilter()).append(" ");
+            // 如果使用了函数则不加引号
+            String filterValueQuotation = buildSqlFilterWithQuotation(c.getValue());
+            sql.append(filterValueQuotation).append(c.getValue()).append(filterValueQuotation);
             if (i < end) {
                 sql.append(" ").append(queryOperator).append(" ");
             }

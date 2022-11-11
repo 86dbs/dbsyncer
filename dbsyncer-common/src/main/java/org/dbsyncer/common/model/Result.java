@@ -20,6 +20,16 @@ public class Result<T> {
      */
     private StringBuffer error = new StringBuffer();
 
+    /**
+     * 驱动表映射关系ID
+     */
+    private String tableGroupId;
+
+    /**
+     * 目标表名称
+     */
+    private String targetTableGroupName;
+
     private final Object LOCK = new Object();
 
     public Result() {
@@ -61,5 +71,21 @@ public class Result<T> {
         synchronized (LOCK) {
             this.successData.addAll(successData);
         }
+    }
+
+    public String getTableGroupId() {
+        return tableGroupId;
+    }
+
+    public void setTableGroupId(String tableGroupId) {
+        this.tableGroupId = tableGroupId;
+    }
+
+    public String getTargetTableGroupName() {
+        return targetTableGroupName;
+    }
+
+    public void setTargetTableGroupName(String targetTableGroupName) {
+        this.targetTableGroupName = targetTableGroupName;
     }
 }
