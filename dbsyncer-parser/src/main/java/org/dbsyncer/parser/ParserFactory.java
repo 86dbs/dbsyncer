@@ -287,7 +287,7 @@ public class ParserFactory implements Parser {
 
             // 5、写入目标源
             BatchWriter batchWriter = new BatchWriter(tConnectorMapper, command, tTableName, event, picker.getTargetFields(), target, batchSize);
-            Result writer = writeBatch(context, batchWriter, executorService);
+            Result result = writeBatch(context, batchWriter, executorService);
 
             // 6、同步完成后通知插件做后置处理
             pluginFactory.postProcessAfter(group.getPlugin(), context);
@@ -295,7 +295,9 @@ public class ParserFactory implements Parser {
             // 7、更新结果
             task.setPageIndex(task.getPageIndex() + 1);
             task.setCursor(getLastCursor(data, pk));
-            flush(task, writer);
+            result.setTableGroupId(tableGroup.getId());
+            result.setTargetTableGroupName(tTableName);
+            flush(task, result);
 
             // 8、判断尾页
             if (data.size() < pageSize) {
@@ -394,10 +396,10 @@ public class ParserFactory implements Parser {
      * 更新缓存
      *
      * @param task
-     * @param writer
+     * @param result
      */
-    private void flush(Task task, Result writer) {
-        flushStrategy.flushFullData(task.getId(), writer, ConnectorConstant.OPERTION_INSERT);
+    private void flush(Task task, Result result) {
+        flushStrategy.flushFullData(task.getId(), result, ConnectorConstant.OPERTION_INSERT);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(Instant.now().toEpochMilli());

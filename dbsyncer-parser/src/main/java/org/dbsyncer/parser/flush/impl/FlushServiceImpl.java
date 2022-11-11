@@ -59,12 +59,14 @@ public class FlushServiceImpl implements FlushService {
     }
 
     @Override
-    public void write(String metaId, String event, boolean success, List<Map> data, String error) {
+    public void write(String metaId, String tableGroupId, String targetTableGroupName, String event, boolean success, List<Map> data, String error) {
         long now = Instant.now().toEpochMilli();
         data.forEach(r -> {
             Map<String, Object> row = new HashMap();
             row.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             row.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
+            row.put(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
+            row.put(ConfigConstant.DATA_TARGET_TABLE_NAME, targetTableGroupName);
             row.put(ConfigConstant.DATA_EVENT, event);
             row.put(ConfigConstant.DATA_ERROR, substring(error));
             try {

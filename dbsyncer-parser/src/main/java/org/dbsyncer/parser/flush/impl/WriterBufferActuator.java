@@ -105,6 +105,8 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
                 picker.getTargetFields(), targetDataList, bufferActuatorConfig.getWriterBatchCount()));
 
         // 6、持久化同步结果
+        result.setTableGroupId(tableGroup.getId());
+        result.setTargetTableGroupName(targetTableName);
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, event);
 
         // 7、执行批量处理后的
