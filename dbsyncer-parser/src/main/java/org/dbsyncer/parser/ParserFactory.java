@@ -27,13 +27,7 @@ import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
-import org.dbsyncer.parser.model.BatchWriter;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.FieldMapping;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Picker;
-import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.model.Task;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.strategy.ParserStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
@@ -153,8 +147,8 @@ public class ParserFactory implements Parser {
         AbstractConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
-        Table sTable = new Table(sourceTable.getName(), sourceTable.getType(), new ArrayList<>());
-        Table tTable = new Table(targetTable.getName(), targetTable.getType(), new ArrayList<>());
+        Table sTable = new Table(sourceTable.getName(), sourceTable.getType(), sourceTable.getPrimaryKey(), new ArrayList<>());
+        Table tTable = new Table(targetTable.getName(), targetTable.getType(), targetTable.getPrimaryKey(), new ArrayList<>());
         List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
         if (!CollectionUtils.isEmpty(fieldMapping)) {
             fieldMapping.forEach(m -> {
@@ -253,7 +247,7 @@ public class ParserFactory implements Parser {
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
         // 获取同步字段
         Picker picker = new Picker(fieldMapping);
-        String pk = picker.getSourcePrimaryKeyName(sConfig);
+        String pk = picker.getSourcePrimaryKeyName(tableGroup.getSourceTable());
 
         int pageSize = mapping.getReadNum();
         int batchSize = mapping.getBatchNum();
@@ -287,7 +281,7 @@ public class ParserFactory implements Parser {
 
             // 5、写入目标源
             BatchWriter batchWriter = new BatchWriter(tConnectorMapper, command, tTableName, event, picker.getTargetFields(), target, batchSize);
-            Result writer = writeBatch(context, batchWriter, executorService);
+            Result result = writeBatch(context, batchWriter, executorService);
 
             // 6、同步完成后通知插件做后置处理
             pluginFactory.postProcessAfter(group.getPlugin(), context);
@@ -295,7 +289,9 @@ public class ParserFactory implements Parser {
             // 7、更新结果
             task.setPageIndex(task.getPageIndex() + 1);
             task.setCursor(getLastCursor(data, pk));
-            flush(task, writer);
+            result.setTableGroupId(tableGroup.getId());
+            result.setTargetTableGroupName(tTableName);
+            flush(task, result);
 
             // 8、判断尾页
             if (data.size() < pageSize) {
@@ -394,10 +390,10 @@ public class ParserFactory implements Parser {
      * 更新缓存
      *
      * @param task
-     * @param writer
+     * @param result
      */
-    private void flush(Task task, Result writer) {
-        flushStrategy.flushFullData(task.getId(), writer, ConnectorConstant.OPERTION_INSERT);
+    private void flush(Task task, Result result) {
+        flushStrategy.flushFullData(task.getId(), result, ConnectorConstant.OPERTION_INSERT);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(Instant.now().toEpochMilli());

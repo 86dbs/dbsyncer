@@ -154,6 +154,8 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
         }
         m.sourceTable = m.sourceTable.join('|');
         m.targetTable = m.targetTable.join('|');
+        m.sourceTablePK = $("#sourceTablePK").val();
+        m.targetTablePK = $("#targetTablePK").val();
 
         doPoster("/tableGroup/add", m, function (data) {
             if (data.success == true) {

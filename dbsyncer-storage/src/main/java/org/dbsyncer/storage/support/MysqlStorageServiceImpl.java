@@ -1,14 +1,11 @@
 package org.dbsyncer.storage.support;
 
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
-import org.dbsyncer.connector.config.WriterBatchConfig;
-import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.Database;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
@@ -22,6 +19,7 @@ import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Param;
 import org.dbsyncer.storage.query.Query;
+import org.dbsyncer.storage.util.UnderlineToCamelUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +31,9 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
+import java.sql.SQLSyntaxErrorException;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -60,10 +58,10 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     private static final String PREFIX_TABLE = "dbsyncer_";
     private static final String SHOW_TABLE = "show tables where Tables_in_%s = \"%s\"";
+    private static final String SHOW_DATA_TABLE = "show tables where Tables_in_%s like \"%s\"";
     private static final String DROP_TABLE = "DROP TABLE %s";
     private static final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
-    private static final String TABLE_CREATE_TIME = "create_time";
-    private static final String TABLE_UPDATE_TIME = "update_time";
+    private static final String UPGRADE_SQL = "upgrade";
 
     @Autowired
     private ConnectorFactory connectorFactory;
@@ -85,6 +83,9 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(config);
         connector = (Database) connectorFactory.getConnector(connectorMapper);
         database = DatabaseUtil.getDatabaseName(config.getUrl());
+
+        // 升级脚本
+        initUpgradeSql();
 
         // 初始化表
         initTable();
@@ -120,8 +121,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     public void update(StorageEnum type, String table, Map params) {
         Executor executor = getExecutor(type, table);
         String sql = executor.getUpdate();
-        List<Object> args = getParams(executor, params);
-        args.add(params.get(ConfigConstant.CONFIG_MODEL_ID));
+        List<Object> args = getUpdateArgs(executor, params);
         int update = connectorMapper.execute(databaseTemplate -> databaseTemplate.update(sql, args.toArray()));
         Assert.isTrue(update > 0, "update failed");
     }
@@ -159,12 +159,9 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     public void insertData(StorageEnum type, String table, List<Map> list) {
         if (!CollectionUtils.isEmpty(list)) {
             Executor executor = getExecutor(type, table);
-            Map<String, String> command = new HashMap<>();
-            command.put(SqlBuilderEnum.INSERT.getName(), executor.getInsert());
-            ConnectorMapper connectorMapper = connectorFactory.connect(config);
-            connectorFactory.writer(connectorMapper, new WriterBatchConfig(table, ConnectorConstant.OPERTION_INSERT, command, executor.getFields(), list));
+            List<Object[]> args = list.stream().map(row -> getArgs(executor, row).toArray()).collect(Collectors.toList());
+            connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(executor.getInsert(), args));
         }
-
     }
 
     @Override
@@ -180,7 +177,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     private int executeInsert(StorageEnum type, String table, Map params) {
         Executor executor = getExecutor(type, table);
         String sql = executor.getInsert();
-        List<Object> args = getParams(executor, params);
+        List<Object> args = getArgs(executor, params);
         int insert = connectorMapper.execute(databaseTemplate -> databaseTemplate.update(sql, args.toArray()));
         if (insert < 1) {
             logger.error("table:{}, params:{}");
@@ -189,8 +186,24 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         return insert;
     }
 
-    private List<Object> getParams(Executor executor, Map params) {
-        return executor.getFieldPairs().stream().map(p -> params.get(p.labelName)).collect(Collectors.toList());
+    private List<Object> getArgs(Executor executor, Map params) {
+        return executor.getFields().stream().map(f -> params.get(f.getLabelName())).collect(Collectors.toList());
+    }
+
+    private List<Object> getUpdateArgs(Executor executor, Map params) {
+        List<Object> args = new ArrayList<>();
+        Object pk = null;
+        for (Field f : executor.getFields()) {
+            if (f.isPk()) {
+                pk = params.get(f.getLabelName());
+                continue;
+            }
+            args.add(params.get(f.getLabelName()));
+        }
+
+        Assert.notNull(pk, "The primaryKey is null.");
+        args.add(pk);
+        return args;
     }
 
     private Executor getExecutor(StorageEnum type, String table) {
@@ -207,7 +220,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                 return tables.get(table);
             }
             // 不存在
-            Executor newExecutor = new Executor(executor.getGroup(), executor.getFieldPairs(), executor.getFields(), executor.isDynamicTableName(), executor.isSystemType(), executor.isOrderByUpdateTime());
+            Executor newExecutor = new Executor(executor.getGroup(), executor.getFields(), executor.isDynamicTableName(), executor.isSystemType(), executor.isOrderByUpdateTime());
             createTableIfNotExist(table, newExecutor);
 
             tables.putIfAbsent(table, newExecutor);
@@ -231,9 +244,13 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     }
 
     private String buildQueryCountSql(Query query, Executor executor, List<Object> args) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(1) FROM ").append(executor.getTable());
+        StringBuilder queryCount = new StringBuilder();
+        queryCount.append("SELECT COUNT(1) FROM (");
+        StringBuilder sql = new StringBuilder("SELECT 1 FROM `").append(executor.getTable()).append("`");
         buildQuerySqlWithParams(query, args, sql);
-        return sql.toString();
+        queryCount.append(sql);
+        queryCount.append(" GROUP BY `ID`) DBSYNCER_T");
+        return queryCount.toString();
     }
 
     private void buildQuerySqlWithParams(Query query, List<Object> args, StringBuilder sql) {
@@ -253,26 +270,53 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         }
     }
 
+    private void initUpgradeSql() {
+        // show tables where Tables_in_dbsyncer like "dbsyncer_data%"
+        String sql = String.format(SHOW_DATA_TABLE, database, PREFIX_TABLE.concat(StorageEnum.DATA.getType()).concat("%"));
+        Map<String, String> tables = null;
+        try {
+            tables = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForMap(sql));
+        } catch (EmptyResultDataAccessException e) {
+            // 没有可更新的表
+        }
+        if (CollectionUtils.isEmpty(tables)) {
+            return;
+        }
+        tables.values().forEach(table -> {
+            try {
+                String ddl = readSql(UPGRADE_SQL, true, table);
+                executeSql(ddl);
+                logger.info(ddl);
+            } catch (Exception e) {
+                if (e.getCause() instanceof SQLSyntaxErrorException) {
+                    SQLSyntaxErrorException ex = (SQLSyntaxErrorException) e.getCause();
+                    if (ex.getSQLState().equals("42S21")) {
+                        // ignore
+                        return;
+                    }
+                }
+                logger.error(e.getMessage());
+            }
+        });
+    }
+
     private void initTable() throws InterruptedException {
         // 配置
         FieldBuilder builder = new FieldBuilder();
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
-        List<FieldPair> configFields = builder.getFieldPairs();
-        List<Field> cfields = builder.getFields();
+        List<Field> configFields = builder.getFields();
 
         // 日志
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
-        List<FieldPair> logFields = builder.getFieldPairs();
-        List<Field> lfields = builder.getFields();
+        List<Field> logFields = builder.getFields();
 
         // 数据
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.DATA_SUCCESS, ConfigConstant.DATA_EVENT, ConfigConstant.DATA_ERROR, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
-        List<FieldPair> dataFields = builder.getFieldPairs();
-        List<Field> dfields = builder.getFields();
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.DATA_SUCCESS, ConfigConstant.DATA_TABLE_GROUP_ID, ConfigConstant.DATA_TARGET_TABLE_NAME, ConfigConstant.DATA_EVENT, ConfigConstant.DATA_ERROR, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        List<Field> dataFields = builder.getFields();
 
-        tables.putIfAbsent(StorageEnum.CONFIG.getType(), new Executor(StorageEnum.CONFIG, configFields, cfields, false, true, true));
-        tables.putIfAbsent(StorageEnum.LOG.getType(), new Executor(StorageEnum.LOG, logFields, lfields, false, true, false));
-        tables.putIfAbsent(StorageEnum.DATA.getType(), new Executor(StorageEnum.DATA, dataFields, dfields, true, false, false));
+        tables.putIfAbsent(StorageEnum.CONFIG.getType(), new Executor(StorageEnum.CONFIG, configFields, false, true, true));
+        tables.putIfAbsent(StorageEnum.LOG.getType(), new Executor(StorageEnum.LOG, logFields, false, true, false));
+        tables.putIfAbsent(StorageEnum.DATA.getType(), new Executor(StorageEnum.DATA, dataFields, true, false, false));
         // 创建表
         tables.forEach((tableName, e) -> {
             if (!e.isDynamicTableName()) {
@@ -292,16 +336,12 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForMap(sql));
         } catch (EmptyResultDataAccessException e) {
             // 不存在表
-            String type = executor.getGroup().getType();
-            String template = PREFIX_TABLE.concat(type);
-            String ddl = readSql("/".concat(template).concat(".sql"));
-            // 动态替换表名
-            ddl = executor.isDynamicTableName() ? StringUtil.replaceOnce(ddl, template, table) : ddl;
+            String ddl = readSql(executor.getGroup().getType(), executor.isDynamicTableName(), table);
             logger.info(ddl);
             executeSql(ddl);
         }
 
-        List<Field> fields = executor.getFieldPairs().stream().map(p -> new Field(p.columnName, p.labelName)).collect(Collectors.toList());
+        List<Field> fields = executor.getFields();
         final SqlBuilderConfig config = new SqlBuilderConfig(connector, "", table, ConfigConstant.CONFIG_MODEL_ID, fields, "", "");
 
         String query = SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config);
@@ -311,7 +351,10 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         executor.setTable(table).setQuery(query).setInsert(insert).setUpdate(update).setDelete(delete);
     }
 
-    private String readSql(String filePath) {
+    private String readSql(String type, boolean dynamicTableName, String table) {
+        String template = PREFIX_TABLE.concat(type);
+        String filePath = "/".concat(template).concat(".sql");
+
         StringBuilder res = new StringBuilder();
         InputStream in = null;
         InputStreamReader isr = null;
@@ -330,6 +373,11 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             close(bf);
             close(isr);
             close(in);
+        }
+
+        // 动态替换表名
+        if (dynamicTableName) {
+            return StringUtil.replaceOnce(res.toString(), template, table);
         }
         return res.toString();
     }
@@ -369,51 +417,30 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         this.config = config;
     }
 
-    final class FieldPair {
-        String columnName;
-        String labelName;
-
-        public FieldPair(String columnName) {
-            this.columnName = columnName;
-            this.labelName = columnName;
-        }
-
-        public FieldPair(String columnName, String labelName) {
-            this.columnName = columnName;
-            this.labelName = labelName;
-        }
-    }
-
     final class FieldBuilder {
-        Map<String, FieldPair> fieldPairMap = new ConcurrentHashMap<>();
-        Map<String, Field> fieldMap = new ConcurrentHashMap<>();
-        List<FieldPair> fieldPairs;
+        Map<String, Field> fieldMap;
         List<Field> fields;
 
         public FieldBuilder() {
-            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_ID, new FieldPair(ConfigConstant.CONFIG_MODEL_ID));
-            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_NAME, new FieldPair(ConfigConstant.CONFIG_MODEL_NAME));
-            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_TYPE, new FieldPair(ConfigConstant.CONFIG_MODEL_TYPE));
-            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_CREATE_TIME, new FieldPair(TABLE_CREATE_TIME, ConfigConstant.CONFIG_MODEL_CREATE_TIME));
-            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, new FieldPair(TABLE_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME));
-            fieldPairMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_JSON, new FieldPair(ConfigConstant.CONFIG_MODEL_JSON));
-            fieldPairMap.putIfAbsent(ConfigConstant.DATA_SUCCESS, new FieldPair(ConfigConstant.DATA_SUCCESS));
-            fieldPairMap.putIfAbsent(ConfigConstant.DATA_EVENT, new FieldPair(ConfigConstant.DATA_EVENT));
-            fieldPairMap.putIfAbsent(ConfigConstant.DATA_ERROR, new FieldPair(ConfigConstant.DATA_ERROR));
-
-            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_ID, new Field(ConfigConstant.CONFIG_MODEL_ID, "VARCHAR", Types.VARCHAR, true));
-            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_NAME, new Field(ConfigConstant.CONFIG_MODEL_NAME, "VARCHAR", Types.VARCHAR));
-            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_TYPE, new Field(ConfigConstant.CONFIG_MODEL_TYPE, "VARCHAR", Types.VARCHAR));
-            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_CREATE_TIME, new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, "BIGINT", Types.BIGINT));
-            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, new Field(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, "BIGINT", Types.BIGINT));
-            fieldMap.putIfAbsent(ConfigConstant.CONFIG_MODEL_JSON, new Field(ConfigConstant.CONFIG_MODEL_JSON, "LONGVARCHAR", Types.LONGVARCHAR));
-            fieldMap.putIfAbsent(ConfigConstant.DATA_SUCCESS, new Field(ConfigConstant.DATA_SUCCESS, "INTEGER", Types.INTEGER));
-            fieldMap.putIfAbsent(ConfigConstant.DATA_EVENT, new Field(ConfigConstant.DATA_EVENT, "VARCHAR", Types.VARCHAR));
-            fieldMap.putIfAbsent(ConfigConstant.DATA_ERROR, new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR));
-        }
-
-        public List<FieldPair> getFieldPairs() {
-            return fieldPairs;
+            fieldMap = Stream.of(
+                    new Field(ConfigConstant.CONFIG_MODEL_ID, "VARCHAR", Types.VARCHAR, true),
+                    new Field(ConfigConstant.CONFIG_MODEL_NAME, "VARCHAR", Types.VARCHAR),
+                    new Field(ConfigConstant.CONFIG_MODEL_TYPE, "VARCHAR", Types.VARCHAR),
+                    new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, "BIGINT", Types.BIGINT),
+                    new Field(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, "BIGINT", Types.BIGINT),
+                    new Field(ConfigConstant.CONFIG_MODEL_JSON, "LONGVARCHAR", Types.LONGVARCHAR),
+                    new Field(ConfigConstant.DATA_SUCCESS, "INTEGER", Types.INTEGER),
+                    new Field(ConfigConstant.DATA_TABLE_GROUP_ID, "VARCHAR", Types.VARCHAR),
+                    new Field(ConfigConstant.DATA_TARGET_TABLE_NAME, "VARCHAR", Types.VARCHAR),
+                    new Field(ConfigConstant.DATA_EVENT, "VARCHAR", Types.VARCHAR),
+                    new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR)
+            ).map(field -> {
+                field.setLabelName(field.getName());
+                // 转换列下划线
+                String labelName = UnderlineToCamelUtils.camelToUnderline(field.getName());
+                field.setName(labelName);
+                return field;
+            }).collect(Collectors.toMap(Field::getLabelName, field -> field));
         }
 
         public List<Field> getFields() {
@@ -421,11 +448,12 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         }
 
         public void build(String... fieldNames) {
-            fieldPairs = new ArrayList<>(fieldNames.length);
             fields = new ArrayList<>(fieldNames.length);
             Stream.of(fieldNames).parallel().forEach(k -> {
-                fieldPairs.add(fieldPairMap.get(k));
-                fields.add(fieldMap.get(k));
+                if (fieldMap.containsKey(k)) {
+                    Field field = fieldMap.get(k);
+                    fields.add(field);
+                }
             });
         }
     }
@@ -437,15 +465,13 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         private String update;
         private String delete;
         private StorageEnum group;
-        private List<FieldPair> fieldPairs;
         private List<Field> fields;
         private boolean dynamicTableName;
         private boolean systemType;
         private boolean orderByUpdateTime;
 
-        public Executor(StorageEnum group, List<FieldPair> fieldPairs, List<Field> fields, boolean dynamicTableName, boolean systemType, boolean orderByUpdateTime) {
+        public Executor(StorageEnum group, List<Field> fields, boolean dynamicTableName, boolean systemType, boolean orderByUpdateTime) {
             this.group = group;
-            this.fieldPairs = fieldPairs;
             this.fields = fields;
             this.dynamicTableName = dynamicTableName;
             this.systemType = systemType;
@@ -503,10 +529,6 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
         public List<Field> getFields() {
             return fields;
-        }
-
-        public List<FieldPair> getFieldPairs() {
-            return fieldPairs;
         }
 
         public boolean isDynamicTableName() {

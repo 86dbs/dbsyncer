@@ -31,7 +31,7 @@ public final class DisableFullFlushStrategy extends AbstractFlushStrategy {
         if (!CollectionUtils.isEmpty(result.getFailData())) {
             logger.error(result.getError().toString());
             LogType logType = LogType.TableGroupLog.FULL_FAILED;
-            logService.log(logType, "%s:%s", logType.getMessage(), result.getError().toString());
+            logService.log(logType, "%s:%s:%s", result.getTargetTableGroupName(), logType.getMessage(), result.getError().toString());
         }
     }
 
