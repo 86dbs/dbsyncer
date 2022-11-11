@@ -3,6 +3,7 @@ package org.dbsyncer.biz.checker.impl.connector;
 import org.dbsyncer.biz.enums.OracleIncrementEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
@@ -33,6 +34,14 @@ public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
 
     @Autowired
     private Manager manager;
+
+    @Override
+    public void modify(DatabaseConfig connectorConfig, Map<String, String> params) {
+        super.modify(connectorConfig, params);
+
+        String schema = params.get("schema");
+        connectorConfig.setSchema(StringUtil.isBlank(schema) ? connectorConfig.getUsername().toUpperCase() : schema.toUpperCase());
+    }
 
     @Override
     public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup) {

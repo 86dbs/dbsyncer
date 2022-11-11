@@ -211,9 +211,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         map.put(delete, buildSql(delete, commandConfig, schema, null));
 
         // 获取查询数据行是否存在
-        String pk = StringUtil.isNotBlank(commandConfig.getTable().getPrimaryKey())?commandConfig.getTable().getPrimaryKey(): findOriginalTablePrimaryKey(commandConfig, quotation);
-        StringBuilder queryCount = new StringBuilder().append("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(
-                commandConfig.getTable().getName()).append(quotation).append(" WHERE ").append(pk).append(" = ?");
+        String tableName = commandConfig.getTable().getName();
+        String pk = findOriginalTablePrimaryKey(commandConfig);
+        StringBuilder queryCount = new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(tableName).append(quotation)
+                .append(" WHERE ").append(quotation).append(pk).append(quotation).append(" = ?");
         String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
         map.put(queryCountExist, queryCount.toString());
         return map;
@@ -270,28 +271,29 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * 返回主键名称
      *
      * @param commandConfig
-     * @param quotation
      * @return
      */
-    protected String findOriginalTablePrimaryKey(CommandConfig commandConfig, String quotation) {
+    protected String findOriginalTablePrimaryKey(CommandConfig commandConfig) {
+        // 获取自定义主键
+        String pk = commandConfig.getTable().getPrimaryKey();
+        if (StringUtil.isNotBlank(pk)) {
+            return pk;
+        }
+
+        // 获取表原始主键
         Table table = commandConfig.getOriginalTable();
         if (null != table) {
             List<Field> column = table.getColumn();
             if (!CollectionUtils.isEmpty(column)) {
                 for (Field c : column) {
                     if (c.isPk()) {
-                        return new StringBuilder(quotation).append(c.getName()).append(quotation).toString();
+                        return c.getName();
                     }
                 }
             }
         }
 
-        DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
-        if (StringUtil.isBlank(cfg.getPrimaryKey())) {
-            throw new ConnectorException("Table primary key can not be empty.");
-        }
-
-        return new StringBuilder(quotation).append(cfg.getPrimaryKey()).append(quotation).toString();
+        throw new ConnectorException(String.format("The primary key of table '%s' is null.", commandConfig.getTable().getName()));
     }
 
     /**
@@ -382,13 +384,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
         String table = commandConfig.getTable().getName();
-        String pk = StringUtil.isNotBlank(commandConfig.getTable().getPrimaryKey())?commandConfig.getTable().getPrimaryKey():findOriginalTablePrimaryKey(commandConfig, quotation);
+        String pk = findOriginalTablePrimaryKey(commandConfig);
         StringBuilder queryCount = new StringBuilder();
         queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
         if (StringUtil.isNotBlank(queryFilterSql)) {
             queryCount.append(queryFilterSql);
         }
-        queryCount.append(" GROUP BY ").append(pk).append(") DBSYNCER_T");
+        queryCount.append(" GROUP BY ").append(quotation).append(pk).append(quotation).append(") DBSYNCER_T");
         return queryCount.toString();
     }
 
@@ -508,7 +510,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             throw new ConnectorException("Table name can not be empty.");
         }
         if (StringUtil.isBlank(pk)) {
-            pk = StringUtil.isNotBlank(commandConfig.getTable().getPrimaryKey())?commandConfig.getTable().getPrimaryKey():findOriginalTablePrimaryKey(commandConfig, "");
+            pk = findOriginalTablePrimaryKey(commandConfig);
         }
 
         SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());

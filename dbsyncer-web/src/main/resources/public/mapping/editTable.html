@@ -8,7 +8,7 @@
         <div class="col-md-5">
             <label class="col-sm-3 control-label text-right">数据源表</label>
             <div class="col-sm-9">
-                <select id="sourceTable" class="form-control select-control-table">
+                <select id="sourceTable" class="form-control select-control-table" multiple="multiple">
                     <option th:each="t,s:${mapping?.sourceConnector?.table}" th:text="${t?.name} + ' ('+${t?.type}+')'"
                             th:value="${t?.name}"/>
                 </select>
@@ -23,7 +23,7 @@
             <div class="form-group">
                 <label class="col-sm-3 control-label text-right">目标源表</label>
                 <div class="col-sm-9">
-                    <select id="targetTable" class="form-control select-control-table">
+                    <select id="targetTable" class="form-control select-control-table" multiple="multiple">
                         <option th:each="t,s:${mapping?.targetConnector?.table}"
                                 th:text="${t?.name} + ' ('+${t?.type}+')'" th:value="${t?.name}"/>
                     </select>
@@ -34,9 +34,9 @@
     <div class="row">
         <!-- 数据源配置 -->
         <div class="col-md-5">
-            <label class="col-sm-3 control-label text-right">源表主键</label>
+            <label class="col-sm-3 control-label text-right">标记主键 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="如果使用的数据源表或视图没有主键，可以自定义主键（大小写必须一致）"></i></label>
             <div class="col-sm-9">
-                <input id="sourceTablePrimary" class="form-control" type="text" />
+                <input id="sourceTablePK" class="form-control" type="text" />
             </div>
         </div>
         <!-- 中间图标 -->
@@ -46,9 +46,9 @@
         <!-- 目标源配置 -->
         <div class="col-md-5">
             <div class="form-group">
-                <label class="col-sm-3 control-label text-right">目标表主键</label>
+                <label class="col-sm-3 control-label text-right">标记主键 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="如果使用的目标源表或视图没有主键，可以自定义主键（大小写必须一致）"></i></label>
                 <div class="col-sm-9">
-                    <input id="targetTablePrimary" class="form-control" type="text" />
+                    <input id="targetTablePK" class="form-control" type="text" />
                 </div>
             </div>
         </div>

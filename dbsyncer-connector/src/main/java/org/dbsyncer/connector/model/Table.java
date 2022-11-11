@@ -39,25 +39,17 @@ public class Table {
     }
 
     public Table(String name) {
-        this.name = name;
-        this.type = TableTypeEnum.TABLE.getCode();
+        this(name, TableTypeEnum.TABLE.getCode());
     }
 
     public Table(String name, String type) {
-        this.name = name;
-        this.type = type;
+        this(name, type, null, null);
     }
 
-    public Table(String name, String type, List<Field> column) {
+    public Table(String name, String type, String primaryKey, List<Field> column) {
         this.name = name;
         this.type = type;
-        this.column = column;
-    }
-
-    public Table(String name, String primaryKey, String type, List<Field> column) {
-        this.name = name;
         this.primaryKey = primaryKey;
-        this.type = type;
         this.column = column;
     }
 

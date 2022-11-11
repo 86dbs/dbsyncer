@@ -58,8 +58,4 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         return String.format("SELECT NUM_ROWS FROM ALL_TABLES WHERE OWNER = '%s' AND TABLE_NAME = '%s'", cfg.getUsername().toUpperCase(), table.getName());
     }
 
-    @Override
-    protected String getSchema(DatabaseConfig config) {
-        return StringUtil.isBlank(config.getSchema())?config.getUsername().toUpperCase():config.getSchema().toUpperCase();
-    }
 }
