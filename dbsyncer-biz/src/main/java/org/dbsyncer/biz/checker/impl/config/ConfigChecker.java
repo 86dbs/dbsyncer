@@ -84,6 +84,10 @@ public class ConfigChecker extends AbstractChecker {
             config.setRefreshInterval(time);
         }
 
+        // 刷新邮箱配置(有配置则发邮件)
+        String email = params.get("email");
+        config.setEmail(email);
+
         // 修改基本配置
         this.modifyConfigModel(config, params);
         return config;

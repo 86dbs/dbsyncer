@@ -11,6 +11,9 @@ public class Config extends ConfigModel {
 
     private int refreshInterval = 5;
 
+    // 同步失败发送邮箱,多个以分号分割
+    private String email;
+
     public String getPassword() {
         return password;
     }
@@ -25,5 +28,13 @@ public class Config extends ConfigModel {
 
     public void setRefreshInterval(int refreshInterval) {
         this.refreshInterval = refreshInterval;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }
