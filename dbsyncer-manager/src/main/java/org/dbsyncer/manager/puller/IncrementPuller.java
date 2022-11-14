@@ -18,7 +18,7 @@ import org.dbsyncer.listener.quartz.AbstractQuartzExtractor;
 import org.dbsyncer.listener.quartz.TableGroupCommand;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.ManagerException;
-import org.dbsyncer.manager.config.FieldPicker;
+import org.dbsyncer.manager.model.FieldPicker;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;

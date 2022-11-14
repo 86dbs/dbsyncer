@@ -1,15 +1,15 @@
-package org.dbsyncer.manager.template.impl;
+package org.dbsyncer.manager.template;
 
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.manager.GroupStrategy;
 import org.dbsyncer.manager.ManagerException;
-import org.dbsyncer.manager.config.OperationCallBack;
-import org.dbsyncer.manager.config.OperationConfig;
-import org.dbsyncer.manager.config.QueryConfig;
+import org.dbsyncer.manager.command.PersistenceCommand;
+import org.dbsyncer.manager.enums.CommandEnum;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
-import org.dbsyncer.manager.template.GroupStrategy;
-import org.dbsyncer.manager.template.Handler;
+import org.dbsyncer.manager.model.OperationConfig;
+import org.dbsyncer.manager.model.QueryConfig;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.storage.StorageService;
@@ -21,11 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 操作配置模板
@@ -89,9 +85,9 @@ public final class OperationTemplate {
         // 2、持久化
         Map<String, Object> params = ConfigModelUtil.convertModelToMap(model);
         logger.debug("params:{}", params);
-        Handler handler = config.getHandler();
-        Assert.notNull(handler, "Handler can not be null.");
-        handler.execute(new OperationCallBack(storageService, StorageEnum.CONFIG, params));
+        CommandEnum cmd = config.getCommandEnum();
+        Assert.notNull(cmd, "CommandEnum can not be null.");
+        cmd.getCommandExecutor().execute(new PersistenceCommand(storageService, StorageEnum.CONFIG, params));
 
         // 3、缓存
         cache(model, config.getGroupStrategyEnum());

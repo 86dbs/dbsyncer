@@ -1,16 +1,16 @@
-package org.dbsyncer.manager.config;
+package org.dbsyncer.manager.command;
 
-import org.dbsyncer.manager.template.Callback;
+import org.dbsyncer.manager.Command;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.model.*;
 
-public class PreloadCallBack implements Callback {
+public class PreloadCommand implements Command {
 
     private Parser parser;
 
     private String json;
 
-    public PreloadCallBack(Parser parser, String json) {
+    public PreloadCommand(Parser parser, String json) {
         this.parser = parser;
         this.json = json;
     }

@@ -1,6 +1,6 @@
 package org.dbsyncer.manager.strategy;
 
-import org.dbsyncer.manager.template.GroupStrategy;
+import org.dbsyncer.manager.GroupStrategy;
 import org.dbsyncer.parser.model.ConfigModel;
 
 /**

@@ -1,12 +1,12 @@
-package org.dbsyncer.manager.config;
+package org.dbsyncer.manager.command;
 
-import org.dbsyncer.manager.template.Callback;
+import org.dbsyncer.manager.Command;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageEnum;
 
 import java.util.Map;
 
-public class OperationCallBack implements Callback {
+public class PersistenceCommand implements Command {
 
     private StorageService storageService;
 
@@ -14,18 +14,20 @@ public class OperationCallBack implements Callback {
 
     private Map params;
 
-    public OperationCallBack(StorageService storageService, StorageEnum type, Map params) {
+    public PersistenceCommand(StorageService storageService, StorageEnum type, Map params) {
         this.storageService = storageService;
         this.type = type;
         this.params = params;
     }
 
-    public void add() {
+    public boolean add() {
         storageService.add(type, params);
+        return true;
     }
 
-    public void edit() {
+    public boolean edit() {
         storageService.edit(type, params);
+        return true;
     }
 
 }

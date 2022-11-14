@@ -1,16 +1,15 @@
-package org.dbsyncer.manager.template.impl;
+package org.dbsyncer.manager.template;
 
 import com.alibaba.fastjson.JSONObject;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.manager.Manager;
-import org.dbsyncer.manager.config.OperationConfig;
-import org.dbsyncer.manager.config.PreloadCallBack;
-import org.dbsyncer.manager.config.QueryConfig;
-import org.dbsyncer.manager.enums.HandlerEnum;
-import org.dbsyncer.manager.template.Handler;
-import org.dbsyncer.manager.template.impl.OperationTemplate.Group;
+import org.dbsyncer.manager.command.PreloadCommand;
+import org.dbsyncer.manager.enums.CommandEnum;
+import org.dbsyncer.manager.model.OperationConfig;
+import org.dbsyncer.manager.model.QueryConfig;
+import org.dbsyncer.manager.template.OperationTemplate.Group;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -55,10 +54,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     @Autowired
     private OperationTemplate operationTemplate;
 
-    public void execute(HandlerEnum handlerEnum) {
+    public void execute(CommandEnum commandEnum) {
         Query query = new Query();
         query.setType(StorageEnum.CONFIG);
-        String modelType = handlerEnum.getModelType();
+        String modelType = commandEnum.getModelType();
         query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, modelType);
 
         int pageNum = 1;
@@ -72,12 +71,11 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             if (CollectionUtils.isEmpty(data)) {
                 break;
             }
-            Handler handler = handlerEnum.getHandler();
             data.forEach(map -> {
                 String json = (String) map.get(ConfigConstant.CONFIG_MODEL_JSON);
-                ConfigModel model = (ConfigModel) handler.execute(new PreloadCallBack(parser, json));
+                ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(parser, json));
                 if (null != model) {
-                    operationTemplate.cache(model, handlerEnum.getGroupStrategyEnum());
+                    operationTemplate.cache(model, commandEnum.getGroupStrategyEnum());
                 }
             });
             total += paging.getTotal();
@@ -93,23 +91,23 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         }
 
         // Load configs
-        reload(map, HandlerEnum.PRELOAD_CONFIG);
+        reload(map, CommandEnum.PRELOAD_CONFIG);
         // Load connectors
-        reload(map, HandlerEnum.PRELOAD_CONNECTOR);
+        reload(map, CommandEnum.PRELOAD_CONNECTOR);
         // Load mappings
-        reload(map, HandlerEnum.PRELOAD_MAPPING);
+        reload(map, CommandEnum.PRELOAD_MAPPING);
         // Load metas
-        reload(map, HandlerEnum.PRELOAD_META);
+        reload(map, CommandEnum.PRELOAD_META);
         // Load projectGroups
-        reload(map, HandlerEnum.PRELOAD_PROJECT_GROUP);
+        reload(map, CommandEnum.PRELOAD_PROJECT_GROUP);
         launch();
     }
 
-    private void reload(Map<String, JSONObject> map, HandlerEnum handlerEnum) {
-        reload(map, handlerEnum, handlerEnum.getModelType());
+    private void reload(Map<String, JSONObject> map, CommandEnum commandEnum) {
+        reload(map, commandEnum, commandEnum.getModelType());
     }
 
-    private void reload(Map<String, JSONObject> map, HandlerEnum handlerEnum, String groupId) {
+    private void reload(Map<String, JSONObject> map, CommandEnum commandEnum, String groupId) {
         JSONObject config = map.get(groupId);
         Group group = JsonUtil.jsonToObj(config.toJSONString(), Group.class);
         if (null == group) {
@@ -121,15 +119,14 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             return;
         }
 
-        Handler handler = handlerEnum.getHandler();
         for (String e : index) {
             JSONObject m = map.get(e);
-            ConfigModel model = (ConfigModel) handler.execute(new PreloadCallBack(parser, m.toJSONString()));
-            operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD, handlerEnum.getGroupStrategyEnum()));
+            ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(parser, m.toJSONString()));
+            operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, commandEnum.getGroupStrategyEnum()));
             // Load tableGroups
-            if (HandlerEnum.PRELOAD_MAPPING == handlerEnum) {
-                handlerEnum = HandlerEnum.PRELOAD_TABLE_GROUP;
-                reload(map, handlerEnum, operationTemplate.getGroupId(model, handlerEnum.getGroupStrategyEnum()));
+            if (CommandEnum.PRELOAD_MAPPING == commandEnum) {
+                commandEnum = CommandEnum.PRELOAD_TABLE_GROUP;
+                reload(map, commandEnum, operationTemplate.getGroupId(model, commandEnum.getGroupStrategyEnum()));
             }
         }
     }
@@ -155,7 +152,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     @Override
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
         // Load configModels
-        Arrays.stream(HandlerEnum.values()).filter(handlerEnum -> handlerEnum.isPreload()).forEach(handlerEnum -> execute(handlerEnum));
+        Arrays.stream(CommandEnum.values()).filter(commandEnum -> commandEnum.isPreload()).forEach(commandEnum -> execute(commandEnum));
 
         // Load plugins
         manager.loadPlugins();
