@@ -11,12 +11,11 @@ import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
-import org.dbsyncer.manager.config.OperationConfig;
-import org.dbsyncer.manager.config.QueryConfig;
+import org.dbsyncer.manager.enums.CommandEnum;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
-import org.dbsyncer.manager.enums.HandlerEnum;
-import org.dbsyncer.manager.puller.Puller;
-import org.dbsyncer.manager.template.impl.OperationTemplate;
+import org.dbsyncer.manager.model.OperationConfig;
+import org.dbsyncer.manager.model.QueryConfig;
+import org.dbsyncer.manager.template.OperationTemplate;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.enums.MetaEnum;
@@ -70,12 +69,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public String addProjectGroup(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD));
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
     }
 
     @Override
     public String editProjectGroup(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT));
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
     }
 
     @Override
@@ -124,12 +123,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public String addConnector(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD));
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
     }
 
     @Override
     public String editConnector(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT));
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
     }
 
     @Override
@@ -168,12 +167,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public String addMapping(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD));
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
     }
 
     @Override
     public String editMapping(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT));
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
     }
 
     @Override
@@ -197,12 +196,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public String addTableGroup(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD, GroupStrategyEnum.TABLE));
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, GroupStrategyEnum.TABLE));
     }
 
     @Override
     public String editTableGroup(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT, GroupStrategyEnum.TABLE));
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT, GroupStrategyEnum.TABLE));
     }
 
     @Override
@@ -255,12 +254,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public String addMeta(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD));
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
     }
 
     @Override
     public String editMeta(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT));
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
     }
 
     @Override
@@ -283,12 +282,12 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public String addConfig(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_ADD));
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
     }
 
     @Override
     public String editConfig(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, HandlerEnum.OPR_EDIT));
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
     }
 
     @Override

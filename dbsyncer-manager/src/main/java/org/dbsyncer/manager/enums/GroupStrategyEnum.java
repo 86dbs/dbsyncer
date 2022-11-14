@@ -1,8 +1,8 @@
 package org.dbsyncer.manager.enums;
 
+import org.dbsyncer.manager.GroupStrategy;
 import org.dbsyncer.manager.strategy.DefaultGroupStrategy;
 import org.dbsyncer.manager.strategy.TableGroupStrategy;
-import org.dbsyncer.manager.template.GroupStrategy;
 
 /**
  * @author AE86

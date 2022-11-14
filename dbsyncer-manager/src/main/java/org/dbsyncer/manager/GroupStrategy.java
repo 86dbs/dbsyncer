@@ -1,4 +1,4 @@
-package org.dbsyncer.manager.template;
+package org.dbsyncer.manager;
 
 import org.dbsyncer.parser.model.ConfigModel;
 

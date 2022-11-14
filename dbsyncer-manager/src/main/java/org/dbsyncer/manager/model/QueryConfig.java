@@ -1,4 +1,4 @@
-package org.dbsyncer.manager.config;
+package org.dbsyncer.manager.model;
 
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.parser.model.ConfigModel;

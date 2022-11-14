@@ -1,7 +1,7 @@
 package org.dbsyncer.manager.strategy;
 
+import org.dbsyncer.manager.GroupStrategy;
 import org.dbsyncer.manager.ManagerException;
-import org.dbsyncer.manager.template.GroupStrategy;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;

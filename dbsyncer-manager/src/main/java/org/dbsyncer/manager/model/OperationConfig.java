@@ -1,8 +1,7 @@
-package org.dbsyncer.manager.config;
+package org.dbsyncer.manager.model;
 
+import org.dbsyncer.manager.enums.CommandEnum;
 import org.dbsyncer.manager.enums.GroupStrategyEnum;
-import org.dbsyncer.manager.enums.HandlerEnum;
-import org.dbsyncer.manager.template.Handler;
 import org.dbsyncer.parser.model.ConfigModel;
 
 public class OperationConfig {
@@ -11,12 +10,12 @@ public class OperationConfig {
 
     private ConfigModel model;
 
-    private GroupStrategyEnum groupStrategyEnum = GroupStrategyEnum.DEFAULT;
+    private GroupStrategyEnum groupStrategyEnum;
 
-    private HandlerEnum handlerEnum;
+    private CommandEnum commandEnum;
 
     public OperationConfig(String id) {
-        this.id = id;
+        this(id, GroupStrategyEnum.DEFAULT);
     }
 
     public OperationConfig(String id, GroupStrategyEnum groupStrategyEnum) {
@@ -24,14 +23,13 @@ public class OperationConfig {
         this.groupStrategyEnum = groupStrategyEnum;
     }
 
-    public OperationConfig(ConfigModel model, HandlerEnum handlerEnum) {
-        this.model = model;
-        this.handlerEnum = handlerEnum;
+    public OperationConfig(ConfigModel model, CommandEnum commandEnum) {
+        this(model, commandEnum, GroupStrategyEnum.DEFAULT);
     }
 
-    public OperationConfig(ConfigModel model, HandlerEnum handlerEnum, GroupStrategyEnum groupStrategyEnum) {
+    public OperationConfig(ConfigModel model, CommandEnum commandEnum, GroupStrategyEnum groupStrategyEnum) {
         this.model = model;
-        this.handlerEnum = handlerEnum;
+        this.commandEnum = commandEnum;
         this.groupStrategyEnum = groupStrategyEnum;
     }
 
@@ -47,7 +45,7 @@ public class OperationConfig {
         return groupStrategyEnum;
     }
 
-    public Handler getHandler() {
-        return handlerEnum.getHandler();
+    public CommandEnum getCommandEnum() {
+        return commandEnum;
     }
 }

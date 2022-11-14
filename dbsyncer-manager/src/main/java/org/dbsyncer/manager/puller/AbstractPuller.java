@@ -1,6 +1,7 @@
 package org.dbsyncer.manager.puller;
 
 import org.dbsyncer.common.event.ClosedEvent;
+import org.dbsyncer.manager.Puller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 

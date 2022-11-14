@@ -6,7 +6,7 @@ import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.ConfigVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.Manager;
-import org.dbsyncer.manager.template.impl.PreloadTemplate;
+import org.dbsyncer.manager.template.PreloadTemplate;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.Config;
