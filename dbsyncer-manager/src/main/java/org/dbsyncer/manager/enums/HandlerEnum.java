@@ -2,8 +2,6 @@ package org.dbsyncer.manager.enums;
 
 import org.dbsyncer.manager.config.OperationCallBack;
 import org.dbsyncer.manager.config.PreloadCallBack;
-import org.dbsyncer.manager.handler.AbstractOperationHandler;
-import org.dbsyncer.manager.handler.AbstractPreloadHandler;
 import org.dbsyncer.manager.template.Handler;
 import org.dbsyncer.storage.constant.ConfigConstant;
 
@@ -17,29 +15,29 @@ public enum HandlerEnum {
     /**
      * 添加
      */
-    OPR_ADD("add", new AbstractOperationHandler() {
+    OPR_ADD("add", new Handler<OperationCallBack>() {
         @Override
-        protected void handle(OperationCallBack operationCallBack) {
-            operationCallBack.add();
+        public Object execute(OperationCallBack operationCallBack) {
+            return operationCallBack.add();
         }
     }),
 
     /**
      * 修改
      */
-    OPR_EDIT("edit", new AbstractOperationHandler() {
+    OPR_EDIT("edit", new Handler<OperationCallBack>() {
         @Override
-        protected void handle(OperationCallBack operationCallBack) {
-            operationCallBack.edit();
+        public Object execute(OperationCallBack operationCallBack) {
+            return operationCallBack.edit();
         }
     }),
 
     /**
      * 预加载Connector
      */
-    PRELOAD_CONNECTOR(ConfigConstant.CONNECTOR, true, new AbstractPreloadHandler() {
+    PRELOAD_CONNECTOR(ConfigConstant.CONNECTOR, true, new Handler<PreloadCallBack>() {
         @Override
-        protected Object preload(PreloadCallBack preloadCallBack) {
+        public Object execute(PreloadCallBack preloadCallBack) {
             return preloadCallBack.parseConnector();
         }
     }),
@@ -47,9 +45,9 @@ public enum HandlerEnum {
     /**
      * 预加载Mapping
      */
-    PRELOAD_MAPPING(ConfigConstant.MAPPING, true, new AbstractPreloadHandler() {
+    PRELOAD_MAPPING(ConfigConstant.MAPPING, true, new Handler<PreloadCallBack>() {
         @Override
-        protected Object preload(PreloadCallBack preloadCallBack) {
+        public Object execute(PreloadCallBack preloadCallBack) {
             return preloadCallBack.parseMapping();
         }
     }),
@@ -57,9 +55,9 @@ public enum HandlerEnum {
     /**
      * 预加载TableGroup
      */
-    PRELOAD_TABLE_GROUP(ConfigConstant.TABLE_GROUP, true, new AbstractPreloadHandler() {
+    PRELOAD_TABLE_GROUP(ConfigConstant.TABLE_GROUP, true, new Handler<PreloadCallBack>() {
         @Override
-        protected Object preload(PreloadCallBack preloadCallBack) {
+        public Object execute(PreloadCallBack preloadCallBack) {
             return preloadCallBack.parseTableGroup();
         }
     }, GroupStrategyEnum.TABLE),
@@ -67,9 +65,9 @@ public enum HandlerEnum {
     /**
      * 预加载Meta
      */
-    PRELOAD_META(ConfigConstant.META, true, new AbstractPreloadHandler() {
+    PRELOAD_META(ConfigConstant.META, true, new Handler<PreloadCallBack>() {
         @Override
-        protected Object preload(PreloadCallBack preloadCallBack) {
+        public Object execute(PreloadCallBack preloadCallBack) {
             return preloadCallBack.parseMeta();
         }
     }),
@@ -77,9 +75,9 @@ public enum HandlerEnum {
     /**
      * 预加载Config
      */
-    PRELOAD_CONFIG(ConfigConstant.CONFIG, true, new AbstractPreloadHandler() {
+    PRELOAD_CONFIG(ConfigConstant.CONFIG, true, new Handler<PreloadCallBack>() {
         @Override
-        protected Object preload(PreloadCallBack preloadCallBack) {
+        public Object execute(PreloadCallBack preloadCallBack) {
             return preloadCallBack.parseConfig();
         }
     }),
@@ -87,9 +85,9 @@ public enum HandlerEnum {
     /**
      * 预加载ProjectGroup
      */
-    PRELOAD_PROJECT_GROUP(ConfigConstant.PROJECT_GROUP, true, new AbstractPreloadHandler(){
+    PRELOAD_PROJECT_GROUP(ConfigConstant.PROJECT_GROUP, true, new Handler<PreloadCallBack>() {
         @Override
-        protected Object preload(PreloadCallBack preloadCallBack) {
+        public Object execute(PreloadCallBack preloadCallBack) {
             return preloadCallBack.parseProjectGroup();
         }
     });
@@ -100,7 +98,7 @@ public enum HandlerEnum {
     private GroupStrategyEnum groupStrategyEnum;
 
     HandlerEnum(String modelType, Handler handler) {
-        this(modelType, false, handler, null);
+        this(modelType, false, handler);
     }
 
     HandlerEnum(String modelType, boolean preload, Handler handler) {

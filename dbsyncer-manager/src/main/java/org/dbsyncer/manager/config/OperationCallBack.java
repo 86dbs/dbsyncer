@@ -6,7 +6,7 @@ import org.dbsyncer.storage.enums.StorageEnum;
 
 import java.util.Map;
 
-public class OperationCallBack implements Callback {
+public class OperationCallBack extends Callback {
 
     private StorageService storageService;
 
@@ -20,12 +20,14 @@ public class OperationCallBack implements Callback {
         this.params = params;
     }
 
-    public void add() {
+    public boolean add() {
         storageService.add(type, params);
+        return true;
     }
 
-    public void edit() {
+    public boolean edit() {
         storageService.edit(type, params);
+        return true;
     }
 
 }
