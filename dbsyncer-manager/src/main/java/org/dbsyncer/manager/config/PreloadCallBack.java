@@ -4,7 +4,7 @@ import org.dbsyncer.manager.template.Callback;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.model.*;
 
-public class PreloadCallBack implements Callback {
+public class PreloadCallBack extends Callback {
 
     private Parser parser;
 

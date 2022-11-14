@@ -2,8 +2,6 @@ package org.dbsyncer.manager.enums;
 
 import org.dbsyncer.manager.config.OperationCallBack;
 import org.dbsyncer.manager.config.PreloadCallBack;
-import org.dbsyncer.manager.handler.AbstractOperationHandler;
-import org.dbsyncer.manager.handler.AbstractPreloadHandler;
 import org.dbsyncer.manager.template.Handler;
 import org.dbsyncer.storage.constant.ConfigConstant;
 
@@ -17,82 +15,42 @@ public enum HandlerEnum {
     /**
      * 添加
      */
-    OPR_ADD("add", new AbstractOperationHandler() {
-        @Override
-        protected void handle(OperationCallBack operationCallBack) {
-            operationCallBack.add();
-        }
-    }),
+    OPR_ADD("add", (callback) -> ((OperationCallBack) callback).add()),
 
     /**
      * 修改
      */
-    OPR_EDIT("edit", new AbstractOperationHandler() {
-        @Override
-        protected void handle(OperationCallBack operationCallBack) {
-            operationCallBack.edit();
-        }
-    }),
+    OPR_EDIT("edit", (callback) -> ((OperationCallBack) callback).edit()),
 
     /**
      * 预加载Connector
      */
-    PRELOAD_CONNECTOR(ConfigConstant.CONNECTOR, true, new AbstractPreloadHandler() {
-        @Override
-        protected Object preload(PreloadCallBack preloadCallBack) {
-            return preloadCallBack.parseConnector();
-        }
-    }),
+    PRELOAD_CONNECTOR(ConfigConstant.CONNECTOR, true, (callback) -> ((PreloadCallBack) callback).parseConnector()),
 
     /**
      * 预加载Mapping
      */
-    PRELOAD_MAPPING(ConfigConstant.MAPPING, true, new AbstractPreloadHandler() {
-        @Override
-        protected Object preload(PreloadCallBack preloadCallBack) {
-            return preloadCallBack.parseMapping();
-        }
-    }),
+    PRELOAD_MAPPING(ConfigConstant.MAPPING, true, (callback) -> ((PreloadCallBack) callback).parseMapping()),
 
     /**
      * 预加载TableGroup
      */
-    PRELOAD_TABLE_GROUP(ConfigConstant.TABLE_GROUP, true, new AbstractPreloadHandler() {
-        @Override
-        protected Object preload(PreloadCallBack preloadCallBack) {
-            return preloadCallBack.parseTableGroup();
-        }
-    }, GroupStrategyEnum.TABLE),
+    PRELOAD_TABLE_GROUP(ConfigConstant.TABLE_GROUP, true, GroupStrategyEnum.TABLE, (callback) -> ((PreloadCallBack) callback).parseTableGroup()),
 
     /**
      * 预加载Meta
      */
-    PRELOAD_META(ConfigConstant.META, true, new AbstractPreloadHandler() {
-        @Override
-        protected Object preload(PreloadCallBack preloadCallBack) {
-            return preloadCallBack.parseMeta();
-        }
-    }),
+    PRELOAD_META(ConfigConstant.META, true, (callback) -> ((PreloadCallBack) callback).parseMeta()),
 
     /**
      * 预加载Config
      */
-    PRELOAD_CONFIG(ConfigConstant.CONFIG, true, new AbstractPreloadHandler() {
-        @Override
-        protected Object preload(PreloadCallBack preloadCallBack) {
-            return preloadCallBack.parseConfig();
-        }
-    }),
+    PRELOAD_CONFIG(ConfigConstant.CONFIG, true, (callback) -> ((PreloadCallBack) callback).parseConfig()),
 
     /**
      * 预加载ProjectGroup
      */
-    PRELOAD_PROJECT_GROUP(ConfigConstant.PROJECT_GROUP, true, new AbstractPreloadHandler(){
-        @Override
-        protected Object preload(PreloadCallBack preloadCallBack) {
-            return preloadCallBack.parseProjectGroup();
-        }
-    });
+    PRELOAD_PROJECT_GROUP(ConfigConstant.PROJECT_GROUP, true, (callback) -> ((PreloadCallBack) callback).parseProjectGroup());
 
     private String modelType;
     private boolean preload;
@@ -100,18 +58,18 @@ public enum HandlerEnum {
     private GroupStrategyEnum groupStrategyEnum;
 
     HandlerEnum(String modelType, Handler handler) {
-        this(modelType, false, handler, null);
+        this(modelType, false, handler);
     }
 
     HandlerEnum(String modelType, boolean preload, Handler handler) {
-        this(modelType, preload, handler, GroupStrategyEnum.DEFAULT);
+        this(modelType, preload, GroupStrategyEnum.DEFAULT, handler);
     }
 
-    HandlerEnum(String modelType, boolean preload, Handler handler, GroupStrategyEnum groupStrategyEnum) {
+    HandlerEnum(String modelType, boolean preload, GroupStrategyEnum groupStrategyEnum, Handler handler) {
         this.modelType = modelType;
         this.preload = preload;
-        this.handler = handler;
         this.groupStrategyEnum = groupStrategyEnum;
+        this.handler = handler;
     }
 
     public String getModelType() {

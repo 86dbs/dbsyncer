@@ -1,7 +1,6 @@
 package org.dbsyncer.manager.template;
 
-public interface Handler {
+public interface Handler<C extends Callback> {
 
-    Object execute(Callback call);
-
+    Object execute(C callback);
 }
