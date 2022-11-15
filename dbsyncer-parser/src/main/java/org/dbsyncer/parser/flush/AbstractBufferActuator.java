@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -37,7 +38,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     @Autowired
     private BufferActuatorConfig bufferActuatorConfig;
 
-    private Queue<Request> buffer;
+    private BlockingQueue<Request> buffer;
 
     private final Lock lock = new ReentrantLock(true);
 
@@ -81,7 +82,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
      * @param response
      * @return
      */
-    protected boolean skipPartition(Request nextRequest, Response response){
+    protected boolean skipPartition(Request nextRequest, Response response) {
         return false;
     }
 
@@ -96,8 +97,12 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     }
 
     @Override
-    public void offer(BufferRequest request) {
-        buffer.offer((Request) request);
+    public boolean offer(BufferRequest request) {
+        boolean offer = buffer.offer((Request) request);
+        if (!offer) {
+            logger.warn("[{}]缓存队列容量已达上限，建议修改参数[dbsyncer.parser.flush.buffer.actuator.queue-capacity={}], ", this.getClass().getSimpleName(), getQueueCapacity());
+        }
+        return offer;
     }
 
     @Override
@@ -139,7 +144,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
                 batchCounter.incrementAndGet();
 
                 Request next = queue.peek();
-                if(null != next && skipPartition(next, response)){
+                if (null != next && skipPartition(next, response)) {
                     break;
                 }
             }
