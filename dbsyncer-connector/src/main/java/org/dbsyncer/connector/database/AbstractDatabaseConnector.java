@@ -18,6 +18,7 @@ import org.dbsyncer.connector.model.Filter;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.DatabaseUtil;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
@@ -212,7 +213,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 获取查询数据行是否存在
         String tableName = commandConfig.getTable().getName();
-        String pk = findOriginalTablePrimaryKey(commandConfig);
+        String pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getTable());
         StringBuilder queryCount = new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(tableName).append(quotation)
                 .append(" WHERE ").append(quotation).append(pk).append(quotation).append(" = ?");
         String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
@@ -265,35 +266,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getSchema(DatabaseConfig config) {
         return config.getSchema();
-    }
-
-    /**
-     * 返回主键名称
-     *
-     * @param commandConfig
-     * @return
-     */
-    protected String findOriginalTablePrimaryKey(CommandConfig commandConfig) {
-        // 获取自定义主键
-        String pk = commandConfig.getTable().getPrimaryKey();
-        if (StringUtil.isNotBlank(pk)) {
-            return pk;
-        }
-
-        // 获取表原始主键
-        Table table = commandConfig.getOriginalTable();
-        if (null != table) {
-            List<Field> column = table.getColumn();
-            if (!CollectionUtils.isEmpty(column)) {
-                for (Field c : column) {
-                    if (c.isPk()) {
-                        return c.getName();
-                    }
-                }
-            }
-        }
-
-        throw new ConnectorException(String.format("The primary key of table '%s' is null.", commandConfig.getTable().getName()));
     }
 
     /**
@@ -384,7 +356,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
         String table = commandConfig.getTable().getName();
-        String pk = findOriginalTablePrimaryKey(commandConfig);
+        String pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getTable());
         StringBuilder queryCount = new StringBuilder();
         queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
         if (StringUtil.isNotBlank(queryFilterSql)) {
@@ -510,7 +482,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             throw new ConnectorException("Table name can not be empty.");
         }
         if (StringUtil.isBlank(pk)) {
-            pk = findOriginalTablePrimaryKey(commandConfig);
+            pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(table);
         }
 
         SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());

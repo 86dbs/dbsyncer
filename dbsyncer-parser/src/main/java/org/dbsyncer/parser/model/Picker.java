@@ -2,8 +2,6 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.connector.model.Table;
-import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,18 +53,6 @@ public class Picker {
                 target.put(tField.getName(), v);
             }
         }
-    }
-
-    public String getSourcePrimaryKeyName(Table sourceTable) {
-        for (Field f : sourceFields) {
-            if (null != f && f.isPk()) {
-                return f.getName();
-            }
-        }
-
-        String primaryKey = sourceTable.getPrimaryKey();
-        Assert.hasText(primaryKey, "主键为空");
-        return primaryKey;
     }
 
     public List<Field> getSourceFields() {
