@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -178,12 +179,13 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         private static final int FLUSH_DELAYED_SECONDS = 30;
         protected Mapping mapping;
         protected String metaId;
-        private LocalDateTime updateTime = LocalDateTime.now();
 
         @Override
         public void flushEvent(Map<String, String> snapshot) {
             // 30s内更新，执行写入
-            if (updateTime.isAfter(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS))) {
+            Meta meta = manager.getMeta(metaId);
+            LocalDateTime lastSeconds = LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS);
+            if(meta.getUpdateTime() > Timestamp.valueOf(lastSeconds).getTime()){
                 if (!CollectionUtils.isEmpty(snapshot)) {
                     logger.debug("{}", snapshot);
                 }
@@ -198,11 +200,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
                 meta.setSnapshot(snapshot);
                 manager.editMeta(meta);
             }
-        }
-
-        @Override
-        public void refreshFlushEventUpdateTime() {
-            updateTime = LocalDateTime.now();
         }
 
         @Override
@@ -253,9 +250,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
             // 处理过程有异常向上抛
             parser.execute(mapping, tableGroup, rowChangedEvent);
-
-            // 标记有变更记录
-            refreshFlushEventUpdateTime();
         }
     }
 
@@ -314,8 +308,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
                         parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);
                     }
                 });
-                // 标记有变更记录
-                refreshFlushEventUpdateTime();
                 eventCounter.set(0);
                 return;
             }

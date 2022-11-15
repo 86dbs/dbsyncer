@@ -10,6 +10,8 @@ import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
+
 /**
  * @author AE86
  * @version 1.0.0
@@ -56,6 +58,7 @@ public abstract class AbstractFlushStrategy implements FlushStrategy {
         Assert.notNull(meta, "Meta can not be null.");
         meta.getFail().getAndAdd(writer.getFailData().size());
         meta.getSuccess().getAndAdd(writer.getSuccessData().size());
+        meta.setUpdateTime(Instant.now().toEpochMilli());
     }
 
 }

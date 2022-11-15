@@ -31,11 +31,6 @@ public interface Event {
     void forceFlushEvent(Map<String,String> snapshot);
 
     /**
-     * 刷新事件变更时间
-     */
-    void refreshFlushEventUpdateTime();
-
-    /**
      * 异常事件
      *
      * @param e
