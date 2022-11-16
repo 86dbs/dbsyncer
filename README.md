@@ -123,13 +123,8 @@ $ ./build.sh
 
 ## 🐞常见问题
 * MySQL无法连接。默认使用的驱动版本为5.1.40，如果为mysql8需要手动替换驱动 [mysql-connector-java-8.0.21.jar](https://gitee.com/ghi/dbsyncer/attach_files) 
-* SQLServer无法连接。类似解决办法：[驱动程序无法通过使用安全套接字层(SSL)加密与 SQL Server 建立安全连接。错误:“The server selected protocol version TLS10 is not accepted by client preferences [TLS12]”](https://gitee.com/ghi/dbsyncer/issues/I4PL46?from=project-issue) 
-* 启动脚本编码格式有误，在linux系统中，打包后，在bin文件夹下运行startup.sh前，要使用vi操作
-```bash
-vi startup.sh
-:set ff=unix
-:wq
-```
+* SQLServer无法连接。案例：[驱动程序无法通过使用安全套接字层(SSL)加密与 SQL Server 建立安全连接。错误:“The server selected protocol version TLS10 is not accepted by client preferences [TLS12]”](https://gitee.com/ghi/dbsyncer/issues/I4PL46?from=project-issue) 
+* 同步数据乱码。案例：[mysql8表导入sqlserver2008R2后，sqlserver表nvarchar字段内容为乱码](https://gitee.com/ghi/dbsyncer/issues/I4JXY0) 
 * 有其他问题、建议或需求（如想支持某中间件，记得补充使用的版本号），欢迎大家提[【issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!
 
 ## 🏆性能测试
