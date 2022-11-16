@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -160,6 +161,8 @@ public class ShardBinlogTest {
         data.put("name", key + "中文");
         data.put("age", 88);
         data.put("bd", new BigDecimal(88));
+        data.put("bigInt", new BigInteger("123456789876543210"));
+        data.put("localTime", LocalDateTime.now());
         data.put("sex", 1);
         data.put("f", 88.88f);
         data.put("d", 999.99d);
