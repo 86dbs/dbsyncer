@@ -27,7 +27,8 @@ public interface BufferActuator {
      * 提交任务
      *
      * @param request
+     * @return true/false
      */
-    void offer(BufferRequest request);
+    boolean offer(BufferRequest request);
 
 }

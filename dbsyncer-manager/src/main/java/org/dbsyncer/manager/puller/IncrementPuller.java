@@ -9,6 +9,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
@@ -22,7 +23,10 @@ import org.dbsyncer.manager.model.FieldPicker;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,9 +36,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -142,8 +153,8 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         if (ListenerTypeEnum.isTiming(listenerType)) {
             AbstractQuartzExtractor extractor = listener.getExtractor(ListenerTypeEnum.TIMING, connectorConfig.getConnectorType(), AbstractQuartzExtractor.class);
             extractor.setCommands(list.stream().map(t -> {
-                Picker picker = new Picker(t.getFieldMapping());
-                return new TableGroupCommand(picker.getSourcePrimaryKeyName(t.getSourceTable()), t.getCommand());
+                String pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(t.getSourceTable());
+                return new TableGroupCommand(pk, t.getCommand());
             }).collect(Collectors.toList()));
             setExtractorConfig(extractor, connectorConfig, listenerConfig, meta.getSnapshot(), new QuartzListener(mapping, list));
             return extractor;
@@ -178,12 +189,13 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         private static final int FLUSH_DELAYED_SECONDS = 30;
         protected Mapping mapping;
         protected String metaId;
-        private LocalDateTime updateTime = LocalDateTime.now();
 
         @Override
         public void flushEvent(Map<String, String> snapshot) {
             // 30s内更新，执行写入
-            if (updateTime.isAfter(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS))) {
+            Meta meta = manager.getMeta(metaId);
+            LocalDateTime lastSeconds = LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS);
+            if(meta.getUpdateTime() > Timestamp.valueOf(lastSeconds).getTime()){
                 if (!CollectionUtils.isEmpty(snapshot)) {
                     logger.debug("{}", snapshot);
                 }
@@ -198,11 +210,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
                 meta.setSnapshot(snapshot);
                 manager.editMeta(meta);
             }
-        }
-
-        @Override
-        public void refreshFlushEventUpdateTime() {
-            updateTime = LocalDateTime.now();
         }
 
         @Override
@@ -253,9 +260,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
             // 处理过程有异常向上抛
             parser.execute(mapping, tableGroup, rowChangedEvent);
-
-            // 标记有变更记录
-            refreshFlushEventUpdateTime();
         }
     }
 
@@ -314,8 +318,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
                         parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);
                     }
                 });
-                // 标记有变更记录
-                refreshFlushEventUpdateTime();
                 eventCounter.set(0);
                 return;
             }

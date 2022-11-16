@@ -154,7 +154,8 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
 
         @Override
         public void run() {
-            if (running || (binlogRecorderConfig.getBatchCount() * 2) + getQueue().size() >= getQueueCapacity()) {
+            // 读取任务数 >= 1/2缓存同步队列容量则继续等待
+            if (running || binlogRecorderConfig.getBatchCount() + getQueue().size() >= getQueueCapacity() / 2) {
                 return;
             }
 
@@ -205,13 +206,14 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
             final List<Message> messages = new ArrayList<>(size);
             final List<Document> updateDocs = new ArrayList<>(size);
             final Term[] deleteIds = new Term[size];
+            boolean existProcessing = false;
             for (int i = 0; i < size; i++) {
                 Map row = list.get(i);
                 String id = (String) row.get(BinlogConstant.BINLOG_ID);
                 Integer status = (Integer) row.get(BinlogConstant.BINLOG_STATUS);
                 BytesRef ref = (BytesRef) row.get(BinlogConstant.BINLOG_CONTENT);
                 if (BinlogConstant.PROCESSING == status) {
-                    logger.warn("存在超时未处理数据，正在重试，建议优化配置参数[max-processing-seconds={}].", binlogRecorderConfig.getMaxProcessingSeconds());
+                    existProcessing = true;
                 }
                 deleteIds[i] = new Term(BinlogConstant.BINLOG_ID, id);
                 String newId = String.valueOf(snowflakeIdWorker.nextId());
@@ -224,6 +226,9 @@ public abstract class AbstractBinlogRecorder<Message> implements BinlogRecorder,
                 } catch (InvalidProtocolBufferException e) {
                     logger.error(e.getMessage());
                 }
+            }
+            if (existProcessing) {
+                logger.warn("存在超时未处理数据，正在重试，建议优化配置参数[max-processing-seconds={}].", binlogRecorderConfig.getMaxProcessingSeconds());
             }
 
             // 如果在更新消息状态的过程中服务被中止，为保证数据的安全性，重启后消息可能会同步2次）

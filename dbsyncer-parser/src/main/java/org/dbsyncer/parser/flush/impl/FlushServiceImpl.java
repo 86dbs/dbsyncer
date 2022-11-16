@@ -76,7 +76,11 @@ public class FlushServiceImpl implements FlushService {
                 row.put(ConfigConstant.CONFIG_MODEL_JSON, r.toString());
             }
             row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
-            storageBufferActuator.offer(new StorageRequest(metaId, row));
+
+            // 缓存队列满时，打印日志
+            if (!storageBufferActuator.offer(new StorageRequest(metaId, row))) {
+                logger.error("缓存队列容量已达上限, 无法持久化:{}", r);
+            }
         });
     }
 
@@ -86,7 +90,7 @@ public class FlushServiceImpl implements FlushService {
      * @param error
      * @return
      */
-    private String substring(String error){
+    private String substring(String error) {
         return StringUtil.substring(error, 0, flushDataConfig.getMaxErrorLength());
     }
 

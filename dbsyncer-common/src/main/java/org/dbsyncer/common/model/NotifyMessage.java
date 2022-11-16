@@ -24,27 +24,34 @@ public class NotifyMessage {
      */
     private String receiver;
 
+    public static NotifyMessage newBuilder() {
+        return new NotifyMessage();
+    }
+
     public String getTitle() {
         return title;
     }
 
-    public void setTitle(String title) {
+    public NotifyMessage setTitle(String title) {
         this.title = title;
+        return this;
     }
 
     public String getContent() {
         return content;
     }
 
-    public void setContent(String content) {
+    public NotifyMessage setContent(String content) {
         this.content = content;
+        return this;
     }
 
     public String getReceiver() {
         return receiver;
     }
 
-    public void setReceiver(String receiver) {
+    public NotifyMessage setReceiver(String receiver) {
         this.receiver = receiver;
+        return this;
     }
 }
