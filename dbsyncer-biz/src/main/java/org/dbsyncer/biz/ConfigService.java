@@ -40,13 +40,6 @@ public interface ConfigService {
      *
      * @return
      */
-    List<ConfigVo> queryConfig();
-
-    /**
-     * 获取所有配置
-     *
-     * @return
-     */
     List<ConfigModel> getConfigModelAll();
 
     /**

@@ -47,7 +47,7 @@ public class SystemController extends BaseController {
 	@ResponseBody
 	public RestResult queryConfig(HttpServletRequest request) {
 		try {
-			return RestResult.restSuccess(configService.queryConfig());
+			return RestResult.restSuccess(configService.getConfig());
 		} catch (Exception e) {
 			logger.error(e.getLocalizedMessage(), e.getClass());
 			return RestResult.restFail(e.getMessage());

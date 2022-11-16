@@ -1,11 +1,14 @@
 package org.dbsyncer.web.controller.index;
 
 import org.dbsyncer.biz.ProjectGroupService;
+import org.dbsyncer.biz.UserService;
 import org.dbsyncer.biz.vo.ProjectGroupVo;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.biz.vo.VersionVo;
 import org.dbsyncer.common.config.AppConfig;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +23,9 @@ public class IndexController {
 
     @Autowired
     private ProjectGroupService projectGroupService;
+
+    @Autowired
+    private UserService userService;
 
     @Autowired
     private AppConfig appConfig;
@@ -39,6 +45,13 @@ public class IndexController {
     @ResponseBody
     public RestResult version() {
         return RestResult.restSuccess(new VersionVo(appConfig.getName(), appConfig.getCopyright()));
+    }
+
+    @GetMapping("/getUserInfo.json")
+    @ResponseBody
+    public RestResult getUserInfo() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return RestResult.restSuccess(userService.getUserVo(authentication.getName()));
     }
 
 }

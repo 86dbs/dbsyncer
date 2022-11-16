@@ -12,7 +12,6 @@ import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.Config;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.plugin.enums.FileSuffixEnum;
-import org.dbsyncer.storage.constant.ConfigConstant;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * @author AE86
@@ -50,10 +48,7 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public String edit(Map<String, String> params) {
         synchronized (this) {
-            Config config = manager.getConfig(ConfigConstant.CONFIG);
-            if (null == config) {
-                configChecker.checkAddConfigModel(params);
-            }
+            getConfigModel();
             ConfigModel model = configChecker.checkEditConfigModel(params);
             manager.editConfig(model);
         }
@@ -62,30 +57,18 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public ConfigVo getConfig() {
-        List<Config> all = manager.getConfigAll();
-        Config config = CollectionUtils.isEmpty(all) ? (Config) configChecker.checkAddConfigModel(new HashMap<>()) : all.get(0);
-        return convertConfig2Vo(config);
+        return convertConfig2Vo(getConfigModel());
     }
 
     @Override
     public String getPassword() {
-        List<Config> all = manager.getConfigAll();
-        Config config = CollectionUtils.isEmpty(all) ? (Config) configChecker.checkAddConfigModel(new HashMap<>()) : all.get(0);
-        return config.getPassword();
-    }
-
-    @Override
-    public List<ConfigVo> queryConfig() {
-        List<ConfigVo> list = manager.getConfigAll().stream()
-                .map(config -> convertConfig2Vo(config))
-                .collect(Collectors.toList());
-        return list;
+        return getConfigModel().getPassword();
     }
 
     @Override
     public List<ConfigModel> getConfigModelAll() {
         List<ConfigModel> list = new ArrayList<>();
-        manager.getConfigAll().forEach(config -> list.add(config));
+        list.add(getConfig());
         manager.getConnectorAll().forEach(config -> list.add(config));
         manager.getMappingAll().forEach(config -> list.add(config));
         manager.getMetaAll().forEach(config -> list.add(config));
@@ -116,6 +99,11 @@ public class ConfigServiceImpl implements ConfigService {
         } finally {
             FileUtils.deleteQuietly(file);
         }
+    }
+
+    private Config getConfigModel() {
+        List<Config> all = manager.getConfigAll();
+        return CollectionUtils.isEmpty(all) ? (Config) configChecker.checkAddConfigModel(new HashMap<>()) : all.get(0);
     }
 
     private ConfigVo convertConfig2Vo(Config config) {

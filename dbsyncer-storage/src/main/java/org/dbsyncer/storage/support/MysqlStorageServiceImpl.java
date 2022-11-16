@@ -234,9 +234,9 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         // order by updateTime,createTime desc
         sql.append(" order by ");
         if (executor.isOrderByUpdateTime()) {
-            sql.append(ConfigConstant.CONFIG_MODEL_UPDATE_TIME).append(",");
+            sql.append(UnderlineToCamelUtils.camelToUnderline(ConfigConstant.CONFIG_MODEL_UPDATE_TIME)).append(",");
         }
-        sql.append(ConfigConstant.CONFIG_MODEL_CREATE_TIME).append(" desc");
+        sql.append(UnderlineToCamelUtils.camelToUnderline(ConfigConstant.CONFIG_MODEL_CREATE_TIME)).append(" desc");
         sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
         args.add((query.getPageNum() - 1) * query.getPageSize());
         args.add(query.getPageSize());
