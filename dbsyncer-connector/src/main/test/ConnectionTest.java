@@ -1,5 +1,7 @@
 import oracle.jdbc.OracleConnection;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.RandomUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.database.ds.SimpleConnection;
@@ -107,43 +109,57 @@ public class ConnectionTest {
 
     @Test
     public void testBatchInsert() {
-        final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(createPostgresConfig());
+        final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(createMysqlConfig());
 
         long begin = Instant.now().toEpochMilli();
         final int threadSize = 10;
         final ExecutorService pool = Executors.newFixedThreadPool(threadSize);
+        //final String sql = "insert into t_course2 (id,course,score,user_id,memo) VALUES (?,?,?,?,?)";
+        final String sql = "INSERT INTO `vote_record_memory` (`id`, `user_id`, `vote_num`, `group_id`, `status`, `create_time`) VALUES (?, ?, ?, ?, ?, ?)";
 
         // 模拟1000w条数据
         List<Object[]> dataList = new ArrayList<>();
-        for (int i = 1; i <= 10000001; i++) {
-            Object[] args = new Object[5];
+        for (int i = 1; i <= 10000002; i++) {
+            // 442001, 'dA8LeJLtX9MgQgDe7H1O', 9620, 1, 2, '2022-11-17 16:35:21'
+            Object[] args = new Object[6];
             args[0] = i;
-            args[1] = "mathaaaaaaaaaaaaaaaaaa";
-            args[2] = 9999;
-            args[3] = 8888;
-            args[4] = "888899999999999999999999999999蓉儿UN是代付款房间里的解放东路来得及分类的恢复力度菲欧";
+            args[1] = randomUserId(20);
+            args[2] = RandomUtil.nextInt(1, 9999);
+            args[3] = RandomUtil.nextInt(0, 3);
+            args[4] = RandomUtil.nextInt(1, 3);
+            args[5] = Timestamp.valueOf(LocalDateTime.now());
             dataList.add(args);
 
             if (i % 10000 == 0) {
                 System.out.println(i + "-----------------正在处理");
-                batchInsert(connectorMapper, pool, dataList, 1000);
+                batchInsert(connectorMapper, pool, sql, dataList, 1000);
                 dataList.clear();
             }
         }
 
         if(!CollectionUtils.isEmpty(dataList)){
             System.out.println("-----------------正在处理剩余数据");
-            batchInsert(connectorMapper, pool, dataList, 1000);
+            batchInsert(connectorMapper, pool, sql, dataList, 1000);
         }
 
         pool.shutdown();
         logger.info("总共耗时：{}秒", (Instant.now().toEpochMilli() - begin) / 1000);
     }
 
-    private void batchInsert(DatabaseConnectorMapper connectorMapper, ExecutorService pool, List<Object[]> dataList, int batchSize) {
+    private final static String STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    private String randomUserId(int i) {
+        StringBuilder s = new StringBuilder();
+        for (int j = 0; j < i; j++) {
+            int r = RandomUtil.nextInt(0, 62);
+            s.append(StringUtil.substring(STR, r, r + 1));
+        }
+        return s.toString();
+    }
+
+    private void batchInsert(DatabaseConnectorMapper connectorMapper, ExecutorService pool, String sql, List<Object[]> dataList, int batchSize) {
         int total = dataList.size();
         int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
-        final String sql = "insert into t_course2 (id,course,score,user_id,memo) VALUES (?,?,?,?,?)";
         final CountDownLatch latch = new CountDownLatch(taskSize);
         int fromIndex = 0;
         int toIndex = batchSize;
