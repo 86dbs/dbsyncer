@@ -46,23 +46,16 @@ public class ConfigServiceImpl implements ConfigService {
     private LogService logService;
 
     @Override
-    public String edit(Map<String, String> params) {
-        synchronized (this) {
-            getConfigModel();
-            ConfigModel model = configChecker.checkEditConfigModel(params);
-            manager.editConfig(model);
-        }
+    public synchronized String edit(Map<String, String> params) {
+        getConfigModel();
+        ConfigModel model = configChecker.checkEditConfigModel(params);
+        manager.editConfig(model);
         return "修改成功.";
     }
 
     @Override
     public ConfigVo getConfig() {
         return convertConfig2Vo(getConfigModel());
-    }
-
-    @Override
-    public String getPassword() {
-        return getConfigModel().getPassword();
     }
 
     @Override
@@ -101,7 +94,7 @@ public class ConfigServiceImpl implements ConfigService {
         }
     }
 
-    private Config getConfigModel() {
+    private synchronized Config getConfigModel() {
         List<Config> all = manager.getConfigAll();
         return CollectionUtils.isEmpty(all) ? (Config) configChecker.checkAddConfigModel(new HashMap<>()) : all.get(0);
     }
@@ -109,8 +102,6 @@ public class ConfigServiceImpl implements ConfigService {
     private ConfigVo convertConfig2Vo(Config config) {
         ConfigVo configVo = new ConfigVo();
         BeanUtils.copyProperties(config, configVo);
-        // 避免密码直接暴露
-        configVo.setPassword("");
         return configVo;
     }
 

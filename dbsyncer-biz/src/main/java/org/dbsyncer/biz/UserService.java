@@ -1,6 +1,8 @@
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.vo.UserVo;
+import org.dbsyncer.biz.vo.UserInfoVo;
+
+import java.util.Map;
 
 /**
  * @author AE86
@@ -10,11 +12,32 @@ import org.dbsyncer.biz.vo.UserVo;
 public interface UserService {
 
     /**
-     * 获取登录用户信息
+     * 新增用戶
+     *
+     * @param params
+     */
+    String add(Map<String, String> params);
+
+    /**
+     * 修改用戶
+     *
+     * @param params
+     */
+    String edit(Map<String, String> params);
+
+    /**
+     * 获取用户密码
+     *
+     * @return
+     */
+    String getPassword(String username);
+
+    /**
+     * 获取用户信息VO
      *
      * @param username
      * @return
      */
-    UserVo getUserVo(String username);
+    UserInfoVo getUserInfoVo(String username);
 
 }

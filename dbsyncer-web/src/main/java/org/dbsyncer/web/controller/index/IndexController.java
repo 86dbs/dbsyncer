@@ -51,7 +51,7 @@ public class IndexController {
     @ResponseBody
     public RestResult getUserInfo() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return RestResult.restSuccess(userService.getUserVo(authentication.getName()));
+        return RestResult.restSuccess(userService.getUserInfoVo(authentication.getName()));
     }
 
 }

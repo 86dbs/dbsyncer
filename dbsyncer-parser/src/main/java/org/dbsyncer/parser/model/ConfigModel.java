@@ -12,7 +12,7 @@ public class ConfigModel {
     private String id;
 
     /**
-     * connector/mapping/tableGroup/meta/config
+     * connector/mapping/tableGroup/meta/config/ProjectGroup/UserConfig
      *
      * @see ConfigConstant
      */

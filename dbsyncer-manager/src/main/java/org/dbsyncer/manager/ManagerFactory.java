@@ -68,6 +68,30 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     private Map<String, Puller> map;
 
     @Override
+    public String addUserConfig(ConfigModel model) {
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
+    }
+
+    @Override
+    public String editUserConfig(ConfigModel model) {
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
+    }
+
+    @Override
+    public UserConfig getUserConfig(String id) {
+        return operationTemplate.queryObject(UserConfig.class, id);
+    }
+
+    @Override
+    public List<UserConfig> getUserConfigAll() {
+        UserConfig userConfig = new UserConfig();
+        userConfig.setType(ConfigConstant.USER_CONFIG);
+        QueryConfig<UserConfig> queryConfig = new QueryConfig<>(userConfig);
+        List<UserConfig> userConfigs = operationTemplate.queryAll(queryConfig);
+        return userConfigs;
+    }
+
+    @Override
     public String addProjectGroup(ConfigModel model) {
         return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
     }

@@ -7,20 +7,10 @@ package org.dbsyncer.parser.model;
  */
 public class Config extends ConfigModel {
 
-    private String password;
-
     private int refreshInterval = 5;
 
     // 同步失败发送邮箱,多个以分号分割
     private String email;
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
 
     public int getRefreshInterval() {
         return refreshInterval;

@@ -27,6 +27,15 @@ import java.util.Map;
  */
 public interface Manager extends Executor {
 
+    // user
+    String addUserConfig(ConfigModel model);
+
+    String editUserConfig(ConfigModel model);
+
+    UserConfig getUserConfig(String id);
+
+    List<UserConfig> getUserConfigAll();
+
     // project group
     String addProjectGroup(ConfigModel model);
 
