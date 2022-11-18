@@ -8,4 +8,17 @@ import org.dbsyncer.parser.model.UserInfo;
  * @date 2022/11/17 0:14
  */
 public class UserInfoVo extends UserInfo {
+
+    /**
+     * 角色名称
+     */
+    private String roleName;
+
+    public String getRoleName() {
+        return roleName;
+    }
+
+    public void setRoleName(String roleName) {
+        this.roleName = roleName;
+    }
 }

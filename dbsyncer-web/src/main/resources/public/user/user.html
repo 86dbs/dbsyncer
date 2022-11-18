@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="container">
+    <form id="configEditForm" class="form-horizontal" role="form">
+        <div class="row text-center">
+            <div class="page-header">
+                <h3>用户管理</h3>
+            </div>
+        </div>
+
+        <!-- 操作 -->
+        <div class="row">
+            <div class="col-md-12">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>用户</th>
+                        <th>昵称</th>
+                        <th>角色</th>
+                        <th>密码</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody id="userList">
+                    <tr th:id="${u?.username}" th:each="u,state : ${users}">
+                        <td th:text="${state.count}"/>
+                        <td th:text="${u?.username}"/>
+                        <td th:text="${u?.nickname}"/>
+                        <td th:text="${u?.roleName}"/>
+                        <td th:text="${u?.password}"/>
+                        <td th:text="修改"/>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script th:src="@{/js/user/index.js}"></script>
+</html>

@@ -3,7 +3,7 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.UserService;
 import org.dbsyncer.biz.checker.impl.user.UserConfigChecker;
-import org.dbsyncer.biz.enums.UserEnum;
+import org.dbsyncer.biz.enums.UserRoleEnum;
 import org.dbsyncer.biz.vo.UserInfoVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.SHA1Util;
@@ -59,11 +59,11 @@ public class UserServiceImpl implements UserService {
         // 验证当前登录用户合法身份（必须是管理员操作）
         UserConfig userConfig = getUserConfig();
         UserInfo currentUser = userConfig.getUserInfo(params.get(UserService.CURRENT_USER_NAME));
-        Assert.isTrue(null == currentUser || UserEnum.isAdmin(currentUser.getRoleCode()), "No permission.");
+        Assert.isTrue(null == currentUser || UserRoleEnum.isAdmin(currentUser.getRoleCode()), "No permission.");
         // 新用户合法性（用户不能重复）
         Assert.isNull(userConfig.getUserInfo(username), "用户已存在");
         // 注册新用户
-        userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password), UserEnum.USER.getCode()));
+        userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password), UserRoleEnum.USER.getCode()));
 
         return manager.editUserConfig(userConfig);
     }
@@ -79,7 +79,7 @@ public class UserServiceImpl implements UserService {
         // 验证当前登录用户合法身份（管理员或本人操作）
         UserConfig userConfig = getUserConfig();
         UserInfo currentUser = userConfig.getUserInfo(params.get(UserService.CURRENT_USER_NAME));
-        boolean admin = null != currentUser && UserEnum.isAdmin(currentUser.getRoleCode());
+        boolean admin = null != currentUser && UserRoleEnum.isAdmin(currentUser.getRoleCode());
         boolean self = null != currentUser && StringUtil.equals(currentUser.getUsername(), username);
         Assert.isTrue(admin || self, "No permission.");
 
@@ -117,7 +117,7 @@ public class UserServiceImpl implements UserService {
         // 验证当前登录用户合法身份（必须是管理员操作）
         UserConfig userConfig = getUserConfig();
         UserInfo currentUser = userConfig.getUserInfo(params.get(UserService.CURRENT_USER_NAME));
-        Assert.isTrue(UserEnum.isAdmin(currentUser.getRoleCode()), "No permission.");
+        Assert.isTrue(UserRoleEnum.isAdmin(currentUser.getRoleCode()), "No permission.");
 
         // 删除用户
         UserInfo deleteUser = userConfig.getUserInfo(username);
@@ -155,8 +155,8 @@ public class UserServiceImpl implements UserService {
             }
 
             UserConfig userConfig = (UserConfig) userConfigChecker.checkAddConfigModel(new HashMap<>());
-            UserEnum admin = UserEnum.ADMIN;
-            userConfig.getUserInfoList().add(new UserInfo(username, admin.getName(), password, admin.getCode()));
+            UserRoleEnum admin = UserRoleEnum.ADMIN;
+            userConfig.getUserInfoList().add(new UserInfo(username, username, password, admin.getCode()));
             manager.addUserConfig(userConfig);
             return userConfig;
         }
@@ -166,7 +166,8 @@ public class UserServiceImpl implements UserService {
         UserInfoVo userInfoVo = new UserInfoVo();
         BeanUtils.copyProperties(userInfo, userInfoVo);
         // 避免密码直接暴露
-        userInfoVo.setPassword("");
+        userInfoVo.setPassword("***");
+        userInfoVo.setRoleName(UserRoleEnum.getNameByCode(userInfo.getRoleCode()));
         return userInfoVo;
     }
 

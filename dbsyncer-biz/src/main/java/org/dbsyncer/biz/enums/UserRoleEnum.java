@@ -1,5 +1,7 @@
 package org.dbsyncer.biz.enums;
 
+import org.dbsyncer.common.util.StringUtil;
+
 /**
  * 用户角色枚举
  *
@@ -7,7 +9,7 @@ package org.dbsyncer.biz.enums;
  * @version 1.0.0
  * @date 2022/11/18 23:21
  */
-public enum UserEnum {
+public enum UserRoleEnum {
 
     /**
      * 管理员
@@ -23,7 +25,7 @@ public enum UserEnum {
 
     private String name;
 
-    UserEnum(String code, String name) {
+    UserRoleEnum(String code, String name) {
         this.code = code;
         this.name = name;
     }
@@ -36,6 +38,21 @@ public enum UserEnum {
      */
     public static boolean isAdmin(String roleCode) {
         return ADMIN.getCode().equals(roleCode);
+    }
+
+    /**
+     * 获取角色名称
+     *
+     * @param roleCode
+     * @return
+     */
+    public static String getNameByCode(String roleCode) {
+        for (UserRoleEnum u : UserRoleEnum.values()) {
+            if (StringUtil.equals(roleCode, u.getCode())) {
+                return u.getName();
+            }
+        }
+        return "";
     }
 
     public String getCode() {

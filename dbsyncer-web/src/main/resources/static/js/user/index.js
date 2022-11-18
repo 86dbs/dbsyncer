@@ -1,19 +1,19 @@
 function submit(data) {
-    doPoster('/pwd/edit', data, function (data) {
+    doPoster('/user/add', data, function (data) {
         if (data.success == true) {
             doPoster("/logout", null, function (data) {
                 location.href = $basePath;
             });
         } else {
             bootGrowl(data.resultValue, "danger");
-            doLoader("/pwd");
+            doLoader("/user");
         }
     });
 }
 
 $(function () {
     //保存
-    $("#updatePwdSubBtn").click(function () {
+    $("#updateUserBtn").click(function () {
         var $form = $("#configEditForm");
         if ($form.formValidate() == true) {
             var data = $form.serializeJson();
