@@ -1,7 +1,9 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.UserInfoVo;
+import org.dbsyncer.parser.model.UserInfo;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -12,32 +14,53 @@ import java.util.Map;
 public interface UserService {
 
     /**
-     * 新增用戶
+     * 获取登录用户属性KEY
+     */
+    String CURRENT_USER_NAME = "currentUserName";
+
+    /**
+     * 新增用戶(仅管理员可以新增用户)
      *
      * @param params
      */
     String add(Map<String, String> params);
 
     /**
-     * 修改用戶
+     * 修改用戶(管理员可以修改所有用户，普通用户只能修改自己)
      *
      * @param params
      */
     String edit(Map<String, String> params);
 
     /**
-     * 获取用户密码
+     * 删除用戶(仅管理员可以删除普通用户)
      *
-     * @return
+     * @param params
      */
-    String getPassword(String username);
+    String remove(Map<String, String> params);
 
     /**
-     * 获取用户信息VO
+     * 获取登录用户密码
      *
-     * @param username
+     * @param currentUserName 登录用户
      * @return
      */
-    UserInfoVo getUserInfoVo(String username);
+    UserInfo getUserInfo(String currentUserName);
+
+    /**
+     * 获取登录用户信息VO
+     *
+     * @param currentUserName 登录用户
+     * @return
+     */
+    UserInfoVo getUserInfoVo(String currentUserName);
+
+    /**
+     * 获取所有用户信息VO(系统管理员可以查看所有用户，其他用户只能查看自己)
+     *
+     * @param currentUserName 登录用户
+     * @return
+     */
+    List<UserInfoVo> getUserInfoAll(String currentUserName);
 
 }

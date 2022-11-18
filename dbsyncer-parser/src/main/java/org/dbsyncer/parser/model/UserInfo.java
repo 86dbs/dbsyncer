@@ -22,13 +22,19 @@ public class UserInfo {
      */
     private String password;
 
+    /**
+     * 角色
+     */
+    private String roleCode;
+
     public UserInfo() {
     }
 
-    public UserInfo(String username, String nickname, String password) {
+    public UserInfo(String username, String nickname, String password, String roleCode) {
         this.username = username;
         this.nickname = nickname;
         this.password = password;
+        this.roleCode = roleCode;
     }
 
     public String getUsername() {
@@ -53,6 +59,14 @@ public class UserInfo {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getRoleCode() {
+        return roleCode;
+    }
+
+    public void setRoleCode(String roleCode) {
+        this.roleCode = roleCode;
     }
 
     @Override

@@ -46,8 +46,7 @@ public class ConfigServiceImpl implements ConfigService {
     private LogService logService;
 
     @Override
-    public synchronized String edit(Map<String, String> params) {
-        getConfigModel();
+    public String edit(Map<String, String> params) {
         ConfigModel model = configChecker.checkEditConfigModel(params);
         manager.editConfig(model);
         return "修改成功.";
@@ -61,7 +60,7 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public List<ConfigModel> getConfigModelAll() {
         List<ConfigModel> list = new ArrayList<>();
-        list.add(getConfig());
+        list.add(getConfigModel());
         manager.getConnectorAll().forEach(config -> list.add(config));
         manager.getMappingAll().forEach(config -> list.add(config));
         manager.getMetaAll().forEach(config -> list.add(config));
