@@ -4,7 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.dbsyncer.biz.ConfigService;
 import org.dbsyncer.biz.UserService;
 import org.dbsyncer.biz.checker.Checker;
-import org.dbsyncer.biz.vo.ConfigVo;
+import org.dbsyncer.biz.vo.SystemConfigVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.template.PreloadTemplate;
@@ -57,7 +57,7 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
-    public ConfigVo getConfig() {
+    public SystemConfigVo getConfig() {
         return convertConfig2Vo(getConfigModel());
     }
 
@@ -103,10 +103,10 @@ public class ConfigServiceImpl implements ConfigService {
         return CollectionUtils.isEmpty(all) ? (Config) configChecker.checkAddConfigModel(new HashMap<>()) : all.get(0);
     }
 
-    private ConfigVo convertConfig2Vo(Config config) {
-        ConfigVo configVo = new ConfigVo();
-        BeanUtils.copyProperties(config, configVo);
-        return configVo;
+    private SystemConfigVo convertConfig2Vo(Config config) {
+        SystemConfigVo systemConfigVo = new SystemConfigVo();
+        BeanUtils.copyProperties(config, systemConfigVo);
+        return systemConfigVo;
     }
 
 }

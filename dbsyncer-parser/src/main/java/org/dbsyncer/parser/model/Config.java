@@ -1,6 +1,8 @@
 package org.dbsyncer.parser.model;
 
 /**
+ * 系统配置
+ *
  * @version 1.0.0
  * @Author AE86
  * @Date 2020-05-29 20:13

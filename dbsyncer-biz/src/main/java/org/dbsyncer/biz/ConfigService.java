@@ -1,6 +1,6 @@
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.vo.ConfigVo;
+import org.dbsyncer.biz.vo.SystemConfigVo;
 import org.dbsyncer.parser.model.ConfigModel;
 
 import java.io.File;
@@ -26,7 +26,7 @@ public interface ConfigService {
      *
      * @return
      */
-    ConfigVo getConfig();
+    SystemConfigVo getConfig();
 
     /**
      * 获取所有配置

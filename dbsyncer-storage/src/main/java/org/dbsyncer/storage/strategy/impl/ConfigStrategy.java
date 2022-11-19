@@ -5,7 +5,7 @@ import org.dbsyncer.storage.strategy.Strategy;
 import org.springframework.stereotype.Component;
 
 /**
- * 配置：Connector、Mapping、TableGroup、Meta、SysConfig
+ * 配置：Connector、Mapping、TableGroup、Meta、ProjectGroup、SystemConfig、UserConfig
  *
  * @author AE86
  * @version 1.0.0

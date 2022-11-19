@@ -8,7 +8,7 @@ package org.dbsyncer.storage.enums;
 public enum StorageEnum {
 
     /**
-     * 配置：连接器、驱动、映射关系、同步信息、系统配置
+     * 配置：连接器、驱动、映射关系、同步信息、分組配置、系统配置、用戶配置
      */
     CONFIG("config"),
     /**
