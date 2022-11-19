@@ -47,7 +47,7 @@ function showResponse($form, data) {
         location.href = $basePath;
     } else {
         // 请求失败
-        $form.find("#loginTip").removeClass("loginVerifcateTextTip").addClass("loginVerifcateTextError").html(data.resultValue);
+        $form.find("#loginTip").removeClass("loginTextTip").addClass("loginTextTipError").html(data.resultValue);
         //用户名密码错误清空输入框
         $form.find('input:eq(0)').val("");
         $form.find('input:eq(1)').val("");
@@ -59,7 +59,7 @@ function login($form) {
     var username = $form.find('input[name="username"]').val();
     var password = $form.find('input[name="password"]').val();
     if (username != "" && password != "") {
-        $form.find("#loginTip").removeClass("loginVerifcateTextError").addClass("loginVerifcateTextTip").html("登录中...");
+        $form.find("#loginTip").removeClass("loginTextTipError").addClass("loginTextTip").html("登录中...");
         $form.find("input").attr("disabled", "disabled");
         // 点击确定确认登录请求后台
         $.post($basePath + "/login", {"username": username, "password": password}, function (data) {
@@ -78,20 +78,16 @@ function login($form) {
     // 对登录表单进行非空校验
     $form.find("input.required").each(function () {
         if ($(this).val() != "") {
-            $(this).removeClass("loginVerifcateError");
-            $(this).addClass("login_txtbx");
+            $(this).removeClass("loginInputError").addClass("loginInput");
             return;
         }
-        $(this).removeClass("login_txtbx");
-        $(this).addClass("loginVerifcateError");
+        $(this).removeClass("loginInput").addClass("loginInputError");
     });
     // 触发 keyup 事件
     $form.find("input.required").keyup(function () {
-        $(this).removeClass("loginVerifcateError");
-        $(this).addClass("login_txtbx");
+        $(this).removeClass("loginInputError").addClass("loginInput");
         if ($(this).val() == "") {
-            $(this).removeClass("login_txtbx");
-            $(this).addClass("loginVerifcateError");
+            $(this).removeClass("loginInput").addClass("loginInputError");
         }
     });
 }
