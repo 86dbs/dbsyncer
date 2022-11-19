@@ -1,6 +1,13 @@
 // ******************* 初始化 *****************************
 // 默认绑定菜单事件
 $(function () {
+    // 获取登录用户信息
+    doGetter("/user/getUserInfo.json",{}, function (data) {
+        if (data.success == true) {
+            const userDetail = data.resultValue.nickname + " (" + data.resultValue.roleName + ")";
+            $("#currentUser").html(userDetail);
+        }
+    });
 
     // 初始化版权信息
     doGetter("/index/version.json",{}, function (data) {

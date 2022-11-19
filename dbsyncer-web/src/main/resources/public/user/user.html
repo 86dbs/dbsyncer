@@ -10,28 +10,43 @@
             </div>
         </div>
 
+        <!-- 管理员操作区域 -->
+        <div class="form-group" th:if="${currentUser?.roleCode eq 'admin'}">
+            <div class="row">
+                <div class="col-sm-10"></div>
+                <div class="col-md-2 text-right">
+                    <button id="addUserBtn" type="button" class="btn btn-primary">
+                        <span class="fa fa-plus"></span>添加([[${users?.size()} ?: 0]])
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- 操作 -->
         <div class="row">
             <div class="col-md-12">
                 <table class="table table-hover">
                     <thead>
                     <tr>
-                        <th>序号</th>
                         <th>用户</th>
-                        <th>昵称</th>
                         <th>角色</th>
-                        <th>密码</th>
                         <th>操作</th>
                     </tr>
                     </thead>
                     <tbody id="userList">
-                    <tr th:id="${u?.username}" th:each="u,state : ${users}">
-                        <td th:text="${state.count}"/>
-                        <td th:text="${u?.username}"/>
-                        <td th:text="${u?.nickname}"/>
+                    <tr th:each="u,state : ${users}">
+                        <td th:text="${u?.username + '(' + u?.nickname + ')'}"/>
                         <td th:text="${u?.roleName}"/>
-                        <td th:text="${u?.password}"/>
-                        <td th:text="修改"/>
+                        <td>
+                            <!-- 管理员或本人权限 -->
+                            <button th:if="${currentUser?.roleCode eq 'admin' or currentUser?.username eq u?.username}" type="button" th:id="${u?.username}" class="btn btn-primary editUserBtn">
+                                <span class="fa fa-pencil"></span>修改
+                            </button>
+                            <!-- 管理员且非本人权限 -->
+                            <button th:if="${currentUser?.roleCode eq 'admin' and currentUser?.username != u?.username}" type="button" th:id="${u?.username}" class="btn btn-default removeUserBtn">
+                                <span class="fa fa-times"></span>删除
+                            </button>
+                        </td>
                     </tr>
                     </tbody>
                 </table>

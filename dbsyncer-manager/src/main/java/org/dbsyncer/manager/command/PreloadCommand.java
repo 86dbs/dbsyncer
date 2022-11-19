@@ -38,4 +38,8 @@ public class PreloadCommand implements Command {
     public Object parseProjectGroup() {
         return parser.parseObject(json, ProjectGroup.class);
     }
+
+    public Object parseUserConfig() {
+        return parser.parseObject(json, UserConfig.class);
+    }
 }

@@ -50,7 +50,12 @@ public enum CommandEnum {
     /**
      * 预加载ProjectGroup
      */
-    PRELOAD_PROJECT_GROUP(ConfigConstant.PROJECT_GROUP, true, (cmd) -> ((PreloadCommand) cmd).parseProjectGroup());
+    PRELOAD_PROJECT_GROUP(ConfigConstant.PROJECT_GROUP, true, (cmd) -> ((PreloadCommand) cmd).parseProjectGroup()),
+
+    /**
+     * 预加载用户配置
+     */
+    USER_CONFIG(ConfigConstant.USER_CONFIG, true, (cmd) -> ((PreloadCommand) cmd).parseUserConfig());
 
     private String modelType;
     private boolean preload;

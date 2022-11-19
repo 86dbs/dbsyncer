@@ -48,12 +48,13 @@ public interface UserService {
     UserInfo getUserInfo(String currentUserName);
 
     /**
-     * 获取登录用户信息VO
+     * 获取登录用户信息VO(管理员可以查看所有用户，普通用户只能查看自己)
      *
      * @param currentUserName 登录用户
+     * @param username        查询的用户
      * @return
      */
-    UserInfoVo getUserInfoVo(String currentUserName);
+    UserInfoVo getUserInfoVo(String currentUserName, String username);
 
     /**
      * 获取所有用户信息VO(系统管理员可以查看所有用户，其他用户只能查看自己)

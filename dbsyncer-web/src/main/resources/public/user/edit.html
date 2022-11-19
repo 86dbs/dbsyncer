@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="container-fluid">
+  <div class="container">
+    <form id="userEditForm" class="form-horizontal" role="form" method="post">
+      <!-- 标题 -->
+      <div class="row text-center">
+        <div class="page-header">
+          <h3>修改用户</h3>
+        </div>
+      </div>
+
+      <!-- 操作 -->
+      <div class="form-group">
+        <div class="col-md-10"></div>
+        <div class="col-md-2 text-right">
+          <button id="userSubmitBtn" type="button" class="btn btn-primary">
+            <span class="fa fa-save"></span>保存
+          </button>
+          <button id="userBackBtn" type="button" class="btn btn-default">
+            <span class="fa fa-reply"></span>返回
+          </button>
+        </div>
+      </div>
+
+      <!-- 配置 -->
+      <div class="row">
+        <div class="col-md-12">
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <h3 class="panel-title">用户配置</h3>
+            </div>
+
+            <div class="panel-body">
+              <!-- 账号 -->
+              <div class="form-group">
+                <label class="col-sm-2 control-label">账号 <strong class="driverVerifcateRequired">*</strong></label>
+                <div class="col-sm-10">
+                  <input class="form-control" name="username" type="text" maxlength="50" dbsyncer-valid="require" placeholder="账号" readonly="true" th:value="${currentUser?.username}"/>
+                </div>
+              </div>
+
+              <!-- 昵称 -->
+              <div class="form-group">
+                <label class="col-sm-2 control-label">昵称 <strong class="driverVerifcateRequired">*</strong></label>
+                <div class="col-sm-10">
+                  <input class="form-control" name="nickname" type="text" maxlength="50" dbsyncer-valid="require" placeholder="昵称" th:value="${currentUser?.nickname}"/>
+                </div>
+              </div>
+
+              <!-- 新密码 -->
+              <div class="form-group">
+                <label class="col-sm-2 control-label">新密码</label>
+                <div class="col-sm-10">
+                  <input class="form-control" name="newPwd" type="password" maxlength="50" placeholder="密码"/>
+                </div>
+              </div>
+
+              <!-- 旧密码 -->
+              <div class="form-group">
+                <label class="col-sm-2 control-label">旧密码</label>
+                <div class="col-sm-10">
+                  <input class="form-control" name="oldPwd" type="password" maxlength="50" placeholder="密码"/>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script type="text/javascript">
+  // 跳转用户管理
+  function backUserIndexPage() {
+    doLoader("/user?refresh=" + new Date().getTime());
+  }
+
+  //保存
+  $("#userSubmitBtn").click(function () {
+    const $form = $("#userEditForm");
+    if ($form.formValidate() == true) {
+      const data = $form.serializeJson();
+      doPoster("/user/edit", data, function (data) {
+        if (data.success == true) {
+          bootGrowl("修改用户成功！", "success");
+          backUserIndexPage();
+        } else {
+          bootGrowl(data.resultValue, "danger");
+        }
+      });
+    }
+  });
+
+  //返回
+  $("#userBackBtn").click(function () {
+    backUserIndexPage();
+  });
+</script>
+</html>

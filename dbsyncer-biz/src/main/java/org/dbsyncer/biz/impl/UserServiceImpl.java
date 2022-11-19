@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +62,7 @@ public class UserServiceImpl implements UserService {
         UserInfo currentUser = userConfig.getUserInfo(params.get(UserService.CURRENT_USER_NAME));
         Assert.isTrue(null == currentUser || UserRoleEnum.isAdmin(currentUser.getRoleCode()), "No permission.");
         // 新用户合法性（用户不能重复）
-        Assert.isNull(userConfig.getUserInfo(username), "用户已存在");
+        Assert.isNull(userConfig.getUserInfo(username), "用户已存在，请换个账号");
         // 注册新用户
         userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password), UserRoleEnum.USER.getCode()));
 
@@ -90,20 +91,20 @@ public class UserServiceImpl implements UserService {
         // 用户昵称
         updateUser.setNickname(nickname);
         // 修改密码
-        if(StringUtil.isNotBlank(newPwd)){
+        if (StringUtil.isNotBlank(newPwd)) {
             // 修改自己的密码需要验证
-            if(self){
+            if (self) {
                 String oldPwd = params.get("oldPwd");
-                Assert.hasText(oldPwd, "The oldPwd is null.");
-                if(!StringUtil.equals(SHA1Util.b64_sha1(oldPwd), updateUser.getPassword())){
+                Assert.hasText(oldPwd, "旧密码不能为空.");
+                if (!StringUtil.equals(SHA1Util.b64_sha1(oldPwd), updateUser.getPassword())) {
                     logService.log(LogType.SystemLog.ERROR, String.format("[%s]修改密码失败", username));
-                    throw new BizException("修改密码失败");
+                    throw new BizException("修改密码失败.");
                 }
             }
             newPwd = SHA1Util.b64_sha1(newPwd);
             Assert.isTrue(!StringUtil.equals(newPwd, updateUser.getPassword()), "新旧密码不能完全一样.");
             updateUser.setPassword(newPwd);
-            logService.log(LogType.SystemLog.INFO, String.format("[%s]修改账号[%s]密码成功", currentUser.getUsername(), username));
+            logService.log(LogType.SystemLog.INFO, String.format("[%s]修改[%s]账号密码成功", currentUser.getUsername(), username));
         }
 
         return manager.editUserConfig(userConfig);
@@ -119,6 +120,9 @@ public class UserServiceImpl implements UserService {
         UserInfo currentUser = userConfig.getUserInfo(params.get(UserService.CURRENT_USER_NAME));
         Assert.isTrue(UserRoleEnum.isAdmin(currentUser.getRoleCode()), "No permission.");
 
+        // 不能删除自己
+        Assert.isTrue(!StringUtil.equals(currentUser.getUsername(), username), "不能删除自己.");
+
         // 删除用户
         UserInfo deleteUser = userConfig.getUserInfo(username);
         Assert.notNull(deleteUser, "用户已删除.");
@@ -133,13 +137,32 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserInfoVo getUserInfoVo(String currentUserName) {
-        return convertUserInfo2Vo(getUserConfig().getUserInfo(currentUserName));
+    public UserInfoVo getUserInfoVo(String currentUserName, String username) {
+        // 管理员可以查看所有用户，普通用户只能查看自己
+        UserConfig userConfig = getUserConfig();
+        UserInfo currentUser = userConfig.getUserInfo(currentUserName);
+        boolean admin = null != currentUser && UserRoleEnum.isAdmin(currentUser.getRoleCode());
+        boolean self = null != currentUser && StringUtil.equals(currentUser.getUsername(), username);
+        Assert.isTrue(admin || self, "No permission.");
+
+        UserInfo userInfo = getUserConfig().getUserInfo(username);
+        return convertUserInfo2Vo(userInfo);
     }
 
     @Override
     public List<UserInfoVo> getUserInfoAll(String currentUserName) {
-        return getUserConfig().getUserInfoList().stream().map(user -> convertUserInfo2Vo(user)).collect(Collectors.toList());
+        // 系统管理员可以查看所有用户，其他用户只能查看自己
+        UserConfig userConfig = getUserConfig();
+        UserInfo currentUser = userConfig.getUserInfo(currentUserName);
+        boolean admin = null != currentUser && UserRoleEnum.isAdmin(currentUser.getRoleCode());
+        if(admin){
+            return getUserConfig().getUserInfoList().stream().map(user -> convertUserInfo2Vo(user)).collect(Collectors.toList());
+        }
+
+        List<UserInfoVo> list = new ArrayList<>();
+        UserInfo userInfo = userConfig.getUserInfo(currentUserName);
+        list.add(convertUserInfo2Vo(userInfo));
+        return list;
     }
 
     private UserConfig getUserConfig() {
@@ -164,10 +187,12 @@ public class UserServiceImpl implements UserService {
 
     private UserInfoVo convertUserInfo2Vo(UserInfo userInfo) {
         UserInfoVo userInfoVo = new UserInfoVo();
-        BeanUtils.copyProperties(userInfo, userInfoVo);
-        // 避免密码直接暴露
-        userInfoVo.setPassword("***");
-        userInfoVo.setRoleName(UserRoleEnum.getNameByCode(userInfo.getRoleCode()));
+        if (null != userInfo) {
+            BeanUtils.copyProperties(userInfo, userInfoVo);
+            // 避免密码直接暴露
+            userInfoVo.setPassword("***");
+            userInfoVo.setRoleName(UserRoleEnum.getNameByCode(userInfo.getRoleCode()));
+        }
         return userInfoVo;
     }
 
