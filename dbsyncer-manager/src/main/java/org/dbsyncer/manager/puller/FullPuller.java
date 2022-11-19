@@ -106,10 +106,10 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
 
         int i = task.getTableGroupIndex();
         while (i < list.size()){
+            parser.execute(task, mapping, list.get(i), executorService);
             if (!task.isRunning()) {
                 break;
             }
-            parser.execute(task, mapping, list.get(i), executorService);
             task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
             task.setCursor(null);
             task.setTableGroupIndex(++i);
@@ -119,7 +119,6 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         // 记录结束时间
         task.setEndTime(Instant.now().toEpochMilli());
         task.setTableGroupIndex(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
-        task.setFinished(true);
         flush(task);
     }
 
@@ -130,11 +129,6 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         // 全量的过程中，有新数据则更新总数
         long finished = meta.getSuccess().get() + meta.getFail().get();
         if(meta.getTotal().get() < finished){
-            meta.getTotal().set(finished);
-        }
-
-        // 同步实际完成总数（读取的系统表存在误差，执行的过程中，总数可能有变化）
-        if(task.isFinished() && meta.getTotal().get() != finished){
             meta.getTotal().set(finished);
         }
 

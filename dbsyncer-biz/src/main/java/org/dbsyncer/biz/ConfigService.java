@@ -29,20 +29,6 @@ public interface ConfigService {
     ConfigVo getConfig();
 
     /**
-     * 获取密码
-     *
-     * @return
-     */
-    String getPassword();
-
-    /**
-     * 获取所有配置
-     *
-     * @return
-     */
-    List<ConfigVo> queryConfig();
-
-    /**
      * 获取所有配置
      *
      * @return

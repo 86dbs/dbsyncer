@@ -13,20 +13,24 @@
                         class="fa fa-tachometer"></span>驱动</a>
                 </li>
                 <li><a href="javascript:void(0);" url="/monitor"><span class="fa fa-line-chart"></span>监控</a></li>
-                <li><a href="javascript:void(0);" url="/plugin"><span class="fa fa-puzzle-piece"
-                                                                      aria-hidden="true"></span>插件</a></li>
+                <li><a href="javascript:void(0);" url="/plugin"><span class="fa fa-puzzle-piece" aria-hidden="true"></span>插件</a></li>
                 <li class="dropdown">
                     <a href="javascript:void(0);" class="dropdown-toggle" data-toggle="dropdown">配置<b class="caret"></b></a>
                     <ul class="dropdown-menu">
                         <li><a href="javascript:void(0);" url="/system"><span class="fa fa-cog"></span>系统参数</a></li>
-                        <li><a href="javascript:void(0);" url="/pwd"><span class="fa fa-lock"></span>修改密码</a></li>
-                        <li><a href="javascript:void(0);" url="/config"><span class="fa fa-file"
-                                                                              aria-hidden="true"></span>配置管理</a></li>
+                        <li><a href="javascript:void(0);" url="/user"><span class="fa fa-users"></span>用户管理</a></li>
+                        <li><a href="javascript:void(0);" url="/config"><span class="fa fa-file" aria-hidden="true"></span>配置管理</a></li>
                     </ul>
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
-                <li><a href="javascript:void(0);" id="nav_logout"> <i class ="fa fa-power-off"></i>注销</a></li>
+                <li class="dropdown">
+                    <a href="javascript:void(0);" class="dropdown-toggle" data-toggle="dropdown"><span id="currentUser"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="javascript:void(0);" id="edit_personal"> <i class ="fa fa-pencil"></i>修改</a></li>
+                        <li><a href="javascript:void(0);" id="nav_logout"> <i class ="fa fa-power-off"></i>注销</a></li>
+                    </ul>
+                </li>
             </ul>
         </div>
     </div>

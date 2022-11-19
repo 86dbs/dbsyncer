@@ -11,9 +11,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.BitSet;
 
 /**
@@ -87,6 +89,10 @@ public abstract class BinlogMessageUtil {
                 buffer.putInt((Integer) v);
                 buffer.flip();
                 return ByteString.copyFrom(buffer, 4);
+            case "java.math.BigInteger":
+                BigInteger bigInteger = (BigInteger) v;
+                byte[] bytes = bigInteger.toByteArray();
+                return ByteString.copyFrom(bytes, 0, 8);
             case "java.lang.Long":
                 buffer.clear();
                 buffer.putLong((Long) v);
@@ -121,6 +127,11 @@ public abstract class BinlogMessageUtil {
                 buffer.putShort((short) (b ? 1 : 0));
                 buffer.flip();
                 return ByteString.copyFrom(buffer, 2);
+            case "java.time.LocalDateTime":
+                buffer.clear();
+                buffer.putLong(Timestamp.valueOf((LocalDateTime) v).getTime());
+                buffer.flip();
+                return ByteString.copyFrom(buffer, 8);
             case "oracle.sql.TIMESTAMP":
                 buffer.clear();
                 TIMESTAMP timeStamp = (TIMESTAMP) v;

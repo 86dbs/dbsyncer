@@ -26,6 +26,7 @@ public class ConfigConstant {
     public static final String META = "meta";
     public static final String CONFIG = "config";
     public static final String PROJECT_GROUP = "projectGroup";
+    public static final String USER_CONFIG = "userConfig";
 
     /**
      * 数据

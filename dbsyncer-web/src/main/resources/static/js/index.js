@@ -1,6 +1,8 @@
 // ******************* 初始化 *****************************
 // 默认绑定菜单事件
 $(function () {
+    // 刷新登录用户
+    refreshLoginUser();
 
     // 初始化版权信息
     doGetter("/index/version.json",{}, function (data) {
@@ -8,6 +10,11 @@ $(function () {
             // 获取底部版权信息
             $("#appCopyRight").html(data.resultValue.appCopyRight);
         }
+    });
+
+    // 修改登录用户
+    $("#edit_personal").click(function () {
+        doLoader("/user/page/edit?username=" + $(this).attr("username"));
     });
 
     // 注销
