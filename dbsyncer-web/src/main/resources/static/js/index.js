@@ -12,6 +12,11 @@ $(function () {
         }
     });
 
+    // 修改登录用户
+    $("#edit_personal").click(function () {
+        doLoader("/user/page/edit?username=" + $(this).attr("username"));
+    });
+
     // 注销
     $("#nav_logout").click(function () {
         // 确认框确认是否注销

@@ -36,9 +36,16 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
             <div class="panel-body">
               <!-- 账号 -->
               <div class="form-group">
-                <label class="col-sm-2 control-label">账号 <strong class="driverVerifcateRequired">*</strong></label>
+                <label class="col-sm-2 control-label">角色</label>
                 <div class="col-sm-10">
-                  <input class="form-control" name="username" type="text" maxlength="50" dbsyncer-valid="require" placeholder="账号" readonly="true" th:value="${currentUser?.username}"/>
+                  <input class="form-control" name="roleName" type="text" readonly="true" th:value="${currentUser?.roleName}"/>
+                </div>
+              </div>
+              <!-- 账号 -->
+              <div class="form-group">
+                <label class="col-sm-2 control-label">账号</label>
+                <div class="col-sm-10">
+                  <input class="form-control" name="username" type="text" maxlength="50" placeholder="账号" readonly="true" th:value="${currentUser?.username}"/>
                 </div>
               </div>
 
@@ -50,6 +57,14 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 </div>
               </div>
 
+              <!-- 旧密码 -->
+              <div class="form-group">
+                <label class="col-sm-2 control-label">旧密码</label>
+                <div class="col-sm-10">
+                  <input class="form-control" name="oldPwd" type="password" maxlength="50" placeholder="密码"/>
+                </div>
+              </div>
+
               <!-- 新密码 -->
               <div class="form-group">
                 <label class="col-sm-2 control-label">新密码</label>
@@ -58,11 +73,11 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 </div>
               </div>
 
-              <!-- 旧密码 -->
+              <!-- 邮箱 -->
               <div class="form-group">
-                <label class="col-sm-2 control-label">旧密码</label>
+                <label class="col-sm-2 control-label">邮箱 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个邮箱使用分号拼接，例子：abc@qq.com;xxx@qq.com"></i></label>
                 <div class="col-sm-10">
-                  <input class="form-control" name="oldPwd" type="password" maxlength="50" placeholder="密码"/>
+                  <input type="string" class="form-control" max="100" min="1" name="mail" th:value="${currentUser?.mail}"/>
                 </div>
               </div>
 
@@ -89,12 +104,20 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
     if ($form.formValidate() == true) {
       const data = $form.serializeJson();
       const username = data.username;
+      const newPwd = data.newPwd;
       doPoster("/user/edit", data, function (data) {
         if (data.success == true) {
           bootGrowl("修改用户成功！", "success");
           backUserIndexPage();
           // 刷新个人信息
           if (currentUserName == username) {
+            // 修改个人密码后需要重新登录
+            if (!isBlank(newPwd)) {
+              doPoster("/logout", null, function (data) {
+                location.href = $basePath;
+              });
+              return;
+            }
             refreshLoginUser();
           }
         } else {

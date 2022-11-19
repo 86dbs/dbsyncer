@@ -24,6 +24,7 @@ function refreshLoginUser() {
     doGetter("/user/getUserInfo.json", {}, function (data) {
         if (data.success == true) {
             $("#currentUser").html(data.resultValue.nickname + " (" + data.resultValue.roleName + ")");
+            $("#edit_personal").attr("username", data.resultValue.username);
         }
     });
 }

@@ -1,6 +1,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.UserInfoVo;
+import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.model.UserInfo;
 
 import java.util.List;
@@ -63,5 +64,12 @@ public interface UserService {
      * @return
      */
     List<UserInfoVo> getUserInfoAll(String currentUserName);
+
+    /**
+     * 获取用户配置
+     *
+     * @return
+     */
+    UserConfig getUserConfig();
 
 }

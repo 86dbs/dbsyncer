@@ -27,14 +27,20 @@ public class UserInfo {
      */
     private String roleCode;
 
+    /**
+     * 邮箱(多个邮箱使用分号拼接)
+     */
+    private String mail;
+
     public UserInfo() {
     }
 
-    public UserInfo(String username, String nickname, String password, String roleCode) {
+    public UserInfo(String username, String nickname, String password, String roleCode, String mail) {
         this.username = username;
         this.nickname = nickname;
         this.password = password;
         this.roleCode = roleCode;
+        this.mail = mail;
     }
 
     public String getUsername() {
@@ -67,6 +73,14 @@ public class UserInfo {
 
     public void setRoleCode(String roleCode) {
         this.roleCode = roleCode;
+    }
+
+    public String getMail() {
+        return mail;
+    }
+
+    public void setMail(String mail) {
+        this.mail = mail;
     }
 
     @Override

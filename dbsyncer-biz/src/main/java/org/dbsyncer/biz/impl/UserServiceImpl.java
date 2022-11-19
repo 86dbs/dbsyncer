@@ -15,7 +15,6 @@ import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.model.UserInfo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -33,11 +32,9 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl implements UserService {
 
-    @Value(value = "${dbsyncer.web.login.username}")
-    private String username;
+    private static final String DEFAULT_USERNAME = "admin";
 
-    @Value(value = "${dbsyncer.web.login.password}")
-    private String password;
+    private static final String DEFAULT_PASSWORD = "0DPiKuNIrrVmD8IUCuw1hQxNqZc=";
 
     @Autowired
     private Manager manager;
@@ -56,6 +53,7 @@ public class UserServiceImpl implements UserService {
         Assert.hasText(nickname, "The nickname is null.");
         String password = params.get("password");
         Assert.hasText(password, "The password is null.");
+        String mail = params.get("mail");
 
         // 验证当前登录用户合法身份（必须是管理员操作）
         UserConfig userConfig = getUserConfig();
@@ -64,7 +62,7 @@ public class UserServiceImpl implements UserService {
         // 新用户合法性（用户不能重复）
         Assert.isNull(userConfig.getUserInfo(username), "用户已存在，请换个账号");
         // 注册新用户
-        userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password), UserRoleEnum.USER.getCode()));
+        userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password), UserRoleEnum.USER.getCode(), mail));
 
         return manager.editUserConfig(userConfig);
     }
@@ -76,6 +74,7 @@ public class UserServiceImpl implements UserService {
         String nickname = params.get("nickname");
         Assert.hasText(nickname, "The nickname is null.");
         String newPwd = params.get("newPwd");
+        String mail = params.get("mail");
 
         // 验证当前登录用户合法身份（管理员或本人操作）
         UserConfig userConfig = getUserConfig();
@@ -90,6 +89,7 @@ public class UserServiceImpl implements UserService {
 
         // 用户昵称
         updateUser.setNickname(nickname);
+        updateUser.setMail(mail);
         // 修改密码
         if (StringUtil.isNotBlank(newPwd)) {
             // 修改自己的密码需要验证
@@ -155,7 +155,7 @@ public class UserServiceImpl implements UserService {
         UserConfig userConfig = getUserConfig();
         UserInfo currentUser = userConfig.getUserInfo(currentUserName);
         boolean admin = null != currentUser && UserRoleEnum.isAdmin(currentUser.getRoleCode());
-        if(admin){
+        if (admin) {
             return getUserConfig().getUserInfoList().stream().map(user -> convertUserInfo2Vo(user)).collect(Collectors.toList());
         }
 
@@ -165,7 +165,8 @@ public class UserServiceImpl implements UserService {
         return list;
     }
 
-    private UserConfig getUserConfig() {
+    @Override
+    public UserConfig getUserConfig() {
         List<UserConfig> all = manager.getUserConfigAll();
         if (!CollectionUtils.isEmpty(all)) {
             return all.get(0);
@@ -179,7 +180,7 @@ public class UserServiceImpl implements UserService {
 
             UserConfig userConfig = (UserConfig) userConfigChecker.checkAddConfigModel(new HashMap<>());
             UserRoleEnum admin = UserRoleEnum.ADMIN;
-            userConfig.getUserInfoList().add(new UserInfo(username, username, password, admin.getCode()));
+            userConfig.getUserInfoList().add(new UserInfo(DEFAULT_USERNAME, DEFAULT_USERNAME, DEFAULT_PASSWORD, admin.getCode(), ""));
             manager.addUserConfig(userConfig);
             return userConfig;
         }
