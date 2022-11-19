@@ -75,7 +75,9 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
   </div>
 </div>
 
-<script type="text/javascript">
+<script type="text/javascript" th:inline="javascript">
+  const currentUserName = [[${currentUserName}]];
+
   // 跳转用户管理
   function backUserIndexPage() {
     doLoader("/user?refresh=" + new Date().getTime());
@@ -86,10 +88,15 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
     const $form = $("#userEditForm");
     if ($form.formValidate() == true) {
       const data = $form.serializeJson();
+      const username = data.username;
       doPoster("/user/edit", data, function (data) {
         if (data.success == true) {
           bootGrowl("修改用户成功！", "success");
           backUserIndexPage();
+          // 刷新个人信息
+          if (currentUserName == username) {
+            refreshLoginUser();
+          }
         } else {
           bootGrowl(data.resultValue, "danger");
         }

@@ -18,6 +18,16 @@ function bootGrowl(data, type) {
     });
 }
 
+// 刷新登录用户信息
+function refreshLoginUser() {
+    // 获取登录用户信息
+    doGetter("/user/getUserInfo.json", {}, function (data) {
+        if (data.success == true) {
+            $("#currentUser").html(data.resultValue.nickname + " (" + data.resultValue.roleName + ")");
+        }
+    });
+}
+
 // 跳转主页
 function backIndexPage(projectGroupId) {
     // 加载页面

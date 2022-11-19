@@ -3,7 +3,6 @@ package org.dbsyncer.web.controller.index;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.ProjectGroupService;
-import org.dbsyncer.biz.vo.ProjectGroupVo;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -38,14 +37,14 @@ public class ProjectGroupController extends BaseController {
     private MappingService mappingService;
 
     @GetMapping("/page/add")
-    public String pageAdd(HttpServletRequest request, ModelMap model) {
+    public String pageAdd(ModelMap model) {
         model.put("connectors", connectorService.getConnectorAll());
         model.put("mappings", mappingService.getMappingAll());
         return "group/save";
     }
 
     @GetMapping("/page/edit")
-    public String pageEdit(HttpServletRequest request, ModelMap model, String id) {
+    public String pageEdit(ModelMap model, String id) {
         model.put("projectGroup", projectGroupService.getProjectGroup(id));
         model.put("connectors", connectorService.getConnectorAll());
         model.put("mappings", mappingService.getMappingAll());

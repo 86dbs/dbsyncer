@@ -3,7 +3,6 @@ package org.dbsyncer.web.controller.user;
 import org.dbsyncer.biz.UserService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.biz.vo.UserInfoVo;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,7 @@ public class UserController extends BaseController {
 
     @RequestMapping("")
     public String index(ModelMap model) {
-        model.put("currentUser", getUserInfoVo(null));
+        model.put("currentUser", getUserInfoVo());
         model.put("users", userService.getUserInfoAll(getUserName()));
         return "user/user";
     }
@@ -51,14 +50,16 @@ public class UserController extends BaseController {
 
     @GetMapping("/page/edit")
     public String pageEdit(ModelMap model, String username) {
-        model.put("currentUser", getUserInfoVo(username));
+        String currentUserName = getUserName();
+        model.put(UserService.CURRENT_USER_NAME, currentUserName);
+        model.put("currentUser", userService.getUserInfoVo(currentUserName, username));
         return "user/edit";
     }
 
     @GetMapping("/getUserInfo.json")
     @ResponseBody
     public RestResult getUserInfo() {
-        return RestResult.restSuccess(getUserInfoVo(null));
+        return RestResult.restSuccess(getUserInfoVo());
     }
 
     @RequestMapping(value = "/add")
@@ -104,15 +105,13 @@ public class UserController extends BaseController {
     }
 
     /**
-     * 获取用户信息
+     * 获取登录用户信息
      *
-     * @param userName 穿空获取自己，否则获取指定用户
      * @return
      */
-    private UserInfoVo getUserInfoVo(String userName) {
+    private UserInfoVo getUserInfoVo() {
         String currentUserName = getUserName();
-        userName = StringUtil.isBlank(userName) ? currentUserName : userName;
-        return userService.getUserInfoVo(currentUserName, userName);
+        return userService.getUserInfoVo(currentUserName, currentUserName);
     }
 
     private String getUserName() {
