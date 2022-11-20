@@ -11,13 +11,6 @@
     <artifactId>dbsyncer-plugin</artifactId>
 
     <dependencies>
-        <!-- Common 公共层 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-common</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
         <!-- Connector 连接器 -->
         <dependency>
             <groupId>org.ghi</groupId>

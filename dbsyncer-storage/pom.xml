@@ -11,13 +11,6 @@
     <artifactId>dbsyncer-storage</artifactId>
 
     <dependencies>
-        <!-- Common 公共层 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-common</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        
         <!-- Cluster 集群服务 -->
         <dependency>
             <groupId>org.ghi</groupId>

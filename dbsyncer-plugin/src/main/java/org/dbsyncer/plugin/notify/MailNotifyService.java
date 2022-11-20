@@ -1,10 +1,12 @@
 package org.dbsyncer.plugin.notify;
 
+import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.model.NotifyMessage;
 import org.dbsyncer.common.spi.NotifyService;
 import org.dbsyncer.common.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -14,6 +16,8 @@ import javax.annotation.PostConstruct;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -29,6 +33,9 @@ import java.util.Properties;
 public class MailNotifyService implements NotifyService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Autowired
+    private AppConfig appConfig;
 
     /**
      * 邮箱账户
@@ -66,8 +73,8 @@ public class MailNotifyService implements NotifyService {
     public void sendMessage(NotifyMessage notifyMessage) {
         try {
             checkMail(notifyMessage);
-            String to = notifyMessage.getReceiver();
-            String title = notifyMessage.getTitle();
+            // 统一应用标题
+            String title = String.format("【%s通知】%s", appConfig.getName(), notifyMessage.getTitle());
             String content = notifyMessage.getContent();
 
             // 创建邮件消息
@@ -76,11 +83,11 @@ public class MailNotifyService implements NotifyService {
             message.setFrom(new InternetAddress(username));
 
             // 接收人
-            String[] receiverArray = StringUtil.split(to, ";");
-            int length = receiverArray.length;
-            InternetAddress[] addresses = new InternetAddress[length];
-            for (int i = 0; i < length; i++) {
-                addresses[i] = new InternetAddress(receiverArray[i]);
+            List<String> messageReceivers = notifyMessage.getReceivers();
+            int size = messageReceivers.size();
+            InternetAddress[] addresses = new InternetAddress[size];
+            for (int i = 0; i < size; i++) {
+                addresses[i] = new InternetAddress(messageReceivers.get(i));
             }
             message.setRecipients(Message.RecipientType.TO, addresses);
 
@@ -101,7 +108,7 @@ public class MailNotifyService implements NotifyService {
         Assert.notNull(notifyMessage, "通知请求不能为空");
         Assert.notNull(notifyMessage.getTitle(), "邮件主题不能为空");
         Assert.notNull(notifyMessage.getContent(), "邮件内容不能为空");
-        Assert.notNull(notifyMessage.getReceiver(), "邮件收件人不能为空");
+        Assert.notEmpty(notifyMessage.getReceivers(), "邮件收件人不能为空");
     }
 
     public void setUsername(String username) {

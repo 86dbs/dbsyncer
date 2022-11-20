@@ -1,5 +1,7 @@
 package org.dbsyncer.common.model;
 
+import java.util.List;
+
 /**
  * 通知消息
  *
@@ -22,7 +24,7 @@ public class NotifyMessage {
     /**
      * 消息接收人
      */
-    private String receiver;
+    private List<String> receivers;
 
     public static NotifyMessage newBuilder() {
         return new NotifyMessage();
@@ -46,12 +48,12 @@ public class NotifyMessage {
         return this;
     }
 
-    public String getReceiver() {
-        return receiver;
+    public List<String> getReceivers() {
+        return receivers;
     }
 
-    public NotifyMessage setReceiver(String receiver) {
-        this.receiver = receiver;
+    public NotifyMessage setReceivers(List<String> receivers) {
+        this.receivers = receivers;
         return this;
     }
 }

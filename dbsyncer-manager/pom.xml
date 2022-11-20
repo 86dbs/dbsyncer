@@ -17,28 +17,6 @@
             <artifactId>dbsyncer-parser</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
-
-        <!-- Cache 缓存服务 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-cache</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <!-- Storage 存储服务 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-storage</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <!-- Plugin 插件服务 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-plugin</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
     </dependencies>
 
 </project>
