@@ -145,6 +145,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             manager.close(mapping);
 
             log(LogType.MappingLog.STOP, mapping);
+
+            // 发送关闭驱动通知消息
+            String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
+            sendNotifyMessage("停止驱动", String.format("手动停止驱动：%s(%s)", mapping.getName(), model));
         }
         return "驱动停止成功";
     }

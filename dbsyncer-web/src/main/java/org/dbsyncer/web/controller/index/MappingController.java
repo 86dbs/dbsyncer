@@ -70,7 +70,7 @@ public class MappingController extends BaseController {
 
     @PostMapping("/remove")
     @ResponseBody
-    public RestResult remove(HttpServletRequest request, @RequestParam(value = "id") String id) {
+    public RestResult remove(@RequestParam(value = "id") String id) {
         try {
             return RestResult.restSuccess(mappingService.remove(id));
         } catch (Exception e) {
@@ -81,7 +81,7 @@ public class MappingController extends BaseController {
 
     @PostMapping("/start")
     @ResponseBody
-    public RestResult start(HttpServletRequest request, @RequestParam(value = "id") String id) {
+    public RestResult start(@RequestParam(value = "id") String id) {
         try {
             return RestResult.restSuccess(mappingService.start(id));
         } catch (Exception e) {
@@ -92,7 +92,7 @@ public class MappingController extends BaseController {
 
     @PostMapping("/stop")
     @ResponseBody
-    public RestResult stop(HttpServletRequest request, @RequestParam(value = "id") String id) {
+    public RestResult stop(@RequestParam(value = "id") String id) {
         try {
             return RestResult.restSuccess(mappingService.stop(id));
         } catch (Exception e) {
@@ -103,7 +103,7 @@ public class MappingController extends BaseController {
 
     @GetMapping("/get")
     @ResponseBody
-    public RestResult get(HttpServletRequest request, @RequestParam(value = "id") String id) {
+    public RestResult get(@RequestParam(value = "id") String id) {
         try {
             return RestResult.restSuccess(mappingService.getMapping(id));
         } catch (Exception e) {
@@ -114,7 +114,7 @@ public class MappingController extends BaseController {
 
     @GetMapping("/getAll")
     @ResponseBody
-    public RestResult getAll(HttpServletRequest request) {
+    public RestResult getAll() {
         try {
             return RestResult.restSuccess(mappingService.getMappingAll());
         } catch (Exception e) {

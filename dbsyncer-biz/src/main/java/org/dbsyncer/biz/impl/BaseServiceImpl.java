@@ -5,6 +5,7 @@ import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
+import org.dbsyncer.parser.message.MessageService;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -19,6 +20,9 @@ public class BaseServiceImpl {
 
     @Autowired
     private LogService logService;
+
+    @Autowired
+    private MessageService messageService;
 
     /**
      * 驱动启停锁
@@ -72,6 +76,16 @@ public class BaseServiceImpl {
                 logService.log(log, "%s驱动%s(%s)%s:[%s] >> [%s]", log.getMessage(), name, model, log.getName(), s, t);
             }
         }
+    }
+
+    /**
+     * 发送通知消息
+     *
+     * @param title
+     * @param content
+     */
+    protected void sendNotifyMessage(String title, String content) {
+        messageService.sendMessage(title, content);
     }
 
 }
