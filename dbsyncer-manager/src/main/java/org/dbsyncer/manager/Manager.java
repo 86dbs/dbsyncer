@@ -27,23 +27,38 @@ import java.util.Map;
  */
 public interface Manager extends Executor {
 
+    /**
+     * 添加ConfigModel
+     *
+     * @param model
+     * @return id
+     */
+    String addConfigModel(ConfigModel model);
+
+    /**
+     * 编辑ConfigModel
+     *
+     * @param model
+     * @return id
+     */
+    String editConfigModel(ConfigModel model);
+
+    /**
+     * 刪除ConfigModel
+     *
+      * @param id
+     * @return
+     */
+    void removeConfigModel(String id);
+
+    // system
+    SystemConfig getSystemConfig();
+
     // user
-    String addUserConfig(ConfigModel model);
-
-    String editUserConfig(ConfigModel model);
-
-    UserConfig getUserConfig(String id);
-
-    List<UserConfig> getUserConfigAll();
+    UserConfig getUserConfig();
 
     // project group
-    String addProjectGroup(ConfigModel model);
-
-    String editProjectGroup(ConfigModel model);
-
     ProjectGroup getProjectGroup(String id);
-
-    void removeProjectGroup(String id);
 
     List<ProjectGroup> getProjectGroupAll();
 
@@ -58,12 +73,6 @@ public interface Manager extends Executor {
 
     MetaInfo getMetaInfo(String connectorId, String tableName);
 
-    String addConnector(ConfigModel model);
-
-    String editConnector(ConfigModel model);
-
-    void removeConnector(String connectorId);
-
     Connector getConnector(String connectorId);
 
     List<Connector> getConnectorAll();
@@ -71,23 +80,11 @@ public interface Manager extends Executor {
     void checkAllConnectorStatus();
 
     // Mapping
-    String addMapping(ConfigModel model);
-
-    String editMapping(ConfigModel model);
-
-    void removeMapping(String mappingId);
-
     Mapping getMapping(String mappingId);
 
     List<Mapping> getMappingAll();
 
     // TableGroup
-    String addTableGroup(ConfigModel model);
-
-    String editTableGroup(ConfigModel model);
-
-    void removeTableGroup(String tableGroupId);
-
     TableGroup getTableGroup(String tableGroupId);
 
     List<TableGroup> getTableGroupAll(String mappingId);
@@ -101,24 +98,9 @@ public interface Manager extends Executor {
     long getCount(String connectorId, Map<String, String> command);
 
     // Meta
-    String addMeta(ConfigModel model);
-
-    String editMeta(ConfigModel model);
-
     Meta getMeta(String metaId);
 
-    void removeMeta(String metaId);
-
     List<Meta> getMetaAll();
-
-    // Config
-    String addSystemConfig(ConfigModel model);
-
-    String editSystemConfig(ConfigModel model);
-
-    SystemConfig getSystemConfig(String configId);
-
-    List<SystemConfig> getSystemConfigAll();
 
     // Data
     Paging queryData(Query query, String collectionId);

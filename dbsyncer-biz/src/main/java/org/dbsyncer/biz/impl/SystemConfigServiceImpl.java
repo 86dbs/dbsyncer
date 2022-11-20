@@ -10,8 +10,8 @@ import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.template.PreloadTemplate;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
-import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.plugin.enums.FileSuffixEnum;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,19 +52,19 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     @Override
     public String edit(Map<String, String> params) {
         ConfigModel model = systemConfigChecker.checkEditConfigModel(params);
-        manager.editSystemConfig(model);
+        manager.editConfigModel(model);
         return "修改成功.";
     }
 
     @Override
     public SystemConfigVo getSystemConfigVo() {
-        return convertConfig2Vo(getSystemConfigModel());
+        return convertConfig2Vo(getSystemConfig());
     }
 
     @Override
     public List<ConfigModel> getConfigModelAll() {
         List<ConfigModel> list = new ArrayList<>();
-        list.add(getSystemConfigModel());
+        list.add(getSystemConfig());
         list.add(userService.getUserConfig());
         manager.getConnectorAll().forEach(config -> list.add(config));
         manager.getMappingAll().forEach(config -> list.add(config));
@@ -98,9 +98,19 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         }
     }
 
-    private synchronized SystemConfig getSystemConfigModel() {
-        List<SystemConfig> all = manager.getSystemConfigAll();
-        return CollectionUtils.isEmpty(all) ? (SystemConfig) systemConfigChecker.checkAddConfigModel(new HashMap<>()) : all.get(0);
+    private SystemConfig getSystemConfig() {
+        SystemConfig config = manager.getSystemConfig();
+        if (null != config) {
+            return config;
+        }
+
+        synchronized (this) {
+            config = manager.getSystemConfig();
+            if (null == config) {
+                config = (SystemConfig) systemConfigChecker.checkAddConfigModel(new HashMap<>());
+            }
+            return config;
+        }
     }
 
     private SystemConfigVo convertConfig2Vo(SystemConfig systemConfig) {

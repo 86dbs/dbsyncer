@@ -5,7 +5,6 @@ import org.dbsyncer.biz.UserService;
 import org.dbsyncer.biz.checker.impl.user.UserConfigChecker;
 import org.dbsyncer.biz.enums.UserRoleEnum;
 import org.dbsyncer.biz.vo.UserInfoVo;
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.Manager;
@@ -64,7 +63,8 @@ public class UserServiceImpl implements UserService {
         // 注册新用户
         userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password), UserRoleEnum.USER.getCode(), mail));
 
-        return manager.editUserConfig(userConfig);
+        logService.log(LogType.UserLog.INSERT, String.format("[%s]添加[%s]账号成功", currentUser.getUsername(), username));
+        return manager.editConfigModel(userConfig);
     }
 
     @Override
@@ -104,10 +104,10 @@ public class UserServiceImpl implements UserService {
             newPwd = SHA1Util.b64_sha1(newPwd);
             Assert.isTrue(!StringUtil.equals(newPwd, updateUser.getPassword()), "新旧密码不能完全一样.");
             updateUser.setPassword(newPwd);
-            logService.log(LogType.SystemLog.INFO, String.format("[%s]修改[%s]账号密码成功", currentUser.getUsername(), username));
+            logService.log(LogType.UserLog.UPDATE, String.format("[%s]修改[%s]账号密码成功", currentUser.getUsername(), username));
         }
 
-        return manager.editUserConfig(userConfig);
+        return manager.editConfigModel(userConfig);
     }
 
     @Override
@@ -127,7 +127,8 @@ public class UserServiceImpl implements UserService {
         UserInfo deleteUser = userConfig.getUserInfo(username);
         Assert.notNull(deleteUser, "用户已删除.");
         userConfig.removeUserInfo(username);
-        manager.editUserConfig(userConfig);
+        manager.editConfigModel(userConfig);
+        logService.log(LogType.UserLog.DELETE, String.format("[%s]删除[%s]账号成功", currentUser.getUsername(), username));
         return "删除用户成功!";
     }
 
@@ -167,22 +168,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserConfig getUserConfig() {
-        List<UserConfig> all = manager.getUserConfigAll();
-        if (!CollectionUtils.isEmpty(all)) {
-            return all.get(0);
+        UserConfig config = manager.getUserConfig();
+        if (null != config) {
+            return config;
         }
 
         synchronized (this) {
-            all = manager.getUserConfigAll();
-            if (!CollectionUtils.isEmpty(all)) {
-                return all.get(0);
+            config = manager.getUserConfig();
+            if (null == config) {
+                config = (UserConfig) userConfigChecker.checkAddConfigModel(new HashMap<>());
+                UserRoleEnum admin = UserRoleEnum.ADMIN;
+                config.getUserInfoList().add(new UserInfo(DEFAULT_USERNAME, DEFAULT_USERNAME, DEFAULT_PASSWORD, admin.getCode(), ""));
+                manager.addConfigModel(config);
             }
-
-            UserConfig userConfig = (UserConfig) userConfigChecker.checkAddConfigModel(new HashMap<>());
-            UserRoleEnum admin = UserRoleEnum.ADMIN;
-            userConfig.getUserInfoList().add(new UserInfo(DEFAULT_USERNAME, DEFAULT_USERNAME, DEFAULT_PASSWORD, admin.getCode(), ""));
-            manager.addUserConfig(userConfig);
-            return userConfig;
+            return config;
         }
     }
 

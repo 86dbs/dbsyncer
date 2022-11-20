@@ -151,7 +151,7 @@ public class MappingChecker extends AbstractChecker {
             // 合并配置
             for (TableGroup g : groupAll) {
                 tableGroupChecker.mergeConfig(mapping, g);
-                manager.editTableGroup(g);
+                manager.editConfigModel(g);
             }
         }
     }
@@ -197,7 +197,7 @@ public class MappingChecker extends AbstractChecker {
         getMetaTotal(meta, mapping.getModel());
 
         meta.setUpdateTime(Instant.now().toEpochMilli());
-        manager.editMeta(meta);
+        manager.editConfigModel(meta);
     }
 
     private void addMeta(Mapping mapping) {
@@ -209,7 +209,7 @@ public class MappingChecker extends AbstractChecker {
         // 修改基本配置
         this.modifyConfigModel(meta, new HashMap<>());
 
-        String id = manager.addMeta(meta);
+        String id = manager.addConfigModel(meta);
         mapping.setMetaId(id);
     }
 

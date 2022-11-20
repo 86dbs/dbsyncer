@@ -48,7 +48,7 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
         ConfigModel model = projectGroupChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.INSERT, model);
 
-        return manager.addProjectGroup(model);
+        return manager.addConfigModel(model);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
         ConfigModel model = projectGroupChecker.checkEditConfigModel(params);
         log(LogType.ConnectorLog.UPDATE, model);
 
-        return manager.editProjectGroup(model);
+        return manager.editConfigModel(model);
     }
 
     @Override
@@ -64,7 +64,7 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
         ProjectGroup projectGroup = manager.getProjectGroup(id);
         log(LogType.ConnectorLog.DELETE, projectGroup);
         Assert.notNull(projectGroup, "该分组已被删除");
-        manager.removeProjectGroup(id);
+        manager.removeConfigModel(id);
         return "删除分组成功!";
     }
 

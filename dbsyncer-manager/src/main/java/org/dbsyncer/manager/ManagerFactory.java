@@ -69,47 +69,41 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     private Map<String, Puller> map;
 
     @Override
-    public String addUserConfig(ConfigModel model) {
+    public String addConfigModel(ConfigModel model) {
         return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
     }
 
     @Override
-    public String editUserConfig(ConfigModel model) {
+    public String editConfigModel(ConfigModel model) {
         return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
     }
 
     @Override
-    public UserConfig getUserConfig(String id) {
-        return operationTemplate.queryObject(UserConfig.class, id);
+    public void removeConfigModel(String id) {
+        operationTemplate.remove(new OperationConfig(id));
     }
 
     @Override
-    public List<UserConfig> getUserConfigAll() {
+    public SystemConfig getSystemConfig() {
+        SystemConfig systemConfig = new SystemConfig();
+        systemConfig.setType(ConfigConstant.SYSTEM);
+        QueryConfig<SystemConfig> queryConfig = new QueryConfig<>(systemConfig);
+        List<SystemConfig> list = operationTemplate.queryAll(queryConfig);
+        return CollectionUtils.isEmpty(list) ? null : list.get(0);
+    }
+
+    @Override
+    public UserConfig getUserConfig() {
         UserConfig userConfig = new UserConfig();
         userConfig.setType(ConfigConstant.USER);
         QueryConfig<UserConfig> queryConfig = new QueryConfig<>(userConfig);
-        List<UserConfig> userConfigs = operationTemplate.queryAll(queryConfig);
-        return userConfigs;
-    }
-
-    @Override
-    public String addProjectGroup(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
-    }
-
-    @Override
-    public String editProjectGroup(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
+        List<UserConfig> list = operationTemplate.queryAll(queryConfig);
+        return CollectionUtils.isEmpty(list) ? null : list.get(0);
     }
 
     @Override
     public ProjectGroup getProjectGroup(String id) {
         return operationTemplate.queryObject(ProjectGroup.class, id);
-    }
-
-    @Override
-    public void removeProjectGroup(String id) {
-        operationTemplate.remove(new OperationConfig(id));
     }
 
     @Override
@@ -147,21 +141,6 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     }
 
     @Override
-    public String addConnector(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
-    }
-
-    @Override
-    public String editConnector(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
-    }
-
-    @Override
-    public void removeConnector(String connectorId) {
-        operationTemplate.remove(new OperationConfig(connectorId));
-    }
-
-    @Override
     public Connector getConnector(String connectorId) {
         return operationTemplate.queryObject(Connector.class, connectorId);
     }
@@ -191,21 +170,6 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     }
 
     @Override
-    public String addMapping(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
-    }
-
-    @Override
-    public String editMapping(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
-    }
-
-    @Override
-    public void removeMapping(String mappingId) {
-        operationTemplate.remove(new OperationConfig(mappingId));
-    }
-
-    @Override
     public Mapping getMapping(String mappingId) {
         return operationTemplate.queryObject(Mapping.class, mappingId);
     }
@@ -217,21 +181,6 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
         QueryConfig<Mapping> queryConfig = new QueryConfig<>(mapping);
         List<Mapping> mappings = operationTemplate.queryAll(queryConfig);
         return mappings;
-    }
-
-    @Override
-    public String addTableGroup(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, GroupStrategyEnum.TABLE));
-    }
-
-    @Override
-    public String editTableGroup(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT, GroupStrategyEnum.TABLE));
-    }
-
-    @Override
-    public void removeTableGroup(String tableGroupId) {
-        operationTemplate.remove(new OperationConfig(tableGroupId, GroupStrategyEnum.TABLE));
     }
 
     @Override
@@ -278,23 +227,8 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     }
 
     @Override
-    public String addMeta(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
-    }
-
-    @Override
-    public String editMeta(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
-    }
-
-    @Override
     public Meta getMeta(String metaId) {
         return operationTemplate.queryObject(Meta.class, metaId);
-    }
-
-    @Override
-    public void removeMeta(String metaId) {
-        operationTemplate.remove(new OperationConfig(metaId));
     }
 
     @Override
@@ -302,29 +236,6 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
         Meta meta = new Meta();
         meta.setType(ConfigConstant.META);
         QueryConfig<Meta> queryConfig = new QueryConfig<>(meta);
-        return operationTemplate.queryAll(queryConfig);
-    }
-
-    @Override
-    public String addSystemConfig(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
-    }
-
-    @Override
-    public String editSystemConfig(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
-    }
-
-    @Override
-    public SystemConfig getSystemConfig(String configId) {
-        return operationTemplate.queryObject(SystemConfig.class, configId);
-    }
-
-    @Override
-    public List<SystemConfig> getSystemConfigAll() {
-        SystemConfig systemConfig = new SystemConfig();
-        systemConfig.setType(ConfigConstant.SYSTEM);
-        QueryConfig<SystemConfig> queryConfig = new QueryConfig<>(systemConfig);
         return operationTemplate.queryAll(queryConfig);
     }
 
@@ -434,7 +345,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
         if (null != meta && meta.getState() != code) {
             meta.setState(code);
             meta.setUpdateTime(Instant.now().toEpochMilli());
-            editMeta(meta);
+            editConfigModel(meta);
         }
     }
 

@@ -51,7 +51,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
                 log(LogType.TableGroupLog.INSERT, model);
                 int tableGroupCount = manager.getTableGroupCount(mappingId);
                 model.setIndex(tableGroupCount + 1);
-                id = manager.addTableGroup(model);
+                id = manager.addConfigModel(model);
             }
 
             // 合并驱动公共字段
@@ -70,7 +70,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
         log(LogType.TableGroupLog.UPDATE, model);
 
-        return manager.editTableGroup(model);
+        return manager.editConfigModel(model);
     }
 
     @Override
@@ -83,7 +83,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
             TableGroup model = manager.getTableGroup(id);
             log(LogType.TableGroupLog.DELETE, model);
-            manager.removeTableGroup(id);
+            manager.removeConfigModel(id);
         });
 
         // 合并驱动公共字段
@@ -114,7 +114,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
             while (i > 0) {
                 TableGroup g = list.get(size - i);
                 g.setIndex(i);
-                manager.editTableGroup(g);
+                manager.editConfigModel(g);
                 i--;
             }
         }
@@ -135,7 +135,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
         mapping.setSourceColumn(sourceColumn);
         mapping.setTargetColumn(targetColumn);
-        manager.editMapping(mapping);
+        manager.editConfigModel(mapping);
     }
 
     private List<Field> pickCommonFields(List<Field> column, List<Field> target) {

@@ -42,7 +42,7 @@ public class SystemConfigChecker extends AbstractChecker {
         // 修改基本配置
         this.modifyConfigModel(systemConfig, params);
 
-        manager.addSystemConfig(systemConfig);
+        manager.addConfigModel(systemConfig);
         return systemConfig;
     }
 
@@ -51,9 +51,7 @@ public class SystemConfigChecker extends AbstractChecker {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "Config check params is null.");
 
-        String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        Assert.hasText(id, "Config id is empty.");
-        SystemConfig systemConfig = manager.getSystemConfig(id);
+        SystemConfig systemConfig = manager.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");
 
         // 刷新监控间隔（秒）

@@ -44,7 +44,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         ConfigModel model = connectorChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.INSERT, model);
 
-        return manager.addConnector(model);
+        return manager.addConfigModel(model);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         params.put(ConfigConstant.CONFIG_MODEL_NAME, connector.getName() + "(复制)");
         ConfigModel model = connectorChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.COPY, model);
-        manager.addConnector(model);
+        manager.addConfigModel(model);
 
         return String.format("复制成功[%s]", model.getName());
     }
@@ -66,7 +66,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         ConfigModel model = connectorChecker.checkEditConfigModel(params);
         log(LogType.ConnectorLog.UPDATE, model);
 
-        return manager.editConnector(model);
+        return manager.editConfigModel(model);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         Connector connector = manager.getConnector(id);
         log(LogType.ConnectorLog.DELETE, connector);
 
-        manager.removeConnector(id);
+        manager.removeConfigModel(id);
         return "删除连接器成功!";
     }
 

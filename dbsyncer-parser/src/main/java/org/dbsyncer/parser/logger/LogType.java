@@ -270,4 +270,36 @@ public interface LogType {
         }
     }
 
+    /**
+     * 用户日志8
+     */
+    enum UserLog implements LogType {
+        INSERT("80", "新增"),
+        UPDATE("81", "修改"),
+        DELETE("82", "删除");
+
+        private String type;
+        private String message;
+
+        UserLog(String type, String message) {
+            this.type = type;
+            this.message = message;
+        }
+
+        @Override
+        public String getName() {
+            return "用户日志";
+        }
+
+        @Override
+        public String getType() {
+            return type;
+        }
+
+        @Override
+        public String getMessage() {
+            return message;
+        }
+    }
+
 }

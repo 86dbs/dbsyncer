@@ -138,7 +138,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(task.getPageIndex()));
         snapshot.put(ParserEnum.CURSOR.getCode(), String.valueOf(task.getCursor()));
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(task.getTableGroupIndex()));
-        manager.editMeta(meta);
+        manager.editConfigModel(meta);
     }
 
 }
