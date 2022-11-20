@@ -147,9 +147,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public List<Connector> getConnectorAll() {
-        Connector connector = new Connector();
-        connector.setType(ConfigConstant.CONNECTOR);
-        QueryConfig<Connector> queryConfig = new QueryConfig<>(connector);
+        QueryConfig<Connector> queryConfig = new QueryConfig<>(new Connector());
         List<Connector> connectors = operationTemplate.queryAll(queryConfig);
         return connectors;
     }
@@ -176,9 +174,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public List<Mapping> getMappingAll() {
-        Mapping mapping = new Mapping();
-        mapping.setType(ConfigConstant.MAPPING);
-        QueryConfig<Mapping> queryConfig = new QueryConfig<>(mapping);
+        QueryConfig<Mapping> queryConfig = new QueryConfig<>(new Mapping());
         List<Mapping> mappings = operationTemplate.queryAll(queryConfig);
         return mappings;
     }
@@ -191,7 +187,6 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
         TableGroup tableGroup = new TableGroup();
-        tableGroup.setType(ConfigConstant.TABLE_GROUP);
         tableGroup.setMappingId(mappingId);
         QueryConfig<TableGroup> queryConfig = new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE);
         List<TableGroup> tableGroups = operationTemplate.queryAll(queryConfig);
@@ -210,7 +205,6 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     @Override
     public int getTableGroupCount(String mappingId) {
         TableGroup tableGroup = new TableGroup();
-        tableGroup.setType(ConfigConstant.TABLE_GROUP);
         tableGroup.setMappingId(mappingId);
         QueryConfig queryConfig = new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE);
         return operationTemplate.queryCount(queryConfig);
@@ -233,9 +227,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public List<Meta> getMetaAll() {
-        Meta meta = new Meta();
-        meta.setType(ConfigConstant.META);
-        QueryConfig<Meta> queryConfig = new QueryConfig<>(meta);
+        QueryConfig<Meta> queryConfig = new QueryConfig<>(new Meta());
         return operationTemplate.queryAll(queryConfig);
     }
 

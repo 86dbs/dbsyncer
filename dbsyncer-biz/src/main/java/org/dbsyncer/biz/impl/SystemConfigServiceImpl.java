@@ -2,7 +2,7 @@ package org.dbsyncer.biz.impl;
 
 import org.apache.commons.io.FileUtils;
 import org.dbsyncer.biz.SystemConfigService;
-import org.dbsyncer.biz.UserService;
+import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.SystemConfigVo;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -47,7 +47,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private LogService logService;
 
     @Autowired
-    private UserService userService;
+    private UserConfigService userConfigService;
 
     @Override
     public String edit(Map<String, String> params) {
@@ -65,7 +65,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     public List<ConfigModel> getConfigModelAll() {
         List<ConfigModel> list = new ArrayList<>();
         list.add(getSystemConfig());
-        list.add(userService.getUserConfig());
+        list.add(userConfigService.getUserConfig());
         manager.getConnectorAll().forEach(config -> list.add(config));
         manager.getMappingAll().forEach(config -> list.add(config));
         manager.getMetaAll().forEach(config -> list.add(config));

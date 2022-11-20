@@ -2,6 +2,7 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.storage.constant.ConfigConstant;
 
 import java.util.List;
 
@@ -11,6 +12,10 @@ import java.util.List;
  * @date 2019/10/1 12:40
  */
 public class Connector extends ConfigModel{
+
+    public Connector() {
+        super.setType(ConfigConstant.CONNECTOR);
+    }
 
     /**
      * 表名,["MY_USER", "T_MY_USER", "table_999"]

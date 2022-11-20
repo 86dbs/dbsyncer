@@ -1,7 +1,7 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
-import org.dbsyncer.biz.UserService;
+import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.impl.user.UserConfigChecker;
 import org.dbsyncer.biz.enums.UserRoleEnum;
 import org.dbsyncer.biz.vo.UserInfoVo;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  * @date 2022/11/17 0:16
  */
 @Service
-public class UserServiceImpl implements UserService {
+public class UserConfigServiceImpl implements UserConfigService {
 
     private static final String DEFAULT_USERNAME = "admin";
 
@@ -56,7 +56,7 @@ public class UserServiceImpl implements UserService {
 
         // 验证当前登录用户合法身份（必须是管理员操作）
         UserConfig userConfig = getUserConfig();
-        UserInfo currentUser = userConfig.getUserInfo(params.get(UserService.CURRENT_USER_NAME));
+        UserInfo currentUser = userConfig.getUserInfo(params.get(UserConfigService.CURRENT_USER_NAME));
         Assert.isTrue(null == currentUser || UserRoleEnum.isAdmin(currentUser.getRoleCode()), "No permission.");
         // 新用户合法性（用户不能重复）
         Assert.isNull(userConfig.getUserInfo(username), "用户已存在，请换个账号");
@@ -78,7 +78,7 @@ public class UserServiceImpl implements UserService {
 
         // 验证当前登录用户合法身份（管理员或本人操作）
         UserConfig userConfig = getUserConfig();
-        UserInfo currentUser = userConfig.getUserInfo(params.get(UserService.CURRENT_USER_NAME));
+        UserInfo currentUser = userConfig.getUserInfo(params.get(UserConfigService.CURRENT_USER_NAME));
         boolean admin = null != currentUser && UserRoleEnum.isAdmin(currentUser.getRoleCode());
         boolean self = null != currentUser && StringUtil.equals(currentUser.getUsername(), username);
         Assert.isTrue(admin || self, "No permission.");
@@ -117,7 +117,7 @@ public class UserServiceImpl implements UserService {
 
         // 验证当前登录用户合法身份（必须是管理员操作）
         UserConfig userConfig = getUserConfig();
-        UserInfo currentUser = userConfig.getUserInfo(params.get(UserService.CURRENT_USER_NAME));
+        UserInfo currentUser = userConfig.getUserInfo(params.get(UserConfigService.CURRENT_USER_NAME));
         Assert.isTrue(UserRoleEnum.isAdmin(currentUser.getRoleCode()), "No permission.");
 
         // 不能删除自己
