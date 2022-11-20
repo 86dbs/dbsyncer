@@ -150,6 +150,7 @@ function showData($dataList, arr, append){
         for(i = 0; i < size; i++) {
             html += '<tr>';
             html += '<td>' + (start + i + 1) + '</td>';
+            html += '<td>' + arr[i].targetTableName + '</td>';
             html += '<td>' + arr[i].event + '</td>';
             html += '<td>' + (arr[i].success ? '<span class="label label-success">成功</span>' : '<span class="label label-warning">失败</span>') + '</td>';
             html += '<td style="max-width:100px;" class="dbsyncer_over_hidden"><a href="javascript:;" class="dbsyncer_pointer queryError">' + arr[i].error + '</a></td>';
