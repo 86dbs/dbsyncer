@@ -5,6 +5,7 @@ import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
@@ -29,6 +31,7 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
 
 /**
  * @author AE86
@@ -138,10 +141,12 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         String password = (String) authentication.getCredentials();
         password = SHA1Util.b64_sha1(password);
 
-        if (!StringUtil.equals(userService.getPassword(username), password)) {
+        UserInfo userInfo = userService.getUserInfo(username);
+        if (null != userInfo && !StringUtil.equals(userInfo.getPassword(), password)) {
             throw new BadCredentialsException("对不起,您输入的帐号或密码错误");
         }
-        return new UsernamePasswordAuthenticationToken(username, password, AuthorityUtils.commaSeparatedStringToAuthorityList("admin"));
+        List<GrantedAuthority> authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(userInfo.getRoleCode());
+        return new UsernamePasswordAuthenticationToken(username, password, authorities);
     }
 
     @Override

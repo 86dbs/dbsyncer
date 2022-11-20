@@ -4,9 +4,9 @@ import org.dbsyncer.biz.ConfigService;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.vo.AppReportMetricVo;
-import org.dbsyncer.biz.vo.ConfigVo;
 import org.dbsyncer.biz.vo.HistoryStackVo;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.biz.vo.SystemConfigVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.monitor.enums.DiskMetricEnum;
@@ -32,7 +32,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/monitor")
@@ -157,7 +160,7 @@ public class MonitorController extends BaseController {
     @GetMapping("/getRefreshInterval")
     public RestResult getRefreshInterval() {
         try {
-            ConfigVo config = configService.getConfig();
+            SystemConfigVo config = configService.getConfig();
             return RestResult.restSuccess(config.getRefreshInterval());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());

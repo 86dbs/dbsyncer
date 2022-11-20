@@ -15,24 +15,7 @@ public class UserConfig extends ConfigModel {
 
     private List<UserInfo> userInfoList = new ArrayList<>();
 
-    public synchronized void addUserInfo(UserInfo userInfo){
-        if(userInfoList.contains(userInfo)){
-            return;
-        }
-        userInfoList.add(userInfo);
-    }
-
-    public synchronized void updateUserInfo(UserInfo userInfo){
-        for (UserInfo u : userInfoList) {
-            if(u.getUsername().equals(userInfo.getUsername())){
-                u.setNickname(userInfo.getNickname());
-                u.setPassword(userInfo.getPassword());
-                break;
-            }
-        }
-    }
-
-    public synchronized void removeUserInfo(String username){
+    public void removeUserInfo(String username){
         Iterator<UserInfo> iterator = userInfoList.iterator();
         while (iterator.hasNext()){
             UserInfo next = iterator.next();
@@ -43,7 +26,7 @@ public class UserConfig extends ConfigModel {
         }
     }
 
-    public synchronized UserInfo getUserInfo(String username){
+    public UserInfo getUserInfo(String username){
         Iterator<UserInfo> iterator = userInfoList.iterator();
         while (iterator.hasNext()){
             UserInfo next = iterator.next();
