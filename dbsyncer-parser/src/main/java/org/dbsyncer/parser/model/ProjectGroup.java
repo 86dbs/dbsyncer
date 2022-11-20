@@ -1,5 +1,7 @@
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.storage.constant.ConfigConstant;
+
 import java.util.List;
 
 /**
@@ -8,6 +10,10 @@ import java.util.List;
  * @date 2022/6/9 17:09
  **/
 public class ProjectGroup extends ConfigModel {
+
+    public ProjectGroup() {
+        super.setType(ConfigConstant.PROJECT_GROUP);
+    }
 
     /**
      * 连接器ID列表

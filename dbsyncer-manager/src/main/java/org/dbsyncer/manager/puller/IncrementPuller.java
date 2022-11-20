@@ -109,7 +109,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
                 long now = Instant.now().toEpochMilli();
                 meta.setBeginTime(now);
                 meta.setEndTime(now);
-                manager.editMeta(meta);
+                manager.editConfigModel(meta);
                 map.putIfAbsent(metaId, getExtractor(mapping, connector, list, meta));
                 map.get(metaId).start();
             } catch (Exception e) {
@@ -208,7 +208,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             Meta meta = manager.getMeta(metaId);
             if (null != meta) {
                 meta.setSnapshot(snapshot);
-                manager.editMeta(meta);
+                manager.editConfigModel(meta);
             }
         }
 

@@ -3,6 +3,7 @@ package org.dbsyncer.parser.model;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.parser.enums.ModelEnum;
+import org.dbsyncer.storage.constant.ConfigConstant;
 
 import java.util.List;
 
@@ -14,6 +15,10 @@ import java.util.List;
  * @date 2019/10/1 13:19
  */
 public class Mapping extends AbstractConfigModel {
+
+    public Mapping() {
+        super.setType(ConfigConstant.MAPPING);
+    }
 
     // 数据源连接器ID
     private String sourceConnectorId;

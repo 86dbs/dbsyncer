@@ -94,14 +94,13 @@ public class ProjectGroupController extends BaseController {
     /**
      * 参数： id(必)
      *
-     * @param request
      * @return org.dbsyncer.biz.vo.RestResult
      * @author xinpeng.Fu
      * @date 2022/6/15 16:10
      **/
     @PostMapping("/remove")
     @ResponseBody
-    public RestResult remove(HttpServletRequest request, @RequestParam(value = "id") String id) {
+    public RestResult remove(@RequestParam(value = "id") String id) {
         try {
             return RestResult.restSuccess(projectGroupService.remove(id));
         } catch (Exception e) {
@@ -112,7 +111,7 @@ public class ProjectGroupController extends BaseController {
 
     @GetMapping("/getAll")
     @ResponseBody
-    public RestResult getAll(HttpServletRequest request) {
+    public RestResult getAll() {
         try {
             return RestResult.restSuccess(projectGroupService.getProjectGroupAll());
         } catch (Exception e) {

@@ -1,6 +1,6 @@
 package org.dbsyncer.web.controller.system;
 
-import org.dbsyncer.biz.ConfigService;
+import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -20,38 +20,38 @@ import java.util.Map;
 @RequestMapping(value = "/system")
 public class SystemController extends BaseController {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	@Autowired
-	private ConfigService configService;
+    @Autowired
+    private SystemConfigService systemConfigService;
 
-	@RequestMapping("")
-	public String index(ModelMap model) {
-		model.put("config", configService.getConfig());
-		return "system/system";
-	}
+    @RequestMapping("")
+    public String index(ModelMap model) {
+        model.put("config", systemConfigService.getSystemConfigVo());
+        return "system/system";
+    }
 
-	@PostMapping("/edit")
-	@ResponseBody
-	public RestResult edit(HttpServletRequest request) {
-		try {
-			Map<String, String> params = getParams(request);
-			return RestResult.restSuccess(configService.edit(params));
-		} catch (Exception e) {
-			logger.error(e.getLocalizedMessage(), e.getClass());
-			return RestResult.restFail(e.getMessage());
-		}
-	}
+    @PostMapping("/edit")
+    @ResponseBody
+    public RestResult edit(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(systemConfigService.edit(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e.getClass());
+            return RestResult.restFail(e.getMessage());
+        }
+    }
 
-	@GetMapping("/queryConfig")
-	@ResponseBody
-	public RestResult queryConfig(HttpServletRequest request) {
-		try {
-			return RestResult.restSuccess(configService.getConfig());
-		} catch (Exception e) {
-			logger.error(e.getLocalizedMessage(), e.getClass());
-			return RestResult.restFail(e.getMessage());
-		}
-	}
+    @GetMapping("/queryConfig")
+    @ResponseBody
+    public RestResult queryConfig() {
+        try {
+            return RestResult.restSuccess(systemConfigService.getSystemConfigVo());
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e.getClass());
+            return RestResult.restFail(e.getMessage());
+        }
+    }
 
 }

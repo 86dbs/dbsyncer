@@ -1,4 +1,4 @@
-package org.dbsyncer.biz.checker.impl.config;
+package org.dbsyncer.biz.checker.impl.system;
 
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.NumberUtil;
@@ -6,7 +6,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
-import org.dbsyncer.parser.model.Config;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
@@ -23,7 +23,7 @@ import java.util.Map;
  * @date 2020/1/8 15:17
  */
 @Component
-public class ConfigChecker extends AbstractChecker {
+public class SystemConfigChecker extends AbstractChecker {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -35,15 +35,14 @@ public class ConfigChecker extends AbstractChecker {
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
-        Config config = new Config();
-        config.setName("系统配置");
-        config.setType(ConfigConstant.CONFIG);
+        SystemConfig systemConfig = new SystemConfig();
+        systemConfig.setName("系统配置");
 
         // 修改基本配置
-        this.modifyConfigModel(config, params);
+        this.modifyConfigModel(systemConfig, params);
 
-        manager.addConfig(config);
-        return config;
+        manager.addConfigModel(systemConfig);
+        return systemConfig;
     }
 
     @Override
@@ -51,22 +50,20 @@ public class ConfigChecker extends AbstractChecker {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "Config check params is null.");
 
-        String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        Assert.hasText(id, "Config id is empty.");
-        Config config = manager.getConfig(id);
-        Assert.notNull(config, "配置文件为空.");
+        SystemConfig systemConfig = manager.getSystemConfig();
+        Assert.notNull(systemConfig, "配置文件为空.");
 
         // 刷新监控间隔（秒）
         String refreshInterval = params.get("refreshInterval");
         if (StringUtil.isNotBlank(refreshInterval)) {
             int time = NumberUtil.toInt(refreshInterval, 10);
-            config.setRefreshInterval(time);
+            systemConfig.setRefreshInterval(time);
         }
         logService.log(LogType.SystemLog.INFO, "修改系统配置");
 
         // 修改基本配置
-        this.modifyConfigModel(config, params);
-        return config;
+        this.modifyConfigModel(systemConfig, params);
+        return systemConfig;
     }
 
 }

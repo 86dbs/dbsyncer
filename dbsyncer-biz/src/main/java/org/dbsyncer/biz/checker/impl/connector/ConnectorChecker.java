@@ -52,7 +52,6 @@ public class ConnectorChecker extends AbstractChecker {
 
         Connector connector = new Connector();
         connector.setName(name);
-        connector.setType(ConfigConstant.CONNECTOR);
         AbstractConnectorConfig config = getConfig(connectorType);
         connector.setConfig(config);
 

@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.storage.constant.ConfigConstant;
 
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,11 @@ import java.util.Map;
  * @date 2019/10/15 23:56
  */
 public class TableGroup extends AbstractConfigModel {
+
+    public TableGroup() {
+        super.setType(ConfigConstant.TABLE_GROUP);
+        super.setName(ConfigConstant.TABLE_GROUP);
+    }
 
     // 排序索引
     private int index;

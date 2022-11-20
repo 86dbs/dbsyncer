@@ -8,11 +8,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 用戶配置服務
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2022/11/17 0:16
  */
-public interface UserService {
+public interface UserConfigService {
 
     /**
      * 获取登录用户属性KEY

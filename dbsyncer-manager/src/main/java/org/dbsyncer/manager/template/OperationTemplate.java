@@ -41,6 +41,15 @@ public final class OperationTemplate {
     @Autowired
     private CacheService cacheService;
 
+    public <T> List<T> queryAll(Class<T> valueType) {
+        try {
+            ConfigModel configModel = (ConfigModel) valueType.newInstance();
+            return queryAll(new QueryConfig<T>(configModel));
+        } catch (Exception e) {
+            throw new ManagerException(e);
+        }
+    }
+
     public <T> List<T> queryAll(QueryConfig<T> query) {
         ConfigModel model = query.getConfigModel();
         String groupId = getGroupId(model, query.getGroupStrategyEnum());

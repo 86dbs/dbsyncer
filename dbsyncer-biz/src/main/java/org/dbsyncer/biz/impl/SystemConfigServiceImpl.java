@@ -1,8 +1,8 @@
 package org.dbsyncer.biz.impl;
 
 import org.apache.commons.io.FileUtils;
-import org.dbsyncer.biz.ConfigService;
-import org.dbsyncer.biz.UserService;
+import org.dbsyncer.biz.SystemConfigService;
+import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.SystemConfigVo;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -10,8 +10,8 @@ import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.template.PreloadTemplate;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
-import org.dbsyncer.parser.model.Config;
 import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.plugin.enums.FileSuffixEnum;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,13 +32,13 @@ import java.util.Map;
  * @date 2019/10/17 23:20
  */
 @Service
-public class ConfigServiceImpl implements ConfigService {
+public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Autowired
     private Manager manager;
 
     @Autowired
-    private Checker configChecker;
+    private Checker systemConfigChecker;
 
     @Autowired
     private PreloadTemplate preloadTemplate;
@@ -47,25 +47,25 @@ public class ConfigServiceImpl implements ConfigService {
     private LogService logService;
 
     @Autowired
-    private UserService userService;
+    private UserConfigService userConfigService;
 
     @Override
     public String edit(Map<String, String> params) {
-        ConfigModel model = configChecker.checkEditConfigModel(params);
-        manager.editConfig(model);
+        ConfigModel model = systemConfigChecker.checkEditConfigModel(params);
+        manager.editConfigModel(model);
         return "修改成功.";
     }
 
     @Override
-    public SystemConfigVo getConfig() {
-        return convertConfig2Vo(getConfigModel());
+    public SystemConfigVo getSystemConfigVo() {
+        return convertConfig2Vo(getSystemConfig());
     }
 
     @Override
     public List<ConfigModel> getConfigModelAll() {
         List<ConfigModel> list = new ArrayList<>();
-        list.add(getConfigModel());
-        list.add(userService.getUserConfig());
+        list.add(getSystemConfig());
+        list.add(userConfigService.getUserConfig());
         manager.getConnectorAll().forEach(config -> list.add(config));
         manager.getMappingAll().forEach(config -> list.add(config));
         manager.getMetaAll().forEach(config -> list.add(config));
@@ -98,14 +98,24 @@ public class ConfigServiceImpl implements ConfigService {
         }
     }
 
-    private synchronized Config getConfigModel() {
-        List<Config> all = manager.getConfigAll();
-        return CollectionUtils.isEmpty(all) ? (Config) configChecker.checkAddConfigModel(new HashMap<>()) : all.get(0);
+    private SystemConfig getSystemConfig() {
+        SystemConfig config = manager.getSystemConfig();
+        if (null != config) {
+            return config;
+        }
+
+        synchronized (this) {
+            config = manager.getSystemConfig();
+            if (null == config) {
+                config = (SystemConfig) systemConfigChecker.checkAddConfigModel(new HashMap<>());
+            }
+            return config;
+        }
     }
 
-    private SystemConfigVo convertConfig2Vo(Config config) {
+    private SystemConfigVo convertConfig2Vo(SystemConfig systemConfig) {
         SystemConfigVo systemConfigVo = new SystemConfigVo();
-        BeanUtils.copyProperties(config, systemConfigVo);
+        BeanUtils.copyProperties(systemConfig, systemConfigVo);
         return systemConfigVo;
     }
 

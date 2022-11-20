@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.storage.constant.ConfigConstant;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -32,6 +33,8 @@ public class Meta extends ConfigModel {
     private long endTime;
 
     public Meta() {
+        super.setType(ConfigConstant.META);
+        super.setName(ConfigConstant.META);
         init();
     }
 

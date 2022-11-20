@@ -4,6 +4,8 @@ public class DataVo {
 
     private String id;
     private int success;
+    private String tableGroupId;
+    private String targetTableName;
     private String event;
     private String error;
     private String json;
@@ -23,6 +25,22 @@ public class DataVo {
 
     public void setSuccess(int success) {
         this.success = success;
+    }
+
+    public String getTableGroupId() {
+        return tableGroupId;
+    }
+
+    public void setTableGroupId(String tableGroupId) {
+        this.tableGroupId = tableGroupId;
+    }
+
+    public String getTargetTableName() {
+        return targetTableName;
+    }
+
+    public void setTargetTableName(String targetTableName) {
+        this.targetTableName = targetTableName;
     }
 
     public String getEvent() {

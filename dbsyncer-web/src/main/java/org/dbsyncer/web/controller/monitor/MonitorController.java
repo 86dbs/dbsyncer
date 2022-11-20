@@ -1,6 +1,6 @@
 package org.dbsyncer.web.controller.monitor;
 
-import org.dbsyncer.biz.ConfigService;
+import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.vo.AppReportMetricVo;
@@ -54,7 +54,7 @@ public class MonitorController extends BaseController {
     private ConnectorService connectorService;
 
     @Autowired
-    private ConfigService configService;
+    private SystemConfigService systemConfigService;
 
     @Autowired
     private MetricsEndpoint metricsEndpoint;
@@ -160,7 +160,7 @@ public class MonitorController extends BaseController {
     @GetMapping("/getRefreshInterval")
     public RestResult getRefreshInterval() {
         try {
-            SystemConfigVo config = configService.getConfig();
+            SystemConfigVo config = systemConfigService.getSystemConfigVo();
             return RestResult.restSuccess(config.getRefreshInterval());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());

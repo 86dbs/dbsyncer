@@ -8,7 +8,6 @@ import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.command.PreloadCommand;
 import org.dbsyncer.manager.enums.CommandEnum;
 import org.dbsyncer.manager.model.OperationConfig;
-import org.dbsyncer.manager.model.QueryConfig;
 import org.dbsyncer.manager.template.OperationTemplate.Group;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.MetaEnum;
@@ -90,8 +89,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             return;
         }
 
-        // Load config
-        reload(map, CommandEnum.PRELOAD_CONFIG);
+        // Load system
+        reload(map, CommandEnum.PRELOAD_SYSTEM);
+        // Load user
+        reload(map, CommandEnum.PRELOAD_USER);
         // Load connectors
         reload(map, CommandEnum.PRELOAD_CONNECTOR);
         // Load mappings
@@ -100,8 +101,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         reload(map, CommandEnum.PRELOAD_META);
         // Load projectGroups
         reload(map, CommandEnum.PRELOAD_PROJECT_GROUP);
-        // Load userConfig
-        reload(map, CommandEnum.USER_CONFIG);
         launch();
     }
 
@@ -134,10 +133,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     }
 
     private void launch() {
-        Meta meta = new Meta();
-        meta.setType(ConfigConstant.META);
-        QueryConfig<Meta> queryConfig = new QueryConfig<>(meta);
-        List<Meta> metas = operationTemplate.queryAll(queryConfig);
+        List<Meta> metas = manager.getMetaAll();
         if (!CollectionUtils.isEmpty(metas)) {
             metas.forEach(m -> {
                 // 恢复驱动状态

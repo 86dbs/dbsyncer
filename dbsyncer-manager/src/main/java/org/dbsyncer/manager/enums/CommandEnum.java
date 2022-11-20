@@ -23,6 +23,16 @@ public enum CommandEnum {
     OPR_EDIT("edit", (cmd) -> ((PersistenceCommand) cmd).edit()),
 
     /**
+     * 预加载SystemConfig
+     */
+    PRELOAD_SYSTEM(ConfigConstant.SYSTEM, true, (cmd) -> ((PreloadCommand) cmd).parseSystemConfig()),
+
+    /**
+     * 预加载UserConfig
+     */
+    PRELOAD_USER(ConfigConstant.USER, true, (cmd) -> ((PreloadCommand) cmd).parseUserConfig()),
+
+    /**
      * 预加载Connector
      */
     PRELOAD_CONNECTOR(ConfigConstant.CONNECTOR, true, (cmd) -> ((PreloadCommand) cmd).parseConnector()),
@@ -43,19 +53,9 @@ public enum CommandEnum {
     PRELOAD_META(ConfigConstant.META, true, (cmd) -> ((PreloadCommand) cmd).parseMeta()),
 
     /**
-     * 预加载Config
-     */
-    PRELOAD_CONFIG(ConfigConstant.CONFIG, true, (cmd) -> ((PreloadCommand) cmd).parseConfig()),
-
-    /**
      * 预加载ProjectGroup
      */
-    PRELOAD_PROJECT_GROUP(ConfigConstant.PROJECT_GROUP, true, (cmd) -> ((PreloadCommand) cmd).parseProjectGroup()),
-
-    /**
-     * 预加载用户配置
-     */
-    USER_CONFIG(ConfigConstant.USER_CONFIG, true, (cmd) -> ((PreloadCommand) cmd).parseUserConfig());
+    PRELOAD_PROJECT_GROUP(ConfigConstant.PROJECT_GROUP, true, (cmd) -> ((PreloadCommand) cmd).parseProjectGroup());
 
     private String modelType;
     private boolean preload;

@@ -1,6 +1,6 @@
 package org.dbsyncer.web.config;
 
-import org.dbsyncer.biz.UserService;
+import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.SHA1Util;
@@ -60,7 +60,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     private static final int MAXIMUM_SESSIONS = 1;
 
     @Autowired
-    private UserService userService;
+    private UserConfigService userConfigService;
 
 
     /**
@@ -141,8 +141,8 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         String password = (String) authentication.getCredentials();
         password = SHA1Util.b64_sha1(password);
 
-        UserInfo userInfo = userService.getUserInfo(username);
-        if (null != userInfo && !StringUtil.equals(userInfo.getPassword(), password)) {
+        UserInfo userInfo = userConfigService.getUserInfo(username);
+        if (null == userInfo || !StringUtil.equals(userInfo.getPassword(), password)) {
             throw new BadCredentialsException("对不起,您输入的帐号或密码错误");
         }
         List<GrantedAuthority> authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(userInfo.getRoleCode());

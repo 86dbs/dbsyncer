@@ -20,13 +20,13 @@ public class ConfigConstant {
     /**
      * 配置类型
      */
+    public static final String SYSTEM = "system";
+    public static final String USER = "user";
     public static final String CONNECTOR = "connector";
     public static final String MAPPING = "mapping";
     public static final String TABLE_GROUP = "tableGroup";
     public static final String META = "meta";
-    public static final String CONFIG = "config";
     public static final String PROJECT_GROUP = "projectGroup";
-    public static final String USER_CONFIG = "userConfig";
 
     /**
      * 数据

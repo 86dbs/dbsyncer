@@ -1,7 +1,7 @@
 package org.dbsyncer.biz.vo;
 
-import org.dbsyncer.parser.model.Config;
+import org.dbsyncer.parser.model.SystemConfig;
 
-public class SystemConfigVo extends Config {
+public class SystemConfigVo extends SystemConfig {
 
 }

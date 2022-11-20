@@ -1,6 +1,6 @@
 package org.dbsyncer.web.controller.user;
 
-import org.dbsyncer.biz.UserService;
+import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.biz.vo.UserInfoVo;
 import org.dbsyncer.web.controller.BaseController;
@@ -34,12 +34,12 @@ public class UserController extends BaseController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private UserService userService;
+    private UserConfigService userConfigService;
 
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("currentUser", getUserInfoVo());
-        model.put("users", userService.getUserInfoAll(getUserName()));
+        model.put("users", userConfigService.getUserInfoAll(getUserName()));
         return "user/user";
     }
 
@@ -51,8 +51,8 @@ public class UserController extends BaseController {
     @GetMapping("/page/edit")
     public String pageEdit(ModelMap model, String username) {
         String currentUserName = getUserName();
-        model.put(UserService.CURRENT_USER_NAME, currentUserName);
-        model.put("currentUser", userService.getUserInfoVo(currentUserName, username));
+        model.put(UserConfigService.CURRENT_USER_NAME, currentUserName);
+        model.put("currentUser", userConfigService.getUserInfoVo(currentUserName, username));
         return "user/edit";
     }
 
@@ -67,7 +67,7 @@ public class UserController extends BaseController {
     public RestResult add(HttpServletRequest request) {
         try {
             Map<String, String> params = getParamsWithUserName(request);
-            return RestResult.restSuccess(userService.add(params));
+            return RestResult.restSuccess(userConfigService.add(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -79,7 +79,7 @@ public class UserController extends BaseController {
     public RestResult edit(HttpServletRequest request) {
         try {
             Map<String, String> params = getParamsWithUserName(request);
-            return RestResult.restSuccess(userService.edit(params));
+            return RestResult.restSuccess(userConfigService.edit(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -91,7 +91,7 @@ public class UserController extends BaseController {
     public RestResult remove(HttpServletRequest request) {
         try {
             Map<String, String> params = getParamsWithUserName(request);
-            return RestResult.restSuccess(userService.remove(params));
+            return RestResult.restSuccess(userConfigService.remove(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -100,7 +100,7 @@ public class UserController extends BaseController {
 
     private Map<String, String> getParamsWithUserName(HttpServletRequest request) {
         Map<String, String> params = getParams(request);
-        params.put(UserService.CURRENT_USER_NAME, getUserName());
+        params.put(UserConfigService.CURRENT_USER_NAME, getUserName());
         return params;
     }
 
@@ -111,7 +111,7 @@ public class UserController extends BaseController {
      */
     private UserInfoVo getUserInfoVo() {
         String currentUserName = getUserName();
-        return userService.getUserInfoVo(currentUserName, currentUserName);
+        return userConfigService.getUserInfoVo(currentUserName, currentUserName);
     }
 
     private String getUserName() {

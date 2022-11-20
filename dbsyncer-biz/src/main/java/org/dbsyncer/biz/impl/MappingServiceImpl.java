@@ -47,7 +47,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         ConfigModel model = mappingChecker.checkAddConfigModel(params);
         log(LogType.MappingLog.INSERT, (Mapping) model);
 
-        String id = manager.addMapping(model);
+        String id = manager.addConfigModel(model);
 
         // 匹配相似表 on
         String autoMatchTable = params.get("autoMatchTable");
@@ -68,7 +68,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             log(LogType.MappingLog.UPDATE, model);
 
             mappingChecker.batchMergeTableGroupConfig(model, params);
-            return manager.editMapping(model);
+            return manager.editConfigModel(model);
         }
     }
 
@@ -85,17 +85,17 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             log(LogType.MetaLog.CLEAR, meta);
 
             // 删除meta
-            manager.removeMeta(metaId);
+            manager.removeConfigModel(metaId);
             log(LogType.MetaLog.DELETE, meta);
 
             // 删除tableGroup
             List<TableGroup> groupList = manager.getTableGroupAll(id);
             if (!CollectionUtils.isEmpty(groupList)) {
-                groupList.forEach(t -> manager.removeTableGroup(t.getId()));
+                groupList.forEach(t -> manager.removeConfigModel(t.getId()));
             }
 
             // 删除驱动
-            manager.removeMapping(id);
+            manager.removeConfigModel(id);
             log(LogType.MappingLog.DELETE, mapping);
         }
         return "驱动删除成功";
@@ -218,7 +218,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {
             meta.getFail().set(0);
             meta.getSuccess().set(0);
-            manager.editMeta(meta);
+            manager.editConfigModel(meta);
         }
     }
 

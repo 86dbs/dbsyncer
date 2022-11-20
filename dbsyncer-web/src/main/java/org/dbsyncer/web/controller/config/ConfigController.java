@@ -2,7 +2,7 @@ package org.dbsyncer.web.controller.config;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.dbsyncer.biz.ConfigService;
+import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.config.AppConfig;
@@ -34,7 +34,7 @@ public class ConfigController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private ConfigService configService;
+    private SystemConfigService systemConfigService;
 
     @Autowired
     private CacheService cacheService;
@@ -50,7 +50,7 @@ public class ConfigController {
 
     @RequestMapping("")
     public String index(ModelMap model) {
-        model.put("config", configService.getConfigModelAll());
+        model.put("config", systemConfigService.getConfigModelAll());
         model.put("fileSize", JsonUtil.objToJson(cacheService.getAll()).getBytes(Charset.defaultCharset()).length);
         return "config/config";
     }
@@ -76,12 +76,12 @@ public class ConfigController {
                         continue;
                     }
                     String filename = files[i].getOriginalFilename();
-                    configService.checkFileSuffix(filename);
+                    systemConfigService.checkFileSuffix(filename);
                     String tmpdir = System.getProperty("java.io.tmpdir");
                     File dest = new File(tmpdir + filename);
                     FileUtils.deleteQuietly(dest);
                     FileUtils.copyInputStreamToFile(files[i].getInputStream(), dest);
-                    configService.refreshConfig(dest);
+                    systemConfigService.refreshConfig(dest);
                     String msg = String.format("导入配置文件%s", filename);
                     logger.info(msg);
                     logService.log(LogType.CacheLog.IMPORT, msg);
