@@ -3,6 +3,7 @@ package org.dbsyncer.manager.command;
 import org.dbsyncer.manager.Command;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.SystemConfig;
 
 public class PreloadCommand implements Command {
 
@@ -13,6 +14,14 @@ public class PreloadCommand implements Command {
     public PreloadCommand(Parser parser, String json) {
         this.parser = parser;
         this.json = json;
+    }
+
+    public Object parseSystemConfig() {
+        return parser.parseObject(json, SystemConfig.class);
+    }
+
+    public Object parseUserConfig() {
+        return parser.parseObject(json, UserConfig.class);
     }
 
     public Object parseConnector() {
@@ -31,15 +40,8 @@ public class PreloadCommand implements Command {
         return parser.parseObject(json, Meta.class);
     }
 
-    public Object parseConfig() {
-        return parser.parseObject(json, Config.class);
-    }
-
     public Object parseProjectGroup() {
         return parser.parseObject(json, ProjectGroup.class);
     }
 
-    public Object parseUserConfig() {
-        return parser.parseObject(json, UserConfig.class);
-    }
 }

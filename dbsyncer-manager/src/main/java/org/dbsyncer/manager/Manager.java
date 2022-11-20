@@ -112,13 +112,13 @@ public interface Manager extends Executor {
     List<Meta> getMetaAll();
 
     // Config
-    String addConfig(ConfigModel model);
+    String addSystemConfig(ConfigModel model);
 
-    String editConfig(ConfigModel model);
+    String editSystemConfig(ConfigModel model);
 
-    Config getConfig(String configId);
+    SystemConfig getSystemConfig(String configId);
 
-    List<Config> getConfigAll();
+    List<SystemConfig> getSystemConfigAll();
 
     // Data
     Paging queryData(Query query, String collectionId);

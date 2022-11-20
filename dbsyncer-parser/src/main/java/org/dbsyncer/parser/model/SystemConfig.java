@@ -7,7 +7,7 @@ package org.dbsyncer.parser.model;
  * @Author AE86
  * @Date 2020-05-29 20:13
  */
-public class Config extends ConfigModel {
+public class SystemConfig extends ConfigModel {
 
     private int refreshInterval = 5;
 

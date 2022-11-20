@@ -8,11 +8,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 系统配置
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2020/5/30 23:14
  */
-public interface ConfigService {
+public interface SystemConfigService {
 
     /**
      * 修改系统配置
@@ -26,10 +28,10 @@ public interface ConfigService {
      *
      * @return
      */
-    SystemConfigVo getConfig();
+    SystemConfigVo getSystemConfigVo();
 
     /**
-     * 获取所有配置
+     * 获取所有配置（system、user、connector、mapping、tableGroup、meta、projectGroup）
      *
      * @return
      */

@@ -23,6 +23,7 @@ import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.StorageService;
@@ -85,7 +86,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     @Override
     public List<UserConfig> getUserConfigAll() {
         UserConfig userConfig = new UserConfig();
-        userConfig.setType(ConfigConstant.USER_CONFIG);
+        userConfig.setType(ConfigConstant.USER);
         QueryConfig<UserConfig> queryConfig = new QueryConfig<>(userConfig);
         List<UserConfig> userConfigs = operationTemplate.queryAll(queryConfig);
         return userConfigs;
@@ -305,25 +306,25 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     }
 
     @Override
-    public String addConfig(ConfigModel model) {
+    public String addSystemConfig(ConfigModel model) {
         return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
     }
 
     @Override
-    public String editConfig(ConfigModel model) {
+    public String editSystemConfig(ConfigModel model) {
         return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
     }
 
     @Override
-    public Config getConfig(String configId) {
-        return operationTemplate.queryObject(Config.class, configId);
+    public SystemConfig getSystemConfig(String configId) {
+        return operationTemplate.queryObject(SystemConfig.class, configId);
     }
 
     @Override
-    public List<Config> getConfigAll() {
-        Config config = new Config();
-        config.setType(ConfigConstant.CONFIG);
-        QueryConfig<Config> queryConfig = new QueryConfig<>(config);
+    public List<SystemConfig> getSystemConfigAll() {
+        SystemConfig systemConfig = new SystemConfig();
+        systemConfig.setType(ConfigConstant.SYSTEM);
+        QueryConfig<SystemConfig> queryConfig = new QueryConfig<>(systemConfig);
         return operationTemplate.queryAll(queryConfig);
     }
 

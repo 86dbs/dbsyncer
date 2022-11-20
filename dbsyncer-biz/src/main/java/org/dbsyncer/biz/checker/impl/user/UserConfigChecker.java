@@ -22,7 +22,7 @@ public class UserConfigChecker extends AbstractChecker {
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
         UserConfig config = new UserConfig();
         config.setName("用户配置");
-        config.setType(ConfigConstant.USER_CONFIG);
+        config.setType(ConfigConstant.USER);
         config.setUserInfoList(new ArrayList<>());
 
         // 修改基本配置

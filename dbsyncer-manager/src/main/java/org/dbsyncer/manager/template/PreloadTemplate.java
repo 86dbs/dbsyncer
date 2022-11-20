@@ -90,8 +90,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             return;
         }
 
-        // Load config
-        reload(map, CommandEnum.PRELOAD_CONFIG);
+        // Load system
+        reload(map, CommandEnum.PRELOAD_SYSTEM);
+        // Load user
+        reload(map, CommandEnum.PRELOAD_USER);
         // Load connectors
         reload(map, CommandEnum.PRELOAD_CONNECTOR);
         // Load mappings
@@ -100,8 +102,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         reload(map, CommandEnum.PRELOAD_META);
         // Load projectGroups
         reload(map, CommandEnum.PRELOAD_PROJECT_GROUP);
-        // Load userConfig
-        reload(map, CommandEnum.USER_CONFIG);
         launch();
     }
 
