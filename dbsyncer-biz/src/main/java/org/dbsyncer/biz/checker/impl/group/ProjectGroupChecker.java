@@ -36,7 +36,6 @@ public class ProjectGroupChecker extends AbstractChecker {
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         ProjectGroup projectGroup = new ProjectGroup();
-        projectGroup.setType(ConfigConstant.PROJECT_GROUP);
         projectGroup.setName(name);
 
         modifyProjectGroup(projectGroup, params);

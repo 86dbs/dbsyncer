@@ -33,6 +33,8 @@ public class Meta extends ConfigModel {
     private long endTime;
 
     public Meta() {
+        super.setType(ConfigConstant.META);
+        super.setName(ConfigConstant.META);
         init();
     }
 
@@ -44,7 +46,6 @@ public class Meta extends ConfigModel {
     }
 
     private void init(){
-        super.setType(ConfigConstant.META);
         this.state = MetaEnum.READY.getCode();
         this.total = new AtomicLong(0);
         this.success = new AtomicLong(0);

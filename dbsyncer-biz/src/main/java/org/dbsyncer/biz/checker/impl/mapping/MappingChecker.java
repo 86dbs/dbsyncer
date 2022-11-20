@@ -57,7 +57,6 @@ public class MappingChecker extends AbstractChecker {
 
         Mapping mapping = new Mapping();
         mapping.setName(name);
-        mapping.setType(ConfigConstant.MAPPING);
         mapping.setSourceConnectorId(sourceConnectorId);
         mapping.setTargetConnectorId(targetConnectorId);
         mapping.setModel(ModelEnum.FULL.getCode());
@@ -203,8 +202,6 @@ public class MappingChecker extends AbstractChecker {
     private void addMeta(Mapping mapping) {
         Meta meta = new Meta();
         meta.setMappingId(mapping.getId());
-        meta.setType(ConfigConstant.META);
-        meta.setName(ConfigConstant.META);
 
         // 修改基本配置
         this.modifyConfigModel(meta, new HashMap<>());

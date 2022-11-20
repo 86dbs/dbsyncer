@@ -15,6 +15,7 @@ public class TableGroup extends AbstractConfigModel {
 
     public TableGroup() {
         super.setType(ConfigConstant.TABLE_GROUP);
+        super.setName(ConfigConstant.TABLE_GROUP);
     }
 
     // 排序索引

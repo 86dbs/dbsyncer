@@ -107,8 +107,6 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
       const newPwd = data.newPwd;
       doPoster("/user/edit", data, function (data) {
         if (data.success == true) {
-          bootGrowl("修改用户成功！", "success");
-          backUserIndexPage();
           // 刷新个人信息
           if (currentUserName == username) {
             // 修改个人密码后需要重新登录
@@ -120,6 +118,8 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
             }
             refreshLoginUser();
           }
+          bootGrowl("修改用户成功！", "success");
+          backUserIndexPage();
         } else {
           bootGrowl(data.resultValue, "danger");
         }

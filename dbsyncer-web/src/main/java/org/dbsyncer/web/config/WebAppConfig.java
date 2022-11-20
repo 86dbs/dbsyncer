@@ -142,7 +142,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         password = SHA1Util.b64_sha1(password);
 
         UserInfo userInfo = userConfigService.getUserInfo(username);
-        if (null != userInfo && !StringUtil.equals(userInfo.getPassword(), password)) {
+        if (null == userInfo || !StringUtil.equals(userInfo.getPassword(), password)) {
             throw new BadCredentialsException("对不起,您输入的帐号或密码错误");
         }
         List<GrantedAuthority> authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(userInfo.getRoleCode());

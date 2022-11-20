@@ -1,5 +1,7 @@
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.storage.constant.ConfigConstant;
+
 /**
  * 系统配置
  *
@@ -8,6 +10,10 @@ package org.dbsyncer.parser.model;
  * @Date 2020-05-29 20:13
  */
 public class SystemConfig extends ConfigModel {
+
+    public SystemConfig() {
+        super.setType(ConfigConstant.SYSTEM);
+    }
 
     private int refreshInterval = 5;
 

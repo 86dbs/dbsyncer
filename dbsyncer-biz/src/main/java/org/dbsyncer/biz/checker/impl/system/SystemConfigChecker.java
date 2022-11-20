@@ -37,7 +37,6 @@ public class SystemConfigChecker extends AbstractChecker {
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
         SystemConfig systemConfig = new SystemConfig();
         systemConfig.setName("系统配置");
-        systemConfig.setType(ConfigConstant.SYSTEM);
 
         // 修改基本配置
         this.modifyConfigModel(systemConfig, params);

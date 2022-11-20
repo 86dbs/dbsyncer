@@ -23,11 +23,9 @@ import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.*;
-import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.StorageService;
-import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
@@ -85,19 +83,13 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public SystemConfig getSystemConfig() {
-        SystemConfig systemConfig = new SystemConfig();
-        systemConfig.setType(ConfigConstant.SYSTEM);
-        QueryConfig<SystemConfig> queryConfig = new QueryConfig<>(systemConfig);
-        List<SystemConfig> list = operationTemplate.queryAll(queryConfig);
+        List<SystemConfig> list = operationTemplate.queryAll(SystemConfig.class);
         return CollectionUtils.isEmpty(list) ? null : list.get(0);
     }
 
     @Override
     public UserConfig getUserConfig() {
-        UserConfig userConfig = new UserConfig();
-        userConfig.setType(ConfigConstant.USER);
-        QueryConfig<UserConfig> queryConfig = new QueryConfig<>(userConfig);
-        List<UserConfig> list = operationTemplate.queryAll(queryConfig);
+        List<UserConfig> list = operationTemplate.queryAll(UserConfig.class);
         return CollectionUtils.isEmpty(list) ? null : list.get(0);
     }
 
@@ -108,11 +100,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public List<ProjectGroup> getProjectGroupAll() {
-        ProjectGroup projectGroup = new ProjectGroup();
-        projectGroup.setType(ConfigConstant.PROJECT_GROUP);
-        QueryConfig<ProjectGroup> queryConfig = new QueryConfig<>(projectGroup);
-        List<ProjectGroup> groups = operationTemplate.queryAll(queryConfig);
-        return groups;
+        return operationTemplate.queryAll(ProjectGroup.class);
     }
 
     @Override
@@ -147,9 +135,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public List<Connector> getConnectorAll() {
-        QueryConfig<Connector> queryConfig = new QueryConfig<>(new Connector());
-        List<Connector> connectors = operationTemplate.queryAll(queryConfig);
-        return connectors;
+        return operationTemplate.queryAll(Connector.class);
     }
 
     @Override
@@ -174,9 +160,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public List<Mapping> getMappingAll() {
-        QueryConfig<Mapping> queryConfig = new QueryConfig<>(new Mapping());
-        List<Mapping> mappings = operationTemplate.queryAll(queryConfig);
-        return mappings;
+        return operationTemplate.queryAll(Mapping.class);
     }
 
     @Override
@@ -186,11 +170,8 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
-        TableGroup tableGroup = new TableGroup();
-        tableGroup.setMappingId(mappingId);
-        QueryConfig<TableGroup> queryConfig = new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE);
-        List<TableGroup> tableGroups = operationTemplate.queryAll(queryConfig);
-        return tableGroups;
+        TableGroup tableGroup = new TableGroup().setMappingId(mappingId);
+        return operationTemplate.queryAll(new QueryConfig(tableGroup, GroupStrategyEnum.TABLE));
     }
 
     @Override
@@ -204,10 +185,8 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public int getTableGroupCount(String mappingId) {
-        TableGroup tableGroup = new TableGroup();
-        tableGroup.setMappingId(mappingId);
-        QueryConfig queryConfig = new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE);
-        return operationTemplate.queryCount(queryConfig);
+        TableGroup tableGroup = new TableGroup().setMappingId(mappingId);
+        return operationTemplate.queryCount(new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE));
     }
 
     @Override
@@ -227,8 +206,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
 
     @Override
     public List<Meta> getMetaAll() {
-        QueryConfig<Meta> queryConfig = new QueryConfig<>(new Meta());
-        return operationTemplate.queryAll(queryConfig);
+        return operationTemplate.queryAll(Meta.class);
     }
 
     @Override

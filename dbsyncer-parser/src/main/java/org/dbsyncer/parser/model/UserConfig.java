@@ -1,5 +1,7 @@
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.storage.constant.ConfigConstant;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -15,22 +17,26 @@ public class UserConfig extends ConfigModel {
 
     private List<UserInfo> userInfoList = new ArrayList<>();
 
-    public void removeUserInfo(String username){
+    public UserConfig() {
+        super.setType(ConfigConstant.USER);
+    }
+
+    public void removeUserInfo(String username) {
         Iterator<UserInfo> iterator = userInfoList.iterator();
-        while (iterator.hasNext()){
+        while (iterator.hasNext()) {
             UserInfo next = iterator.next();
-            if(next.getUsername().equals(username)){
+            if (next.getUsername().equals(username)) {
                 iterator.remove();
                 break;
             }
         }
     }
 
-    public UserInfo getUserInfo(String username){
+    public UserInfo getUserInfo(String username) {
         Iterator<UserInfo> iterator = userInfoList.iterator();
-        while (iterator.hasNext()){
+        while (iterator.hasNext()) {
             UserInfo next = iterator.next();
-            if(next.getUsername().equals(username)){
+            if (next.getUsername().equals(username)) {
                 return next;
             }
         }
