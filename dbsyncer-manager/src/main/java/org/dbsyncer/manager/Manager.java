@@ -85,6 +85,10 @@ public interface Manager extends Executor {
     List<Mapping> getMappingAll();
 
     // TableGroup
+    String addTableGroup(TableGroup model);
+
+    String editTableGroup(TableGroup model);
+
     TableGroup getTableGroup(String tableGroupId);
 
     List<TableGroup> getTableGroupAll(String mappingId);

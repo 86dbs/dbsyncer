@@ -164,6 +164,16 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     }
 
     @Override
+    public String addTableGroup(TableGroup model) {
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, GroupStrategyEnum.TABLE));
+    }
+
+    @Override
+    public String editTableGroup(TableGroup model) {
+        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT, GroupStrategyEnum.TABLE));
+    }
+
+    @Override
     public TableGroup getTableGroup(String tableGroupId) {
         return operationTemplate.queryObject(TableGroup.class, tableGroupId);
     }

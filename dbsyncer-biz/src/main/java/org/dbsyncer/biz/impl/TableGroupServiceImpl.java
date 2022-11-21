@@ -51,7 +51,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
                 log(LogType.TableGroupLog.INSERT, model);
                 int tableGroupCount = manager.getTableGroupCount(mappingId);
                 model.setIndex(tableGroupCount + 1);
-                id = manager.addConfigModel(model);
+                id = manager.addTableGroup(model);
             }
 
             // 合并驱动公共字段
@@ -70,7 +70,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
         log(LogType.TableGroupLog.UPDATE, model);
 
-        return manager.editConfigModel(model);
+        return manager.editTableGroup(model);
     }
 
     @Override

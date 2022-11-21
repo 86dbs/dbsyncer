@@ -133,6 +133,15 @@ public class TableGroupChecker extends AbstractChecker {
     private Table getTable(String connectorId, String tableName, String primaryKey) {
         MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接器表信息.");
+        // 自定义主键
+        if(StringUtil.isNotBlank(primaryKey) && !CollectionUtils.isEmpty(metaInfo.getColumn())){
+            for(Field field : metaInfo.getColumn()){
+                if(StringUtil.equals(field.getName(), primaryKey)){
+                    field.setPk(true);
+                    break;
+                }
+            }
+        }
         return new Table(tableName, metaInfo.getTableType(), primaryKey, metaInfo.getColumn());
     }
 
