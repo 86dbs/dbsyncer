@@ -48,8 +48,7 @@ public class ESClientTest {
     @Before
     public void init() {
         ESConfig config = new ESConfig();
-        config.setUrl("127.0.0.1:9200");
-        config.setSchema("http");
+        config.setUrl("https://127.0.0.1:9200");
         config.setUsername("ae86");
         config.setPassword("123456");
         client = ESUtil.getConnection(config);

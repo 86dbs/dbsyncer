@@ -18,28 +18,15 @@
         <div class="col-sm-4">
             <input class="form-control" name="index" type="text" maxlength="32" dbsyncer-valid="require" placeholder="test" th:value="${connector?.config?.index}?:'test'"/>
         </div>
-        <label class="col-sm-2 control-label">type <strong class="driverVerifcateRequired">*</strong></label>
-        <div class="col-sm-4 ">
-            <input class="form-control" name="type" type="text" maxlength="32" dbsyncer-valid="require" placeholder="_doc" th:value="${connector?.config?.type}?:'_doc'"/>
-        </div>
-    </div>
-    <div class="form-group">
         <label class="col-sm-2 control-label">主键 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="如果使用的表没有主键，可以自定义主键（大小写必须一致，添加表映射关系时，主键不能为空）。"></i><strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-4">
             <input class="form-control" name="primaryKey" type="text" maxlength="32" dbsyncer-valid="require" placeholder="id" th:value="${connector?.config?.primaryKey}?:'id'"/>
         </div>
-        <label class="col-sm-2 control-label">地址 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：192.168.1.100:9200,192.168.1.200:9200"></i> <strong class="driverVerifcateRequired">*</strong></label>
-        <div class="col-sm-4">
-            <textarea id="sql" name="url" class="form-control dbsyncer_textarea_resize_none" maxlength="1024" dbsyncer-valid="require" rows="2" th:text="${connector?.config?.url}?:'127.0.0.1:9200'"></textarea>
-        </div>
     </div>
     <div class="form-group">
-        <label class="col-sm-2 control-label">协议 </label>
+        <label class="col-sm-2 control-label">地址 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：http://192.168.1.100:9200,http://192.168.1.200:9200"></i> <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-4">
-            <select class="form-control select-control" name="schema">
-                <option value="http" th:selected="${connector?.config?.schema eq 'http'}">http</option>
-                <option value="tcp" th:selected="${connector?.config?.schema eq 'tcp'}">tcp</option>
-            </select>
+            <textarea id="sql" name="url" class="form-control dbsyncer_textarea_resize_none" maxlength="1024" dbsyncer-valid="require" rows="2" th:text="${connector?.config?.url}?:'http://127.0.0.1:9200'"></textarea>
         </div>
         <div class="col-sm-6"></div>
     </div>
