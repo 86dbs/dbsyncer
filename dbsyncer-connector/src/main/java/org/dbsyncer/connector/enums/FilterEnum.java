@@ -25,19 +25,19 @@ public enum FilterEnum {
     /**
      * 大于
      */
-    GT(">", (value, filterValue) -> NumberUtil.toInt(value) > NumberUtil.toInt(filterValue)),
+    GT(">", (value, filterValue) -> NumberUtil.toLong(value) > NumberUtil.toLong(filterValue)),
     /**
      * 小于
      */
-    LT("<", (value, filterValue) -> NumberUtil.toInt(value) < NumberUtil.toInt(filterValue)),
+    LT("<", (value, filterValue) -> NumberUtil.toLong(value) < NumberUtil.toLong(filterValue)),
     /**
      * 大于等于
      */
-    GT_AND_EQUAL(">=", (value, filterValue) -> NumberUtil.toInt(value) >= NumberUtil.toInt(filterValue)),
+    GT_AND_EQUAL(">=", (value, filterValue) -> NumberUtil.toLong(value) >= NumberUtil.toLong(filterValue)),
     /**
      * 小于等于
      */
-    LT_AND_EQUAL("<=", (value, filterValue) -> NumberUtil.toInt(value) <= NumberUtil.toInt(filterValue)),
+    LT_AND_EQUAL("<=", (value, filterValue) -> NumberUtil.toLong(value) <= NumberUtil.toLong(filterValue)),
     /**
      * 模糊匹配
      */
