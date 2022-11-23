@@ -23,7 +23,6 @@ public abstract class AbstractDataBaseConfigChecker implements ConnectorConfigCh
         Assert.hasText(username, "Username is empty.");
         Assert.hasText(password, "Password is empty.");
         Assert.hasText(url, "Url is empty.");
-        Assert.hasText(driverClassName, "DriverClassName is empty.");
 
         connectorConfig.setUsername(username);
         connectorConfig.setPassword(password);
