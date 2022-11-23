@@ -1,6 +1,7 @@
 package org.dbsyncer.manager.model;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.CompareFilter;
 import org.dbsyncer.connector.enums.FilterEnum;
@@ -11,6 +12,8 @@ import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.springframework.util.Assert;
 
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,15 +63,13 @@ public class FieldPicker {
         }
         // where (id > 1 and id < 100) or (id = 100 or id =101)
         // 或 关系(成立任意条件)
-        CompareFilter filter = null;
         Object value = null;
         for (Filter f : or) {
             value = row.get(f.getName());
             if (null == value) {
                 continue;
             }
-            filter = FilterEnum.getCompareFilter(f.getFilter());
-            if (filter.compare(String.valueOf(value), f.getValue())) {
+            if (compareValueWithFilter(f, value)) {
                 return true;
             }
         }
@@ -80,14 +81,41 @@ public class FieldPicker {
             if (null == value) {
                 continue;
             }
-            filter = FilterEnum.getCompareFilter(f.getFilter());
-            if (!filter.compare(String.valueOf(value), f.getValue())) {
+            if (!compareValueWithFilter(f, value)) {
                 return false;
             }
             pass = true;
         }
 
         return pass;
+    }
+
+    /**
+     * 比较值是否满足过滤条件
+     *
+     * @param filter        过滤器
+     * @param comparedValue 比较值
+     * @return
+     */
+    private boolean compareValueWithFilter(Filter filter, Object comparedValue) {
+        CompareFilter compareFilter = FilterEnum.getCompareFilter(filter.getFilter());
+        if (null == filter) {
+            return false;
+        }
+
+        // 支持时间比较
+        if (comparedValue instanceof Timestamp) {
+            Timestamp comparedTimestamp = (Timestamp) comparedValue;
+            Timestamp filterTimestamp = DateFormatUtil.stringToTimestamp(filter.getValue());
+            return compareFilter.compare(String.valueOf(comparedTimestamp.getTime()), String.valueOf(filterTimestamp.getTime()));
+        }
+        if (comparedValue instanceof Date) {
+            Date comparedDate = (Date) comparedValue;
+            Date filterDate = DateFormatUtil.stringToDate(filter.getValue());
+            return compareFilter.compare(String.valueOf(comparedDate.getTime()), String.valueOf(filterDate.getTime()));
+        }
+
+        return compareFilter.compare(String.valueOf(comparedValue), filter.getValue());
     }
 
     private void init(List<Filter> filter, List<Field> column, List<FieldMapping> fieldMapping) {

@@ -11,14 +11,9 @@ import org.dbsyncer.common.model.AbstractConnectorConfig;
 public class ESConfig extends AbstractConnectorConfig {
 
     /**
-     * 集群地址192.168.1.100:9200,192.168.1.200:9200
+     * 集群地址, http(s)-9200, tcp-9300 http://192.168.1.100:9200,http://192.168.1.200:9200
      */
     private String url;
-
-    /**
-     * 协议9200(http),9300(tcp)
-     */
-    private String schema;
 
     /**
      * 帐号
@@ -36,9 +31,9 @@ public class ESConfig extends AbstractConnectorConfig {
     private String index;
 
     /**
-     * 类型(相当于表)
+     * 类型(相当于表), 6.x 每个索引对应一个type；7.x版本不再引入type概念
      */
-    private String type;
+    private String type = "_doc";
 
     /**
      * 主键
@@ -51,14 +46,6 @@ public class ESConfig extends AbstractConnectorConfig {
 
     public void setUrl(String url) {
         this.url = url;
-    }
-
-    public String getSchema() {
-        return schema;
-    }
-
-    public void setSchema(String schema) {
-        this.schema = schema;
     }
 
     public String getUsername() {

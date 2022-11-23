@@ -273,20 +273,26 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     private void initUpgradeSql() {
         // show tables where Tables_in_dbsyncer like "dbsyncer_data%"
         String sql = String.format(SHOW_DATA_TABLE, database, PREFIX_TABLE.concat(StorageEnum.DATA.getType()).concat("%"));
-        Map<String, String> tables = null;
+        List<String> tables = null;
         try {
-            tables = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForMap(sql));
+            tables = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
         } catch (EmptyResultDataAccessException e) {
             // 没有可更新的表
         }
         if (CollectionUtils.isEmpty(tables)) {
             return;
         }
-        tables.values().forEach(table -> {
+        final String queryColumnCount = "SELECT count(*) FROM information_schema.columns WHERE table_name = '%s' and column_name = 'TABLE_GROUP_ID'";
+        tables.forEach(table -> {
             try {
-                String ddl = readSql(UPGRADE_SQL, true, table);
-                executeSql(ddl);
-                logger.info(ddl);
+                String query = String.format(queryColumnCount, table);
+                // 是否已升级
+                int count = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(query, Integer.class));
+                if (count == 0) {
+                    String ddl = readSql(UPGRADE_SQL, true, table);
+                    executeSql(ddl);
+                    logger.info(ddl);
+                }
             } catch (Exception e) {
                 if (e.getCause() instanceof SQLSyntaxErrorException) {
                     SQLSyntaxErrorException ex = (SQLSyntaxErrorException) e.getCause();
@@ -404,11 +410,11 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         if (!CollectionUtils.isEmpty(list) && query.isEnableHighLightSearch()) {
             List<Param> highLight = query.getParams().stream().filter(p -> p.isHighlighter()).collect(Collectors.toList());
             list.forEach(row ->
-                highLight.forEach(p -> {
-                    String text = String.valueOf(row.get(p.getKey()));
-                    String replacement = new StringBuilder("<span style='color:red'>").append(p.getValue()).append("</span>").toString();
-                    row.put(p.getKey(), StringUtil.replace(text, p.getValue(), replacement));
-                })
+                    highLight.forEach(p -> {
+                        String text = String.valueOf(row.get(p.getKey()));
+                        String replacement = new StringBuilder("<span style='color:red'>").append(p.getValue()).append("</span>").toString();
+                        row.put(p.getKey(), StringUtil.replace(text, p.getValue(), replacement));
+                    })
             );
         }
     }
