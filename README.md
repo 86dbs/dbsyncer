@@ -41,9 +41,15 @@ log-bin=mysql_bin
 binlog-format=ROW
 max_binlog_cache_size = 256M
 max_binlog_size = 512M
-expire_logs_days = 7
 #监听同步的库, 多个库使用英文逗号“,”拼接
 replicate-do-db=test
+```
+> 准备账号用于数据同步（这里我为test数据库创建了ae86账号，并授权）
+``` sql
+CREATE USER 'ae86'@'%' IDENTIFIED WITH mysql_native_password BY '123';
+GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'ae86'@'%';
+GRANT SELECT ON test.* TO 'ae86'@'%';
+flush privileges;
 ```
 
 ##### Oracle
