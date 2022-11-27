@@ -160,7 +160,7 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
                 logger.error("[{}]异常{}", key);
             }
             final BufferResponse task = (BufferResponse) flushTask;
-            logger.info("[{}{}]{}条，耗时{}毫秒", key, task.getSuffixName(), task.getTaskSize(), (Instant.now().toEpochMilli() - now));
+            logger.info("[{}{}]{}, {}ms", key, task.getSuffixName(), task.getTaskSize(), (Instant.now().toEpochMilli() - now));
         });
         map.clear();
         map = null;
