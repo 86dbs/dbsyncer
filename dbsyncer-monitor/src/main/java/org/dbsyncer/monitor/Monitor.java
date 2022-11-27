@@ -21,9 +21,9 @@ public interface Monitor {
 
     List<Meta> getMetaAll();
 
-    Paging queryData(String id, int pageNum, int pageSize, String error, String success);
+    Paging queryData(String metaId, int pageNum, int pageSize, String error, String success);
 
-    void clearData(String collectionId);
+    void clearData(String metaId);
 
     Paging queryLog(int pageNum, int pageSize, String json);
 

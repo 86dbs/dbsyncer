@@ -14,36 +14,13 @@ import java.util.Map;
  */
 public interface StorageService {
 
+    /**
+     * 查询所有数据
+     *
+     * @param query
+     * @return
+     */
     Paging query(Query query);
-
-    void add(StorageEnum type, Map params);
-
-    void add(StorageEnum type, Map params, String collectionId);
-
-    void edit(StorageEnum type, Map params);
-
-    void edit(StorageEnum type, Map params, String collectionId);
-
-    void remove(StorageEnum type, String id);
-
-    void remove(StorageEnum type, String id, String collectionId);
-
-    /**
-     * 记录日志
-     *
-     * @param log
-     * @param params
-     */
-    void addLog(StorageEnum log, Map<String,Object> params);
-
-    /**
-     * 记录数据
-     *
-     * @param data
-     * @param collectionId
-     * @param list
-     */
-    void addData(StorageEnum data, String collectionId, List<Map> list);
 
     /**
      * 清空数据/日志
@@ -52,4 +29,40 @@ public interface StorageService {
      * @param collectionId
      */
     void clear(StorageEnum type, String collectionId);
+
+    /**
+     * 添加配置
+     *
+     * @param params
+     */
+    void addConfig(Map params);
+
+    /**
+     * 修改配置
+     *
+     * @param params
+     */
+    void editConfig(Map params);
+
+    /**
+     * 删除配置
+     *
+     * @param id
+     */
+    void removeConfig(String id);
+
+    /**
+     * 记录日志
+     *
+     * @param params
+     */
+    void addLog(Map<String,Object> params);
+
+    /**
+     * 记录数据
+     *
+     * @param collectionId
+     * @param list
+     */
+    void addData(String collectionId, List<Map> list);
 }

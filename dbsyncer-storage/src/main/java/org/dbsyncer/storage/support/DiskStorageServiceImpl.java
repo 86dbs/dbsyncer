@@ -2,7 +2,6 @@ package org.dbsyncer.storage.support;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.dbsyncer.common.model.Paging;
@@ -17,16 +16,14 @@ import org.dbsyncer.storage.query.Option;
 import org.dbsyncer.storage.query.Param;
 import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.util.DocumentUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * 将数据存储在磁盘，基于lucene实现
@@ -37,9 +34,7 @@ import java.util.stream.Collectors;
  */
 public class DiskStorageServiceImpl extends AbstractStorageService {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    private Map<String, Shard> map = new ConcurrentHashMap();
+    private Map<String, Shard> shards = new ConcurrentHashMap();
 
     /**
      * 相对路径/data/
@@ -49,28 +44,15 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
 
     @PostConstruct
     private void init() {
-        try {
-            // 创建配置和日志索引shard
-            String config = StorageEnum.CONFIG.getType();
-            map.putIfAbsent(config, new Shard(PATH + config));
-
-            String log = StorageEnum.LOG.getType();
-            map.putIfAbsent(log, new Shard(PATH + log));
-        } catch (IOException e) {
-            throw new StorageException(e);
-        }
+        // 创建配置和日志索引shard
+        getShard(getSharding(StorageEnum.CONFIG, null));
+        getShard(getSharding(StorageEnum.LOG, null));
     }
 
     @Override
-    public Paging select(Query query) throws IOException {
-        Shard shard = map.get(query.getCollection());
-
-        // 检查是否存在历史
-        if (null == shard) {
-            shard = cacheShardIfExist(query.getCollection());
-        }
-
-        if (null != shard) {
+    protected Paging select(String sharding, Query query) {
+        try {
+            Shard shard = getShard(sharding);
             int pageNum = query.getPageNum() <= 0 ? 1 : query.getPageNum();
             int pageSize = query.getPageSize() <= 0 ? 20 : query.getPageSize();
             boolean queryTotal = query.isQueryTotal();
@@ -93,54 +75,92 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
             }
 
             return shard.query(new Option(new MatchAllDocsQuery(), queryTotal, null), pageNum, pageSize, sort);
+        } catch (IOException e) {
+            throw new StorageException(e);
         }
-        return new Paging(query.getPageNum(), query.getPageSize());
     }
 
     @Override
-    public void insert(StorageEnum type, String collection, Map params) throws IOException {
-        createShardIfNotExist(collection);
-        Document doc = DocumentUtil.convertConfig2Doc(params);
-        map.get(collection).insert(doc);
+    public void deleteAll(String sharding) {
+        shards.computeIfPresent(sharding, (k, v) -> {
+            v.deleteAll();
+            return v;
+        });
+        shards.remove(sharding);
     }
 
     @Override
-    public void update(StorageEnum type, String collection, Map params) throws IOException {
-        createShardIfNotExist(collection);
-        Document doc = DocumentUtil.convertConfig2Doc(params);
-        IndexableField field = doc.getField(ConfigConstant.CONFIG_MODEL_ID);
-        map.get(collection).update(new Term(ConfigConstant.CONFIG_MODEL_ID, field.stringValue()), doc);
+    protected void batchInsert(StorageEnum type, String sharding, List<Map> list) {
+        batchExecute(type, sharding, list, (shard, docs) -> shard.insertBatch(docs));
     }
 
     @Override
-    public void delete(StorageEnum type, String collection, String id) throws IOException {
-        createShardIfNotExist(collection);
-        map.get(collection).delete(new Term(ConfigConstant.CONFIG_MODEL_ID, id));
-    }
-
-    @Override
-    public void deleteAll(StorageEnum type, String collection) throws IOException {
-        synchronized (this) {
-            Shard shard = map.get(collection);
-            if (null != shard) {
-                shard.deleteAll();
-                map.remove(collection);
+    protected void batchUpdate(StorageEnum type, String sharding, List<Map> list) {
+        batchExecute(type, sharding, list, (shard, docs) -> {
+            for (Document doc : docs) {
+                shard.update(getPrimaryKeyTerm(doc), doc);
             }
+        });
+    }
+
+    @Override
+    protected void batchDelete(StorageEnum type, String sharding, List<String> list) {
+        Shard shard = getShard(sharding);
+        int size = list.size();
+        Term[] terms = new Term[size];
+        for (int i = 0; i < size; i++) {
+            terms[i] = getPrimaryKeyTerm(list.get(i));
+        }
+        try {
+            shard.deleteBatch(terms);
+        } catch (IOException e) {
+            throw new StorageException(e);
         }
     }
 
     @Override
-    public void insertLog(StorageEnum type, String collection, Map<String, Object> params) throws IOException {
-        createShardIfNotExist(collection);
-        Document doc = DocumentUtil.convertLog2Doc(params);
-        map.get(collection).insert(doc);
+    public void destroy() throws Exception {
+        for (Map.Entry<String, Shard> m : shards.entrySet()) {
+            m.getValue().close();
+        }
+        shards.clear();
     }
 
-    @Override
-    public void insertData(StorageEnum type, String collection, List<Map> list) throws IOException {
-        createShardIfNotExist(collection);
-        List<Document> docs = list.stream().map(r -> DocumentUtil.convertData2Doc(r)).collect(Collectors.toList());
-        map.get(collection).insertBatch(docs);
+    private Term getPrimaryKeyTerm(Document doc) {
+        return new Term(ConfigConstant.CONFIG_MODEL_ID, doc.getField(ConfigConstant.CONFIG_MODEL_ID).stringValue());
+    }
+
+    private Term getPrimaryKeyTerm(String id) {
+        return new Term(ConfigConstant.CONFIG_MODEL_ID, id);
+    }
+
+    private void batchExecute(StorageEnum type, String sharding, List<Map> list, ExecuteMapper mapper) {
+        if (CollectionUtils.isEmpty(list)) {
+            return;
+        }
+
+        Shard shard = getShard(sharding);
+        List<Document> docs = new ArrayList<>();
+        list.forEach(r -> {
+            switch (type) {
+                case DATA:
+                    docs.add(DocumentUtil.convertData2Doc(r));
+                    break;
+                case LOG:
+                    docs.add(DocumentUtil.convertLog2Doc(r));
+                    break;
+                case CONFIG:
+                    docs.add(DocumentUtil.convertConfig2Doc(r));
+                    break;
+                default:
+                    break;
+            }
+        });
+        try {
+            mapper.apply(shard, docs);
+        } catch (IOException e) {
+            throw new StorageException(e);
+        }
     }
 
     /**
@@ -149,34 +169,14 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
      * <p>/data/log</p>
      * <p>/data/data/123</p>
      *
-     * @param collectionId
+     * @param sharding
      * @throws IOException
      */
-    private void createShardIfNotExist(String collectionId) throws IOException {
-        synchronized (this) {
-            if (null == map.get(collectionId)) {
-                map.putIfAbsent(collectionId, new Shard(PATH + collectionId));
-            }
-        }
+    private Shard getShard(String sharding) {
+        return shards.computeIfAbsent(sharding, k -> new Shard(PATH + k));
     }
 
-    private Shard cacheShardIfExist(String collectionId) {
-        String path = PATH + collectionId;
-        if (new File(path).exists()) {
-            try {
-                map.putIfAbsent(collectionId, new Shard(path));
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-            }
-        }
-        return map.get(collectionId);
-    }
-
-    @Override
-    public void destroy() throws Exception {
-        for (Map.Entry<String, Shard> m : map.entrySet()) {
-            m.getValue().close();
-        }
-        map.clear();
+    interface ExecuteMapper {
+        void apply(Shard shard, List<Document> docs) throws IOException;
     }
 }

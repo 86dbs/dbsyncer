@@ -15,12 +15,12 @@ public enum CommandEnum {
     /**
      * 添加
      */
-    OPR_ADD("add", (cmd) -> ((PersistenceCommand) cmd).add()),
+    OPR_ADD("add", (cmd) -> ((PersistenceCommand) cmd).addConfig()),
 
     /**
      * 修改
      */
-    OPR_EDIT("edit", (cmd) -> ((PersistenceCommand) cmd).edit()),
+    OPR_EDIT("edit", (cmd) -> ((PersistenceCommand) cmd).editConfig()),
 
     /**
      * 预加载SystemConfig

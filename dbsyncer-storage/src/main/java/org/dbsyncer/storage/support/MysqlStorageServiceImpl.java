@@ -1,5 +1,6 @@
 package org.dbsyncer.storage.support;
 
+import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -14,7 +15,6 @@ import org.dbsyncer.connector.enums.SqlBuilderEnum;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.storage.AbstractStorageService;
-import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Param;
@@ -30,7 +30,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.sql.SQLSyntaxErrorException;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -92,14 +95,19 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     }
 
     @Override
-    public Paging select(Query query) {
+    protected String getSeparator() {
+        return "_";
+    }
+
+    @Override
+    protected Paging select(String sharding, Query query) {
         Paging paging = new Paging(query.getPageNum(), query.getPageSize());
-        Executor executor = getExecutor(query.getType(), query.getCollection());
+        Executor executor = getExecutor(query.getType(), sharding);
         List<Object> queryCountArgs = new ArrayList<>();
         String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
         Long total = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
+        paging.setTotal(total);
         if (query.isQueryTotal()) {
-            paging.setTotal(total);
             return paging;
         }
 
@@ -108,60 +116,59 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         List<Map<String, Object>> data = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
         replaceHighLight(query, data);
         paging.setData(data);
-        paging.setTotal(total);
         return paging;
     }
 
     @Override
-    public void insert(StorageEnum type, String table, Map params) {
-        executeInsert(type, table, params);
-    }
-
-    @Override
-    public void update(StorageEnum type, String table, Map params) {
-        Executor executor = getExecutor(type, table);
-        String sql = executor.getUpdate();
-        List<Object> args = getUpdateArgs(executor, params);
-        int update = connectorMapper.execute(databaseTemplate -> databaseTemplate.update(sql, args.toArray()));
-        Assert.isTrue(update > 0, "update failed");
-    }
-
-    @Override
-    public void delete(StorageEnum type, String table, String id) {
-        Executor executor = getExecutor(type, table);
-        String sql = executor.getDelete();
-        int delete = connectorMapper.execute(databaseTemplate -> databaseTemplate.update(sql, new Object[]{id}));
-        Assert.isTrue(delete > 0, "delete failed");
-    }
-
-    @Override
-    public void deleteAll(StorageEnum type, String table) {
-        Executor executor = getExecutor(type, table);
-        if (executor.isSystemType()) {
-            String sql = String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(table));
+    protected void deleteAll(String sharding) {
+        tables.computeIfPresent(sharding, (k, executor) -> {
+            String sql = getExecutorSql(executor, k);
             executeSql(sql);
+            return executor;
+        });
+        tables.remove(sharding);
+    }
+
+    @Override
+    protected void batchInsert(StorageEnum type, String sharding, List<Map> list) {
+        batchExecute(type, sharding, list, new ExecuteMapper() {
+            @Override
+            public String getSql(Executor executor) {
+                return executor.getInsert();
+            }
+
+            @Override
+            public Object[] getArgs(Executor executor, Map params) {
+                return getInsertArgs(executor, params);
+            }
+        });
+    }
+
+    @Override
+    protected void batchUpdate(StorageEnum type, String sharding, List<Map> list) {
+        batchExecute(type, sharding, list, new ExecuteMapper() {
+            @Override
+            public String getSql(Executor executor) {
+                return executor.getUpdate();
+            }
+
+            @Override
+            public Object[] getArgs(Executor executor, Map params) {
+                return getUpdateArgs(executor, params);
+            }
+        });
+    }
+
+    @Override
+    protected void batchDelete(StorageEnum type, String sharding, List<String> list) {
+        if (CollectionUtils.isEmpty(list)) {
             return;
         }
 
-        if (tables.containsKey(table)) {
-            tables.remove(table);
-            String sql = String.format(DROP_TABLE, PREFIX_TABLE.concat(table));
-            executeSql(sql);
-        }
-    }
-
-    @Override
-    public void insertLog(StorageEnum type, String table, Map<String, Object> params) {
-        executeInsert(type, table, params);
-    }
-
-    @Override
-    public void insertData(StorageEnum type, String table, List<Map> list) {
-        if (!CollectionUtils.isEmpty(list)) {
-            Executor executor = getExecutor(type, table);
-            List<Object[]> args = list.stream().map(row -> getArgs(executor, row).toArray()).collect(Collectors.toList());
-            connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(executor.getInsert(), args));
-        }
+        final Executor executor = getExecutor(type, sharding);
+        final String sql = executor.getDelete();
+        final List<Object[]> args = list.stream().map(id -> new Object[]{id}).collect(Collectors.toList());
+        connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, args));
     }
 
     @Override
@@ -169,28 +176,36 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         connectorMapper.close();
     }
 
-    @Override
-    protected String getSeparator() {
-        return "_";
-    }
-
-    private int executeInsert(StorageEnum type, String table, Map params) {
-        Executor executor = getExecutor(type, table);
-        String sql = executor.getInsert();
-        List<Object> args = getArgs(executor, params);
-        int insert = connectorMapper.execute(databaseTemplate -> databaseTemplate.update(sql, args.toArray()));
-        if (insert < 1) {
-            logger.error("table:{}, params:{}");
-            throw new StorageException("insert failed");
+    private void batchExecute(StorageEnum type, String sharding, List<Map> list, ExecuteMapper mapper) {
+        if (CollectionUtils.isEmpty(list)) {
+            return;
         }
-        return insert;
+
+        final Executor executor = getExecutor(type, sharding);
+        final String sql = mapper.getSql(executor);
+        final List<Object[]> args = list.stream().map(row -> mapper.getArgs(executor, row)).collect(Collectors.toList());
+        connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, args));
     }
 
-    private List<Object> getArgs(Executor executor, Map params) {
-        return executor.getFields().stream().map(f -> params.get(f.getLabelName())).collect(Collectors.toList());
+    private Executor getExecutor(StorageEnum type, String sharding) {
+        return tables.computeIfAbsent(sharding, (table) -> {
+            Executor dataTemplate = tables.get(type.getType());
+            Assert.notNull(dataTemplate, "未知的存储类型");
+
+            Executor newExecutor = new Executor(dataTemplate.getType(), dataTemplate.getFields(), dataTemplate.isSystemTable(), dataTemplate.isOrderByUpdateTime());
+            return createTableIfNotExist(table, newExecutor);
+        });
     }
 
-    private List<Object> getUpdateArgs(Executor executor, Map params) {
+    private String getExecutorSql(Executor executor, String sharding) {
+        return executor.isSystemTable() ? String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(sharding)) : String.format(DROP_TABLE, PREFIX_TABLE.concat(sharding));
+    }
+
+    private Object[] getInsertArgs(Executor executor, Map params) {
+        return executor.getFields().stream().map(f -> params.get(f.getLabelName())).collect(Collectors.toList()).toArray();
+    }
+
+    private Object[] getUpdateArgs(Executor executor, Map params) {
         List<Object> args = new ArrayList<>();
         Object pk = null;
         for (Field f : executor.getFields()) {
@@ -203,29 +218,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
         Assert.notNull(pk, "The primaryKey is null.");
         args.add(pk);
-        return args;
-    }
-
-    private Executor getExecutor(StorageEnum type, String table) {
-        // 获取模板
-        Executor executor = tables.get(type.getType());
-        Assert.notNull(executor, "未知的存储类型");
-
-        if (tables.containsKey(table)) {
-            return tables.get(table);
-        }
-        synchronized (tables) {
-            // 检查本地缓存
-            if (tables.containsKey(table)) {
-                return tables.get(table);
-            }
-            // 不存在
-            Executor newExecutor = new Executor(executor.getGroup(), executor.getFields(), executor.isDynamicTableName(), executor.isSystemType(), executor.isOrderByUpdateTime());
-            createTableIfNotExist(table, newExecutor);
-
-            tables.putIfAbsent(table, newExecutor);
-            return newExecutor;
-        }
+        return args.toArray();
     }
 
     private String buildQuerySql(Query query, Executor executor, List<Object> args) {
@@ -265,7 +258,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                 // name=?
                 sql.append(p.getKey()).append(p.isHighlighter() ? " LIKE ?" : "=?");
                 args.add(p.isHighlighter() ? new StringBuilder("%").append(p.getValue()).append("%") : p.getValue());
-                flag.compareAndSet(false, true);
+                flag.set(true);
             });
         }
     }
@@ -320,12 +313,12 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.DATA_SUCCESS, ConfigConstant.DATA_TABLE_GROUP_ID, ConfigConstant.DATA_TARGET_TABLE_NAME, ConfigConstant.DATA_EVENT, ConfigConstant.DATA_ERROR, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> dataFields = builder.getFields();
 
-        tables.putIfAbsent(StorageEnum.CONFIG.getType(), new Executor(StorageEnum.CONFIG, configFields, false, true, true));
-        tables.putIfAbsent(StorageEnum.LOG.getType(), new Executor(StorageEnum.LOG, logFields, false, true, false));
-        tables.putIfAbsent(StorageEnum.DATA.getType(), new Executor(StorageEnum.DATA, dataFields, true, false, false));
+        tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
+        tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
+        tables.computeIfAbsent(StorageEnum.DATA.getType(), k -> new Executor(k, dataFields, false, false));
         // 创建表
         tables.forEach((tableName, e) -> {
-            if (!e.isDynamicTableName()) {
+            if (e.isSystemTable()) {
                 createTableIfNotExist(tableName, e);
             }
         });
@@ -334,7 +327,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         TimeUnit.SECONDS.sleep(1);
     }
 
-    private void createTableIfNotExist(String table, Executor executor) {
+    private Executor createTableIfNotExist(String table, Executor executor) {
         table = PREFIX_TABLE.concat(table);
         // show tables where Tables_in_dbsyncer = "dbsyncer_config"
         String sql = String.format(SHOW_TABLE, database, table);
@@ -342,7 +335,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForMap(sql));
         } catch (EmptyResultDataAccessException e) {
             // 不存在表
-            String ddl = readSql(executor.getGroup().getType(), executor.isDynamicTableName(), table);
+            String ddl = readSql(executor.getType(), executor.isSystemTable(), table);
             logger.info(ddl);
             executeSql(ddl);
         }
@@ -355,9 +348,10 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         String update = SqlBuilderEnum.UPDATE.getSqlBuilder().buildSql(config);
         String delete = SqlBuilderEnum.DELETE.getSqlBuilder().buildSql(config);
         executor.setTable(table).setQuery(query).setInsert(insert).setUpdate(update).setDelete(delete);
+        return executor;
     }
 
-    private String readSql(String type, boolean dynamicTableName, String table) {
+    private String readSql(String type, boolean systemTable, String table) {
         String template = PREFIX_TABLE.concat(type);
         String filePath = "/".concat(template).concat(".sql");
 
@@ -376,26 +370,16 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         } catch (IOException e) {
             logger.error("failed read file:{}", filePath);
         } finally {
-            close(bf);
-            close(isr);
-            close(in);
+            IOUtils.closeQuietly(bf);
+            IOUtils.closeQuietly(isr);
+            IOUtils.closeQuietly(in);
         }
 
         // 动态替换表名
-        if (dynamicTableName) {
+        if (!systemTable) {
             return StringUtil.replaceOnce(res.toString(), template, table);
         }
         return res.toString();
-    }
-
-    private void close(Closeable closeable) {
-        if (null != closeable) {
-            try {
-                closeable.close();
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-            }
-        }
     }
 
     private void executeSql(String ddl) {
@@ -470,17 +454,15 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         private String insert;
         private String update;
         private String delete;
-        private StorageEnum group;
+        private String type;
         private List<Field> fields;
-        private boolean dynamicTableName;
-        private boolean systemType;
+        private boolean systemTable;
         private boolean orderByUpdateTime;
 
-        public Executor(StorageEnum group, List<Field> fields, boolean dynamicTableName, boolean systemType, boolean orderByUpdateTime) {
-            this.group = group;
+        public Executor(String type, List<Field> fields, boolean systemTable, boolean orderByUpdateTime) {
+            this.type = type;
             this.fields = fields;
-            this.dynamicTableName = dynamicTableName;
-            this.systemType = systemType;
+            this.systemTable = systemTable;
             this.orderByUpdateTime = orderByUpdateTime;
         }
 
@@ -529,25 +511,27 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             return this;
         }
 
-        public StorageEnum getGroup() {
-            return group;
+        public String getType() {
+            return type;
         }
 
         public List<Field> getFields() {
             return fields;
         }
 
-        public boolean isDynamicTableName() {
-            return dynamicTableName;
-        }
-
-        public boolean isSystemType() {
-            return systemType;
+        public boolean isSystemTable() {
+            return systemTable;
         }
 
         public boolean isOrderByUpdateTime() {
             return orderByUpdateTime;
         }
 
+    }
+
+    interface ExecuteMapper {
+        String getSql(Executor executor);
+
+        Object[] getArgs(Executor executor, Map params);
     }
 }

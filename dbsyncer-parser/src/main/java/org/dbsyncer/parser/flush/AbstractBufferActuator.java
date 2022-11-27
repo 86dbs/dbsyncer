@@ -130,37 +130,41 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     }
 
     private void flush(Queue<Request> queue) throws IllegalAccessException, InstantiationException {
-        if (!queue.isEmpty()) {
-            AtomicLong batchCounter = new AtomicLong();
-            final Map<String, Response> map = new LinkedHashMap<>();
-            while (!queue.isEmpty() && batchCounter.get() < bufferActuatorConfig.getBatchCount()) {
-                Request poll = queue.poll();
-                String key = getPartitionKey(poll);
-                if (!map.containsKey(key)) {
-                    map.putIfAbsent(key, responseClazz.newInstance());
-                }
-                Response response = map.get(key);
-                partition(poll, response);
-                batchCounter.incrementAndGet();
-
-                Request next = queue.peek();
-                if (null != next && skipPartition(next, response)) {
-                    break;
-                }
-            }
-
-            map.forEach((key, flushTask) -> {
-                long now = Instant.now().toEpochMilli();
-                try {
-                    pull(flushTask);
-                } catch (Exception e) {
-                    logger.error("[{}]异常{}", key);
-                }
-                final BufferResponse task = (BufferResponse) flushTask;
-                logger.info("[{}{}]{}条，耗时{}毫秒", key, task.getSuffixName(), task.getTaskSize(), (Instant.now().toEpochMilli() - now));
-            });
-            map.clear();
+        if (queue.isEmpty()) {
+            return;
         }
+
+        AtomicLong batchCounter = new AtomicLong();
+        Map<String, Response> map = new LinkedHashMap<>();
+        while (!queue.isEmpty() && batchCounter.get() < bufferActuatorConfig.getBatchCount()) {
+            Request poll = queue.poll();
+            String key = getPartitionKey(poll);
+            if (!map.containsKey(key)) {
+                map.putIfAbsent(key, responseClazz.newInstance());
+            }
+            Response response = map.get(key);
+            partition(poll, response);
+            batchCounter.incrementAndGet();
+
+            Request next = queue.peek();
+            if (null != next && skipPartition(next, response)) {
+                break;
+            }
+        }
+
+        map.forEach((key, flushTask) -> {
+            long now = Instant.now().toEpochMilli();
+            try {
+                pull(flushTask);
+            } catch (Exception e) {
+                logger.error("[{}]异常{}", key);
+            }
+            final BufferResponse task = (BufferResponse) flushTask;
+            logger.info("[{}{}]{}条，耗时{}毫秒", key, task.getSuffixName(), task.getTaskSize(), (Instant.now().toEpochMilli() - now));
+        });
+        map.clear();
+        map = null;
+        batchCounter = null;
     }
 
 }

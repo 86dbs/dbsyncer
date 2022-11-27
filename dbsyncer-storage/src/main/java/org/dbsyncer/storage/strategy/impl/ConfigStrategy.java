@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 public class ConfigStrategy implements Strategy {
 
     @Override
-    public String createCollectionId(String separator, String id) {
+    public String createSharding(String separator, String collectionId) {
         return StorageEnum.CONFIG.getType();
     }
 }

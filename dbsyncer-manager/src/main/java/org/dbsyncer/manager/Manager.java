@@ -107,9 +107,9 @@ public interface Manager extends Executor {
     List<Meta> getMetaAll();
 
     // Data
-    Paging queryData(Query query, String collectionId);
+    Paging queryData(Query query);
 
-    void clearData(String collectionId);
+    void clearData(String metaId);
 
     // Log
     Paging queryLog(Query query);

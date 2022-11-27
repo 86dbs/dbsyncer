@@ -19,12 +19,12 @@ package org.dbsyncer.storage.strategy;
 public interface Strategy {
 
     /**
-     * 创建集合ID
+     * 创建分片
      *
      * @param separator
-     * @param id
+     * @param collectionId
      * @return
      */
-    String createCollectionId(String separator, String id);
+    String createSharding(String separator, String collectionId);
 
 }

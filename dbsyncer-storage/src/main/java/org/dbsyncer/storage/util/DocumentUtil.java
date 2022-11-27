@@ -94,6 +94,8 @@ public abstract class DocumentUtil {
         Document doc = new Document();
         String id = (String) params.get(ConfigConstant.CONFIG_MODEL_ID);
         Integer success = (Integer) params.get(ConfigConstant.DATA_SUCCESS);
+        String tableGroupId = (String) params.get(ConfigConstant.DATA_TABLE_GROUP_ID);
+        String targetTableName = (String) params.get(ConfigConstant.DATA_TARGET_TABLE_NAME);
         String event = (String) params.get(ConfigConstant.DATA_EVENT);
         String error = (String) params.get(ConfigConstant.DATA_ERROR);
         String json = (String) params.get(ConfigConstant.CONFIG_MODEL_JSON);
@@ -102,6 +104,8 @@ public abstract class DocumentUtil {
         doc.add(new StringField(ConfigConstant.CONFIG_MODEL_ID, id, Field.Store.YES));
         doc.add(new IntPoint(ConfigConstant.DATA_SUCCESS, success));
         doc.add(new StoredField(ConfigConstant.DATA_SUCCESS, success));
+        doc.add(new StringField(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId, Field.Store.YES));
+        doc.add(new StringField(ConfigConstant.DATA_TARGET_TABLE_NAME, targetTableName, Field.Store.YES));
         doc.add(new StringField(ConfigConstant.DATA_EVENT, event, Field.Store.YES));
         doc.add(new TextField(ConfigConstant.DATA_ERROR, error, Field.Store.YES));
         doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_JSON, json));

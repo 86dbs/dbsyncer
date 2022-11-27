@@ -20,6 +20,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
+import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,9 +86,9 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
     }
 
     @Override
-    public Paging queryData(String id, int pageNum, int pageSize, String error, String success) {
+    public Paging queryData(String metaId, int pageNum, int pageSize, String error, String success) {
         // 没有驱动
-        if (StringUtil.isBlank(id)) {
+        if (StringUtil.isBlank(metaId)) {
             return new Paging(pageNum, pageSize);
         }
 
@@ -98,12 +99,13 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
         }
         // 查询是否成功, 默认查询失败
         query.addFilter(ConfigConstant.DATA_SUCCESS, StringUtil.isNotBlank(success) ? success : StorageDataStatusEnum.FAIL.getCode(), false, true);
-        return manager.queryData(query, id);
+        query.setMetaId(metaId);
+        return manager.queryData(query);
     }
 
     @Override
-    public void clearData(String collectionId) {
-        manager.clearData(collectionId);
+    public void clearData(String metaId) {
+        manager.clearData(metaId);
     }
 
     @Override
@@ -249,10 +251,12 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
         AtomicLong total = new AtomicLong(0);
         if (!CollectionUtils.isEmpty(metaAll)) {
             Query query = new Query(1, 1);
+            query.setQueryTotal(true);
+            query.setType(StorageEnum.DATA);
             operation.apply(query);
             metaAll.forEach(meta -> {
-                query.setQueryTotal(true);
-                Paging paging = manager.queryData(query, meta.getId());
+                query.setMetaId(meta.getId());
+                Paging paging = manager.queryData(query);
                 total.getAndAdd(paging.getTotal());
             });
         }

@@ -16,9 +16,9 @@ import org.springframework.util.Assert;
 public class DataStrategy implements Strategy {
 
     @Override
-    public String createCollectionId(String separator, String id) {
-        Assert.hasText(id, "Id can not be empty.");
+    public String createSharding(String separator, String collectionId) {
+        Assert.hasText(collectionId, "The collectionId is empty.");
         // 同步数据较多，根据不同的驱动生成集合ID: data/123
-        return new StringBuilder(StorageEnum.DATA.getType()).append(separator).append(id).toString();
+        return new StringBuilder(StorageEnum.DATA.getType()).append(separator).append(collectionId).toString();
     }
 }

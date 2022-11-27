@@ -11,6 +11,7 @@ import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.query.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,21 +47,25 @@ public class Shard {
 
     private static final int MAX_SIZE = 10000;
 
-    public Shard(String path) throws IOException {
-        // 索引存放的位置，设置在当前目录中
-        Path dir = Paths.get(path);
-        indexPath = new File(dir.toUri());
-        directory = FSDirectory.open(dir);
-        // 分词器
-        analyzer = new SmartChineseAnalyzer();
-        // 创建索引写入配置
-        config = new IndexWriterConfig(analyzer);
-        // 默认32M, 减少合并次数
-        config.setRAMBufferSizeMB(32);
-        // 创建索引写入对象
-        indexWriter = new IndexWriter(directory, config);
-        // 创建索引的读取器
-        indexReader = DirectoryReader.open(indexWriter);
+    public Shard(String path) {
+        try {
+            // 索引存放的位置，设置在当前目录中
+            Path dir = Paths.get(path);
+            indexPath = new File(dir.toUri());
+            directory = FSDirectory.open(dir);
+            // 分词器
+            analyzer = new SmartChineseAnalyzer();
+            // 创建索引写入配置
+            config = new IndexWriterConfig(analyzer);
+            // 默认32M, 减少合并次数
+            config.setRAMBufferSizeMB(32);
+            // 创建索引写入对象
+            indexWriter = new IndexWriter(directory, config);
+            // 创建索引的读取器
+            indexReader = DirectoryReader.open(indexWriter);
+        } catch (IOException e) {
+            throw new StorageException(e);
+        }
     }
 
     public void insert(Document doc) throws IOException {
@@ -89,11 +94,15 @@ public class Shard {
         }
     }
 
-    public void deleteAll() throws IOException {
+    public void deleteAll() {
         // Fix Bug: this IndexReader is closed. 直接删除文件
-        close();
-        directory.close();
-        FileUtils.deleteDirectory(indexPath);
+        try {
+            close();
+            directory.close();
+            FileUtils.deleteDirectory(indexPath);
+        } catch (IOException e) {
+            throw new StorageException(e);
+        }
     }
 
     public void close() throws IOException {
@@ -115,10 +124,6 @@ public class Shard {
             }
         }
         return new IndexSearcher(indexReader);
-    }
-
-    public Analyzer getAnalyzer() {
-        return analyzer;
     }
 
     public Paging query(Option option, int pageNum, int pageSize, Sort sort) throws IOException {

@@ -13,7 +13,6 @@ import org.dbsyncer.manager.model.QueryConfig;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.storage.StorageService;
-import org.dbsyncer.storage.enums.StorageEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -96,7 +95,7 @@ public final class OperationTemplate {
         logger.debug("params:{}", params);
         CommandEnum cmd = config.getCommandEnum();
         Assert.notNull(cmd, "CommandEnum can not be null.");
-        cmd.getCommandExecutor().execute(new PersistenceCommand(storageService, StorageEnum.CONFIG, params));
+        cmd.getCommandExecutor().execute(new PersistenceCommand(storageService, params));
 
         // 3、缓存
         cache(model, config.getGroupStrategyEnum());
@@ -131,7 +130,7 @@ public final class OperationTemplate {
             }
         }
         cacheService.remove(id);
-        storageService.remove(StorageEnum.CONFIG, id);
+        storageService.removeConfig(id);
     }
 
     public String getGroupId(ConfigModel model, GroupStrategyEnum strategy) {
