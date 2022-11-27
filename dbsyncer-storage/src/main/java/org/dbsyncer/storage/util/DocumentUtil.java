@@ -116,6 +116,7 @@ public abstract class DocumentUtil {
         return doc;
     }
 
+    @Deprecated
     public static Document convertBinlog2Doc(String messageId, int status, BytesRef bytes, long updateTime) {
         Document doc = new Document();
         doc.add(new StringField(BinlogConstant.BINLOG_ID, messageId, Field.Store.YES));
@@ -129,6 +130,26 @@ public abstract class DocumentUtil {
         doc.add(new LongPoint(BinlogConstant.BINLOG_TIME, updateTime));
         doc.add(new StoredField(BinlogConstant.BINLOG_TIME, updateTime));
         doc.add(new NumericDocValuesField(BinlogConstant.BINLOG_TIME, updateTime));
+        return doc;
+    }
+
+    public static Document convertBinlog2Doc(Map params) {
+        Document doc = new Document();
+        String id = (String) params.get(ConfigConstant.CONFIG_MODEL_ID);
+        doc.add(new StringField(ConfigConstant.CONFIG_MODEL_ID, id, Field.Store.YES));
+
+        Integer status = (Integer) params.get(ConfigConstant.BINLOG_STATUS);
+        doc.add(new IntPoint(ConfigConstant.BINLOG_STATUS, status));
+        doc.add(new StoredField(ConfigConstant.BINLOG_STATUS, status));
+
+        byte[] bytes = (byte[]) params.get(ConfigConstant.CONFIG_MODEL_JSON);
+        doc.add(new BinaryDocValuesField(ConfigConstant.CONFIG_MODEL_JSON, new BytesRef(bytes)));
+        doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_JSON, bytes));
+
+        Long createTime = (Long) params.get(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
+        doc.add(new LongPoint(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
+        doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
+        doc.add(new NumericDocValuesField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
         return doc;
     }
 

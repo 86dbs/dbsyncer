@@ -47,6 +47,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         // 创建配置和日志索引shard
         getShard(getSharding(StorageEnum.CONFIG, null));
         getShard(getSharding(StorageEnum.LOG, null));
+        getShard(getSharding(StorageEnum.BINLOG, null));
     }
 
     @Override
@@ -151,6 +152,9 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
                     break;
                 case CONFIG:
                     docs.add(DocumentUtil.convertConfig2Doc(r));
+                    break;
+                case BINLOG:
+                    docs.add(DocumentUtil.convertBinlog2Doc(r));
                     break;
                 default:
                     break;
