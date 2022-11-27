@@ -160,14 +160,10 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     }
 
     @Override
-    protected void batchDelete(StorageEnum type, String sharding, List<String> list) {
-        if (CollectionUtils.isEmpty(list)) {
-            return;
-        }
-
+    protected void batchDelete(StorageEnum type, String sharding, List<String> ids) {
         final Executor executor = getExecutor(type, sharding);
         final String sql = executor.getDelete();
-        final List<Object[]> args = list.stream().map(id -> new Object[]{id}).collect(Collectors.toList());
+        final List<Object[]> args = ids.stream().map(id -> new Object[]{id}).collect(Collectors.toList());
         connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, args));
     }
 

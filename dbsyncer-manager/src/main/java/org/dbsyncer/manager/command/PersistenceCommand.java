@@ -2,6 +2,7 @@ package org.dbsyncer.manager.command;
 
 import org.dbsyncer.manager.Command;
 import org.dbsyncer.storage.StorageService;
+import org.dbsyncer.storage.enums.StorageEnum;
 
 import java.util.Map;
 
@@ -17,12 +18,12 @@ public class PersistenceCommand implements Command {
     }
 
     public boolean addConfig() {
-        storageService.addConfig(params);
+        storageService.add(StorageEnum.CONFIG, params);
         return true;
     }
 
     public boolean editConfig() {
-        storageService.editConfig(params);
+        storageService.edit(StorageEnum.CONFIG, params);
         return true;
     }
 

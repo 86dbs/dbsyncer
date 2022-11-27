@@ -104,12 +104,12 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
     }
 
     @Override
-    protected void batchDelete(StorageEnum type, String sharding, List<String> list) {
+    protected void batchDelete(StorageEnum type, String sharding, List<String> ids) {
         Shard shard = getShard(sharding);
-        int size = list.size();
+        int size = ids.size();
         Term[] terms = new Term[size];
         for (int i = 0; i < size; i++) {
-            terms[i] = getPrimaryKeyTerm(list.get(i));
+            terms[i] = getPrimaryKeyTerm(ids.get(i));
         }
         try {
             shard.deleteBatch(terms);

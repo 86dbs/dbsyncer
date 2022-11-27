@@ -1,6 +1,7 @@
 package org.dbsyncer.storage;
 
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.strategy.Strategy;
@@ -37,7 +38,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     protected abstract void batchUpdate(StorageEnum type, String sharding, List<Map> list);
 
-    protected abstract void batchDelete(StorageEnum type, String sharding, List<String> list);
+    protected abstract void batchDelete(StorageEnum type, String sharding, List<String> ids);
 
     protected String getSharding(StorageEnum type, String collectionId) {
         Assert.notNull(type, "StorageEnum type can not be null.");
@@ -90,33 +91,69 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public void addConfig(Map params) {
-        StorageEnum type = StorageEnum.CONFIG;
-        batchInsert(type, getSharding(type, null), newArrayList(params));
+    public void add(StorageEnum type, Map params) {
+        add(type, null, params);
     }
 
     @Override
-    public void editConfig(Map params) {
-        StorageEnum type = StorageEnum.CONFIG;
-        batchUpdate(type, getSharding(type, null), newArrayList(params));
+    public void add(StorageEnum type, String metaId, Map params) {
+        addBatch(type, metaId, newArrayList(params));
     }
 
     @Override
-    public void removeConfig(String id) {
-        StorageEnum type = StorageEnum.CONFIG;
-        batchDelete(type, getSharding(type, null), newArrayList(id));
+    public void addBatch(StorageEnum type, List<Map> list) {
+        addBatch(type, null, list);
     }
 
     @Override
-    public void addLog(Map<String, Object> params) {
-        StorageEnum type = StorageEnum.LOG;
-        batchInsert(type, getSharding(type, null), newArrayList(params));
+    public void addBatch(StorageEnum type, String metaId, List<Map> list) {
+        if (!CollectionUtils.isEmpty(list)) {
+            batchInsert(type, getSharding(type, metaId), list);
+        }
     }
 
     @Override
-    public void addData(String collectionId, List<Map> list) {
-        StorageEnum type = StorageEnum.DATA;
-        batchInsert(type, getSharding(type, collectionId), list);
+    public void edit(StorageEnum type, Map params) {
+        edit(type, null, params);
+    }
+
+    @Override
+    public void edit(StorageEnum type, String metaId, Map params) {
+        editBatch(type, metaId, newArrayList(params));
+    }
+
+    @Override
+    public void editBatch(StorageEnum type, List<Map> list) {
+        editBatch(type, null, list);
+    }
+
+    @Override
+    public void editBatch(StorageEnum type, String metaId, List<Map> list) {
+        if (!CollectionUtils.isEmpty(list)) {
+            batchUpdate(type, getSharding(type, metaId), list);
+        }
+    }
+
+    @Override
+    public void remove(StorageEnum type, String id) {
+        remove(type, null, id);
+    }
+
+    @Override
+    public void remove(StorageEnum type, String metaId, String id) {
+        removeBatch(type, metaId, newArrayList(id));
+    }
+
+    @Override
+    public void removeBatch(StorageEnum type, List<String> ids) {
+        removeBatch(type, null, ids);
+    }
+
+    @Override
+    public void removeBatch(StorageEnum type, String metaId, List<String> ids) {
+        if (!CollectionUtils.isEmpty(ids)) {
+            batchDelete(type, getSharding(type, metaId), ids);
+        }
     }
 
     private List<Map> newArrayList(Map params) {

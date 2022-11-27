@@ -4,6 +4,7 @@ import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.StorageResponse;
 import org.dbsyncer.storage.StorageService;
+import org.dbsyncer.storage.enums.StorageEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +32,6 @@ public class StorageBufferActuator extends AbstractBufferActuator<StorageRequest
 
     @Override
     protected void pull(StorageResponse response) {
-        storageService.addData(response.getMetaId(), response.getDataList());
+        storageService.addBatch(StorageEnum.DATA, response.getMetaId(), response.getDataList());
     }
 }

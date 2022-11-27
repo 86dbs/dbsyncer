@@ -13,6 +13,7 @@ import org.dbsyncer.manager.model.QueryConfig;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.storage.StorageService;
+import org.dbsyncer.storage.enums.StorageEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -130,7 +131,7 @@ public final class OperationTemplate {
             }
         }
         cacheService.remove(id);
-        storageService.removeConfig(id);
+        storageService.remove(StorageEnum.CONFIG, id);
     }
 
     public String getGroupId(ConfigModel model, GroupStrategyEnum strategy) {
