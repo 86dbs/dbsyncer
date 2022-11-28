@@ -220,20 +220,19 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     }
 
     @Override
-    public Paging queryData(Query query, String collectionId) {
+    public Paging queryData(Query query) {
         query.setType(StorageEnum.DATA);
-        query.setCollection(collectionId);
         return storageService.query(query);
     }
 
     @Override
-    public void clearData(String collectionId) {
-        Meta meta = getMeta(collectionId);
+    public void clearData(String metaId) {
+        Meta meta = getMeta(metaId);
         Mapping mapping = getMapping(meta.getMappingId());
         String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
         LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
         logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
-        storageService.clear(StorageEnum.DATA, collectionId);
+        storageService.clear(StorageEnum.DATA, metaId);
     }
 
     @Override

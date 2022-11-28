@@ -17,7 +17,7 @@ public class Query {
      */
     private StorageEnum type;
 
-    private String collection;
+    private String metaId;
 
     private List<Param> params;
 
@@ -65,12 +65,12 @@ public class Query {
         this.type = type;
     }
 
-    public String getCollection() {
-        return collection;
+    public String getMetaId() {
+        return metaId;
     }
 
-    public void setCollection(String collection) {
-        this.collection = collection;
+    public void setMetaId(String metaId) {
+        this.metaId = metaId;
     }
 
     public List<Param> getParams() {

@@ -96,7 +96,7 @@ public final class OperationTemplate {
         logger.debug("params:{}", params);
         CommandEnum cmd = config.getCommandEnum();
         Assert.notNull(cmd, "CommandEnum can not be null.");
-        cmd.getCommandExecutor().execute(new PersistenceCommand(storageService, StorageEnum.CONFIG, params));
+        cmd.getCommandExecutor().execute(new PersistenceCommand(storageService, params));
 
         // 3、缓存
         cache(model, config.getGroupStrategyEnum());

@@ -32,6 +32,6 @@ public class StorageBufferActuator extends AbstractBufferActuator<StorageRequest
 
     @Override
     protected void pull(StorageResponse response) {
-        storageService.addData(StorageEnum.DATA, response.getMetaId(), response.getDataList());
+        storageService.addBatch(StorageEnum.DATA, response.getMetaId(), response.getDataList());
     }
 }

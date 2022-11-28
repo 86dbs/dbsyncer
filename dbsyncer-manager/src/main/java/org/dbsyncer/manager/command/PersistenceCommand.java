@@ -10,23 +10,20 @@ public class PersistenceCommand implements Command {
 
     private StorageService storageService;
 
-    private StorageEnum type;
-
     private Map params;
 
-    public PersistenceCommand(StorageService storageService, StorageEnum type, Map params) {
+    public PersistenceCommand(StorageService storageService, Map params) {
         this.storageService = storageService;
-        this.type = type;
         this.params = params;
     }
 
-    public boolean add() {
-        storageService.add(type, params);
+    public boolean addConfig() {
+        storageService.add(StorageEnum.CONFIG, params);
         return true;
     }
 
-    public boolean edit() {
-        storageService.edit(type, params);
+    public boolean editConfig() {
+        storageService.edit(StorageEnum.CONFIG, params);
         return true;
     }
 

@@ -14,42 +14,121 @@ import java.util.Map;
  */
 public interface StorageService {
 
+    /**
+     * 查询所有数据
+     *
+     * @param query
+     * @return
+     */
     Paging query(Query query);
-
-    void add(StorageEnum type, Map params);
-
-    void add(StorageEnum type, Map params, String collectionId);
-
-    void edit(StorageEnum type, Map params);
-
-    void edit(StorageEnum type, Map params, String collectionId);
-
-    void remove(StorageEnum type, String id);
-
-    void remove(StorageEnum type, String id, String collectionId);
-
-    /**
-     * 记录日志
-     *
-     * @param log
-     * @param params
-     */
-    void addLog(StorageEnum log, Map<String,Object> params);
-
-    /**
-     * 记录数据
-     *
-     * @param data
-     * @param collectionId
-     * @param list
-     */
-    void addData(StorageEnum data, String collectionId, List<Map> list);
 
     /**
      * 清空数据/日志
      *
      * @param type
-     * @param collectionId
+     * @param metaId
      */
-    void clear(StorageEnum type, String collectionId);
+    void clear(StorageEnum type, String metaId);
+
+    /**
+     * 添加
+     *
+     * @param type
+     * @param params
+     */
+    void add(StorageEnum type, Map params);
+
+    /**
+     * 添加
+     *
+     * @param type
+     * @param metaId
+     * @param params
+     */
+    void add(StorageEnum type, String metaId, Map params);
+
+    /**
+     * 批量添加
+     *
+     * @param type
+     * @param list
+     */
+    void addBatch(StorageEnum type, List<Map> list);
+
+    /**
+     * 批量添加
+     *
+     * @param type
+     * @param metaId
+     * @param list
+     */
+    void addBatch(StorageEnum type, String metaId, List<Map> list);
+
+    /**
+     * 修改
+     *
+     * @param type
+     * @param params
+     */
+    void edit(StorageEnum type, Map params);
+
+    /**
+     * 修改
+     *
+     * @param type
+     * @param metaId
+     * @param params
+     */
+    void edit(StorageEnum type, String metaId, Map params);
+
+    /**
+     * 批量修改
+     *
+     * @param type
+     * @param list
+     */
+    void editBatch(StorageEnum type, List<Map> list);
+
+    /**
+     * 批量修改
+     *
+     * @param type
+     * @param metaId
+     * @param list
+     */
+    void editBatch(StorageEnum type, String metaId, List<Map> list);
+
+    /**
+     * 删除
+     *
+     * @param type
+     * @param id
+     */
+    void remove(StorageEnum type, String id);
+
+    /**
+     * 删除
+     *
+     * @param type
+     * @param metaId
+     * @param id
+     */
+    void remove(StorageEnum type, String metaId, String id);
+
+    /**
+     * 批量删除
+     *
+     * @param type
+     * @param ids
+     */
+    void removeBatch(StorageEnum type, List<String> ids);
+
+    /**
+     * 批量删除
+     *
+     * @param type
+     * @param metaId
+     * @param list
+     */
+    void removeBatch(StorageEnum type, String metaId, List<String> ids);
 }

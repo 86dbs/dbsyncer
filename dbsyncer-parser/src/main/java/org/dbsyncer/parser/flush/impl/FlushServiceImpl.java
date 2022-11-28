@@ -55,7 +55,7 @@ public class FlushServiceImpl implements FlushService {
         params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
         params.put(ConfigConstant.CONFIG_MODEL_JSON, substring(error));
         params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, Instant.now().toEpochMilli());
-        storageService.addLog(StorageEnum.LOG, params);
+        storageService.add(StorageEnum.LOG, params);
     }
 
     @Override

@@ -94,6 +94,8 @@ public abstract class DocumentUtil {
         Document doc = new Document();
         String id = (String) params.get(ConfigConstant.CONFIG_MODEL_ID);
         Integer success = (Integer) params.get(ConfigConstant.DATA_SUCCESS);
+        String tableGroupId = (String) params.get(ConfigConstant.DATA_TABLE_GROUP_ID);
+        String targetTableName = (String) params.get(ConfigConstant.DATA_TARGET_TABLE_NAME);
         String event = (String) params.get(ConfigConstant.DATA_EVENT);
         String error = (String) params.get(ConfigConstant.DATA_ERROR);
         String json = (String) params.get(ConfigConstant.CONFIG_MODEL_JSON);
@@ -102,6 +104,8 @@ public abstract class DocumentUtil {
         doc.add(new StringField(ConfigConstant.CONFIG_MODEL_ID, id, Field.Store.YES));
         doc.add(new IntPoint(ConfigConstant.DATA_SUCCESS, success));
         doc.add(new StoredField(ConfigConstant.DATA_SUCCESS, success));
+        doc.add(new StringField(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId, Field.Store.YES));
+        doc.add(new StringField(ConfigConstant.DATA_TARGET_TABLE_NAME, targetTableName, Field.Store.YES));
         doc.add(new StringField(ConfigConstant.DATA_EVENT, event, Field.Store.YES));
         doc.add(new TextField(ConfigConstant.DATA_ERROR, error, Field.Store.YES));
         doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_JSON, json));
@@ -112,6 +116,7 @@ public abstract class DocumentUtil {
         return doc;
     }
 
+    @Deprecated
     public static Document convertBinlog2Doc(String messageId, int status, BytesRef bytes, long updateTime) {
         Document doc = new Document();
         doc.add(new StringField(BinlogConstant.BINLOG_ID, messageId, Field.Store.YES));
@@ -125,6 +130,26 @@ public abstract class DocumentUtil {
         doc.add(new LongPoint(BinlogConstant.BINLOG_TIME, updateTime));
         doc.add(new StoredField(BinlogConstant.BINLOG_TIME, updateTime));
         doc.add(new NumericDocValuesField(BinlogConstant.BINLOG_TIME, updateTime));
+        return doc;
+    }
+
+    public static Document convertBinlog2Doc(Map params) {
+        Document doc = new Document();
+        String id = (String) params.get(ConfigConstant.CONFIG_MODEL_ID);
+        doc.add(new StringField(ConfigConstant.CONFIG_MODEL_ID, id, Field.Store.YES));
+
+        Integer status = (Integer) params.get(ConfigConstant.BINLOG_STATUS);
+        doc.add(new IntPoint(ConfigConstant.BINLOG_STATUS, status));
+        doc.add(new StoredField(ConfigConstant.BINLOG_STATUS, status));
+
+        byte[] bytes = (byte[]) params.get(ConfigConstant.CONFIG_MODEL_JSON);
+        doc.add(new BinaryDocValuesField(ConfigConstant.CONFIG_MODEL_JSON, new BytesRef(bytes)));
+        doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_JSON, bytes));
+
+        Long createTime = (Long) params.get(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
+        doc.add(new LongPoint(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
+        doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
+        doc.add(new NumericDocValuesField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
         return doc;
     }
 

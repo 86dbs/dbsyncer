@@ -37,4 +37,9 @@ public class ConfigConstant {
     public static final String DATA_EVENT = "event";
     public static final String DATA_ERROR = "error";
 
+    /**
+     * Binlog
+     */
+    public static final String BINLOG_STATUS = "status";
+
 }
