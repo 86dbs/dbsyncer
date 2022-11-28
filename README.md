@@ -68,6 +68,22 @@ SELECT OBJECT_ID, OBJECT_NAME, OWNER FROM ALL_OBJECTS WHERE OBJECT_TYPE = 'TABLE
 * SQL Server 2008提供了内建的方法变更数据捕获（Change Data Capture 即CDC）以实现异步跟踪用户表的数据修改。
 > 要求2008版本以上, 启动代理服务（Agent服务）, 连接账号具有 sysadmin 固定服务器角色或 db_owner 固定数据库角色的成员身份。对于所有其他用户，具有源表SELECT 权限；如果已定义捕获实例的访问控制角色，则还要求具有该数据库角色的成员身份。
 
+> 1. 启动 **代理** 和 **数据库** 服务
+
+![输入图片说明](https://foruda.gitee.com/images/1669649054209443088/5ae57c11_376718.png "屏幕截图")
+
+> 2. 准备测试账号，test
+
+![输入图片说明](https://foruda.gitee.com/images/1669648409722723985/2c9cc49b_376718.png "屏幕截图")
+
+> 3. 分配sysadmin角色
+
+![输入图片说明](https://foruda.gitee.com/images/1669648470726217924/0ea30c3c_376718.png "屏幕截图")
+
+> 4. 分配指定数据库权限
+
+![输入图片说明](https://foruda.gitee.com/images/1669648797643372138/018a1692_376718.png "屏幕截图")
+
 ##### PostgreSQL
 * 通过复制流技术监听增量事件，基于内置插件pgoutput、test_decoding实现解析wal日志
 > 修改postgresql.conf文件，重启服务
