@@ -7,18 +7,24 @@ import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.enums.FilterEnum;
+import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.connector.model.Filter;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.constant.BinlogConstant;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageEnum;
+import org.dbsyncer.storage.query.BooleanQuery;
 import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.Lock;
@@ -151,7 +157,14 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
             //  TODO 查询[待处理] 或 [处理中 & 处理超时]
             Query query = new Query();
             query.setType(StorageEnum.BINLOG);
-            query.addFilter(ConfigConstant.BINLOG_STATUS, String.valueOf(BinlogConstant.READY));
+            Filter ready = new Filter(ConfigConstant.BINLOG_STATUS, FilterEnum.EQUAL, BinlogConstant.READY);
+            Filter processing = new Filter(ConfigConstant.BINLOG_STATUS, FilterEnum.EQUAL, BinlogConstant.PROCESSING);
+            long maxProcessingSeconds = Timestamp.valueOf(LocalDateTime.now().minusSeconds(binlogRecorderConfig.getMaxProcessingSeconds())).getTime();
+            Filter processingTimeout = new Filter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, maxProcessingSeconds);
+            BooleanQuery booleanQuery = new BooleanQuery()
+                    .add(new BooleanQuery().add(ready), OperationEnum.OR)
+                    .add(new BooleanQuery().add(processing).add(processingTimeout));
+            query.setBooleanQuery(booleanQuery);
             query.setPageNum(1);
             query.setPageSize(binlogRecorderConfig.getBatchCount());
             Paging paging = storageService.query(query);

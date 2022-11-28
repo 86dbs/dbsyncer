@@ -31,6 +31,15 @@ public class Filter {
      */
     private String value;
 
+    public Filter() {
+    }
+
+    public Filter(String name, FilterEnum filterEnum, Object value) {
+        this.name = name;
+        this.filter = filterEnum.getName();
+        this.value = String.valueOf(value);
+    }
+
     public String getName() {
         return name;
     }

@@ -21,6 +21,8 @@ public class Query {
 
     private List<Param> params;
 
+    private BooleanQuery booleanQuery;
+
     private int pageNum = 1;
 
     private int pageSize = 20;
@@ -79,6 +81,14 @@ public class Query {
 
     public void setParams(List<Param> params) {
         this.params = params;
+    }
+
+    public BooleanQuery getBooleanQuery() {
+        return booleanQuery;
+    }
+
+    public void setBooleanQuery(BooleanQuery booleanQuery) {
+        this.booleanQuery = booleanQuery;
     }
 
     public int getPageNum() {
