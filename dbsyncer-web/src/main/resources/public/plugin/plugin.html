@@ -79,7 +79,7 @@ public class MyPlugin implements ConvertService {
 
         ConnectorMapper connectorMapper = context.getSourceConnectorMapper();
 
-        // 获取关系型数据库连接， 实现自己的业务逻辑...
+        // 获取关系型数据库连接，实现自己的业务逻辑...
         if (connectorMapper instanceof DatabaseConnectorMapper) {
             DatabaseConnectorMapper db = (DatabaseConnectorMapper) connectorMapper;
             // 方式一（推荐）：
@@ -87,10 +87,16 @@ public class MyPlugin implements ConvertService {
             db.execute(databaseTemplate -> databaseTemplate.queryForList(query));
 
             // 方式二：
+            SimpleConnection connection = null;
             try {
-                SimpleConnection connection = (SimpleConnection) db.getConnection();
+                // 通过JDBC访问数据库
+                connection = (SimpleConnection) db.getConnection();
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                if(connection != null){
+                    connection.close();
+                }
             }
         }
     }
