@@ -12,13 +12,7 @@ import java.util.Map;
  */
 public final class IncrementConvertContext extends AbstractConvertContext {
 
-    public IncrementConvertContext(ConnectorMapper targetConnectorMapper, String sourceTableName, String targetTableName, String event,
-                                   List<Map> sourceList, List<Map> targetList) {
-        this.targetConnectorMapper = targetConnectorMapper;
-        this.sourceTableName = sourceTableName;
-        this.targetTableName = targetTableName;
-        this.event = event;
-        this.sourceList = sourceList;
-        this.targetList = targetList;
+    public IncrementConvertContext(ConnectorMapper sourceConnectorMapper, ConnectorMapper targetConnectorMapper, String sourceTableName, String targetTableName, String event, List<Map> sourceList, List<Map> targetList) {
+        super.init(sourceConnectorMapper, targetConnectorMapper, sourceTableName, targetTableName, event, sourceList, targetList);
     }
 }
