@@ -33,6 +33,11 @@ public interface ConvertContext {
     ProxyApplicationContext getContext();
 
     /**
+     * 数据源连接实例
+     */
+    ConnectorMapper getSourceConnectorMapper();
+
+    /**
      * 目标源连接实例
      */
     ConnectorMapper getTargetConnectorMapper();

@@ -26,6 +26,11 @@ public abstract class AbstractConvertContext implements ConvertContext {
     protected ProxyApplicationContext context;
 
     /**
+     * 数据源连接实例
+     */
+    protected ConnectorMapper sourceConnectorMapper;
+
+    /**
      * 目标源连接实例
      */
     protected ConnectorMapper targetConnectorMapper;
@@ -55,6 +60,17 @@ public abstract class AbstractConvertContext implements ConvertContext {
      */
     protected List<Map> targetList;
 
+    public void init(ConnectorMapper sourceConnectorMapper, ConnectorMapper targetConnectorMapper, String sourceTableName, String targetTableName, String event,
+                              List<Map> sourceList, List<Map> targetList) {
+        this.sourceConnectorMapper = sourceConnectorMapper;
+        this.targetConnectorMapper = targetConnectorMapper;
+        this.sourceTableName = sourceTableName;
+        this.targetTableName = targetTableName;
+        this.event = event;
+        this.sourceList = sourceList;
+        this.targetList = targetList;
+    }
+
     public void setContext(ProxyApplicationContext context) {
         this.context = context;
     }
@@ -72,6 +88,11 @@ public abstract class AbstractConvertContext implements ConvertContext {
     @Override
     public ProxyApplicationContext getContext() {
         return context;
+    }
+
+    @Override
+    public ConnectorMapper getSourceConnectorMapper() {
+        return sourceConnectorMapper;
     }
 
     @Override
@@ -99,8 +120,16 @@ public abstract class AbstractConvertContext implements ConvertContext {
         return sourceList;
     }
 
+    public void setSourceList(List<Map> sourceList) {
+        this.sourceList = sourceList;
+    }
+
     @Override
     public List<Map> getTargetList() {
         return targetList;
+    }
+
+    public void setTargetList(List<Map> targetList) {
+        this.targetList = targetList;
     }
 }

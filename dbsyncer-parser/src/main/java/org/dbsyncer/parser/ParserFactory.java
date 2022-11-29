@@ -252,9 +252,10 @@ public class ParserFactory implements Parser {
 
         int pageSize = mapping.getReadNum();
         int batchSize = mapping.getBatchNum();
-        ConnectorMapper sConnectorMapper = connectorFactory.connect(sConfig);
-        ConnectorMapper tConnectorMapper = connectorFactory.connect(tConfig);
+        final ConnectorMapper sConnectorMapper = connectorFactory.connect(sConfig);
+        final ConnectorMapper tConnectorMapper = connectorFactory.connect(tConfig);
         final String event = ConnectorConstant.OPERTION_INSERT;
+        final FullConvertContext context = new FullConvertContext(sConnectorMapper, tConnectorMapper, sTableName, tTableName, event);
 
         for (; ; ) {
             if (!task.isRunning()) {
@@ -264,20 +265,21 @@ public class ParserFactory implements Parser {
 
             // 1、获取数据源数据
             Result reader = connectorFactory.reader(sConnectorMapper, new ReaderConfig(command, new ArrayList<>(), task.getCursor(), task.getPageIndex(), pageSize));
-            List<Map> data = reader.getSuccessData();
-            if (CollectionUtils.isEmpty(data)) {
+            List<Map> source = reader.getSuccessData();
+            if (CollectionUtils.isEmpty(source)) {
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
                 break;
             }
 
             // 2、映射字段
-            List<Map> target = picker.pickData(data);
+            List<Map> target = picker.pickData(source);
 
             // 3、参数转换
             ConvertUtil.convert(group.getConvert(), target);
 
             // 4、插件转换
-            final FullConvertContext context = new FullConvertContext(tConnectorMapper, sTableName, tTableName, event, data, target);
+            context.setSourceList(source);
+            context.setTargetList(target);
             pluginFactory.convert(group.getPlugin(), context);
 
             // 5、写入目标源
@@ -289,13 +291,13 @@ public class ParserFactory implements Parser {
 
             // 7、更新结果
             task.setPageIndex(task.getPageIndex() + 1);
-            task.setCursor(getLastCursor(data, pk));
+            task.setCursor(getLastCursor(source, pk));
             result.setTableGroupId(tableGroup.getId());
             result.setTargetTableGroupName(tTableName);
             flush(task, result);
 
             // 8、判断尾页
-            if (data.size() < pageSize) {
+            if (source.size() < pageSize) {
                 logger.info("完成全量:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
                 break;
             }
@@ -331,7 +333,7 @@ public class ParserFactory implements Parser {
     private Result writeBatch(ConvertContext context, BatchWriter batchWriter, Executor taskExecutor) {
         final Result result = new Result();
         // 终止同步数据到目标源库
-        if(context.isTerminated()){
+        if (context.isTerminated()) {
             result.getSuccessData().addAll(batchWriter.getDataList());
             return result;
         }
@@ -427,12 +429,12 @@ public class ParserFactory implements Parser {
     /**
      * 获取最新游标值
      *
-     * @param data
+     * @param source
      * @param pk
      * @return
      */
-    private Object getLastCursor(List<Map> data, String pk) {
-        return CollectionUtils.isEmpty(data) ? null : data.get(data.size() - 1).get(pk);
+    private Object getLastCursor(List<Map> source, String pk) {
+        return CollectionUtils.isEmpty(source) ? null : source.get(source.size() - 1).get(pk);
     }
 
 }
