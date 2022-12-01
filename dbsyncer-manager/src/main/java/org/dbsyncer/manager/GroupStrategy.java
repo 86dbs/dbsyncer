@@ -7,8 +7,8 @@ import org.dbsyncer.parser.model.ConfigModel;
  * @version 1.0.0
  * @date 2019/12/2 22:52
  */
-public interface GroupStrategy {
+public interface GroupStrategy<M extends ConfigModel> {
 
-    String getGroupId(ConfigModel model);
+    String getGroupId(M model);
     
 }

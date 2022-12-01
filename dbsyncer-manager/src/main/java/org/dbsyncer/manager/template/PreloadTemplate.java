@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.command.PreloadCommand;
 import org.dbsyncer.manager.enums.CommandEnum;
+import org.dbsyncer.manager.enums.GroupStrategyEnum;
 import org.dbsyncer.manager.model.OperationConfig;
 import org.dbsyncer.manager.template.OperationTemplate.Group;
 import org.dbsyncer.parser.Parser;
@@ -110,6 +111,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     private void reload(Map<String, JSONObject> map, CommandEnum commandEnum, String groupId) {
         JSONObject config = map.get(groupId);
+        if (null == config) {
+            return;
+        }
         Group group = JsonUtil.jsonToObj(config.toJSONString(), Group.class);
         if (null == group) {
             return;
@@ -126,8 +130,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, commandEnum.getGroupStrategyEnum()));
             // Load tableGroups
             if (CommandEnum.PRELOAD_MAPPING == commandEnum) {
-                commandEnum = CommandEnum.PRELOAD_TABLE_GROUP;
-                reload(map, commandEnum, operationTemplate.getGroupId(model, commandEnum.getGroupStrategyEnum()));
+                reload(map, CommandEnum.PRELOAD_TABLE_GROUP, operationTemplate.getGroupId(model, GroupStrategyEnum.PRELOAD_TABLE_GROUP));
             }
         }
     }
