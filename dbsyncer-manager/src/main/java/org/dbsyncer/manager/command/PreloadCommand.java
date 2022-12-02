@@ -2,8 +2,13 @@ package org.dbsyncer.manager.command;
 
 import org.dbsyncer.manager.Command;
 import org.dbsyncer.parser.Parser;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.ProjectGroup;
 import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.UserConfig;
 
 public class PreloadCommand implements Command {
 
@@ -16,31 +21,38 @@ public class PreloadCommand implements Command {
         this.json = json;
     }
 
-    public Object parseSystemConfig() {
+    @Override
+    public SystemConfig parseSystemConfig() {
         return parser.parseObject(json, SystemConfig.class);
     }
 
-    public Object parseUserConfig() {
+    @Override
+    public UserConfig parseUserConfig() {
         return parser.parseObject(json, UserConfig.class);
     }
 
-    public Object parseConnector() {
+    @Override
+    public Connector parseConnector() {
         return parser.parseConnector(json);
     }
 
-    public Object parseMapping() {
+    @Override
+    public Mapping parseMapping() {
         return parser.parseObject(json, Mapping.class);
     }
 
-    public Object parseTableGroup() {
+    @Override
+    public TableGroup parseTableGroup() {
         return parser.parseObject(json, TableGroup.class);
     }
 
-    public Object parseMeta() {
+    @Override
+    public Meta parseMeta() {
         return parser.parseObject(json, Meta.class);
     }
 
-    public Object parseProjectGroup() {
+    @Override
+    public ProjectGroup parseProjectGroup() {
         return parser.parseObject(json, ProjectGroup.class);
     }
 
