@@ -1,0 +1,8 @@
+CREATE TABLE `dbsyncer_binlog`  (
+  `ID` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '唯一ID',
+  `STATUS` int(1) NOT NULL COMMENT '状态，0-待同步；1-同步中',
+  `CREATE_TIME` bigint(0) NOT NULL COMMENT '创建时间',
+  `DATA` blob NOT NULL COMMENT '同步数据',
+  PRIMARY KEY (`ID`) USING BTREE,
+  INDEX `IDX_TYPE_CREATE_TIME`(`STATUS`, `CREATE_TIME`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin COMMENT = '缓存队列任务表' ROW_FORMAT = Dynamic;

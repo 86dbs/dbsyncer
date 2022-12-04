@@ -41,5 +41,6 @@ public class ConfigConstant {
      * Binlog
      */
     public static final String BINLOG_STATUS = "status";
+    public static final String BINLOG_DATA = "data";
 
 }

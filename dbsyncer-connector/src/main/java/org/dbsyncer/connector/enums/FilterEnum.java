@@ -72,6 +72,22 @@ public enum FilterEnum {
     }
 
     /**
+     * 获取表达式
+     *
+     * @param name
+     * @return
+     * @throws ConnectorException
+     */
+    public static FilterEnum getFilterEnum(String name) throws ConnectorException {
+        for (FilterEnum e : FilterEnum.values()) {
+            if (StringUtil.equals(name, e.getName())) {
+                return e;
+            }
+        }
+        throw new ConnectorException(String.format("FilterEnum name \"%s\" does not exist.", name));
+    }
+
+    /**
      * 获取比较器
      *
      * @param filterName

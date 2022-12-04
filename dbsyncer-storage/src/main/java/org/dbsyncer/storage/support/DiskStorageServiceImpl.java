@@ -1,28 +1,30 @@
 package org.dbsyncer.storage.support;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.highlight.Highlighter;
+import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.NumberUtil;
+import org.dbsyncer.connector.enums.FilterEnum;
+import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.lucene.Shard;
-import org.dbsyncer.storage.query.Option;
-import org.dbsyncer.storage.query.Param;
+import org.dbsyncer.storage.query.AbstractFilter;
+import org.dbsyncer.storage.query.BooleanFilter;
+import org.dbsyncer.storage.lucene.Option;
 import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.util.DocumentUtil;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -56,26 +58,40 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
             Shard shard = getShard(sharding);
             int pageNum = query.getPageNum() <= 0 ? 1 : query.getPageNum();
             int pageSize = query.getPageSize() <= 0 ? 20 : query.getPageSize();
-            boolean queryTotal = query.isQueryTotal();
             // 根据修改时间 > 创建时间排序
             Sort sort = new Sort(new SortField(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortField.Type.LONG, true),
                     new SortField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SortField.Type.LONG, true));
+            Option option = new Option();
+            option.setQueryTotal(query.isQueryTotal());
+            option.setIndexFieldResolverMap(query.getIndexFieldResolverMap());
             // 设置参数
-            List<Param> params = query.getParams();
-            if (!CollectionUtils.isEmpty(params)) {
-                BooleanQuery.Builder builder = new BooleanQuery.Builder();
-                params.forEach(p -> {
-                    if (p.isNumber()) {
-                        builder.add(IntPoint.newSetQuery(p.getKey(), NumberUtil.toInt(p.getValue())), BooleanClause.Occur.MUST);
-                    } else {
-                        builder.add(new TermQuery(new Term(p.getKey(), p.getValue())), BooleanClause.Occur.MUST);
-                    }
-                });
-                BooleanQuery q = builder.build();
-                return shard.query(new Option(q, queryTotal, params), pageNum, pageSize, sort);
+            BooleanFilter baseQuery = query.getBooleanFilter();
+            List<AbstractFilter> filters = baseQuery.getFilters();
+            List<BooleanFilter> clauses = baseQuery.getClauses();
+            if (CollectionUtils.isEmpty(clauses) && CollectionUtils.isEmpty(filters)) {
+                option.setQuery(new MatchAllDocsQuery());
+                return shard.query(option, pageNum, pageSize, sort);
             }
 
-            return shard.query(new Option(new MatchAllDocsQuery(), queryTotal, null), pageNum, pageSize, sort);
+            Set<String> highLightKeys = new HashSet<>();
+            BooleanQuery build = null;
+            if (!CollectionUtils.isEmpty(filters)) {
+                build = buildQueryWithFilters(filters, highLightKeys);
+            } else {
+                build = buildQueryWithBooleanFilters(clauses, highLightKeys);
+            }
+
+            option.setQuery(build);
+
+            // 高亮查询
+            if (!CollectionUtils.isEmpty(highLightKeys)) {
+                option.setHighLightKeys(highLightKeys);
+                option.setEnableHighLightSearch(true);
+                SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<span style='color:red'>", "</span>");
+                option.setHighlighter(new Highlighter(formatter, new QueryScorer(build)));
+            }
+
+            return shard.query(option, pageNum, pageSize, sort);
         } catch (IOException e) {
             throw new StorageException(e);
         }
@@ -125,6 +141,43 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
             m.getValue().close();
         }
         shards.clear();
+    }
+
+    private BooleanQuery buildQueryWithFilters(List<AbstractFilter> filters, Set<String> highLightKeys) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        filters.forEach(p -> {
+            FilterEnum filterEnum = FilterEnum.getFilterEnum(p.getFilter());
+            BooleanClause.Occur occur = getOccur(p.getOperation());
+            switch (filterEnum) {
+                case EQUAL:
+                case LIKE:
+                    builder.add(p.newEqual(), occur);
+                    break;
+                case LT:
+                    builder.add(p.newLessThan(), occur);
+                    break;
+            }
+
+            if (p.isEnableHighLightSearch()) {
+                highLightKeys.add(p.getName());
+            }
+        });
+        return builder.build();
+    }
+
+    private BooleanQuery buildQueryWithBooleanFilters(List<BooleanFilter> clauses, Set<String> highLightKeys) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        clauses.forEach(c -> {
+            if (!CollectionUtils.isEmpty(c.getFilters())) {
+                BooleanQuery cBuild = buildQueryWithFilters(c.getFilters(), highLightKeys);
+                builder.add(cBuild, getOccur(c.getOperationEnum().getName()));
+            }
+        });
+        return builder.build();
+    }
+
+    private BooleanClause.Occur getOccur(String operation) {
+        return OperationEnum.isAnd(operation) ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
     }
 
     private Term getPrimaryKeyTerm(Document doc) {
@@ -182,5 +235,9 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
 
     interface ExecuteMapper {
         void apply(Shard shard, List<Document> docs) throws IOException;
+    }
+
+    interface BooleanClauseBuilder {
+        BooleanClause toBooleanClause();
     }
 }

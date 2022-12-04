@@ -11,13 +11,15 @@ import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.database.Database;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.enums.ConnectorEnum;
+import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageEnum;
-import org.dbsyncer.storage.query.Param;
+import org.dbsyncer.storage.query.AbstractFilter;
+import org.dbsyncer.storage.query.BooleanFilter;
 import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.util.UnderlineToCamelUtils;
 import org.slf4j.Logger;
@@ -41,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -111,10 +112,11 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             return paging;
         }
 
+        List<AbstractFilter> highLightKeys = new ArrayList<>();
         List<Object> queryArgs = new ArrayList<>();
-        String querySql = buildQuerySql(query, executor, queryArgs);
+        String querySql = buildQuerySql(query, executor, queryArgs, highLightKeys);
         List<Map<String, Object>> data = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
-        replaceHighLight(query, data);
+        replaceHighLight(highLightKeys, data);
         paging.setData(data);
         return paging;
     }
@@ -217,9 +219,9 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         return args.toArray();
     }
 
-    private String buildQuerySql(Query query, Executor executor, List<Object> args) {
+    private String buildQuerySql(Query query, Executor executor, List<Object> args, List<AbstractFilter> highLightKeys) {
         StringBuilder sql = new StringBuilder(executor.getQuery());
-        buildQuerySqlWithParams(query, args, sql);
+        buildQuerySqlWithParams(query, args, sql, highLightKeys);
         // order by updateTime,createTime desc
         sql.append(" order by ");
         if (executor.isOrderByUpdateTime()) {
@@ -236,26 +238,85 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         StringBuilder queryCount = new StringBuilder();
         queryCount.append("SELECT COUNT(1) FROM (");
         StringBuilder sql = new StringBuilder("SELECT 1 FROM `").append(executor.getTable()).append("`");
-        buildQuerySqlWithParams(query, args, sql);
+        buildQuerySqlWithParams(query, args, sql, null);
         queryCount.append(sql);
         queryCount.append(" GROUP BY `ID`) DBSYNCER_T");
         return queryCount.toString();
     }
 
-    private void buildQuerySqlWithParams(Query query, List<Object> args, StringBuilder sql) {
-        List<Param> params = query.getParams();
-        if (!CollectionUtils.isEmpty(params)) {
-            sql.append(" WHERE ");
-            AtomicBoolean flag = new AtomicBoolean();
-            params.forEach(p -> {
-                if (flag.get()) {
-                    sql.append(" AND ");
-                }
-                // name=?
-                sql.append(p.getKey()).append(p.isHighlighter() ? " LIKE ?" : "=?");
-                args.add(p.isHighlighter() ? new StringBuilder("%").append(p.getValue()).append("%") : p.getValue());
-                flag.set(true);
-            });
+    private void buildQuerySqlWithParams(Query query, List<Object> args, StringBuilder sql, List<AbstractFilter> highLightKeys) {
+        BooleanFilter baseQuery = query.getBooleanFilter();
+        List<BooleanFilter> clauses = baseQuery.getClauses();
+        List<AbstractFilter> filters = baseQuery.getFilters();
+        if (CollectionUtils.isEmpty(clauses) && CollectionUtils.isEmpty(filters)) {
+            return;
+        }
+
+        sql.append(" WHERE ");
+        if (!CollectionUtils.isEmpty(filters)) {
+            buildQuerySqlWithFilters(filters, args, sql, highLightKeys);
+            return;
+        }
+
+        buildQuerySqlWithBooleanFilters(clauses, args, sql, highLightKeys);
+    }
+
+    private void buildQuerySqlWithFilters(List<AbstractFilter> filters, List<Object> args, StringBuilder sql, List<AbstractFilter> highLightKeys) {
+        // 过滤值
+        int size = filters.size();
+        for (int i = 0; i < size; i++) {
+            AbstractFilter p = filters.get(i);
+
+            if (i > 0) {
+                sql.append(" ").append(p.getOperation().toUpperCase()).append(" ");
+            }
+
+            FilterEnum filterEnum = FilterEnum.getFilterEnum(p.getFilter());
+            String name = UnderlineToCamelUtils.camelToUnderline(p.getName());
+            switch (filterEnum) {
+                case EQUAL:
+                    sql.append(name).append(" = ?");
+                    args.add(p.getValue());
+                    break;
+                case LIKE:
+                    sql.append(name).append(" LIKE ?");
+                    args.add(new StringBuilder("%").append(p.getValue()).append("%"));
+                    break;
+                case LT:
+                    sql.append(name).append(" < ?");
+                    args.add(p.getValue());
+                    break;
+            }
+            if (null != highLightKeys && p.isEnableHighLightSearch()) {
+                highLightKeys.add(p);
+            }
+        }
+    }
+
+    private void buildQuerySqlWithBooleanFilters(List<BooleanFilter> clauses, List<Object> args, StringBuilder sql, List<AbstractFilter> highLightKeys) {
+        // 解析查询
+        int size = clauses.size();
+        for (int i = 0; i < size; i++) {
+            BooleanFilter booleanFilter = clauses.get(i);
+            List<AbstractFilter> filters = booleanFilter.getFilters();
+            if (CollectionUtils.isEmpty(filters)) {
+                continue;
+            }
+
+            // 组合条件
+            if (i > 0) {
+                sql.append(" ").append(booleanFilter.getOperationEnum().name().toUpperCase()).append(" ");
+            }
+
+            if (size > 0) {
+                sql.append("(");
+            }
+
+            buildQuerySqlWithFilters(filters, args, sql, highLightKeys);
+
+            if (size > 0) {
+                sql.append(")");
+            }
         }
     }
 
@@ -305,12 +366,17 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> logFields = builder.getFields();
 
+        // 缓存任务
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.BINLOG_STATUS, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.BINLOG_DATA);
+        List<Field> binlogFields = builder.getFields();
+
         // 数据
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.DATA_SUCCESS, ConfigConstant.DATA_TABLE_GROUP_ID, ConfigConstant.DATA_TARGET_TABLE_NAME, ConfigConstant.DATA_EVENT, ConfigConstant.DATA_ERROR, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> dataFields = builder.getFields();
 
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
+        tables.computeIfAbsent(StorageEnum.BINLOG.getType(), k -> new Executor(k, binlogFields, true, false));
         tables.computeIfAbsent(StorageEnum.DATA.getType(), k -> new Executor(k, dataFields, false, false));
         // 创建表
         tables.forEach((tableName, e) -> {
@@ -385,15 +451,14 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         });
     }
 
-    private void replaceHighLight(Query query, List<Map<String, Object>> list) {
+    private void replaceHighLight(List<AbstractFilter> highLightKeys, List<Map<String, Object>> list) {
         // 开启高亮
-        if (!CollectionUtils.isEmpty(list) && query.isEnableHighLightSearch()) {
-            List<Param> highLight = query.getParams().stream().filter(p -> p.isHighlighter()).collect(Collectors.toList());
+        if (!CollectionUtils.isEmpty(list) && !CollectionUtils.isEmpty(highLightKeys)) {
             list.forEach(row ->
-                    highLight.forEach(p -> {
-                        String text = String.valueOf(row.get(p.getKey()));
-                        String replacement = new StringBuilder("<span style='color:red'>").append(p.getValue()).append("</span>").toString();
-                        row.put(p.getKey(), StringUtil.replace(text, p.getValue(), replacement));
+                    highLightKeys.forEach(paramFilter -> {
+                        String text = String.valueOf(row.get(paramFilter.getName()));
+                        String replacement = new StringBuilder("<span style='color:red'>").append(paramFilter.getValue()).append("</span>").toString();
+                        row.put(paramFilter.getName(), StringUtil.replace(text, paramFilter.getValue(), replacement));
                     })
             );
         }
@@ -419,7 +484,9 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                     new Field(ConfigConstant.DATA_TABLE_GROUP_ID, "VARCHAR", Types.VARCHAR),
                     new Field(ConfigConstant.DATA_TARGET_TABLE_NAME, "VARCHAR", Types.VARCHAR),
                     new Field(ConfigConstant.DATA_EVENT, "VARCHAR", Types.VARCHAR),
-                    new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR)
+                    new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR),
+                    new Field(ConfigConstant.BINLOG_STATUS, "INTEGER", Types.INTEGER),
+                    new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.VARBINARY)
             ).map(field -> {
                 field.setLabelName(field.getName());
                 // 转换列下划线

@@ -12,7 +12,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.storage.StorageException;
-import org.dbsyncer.storage.query.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,7 +130,7 @@ public class Shard {
         final TopDocs topDocs = getTopDocs(searcher, option.getQuery(), MAX_SIZE, sort);
         Paging paging = new Paging(pageNum, pageSize);
         paging.setTotal(topDocs.totalHits);
-        if(option.isQueryTotal()){
+        if (option.isQueryTotal()) {
             return paging;
         }
 
@@ -197,7 +196,7 @@ public class Shard {
                 }
 
                 // 解析value类型
-                r.put(f.name(), option.getFieldResolver(f.name()).getValue(f));
+                r.put(f.name(), option.getIndexFieldResolver(f.name()).getValue(f));
             }
             list.add(r);
         }

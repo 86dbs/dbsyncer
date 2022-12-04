@@ -9,7 +9,7 @@ import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterRequest;
-import org.dbsyncer.storage.binlog.AbstractBinlogRecorder;
+import org.dbsyncer.storage.binlog.AbstractBinlogService;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.binlog.proto.EventEnum;
@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 
-public abstract class AbstractWriterBinlog extends AbstractBinlogRecorder<WriterRequest> {
+public abstract class AbstractWriterBinlog extends AbstractBinlogService<WriterRequest> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

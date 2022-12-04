@@ -2,43 +2,42 @@ package org.dbsyncer.storage.query;
 
 
 import org.dbsyncer.connector.enums.OperationEnum;
-import org.dbsyncer.connector.model.Filter;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class BooleanQuery {
+public class BooleanFilter {
 
-    private final List<BooleanQuery> clauses = new ArrayList<>();
+    private final List<BooleanFilter> clauses = new ArrayList<>();
 
-    private final List<Filter> filters = new ArrayList<>();
+    private final List<AbstractFilter> filters = new ArrayList<>();
 
     private OperationEnum operationEnum;
 
-    public BooleanQuery add(BooleanQuery booleanQuery) {
-        return add(booleanQuery, OperationEnum.AND);
-    }
-
-    public BooleanQuery add(BooleanQuery booleanQuery, OperationEnum operationEnum) {
-        clauses.add(booleanQuery);
-        booleanQuery.setOperationEnum(operationEnum);
+    public BooleanFilter add(BooleanFilter booleanFilter, OperationEnum operationEnum) {
+        clauses.add(booleanFilter);
+        booleanFilter.setOperationEnum(operationEnum);
         return this;
     }
 
-    public BooleanQuery add(Filter filter) {
+    public BooleanFilter add(AbstractFilter filter) {
         filter.setOperation(OperationEnum.AND.getName());
         filters.add(filter);
         return this;
     }
 
-    public BooleanQuery or(Filter filter) {
+    public BooleanFilter or(AbstractFilter filter) {
         filter.setOperation(OperationEnum.OR.getName());
         filters.add(filter);
         return this;
     }
 
-    public List<Filter> getFilters() {
+    public List<AbstractFilter> getFilters() {
         return filters;
+    }
+
+    public List<BooleanFilter> getClauses() {
+        return clauses;
     }
 
     public OperationEnum getOperationEnum() {

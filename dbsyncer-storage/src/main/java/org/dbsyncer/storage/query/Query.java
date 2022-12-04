@@ -1,9 +1,12 @@
 package org.dbsyncer.storage.query;
 
+import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
+import org.dbsyncer.storage.query.filter.IntFilter;
+import org.dbsyncer.storage.query.filter.StringFilter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author AE86
@@ -19,44 +22,40 @@ public class Query {
 
     private String metaId;
 
-    private List<Param> params;
-
-    private BooleanQuery booleanQuery;
-
-    private int pageNum = 1;
-
-    private int pageSize = 20;
-
-    private boolean enableHighLightSearch;
+    private BooleanFilter booleanFilter = new BooleanFilter();
 
     /**
      * 查询应用性能，不用排序查询，只用查询总量即可
      */
     private boolean queryTotal;
 
+    private int pageNum = 1;
+
+    private int pageSize = 20;
+
+    /**
+     * 返回值转换器，限Disk使用
+     */
+    private Map<String, IndexFieldResolverEnum> indexFieldResolverMap = new ConcurrentHashMap<>();
+
     public Query() {
-        this.params = new ArrayList<>();
     }
 
     public Query(int pageNum, int pageSize) {
         this.pageNum = pageNum;
         this.pageSize = pageSize;
-        this.params = new ArrayList<>();
     }
 
-    public void addFilter(String key, String value) {
-        addFilter(key, value, false, false);
+    public void addFilter(String name, String value) {
+        booleanFilter.add(new StringFilter(name, value, false));
     }
 
-    public void addFilter(String key, String value, boolean highlighter) {
-        addFilter(key, value, highlighter, false);
+    public void addFilter(String name, String value, boolean enableHighLightSearch) {
+        booleanFilter.add(new StringFilter(name, value, enableHighLightSearch));
     }
 
-    public void addFilter(String key, String value, boolean highlighter, boolean number) {
-        params.add(new Param(key, value, highlighter, number));
-        if (highlighter) {
-            enableHighLightSearch = highlighter;
-        }
+    public void addFilter(String name, int value) {
+        booleanFilter.add(new IntFilter(name, value));
     }
 
     public StorageEnum getType() {
@@ -75,20 +74,20 @@ public class Query {
         this.metaId = metaId;
     }
 
-    public List<Param> getParams() {
-        return params;
+    public BooleanFilter getBooleanFilter() {
+        return booleanFilter;
     }
 
-    public void setParams(List<Param> params) {
-        this.params = params;
+    public void setBooleanFilter(BooleanFilter booleanFilter) {
+        this.booleanFilter = booleanFilter;
     }
 
-    public BooleanQuery getBooleanQuery() {
-        return booleanQuery;
+    public boolean isQueryTotal() {
+        return queryTotal;
     }
 
-    public void setBooleanQuery(BooleanQuery booleanQuery) {
-        this.booleanQuery = booleanQuery;
+    public void setQueryTotal(boolean queryTotal) {
+        this.queryTotal = queryTotal;
     }
 
     public int getPageNum() {
@@ -107,15 +106,12 @@ public class Query {
         this.pageSize = pageSize;
     }
 
-    public boolean isEnableHighLightSearch() {
-        return enableHighLightSearch;
+    public Map<String, IndexFieldResolverEnum> getIndexFieldResolverMap() {
+        return indexFieldResolverMap;
     }
 
-    public boolean isQueryTotal() {
-        return queryTotal;
+    public void setIndexFieldResolverMap(Map<String, IndexFieldResolverEnum> indexFieldResolverMap) {
+        this.indexFieldResolverMap = indexFieldResolverMap;
     }
 
-    public void setQueryTotal(boolean queryTotal) {
-        this.queryTotal = queryTotal;
-    }
 }

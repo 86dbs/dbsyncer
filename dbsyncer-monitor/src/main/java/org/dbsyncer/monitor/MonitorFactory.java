@@ -4,6 +4,7 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.manager.Manager;
@@ -98,7 +99,7 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
             query.addFilter(ConfigConstant.DATA_ERROR, error, true);
         }
         // 查询是否成功, 默认查询失败
-        query.addFilter(ConfigConstant.DATA_SUCCESS, StringUtil.isNotBlank(success) ? success : StorageDataStatusEnum.FAIL.getCode(), false, true);
+        query.addFilter(ConfigConstant.DATA_SUCCESS, StringUtil.isNotBlank(success) ? NumberUtil.toInt(success) : StorageDataStatusEnum.FAIL.getValue());
         query.setMetaId(metaId);
         return manager.queryData(query);
     }
@@ -196,7 +197,7 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
      * @return
      */
     private long getMappingSuccess(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DATA_SUCCESS, StorageDataStatusEnum.SUCCESS.getCode(), false, true));
+        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DATA_SUCCESS, StorageDataStatusEnum.SUCCESS.getValue()));
     }
 
     /**
@@ -206,7 +207,7 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
      * @return
      */
     private long getMappingFail(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DATA_SUCCESS, StorageDataStatusEnum.FAIL.getCode(), false, true));
+        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DATA_SUCCESS, StorageDataStatusEnum.FAIL.getValue()));
     }
 
     /**
