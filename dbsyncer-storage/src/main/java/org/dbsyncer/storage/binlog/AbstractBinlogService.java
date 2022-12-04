@@ -160,7 +160,7 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
         }
 
         private void doParse() {
-            // 查询[待处理] 或 [处理中 & 处理超时]
+            // 查询[待处理] 或 [处理中 & 处理超时] // TODO 待优化
             Query query = new Query();
             query.setType(StorageEnum.BINLOG);
 
@@ -176,7 +176,7 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
             // 指定返回值类型
             Map<String, IndexFieldResolverEnum> fieldResolvers = new LinkedHashMap<>();
             fieldResolvers.put(ConfigConstant.BINLOG_STATUS, IndexFieldResolverEnum.INT);
-            fieldResolvers.put(ConfigConstant.CONFIG_MODEL_JSON, IndexFieldResolverEnum.BINARY);
+            fieldResolvers.put(ConfigConstant.BINLOG_DATA, IndexFieldResolverEnum.BINARY);
             fieldResolvers.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, IndexFieldResolverEnum.LONG);
             query.setIndexFieldResolverMap(fieldResolvers);
             query.setPageNum(1);
