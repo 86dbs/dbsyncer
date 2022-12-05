@@ -486,7 +486,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
                     new Field(ConfigConstant.DATA_EVENT, "VARCHAR", Types.VARCHAR),
                     new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR),
                     new Field(ConfigConstant.BINLOG_STATUS, "INTEGER", Types.INTEGER),
-                    new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.VARBINARY)
+                    new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB)
             ).map(field -> {
                 field.setLabelName(field.getName());
                 // 转换列下划线
