@@ -332,16 +332,15 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         if (CollectionUtils.isEmpty(tables)) {
             return;
         }
-        final String queryColumnCount = "SELECT count(*) FROM information_schema.columns WHERE table_name = '%s' and column_name = 'TABLE_GROUP_ID'";
+        final String queryColumnCount = "SELECT count(*) FROM information_schema.columns WHERE table_name = '%s' and column_name = 'DATA'";
         tables.forEach(table -> {
             try {
                 String query = String.format(queryColumnCount, table);
                 // 是否已升级
                 int count = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(query, Integer.class));
                 if (count == 0) {
-                    String ddl = readSql(UPGRADE_SQL, true, table);
-                    executeSql(ddl);
-                    logger.info(ddl);
+                    String ddlSql = readSql(UPGRADE_SQL, false, table);
+                    Stream.of(StringUtil.split(ddlSql, ";")).forEach(ddl -> executeSql(ddl));
                 }
             } catch (Exception e) {
                 if (e.getCause() instanceof SQLSyntaxErrorException) {
@@ -371,7 +370,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         List<Field> binlogFields = builder.getFields();
 
         // 数据
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.DATA_SUCCESS, ConfigConstant.DATA_TABLE_GROUP_ID, ConfigConstant.DATA_TARGET_TABLE_NAME, ConfigConstant.DATA_EVENT, ConfigConstant.DATA_ERROR, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.DATA_SUCCESS, ConfigConstant.DATA_TABLE_GROUP_ID, ConfigConstant.DATA_TARGET_TABLE_NAME, ConfigConstant.DATA_EVENT, ConfigConstant.DATA_ERROR, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.BINLOG_DATA);
         List<Field> dataFields = builder.getFields();
 
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
@@ -398,7 +397,6 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         } catch (EmptyResultDataAccessException e) {
             // 不存在表
             String ddl = readSql(executor.getType(), executor.isSystemTable(), table);
-            logger.info(ddl);
             executeSql(ddl);
         }
 
@@ -439,7 +437,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
         // 动态替换表名
         if (!systemTable) {
-            return StringUtil.replaceOnce(res.toString(), template, table);
+            return StringUtil.replace(res.toString(), template, table);
         }
         return res.toString();
     }
@@ -447,6 +445,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     private void executeSql(String ddl) {
         connectorMapper.execute(databaseTemplate -> {
             databaseTemplate.execute(ddl);
+            logger.info(ddl);
             return true;
         });
     }
