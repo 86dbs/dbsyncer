@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="container-fluid">
+  <div class="container">
+    <form id="retryDataForm" class="form-horizontal" role="form" method="post">
+      <!-- 标题 -->
+      <div class="row text-center">
+        <div class="page-header">
+          <h3>重试[[${meta?.mappingName}]]</h3>
+          <input type="hidden" id="metaId" th:value="${meta?.id}">
+        </div>
+      </div>
+
+      <!-- 操作 -->
+      <div class="form-group">
+        <div class="col-md-10"><h3>[[${message?.tableGroup?.sourceTable?.name}]] <span class="fa fa-angle-double-right"></span> [[${message?.tableGroup?.targetTable?.name}]]</h3></div>
+        <div class="col-md-2 text-right">
+          <button id="retryDataSubmitBtn" type="button" class="btn btn-primary">
+            <span class="fa fa-refresh"></span>执行
+          </button>
+          <button id="retryDataBackBtn" type="button" class="btn btn-default">
+            <span class="fa fa-reply"></span>返回
+          </button>
+        </div>
+      </div>
+
+      <!-- 配置 -->
+      <div class="row">
+        <div class="col-md-12">
+          <table class="table table-hover">
+            <caption>执行前，请先检查数据。字段类型是否支持当前值</caption>
+            <thead>
+            <tr>
+              <th></th>
+              <th>目标表字段</th>
+              <th>目标表值</th>
+            </tr>
+            </thead>
+            <tbody id="pluginList">
+            <tr th:each="m,state : ${message?.row}">
+              <td th:text="${state.index}+1"></td>
+              <td th:text="${state?.current?.key}"/>
+              <td th:text="${state?.current?.value}"/>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script th:src="@{/js/monitor/retry.js}"></script>
+</html>

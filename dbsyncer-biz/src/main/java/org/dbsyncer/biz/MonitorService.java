@@ -1,6 +1,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.AppReportMetricVo;
+import org.dbsyncer.biz.vo.MessageVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.monitor.enums.MetricEnum;
@@ -25,6 +26,14 @@ public interface MonitorService {
     List<MetaVo> getMetaAll();
 
     /**
+     * 获取驱动元信息
+     *
+     * @param metaId
+     * @return
+     */
+    MetaVo getMetaVo(String metaId);
+
+    /**
      * 获取驱动默认元信息id
      * @param params
      * @return
@@ -38,6 +47,14 @@ public interface MonitorService {
      * @param params
      */
     Paging queryData(Map<String, String> params);
+
+    /**
+     * 获取驱动同步数据
+     * @param metaId
+     * @param messageId
+     * @return
+     */
+    MessageVo getMessageVo(String metaId, String messageId);
 
     /**
      * 清空驱动同步数据
@@ -82,4 +99,5 @@ public interface MonitorService {
      * @return
      */
     AppReportMetricVo queryAppReportMetric(List<MetricResponse> metrics);
+
 }

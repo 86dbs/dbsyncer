@@ -1,8 +1,8 @@
 package org.dbsyncer.web.controller.monitor;
 
-import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MonitorService;
+import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.AppReportMetricVo;
 import org.dbsyncer.biz.vo.HistoryStackVo;
 import org.dbsyncer.biz.vo.RestResult;
@@ -79,6 +79,13 @@ public class MonitorController extends BaseController {
         return "monitor/monitor.html";
     }
 
+    @GetMapping("/page/retry")
+    public String page(ModelMap model, String metaId, String messageId) {
+        model.put("meta", monitorService.getMetaVo(metaId));
+        model.put("message", monitorService.getMessageVo(metaId, messageId));
+        return "monitor/retry.html";
+    }
+
     @Scheduled(fixedRate = 5000)
     public void recordHistoryStackMetric() {
         recordHistoryStackMetric(MetricEnum.CPU_USAGE, cpu, cpuHistoryStackValueFormatterImpl);
@@ -108,6 +115,17 @@ public class MonitorController extends BaseController {
         try {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(monitorService.queryLog(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e.getClass());
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/sync")
+    @ResponseBody
+    public RestResult sync(HttpServletRequest request) {
+        try {
+            return RestResult.restSuccess("ok");
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());

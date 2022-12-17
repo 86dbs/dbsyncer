@@ -49,6 +49,17 @@ function bindQueryDataDetailEvent() {
     });
 }
 
+// 重试同步
+function bindQueryDataRetryEvent(){
+    let $retry = $(".retryData");
+    $retry.unbind("click");
+    $retry.click(function () {
+        let id = $("#searchMetaData").selectpicker("val");
+        let messageId = $(this).attr("id");
+        doLoader('/monitor/page/retry?metaId=' + id + '&messageId=' + messageId);
+    });
+}
+
 // 查看详细数据日志
 function bindQueryErrorDetailEvent() {
     var $queryData = $(".queryError");
@@ -170,6 +181,7 @@ function refreshDataList(resultValue, append) {
     }
     $dataTotal.html(resultValue.total);
     bindQueryDataDetailEvent();
+    bindQueryDataRetryEvent();
     bindQueryErrorDetailEvent();
 }
 
@@ -186,7 +198,7 @@ function showData($dataList, arr, append) {
             html += '<td>' + (arr[i].success ? '<span class="label label-success">成功</span>' : '<span class="label label-warning">失败</span>') + '</td>';
             html += '<td style="max-width:100px;" class="dbsyncer_over_hidden"><a href="javascript:;" class="dbsyncer_pointer queryError">' + arr[i].error + '</a></td>';
             html += '<td>' + formatDate(arr[i].createTime) + '</td>';
-            html += '<td><a href="javascript:;" class="label label-info queryData">查看数据</a><div class="hidden">' + arr[i].json + '</div></td>';
+            html += '<td><a href="javascript:;" class="label label-info queryData">查看数据</a>&nbsp;<a id="' + arr[i].id + '" href="javascript:;" class="label label-warning retryData">重试</a><div class="hidden">' + arr[i].json + '</div></td>';
             html += '</tr>';
         }
     }
@@ -492,6 +504,7 @@ $(function () {
     bindQueryDataEvent();
     bindQueryDataMoreEvent();
     bindQueryDataDetailEvent();
+    bindQueryDataRetryEvent();
     bindQueryErrorDetailEvent();
     bindClearEvent($(".clearDataBtn"), "确认清空数据？", "清空数据成功!", "/monitor/clearData", function () {
         return $("#searchMetaData").selectpicker("val");

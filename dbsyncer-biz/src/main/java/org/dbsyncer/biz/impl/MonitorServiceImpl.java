@@ -1,5 +1,6 @@
 package org.dbsyncer.biz.impl;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.metric.MetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.CpuMetricDetailFormatter;
@@ -11,6 +12,7 @@ import org.dbsyncer.biz.metric.impl.ValueMetricDetailFormatter;
 import org.dbsyncer.biz.vo.AppReportMetricVo;
 import org.dbsyncer.biz.vo.DataVo;
 import org.dbsyncer.biz.vo.LogVo;
+import org.dbsyncer.biz.vo.MessageVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.biz.vo.MetricResponseVo;
 import org.dbsyncer.cache.CacheService;
@@ -104,6 +106,14 @@ public class MonitorServiceImpl implements MonitorService {
     }
 
     @Override
+    public MetaVo getMetaVo(String metaId) {
+        Meta meta = monitor.getMeta(metaId);
+        Assert.notNull(meta, "The meta is null.");
+
+        return convertMeta2Vo(meta);
+    }
+
+    @Override
     public String getDefaultMetaId(Map<String, String> params) {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         return getDefaultMetaId(id);
@@ -120,38 +130,11 @@ public class MonitorServiceImpl implements MonitorService {
         Paging paging = monitor.queryData(getDefaultMetaId(id), pageNum, pageSize, error, success);
         List<Map> data = (List<Map>) paging.getData();
         List<DataVo> list = new ArrayList<>();
-        for (Map m : data) {
+        for (Map row : data) {
             try {
-                DataVo dataVo = convert2Vo(m, DataVo.class);
-                String tableGroupId = (String) m.get(ConfigConstant.DATA_TABLE_GROUP_ID);
-                byte[] bytes = (byte[]) m.get(ConfigConstant.BINLOG_DATA);
-                BinlogMap message = BinlogMap.parseFrom(bytes);
-
-                // 1、获取配置信息
-                final TableGroup tableGroup = cacheService.get(tableGroupId, TableGroup.class);
-
-                // 2、反序列数据
-                Map<String, Object> row = new HashMap<>();
-                final Picker picker = new Picker(tableGroup.getFieldMapping());
-                final Map<String, Field> fieldMap = picker.getSourceFieldMap();
-                message.getRowMap().forEach((k, v) -> {
-                    if (fieldMap.containsKey(k)) {
-                        Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);
-                        // 处理二进制对象显示
-                        if (null != val && val instanceof byte[]) {
-                            byte[] b = (byte[]) val;
-                            if (b.length > 128) {
-                                row.put(k, String.format("bytes[%d]", b.length));
-                                return;
-                            }
-                            row.put(k, Arrays.toString(b));
-                            return;
-                        }
-                        row.put(k, val);
-                    }
-                });
-
-                dataVo.setJson(JsonUtil.objToJson(row));
+                DataVo dataVo = convert2Vo(row, DataVo.class);
+                Map binlogData = getBinlogData(row);
+                dataVo.setJson(JsonUtil.objToJson(binlogData));
                 list.add(dataVo);
             } catch (Exception e) {
                 logger.error(e.getLocalizedMessage());
@@ -159,6 +142,25 @@ public class MonitorServiceImpl implements MonitorService {
         }
         paging.setData(list);
         return paging;
+    }
+
+    @Override
+    public MessageVo getMessageVo(String metaId, String messageId) {
+        Assert.hasText(metaId, "The metaId is null.");
+        Assert.hasText(messageId, "The messageId is null.");
+
+        MessageVo messageVo = new MessageVo();
+        try {
+            Map row = monitor.getData(metaId, messageId);
+            Map binlogData = getBinlogData(row);
+            String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
+            TableGroup tableGroup = monitor.getTableGroup(tableGroupId);
+            messageVo.setTableGroup(tableGroup);
+            messageVo.setRow(binlogData);
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage());
+        }
+        return messageVo;
     }
 
     @Override
@@ -204,6 +206,37 @@ public class MonitorServiceImpl implements MonitorService {
         BeanUtils.copyProperties(appReportMetric, vo);
         vo.setMetrics(getMetrics(metrics));
         return vo;
+    }
+
+    private Map getBinlogData(Map row) throws InvalidProtocolBufferException {
+        String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
+        byte[] bytes = (byte[]) row.get(ConfigConstant.BINLOG_DATA);
+        BinlogMap message = BinlogMap.parseFrom(bytes);
+
+        // 1、获取配置信息
+        final TableGroup tableGroup = cacheService.get(tableGroupId, TableGroup.class);
+
+        // 2、反序列数据
+        Map<String, Object> map = new HashMap<>();
+        final Picker picker = new Picker(tableGroup.getFieldMapping());
+        final Map<String, Field> fieldMap = picker.getSourceFieldMap();
+        message.getRowMap().forEach((k, v) -> {
+            if (fieldMap.containsKey(k)) {
+                Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);
+                // 处理二进制对象显示
+                if (null != val && val instanceof byte[]) {
+                    byte[] b = (byte[]) val;
+                    if (b.length > 128) {
+                        map.put(k, String.format("bytes[%d]", b.length));
+                        return;
+                    }
+                    map.put(k, Arrays.toString(b));
+                    return;
+                }
+                map.put(k, val);
+            }
+        });
+        return map;
     }
 
     private MetaVo convertMeta2Vo(Meta meta) {
