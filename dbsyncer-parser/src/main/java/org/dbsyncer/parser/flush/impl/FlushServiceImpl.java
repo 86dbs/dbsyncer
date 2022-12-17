@@ -1,9 +1,7 @@
 package org.dbsyncer.parser.flush.impl;
 
-import com.alibaba.fastjson.JSONException;
 import org.dbsyncer.common.config.IncrementDataConfig;
 import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.FlushService;
@@ -12,6 +10,7 @@ import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
+import org.dbsyncer.storage.util.BinlogMessageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,13 +68,13 @@ public class FlushServiceImpl implements FlushService {
             row.put(ConfigConstant.DATA_TARGET_TABLE_NAME, targetTableGroupName);
             row.put(ConfigConstant.DATA_EVENT, event);
             row.put(ConfigConstant.DATA_ERROR, substring(error));
-            try {
-                row.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(r));
-            } catch (JSONException e) {
-                logger.warn("可能存在Blob或inputStream大文件类型, 无法序列化:{}", r);
-                row.put(ConfigConstant.CONFIG_MODEL_JSON, r.toString());
-            }
             row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
+            try {
+                byte[] bytes = BinlogMessageUtil.toBinlogMap(r).toByteArray();
+                row.put(ConfigConstant.BINLOG_DATA, bytes);
+            } catch (Exception e) {
+                logger.warn("可能存在Blob或inputStream大文件类型, 无法序列化:{}", r);
+            }
 
             // 缓存队列满时，打印日志
             if (!storageBufferActuator.offer(new StorageRequest(metaId, row))) {

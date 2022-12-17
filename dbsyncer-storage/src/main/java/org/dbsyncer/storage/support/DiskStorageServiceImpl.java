@@ -14,10 +14,10 @@ import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageEnum;
+import org.dbsyncer.storage.lucene.Option;
 import org.dbsyncer.storage.lucene.Shard;
 import org.dbsyncer.storage.query.AbstractFilter;
 import org.dbsyncer.storage.query.BooleanFilter;
-import org.dbsyncer.storage.lucene.Option;
 import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.util.DocumentUtil;
 
@@ -237,7 +237,4 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         void apply(Shard shard, List<Document> docs) throws IOException;
     }
 
-    interface BooleanClauseBuilder {
-        BooleanClause toBooleanClause();
-    }
 }

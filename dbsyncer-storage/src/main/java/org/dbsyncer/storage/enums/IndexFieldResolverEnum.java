@@ -10,7 +10,7 @@ public enum IndexFieldResolverEnum {
 
     STRING((f) -> f.stringValue()),
 
-    BINARY((f) -> f.binaryValue());
+    BINARY((f) -> f.binaryValue().bytes);
 
     private IndexFieldResolver indexFieldResolver;
 

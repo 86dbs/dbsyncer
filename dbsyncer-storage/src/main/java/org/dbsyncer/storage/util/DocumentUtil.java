@@ -97,7 +97,6 @@ public abstract class DocumentUtil {
         String targetTableName = (String) params.get(ConfigConstant.DATA_TARGET_TABLE_NAME);
         String event = (String) params.get(ConfigConstant.DATA_EVENT);
         String error = (String) params.get(ConfigConstant.DATA_ERROR);
-        String json = (String) params.get(ConfigConstant.CONFIG_MODEL_JSON);
         Long createTime = (Long) params.get(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
 
         doc.add(new StringField(ConfigConstant.CONFIG_MODEL_ID, id, Field.Store.YES));
@@ -107,7 +106,12 @@ public abstract class DocumentUtil {
         doc.add(new StringField(ConfigConstant.DATA_TARGET_TABLE_NAME, targetTableName, Field.Store.YES));
         doc.add(new StringField(ConfigConstant.DATA_EVENT, event, Field.Store.YES));
         doc.add(new TextField(ConfigConstant.DATA_ERROR, error, Field.Store.YES));
-        doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_JSON, json));
+
+        // 同步数据
+        byte[] bytes = (byte[]) params.get(ConfigConstant.BINLOG_DATA);
+        doc.add(new BinaryDocValuesField(ConfigConstant.BINLOG_DATA, new BytesRef(bytes)));
+        doc.add(new StoredField(ConfigConstant.BINLOG_DATA, bytes));
+
         // 创建时间
         doc.add(new LongPoint(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
         doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));

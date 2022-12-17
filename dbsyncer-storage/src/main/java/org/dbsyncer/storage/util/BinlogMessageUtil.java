@@ -6,6 +6,7 @@ import oracle.sql.CLOB;
 import oracle.sql.TIMESTAMP;
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.storage.binlog.BinlogColumnValue;
+import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,9 +15,14 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.sql.*;
+import java.sql.Date;
+import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.BitSet;
+import java.util.Map;
 
 /**
  * Java语言提供了八种基本类型，六种数字类型（四个整数型，两个浮点型），一种字符类型，一种布尔型。
@@ -51,6 +57,19 @@ public abstract class BinlogMessageUtil {
     private static final ByteBuffer buffer = ByteBuffer.allocate(8);
 
     private static final BinlogColumnValue value = new BinlogColumnValue();
+
+    public static BinlogMap toBinlogMap(Map<String, Object> data) {
+        BinlogMap.Builder dataBuilder = BinlogMap.newBuilder();
+        data.forEach((k, v) -> {
+            if (null != v) {
+                ByteString bytes = serializeValue(v);
+                if (null != bytes) {
+                    dataBuilder.putRow(k, bytes);
+                }
+            }
+        });
+        return dataBuilder.build();
+    }
 
     public static ByteString serializeValue(Object v) {
         String type = v.getClass().getName();
@@ -202,7 +221,7 @@ public abstract class BinlogMessageUtil {
             case Types.BINARY:
             case Types.VARBINARY:
             case Types.LONGVARBINARY:
-            // 二进制对象
+                // 二进制对象
             case Types.NCLOB:
             case Types.CLOB:
             case Types.BLOB:
@@ -224,7 +243,7 @@ public abstract class BinlogMessageUtil {
             is = blob.getBinaryStream();
             b = new byte[(int) blob.length()];
             int read = is.read(b);
-            if(-1 == read){
+            if (-1 == read) {
                 return b;
             }
         } catch (Exception e) {
