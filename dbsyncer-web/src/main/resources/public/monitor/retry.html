@@ -9,13 +9,15 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
       <div class="row text-center">
         <div class="page-header">
           <h3>重试[[${meta?.mappingName}]]</h3>
-          <input type="hidden" id="metaId" th:value="${meta?.id}">
+          <input type="hidden" name="metaId" id="metaId" th:value="${meta?.id}"/>
+          <input type="hidden" name="messageId" th:value="${message?.id}"/>
+          <input type="hidden" id="retryDataParams" name="retryDataParams"/>
         </div>
       </div>
 
       <!-- 操作 -->
       <div class="form-group">
-        <div class="col-md-10"><h3>[[${message?.tableGroup?.sourceTable?.name}]] <span class="fa fa-angle-double-right"></span> [[${message?.tableGroup?.targetTable?.name}]]</h3></div>
+        <div class="col-md-10"><h4>[[${message?.sourceTableName}]] <span class="fa fa-angle-double-right"></span> [[${message?.targetTableName}]]</h4></div>
         <div class="col-md-2 text-right">
           <button id="retryDataSubmitBtn" type="button" class="btn btn-primary">
             <span class="fa fa-refresh"></span>执行
@@ -35,14 +37,18 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
             <tr>
               <th></th>
               <th>目标表字段</th>
-              <th>目标表值</th>
+              <th>值类型</th>
+              <th>值</th>
+              <th>操作</th>
             </tr>
             </thead>
-            <tbody id="pluginList">
-            <tr th:each="m,state : ${message?.row}">
+            <tbody>
+            <tr th:each="c,state : ${message?.columns}">
               <td th:text="${state.index}+1"></td>
-              <td th:text="${state?.current?.key}"/>
-              <td th:text="${state?.current?.value}"/>
+              <td th:text="${c?.key + '(' + c?.keyType + ')'}"/>
+              <td th:text="${c?.valueType}"/>
+              <td th:text="${c?.value}"/>
+              <td><i th:type="${c?.key}" th:title="修改" class="fa fa-edit well-sign-green dbsyncer_pointer retryDataModify"></i></td>
             </tr>
             </tbody>
           </table>

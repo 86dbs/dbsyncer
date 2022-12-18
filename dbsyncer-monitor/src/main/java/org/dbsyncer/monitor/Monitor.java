@@ -31,6 +31,8 @@ public interface Monitor {
 
     Map getData(String metaId, String messageId);
 
+    void removeData(String metaId, String messageId);
+
     void clearData(String metaId);
 
     Paging queryLog(int pageNum, int pageSize, String json);

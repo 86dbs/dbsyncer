@@ -198,7 +198,9 @@ function showData($dataList, arr, append) {
             html += '<td>' + (arr[i].success ? '<span class="label label-success">成功</span>' : '<span class="label label-warning">失败</span>') + '</td>';
             html += '<td style="max-width:100px;" class="dbsyncer_over_hidden"><a href="javascript:;" class="dbsyncer_pointer queryError">' + arr[i].error + '</a></td>';
             html += '<td>' + formatDate(arr[i].createTime) + '</td>';
-            html += '<td><a href="javascript:;" class="label label-info queryData">查看数据</a>&nbsp;<a id="' + arr[i].id + '" href="javascript:;" class="label label-warning retryData">重试</a><div class="hidden">' + arr[i].json + '</div></td>';
+            html += '<td><div class="hidden">' + arr[i].json + '</div><a href="javascript:;" class="label label-info queryData">查看数据</a>&nbsp;';
+            html += (arr[i].success ? '' : '<a id="' + arr[i].id + '" href="javascript:;" class="label label-warning retryData">重试</a>');
+            html += '</td>';
             html += '</tr>';
         }
     }

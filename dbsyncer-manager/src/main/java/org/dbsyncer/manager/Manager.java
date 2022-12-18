@@ -109,6 +109,8 @@ public interface Manager extends Executor {
     // Data
     Paging queryData(Query query);
 
+    void removeData(String metaId, String messageId);
+
     void clearData(String metaId);
 
     // Log

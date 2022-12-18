@@ -139,6 +139,11 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
     }
 
     @Override
+    public void removeData(String metaId, String messageId) {
+        manager.removeData(metaId, messageId);
+    }
+
+    @Override
     public void clearData(String metaId) {
         manager.clearData(metaId);
     }

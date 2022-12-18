@@ -57,6 +57,14 @@ public interface MonitorService {
     MessageVo getMessageVo(String metaId, String messageId);
 
     /**
+     * 手动同步单条数据
+     *
+     * @param params
+     * @return
+     */
+    String sync(Map<String, String> params);
+
+    /**
      * 清空驱动同步数据
      *
      * @param id

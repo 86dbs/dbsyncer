@@ -125,7 +125,8 @@ public class MonitorController extends BaseController {
     @ResponseBody
     public RestResult sync(HttpServletRequest request) {
         try {
-            return RestResult.restSuccess("ok");
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(monitorService.sync(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());

@@ -142,7 +142,7 @@
                                     <td th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}" />
                                     <td>
                                         <a th:json="${d?.json}" href="javascript:;" class="label label-info queryData">查看数据</a>
-                                        <a th:id="${d?.id}" href="javascript:;" class="label label-warning retryData">重试</a>
+                                        <a th:if="${d?.success == 0}" th:id="${d?.id}" href="javascript:;" class="label label-warning retryData">重试</a>
                                         <div class="hidden" th:text="${d?.json}"></div>
                                     </td>
                                 </tr>

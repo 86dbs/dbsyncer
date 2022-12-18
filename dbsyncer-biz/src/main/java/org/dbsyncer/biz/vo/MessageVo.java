@@ -1,28 +1,46 @@
 package org.dbsyncer.biz.vo;
 
-import org.dbsyncer.parser.model.TableGroup;
-
-import java.util.Map;
+import java.util.List;
 
 public class MessageVo {
 
-    private TableGroup tableGroup;
+    private String id;
 
-    private Map row;
+    private String sourceTableName;
 
-    public TableGroup getTableGroup() {
-        return tableGroup;
+    private String targetTableName;
+
+    private List<BinlogColumnVo> columns;
+
+    public String getId() {
+        return id;
     }
 
-    public void setTableGroup(TableGroup tableGroup) {
-        this.tableGroup = tableGroup;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public Map getRow() {
-        return row;
+    public String getSourceTableName() {
+        return sourceTableName;
     }
 
-    public void setRow(Map row) {
-        this.row = row;
+    public void setSourceTableName(String sourceTableName) {
+        this.sourceTableName = sourceTableName;
+    }
+
+    public String getTargetTableName() {
+        return targetTableName;
+    }
+
+    public void setTargetTableName(String targetTableName) {
+        this.targetTableName = targetTableName;
+    }
+
+    public List<BinlogColumnVo> getColumns() {
+        return columns;
+    }
+
+    public void setColumns(List<BinlogColumnVo> columns) {
+        this.columns = columns;
     }
 }
