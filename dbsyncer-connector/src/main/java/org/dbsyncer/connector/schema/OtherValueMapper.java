@@ -4,6 +4,7 @@ import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 import org.postgis.Geometry;
+import org.postgis.PGgeometry;
 import org.postgis.binary.BinaryParser;
 import org.postgis.binary.BinaryWriter;
 
@@ -18,7 +19,7 @@ public class OtherValueMapper extends AbstractValueMapper<Object> {
 
     @Override
     protected boolean skipConvert(Object val) {
-        return val instanceof oracle.sql.STRUCT || val instanceof String;
+        return val instanceof oracle.sql.STRUCT;
     }
 
     @Override
@@ -49,6 +50,9 @@ public class OtherValueMapper extends AbstractValueMapper<Object> {
             return val;
 
         }
+
+        if (val instanceof PGgeometry)
+            return val;
 
         // SqlServer Geometry
 
