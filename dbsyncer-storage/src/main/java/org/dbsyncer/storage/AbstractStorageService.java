@@ -5,6 +5,8 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.strategy.Strategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
@@ -13,6 +15,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -22,6 +25,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * @date 2019/11/16 1:28
  */
 public abstract class AbstractStorageService implements StorageService, DisposableBean {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private Map<String, Strategy> map;
@@ -59,11 +64,13 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
         boolean locked = false;
         try {
-            locked = lock.tryLock();
+            locked = lock.tryLock(3, TimeUnit.SECONDS);
             if (locked) {
                 String sharding = getSharding(query.getType(), query.getMetaId());
                 return select(sharding, query);
             }
+        } catch (InterruptedException e) {
+            logger.warn("tryLock error", e.getLocalizedMessage());
         } finally {
             if (locked) {
                 lock.unlock();

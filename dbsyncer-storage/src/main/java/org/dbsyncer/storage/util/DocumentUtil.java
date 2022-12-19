@@ -2,7 +2,6 @@ package org.dbsyncer.storage.util;
 
 import org.apache.lucene.document.*;
 import org.apache.lucene.util.BytesRef;
-import org.dbsyncer.storage.constant.BinlogConstant;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.springframework.util.Assert;
 
@@ -16,7 +15,7 @@ import java.util.Map;
  * <p/> new NumericDocValuesField(name, value); 要排序，必须添加一个同名的SortedNumericDocValuesField
  * <p/> 其他FloatPoint、LongPoint、DoublePoint同上
  * <p/> id使用字符串，防止更新失败
- *
+ * <p>
  * <p/>2、Field：
  * <p/>IntPoint
  * <p/>FloatPoint
@@ -31,7 +30,7 @@ import java.util.Map;
  * <p/>FloatDocValuesField 存储Float类型索引并排序
  * <p/>DoubleDocValuesField 存储Double类型索引并排序
  * <p/>BinaryDocValuesField 只存储不共享，例如标题类字段，如果需要共享并排序，推荐使用SortedDocValuesField
- *
+ * <p>
  * <p/>3、Lucene 6.0版本后：
  * <p>IntField 替换为 IntPoint</p>
  * <p>FloatField 替换为 FloatPoint</p>
@@ -98,7 +97,6 @@ public abstract class DocumentUtil {
         String targetTableName = (String) params.get(ConfigConstant.DATA_TARGET_TABLE_NAME);
         String event = (String) params.get(ConfigConstant.DATA_EVENT);
         String error = (String) params.get(ConfigConstant.DATA_ERROR);
-        String json = (String) params.get(ConfigConstant.CONFIG_MODEL_JSON);
         Long createTime = (Long) params.get(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
 
         doc.add(new StringField(ConfigConstant.CONFIG_MODEL_ID, id, Field.Store.YES));
@@ -108,28 +106,16 @@ public abstract class DocumentUtil {
         doc.add(new StringField(ConfigConstant.DATA_TARGET_TABLE_NAME, targetTableName, Field.Store.YES));
         doc.add(new StringField(ConfigConstant.DATA_EVENT, event, Field.Store.YES));
         doc.add(new TextField(ConfigConstant.DATA_ERROR, error, Field.Store.YES));
-        doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_JSON, json));
+
+        // 同步数据
+        byte[] bytes = (byte[]) params.get(ConfigConstant.BINLOG_DATA);
+        doc.add(new BinaryDocValuesField(ConfigConstant.BINLOG_DATA, new BytesRef(bytes)));
+        doc.add(new StoredField(ConfigConstant.BINLOG_DATA, bytes));
+
         // 创建时间
         doc.add(new LongPoint(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
         doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
         doc.add(new NumericDocValuesField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
-        return doc;
-    }
-
-    @Deprecated
-    public static Document convertBinlog2Doc(String messageId, int status, BytesRef bytes, long updateTime) {
-        Document doc = new Document();
-        doc.add(new StringField(BinlogConstant.BINLOG_ID, messageId, Field.Store.YES));
-
-        doc.add(new IntPoint(BinlogConstant.BINLOG_STATUS, status));
-        doc.add(new StoredField(BinlogConstant.BINLOG_STATUS, status));
-
-        doc.add(new BinaryDocValuesField(BinlogConstant.BINLOG_CONTENT, bytes));
-        doc.add(new StoredField(BinlogConstant.BINLOG_CONTENT, bytes));
-
-        doc.add(new LongPoint(BinlogConstant.BINLOG_TIME, updateTime));
-        doc.add(new StoredField(BinlogConstant.BINLOG_TIME, updateTime));
-        doc.add(new NumericDocValuesField(BinlogConstant.BINLOG_TIME, updateTime));
         return doc;
     }
 
@@ -142,9 +128,9 @@ public abstract class DocumentUtil {
         doc.add(new IntPoint(ConfigConstant.BINLOG_STATUS, status));
         doc.add(new StoredField(ConfigConstant.BINLOG_STATUS, status));
 
-        byte[] bytes = (byte[]) params.get(ConfigConstant.CONFIG_MODEL_JSON);
-        doc.add(new BinaryDocValuesField(ConfigConstant.CONFIG_MODEL_JSON, new BytesRef(bytes)));
-        doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_JSON, bytes));
+        byte[] bytes = (byte[]) params.get(ConfigConstant.BINLOG_DATA);
+        doc.add(new BinaryDocValuesField(ConfigConstant.BINLOG_DATA, new BytesRef(bytes)));
+        doc.add(new StoredField(ConfigConstant.BINLOG_DATA, bytes));
 
         Long createTime = (Long) params.get(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
         doc.add(new LongPoint(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));

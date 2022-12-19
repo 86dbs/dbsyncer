@@ -9,14 +9,16 @@ import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
-import org.dbsyncer.connector.model.Filter;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.constant.BinlogConstant;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
-import org.dbsyncer.storage.query.BooleanQuery;
+import org.dbsyncer.storage.query.BooleanFilter;
 import org.dbsyncer.storage.query.Query;
+import org.dbsyncer.storage.query.filter.IntFilter;
+import org.dbsyncer.storage.query.filter.LongFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,27 +97,31 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
                 return;
             }
 
-            List<Map> tasks = new ArrayList<>();
-            int count = 0;
-            long now = Instant.now().toEpochMilli();
-            Map task = null;
-            while (!queue.isEmpty() && count < binlogRecorderConfig.getBatchCount()) {
-                BinlogMessage message = queue.poll();
-                if (null != message) {
-                    task = new HashMap();
-                    task.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
-                    task.put(ConfigConstant.BINLOG_STATUS, BinlogConstant.READY);
-                    task.put(ConfigConstant.CONFIG_MODEL_JSON, message.toByteArray());
-                    task.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
-                    tasks.add(task);
+            try {
+                List<Map> tasks = new ArrayList<>();
+                int count = 0;
+                long now = Instant.now().toEpochMilli();
+                Map task = null;
+                while (!queue.isEmpty() && count < binlogRecorderConfig.getBatchCount()) {
+                    BinlogMessage message = queue.poll();
+                    if (null != message) {
+                        task = new HashMap();
+                        task.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
+                        task.put(ConfigConstant.BINLOG_STATUS, BinlogConstant.READY);
+                        task.put(ConfigConstant.BINLOG_DATA, message.toByteArray());
+                        task.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
+                        tasks.add(task);
+                    }
+                    count++;
                 }
-                count++;
-            }
 
-            if (!CollectionUtils.isEmpty(tasks)) {
-                storageService.addBatch(StorageEnum.BINLOG, tasks);
+                if (!CollectionUtils.isEmpty(tasks)) {
+                    storageService.addBatch(StorageEnum.BINLOG, tasks);
+                }
+                tasks = null;
+            } catch (Exception e) {
+                logger.error(e.getMessage());
             }
-            tasks = null;
         }
     }
 
@@ -154,17 +160,25 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
         }
 
         private void doParse() {
-            //  TODO 查询[待处理] 或 [处理中 & 处理超时]
+            // 查询[待处理] 或 [处理中 & 处理超时] // TODO 待优化
             Query query = new Query();
             query.setType(StorageEnum.BINLOG);
-            Filter ready = new Filter(ConfigConstant.BINLOG_STATUS, FilterEnum.EQUAL, BinlogConstant.READY);
-            Filter processing = new Filter(ConfigConstant.BINLOG_STATUS, FilterEnum.EQUAL, BinlogConstant.PROCESSING);
+
+            IntFilter ready = new IntFilter(ConfigConstant.BINLOG_STATUS, FilterEnum.EQUAL, BinlogConstant.READY);
+            IntFilter processing = new IntFilter(ConfigConstant.BINLOG_STATUS, FilterEnum.EQUAL, BinlogConstant.PROCESSING);
             long maxProcessingSeconds = Timestamp.valueOf(LocalDateTime.now().minusSeconds(binlogRecorderConfig.getMaxProcessingSeconds())).getTime();
-            Filter processingTimeout = new Filter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, maxProcessingSeconds);
-            BooleanQuery booleanQuery = new BooleanQuery()
-                    .add(new BooleanQuery().add(ready), OperationEnum.OR)
-                    .add(new BooleanQuery().add(processing).add(processingTimeout));
-            query.setBooleanQuery(booleanQuery);
+            LongFilter processingTimeout = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, maxProcessingSeconds);
+            BooleanFilter booleanFilter = new BooleanFilter()
+                    .add(new BooleanFilter().add(ready), OperationEnum.OR)
+                    .add(new BooleanFilter().add(processing).add(processingTimeout), OperationEnum.OR);
+            query.setBooleanFilter(booleanFilter);
+
+            // 指定返回值类型
+            Map<String, IndexFieldResolverEnum> fieldResolvers = new LinkedHashMap<>();
+            fieldResolvers.put(ConfigConstant.BINLOG_STATUS, IndexFieldResolverEnum.INT);
+            fieldResolvers.put(ConfigConstant.BINLOG_DATA, IndexFieldResolverEnum.BINARY);
+            fieldResolvers.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, IndexFieldResolverEnum.LONG);
+            query.setIndexFieldResolverMap(fieldResolvers);
             query.setPageNum(1);
             query.setPageSize(binlogRecorderConfig.getBatchCount());
             Paging paging = storageService.query(query);
@@ -181,7 +195,7 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
                 Map row = list.get(i);
                 String id = (String) row.get(ConfigConstant.CONFIG_MODEL_ID);
                 Integer status = (Integer) row.get(ConfigConstant.BINLOG_STATUS);
-                byte[] bytes = (byte[]) row.get(ConfigConstant.CONFIG_MODEL_JSON);
+                byte[] bytes = (byte[]) row.get(ConfigConstant.BINLOG_DATA);
                 if (BinlogConstant.PROCESSING == status) {
                     existProcessing = true;
                 }

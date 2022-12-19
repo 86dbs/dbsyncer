@@ -8,17 +8,12 @@ package org.dbsyncer.storage.constant;
 public class BinlogConstant {
 
     /**
-     * 属性
-     */
-    public static final String BINLOG_ID = "id";
-    public static final String BINLOG_STATUS = "s";
-    public static final String BINLOG_CONTENT = "c";
-    public static final String BINLOG_TIME = "t";
-
-    /**
-     * 状态类型
+     * 待同步
      */
     public static final int READY = 0;
+    /**
+     * 同步中
+     */
     public static final int PROCESSING = 1;
 
 }

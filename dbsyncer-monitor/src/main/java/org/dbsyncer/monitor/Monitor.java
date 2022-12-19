@@ -6,9 +6,11 @@ import org.dbsyncer.monitor.model.AppReportMetric;
 import org.dbsyncer.monitor.model.MetricResponse;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author AE86
@@ -19,9 +21,17 @@ public interface Monitor {
 
     Mapping getMapping(String mappingId);
 
+    TableGroup getTableGroup(String tableGroupId);
+
     List<Meta> getMetaAll();
 
+    Meta getMeta(String metaId);
+
     Paging queryData(String metaId, int pageNum, int pageSize, String error, String success);
+
+    Map getData(String metaId, String messageId);
+
+    void removeData(String metaId, String messageId);
 
     void clearData(String metaId);
 

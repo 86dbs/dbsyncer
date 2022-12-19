@@ -21,6 +21,9 @@ public class LongVarcharValueMapper extends AbstractValueMapper<String> {
         if (val instanceof Date) {
             return String.valueOf(val);
         }
+        if (val instanceof Integer) {
+            return String.valueOf(val);
+        }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }

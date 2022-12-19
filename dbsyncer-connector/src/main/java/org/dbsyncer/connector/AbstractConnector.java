@@ -7,6 +7,8 @@ import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.schema.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
 import java.util.LinkedHashMap;
@@ -14,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class AbstractConnector {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected static final Map<Integer, ValueMapper> valueMappers = new LinkedHashMap<>();
 
@@ -57,7 +61,7 @@ public abstract class AbstractConnector {
      * @param connectorMapper
      * @param config
      */
-    protected void convertProcessBeforeWriter(ConnectorMapper connectorMapper, WriterBatchConfig config) throws Exception {
+    protected void convertProcessBeforeWriter(ConnectorMapper connectorMapper, WriterBatchConfig config) {
         if (CollectionUtils.isEmpty(config.getFields()) || CollectionUtils.isEmpty(config.getData())) {
             return;
         }
@@ -73,7 +77,12 @@ public abstract class AbstractConnector {
                 final ValueMapper valueMapper = valueMappers.get(f.getType());
                 if (null != valueMapper) {
                     // 当数据类型不同时，转换值类型
-                    row.put(f.getName(), valueMapper.convertValue(connectorMapper, row.get(f.getName())));
+                    try {
+                        row.put(f.getName(), valueMapper.convertValue(connectorMapper, row.get(f.getName())));
+                    } catch (Exception e) {
+                        logger.error("convert value error: ({}, {})", f.getName(), row.get(f.getName()));
+                        throw new ConnectorException(e);
+                    }
                 }
             }
         }

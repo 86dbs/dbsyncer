@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.PostConstruct;
 import java.lang.reflect.ParameterizedType;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -37,6 +38,8 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
 
     @Autowired
     private BufferActuatorConfig bufferActuatorConfig;
+
+    private LocalDateTime lastBufferWarningTime;
 
     private BlockingQueue<Request> buffer;
 
@@ -100,7 +103,16 @@ public abstract class AbstractBufferActuator<Request, Response> implements Buffe
     public boolean offer(BufferRequest request) {
         boolean offer = buffer.offer((Request) request);
         if (!offer) {
-            logger.warn("[{}]缓存队列容量已达上限，建议修改参数[dbsyncer.parser.flush.buffer.actuator.queue-capacity={}], ", this.getClass().getSimpleName(), getQueueCapacity());
+            LocalDateTime now = LocalDateTime.now();
+            if (null == lastBufferWarningTime) {
+                lastBufferWarningTime = now;
+            }
+
+            // 3s前有警告时间
+            if (now.minusSeconds(3).isAfter(lastBufferWarningTime)) {
+                logger.warn("[{}]缓存队列容量已达上限，建议修改参数[dbsyncer.parser.flush.buffer.actuator.queue-capacity={}], ", this.getClass().getSimpleName(), getQueueCapacity());
+                lastBufferWarningTime = now;
+            }
         }
         return offer;
     }

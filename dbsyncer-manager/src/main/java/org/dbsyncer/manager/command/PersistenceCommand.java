@@ -17,11 +17,13 @@ public class PersistenceCommand implements Command {
         this.params = params;
     }
 
+    @Override
     public boolean addConfig() {
         storageService.add(StorageEnum.CONFIG, params);
         return true;
     }
 
+    @Override
     public boolean editConfig() {
         storageService.edit(StorageEnum.CONFIG, params);
         return true;

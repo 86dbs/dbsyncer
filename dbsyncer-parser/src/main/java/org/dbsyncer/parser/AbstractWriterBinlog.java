@@ -1,6 +1,5 @@
 package org.dbsyncer.parser;
 
-import com.google.protobuf.ByteString;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.model.Field;
@@ -9,8 +8,7 @@ import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterRequest;
-import org.dbsyncer.storage.binlog.AbstractBinlogRecorder;
-import org.dbsyncer.storage.binlog.proto.BinlogMap;
+import org.dbsyncer.storage.binlog.AbstractBinlogService;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.binlog.proto.EventEnum;
 import org.dbsyncer.storage.util.BinlogMessageUtil;
@@ -22,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 
-public abstract class AbstractWriterBinlog extends AbstractBinlogRecorder<WriterRequest> {
+public abstract class AbstractWriterBinlog extends AbstractBinlogService<WriterRequest> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -34,20 +32,10 @@ public abstract class AbstractWriterBinlog extends AbstractBinlogRecorder<Writer
 
     protected void flush(String tableGroupId, String event, Map<String, Object> data) {
         try {
-            BinlogMap.Builder dataBuilder = BinlogMap.newBuilder();
-            data.forEach((k, v) -> {
-                if (null != v) {
-                    ByteString bytes = BinlogMessageUtil.serializeValue(v);
-                    if (null != bytes) {
-                        dataBuilder.putRow(k, bytes);
-                    }
-                }
-            });
-
             BinlogMessage builder = BinlogMessage.newBuilder()
                     .setTableGroupId(tableGroupId)
                     .setEvent(EventEnum.valueOf(event))
-                    .setData(dataBuilder.build())
+                    .setData(BinlogMessageUtil.toBinlogMap(data))
                     .build();
             super.flush(builder);
         } catch (Exception e) {

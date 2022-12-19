@@ -226,6 +226,11 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     }
 
     @Override
+    public void removeData(String metaId, String messageId) {
+        storageService.remove(StorageEnum.DATA, metaId, messageId);
+    }
+
+    @Override
     public void clearData(String metaId) {
         Meta meta = getMeta(metaId);
         Mapping mapping = getMapping(meta.getMappingId());
