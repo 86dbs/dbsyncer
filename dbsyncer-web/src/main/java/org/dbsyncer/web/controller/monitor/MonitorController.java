@@ -1,6 +1,7 @@
 package org.dbsyncer.web.controller.monitor;
 
 import org.dbsyncer.biz.ConnectorService;
+import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.AppReportMetricVo;
@@ -17,7 +18,6 @@ import org.dbsyncer.monitor.model.Sample;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthComponent;
 import org.springframework.boot.actuate.health.HealthEndpoint;
@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,25 +48,28 @@ public class MonitorController extends BaseController {
     private HistoryStackVo cpu = new HistoryStackVo();
     private HistoryStackVo memory = new HistoryStackVo();
 
-    @Autowired
+    @Resource
     private MonitorService monitorService;
 
-    @Autowired
+    @Resource
+    private DataSyncService dataSyncService;
+
+    @Resource
     private ConnectorService connectorService;
 
-    @Autowired
+    @Resource
     private SystemConfigService systemConfigService;
 
-    @Autowired
+    @Resource
     private MetricsEndpoint metricsEndpoint;
 
-    @Autowired
+    @Resource
     private HealthEndpoint healthEndpoint;
 
-    @Autowired
+    @Resource
     private HistoryStackValueFormatter cpuHistoryStackValueFormatterImpl;
 
-    @Autowired
+    @Resource
     private HistoryStackValueFormatter memoryHistoryStackValueFormatterImpl;
 
     @RequestMapping("")
@@ -82,7 +86,7 @@ public class MonitorController extends BaseController {
     @GetMapping("/page/retry")
     public String page(ModelMap model, String metaId, String messageId) {
         model.put("meta", monitorService.getMetaVo(metaId));
-        model.put("message", monitorService.getMessageVo(metaId, messageId));
+        model.put("message", dataSyncService.getMessageVo(metaId, messageId));
         return "monitor/retry.html";
     }
 
@@ -126,7 +130,7 @@ public class MonitorController extends BaseController {
     public RestResult sync(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
-            return RestResult.restSuccess(monitorService.sync(params));
+            return RestResult.restSuccess(dataSyncService.sync(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());
