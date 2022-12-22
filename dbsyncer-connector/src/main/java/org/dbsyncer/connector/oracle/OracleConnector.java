@@ -10,7 +10,13 @@ import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
 
+import java.sql.Types;
+
 public final class OracleConnector extends AbstractDatabaseConnector {
+
+    public OracleConnector() {
+        VALUE_MAPPERS.put(Types.OTHER, new OracleOtherValueMapper());
+    }
 
     @Override
     public String getPageSql(PageSql config) {

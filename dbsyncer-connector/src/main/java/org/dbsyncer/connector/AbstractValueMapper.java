@@ -40,7 +40,7 @@ public abstract class AbstractValueMapper<T> implements ValueMapper {
      * @param val
      * @return
      */
-    protected Object getDefaultVal(Object val) throws Exception {
+    protected Object getDefaultVal(Object val) {
         return val;
     }
 

@@ -13,8 +13,8 @@ import java.sql.Types;
 
 public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
-    static {
-        valueMappers.put(Types.OTHER, new PostgreSQLOtherValueMapper());
+    public PostgreSQLConnector() {
+        VALUE_MAPPERS.put(Types.OTHER, new PostgreSQLOtherValueMapper());
     }
 
     @Override

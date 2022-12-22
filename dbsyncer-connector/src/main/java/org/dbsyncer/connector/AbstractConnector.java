@@ -19,40 +19,40 @@ public abstract class AbstractConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected static final Map<Integer, ValueMapper> valueMappers = new LinkedHashMap<>();
+    protected final Map<Integer, ValueMapper> VALUE_MAPPERS = new LinkedHashMap<>();
 
-    static {
+    public AbstractConnector() {
         // 常用类型
-        valueMappers.putIfAbsent(Types.VARCHAR, new VarcharValueMapper());
-        valueMappers.putIfAbsent(Types.INTEGER, new IntegerValueMapper());
-        valueMappers.putIfAbsent(Types.BIGINT, new BigintValueMapper());
-        valueMappers.putIfAbsent(Types.TIMESTAMP, new TimestampValueMapper());
-        valueMappers.putIfAbsent(Types.DATE, new DateValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.VARCHAR, new VarcharValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.INTEGER, new IntegerValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.BIGINT, new BigintValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.TIMESTAMP, new TimestampValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.DATE, new DateValueMapper());
 
         // 较少使用
-        valueMappers.putIfAbsent(Types.CHAR, new CharValueMapper());
-        valueMappers.putIfAbsent(Types.NCHAR, new NCharValueMapper());
-        valueMappers.putIfAbsent(Types.NVARCHAR, new NVarcharValueMapper());
-        valueMappers.putIfAbsent(Types.LONGVARCHAR, new LongVarcharValueMapper());
-        valueMappers.putIfAbsent(Types.NUMERIC, new NumberValueMapper());
-        valueMappers.putIfAbsent(Types.BINARY, new BinaryValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.CHAR, new CharValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.NCHAR, new NCharValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.NVARCHAR, new NVarcharValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.LONGVARCHAR, new LongVarcharValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.NUMERIC, new NumberValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.BINARY, new BinaryValueMapper());
 
         // 很少使用
-        valueMappers.putIfAbsent(Types.SMALLINT, new SmallintValueMapper());
-        valueMappers.putIfAbsent(Types.TINYINT, new TinyintValueMapper());
-        valueMappers.putIfAbsent(Types.TIME, new TimeValueMapper());
-        valueMappers.putIfAbsent(Types.DECIMAL, new DecimalValueMapper());
-        valueMappers.putIfAbsent(Types.DOUBLE, new DoubleValueMapper());
-        valueMappers.putIfAbsent(Types.FLOAT, new FloatValueMapper());
-        valueMappers.putIfAbsent(Types.BIT, new BitValueMapper());
-        valueMappers.putIfAbsent(Types.BLOB, new BlobValueMapper());
-        valueMappers.putIfAbsent(Types.CLOB, new ClobValueMapper());
-        valueMappers.putIfAbsent(Types.NCLOB, new NClobValueMapper());
-        valueMappers.putIfAbsent(Types.ROWID, new RowIdValueMapper());
-        valueMappers.putIfAbsent(Types.REAL, new RealValueMapper());
-        valueMappers.putIfAbsent(Types.VARBINARY, new VarBinaryValueMapper());
-        valueMappers.putIfAbsent(Types.LONGVARBINARY, new LongVarBinaryValueMapper());
-        valueMappers.putIfAbsent(Types.OTHER, new OtherValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.SMALLINT, new SmallintValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.TINYINT, new TinyintValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.TIME, new TimeValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.DECIMAL, new DecimalValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.DOUBLE, new DoubleValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.FLOAT, new FloatValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.BIT, new BitValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.BLOB, new BlobValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.CLOB, new ClobValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.NCLOB, new NClobValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.ROWID, new RowIdValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.REAL, new RealValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.VARBINARY, new VarBinaryValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.LONGVARBINARY, new LongVarBinaryValueMapper());
+        VALUE_MAPPERS.putIfAbsent(Types.OTHER, new OtherValueMapper());
     }
 
     /**
@@ -74,7 +74,7 @@ public abstract class AbstractConnector {
                     continue;
                 }
                 // 根据字段类型转换值
-                final ValueMapper valueMapper = valueMappers.get(f.getType());
+                final ValueMapper valueMapper = VALUE_MAPPERS.get(f.getType());
                 if (null != valueMapper) {
                     // 当数据类型不同时，转换值类型
                     try {

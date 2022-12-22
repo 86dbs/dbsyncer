@@ -29,7 +29,7 @@ import org.postgis.binary.BinaryWriter;
  * @version 1.0.0
  * @date 2022/12/22 22:59
  */
-public class PostgreSQLOtherValueMapper extends AbstractValueMapper<Object> {
+public class PostgreSQLOtherValueMapper extends AbstractValueMapper<byte[]> {
 
     @Override
     protected boolean skipConvert(Object val) {
@@ -37,16 +37,12 @@ public class PostgreSQLOtherValueMapper extends AbstractValueMapper<Object> {
     }
 
     @Override
-    protected Object convert(ConnectorMapper connectorMapper, Object val) {
+    protected byte[] convert(ConnectorMapper connectorMapper, Object val) {
         if (val instanceof String) {
-            try {
-                BinaryParser parser = new BinaryParser();
-                Geometry geo = parser.parse((String) val);
-                BinaryWriter bw = new BinaryWriter();
-                return bw.writeBinary(geo);
-            } catch (Exception ex) {
-                return val;
-            }
+            BinaryParser parser = new BinaryParser();
+            Geometry geo = parser.parse((String) val);
+            BinaryWriter bw = new BinaryWriter();
+            return bw.writeBinary(geo);
         }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
