@@ -8,7 +8,6 @@ import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.connector.schema.GeometryValueMapper;
 import org.dbsyncer.connector.schema.PGOtherValueMapper;
 
 import java.sql.Types;
@@ -18,6 +17,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     static {
         valueMappers.put(Types.OTHER, new PGOtherValueMapper());
     }
+
     @Override
     protected String buildSqlWithQuotation() {
         return "\"";

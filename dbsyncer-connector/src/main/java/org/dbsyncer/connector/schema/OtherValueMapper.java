@@ -2,7 +2,7 @@ package org.dbsyncer.connector.schema;
 
 import com.microsoft.sqlserver.jdbc.Geometry;
 import oracle.jdbc.OracleConnection;
-//import oracle.spatial.geometry.JGeometry;
+import oracle.spatial.geometry.JGeometry;
 import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
@@ -35,8 +35,8 @@ public class OtherValueMapper extends AbstractValueMapper<Struct> {
                     Geometry geometry = Geometry.deserialize((byte[]) val);
                     Double x = geometry.getX();
                     Double y = geometry.getY();
-//                    JGeometry jGeometry = new JGeometry(x, y, 0);
-//                    return JGeometry.store(jGeometry, conn);
+                    JGeometry jGeometry = new JGeometry(x, y, 0);
+                    return JGeometry.store(jGeometry, conn);
                 }
             }
         }
