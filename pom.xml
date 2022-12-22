@@ -42,11 +42,14 @@
         <commons-io.version>2.5</commons-io.version>
         <lucene-analyzers-smartcn.version>7.7.0</lucene-analyzers-smartcn.version>
         <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
+        <sdoapi.version>11.2.0</sdoapi.version>
         <!--<mysql.version>5.1.40</mysql.version>-->
         <mysql.version>8.0.21</mysql.version>
         <mysql-binlog.version>0.21.0</mysql-binlog.version>
         <mssql-jdbc.version>7.4.1.jre8</mssql-jdbc.version>
+        <antlr4-runtime.version>4.7.2</antlr4-runtime.version>
         <postgresql.version>42.3.3</postgresql.version>
+        <postgis-jdbc.version>2.5.1</postgis-jdbc.version>
         <kafka.version>0.9.0.0</kafka.version>
         <fastjson.version>1.2.75</fastjson.version>
         <protobuf.version>3.21.1</protobuf.version>
@@ -151,7 +154,7 @@
             <dependency>
                 <groupId>oracle</groupId>
                 <artifactId>sdoapi</artifactId>
-                <version>11.2.0</version>
+                <version>${sdoapi.version}</version>
             </dependency>
 
             <!-- sqlserver-driver -->
@@ -165,7 +168,7 @@
             <dependency>
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr4-runtime</artifactId>
-                <version>4.7.2</version>
+                <version>${antlr4-runtime.version}</version>
             </dependency>
 
             <!-- postgresql -->
@@ -173,6 +176,12 @@
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>${postgresql.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.postgis</groupId>
+                <artifactId>postgis-jdbc</artifactId>
+                <version>${postgis-jdbc.version}</version>
             </dependency>
 
             <dependency>
