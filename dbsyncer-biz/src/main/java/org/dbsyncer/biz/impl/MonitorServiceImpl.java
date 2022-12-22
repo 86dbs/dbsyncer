@@ -1,6 +1,6 @@
 package org.dbsyncer.biz.impl;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.metric.MetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.CpuMetricDetailFormatter;
@@ -10,20 +10,15 @@ import org.dbsyncer.biz.metric.impl.GCMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.MemoryMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.ValueMetricDetailFormatter;
 import org.dbsyncer.biz.vo.AppReportMetricVo;
-import org.dbsyncer.biz.vo.BinlogColumnVo;
 import org.dbsyncer.biz.vo.DataVo;
 import org.dbsyncer.biz.vo.LogVo;
-import org.dbsyncer.biz.vo.MessageVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.biz.vo.MetricResponseVo;
-import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.monitor.Monitor;
 import org.dbsyncer.monitor.enums.DiskMetricEnum;
 import org.dbsyncer.monitor.enums.MetricEnum;
@@ -32,29 +27,20 @@ import org.dbsyncer.monitor.enums.ThreadPoolMetricEnum;
 import org.dbsyncer.monitor.model.AppReportMetric;
 import org.dbsyncer.monitor.model.MetricResponse;
 import org.dbsyncer.parser.enums.ModelEnum;
-import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.Picker;
-import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.model.WriterRequest;
-import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-import org.dbsyncer.storage.util.BinlogMessageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,14 +56,11 @@ public class MonitorServiceImpl implements MonitorService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private Monitor monitor;
 
-    @Autowired
-    private CacheService cacheService;
-
-    @Autowired
-    private BufferActuator writerBufferActuator;
+    @Resource
+    private DataSyncService dataSyncService;
 
     private Map<String, MetricDetailFormatter> metricDetailFormatterMap = new LinkedHashMap<>();
 
@@ -141,7 +124,7 @@ public class MonitorServiceImpl implements MonitorService {
         for (Map row : data) {
             try {
                 DataVo dataVo = convert2Vo(row, DataVo.class);
-                Map binlogData = getBinlogData(row, true);
+                Map binlogData = dataSyncService.getBinlogData(row, true);
                 dataVo.setJson(JsonUtil.objToJson(binlogData));
                 list.add(dataVo);
             } catch (Exception e) {
@@ -150,62 +133,6 @@ public class MonitorServiceImpl implements MonitorService {
         }
         paging.setData(list);
         return paging;
-    }
-
-    @Override
-    public MessageVo getMessageVo(String metaId, String messageId) {
-        Assert.hasText(metaId, "The metaId is null.");
-        Assert.hasText(messageId, "The messageId is null.");
-
-        MessageVo messageVo = new MessageVo();
-        try {
-            Map row = monitor.getData(metaId, messageId);
-            Map binlogData = getBinlogData(row, true);
-            String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
-            TableGroup tableGroup = monitor.getTableGroup(tableGroupId);
-            messageVo.setSourceTableName(tableGroup.getSourceTable().getName());
-            messageVo.setTargetTableName(tableGroup.getTargetTable().getName());
-            messageVo.setId(messageId);
-
-            if (!CollectionUtils.isEmpty(binlogData)) {
-                Map<String, String> columnMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, Field::getTypeName));
-                List<BinlogColumnVo> columns = new ArrayList<>();
-                binlogData.forEach((k, v) -> columns.add(new BinlogColumnVo((String) k, v, columnMap.get(k))));
-                messageVo.setColumns(columns);
-            }
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage());
-        }
-        return messageVo;
-    }
-
-    @Override
-    public String sync(Map<String, String> params) {
-        String metaId = params.get("metaId");
-        String messageId = params.get("messageId");
-        Assert.hasText(metaId, "The metaId is null.");
-        Assert.hasText(messageId, "The messageId is null.");
-
-        try {
-            Map row = monitor.getData(metaId, messageId);
-            Map binlogData = getBinlogData(row, false);
-            // 历史数据不支持手动同步
-            if (CollectionUtils.isEmpty(binlogData)) {
-                return messageId;
-            }
-            String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
-            String event = (String) row.get(ConfigConstant.DATA_EVENT);
-            // 有修改同步值
-            String retryDataParams = params.get("retryDataParams");
-            if (StringUtil.isNotBlank(retryDataParams)) {
-                JsonUtil.parseObject(retryDataParams).getInnerMap().forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
-            }
-            writerBufferActuator.offer(new WriterRequest(tableGroupId, event, binlogData));
-            monitor.removeData(metaId, messageId);
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage());
-        }
-        return messageId;
     }
 
     @Override
@@ -251,97 +178,6 @@ public class MonitorServiceImpl implements MonitorService {
         BeanUtils.copyProperties(appReportMetric, vo);
         vo.setMetrics(getMetrics(metrics));
         return vo;
-    }
-
-    private Map getBinlogData(Map row, boolean prettyBytes) throws InvalidProtocolBufferException {
-        String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
-        byte[] bytes = (byte[]) row.get(ConfigConstant.BINLOG_DATA);
-        if (null == bytes) {
-            if (prettyBytes) {
-                String json = (String) row.get(ConfigConstant.CONFIG_MODEL_JSON);
-                return JsonUtil.parseObject(json).toJavaObject(Map.class);
-            }
-            return Collections.EMPTY_MAP;
-        }
-        BinlogMap message = BinlogMap.parseFrom(bytes);
-
-        // 1、获取配置信息
-        final TableGroup tableGroup = cacheService.get(tableGroupId, TableGroup.class);
-
-        // 2、反序列数据
-        Map<String, Object> map = new HashMap<>();
-        final Picker picker = new Picker(tableGroup.getFieldMapping());
-        final Map<String, Field> fieldMap = picker.getSourceFieldMap();
-        message.getRowMap().forEach((k, v) -> {
-            if (fieldMap.containsKey(k)) {
-                Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);
-                // 处理二进制对象显示
-                if (prettyBytes) {
-                    if (null != val && val instanceof byte[]) {
-                        byte[] b = (byte[]) val;
-                        if (b.length > 128) {
-                            map.put(k, String.format("byte[%d]", b.length));
-                            return;
-                        }
-                        map.put(k, Arrays.toString(b));
-                        return;
-                    }
-                }
-                map.put(k, val);
-            }
-        });
-        return map;
-    }
-
-    private Object convertValue(Object oldValue, String newValue) {
-        if (oldValue == null) {
-            return newValue;
-        }
-
-        Object newVal;
-        String type = oldValue.getClass().getName();
-        switch (type) {
-            case "java.sql.Date":
-                newVal = DateFormatUtil.stringToDate(newValue);
-                break;
-            case "java.sql.Timestamp":
-                newVal = DateFormatUtil.stringToTimestamp(newValue);
-                break;
-            case "java.lang.Integer":
-            case "java.lang.Short":
-                newVal = NumberUtil.toInt(newValue);
-                break;
-            case "java.lang.Long":
-                newVal = NumberUtil.toLong(newValue);
-                break;
-            case "java.lang.Float":
-                newVal = Float.valueOf(newValue);
-                break;
-            case "java.lang.Double":
-                newVal = Double.valueOf(newValue);
-                break;
-            case "[B":
-                newVal = stringToBytes(newValue);
-                break;
-            default:
-                newVal = newValue;
-        }
-
-        return newVal;
-    }
-
-    private byte[] stringToBytes(String s) {
-        byte[] b = null;
-        if (s.startsWith("[") && s.endsWith("]")) {
-            s = StringUtil.substring(s, 1, s.length() - 1);
-            String[] split = StringUtil.split(s, ",");
-            int length = split.length;
-            b = new byte[length];
-            for (int i = 0; i < length; i++) {
-                b[i] = Byte.valueOf(split[i].trim());
-            }
-        }
-        return b;
     }
 
     private MetaVo convertMeta2Vo(Meta meta) {

@@ -49,22 +49,6 @@ public interface MonitorService {
     Paging queryData(Map<String, String> params);
 
     /**
-     * 获取驱动同步数据
-     * @param metaId
-     * @param messageId
-     * @return
-     */
-    MessageVo getMessageVo(String metaId, String messageId);
-
-    /**
-     * 手动同步单条数据
-     *
-     * @param params
-     * @return
-     */
-    String sync(Map<String, String> params);
-
-    /**
      * 清空驱动同步数据
      *
      * @param id

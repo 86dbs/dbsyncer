@@ -3,8 +3,10 @@ package org.dbsyncer.storage.util;
 import com.google.protobuf.ByteString;
 import oracle.sql.BLOB;
 import oracle.sql.CLOB;
+import oracle.sql.STRUCT;
 import oracle.sql.TIMESTAMP;
 import org.apache.commons.io.IOUtils;
+import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.binlog.BinlogColumnValue;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.slf4j.Logger;
@@ -165,6 +167,8 @@ public abstract class BinlogMessageUtil {
                 return ByteString.copyFrom(getBytes((BLOB) v));
             case "oracle.sql.CLOB":
                 return ByteString.copyFrom(getBytes((CLOB) v));
+            case "oracle.sql.STRUCT":
+                return ByteString.copyFrom(getBytes((STRUCT) v));
             default:
                 logger.error("Unsupported serialize value type:{}", type);
                 return null;
@@ -221,10 +225,10 @@ public abstract class BinlogMessageUtil {
             case Types.BINARY:
             case Types.VARBINARY:
             case Types.LONGVARBINARY:
-                // 二进制对象
             case Types.NCLOB:
             case Types.CLOB:
             case Types.BLOB:
+            case Types.OTHER:
                 return value.asByteArray();
 
             // 暂不支持
@@ -266,4 +270,12 @@ public abstract class BinlogMessageUtil {
         return new byte[0];
     }
 
+    private static byte[] getBytes(STRUCT v) {
+        try {
+            return v.toBytes();
+        } catch (SQLException e) {
+            logger.error(e.getMessage());
+            throw new StorageException(e);
+        }
+    }
 }

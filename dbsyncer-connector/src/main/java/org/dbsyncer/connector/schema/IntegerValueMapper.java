@@ -30,6 +30,11 @@ public class IntegerValueMapper extends AbstractValueMapper<Integer> {
             return bigDecimal.intValue();
         }
 
+        if (val instanceof Boolean) {
+            Boolean b = (Boolean) val;
+            return new Integer(b ? 1 : 0);
+        }
+
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }

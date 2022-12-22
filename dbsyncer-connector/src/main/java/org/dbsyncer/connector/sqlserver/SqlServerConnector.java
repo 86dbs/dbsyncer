@@ -11,9 +11,7 @@ import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.connector.schema.GeometryValueMapper;
 
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,10 +21,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     private static final String QUERY_VIEW = "select name from sysobjects where xtype in('v')";
 
     private static final String QUERY_TABLE = "select name from sys.tables where schema_id = schema_id('%s') and is_ms_shipped = 0";
-
-    static {
-        valueMappers.put(Types.VARBINARY, new GeometryValueMapper());
-    }
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
@@ -45,7 +39,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     public Object[] getPageArgs(ReaderConfig config) {
         int pageSize = config.getPageSize();
         int pageIndex = config.getPageIndex();
-        return new Object[] {(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
+        return new Object[]{(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
     }
 
     @Override

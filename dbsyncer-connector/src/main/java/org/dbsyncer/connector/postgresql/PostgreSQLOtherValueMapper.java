@@ -1,4 +1,4 @@
-package org.dbsyncer.connector.schema;
+package org.dbsyncer.connector.postgresql;
 
 import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.AbstractValueMapper;
@@ -9,7 +9,7 @@ import org.postgis.binary.BinaryParser;
 import org.postgis.binary.BinaryWriter;
 
 /**
- * PostgreSQL值映射器，JDBC索引{@link java.sql.Types 1111}, JDBC类型java.lang.Object，支持的数据库类型：
+ * JDBC索引{@link java.sql.Types 1111}, JDBC类型java.lang.Object，支持的数据库类型：
  * <ol>
  * <li>cidr</li>
  * <li>inet</li>
@@ -27,9 +27,9 @@ import org.postgis.binary.BinaryWriter;
  *
  * @author AE86
  * @version 1.0.0
- * @date 2022/8/24 23:43
+ * @date 2022/12/22 22:59
  */
-public class PGOtherValueMapper extends AbstractValueMapper<Object> {
+public class PostgreSQLOtherValueMapper extends AbstractValueMapper<byte[]> {
 
     @Override
     protected boolean skipConvert(Object val) {
@@ -37,16 +37,12 @@ public class PGOtherValueMapper extends AbstractValueMapper<Object> {
     }
 
     @Override
-    protected Object convert(ConnectorMapper connectorMapper, Object val) {
+    protected byte[] convert(ConnectorMapper connectorMapper, Object val) {
         if (val instanceof String) {
-            try {
-                BinaryParser parser = new BinaryParser();
-                org.postgis.Geometry geo = parser.parse((String) val);
-                BinaryWriter bw = new BinaryWriter();
-                return bw.writeBinary(geo);
-            } catch (Exception ex) {
-                return val;
-            }
+            BinaryParser parser = new BinaryParser();
+            Geometry geo = parser.parse((String) val);
+            BinaryWriter bw = new BinaryWriter();
+            return bw.writeBinary(geo);
         }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
