@@ -30,12 +30,12 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -63,26 +63,26 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private Parser parser;
 
-    @Autowired
+    @Resource
     private Listener listener;
 
-    @Autowired
+    @Resource
     private Manager manager;
 
-    @Autowired
+    @Resource
     private LogService logService;
 
-    @Autowired
+    @Resource
     private ScheduledTaskService scheduledTaskService;
 
-    @Autowired
+    @Resource
     private ConnectorFactory connectorFactory;
 
     @Qualifier("taskExecutor")
-    @Autowired
+    @Resource
     private Executor taskExecutor;
 
     private Map<String, Extractor> map = new ConcurrentHashMap<>();
@@ -104,7 +104,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         Meta meta = manager.getMeta(metaId);
         Assert.notNull(meta, "Meta不能为空.");
 
-        Thread worker = new Thread(()->{
+        Thread worker = new Thread(() -> {
             try {
                 long now = Instant.now().toEpochMilli();
                 meta.setBeginTime(now);
@@ -195,7 +195,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             // 30s内更新，执行写入
             Meta meta = manager.getMeta(metaId);
             LocalDateTime lastSeconds = LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS);
-            if(meta.getUpdateTime() > Timestamp.valueOf(lastSeconds).getTime()){
+            if (meta.getUpdateTime() > Timestamp.valueOf(lastSeconds).getTime()) {
                 if (!CollectionUtils.isEmpty(snapshot)) {
                     logger.debug("{}", snapshot);
                 }
