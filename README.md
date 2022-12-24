@@ -3,18 +3,19 @@
 
 DBSyncer是一款开源的数据同步中间件，提供MySQL、Oracle、SqlServer、PostgreSQL、Elasticsearch(ES)、Kafka、File、SQL等同步场景。支持上传插件自定义同步转换业务，提供监控全量和增量数据统计图、应用性能预警等。
 
-## 项目地址
-- [Gitee](https://gitee.com/ghi/dbsyncer "https://gitee.com/ghi/dbsyncer") 
-- [GitHub](https://github.com/86dbs/dbsyncer "https://github.com/86dbs/dbsyncer")
-
-[![star](https://gitee.com/ghi/dbsyncer/badge/star.svg?theme=dark)](https://gitee.com/ghi/dbsyncer/stargazers)
-[![fork](https://gitee.com/ghi/dbsyncer/badge/fork.svg?theme=dark)](https://gitee.com/ghi/dbsyncer/members)
-[![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://gitee.com/ghi/dbsyncer/blob/master/LICENSE)
-
 > 特点
 * 组合驱动，自定义库同步到库组合，关系型数据库与非关系型之间组合，任意搭配表同步映射关系
 * 实时监控，驱动全量或增量实时同步运行状态、结果、同步日志和系统日志
 * 开发插件，自定义转化同步逻辑
+
+> 项目地址
+
+* [Gitee](https://gitee.com/ghi/dbsyncer "https://gitee.com/ghi/dbsyncer")  
+* [GitHub](https://github.com/86dbs/dbsyncer "https://github.com/86dbs/dbsyncer")
+
+[![star](https://gitee.com/ghi/dbsyncer/badge/star.svg?theme=dark)](https://gitee.com/ghi/dbsyncer/stargazers)
+[![fork](https://gitee.com/ghi/dbsyncer/badge/fork.svg?theme=dark)](https://gitee.com/ghi/dbsyncer/members)
+[![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://gitee.com/ghi/dbsyncer/blob/master/LICENSE)
 
 ## 🌈应用场景
 | 连接器 | 数据源 | 目标源 | 支持版本(包含以下) |
