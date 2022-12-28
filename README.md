@@ -8,6 +8,15 @@ DBSyncer是一款开源的数据同步中间件，提供MySQL、Oracle、SqlServ
 * 实时监控，驱动全量或增量实时同步运行状态、结果、同步日志和系统日志
 * 开发插件，自定义转化同步逻辑
 
+> 项目地址
+
+* [Gitee](https://gitee.com/ghi/dbsyncer "https://gitee.com/ghi/dbsyncer")  
+* [GitHub](https://github.com/86dbs/dbsyncer "https://github.com/86dbs/dbsyncer")
+
+[![star](https://gitee.com/ghi/dbsyncer/badge/star.svg?theme=dark)](https://gitee.com/ghi/dbsyncer/stargazers)
+[![fork](https://gitee.com/ghi/dbsyncer/badge/fork.svg?theme=dark)](https://gitee.com/ghi/dbsyncer/members)
+[![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://gitee.com/ghi/dbsyncer/blob/master/LICENSE)
+
 ## 🌈应用场景
 | 连接器 | 数据源 | 目标源 | 支持版本(包含以下) |
 |---|---|---|---|
