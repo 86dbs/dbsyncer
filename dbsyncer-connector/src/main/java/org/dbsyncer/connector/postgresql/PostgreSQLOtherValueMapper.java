@@ -29,7 +29,7 @@ import org.postgis.binary.BinaryWriter;
  * @version 1.0.0
  * @date 2022/12/22 22:59
  */
-public class PostgreSQLOtherValueMapper extends AbstractValueMapper<byte[]> {
+public final class PostgreSQLOtherValueMapper extends AbstractValueMapper<byte[]> {
 
     @Override
     protected boolean skipConvert(Object val) {

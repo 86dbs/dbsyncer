@@ -8,7 +8,6 @@ import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.database.ds.SimpleConnection;
 
-import java.sql.Connection;
 import java.sql.Struct;
 
 /**
@@ -22,7 +21,7 @@ import java.sql.Struct;
  * @version 1.0.0
  * @date 2022/12/22 22:59
  */
-public class OracleOtherValueMapper extends AbstractValueMapper<Struct> {
+public final class OracleOtherValueMapper extends AbstractValueMapper<Struct> {
 
     @Override
     protected boolean skipConvert(Object val) {
@@ -33,17 +32,14 @@ public class OracleOtherValueMapper extends AbstractValueMapper<Struct> {
     protected Struct convert(ConnectorMapper connectorMapper, Object val) throws Exception {
         // SqlServer Geometry
         if (val instanceof byte[]) {
-            Object connection = connectorMapper.getConnection();
-            if (connection instanceof Connection) {
-                SimpleConnection simpleConnection = (SimpleConnection) connection;
-                OracleConnection conn = simpleConnection.unwrap(OracleConnection.class);
-                // TODO 兼容Oracle STRUCT 字节数组
-                Geometry geometry = Geometry.deserialize((byte[]) val);
-                Double x = geometry.getX();
-                Double y = geometry.getY();
-                JGeometry jGeometry = new JGeometry(x, y, 0);
-                return JGeometry.store(jGeometry, conn);
-            }
+            SimpleConnection connection = (SimpleConnection) connectorMapper.getConnection();
+            OracleConnection conn = connection.unwrap(OracleConnection.class);
+            // TODO 兼容Oracle STRUCT 字节数组
+            Geometry geometry = Geometry.deserialize((byte[]) val);
+            Double x = geometry.getX();
+            Double y = geometry.getY();
+            JGeometry jGeometry = new JGeometry(x, y, 0);
+            return JGeometry.store(jGeometry, conn);
         }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }

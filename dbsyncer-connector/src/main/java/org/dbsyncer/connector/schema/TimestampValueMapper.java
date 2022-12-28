@@ -50,6 +50,11 @@ public class TimestampValueMapper extends AbstractValueMapper<Timestamp> {
             }
         }
 
+        if (val instanceof java.util.Date) {
+            java.util.Date date = (java.util.Date) val;
+            return new Timestamp(date.getTime());
+        }
+
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }

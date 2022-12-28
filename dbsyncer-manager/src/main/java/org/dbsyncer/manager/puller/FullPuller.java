@@ -13,11 +13,11 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -37,20 +37,20 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private Parser parser;
 
-    @Autowired
+    @Resource
     private Manager manager;
 
-    @Autowired
+    @Resource
     private LogService logService;
 
     private Map<String, Task> map = new ConcurrentHashMap<>();
 
     @Override
     public void start(Mapping mapping) {
-        Thread worker = new Thread(()->{
+        Thread worker = new Thread(() -> {
             final String metaId = mapping.getMetaId();
             try {
                 List<TableGroup> list = manager.getSortedTableGroupAll(mapping.getId());
@@ -105,7 +105,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         flush(task);
 
         int i = task.getTableGroupIndex();
-        while (i < list.size()){
+        while (i < list.size()) {
             parser.execute(task, mapping, list.get(i), executorService);
             if (!task.isRunning()) {
                 break;
@@ -128,7 +128,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
 
         // 全量的过程中，有新数据则更新总数
         long finished = meta.getSuccess().get() + meta.getFail().get();
-        if(meta.getTotal().get() < finished){
+        if (meta.getTotal().get() < finished) {
             meta.getTotal().set(finished);
         }
 

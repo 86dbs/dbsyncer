@@ -13,6 +13,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.monitor.Monitor;
 import org.dbsyncer.parser.flush.BufferActuator;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterRequest;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -145,6 +147,11 @@ public class DataSyncServiceImpl implements DataSyncService {
             }
             writerBufferActuator.offer(new WriterRequest(tableGroupId, event, binlogData));
             monitor.removeData(metaId, messageId);
+            // 更新失败数
+            Meta meta = cacheService.get(metaId, Meta.class);
+            Assert.notNull(meta, "Meta can not be null.");
+            meta.getFail().decrementAndGet();
+            meta.setUpdateTime(Instant.now().toEpochMilli());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
         }

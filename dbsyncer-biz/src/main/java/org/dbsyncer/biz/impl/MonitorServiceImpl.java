@@ -15,6 +15,8 @@ import org.dbsyncer.biz.vo.LogVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.biz.vo.MetricResponseVo;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.scheduled.ScheduledTaskJob;
+import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
@@ -52,7 +54,7 @@ import java.util.stream.Collectors;
  * @date 2020/04/27 10:20
  */
 @Service
-public class MonitorServiceImpl implements MonitorService {
+public class MonitorServiceImpl extends BaseServiceImpl implements MonitorService, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -61,6 +63,9 @@ public class MonitorServiceImpl implements MonitorService {
 
     @Resource
     private DataSyncService dataSyncService;
+
+    @Resource
+    private ScheduledTaskService scheduledTaskService;
 
     private Map<String, MetricDetailFormatter> metricDetailFormatterMap = new LinkedHashMap<>();
 
@@ -84,6 +89,9 @@ public class MonitorServiceImpl implements MonitorService {
         metricDetailFormatterMap.putIfAbsent(DiskMetricEnum.THRESHOLD.getCode(), new DiskMetricDetailFormatter());
         metricDetailFormatterMap.putIfAbsent(DiskMetricEnum.FREE.getCode(), new DiskMetricDetailFormatter());
         metricDetailFormatterMap.putIfAbsent(DiskMetricEnum.TOTAL.getCode(), new DiskMetricDetailFormatter());
+
+        // 间隔10分钟预警
+        scheduledTaskService.start("0 */10 * * * ?", this);
     }
 
     @Override
@@ -180,6 +188,37 @@ public class MonitorServiceImpl implements MonitorService {
         return vo;
     }
 
+    @Override
+    public void run() {
+        // 预警：驱动出现失败记录，发送通知消息
+        List<Meta> metaAll = monitor.getMetaAll();
+        if (CollectionUtils.isEmpty(metaAll)) {
+            return;
+        }
+
+        StringBuilder content = new StringBuilder();
+        metaAll.forEach(meta -> {
+            // 有失败记录
+            if (meta.getFail().get() > 0) {
+                Mapping mapping = monitor.getMapping(meta.getMappingId());
+                if (null != mapping) {
+                    ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
+                    content.append("<p>");
+                    content.append(String.format("%s(%s) 失败:%s, 成功:%s", mapping.getName(), modelEnum.getName(), meta.getFail(), meta.getSuccess()));
+                    if (ModelEnum.FULL == modelEnum) {
+                        content.append(String.format(", 总数:%s", meta.getTotal()));
+                    }
+                    content.append("<p>");
+                }
+            }
+        });
+
+        String msg = content.toString();
+        if (StringUtil.isNotBlank(msg)) {
+            sendNotifyMessage("同步失败", msg);
+        }
+    }
+
     private MetaVo convertMeta2Vo(Meta meta) {
         Mapping mapping = monitor.getMapping(meta.getMappingId());
         Assert.notNull(mapping, "驱动不存在.");
@@ -221,4 +260,5 @@ public class MonitorServiceImpl implements MonitorService {
             return vo;
         }).collect(Collectors.toList());
     }
+
 }

@@ -75,7 +75,7 @@ public class MailNotifyService implements NotifyService {
             checkMail(notifyMessage);
             // 统一应用标题
             String title = String.format("【%s通知】%s", appConfig.getName(), notifyMessage.getTitle());
-            String content = notifyMessage.getContent();
+            String content = createTemplate(appConfig.getName(), notifyMessage.getContent());
 
             // 创建邮件消息
             MimeMessage message = new MimeMessage(session);
@@ -102,6 +102,22 @@ public class MailNotifyService implements NotifyService {
         } catch (Exception e) {
             logger.error("simple mail send error!", e);
         }
+    }
+
+    private String createTemplate(String appName, String content) {
+        String temp = "<!DOCTYPE html>\n" +
+                "<html lang=\"en\">\n" +
+                "<meta charset=\"UTF-8\">\n" +
+                "<title>${appName}通知</title>\n" +
+                "</head>\n" +
+                "<body>\n" +
+                "${content}\n" +
+                "<p><a href=\"http://gitee.com/ghi/dbsyncer\">访问项目</a></p>\n" +
+                "</body>\n" +
+                "</html>";
+        String replace = StringUtil.replace(temp, "${appName}", appName);
+        replace = StringUtil.replace(replace, "${content}", content);
+        return replace;
     }
 
     private void checkMail(NotifyMessage notifyMessage) {
