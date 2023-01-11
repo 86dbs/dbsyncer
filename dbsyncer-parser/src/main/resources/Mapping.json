@@ -1,73 +1,360 @@
 {
-  "id": "11111",
-  "type":"mapping",
-  "name": "人力资源系统_审计系统",
-  "createTime": "2019-10-08 21:32:00",
-  "updateTime": "2019-10-08 21:35:00",
-  "sourceConnectorId": "100",
-  "targetConnectorId": "666",
+  "batchNum":1000,
+  "convert":[
+
+  ],
+  "createTime":1671809807457,
+  "filter":[
+
+  ],
+  "id":"1055992399609860096",
+  "listener":{
+    "banDelete":false,
+    "banInsert":false,
+    "banUpdate":false,
+    "cron":"*/30 * * * * ?",
+    "delete":"D",
+    "eventFieldName":"",
+    "insert":"I",
+    "listenerType":"log",
+    "update":"U"
+  },
+  "metaId":"1055992399609860097",
+  "model":"increment",
+  "name":"同步测试",
+  "params":{
+
+  },
+  "readNum":10000,
   "sourceColumn":[
     {
-      "name": "ID",
-      "typeName": "VARCHAR",
-      "type": 12,
-      "pk":true
-    }
-  ],
-  "targetColumn":[
-    {
-      "name": "ID",
-      "typeName": "VARCHAR",
-      "type": 12,
-      "pk":true
-    }
-  ],
-  "params":{
-    "ORACLE_ROW_ID":"RID"
-  },
-  "filter": [
-    {
-      "name": "AGE",
-      "operation": "and",
-      "filter": ">",
-      "value": "0"
+      "name":"id",
+      "pk":true,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
     },
     {
-      "name": "NAME",
-      "operation": "or",
-      "filter": "=",
-      "value": "hello"
-    }
-  ],
-  "convert": [
+      "name":"visit_cust_id",
+      "pk":false,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
+    },
     {
-      "name":"NAME",
-      "convertName":"替换",
-      "convertCode":"REPLACE",
-      "args":"A,B"
+      "name":"visit_type",
+      "pk":false,
+      "type":1,
+      "typeName":"CHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"visit_user_id",
+      "pk":false,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"visit_day",
+      "pk":false,
+      "type":1,
+      "typeName":"CHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"start_time",
+      "pk":false,
+      "type":93,
+      "typeName":"DATETIME",
+      "unmodifiabled":false
+    },
+    {
+      "name":"start_lat",
+      "pk":false,
+      "type":8,
+      "typeName":"DOUBLE",
+      "unmodifiabled":false
+    },
+    {
+      "name":"start_lng",
+      "pk":false,
+      "type":8,
+      "typeName":"DOUBLE",
+      "unmodifiabled":false
+    },
+    {
+      "name":"start_distance",
+      "pk":false,
+      "type":8,
+      "typeName":"DOUBLE",
+      "unmodifiabled":false
+    },
+    {
+      "name":"end_time",
+      "pk":false,
+      "type":93,
+      "typeName":"DATETIME",
+      "unmodifiabled":false
+    },
+    {
+      "name":"end_lat",
+      "pk":false,
+      "type":8,
+      "typeName":"DOUBLE",
+      "unmodifiabled":false
+    },
+    {
+      "name":"end_lng",
+      "pk":false,
+      "type":8,
+      "typeName":"DOUBLE",
+      "unmodifiabled":false
+    },
+    {
+      "name":"end_distance",
+      "pk":false,
+      "type":8,
+      "typeName":"DOUBLE",
+      "unmodifiabled":false
+    },
+    {
+      "name":"visit_status",
+      "pk":false,
+      "type":1,
+      "typeName":"CHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"pre_end_time",
+      "pk":false,
+      "type":93,
+      "typeName":"DATETIME",
+      "unmodifiabled":false
+    },
+    {
+      "name":"create_by",
+      "pk":false,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"create_by_name",
+      "pk":false,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"create_time",
+      "pk":false,
+      "type":93,
+      "typeName":"DATETIME",
+      "unmodifiabled":false
+    },
+    {
+      "name":"update_by",
+      "pk":false,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"update_by_name",
+      "pk":false,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"update_time",
+      "pk":false,
+      "type":93,
+      "typeName":"DATETIME",
+      "unmodifiabled":false
+    },
+    {
+      "name":"version",
+      "pk":false,
+      "type":4,
+      "typeName":"INT",
+      "unmodifiabled":false
+    },
+    {
+      "name":"is_del",
+      "pk":false,
+      "type":4,
+      "typeName":"INT",
+      "unmodifiabled":false
     }
   ],
-  "plugin": {
-    "name":"用户信息转换插件",
-    "className": "com.xx.hr.convert.MyImpl"
-  },
-  "model":"full",
-  "listener": {
-    "listenerType": "Polling",
-    "period": 30,
-    "eventFieldName": "MyEvent",
-    "update": [
-      "U",
-      "M"
-    ],
-    "insert": [
-      "I"
-    ],
-    "delete": [
-      "D"
-    ]
-  },
-  "metaId":"1",
-  "readNum": 10000,
-  "batchNum": 200
+  "sourceConnectorId":"1049111399101501440",
+  "targetColumn":[
+    {
+      "name":"id",
+      "pk":true,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"visit_cust_id",
+      "pk":false,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"visit_type",
+      "pk":false,
+      "type":1,
+      "typeName":"CHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"visit_user_id",
+      "pk":false,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"visit_day",
+      "pk":false,
+      "type":1,
+      "typeName":"CHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"start_time",
+      "pk":false,
+      "type":93,
+      "typeName":"DATETIME",
+      "unmodifiabled":false
+    },
+    {
+      "name":"start_lat",
+      "pk":false,
+      "type":8,
+      "typeName":"DOUBLE",
+      "unmodifiabled":false
+    },
+    {
+      "name":"start_lng",
+      "pk":false,
+      "type":8,
+      "typeName":"DOUBLE",
+      "unmodifiabled":false
+    },
+    {
+      "name":"start_distance",
+      "pk":false,
+      "type":8,
+      "typeName":"DOUBLE",
+      "unmodifiabled":false
+    },
+    {
+      "name":"end_time",
+      "pk":false,
+      "type":93,
+      "typeName":"DATETIME",
+      "unmodifiabled":false
+    },
+    {
+      "name":"end_lat",
+      "pk":false,
+      "type":8,
+      "typeName":"DOUBLE",
+      "unmodifiabled":false
+    },
+    {
+      "name":"end_lng",
+      "pk":false,
+      "type":8,
+      "typeName":"DOUBLE",
+      "unmodifiabled":false
+    },
+    {
+      "name":"end_distance",
+      "pk":false,
+      "type":8,
+      "typeName":"DOUBLE",
+      "unmodifiabled":false
+    },
+    {
+      "name":"visit_status",
+      "pk":false,
+      "type":1,
+      "typeName":"CHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"pre_end_time",
+      "pk":false,
+      "type":93,
+      "typeName":"DATETIME",
+      "unmodifiabled":false
+    },
+    {
+      "name":"create_by",
+      "pk":false,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"create_by_name",
+      "pk":false,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"create_time",
+      "pk":false,
+      "type":93,
+      "typeName":"DATETIME",
+      "unmodifiabled":false
+    },
+    {
+      "name":"update_by",
+      "pk":false,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"update_by_name",
+      "pk":false,
+      "type":12,
+      "typeName":"VARCHAR",
+      "unmodifiabled":false
+    },
+    {
+      "name":"update_time",
+      "pk":false,
+      "type":93,
+      "typeName":"DATETIME",
+      "unmodifiabled":false
+    },
+    {
+      "name":"version",
+      "pk":false,
+      "type":4,
+      "typeName":"INT",
+      "unmodifiabled":false
+    },
+    {
+      "name":"is_del",
+      "pk":false,
+      "type":4,
+      "typeName":"INT",
+      "unmodifiabled":false
+    }
+  ],
+  "targetConnectorId":"1049111399101501440",
+  "threadNum":32,
+  "type":"mapping",
+  "updateTime":1673452598774
 }

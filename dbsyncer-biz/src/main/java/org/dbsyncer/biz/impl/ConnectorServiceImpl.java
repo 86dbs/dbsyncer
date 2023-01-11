@@ -18,7 +18,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -52,7 +58,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         Connector connector = getConnector(id);
         Assert.notNull(connector, "The connector id is invalid.");
 
-        Map params = JsonUtil.parseObject(JsonUtil.objToJson(connector.getConfig())).getInnerMap();
+        Map params = JsonUtil.parseMap(connector.getConfig());
         params.put(ConfigConstant.CONFIG_MODEL_NAME, connector.getName() + "(复制)");
         ConfigModel model = connectorChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.COPY, model);

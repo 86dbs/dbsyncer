@@ -1,5 +1,3 @@
-import com.alibaba.fastjson.JSONException;
-import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.io.FileUtils;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.util.JsonUtil;
@@ -12,6 +10,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Map;
 
 /**
  * @author AE86
@@ -21,17 +20,17 @@ import java.net.URL;
 public class ConnectorParserTest {
 
     @Test
-    public void testConnector() throws IOException, JSONException {
+    public void testConnector() throws IOException {
         String json = readJson("Connector.json");
         System.out.println(json);
 
         // 解析基本信息
-        JSONObject conn = JsonUtil.parseObject(json);
-        JSONObject config = (JSONObject) conn.remove("config");
+        Map conn = JsonUtil.parseMap(json);
+        Map config = (Map) conn.remove("config");
         Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
 
         // 解析配置
-        String connectorType = config.getString("connectorType");
+        String connectorType = (String) config.get("connectorType");
         Class<?> configClass = ConnectorEnum.getConfigClass(connectorType);
         Object obj = JsonUtil.jsonToObj(config.toString(), configClass);
         connector.setConfig((AbstractConnectorConfig) obj);
@@ -39,23 +38,21 @@ public class ConnectorParserTest {
     }
 
     @Test
-    public void testMapping() throws IOException, JSONException {
+    public void testMapping() throws IOException {
         String json = readJson("Mapping.json");
         System.out.println(json);
 
         // 解析基本信息
-        JSONObject map = JsonUtil.parseObject(json);
-        Mapping mapping = JsonUtil.jsonToObj(map.toString(), Mapping.class);
+        Mapping mapping = JsonUtil.jsonToObj(json, Mapping.class);
         System.out.println(mapping);
     }
 
     @Test
-    public void testTableGroup() throws IOException, JSONException {
+    public void testTableGroup() throws IOException {
         String json = readJson("TableGroup.json");
         System.out.println(json);
         // 解析基本信息
-        JSONObject group = JsonUtil.parseObject(json);
-        TableGroup tableGroup = JsonUtil.jsonToObj(group.toString(), TableGroup.class);
+        TableGroup tableGroup = JsonUtil.jsonToObj(json, TableGroup.class);
         System.out.println(tableGroup);
     }
 

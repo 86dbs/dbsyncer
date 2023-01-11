@@ -1,7 +1,5 @@
 package org.dbsyncer.parser;
 
-import com.alibaba.fastjson.JSONException;
-import com.alibaba.fastjson.JSONObject;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
@@ -28,7 +26,13 @@ import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.BatchWriter;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Picker;
+import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.strategy.ParserStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
@@ -176,21 +180,16 @@ public class ParserFactory implements Parser {
 
     @Override
     public Connector parseConnector(String json) {
-        try {
-            JSONObject conn = JsonUtil.parseObject(json);
-            JSONObject config = (JSONObject) conn.remove("config");
-            Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
-            Assert.notNull(connector, "Connector can not be null.");
-            String connectorType = config.getString("connectorType");
-            Class<?> configClass = ConnectorEnum.getConfigClass(connectorType);
-            AbstractConnectorConfig obj = (AbstractConnectorConfig) JsonUtil.jsonToObj(config.toString(), configClass);
-            connector.setConfig(obj);
+        Map conn = JsonUtil.parseMap(json);
+        Map config = (Map) conn.remove("config");
+        Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
+        Assert.notNull(connector, "Connector can not be null.");
+        String connectorType = (String) config.get("connectorType");
+        Class<?> configClass = ConnectorEnum.getConfigClass(connectorType);
+        AbstractConnectorConfig obj = (AbstractConnectorConfig) JsonUtil.jsonToObj(config.toString(), configClass);
+        connector.setConfig(obj);
 
-            return connector;
-        } catch (JSONException e) {
-            logger.error(e.getMessage());
-            throw new ParserException(e.getMessage());
-        }
+        return connector;
     }
 
     @Override

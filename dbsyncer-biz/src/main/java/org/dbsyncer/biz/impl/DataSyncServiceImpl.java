@@ -90,7 +90,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         if (null == bytes) {
             if (prettyBytes) {
                 String json = (String) row.get(ConfigConstant.CONFIG_MODEL_JSON);
-                return JsonUtil.parseObject(json).toJavaObject(Map.class);
+                return JsonUtil.parseMap(json);
             }
             return Collections.EMPTY_MAP;
         }
@@ -143,7 +143,7 @@ public class DataSyncServiceImpl implements DataSyncService {
             // 有修改同步值
             String retryDataParams = params.get("retryDataParams");
             if (StringUtil.isNotBlank(retryDataParams)) {
-                JsonUtil.parseObject(retryDataParams).getInnerMap().forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
+                JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
             }
             writerBufferActuator.offer(new WriterRequest(tableGroupId, event, binlogData));
             monitor.removeData(metaId, messageId);

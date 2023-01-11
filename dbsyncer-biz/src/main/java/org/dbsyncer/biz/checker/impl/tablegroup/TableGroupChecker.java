@@ -1,7 +1,5 @@
 package org.dbsyncer.biz.checker.impl.tablegroup;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
@@ -25,7 +23,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author AE86
@@ -134,9 +136,9 @@ public class TableGroupChecker extends AbstractChecker {
         MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接器表信息.");
         // 自定义主键
-        if(StringUtil.isNotBlank(primaryKey) && !CollectionUtils.isEmpty(metaInfo.getColumn())){
-            for(Field field : metaInfo.getColumn()){
-                if(StringUtil.equals(field.getName(), primaryKey)){
+        if (StringUtil.isNotBlank(primaryKey) && !CollectionUtils.isEmpty(metaInfo.getColumn())) {
+            for (Field field : metaInfo.getColumn()) {
+                if (StringUtil.equals(field.getName(), primaryKey)) {
                     field.setPk(true);
                     break;
                 }
@@ -199,28 +201,28 @@ public class TableGroupChecker extends AbstractChecker {
      * @return
      */
     private void setFieldMapping(TableGroup tableGroup, String json) {
-        JSONArray mapping = JsonUtil.parseArray(json);
-        if (null == mapping) {
+        List<Map> mappings = JsonUtil.parseList(json);
+        if (null == mappings) {
             throw new BizException("映射关系不能为空");
         }
 
         final Map<String, Field> sMap = PickerUtil.convert2Map(tableGroup.getSourceTable().getColumn());
         final Map<String, Field> tMap = PickerUtil.convert2Map(tableGroup.getTargetTable().getColumn());
-        int length = mapping.size();
+        int length = mappings.size();
         List<FieldMapping> list = new ArrayList<>();
-        JSONObject row = null;
+        Map row = null;
         Field s = null;
         Field t = null;
         for (int i = 0; i < length; i++) {
-            row = mapping.getJSONObject(i);
-            s = sMap.get(row.getString("source"));
-            t = tMap.get(row.getString("target"));
+            row = mappings.get(i);
+            s = sMap.get(row.get("source"));
+            t = tMap.get(row.get("target"));
             if (null == s && null == t) {
                 continue;
             }
 
             if (null != t) {
-                t.setPk(row.getBoolean("pk"));
+                t.setPk((Boolean) row.get("pk"));
             }
             list.add(new FieldMapping(s, t));
         }
