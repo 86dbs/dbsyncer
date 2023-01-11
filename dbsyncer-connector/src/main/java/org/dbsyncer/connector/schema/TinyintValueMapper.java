@@ -4,6 +4,8 @@ import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 
+import java.math.BigDecimal;
+
 /**
  * @author AE86
  * @version 1.0.0
@@ -24,6 +26,10 @@ public class TinyintValueMapper extends AbstractValueMapper<Integer> {
         if (val instanceof String) {
             String s = (String) val;
             return new Integer(s);
+        }
+        if (val instanceof BigDecimal) {
+            BigDecimal bigDecimal = (BigDecimal) val;
+            return bigDecimal.intValue();
         }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
