@@ -32,7 +32,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -45,7 +45,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class ESConnector extends AbstractConnector implements Connector<ESConnectorMapper, ESConfig> {
@@ -96,7 +101,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             ESConfig config = connectorMapper.getConfig();
             GetIndexRequest request = new GetIndexRequest(config.getIndex());
             GetIndexResponse indexResponse = connectorMapper.getConnection().indices().get(request, RequestOptions.DEFAULT);
-            MappingMetaData mappingMetaData = indexResponse.getMappings().get(config.getIndex());
+            MappingMetadata mappingMetaData = indexResponse.getMappings().get(config.getIndex());
             List<Table> tables = new ArrayList<>();
             tables.add(new Table(mappingMetaData.type()));
             return tables;
@@ -113,7 +118,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         try {
             GetIndexRequest request = new GetIndexRequest(config.getIndex());
             GetIndexResponse indexResponse = connectorMapper.getConnection().indices().get(request, RequestOptions.DEFAULT);
-            MappingMetaData mappingMetaData = indexResponse.getMappings().get(config.getIndex());
+            MappingMetadata mappingMetaData = indexResponse.getMappings().get(config.getIndex());
             Map<String, Object> propertiesMap = mappingMetaData.getSourceAsMap();
             Map<String, Map> properties = (Map<String, Map>) propertiesMap.get(ESUtil.PROPERTIES);
             if (CollectionUtils.isEmpty(properties)) {
@@ -141,7 +146,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             builder.size(0);
             SearchRequest request = new SearchRequest(new String[] {config.getIndex()}, builder);
             SearchResponse response = connectorMapper.getConnection().search(request, RequestOptions.DEFAULT);
-            return response.getHits().getTotalHits();
+            return response.getHits().getTotalHits().value;
         } catch (IOException e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e);

@@ -37,10 +37,10 @@
         <!-- maven 编译插件版本 -->
         <maven.compiler.compilerVersion>1.8</maven.compiler.compilerVersion>
         <java.version>1.8</java.version>
-        <spring-boot.version>2.2.0.RELEASE</spring-boot.version>
+        <spring-boot.version>2.5.14</spring-boot.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <commons-io.version>2.5</commons-io.version>
-        <lucene-analyzers-smartcn.version>7.7.0</lucene-analyzers-smartcn.version>
+        <lucene-analyzers-smartcn.version>8.8.0</lucene-analyzers-smartcn.version>
         <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
         <sdoapi.version>11.2.0</sdoapi.version>
         <!--<mysql.version>5.1.40</mysql.version>-->
@@ -151,6 +151,7 @@
                 <version>${ojdbc6.version}</version>
             </dependency>
 
+            <!-- 如出现无法下载，请切换maven仓库地址：http://www.datanucleus.org/downloads/maven2/ -->
             <dependency>
                 <groupId>oracle</groupId>
                 <artifactId>sdoapi</artifactId>

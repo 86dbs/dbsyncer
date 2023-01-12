@@ -17,7 +17,7 @@ import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -147,7 +147,7 @@ public class ESClientTest {
         }
 
         // 字段信息
-        MappingMetaData mappingMetaData = indexResponse.getMappings().get(indexName);
+        MappingMetadata mappingMetaData = indexResponse.getMappings().get(indexName);
         Map<String, Object> propertiesMap = mappingMetaData.getSourceAsMap();
         Map<String, Map> properties = (Map<String, Map>) propertiesMap.get(ESUtil.PROPERTIES);
         logger.info(properties.toString());
@@ -240,7 +240,7 @@ public class ESClientTest {
         SearchRequest rq = new SearchRequest(new String[]{indexName}, sourceBuilder);
         SearchResponse searchResponse = client.search(rq, RequestOptions.DEFAULT);
         SearchHits hits = searchResponse.getHits();
-        long totalHits = hits.getTotalHits();
+        long totalHits = hits.getTotalHits().value;
         logger.info("result:{}", totalHits);
         SearchHit[] searchHits = hits.getHits();
         for (SearchHit hit : searchHits) {
@@ -256,7 +256,7 @@ public class ESClientTest {
         SearchRequest request = new SearchRequest(new String[]{indexName}, sourceBuilder);
         SearchResponse searchResponse = client.search(request, RequestOptions.DEFAULT);
         SearchHits hits = searchResponse.getHits();
-        long totalHits = hits.getTotalHits();
+        long totalHits = hits.getTotalHits().value;
         logger.info("result:{}", totalHits);
     }
 }

@@ -129,7 +129,7 @@ public class Shard {
         final IndexSearcher searcher = getSearcher();
         final TopDocs topDocs = getTopDocs(searcher, option.getQuery(), MAX_SIZE, sort);
         Paging paging = new Paging(pageNum, pageSize);
-        paging.setTotal(topDocs.totalHits);
+        paging.setTotal(topDocs.totalHits.value);
         if (option.isQueryTotal()) {
             return paging;
         }
