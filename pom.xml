@@ -37,10 +37,10 @@
         <!-- maven 编译插件版本 -->
         <maven.compiler.compilerVersion>1.8</maven.compiler.compilerVersion>
         <java.version>1.8</java.version>
-        <spring-boot.version>2.2.0.RELEASE</spring-boot.version>
+        <spring-boot.version>2.5.14</spring-boot.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <commons-io.version>2.5</commons-io.version>
-        <lucene-analyzers-smartcn.version>7.7.0</lucene-analyzers-smartcn.version>
+        <lucene-analyzers-smartcn.version>8.8.0</lucene-analyzers-smartcn.version>
         <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
         <sdoapi.version>11.2.0</sdoapi.version>
         <!--<mysql.version>5.1.40</mysql.version>-->
@@ -51,7 +51,7 @@
         <postgresql.version>42.3.3</postgresql.version>
         <postgis-jdbc.version>2.5.1</postgis-jdbc.version>
         <kafka.version>0.9.0.0</kafka.version>
-        <fastjson.version>1.2.75</fastjson.version>
+        <fastjson2.version>2.0.22</fastjson2.version>
         <protobuf.version>3.21.1</protobuf.version>
         <log4j2.version>2.17.1</log4j2.version>
         <junit.version>4.12</junit.version>
@@ -116,11 +116,11 @@
                 <version>${commons-io.version}</version>
             </dependency>
 
-            <!-- fastjson -->
+            <!-- fastjson2 -->
             <dependency>
-                <groupId>com.alibaba</groupId>
-                <artifactId>fastjson</artifactId>
-                <version>${fastjson.version}</version>
+                <groupId>com.alibaba.fastjson2</groupId>
+                <artifactId>fastjson2</artifactId>
+                <version>${fastjson2.version}</version>
             </dependency>
 
             <!-- protobuf -->
@@ -151,6 +151,7 @@
                 <version>${ojdbc6.version}</version>
             </dependency>
 
+            <!-- 如出现无法下载，请切换maven仓库地址：http://www.datanucleus.org/downloads/maven2/ -->
             <dependency>
                 <groupId>oracle</groupId>
                 <artifactId>sdoapi</artifactId>

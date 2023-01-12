@@ -1,6 +1,5 @@
 package org.dbsyncer.manager.template;
 
-import com.alibaba.fastjson.JSONObject;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -85,7 +84,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     }
 
     public void reload(String json) {
-        Map<String, JSONObject> map = JsonUtil.jsonToObj(json, Map.class);
+        Map<String, Map> map = JsonUtil.jsonToObj(json, Map.class);
         if (CollectionUtils.isEmpty(map)) {
             return;
         }
@@ -105,16 +104,16 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         launch();
     }
 
-    private void reload(Map<String, JSONObject> map, CommandEnum commandEnum) {
+    private void reload(Map<String, Map> map, CommandEnum commandEnum) {
         reload(map, commandEnum, commandEnum.getModelType());
     }
 
-    private void reload(Map<String, JSONObject> map, CommandEnum commandEnum, String groupId) {
-        JSONObject config = map.get(groupId);
+    private void reload(Map<String, Map> map, CommandEnum commandEnum, String groupId) {
+        Map config = map.get(groupId);
         if (null == config) {
             return;
         }
-        Group group = JsonUtil.jsonToObj(config.toJSONString(), Group.class);
+        Group group = JsonUtil.jsonToObj(config.toString(), Group.class);
         if (null == group) {
             return;
         }
@@ -125,8 +124,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         }
 
         for (String e : index) {
-            JSONObject m = map.get(e);
-            ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(parser, m.toJSONString()));
+            Map m = map.get(e);
+            ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(parser, m.toString()));
             operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, commandEnum.getGroupStrategyEnum()));
             // Load tableGroups
             if (CommandEnum.PRELOAD_MAPPING == commandEnum) {

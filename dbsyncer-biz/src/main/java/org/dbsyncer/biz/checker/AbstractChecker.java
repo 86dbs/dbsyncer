@@ -1,7 +1,5 @@
 package org.dbsyncer.biz.checker;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import org.dbsyncer.biz.enums.SafeInfoEnum;
 import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -20,7 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author AE86
@@ -75,14 +76,14 @@ public abstract class AbstractChecker implements Checker {
         // 过滤条件
         String filterJson = params.get("filter");
         if (StringUtil.isNotBlank(filterJson)) {
-            List<Filter> list = jsonToList(filterJson, Filter.class);
+            List<Filter> list = JsonUtil.jsonToArray(filterJson, Filter.class);
             model.setFilter(list);
         }
 
         // 转换配置
         String convertJson = params.get("convert");
         if (StringUtil.isNotBlank(convertJson)) {
-            List<Convert> convert = jsonToList(convertJson, Convert.class);
+            List<Convert> convert = JsonUtil.jsonToArray(convertJson, Convert.class);
             model.setConvert(convert);
         }
 
@@ -116,21 +117,6 @@ public abstract class AbstractChecker implements Checker {
             }
         }
         logger.info("params:{}", checkParams);
-    }
-
-    private <T> List<T> jsonToList(String json, Class<T> valueType) {
-        JSONArray array = JsonUtil.parseArray(json);
-        if (null != array) {
-            List<T> list = new ArrayList<>();
-            int length = array.size();
-            for (int i = 0; i < length; i++) {
-                JSONObject obj = array.getJSONObject(i);
-                T t = JsonUtil.jsonToObj(obj.toString(), valueType);
-                list.add(t);
-            }
-            return list;
-        }
-        return Collections.EMPTY_LIST;
     }
 
 }

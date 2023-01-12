@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.core.ResolvableType;
@@ -89,6 +90,16 @@ public class ProxyApplicationContextImpl implements ProxyApplicationContext {
     }
 
     @Override
+    public <T> ObjectProvider<T> getBeanProvider(Class<T> aClass, boolean b) {
+        return applicationContext.getBeanProvider(aClass, b);
+    }
+
+    @Override
+    public <T> ObjectProvider<T> getBeanProvider(ResolvableType resolvableType, boolean b) {
+        return applicationContext.getBeanProvider(resolvableType, b);
+    }
+
+    @Override
     public String[] getBeanNamesForType(ResolvableType type) {
         return applicationContext.getBeanNamesForType(type);
     }
@@ -131,6 +142,11 @@ public class ProxyApplicationContextImpl implements ProxyApplicationContext {
     @Override
     public <A extends Annotation> A findAnnotationOnBean(String beanName, Class<A> annotationType) throws NoSuchBeanDefinitionException {
         return applicationContext.findAnnotationOnBean(beanName, annotationType);
+    }
+
+    @Override
+    public <A extends Annotation> A findAnnotationOnBean(String s, Class<A> aClass, boolean b) throws NoSuchBeanDefinitionException {
+        return applicationContext.findAnnotationOnBean(s, aClass, b);
     }
 
     @Override
@@ -246,5 +262,10 @@ public class ProxyApplicationContextImpl implements ProxyApplicationContext {
     @Override
     public ClassLoader getClassLoader() {
         return applicationContext.getClassLoader();
+    }
+
+    @Override
+    public void publishEvent(ApplicationEvent event) {
+        applicationContext.publishEvent(event);
     }
 }
