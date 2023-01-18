@@ -3,15 +3,17 @@ package org.dbsyncer.listener;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.MetaInfo;
+import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author AE86
@@ -20,14 +22,14 @@ import java.util.Map;
  */
 public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
 
-    private DqlMapper dqlMapper;
+    private Map<String, DqlMapper> dqlMap = new ConcurrentHashMap<>();
 
     /**
      * 发送增量事件
      *
      * @param event
      */
-    protected void sendChangedEvent(RowChangedEvent event){
+    protected void sendChangedEvent(RowChangedEvent event) {
         changedEvent(event);
     }
 
@@ -37,16 +39,19 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
      * @param event
      */
     protected void sendDqlChangedEvent(RowChangedEvent event) {
-        if (null != event && event.getSourceTableName().equals(dqlMapper.tableName)) {
-            switch (event.getEvent()) {
-                case ConnectorConstant.OPERTION_UPDATE:
-                case ConnectorConstant.OPERTION_INSERT:
-                    event.setDataList(queryDqlData(event.getDataList()));
-                    break;
-                default:
-                    break;
+        if (null != event) {
+            DqlMapper dqlMapper = dqlMap.get(event.getSourceTableName());
+            if (null != dqlMapper) {
+                switch (event.getEvent()) {
+                    case ConnectorConstant.OPERTION_UPDATE:
+                    case ConnectorConstant.OPERTION_INSERT:
+                        event.setDataList(queryDqlData(dqlMapper, event.getDataList()));
+                        break;
+                    default:
+                        break;
+                }
+                changedEvent(event);
             }
-            changedEvent(event);
         }
     }
 
@@ -55,27 +60,31 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
      */
     protected void postProcessDqlBeforeInitialization() {
         DatabaseConnectorMapper mapper = (DatabaseConnectorMapper) connectorFactory.connect(connectorConfig);
-        DatabaseConfig cfg = mapper.getConfig();
-        final String tableName = cfg.getTable();
-        final String primaryKey = cfg.getPrimaryKey();
-        Assert.hasText(tableName, String.format("The table name '%s' is null.", tableName));
-        Assert.hasText(primaryKey, "The primaryKey is null.");
-        MetaInfo metaInfo = connectorFactory.getMetaInfo(mapper, tableName);
-        final List<Field> column = metaInfo.getColumn();
-        Assert.notEmpty(column, String.format("The column of table name '%s' is empty.", tableName));
+        for (Table table : sourceTable) {
+            String sql = table.getSql();
+            String tableName = table.getName();
+            String primaryKey = PrimaryKeyUtil.findOriginalTablePrimaryKey(table);
+            Assert.hasText(sql, "The sql is null.");
+            Assert.hasText(tableName, "The tableName is null.");
+            Assert.hasText(primaryKey, "The primaryKey is null.");
 
-        String sql = cfg.getSql().toUpperCase();
-        sql = sql.replace("\t", " ");
-        sql = sql.replace("\r", " ");
-        sql = sql.replace("\n", " ");
-        StringBuilder querySql = new StringBuilder(cfg.getSql());
-        if(StringUtil.contains(sql, " WHERE ")){
-            querySql.append(" AND ");
-        }else{
-            querySql.append(" WHERE ");
+            MetaInfo metaInfo = connectorFactory.getMetaInfo(mapper, tableName);
+            final List<Field> column = metaInfo.getColumn();
+            Assert.notEmpty(column, String.format("The column of table name '%s' is empty.", tableName));
+
+            sql = sql.toUpperCase().replace("\t", " ");
+            sql = sql.replace("\r", " ");
+            sql = sql.replace("\n", " ");
+            StringBuilder querySql = new StringBuilder(table.getSql());
+            if (StringUtil.contains(sql, " WHERE ")) {
+                querySql.append(" AND ");
+            } else {
+                querySql.append(" WHERE ");
+            }
+            querySql.append(primaryKey).append("=?");
+            DqlMapper dqlMapper = new DqlMapper(mapper, querySql.toString(), tableName, column, getPKIndex(column, primaryKey));
+            dqlMap.putIfAbsent(tableName, dqlMapper);
         }
-        querySql.append(primaryKey).append("=?");
-        dqlMapper = new DqlMapper(mapper, querySql.toString(), tableName, column, getPKIndex(column, primaryKey));
     }
 
     /**
@@ -99,7 +108,7 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
         return pkIndex;
     }
 
-    private List<Object> queryDqlData(List<Object> data) {
+    private List<Object> queryDqlData(DqlMapper dqlMapper, List<Object> data) {
         if (!CollectionUtils.isEmpty(data)) {
             Map<String, Object> row = dqlMapper.mapper.execute(databaseTemplate -> databaseTemplate.queryForMap(dqlMapper.sql, data.get(dqlMapper.pkIndex)));
             if (!CollectionUtils.isEmpty(row)) {

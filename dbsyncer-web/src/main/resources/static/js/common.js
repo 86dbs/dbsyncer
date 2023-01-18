@@ -38,7 +38,7 @@ function backIndexPage(projectGroupId) {
 
 // 美化SQL
 function beautifySql(){
-    var $sql = $("#sql");
+    var $sql = $(".sql");
     var $tmp = $sql.attr('tmp');
     if(null == $tmp){
         $sql.attr('tmp', $sql.val());

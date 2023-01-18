@@ -32,6 +32,11 @@ public class Table {
      */
     private List<Field> column;
 
+    /**
+     * sql
+     */
+    private String sql;
+
     // 总数
     private long count;
 
@@ -43,14 +48,15 @@ public class Table {
     }
 
     public Table(String name, String type) {
-        this(name, type, null, null);
+        this(name, type, null, null, null);
     }
 
-    public Table(String name, String type, String primaryKey, List<Field> column) {
+    public Table(String name, String type, String primaryKey, List<Field> column, String sql) {
         this.name = name;
         this.type = type;
         this.primaryKey = primaryKey;
         this.column = column;
+        this.sql = sql;
     }
 
     public String getName() {
@@ -85,6 +91,15 @@ public class Table {
 
     public Table setColumn(List<Field> column) {
         this.column = column;
+        return this;
+    }
+
+    public String getSql() {
+        return sql;
+    }
+
+    public Table setSql(String sql) {
+        this.sql = sql;
         return this;
     }
 

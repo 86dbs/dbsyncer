@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.sql;
 
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -9,8 +10,11 @@ import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.PageSql;
+import org.dbsyncer.connector.model.SqlTable;
 import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,9 +27,18 @@ import java.util.Map;
 public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
 
     @Override
-    public List<Table> getTable(DatabaseConnectorMapper config) {
-        DatabaseConfig cfg = config.getConfig();
-        return super.getTable(config, null, getSchema(cfg), cfg.getTable());
+    public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
+        DatabaseConfig cfg = connectorMapper.getConfig();
+        List<SqlTable> sqlTables = cfg.getSqlTables();
+        List<Table> tables = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(sqlTables)) {
+            sqlTables.forEach(s -> {
+                Table table = new Table(s.getTable());
+                table.setSql(s.getSql());
+                tables.add(table);
+            });
+        }
+        return tables;
     }
 
     @Override
@@ -36,12 +49,18 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
     @Override
     public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableName) {
         DatabaseConfig cfg = connectorMapper.getConfig();
-        String sql = cfg.getSql().toUpperCase();
-        sql = sql.replace("\t", " ");
-        sql = sql.replace("\r", " ");
-        sql = sql.replace("\n", " ");
-        String queryMetaSql = StringUtil.contains(sql, " WHERE ") ? cfg.getSql() + " AND 1!=1 " : cfg.getSql() + " WHERE 1!=1 ";
-        return connectorMapper.execute(databaseTemplate -> super.getMetaInfo(databaseTemplate, queryMetaSql, getSchema(cfg), cfg.getTable()));
+        List<SqlTable> sqlTables = cfg.getSqlTables();
+        for (SqlTable s : sqlTables) {
+            if (s.getTable().equals(tableName)) {
+                String sql = s.getSql().toUpperCase();
+                sql = sql.replace("\t", " ");
+                sql = sql.replace("\r", " ");
+                sql = sql.replace("\n", " ");
+                String queryMetaSql = StringUtil.contains(sql, " WHERE ") ? s.getSql() + " AND 1!=1 " : s.getSql() + " WHERE 1!=1 ";
+                return connectorMapper.execute(databaseTemplate -> super.getMetaInfo(databaseTemplate, queryMetaSql, getSchema(cfg), s.getTable()));
+            }
+        }
+        return null;
     }
 
     /**
@@ -54,18 +73,19 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
     protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig, boolean groupByPK) {
         // 获取过滤SQL
         String queryFilterSql = getQueryFilterSql(commandConfig.getFilter());
-        DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
+        Table table = commandConfig.getTable();
+        String primaryKey = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
 
         // 获取查询SQL
         Map<String, String> map = new HashMap<>();
-        String querySql = cfg.getSql();
+        String querySql = table.getSql();
 
         // 存在条件
         if (StringUtil.isNotBlank(queryFilterSql)) {
             querySql += queryFilterSql;
         }
         String quotation = buildSqlWithQuotation();
-        String pk = new StringBuilder(quotation).append(cfg.getPrimaryKey()).append(quotation).toString();
+        String pk = new StringBuilder(quotation).append(primaryKey).append(quotation).toString();
         map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(new PageSql(querySql, pk)));
 
         // 获取查询总数SQL

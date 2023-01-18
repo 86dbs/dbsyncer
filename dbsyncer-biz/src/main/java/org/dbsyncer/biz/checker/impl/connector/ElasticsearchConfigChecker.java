@@ -21,7 +21,6 @@ public class ElasticsearchConfigChecker implements ConnectorConfigChecker<ESConf
         String password = params.get("password");
         String index = params.get("index");
         String url = params.get("url");
-        String primaryKey = params.get("primaryKey");
         Assert.hasText(username, "Username is empty.");
         Assert.hasText(password, "Password is empty.");
         Assert.hasText(index, "Index is empty.");
@@ -31,6 +30,5 @@ public class ElasticsearchConfigChecker implements ConnectorConfigChecker<ESConf
         connectorConfig.setPassword(password);
         connectorConfig.setIndex(index);
         connectorConfig.setUrl(url);
-        connectorConfig.setPrimaryKey(primaryKey);
     }
 }

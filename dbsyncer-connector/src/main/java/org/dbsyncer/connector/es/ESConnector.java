@@ -126,7 +126,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             }
             properties.forEach((k, v) -> {
                 String columnType = (String) v.get("type");
-                fields.add(new Field(k, columnType, ESFieldTypeEnum.getType(columnType), StringUtil.equals(config.getPrimaryKey(), k)));
+                fields.add(new Field(k, columnType, ESFieldTypeEnum.getType(columnType)));
             });
         } catch (IOException e) {
             logger.error(e.getMessage());

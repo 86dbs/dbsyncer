@@ -139,6 +139,7 @@ public class ParserFactory implements Parser {
             for (Table t : connector.getTable()) {
                 if (t.getName().equals(tableName)) {
                     metaInfo.setTableType(t.getType());
+                    metaInfo.setSql(t.getSql());
                     break;
                 }
             }
@@ -152,8 +153,8 @@ public class ParserFactory implements Parser {
         AbstractConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
-        Table sTable = new Table(sourceTable.getName(), sourceTable.getType(), sourceTable.getPrimaryKey(), new ArrayList<>());
-        Table tTable = new Table(targetTable.getName(), targetTable.getType(), targetTable.getPrimaryKey(), new ArrayList<>());
+        Table sTable = new Table(sourceTable.getName(), sourceTable.getType(), sourceTable.getPrimaryKey(), new ArrayList<>(), sourceTable.getSql());
+        Table tTable = new Table(targetTable.getName(), targetTable.getType(), targetTable.getPrimaryKey(), new ArrayList<>(), sourceTable.getSql());
         List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
         if (!CollectionUtils.isEmpty(fieldMapping)) {
             fieldMapping.forEach(m -> {

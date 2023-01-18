@@ -1,8 +1,10 @@
 package org.dbsyncer.connector.config;
 
 import org.dbsyncer.common.model.AbstractConnectorConfig;
+import org.dbsyncer.connector.model.SqlTable;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -34,24 +36,14 @@ public class DatabaseConfig extends AbstractConnectorConfig {
     private String password;
 
     /**
-     * 主表
-     */
-    private String table;
-
-    /**
-     * 主键
-     */
-    private String primaryKey;
-
-    /**
-     * SQL
-     */
-    private String sql;
-
-    /**
      * 构架名
      */
     private String schema;
+
+    /**
+     * sql
+     */
+    private List<SqlTable> sqlTables;
 
     /**
      * 参数配置
@@ -98,36 +90,20 @@ public class DatabaseConfig extends AbstractConnectorConfig {
         this.password = password;
     }
 
-    public String getTable() {
-        return table;
-    }
-
-    public void setTable(String table) {
-        this.table = table;
-    }
-
-    public String getPrimaryKey() {
-        return primaryKey;
-    }
-
-    public void setPrimaryKey(String primaryKey) {
-        this.primaryKey = primaryKey;
-    }
-
-    public String getSql() {
-        return sql;
-    }
-
-    public void setSql(String sql) {
-        this.sql = sql;
-    }
-
     public String getSchema() {
         return schema;
     }
 
     public void setSchema(String schema) {
         this.schema = schema;
+    }
+
+    public List<SqlTable> getSqlTables() {
+        return sqlTables;
+    }
+
+    public void setSqlTables(List<SqlTable> sqlTables) {
+        this.sqlTables = sqlTables;
     }
 
     public Map<String, String> getProperties() {

@@ -223,7 +223,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 获取查询数据行是否存在
         String tableName = commandConfig.getTable().getName();
-        String pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getTable());
+        String pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
         StringBuilder queryCount = new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(tableName).append(quotation)
                 .append(" WHERE ").append(quotation).append(pk).append(quotation).append(" = ?");
         String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
@@ -276,33 +276,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getSchema(DatabaseConfig config) {
         return config.getSchema();
-    }
-
-    /**
-     * 获取表列表
-     *
-     * @param connectorMapper
-     * @param catalog
-     * @param schema
-     * @param tableNamePattern
-     * @return
-     */
-    protected List<Table> getTable(DatabaseConnectorMapper connectorMapper, String catalog, String schema, String tableNamePattern) {
-        return connectorMapper.execute(databaseTemplate -> {
-            List<Table> tables = new ArrayList<>();
-            SimpleConnection connection = (SimpleConnection) databaseTemplate.getConnection();
-            Connection conn = connection.getConnection();
-            String databaseCatalog = null == catalog ? conn.getCatalog() : catalog;
-            String schemaNamePattern = null == schema ? conn.getSchema() : schema;
-            String[] types = {TableTypeEnum.TABLE.getCode(), TableTypeEnum.VIEW.getCode(), TableTypeEnum.MATERIALIZED_VIEW.getCode()};
-            final ResultSet rs = conn.getMetaData().getTables(databaseCatalog, schemaNamePattern, tableNamePattern, types);
-            while (rs.next()) {
-                final String tableName = rs.getString("TABLE_NAME");
-                final String tableType = rs.getString("TABLE_TYPE");
-                tables.add(new Table(tableName, tableType));
-            }
-            return tables;
-        });
     }
 
     /**
@@ -366,7 +339,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
         String table = commandConfig.getTable().getName();
-        String pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getTable());
+        String pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
         StringBuilder queryCount = new StringBuilder();
         queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
         if (StringUtil.isNotBlank(queryFilterSql)) {
@@ -410,6 +383,33 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             sql.insert(0, " WHERE ");
         }
         return sql.toString();
+    }
+
+    /**
+     * 获取表列表
+     *
+     * @param connectorMapper
+     * @param catalog
+     * @param schema
+     * @param tableNamePattern
+     * @return
+     */
+    private List<Table> getTable(DatabaseConnectorMapper connectorMapper, String catalog, String schema, String tableNamePattern) {
+        return connectorMapper.execute(databaseTemplate -> {
+            List<Table> tables = new ArrayList<>();
+            SimpleConnection connection = (SimpleConnection) databaseTemplate.getConnection();
+            Connection conn = connection.getConnection();
+            String databaseCatalog = null == catalog ? conn.getCatalog() : catalog;
+            String schemaNamePattern = null == schema ? conn.getSchema() : schema;
+            String[] types = {TableTypeEnum.TABLE.getCode(), TableTypeEnum.VIEW.getCode(), TableTypeEnum.MATERIALIZED_VIEW.getCode()};
+            final ResultSet rs = conn.getMetaData().getTables(databaseCatalog, schemaNamePattern, tableNamePattern, types);
+            while (rs.next()) {
+                final String tableName = rs.getString("TABLE_NAME");
+                final String tableType = rs.getString("TABLE_TYPE");
+                tables.add(new Table(tableName, tableType));
+            }
+            return tables;
+        });
     }
 
     /**
@@ -466,16 +466,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (CollectionUtils.isEmpty(column)) {
             return null;
         }
-        String pk = null;
         Set<String> mark = new HashSet<>();
         List<Field> fields = new ArrayList<>();
         for (Field c : column) {
             String name = c.getName();
             if (StringUtil.isBlank(name)) {
                 throw new ConnectorException("The field name can not be empty.");
-            }
-            if (c.isPk()) {
-                pk = name;
             }
             if (!mark.contains(name)) {
                 fields.add(c);
@@ -491,9 +487,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             logger.error("Table name can not be empty.");
             throw new ConnectorException("Table name can not be empty.");
         }
-        if (StringUtil.isBlank(pk)) {
-            pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(table);
-        }
+        String pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
 
         SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());
         return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
