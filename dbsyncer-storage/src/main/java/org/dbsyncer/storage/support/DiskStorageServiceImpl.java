@@ -128,11 +128,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         for (int i = 0; i < size; i++) {
             terms[i] = getPrimaryKeyTerm(ids.get(i));
         }
-        try {
-            shard.deleteBatch(terms);
-        } catch (IOException e) {
-            throw new StorageException(e);
-        }
+        shard.deleteBatch(terms);
     }
 
     @Override
