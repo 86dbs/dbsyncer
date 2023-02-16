@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <!-- SQL配置 -->
+    <div class="page-header"></div>
+
+    <!-- 已添加的SQL配置 -->
+    <div class="form-group">
+        <label class="col-sm-2 control-label">SQL表</label>
+        <div class="col-sm-4">
+            <select id="sqlTableSelect" class="form-control select-control">
+                <option th:each="sqlTable,state:${connector?.config?.sqlTables}" th:value="${sqlTable?.sql}" th:text="${sqlTable?.table}" />
+            </select>
+        </div>
+        <div class="col-sm-6 text-right">
+            <button id="addSqlTableBtn" type="button" class="btn btn-default"> <span class="fa fa-plus"></span>添加([[${sqlTableList?.size()} ?: 0]])</button>
+        </div>
+        <input type="hidden" id="sqlTableSelectParams" name="sqlTableSelect"/>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">SQL名称</label>
+        <div class="col-sm-4">
+            <input class="form-control" id="sqlName" type="text" maxlength="32" placeholder="ERP用户表"/>
+        </div>
+        <label class="col-sm-2 control-label">主表 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="用于增量同步，根据监听的主表获取增量数据"></i></label>
+        <div class="col-sm-4">
+            <input class="form-control" id="table" type="text" maxlength="32" placeholder="USER"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label">SQL</label>
+        <div class="col-sm-10">
+            <textarea id="sql" name="sql" class="sql form-control dbsyncer_textarea_resize_none" maxlength="8192" rows="10"></textarea>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-12 text-right">
+            <a href="javascript:beautifySql();"><span class="fa fa-magic fa-1x fa-flip-horizontal dbsyncer_pointer" title="美化SQL"></span>美化SQL</a>
+        </div>
+    </div>
+
+</div>
+</html>
