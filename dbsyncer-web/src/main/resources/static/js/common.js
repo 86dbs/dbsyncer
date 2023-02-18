@@ -51,10 +51,10 @@ function beautifySql(){
 
 // 初始化select组件，默认选中
 function initSelectIndex($select, $selectedIndex){
-    initSelect($select);
+    let select = initSelect($select);
 
     if($selectedIndex < 0){
-        return;
+        return select;
     }
 
     $.each($select, function () {
@@ -66,9 +66,10 @@ function initSelectIndex($select, $selectedIndex){
             }
         }
     });
+    return select;
 }
 function initSelect($select){
-    $select.selectpicker({
+    return $select.selectpicker({
         "style":'dbsyncer_btn-info',
         "title":"请选择",
         "actionsBox":true,
