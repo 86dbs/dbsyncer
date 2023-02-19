@@ -8,6 +8,7 @@ import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.enums.SqlBuilderEnum;
+import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.SqlTable;
@@ -15,9 +16,11 @@ import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.PrimaryKeyUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author AE86
@@ -33,9 +36,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         List<Table> tables = new ArrayList<>();
         if (!CollectionUtils.isEmpty(sqlTables)) {
             sqlTables.forEach(s -> {
-                Table table = new Table(s.getTable());
-                table.setSql(s.getSql());
-                tables.add(table);
+                tables.add(new Table(s.getSqlName(), TableTypeEnum.TABLE.getCode(), Collections.EMPTY_SET, Collections.EMPTY_LIST, s.getSql()));
             });
         }
         return tables;
@@ -47,11 +48,11 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String tableName) {
+    public MetaInfo getMetaInfo(DatabaseConnectorMapper connectorMapper, String sqlName) {
         DatabaseConfig cfg = connectorMapper.getConfig();
         List<SqlTable> sqlTables = cfg.getSqlTables();
         for (SqlTable s : sqlTables) {
-            if (s.getTable().equals(tableName)) {
+            if (StringUtil.equals(s.getSqlName(), sqlName)) {
                 String sql = s.getSql().toUpperCase();
                 sql = sql.replace("\t", " ");
                 sql = sql.replace("\r", " ");
@@ -74,7 +75,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         // 获取过滤SQL
         String queryFilterSql = getQueryFilterSql(commandConfig.getFilter());
         Table table = commandConfig.getTable();
-        String primaryKey = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
+        Set<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
 
         // 获取查询SQL
         Map<String, String> map = new HashMap<>();
@@ -85,8 +86,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
             querySql += queryFilterSql;
         }
         String quotation = buildSqlWithQuotation();
-        String pk = new StringBuilder(quotation).append(primaryKey).append(quotation).toString();
-        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(new PageSql(querySql, pk)));
+        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(new PageSql(querySql, quotation, primaryKeys)));
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
@@ -94,7 +94,9 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
 
         // Mysql
         if (groupByPK) {
-            queryCount.append(" GROUP BY ").append(pk);
+            queryCount.append(" GROUP BY ");
+            // id,id2
+            PrimaryKeyUtil.buildSql(queryCount, primaryKeys, quotation, ",", "", true);
         }
         queryCount.append(") DBSYNCER_T");
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());

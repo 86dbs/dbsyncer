@@ -3,6 +3,7 @@ package org.dbsyncer.connector.model;
 import org.dbsyncer.connector.enums.TableTypeEnum;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author AE86
@@ -22,9 +23,9 @@ public class Table {
     private String type;
 
     /**
-     * 主键
+     * 主键列表
      */
-    private String primaryKey;
+    private Set<String> primaryKeys;
 
     /**
      * 属性字段
@@ -51,10 +52,10 @@ public class Table {
         this(name, type, null, null, null);
     }
 
-    public Table(String name, String type, String primaryKey, List<Field> column, String sql) {
+    public Table(String name, String type, Set<String> primaryKeys, List<Field> column, String sql) {
         this.name = name;
         this.type = type;
-        this.primaryKey = primaryKey;
+        this.primaryKeys = primaryKeys;
         this.column = column;
         this.sql = sql;
     }
@@ -63,44 +64,40 @@ public class Table {
         return name;
     }
 
-    public Table setName(String name) {
+    public void setName(String name) {
         this.name = name;
-        return this;
     }
 
     public String getType() {
         return type;
     }
 
-    public Table setType(String type) {
+    public void setType(String type) {
         this.type = type;
-        return this;
     }
 
-    public String getPrimaryKey() {
-        return primaryKey;
+    public Set<String> getPrimaryKeys() {
+        return primaryKeys;
     }
 
-    public void setPrimaryKey(String primaryKey) {
-        this.primaryKey = primaryKey;
+    public void setPrimaryKeys(Set<String> primaryKeys) {
+        this.primaryKeys = primaryKeys;
     }
 
     public List<Field> getColumn() {
         return column;
     }
 
-    public Table setColumn(List<Field> column) {
+    public void setColumn(List<Field> column) {
         this.column = column;
-        return this;
     }
 
     public String getSql() {
         return sql;
     }
 
-    public Table setSql(String sql) {
+    public void setSql(String sql) {
         this.sql = sql;
-        return this;
     }
 
     public long getCount() {

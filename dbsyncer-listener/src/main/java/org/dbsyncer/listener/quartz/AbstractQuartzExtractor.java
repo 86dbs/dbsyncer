@@ -9,6 +9,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,15 +97,16 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
     private void execute(TableGroupCommand tableGroupCommand, int index) {
         final Map<String, String> command = tableGroupCommand.getCommand();
-        final String pk = tableGroupCommand.getPk();
+        final Set<String> primaryKeys = tableGroupCommand.getPrimaryKeys();
 
         // 检查增量点
         ConnectorMapper connectionMapper = connectorFactory.connect(connectorConfig);
         Point point = checkLastPoint(command, index);
         int pageIndex = 1;
-        String cursor = snapshot.get(index + CURSOR);
+        Object[] cursors = PrimaryKeyUtil.getLastCursors(snapshot.get(index + CURSOR));
+
         while (running) {
-            Result reader = connectorFactory.reader(connectionMapper, new ReaderConfig(point.getCommand(), point.getArgs(), cursor, pageIndex++, READ_NUM));
+            Result reader = connectorFactory.reader(connectionMapper, new ReaderConfig(point.getCommand(), point.getArgs(), cursors, pageIndex++, READ_NUM));
             List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
                 break;
@@ -133,33 +135,24 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
             }
             // 更新记录点
-            cursor = getLastCursor(data, pk);
+            cursors = PrimaryKeyUtil.getLastCursors(data, primaryKeys);
             point.refresh();
 
             if (data.size() < READ_NUM) {
                 break;
             }
-
         }
 
         // 持久化
         if (point.refreshed()) {
             snapshot.putAll(point.getPosition());
-            snapshot.put(index + CURSOR, cursor);
+            snapshot.put(index + CURSOR, StringUtil.join(cursors, ","));
         }
 
     }
 
     public void setCommands(List<TableGroupCommand> commands) {
         this.commands = commands;
-    }
-
-    private String getLastCursor(List<Map> data, String pk) {
-        if (!CollectionUtils.isEmpty(data)) {
-            Object value = data.get(data.size() - 1).get(pk);
-            return value == null ? "" : String.valueOf(value);
-        }
-        return "";
     }
 
 }

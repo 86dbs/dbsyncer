@@ -4,47 +4,55 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.model.PageSql;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
+
+import java.util.Set;
 
 public final class MysqlConnector extends AbstractDatabaseConnector {
 
     @Override
-    protected String buildSqlWithQuotation() {
+    public String buildSqlWithQuotation() {
         return "`";
     }
 
     @Override
     public String getPageSql(PageSql config) {
         final String quotation = buildSqlWithQuotation();
-        final String pk = config.getPk();
-        // select * from test.`my_user` where `id` > ? order by `id` limit ?
-        StringBuilder querySql = new StringBuilder(config.getQuerySql());
-        String queryFilter = config.getSqlBuilderConfig().getQueryFilter();
-        if (StringUtil.isNotBlank(queryFilter)) {
-            querySql.append(" AND ");
-        } else {
-            querySql.append(" WHERE ");
-        }
-        querySql.append(quotation).append(pk).append(quotation).append(" > ? ORDER BY ").append(quotation).append(pk).append(quotation).append(" LIMIT ?");
-        return querySql.toString();
+        final Set<String> primaryKeys = config.getPrimaryKeys();
+        // select * from test.`my_user` where `id` > ? and `uid` > ? order by `id`,`uid` limit ?
+        StringBuilder sql = new StringBuilder(config.getQuerySql());
+        boolean blank = StringUtil.isBlank(config.getSqlBuilderConfig().getQueryFilter());
+        sql.append(blank ? " WHERE " : " AND ");
+        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, " AND ", " > ? ", blank);
+        sql.append(" ORDER BY ");
+        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, ",", "", true);
+        sql.append(" LIMIT ?");
+        return sql.toString();
     }
 
     @Override
     public String getPageCursorSql(PageSql config) {
         final String quotation = buildSqlWithQuotation();
-        final String pk = config.getPk();
-        // select * from test.`my_user` order by `id` limit ?
-        StringBuilder querySql = new StringBuilder(config.getQuerySql()).append(" ORDER BY ").append(quotation).append(pk).append(quotation).append(" LIMIT ?");
-        return querySql.toString();
+        final Set<String> primaryKeys = config.getPrimaryKeys();
+        // select * from test.`my_user` order by `id`,`uid` limit ?
+        StringBuilder sql = new StringBuilder(config.getQuerySql()).append(" ORDER BY ");
+        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, ",", "", true);
+        sql.append(" LIMIT ?");
+        return sql.toString();
     }
 
     @Override
     public Object[] getPageArgs(ReaderConfig config) {
         int pageSize = config.getPageSize();
-        Object cursor = config.getCursor();
-        if (null == cursor) {
+        Object[] cursors = config.getCursors();
+        if (null == cursors) {
             return new Object[]{pageSize};
         }
-        return new Object[]{cursor, pageSize};
+        int cursorsLen = cursors.length;
+        Object[] newCursors = new Object[cursorsLen + 1];
+        System.arraycopy(cursors, 0, newCursors, 0, cursorsLen);
+        newCursors[cursorsLen] = pageSize;
+        return newCursors;
     }
 
     @Override

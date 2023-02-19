@@ -2,6 +2,9 @@ package org.dbsyncer.connector.database.sqlbuilder;
 
 import org.dbsyncer.connector.config.SqlBuilderConfig;
 import org.dbsyncer.connector.database.AbstractSqlBuilder;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
+
+import java.util.Set;
 
 /**
  * @author AE86
@@ -14,9 +17,11 @@ public class SqlBuilderDelete extends AbstractSqlBuilder {
     public String buildSql(SqlBuilderConfig config) {
         String tableName = config.getTableName();
         String quotation = config.getQuotation();
-        // DELETE FROM "USER" WHERE "ID"=?
-        return new StringBuilder().append("DELETE FROM ").append(config.getSchema()).append(quotation).append(tableName).append(quotation).append(" WHERE ").append(quotation).append(config.getPk()).append(quotation)
-                .append("=?").toString();
+        Set<String> primaryKeys = config.getPrimaryKeys();
+        // DELETE FROM "USER" WHERE "ID"=? AND "UID" = ?
+        StringBuilder sql = new StringBuilder().append("DELETE FROM ").append(config.getSchema()).append(quotation).append(tableName).append(quotation).append(" WHERE ");
+        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, " AND ", " = ? ", true);
+        return sql.toString();
     }
 
 }

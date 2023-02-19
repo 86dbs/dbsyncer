@@ -1,6 +1,8 @@
 package org.dbsyncer.manager.puller;
 
 import org.dbsyncer.common.util.NumberUtil;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.enums.ParserEnum;
@@ -100,7 +102,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         task.setPageIndex(NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()), ParserEnum.PAGE_INDEX.getDefaultValue()));
         // 反序列化游标值类型(通常为数字或字符串类型)
         String cursorValue = snapshot.get(ParserEnum.CURSOR.getCode());
-        task.setCursor(NumberUtil.isCreatable(cursorValue) ? NumberUtil.toLong(cursorValue) : cursorValue);
+        task.setCursors(PrimaryKeyUtil.getLastCursors(cursorValue));
         task.setTableGroupIndex(NumberUtil.toInt(snapshot.get(ParserEnum.TABLE_GROUP_INDEX.getCode()), ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
         flush(task);
 
@@ -111,7 +113,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
                 break;
             }
             task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
-            task.setCursor(null);
+            task.setCursors(null);
             task.setTableGroupIndex(++i);
             flush(task);
         }
@@ -136,7 +138,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         meta.setEndTime(task.getEndTime());
         Map<String, String> snapshot = meta.getSnapshot();
         snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(task.getPageIndex()));
-        snapshot.put(ParserEnum.CURSOR.getCode(), String.valueOf(task.getCursor()));
+        snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.join(task.getCursors(), ","));
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(task.getTableGroupIndex()));
         manager.editConfigModel(meta);
     }

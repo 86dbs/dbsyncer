@@ -3,16 +3,19 @@ package org.dbsyncer.connector.sql;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.model.PageSql;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
+
+import java.util.Set;
 
 public final class DQLSqlServerConnector extends AbstractDQLConnector {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     @Override
     public String getPageSql(PageSql config) {
-        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, config.getPk(), config.getQuerySql());
+        String quotation = config.getQuotation();
+        Set<String> primaryKeys = config.getPrimaryKeys();
+        StringBuilder orderBy = new StringBuilder();
+        PrimaryKeyUtil.buildSql(orderBy, primaryKeys, quotation, " AND ", " = ? ", true);
+        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, orderBy.toString(), config.getQuerySql());
     }
 
     @Override

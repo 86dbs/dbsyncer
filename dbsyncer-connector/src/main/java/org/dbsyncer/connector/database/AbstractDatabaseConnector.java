@@ -121,7 +121,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     @Override
     public Result reader(DatabaseConnectorMapper connectorMapper, ReaderConfig config) {
         // 1、获取select SQL
-        String queryKey = enableCursor() && null == config.getCursor() ? ConnectorConstant.OPERTION_QUERY_CURSOR : SqlBuilderEnum.QUERY.getName();
+        String queryKey = enableCursor() && null == config.getCursors() ? ConnectorConstant.OPERTION_QUERY_CURSOR : SqlBuilderEnum.QUERY.getName();
         String querySql = config.getCommand().get(queryKey);
         Assert.hasText(querySql, "查询语句不能为空.");
 
@@ -223,12 +223,23 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 获取查询数据行是否存在
         String tableName = commandConfig.getTable().getName();
-        String pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
-        StringBuilder queryCount = new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(tableName).append(quotation)
-                .append(" WHERE ").append(quotation).append(pk).append(quotation).append(" = ?");
+        Set<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
+        StringBuilder queryCount = new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(tableName).append(quotation).append(" WHERE ");
+        // id = ? AND uid = ?
+        PrimaryKeyUtil.buildSql(queryCount, primaryKeys, quotation, " AND ", " = ? ", true);
+
         String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
         map.put(queryCountExist, queryCount.toString());
         return map;
+    }
+
+    /**
+     * 查询语句表名和字段带上引号（默认不加）
+     *
+     * @return
+     */
+    public String buildSqlWithQuotation() {
+        return "";
     }
 
     /**
@@ -247,15 +258,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getValidationQuery() {
         return "select 1";
-    }
-
-    /**
-     * 查询语句表名和字段带上引号（默认不加）
-     *
-     * @return
-     */
-    protected String buildSqlWithQuotation() {
-        return "";
     }
 
     /**
@@ -339,14 +341,17 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
         String table = commandConfig.getTable().getName();
-        String pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
-        StringBuilder queryCount = new StringBuilder();
-        queryCount.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
+        Set<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
         if (StringUtil.isNotBlank(queryFilterSql)) {
-            queryCount.append(queryFilterSql);
+            sql.append(queryFilterSql);
         }
-        queryCount.append(" GROUP BY ").append(quotation).append(pk).append(quotation).append(") DBSYNCER_T");
-        return queryCount.toString();
+        sql.append(" GROUP BY ");
+        // id,uid
+        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, ",", "", true);
+        sql.append(") DBSYNCER_T");
+        return sql.toString();
     }
 
     /**
@@ -487,9 +492,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             logger.error("Table name can not be empty.");
             throw new ConnectorException("Table name can not be empty.");
         }
-        String pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
-
-        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, pk, fields, queryFilterSQL, buildSqlWithQuotation());
+        Set<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
+        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, fields, queryFilterSQL, buildSqlWithQuotation());
         return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
     }
 
@@ -548,7 +552,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     private void forceUpdate(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField,
                              Map row) {
-        if(isUpdate(config.getEvent()) || isInsert(config.getEvent())){
+        if (isUpdate(config.getEvent()) || isInsert(config.getEvent())) {
             // 存在执行覆盖更新，否则写入
             final String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
             final String event = existRow(connectorMapper, queryCount, row.get(pkField.getName())) ? ConnectorConstant.OPERTION_UPDATE : ConnectorConstant.OPERTION_INSERT;

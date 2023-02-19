@@ -4,8 +4,10 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
 import org.dbsyncer.connector.database.AbstractSqlBuilder;
 import org.dbsyncer.connector.model.Field;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author AE86
@@ -20,8 +22,8 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
         List<Field> fields = config.getFields();
         String quotation = config.getQuotation();
         StringBuilder sql = new StringBuilder();
+        Set<String> primaryKeys = config.getPrimaryKeys();
         int size = fields.size();
-        int end = size - 1;
         sql.append("UPDATE ").append(config.getSchema()).append(quotation).append(tableName).append(quotation).append(" SET ");
         for (int i = 0; i < size; i++) {
             // skip pk
@@ -31,7 +33,7 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
 
             // "USERNAME"=?
             sql.append(quotation).append(fields.get(i).getName()).append(quotation).append("=?");
-            if (i < end) {
+            if (i < size - 1) {
                 sql.append(",");
             }
         }
@@ -42,8 +44,9 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
             sql.deleteCharAt(last);
         }
 
-        // UPDATE "USER" SET "USERNAME"=?,"AGE"=? WHERE "ID"=?
-        sql.append(" WHERE ").append(quotation).append(config.getPk()).append(quotation).append("=?");
+        // UPDATE "USER" SET "USERNAME"=?,"AGE"=? WHERE "ID"=? AND "UID" = ?
+        sql.append(" WHERE ");
+        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, " AND ", " = ? ", true);
         return sql.toString();
     }
 
