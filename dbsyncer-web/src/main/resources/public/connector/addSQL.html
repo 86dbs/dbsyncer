@@ -98,7 +98,7 @@
             },
             // 删除下拉选中项
             removeOption: function () {
-                this.sqlTableArray = removeSqlTableBySqlName(this.sqlTableArray, this.selectedVal());
+                this.removeSqlTable(this.selectedVal());
                 this.selector.find('option:selected').remove();
                 this.selector.selectpicker('refresh');
                 this.stash();
@@ -121,7 +121,7 @@
             },
             // 回显下拉选中配置
             apply: function () {
-                let sqlTable = findSqlTableBySqlName(this.sqlTableArray, this.selectedVal());
+                let sqlTable = this.getSqlTable(this.selectedVal());
                 if (sqlTable != null) {
                     this.sqlNameInput.val(sqlTable.sqlName);
                     this.tableInput.val(sqlTable.table);
@@ -158,6 +158,29 @@
             // 恢复按钮
             after: function ($btn) {
                 $btn.removeAttr('disabled');
+            },
+            getSqlTable: function (sqlName) {
+                if (!isBlank(sqlName)) {
+                    let tLen = this.sqlTableArray.length;
+                    for (let j = 0; j < tLen; j++) {
+                        if (this.sqlTableArray[j].sqlName == sqlName) {
+                            return this.sqlTableArray[j];
+                        }
+                    }
+                }
+                return null;
+            },
+            removeSqlTable: function (sqlName) {
+                let newArray = [];
+                if (!isBlank(sqlName)) {
+                    let tLen = this.sqlTableArray.length;
+                    for (let j = 0; j < tLen; j++) {
+                        if (this.sqlTableArray[j].sqlName != sqlName) {
+                            newArray.push(this.sqlTableArray[j]);
+                        }
+                    }
+                }
+                this.sqlTableArray = newArray;
             }
         }
 
@@ -172,36 +195,13 @@
         bindSqlTableDelEvent($template);
     })
 
-    function findSqlTableBySqlName(sqlTableArray, sqlName) {
-        if (!isBlank(sqlName)) {
-            let tLen = sqlTableArray.length;
-            for (let j = 0; j < tLen; j++) {
-                if (sqlTableArray[j].sqlName == sqlName) {
-                    return sqlTableArray[j];
-                }
-            }
-        }
-        return null;
-    }
-    function removeSqlTableBySqlName(sqlTableArray, sqlName) {
-        let newArray = [];
-        if (!isBlank(sqlName)) {
-            let tLen = sqlTableArray.length;
-            for (let j = 0; j < tLen; j++) {
-                if (sqlTableArray[j].sqlName != sqlName) {
-                    newArray.push(sqlTableArray[j]);
-                }
-            }
-        }
-        return newArray;
-    }
     function bindSqlTableAddEvent($template) {
         $template.addSqlTableBtn.click(function () {
             $template.before($(this));
             $template.validate(function () {
                 // 重复校验
                 let newSqlName = $template.sqlNameInput.val();
-                let sqlTable = findSqlTableBySqlName($template.sqlTableArray, newSqlName);
+                let sqlTable = $template.getSqlTable(newSqlName);
                 if (sqlTable != null) {
                     bootGrowl(newSqlName + " 已存在.", "danger");
                 } else {
@@ -222,7 +222,7 @@
                 if (!isBlank(oldSqlName)) {
                     let newSqlName = $template.sqlNameInput.val();
                     // 重命名的SQL名称已存在
-                    if (oldSqlName != newSqlName && findSqlTableBySqlName($template.sqlTableArray, newSqlName) != null) {
+                    if (oldSqlName != newSqlName && $template.getSqlTable(newSqlName) != null) {
                         bootGrowl(newSqlName + " 已存在.", "danger");
                         return;
                     }
