@@ -6,6 +6,7 @@ import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -24,25 +24,19 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractExtractor implements Extractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    protected String metaId;
     protected ConnectorFactory connectorFactory;
     protected ScheduledTaskService scheduledTaskService;
     protected AbstractConnectorConfig connectorConfig;
     protected ListenerConfig listenerConfig;
-    protected Map<String, String> snapshot;
     protected Set<String> filterTable;
-    private final List<Event> watcher = new CopyOnWriteArrayList<>();
+    protected List<Table> sourceTable;
+    protected Map<String, String> snapshot;
+    protected String metaId;
+    protected Event watcher;
 
     @Override
-    public void addListener(Event event) {
-        if (null != event) {
-            watcher.add(event);
-        }
-    }
-
-    @Override
-    public void clearAllListener() {
-        watcher.clear();
+    public void register(Event event) {
+        watcher = event;
     }
 
     @Override
@@ -69,23 +63,23 @@ public abstract class AbstractExtractor implements Extractor {
 
     @Override
     public void flushEvent() {
-        watcher.forEach(w -> w.flushEvent(snapshot));
+        watcher.flushEvent(snapshot);
     }
 
     @Override
     public void forceFlushEvent() {
         logger.info("Force flush:{}", snapshot);
-        watcher.forEach(w -> w.forceFlushEvent(snapshot));
+        watcher.forceFlushEvent(snapshot);
     }
 
     @Override
     public void errorEvent(Exception e) {
-        watcher.forEach(w -> w.errorEvent(e));
+        watcher.errorEvent(e);
     }
 
     @Override
     public void interruptException(Exception e) {
-        watcher.forEach(w -> w.interruptException(e));
+        watcher.interruptException(e);
     }
 
     protected void sleepInMills(long timeout) {
@@ -104,12 +98,8 @@ public abstract class AbstractExtractor implements Extractor {
      */
     private void processEvent(boolean permitEvent, RowChangedEvent event) {
         if (permitEvent) {
-            watcher.forEach(w -> w.changedEvent(event));
+            watcher.changedEvent(event);
         }
-    }
-
-    public void setMetaId(String metaId) {
-        this.metaId = metaId;
     }
 
     public void setConnectorFactory(ConnectorFactory connectorFactory) {
@@ -128,11 +118,20 @@ public abstract class AbstractExtractor implements Extractor {
         this.listenerConfig = listenerConfig;
     }
 
+    public void setFilterTable(Set<String> filterTable) {
+        this.filterTable = filterTable;
+    }
+
+    public AbstractExtractor setSourceTable(List<Table> sourceTable) {
+        this.sourceTable = sourceTable;
+        return this;
+    }
+
     public void setSnapshot(Map<String, String> snapshot) {
         this.snapshot = snapshot;
     }
 
-    public void setFilterTable(Set<String> filterTable) {
-        this.filterTable = filterTable;
+    public void setMetaId(String metaId) {
+        this.metaId = metaId;
     }
 }

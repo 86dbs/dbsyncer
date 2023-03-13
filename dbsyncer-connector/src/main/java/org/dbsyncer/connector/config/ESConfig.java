@@ -35,11 +35,6 @@ public class ESConfig extends AbstractConnectorConfig {
      */
     private String type = "_doc";
 
-    /**
-     * 主键
-     */
-    private String primaryKey;
-
     public String getUrl() {
         return url;
     }
@@ -80,11 +75,4 @@ public class ESConfig extends AbstractConnectorConfig {
         this.type = type;
     }
 
-    public String getPrimaryKey() {
-        return primaryKey;
-    }
-
-    public void setPrimaryKey(String primaryKey) {
-        this.primaryKey = primaryKey;
-    }
 }

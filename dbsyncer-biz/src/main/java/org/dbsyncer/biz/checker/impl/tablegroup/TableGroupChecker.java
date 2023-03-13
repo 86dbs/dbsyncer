@@ -24,10 +24,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author AE86
@@ -132,19 +135,26 @@ public class TableGroupChecker extends AbstractChecker {
         checker.dealIncrementStrategy(mapping, tableGroup);
     }
 
-    private Table getTable(String connectorId, String tableName, String primaryKey) {
+    private Table getTable(String connectorId, String tableName, String primaryKeyStr) {
         MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
-        Assert.notNull(metaInfo, "无法获取连接器表信息.");
+        Assert.notNull(metaInfo, "无法获取连接器表信息:" + tableName);
         // 自定义主键
-        if (StringUtil.isNotBlank(primaryKey) && !CollectionUtils.isEmpty(metaInfo.getColumn())) {
-            for (Field field : metaInfo.getColumn()) {
-                if (StringUtil.equals(field.getName(), primaryKey)) {
-                    field.setPk(true);
-                    break;
-                }
-            }
+        List<String> primaryKeys = new ArrayList<>();
+        if (StringUtil.isNotBlank(primaryKeyStr)) {
+            String[] pks = StringUtil.split(primaryKeyStr, ",");
+            Set<String> keys = new LinkedHashSet<>(Arrays.asList(pks));
+            primaryKeys.addAll(keys);
         }
-        return new Table(tableName, metaInfo.getTableType(), primaryKey, metaInfo.getColumn());
+        if (!CollectionUtils.isEmpty(primaryKeys) && !CollectionUtils.isEmpty(metaInfo.getColumn())) {
+            primaryKeys.forEach(pk ->
+                metaInfo.getColumn().forEach(field -> {
+                    if(StringUtil.equalsIgnoreCase(field.getName(), pk)){
+                        field.setPk(true);
+                    }
+                })
+            );
+        }
+        return new Table(tableName, metaInfo.getTableType(), primaryKeys, metaInfo.getColumn(), metaInfo.getSql());
     }
 
     private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {

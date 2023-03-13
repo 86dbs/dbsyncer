@@ -1,9 +1,13 @@
 package org.dbsyncer.biz.checker.impl.connector;
 
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.model.SqlTable;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -19,7 +23,6 @@ public abstract class AbstractDataBaseConfigChecker implements ConnectorConfigCh
         String password = params.get("password");
         String url = params.get("url");
         String driverClassName = params.get("driverClassName");
-        String primaryKey = params.get("primaryKey");
         Assert.hasText(username, "Username is empty.");
         Assert.hasText(password, "Password is empty.");
         Assert.hasText(url, "Url is empty.");
@@ -28,19 +31,19 @@ public abstract class AbstractDataBaseConfigChecker implements ConnectorConfigCh
         connectorConfig.setPassword(password);
         connectorConfig.setUrl(url);
         connectorConfig.setDriverClassName(driverClassName);
-        connectorConfig.setPrimaryKey(primaryKey);
     }
 
     protected void modifyDql(DatabaseConfig connectorConfig, Map<String, String> params) {
-        String sql = params.get("sql");
-        String table = params.get("table");
-        String primaryKey = params.get("primaryKey");
-        Assert.hasText(sql, "Sql is empty.");
-        Assert.hasText(table, "Table is empty.");
-        Assert.hasText(primaryKey, "PrimaryKey is empty.");
-        connectorConfig.setSql(sql);
-        connectorConfig.setTable(table);
-        connectorConfig.setPrimaryKey(primaryKey);
+        String sqlTableParams = params.get("sqlTableParams");
+        Assert.hasText(sqlTableParams, "sqlTableParams is empty.");
+        List<SqlTable> sqlTables = JsonUtil.jsonToArray(sqlTableParams, SqlTable.class);
+        Assert.isTrue(!CollectionUtils.isEmpty(sqlTables), "sqlTables is empty.");
+        sqlTables.forEach(sqlTable -> {
+            Assert.hasText(sqlTable.getSqlName(), "SqlName is empty.");
+            Assert.hasText(sqlTable.getSql(), "Sql is empty.");
+            Assert.hasText(sqlTable.getTable(), "Table is empty.");
+        });
+        connectorConfig.setSqlTables(sqlTables);
     }
 
     protected void modifySchema(DatabaseConfig connectorConfig, Map<String, String> params) {

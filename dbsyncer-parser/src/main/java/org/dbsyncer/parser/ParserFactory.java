@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -139,6 +140,7 @@ public class ParserFactory implements Parser {
             for (Table t : connector.getTable()) {
                 if (t.getName().equals(tableName)) {
                     metaInfo.setTableType(t.getType());
+                    metaInfo.setSql(t.getSql());
                     break;
                 }
             }
@@ -152,8 +154,8 @@ public class ParserFactory implements Parser {
         AbstractConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
-        Table sTable = new Table(sourceTable.getName(), sourceTable.getType(), sourceTable.getPrimaryKey(), new ArrayList<>());
-        Table tTable = new Table(targetTable.getName(), targetTable.getType(), targetTable.getPrimaryKey(), new ArrayList<>());
+        Table sTable = new Table(sourceTable.getName(), sourceTable.getType(), sourceTable.getPrimaryKeys(), new ArrayList<>(), sourceTable.getSql());
+        Table tTable = new Table(targetTable.getName(), targetTable.getType(), targetTable.getPrimaryKeys(), new ArrayList<>(), sourceTable.getSql());
         List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
         if (!CollectionUtils.isEmpty(fieldMapping)) {
             fieldMapping.forEach(m -> {
@@ -247,7 +249,7 @@ public class ParserFactory implements Parser {
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
         // 获取同步字段
         Picker picker = new Picker(fieldMapping);
-        String pk = PrimaryKeyUtil.findOriginalTablePrimaryKey(tableGroup.getSourceTable());
+        List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(tableGroup.getSourceTable());
 
         int pageSize = mapping.getReadNum();
         int batchSize = mapping.getBatchNum();
@@ -263,7 +265,7 @@ public class ParserFactory implements Parser {
             }
 
             // 1、获取数据源数据
-            Result reader = connectorFactory.reader(sConnectorMapper, new ReaderConfig(command, new ArrayList<>(), task.getCursor(), task.getPageIndex(), pageSize));
+            Result reader = connectorFactory.reader(sConnectorMapper, new ReaderConfig(command, new ArrayList<>(), task.getCursors(), task.getPageIndex(), pageSize));
             List<Map> source = reader.getSuccessData();
             if (CollectionUtils.isEmpty(source)) {
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
@@ -290,7 +292,7 @@ public class ParserFactory implements Parser {
 
             // 7、更新结果
             task.setPageIndex(task.getPageIndex() + 1);
-            task.setCursor(getLastCursor(source, pk));
+            task.setCursors(PrimaryKeyUtil.getLastCursors(source, primaryKeys));
             result.setTableGroupId(tableGroup.getId());
             result.setTargetTableGroupName(tTableName);
             flush(task, result);
@@ -423,17 +425,6 @@ public class ParserFactory implements Parser {
      */
     private AbstractConnectorConfig getConnectorConfig(String connectorId) {
         return getConnector(connectorId).getConfig();
-    }
-
-    /**
-     * 获取最新游标值
-     *
-     * @param source
-     * @param pk
-     * @return
-     */
-    private Object getLastCursor(List<Map> source, String pk) {
-        return CollectionUtils.isEmpty(source) ? null : source.get(source.size() - 1).get(pk);
     }
 
 }

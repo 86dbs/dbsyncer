@@ -8,6 +8,10 @@ public abstract class StringUtil {
         return StringUtils.equals(cs1, cs2);
     }
 
+    public static boolean equalsIgnoreCase(CharSequence cs1, CharSequence cs2) {
+        return StringUtils.equalsIgnoreCase(cs1, cs2);
+    }
+
     public static boolean isBlank(CharSequence cs) {
         return StringUtils.isBlank(cs);
     }

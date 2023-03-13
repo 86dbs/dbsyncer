@@ -69,9 +69,9 @@ function bindQueryErrorDetailEvent() {
         var html = '<div class="row driver_break_word">' + json + '</div>';
         BootstrapDialog.show({
             title: "异常详细",
-            type: BootstrapDialog.TYPE_INFO,
+            size: BootstrapDialog.SIZE_WIDE,
             message: html,
-            size: BootstrapDialog.SIZE_NORMAL,
+            type: BootstrapDialog.TYPE_WARNING,
             buttons: [{
                 label: "关闭",
                 action: function (dialog) {

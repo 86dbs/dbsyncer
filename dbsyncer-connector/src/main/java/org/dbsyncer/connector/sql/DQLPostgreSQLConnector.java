@@ -19,7 +19,7 @@ public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
     }
 
     @Override
-    protected String buildSqlWithQuotation() {
+    public String buildSqlWithQuotation() {
         return "\"";
     }
 }
