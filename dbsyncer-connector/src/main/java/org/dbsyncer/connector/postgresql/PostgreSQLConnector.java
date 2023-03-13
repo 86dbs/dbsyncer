@@ -11,7 +11,7 @@ import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.PrimaryKeyUtil;
 
 import java.sql.Types;
-import java.util.Set;
+import java.util.List;
 
 public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
@@ -27,7 +27,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     @Override
     public String getPageSql(PageSql config) {
         final String quotation = buildSqlWithQuotation();
-        final Set<String> primaryKeys = config.getPrimaryKeys();
+        final List<String> primaryKeys = config.getPrimaryKeys();
         // select * from test.`my_user` where `id` > ? and `uid` > ? order by `id`,`uid` limit ?
         StringBuilder sql = new StringBuilder(config.getQuerySql());
         boolean blank = StringUtil.isBlank(config.getSqlBuilderConfig().getQueryFilter());
@@ -43,7 +43,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     @Override
     public String getPageCursorSql(PageSql config) {
         final String quotation = buildSqlWithQuotation();
-        final Set<String> primaryKeys = config.getPrimaryKeys();
+        final List<String> primaryKeys = config.getPrimaryKeys();
         // select * from test.`my_user` order by `id`,`uid` limit ?
         StringBuilder sql = new StringBuilder(config.getQuerySql()).append(" ORDER BY ");
         PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, ",", "", true);

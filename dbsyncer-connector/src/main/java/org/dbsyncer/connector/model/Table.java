@@ -3,7 +3,6 @@ package org.dbsyncer.connector.model;
 import org.dbsyncer.connector.enums.TableTypeEnum;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author AE86
@@ -25,7 +24,7 @@ public class Table {
     /**
      * 主键列表
      */
-    private Set<String> primaryKeys;
+    private List<String> primaryKeys;
 
     /**
      * 属性字段
@@ -52,7 +51,7 @@ public class Table {
         this(name, type, null, null, null);
     }
 
-    public Table(String name, String type, Set<String> primaryKeys, List<Field> column, String sql) {
+    public Table(String name, String type, List<String> primaryKeys, List<Field> column, String sql) {
         this.name = name;
         this.type = type;
         this.primaryKeys = primaryKeys;
@@ -76,11 +75,11 @@ public class Table {
         this.type = type;
     }
 
-    public Set<String> getPrimaryKeys() {
+    public List<String> getPrimaryKeys() {
         return primaryKeys;
     }
 
-    public void setPrimaryKeys(Set<String> primaryKeys) {
+    public void setPrimaryKeys(List<String> primaryKeys) {
         this.primaryKeys = primaryKeys;
     }
 

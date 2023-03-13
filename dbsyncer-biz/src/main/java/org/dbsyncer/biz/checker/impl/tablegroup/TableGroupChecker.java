@@ -26,7 +26,7 @@ import org.springframework.util.Assert;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -139,18 +139,20 @@ public class TableGroupChecker extends AbstractChecker {
         MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接器表信息:" + tableName);
         // 自定义主键
-        Set<String> primaryKeys = new HashSet<>();
+        List<String> primaryKeys = new ArrayList<>();
         if (StringUtil.isNotBlank(primaryKeyStr)) {
             String[] pks = StringUtil.split(primaryKeyStr, ",");
-            primaryKeys.addAll(Arrays.asList(pks));
+            Set<String> keys = new LinkedHashSet<>(Arrays.asList(pks));
+            primaryKeys.addAll(keys);
         }
         if (!CollectionUtils.isEmpty(primaryKeys) && !CollectionUtils.isEmpty(metaInfo.getColumn())) {
-            for (Field field : metaInfo.getColumn()) {
-                if (primaryKeys.contains(field.getName())) {
-                    field.setPk(true);
-                    break;
-                }
-            }
+            primaryKeys.forEach(pk ->
+                metaInfo.getColumn().forEach(field -> {
+                    if(StringUtil.equalsIgnoreCase(field.getName(), pk)){
+                        field.setPk(true);
+                    }
+                })
+            );
         }
         return new Table(tableName, metaInfo.getTableType(), primaryKeys, metaInfo.getColumn(), metaInfo.getSql());
     }

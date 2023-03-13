@@ -2,7 +2,7 @@ package org.dbsyncer.connector.model;
 
 import org.dbsyncer.connector.config.SqlBuilderConfig;
 
-import java.util.Set;
+import java.util.List;
 
 public class PageSql {
 
@@ -12,15 +12,15 @@ public class PageSql {
 
     private String quotation;
 
-    private Set<String> primaryKeys;
+    private List<String> primaryKeys;
 
-    public PageSql(String querySql, String quotation, Set<String> primaryKeys) {
+    public PageSql(String querySql, String quotation, List<String> primaryKeys) {
         this.querySql = querySql;
         this.quotation = quotation;
         this.primaryKeys = primaryKeys;
     }
 
-    public PageSql(SqlBuilderConfig sqlBuilderConfig, String querySql, Set<String> primaryKeys) {
+    public PageSql(SqlBuilderConfig sqlBuilderConfig, String querySql, List<String> primaryKeys) {
         this.sqlBuilderConfig = sqlBuilderConfig;
         this.querySql = querySql;
         this.primaryKeys = primaryKeys;
@@ -38,7 +38,7 @@ public class PageSql {
         return quotation;
     }
 
-    public Set<String> getPrimaryKeys() {
+    public List<String> getPrimaryKeys() {
         return primaryKeys;
     }
 }

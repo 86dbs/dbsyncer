@@ -4,7 +4,6 @@ import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.connector.model.Field;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author AE86
@@ -25,7 +24,7 @@ public class DqlOracleExtractor extends OracleExtractor {
     }
 
     @Override
-    protected Integer[] getPrimaryKeyIndexArray(List<Field> column, Set<String> primaryKeys) {
+    protected Integer[] getPrimaryKeyIndexArray(List<Field> column, List<String> primaryKeys) {
         // ROW_ID
         return new Integer[]{0};
     }

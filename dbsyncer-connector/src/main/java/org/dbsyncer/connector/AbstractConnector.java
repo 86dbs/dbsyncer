@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +71,7 @@ public abstract class AbstractConnector {
         for (Map row : config.getData()) {
             // 根据目标字段类型转换值
             for (Field f : config.getFields()) {
-                if(null == f){
+                if (null == f) {
                     continue;
                 }
                 // 根据字段类型转换值
@@ -88,13 +89,18 @@ public abstract class AbstractConnector {
         }
     }
 
-    protected Field getPrimaryKeyField(List<Field> fields) {
+    protected List<Field> getPrimaryKeys(List<Field> fields) {
+        List<Field> list = new ArrayList<>();
+
         for (Field f : fields) {
             if (f.isPk()) {
-                return f;
+                list.add(f);
             }
         }
-        throw new ConnectorException("主键为空");
+        if (CollectionUtils.isEmpty(list)) {
+            throw new ConnectorException("主键为空");
+        }
+        return list;
     }
 
     protected boolean isUpdate(String event) {

@@ -7,12 +7,11 @@ import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Table;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class PrimaryKeyUtil {
@@ -23,22 +22,22 @@ public abstract class PrimaryKeyUtil {
      * @param table
      * @return
      */
-    public static Set<String> findOriginalTablePrimaryKey(Table table) {
+    public static List<String> findOriginalTablePrimaryKey(Table table) {
         if (null == table) {
             throw new ConnectorException("The table is null.");
         }
 
         // 获取自定义主键
         if (!CollectionUtils.isEmpty(table.getPrimaryKeys())) {
-            return Collections.unmodifiableSet(table.getPrimaryKeys());
+            return Collections.unmodifiableList(table.getPrimaryKeys());
         }
 
         // 获取表原始主键
-        Set<String> primaryKeys = new HashSet<>();
+        List<String> primaryKeys = new ArrayList<>();
         List<Field> column = table.getColumn();
         if (!CollectionUtils.isEmpty(column)) {
             for (Field c : column) {
-                if (c.isPk()) {
+                if (c.isPk() && !primaryKeys.contains(c.getName())) {
                     primaryKeys.add(c.getName());
                 }
             }
@@ -47,10 +46,10 @@ public abstract class PrimaryKeyUtil {
         if (CollectionUtils.isEmpty(primaryKeys)) {
             throw new ConnectorException(String.format("The primary key of table '%s' is null.", table.getName()));
         }
-        return Collections.unmodifiableSet(primaryKeys);
+        return Collections.unmodifiableList(primaryKeys);
     }
 
-    public static void buildSql(StringBuilder sql, Set<String> primaryKeys, String quotation, String join, String value, boolean skipFirst) {
+    public static void buildSql(StringBuilder sql, List<String> primaryKeys, String quotation, String join, String value, boolean skipFirst) {
         AtomicBoolean added = new AtomicBoolean();
         primaryKeys.forEach(pk -> {
             // skip first pk
@@ -74,7 +73,7 @@ public abstract class PrimaryKeyUtil {
      * @param primaryKeys
      * @return
      */
-    public static Object[] getLastCursors(List<Map> data, Set<String> primaryKeys) {
+    public static Object[] getLastCursors(List<Map> data, List<String> primaryKeys) {
         if (CollectionUtils.isEmpty(data)) {
             return null;
         }

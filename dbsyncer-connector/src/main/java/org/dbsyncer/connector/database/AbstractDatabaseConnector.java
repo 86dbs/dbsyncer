@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -152,15 +153,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             throw new ConnectorException("writer data can not be empty.");
         }
         List<Field> fields = new ArrayList<>(config.getFields());
-        Field pkField = getPrimaryKeyField(config.getFields());
+        List<Field> pkFields = getPrimaryKeys(config.getFields());
         // Update / Delete
         if (!isInsert(event)) {
             if (isDelete(event)) {
                 fields.clear();
             } else if (isUpdate(event)) {
-                fields.remove(pkField);
+                removeFieldWithPk(fields, pkFields);
             }
-            fields.add(pkField);
+            fields.addAll(pkFields);
         }
 
         Result result = new Result();
@@ -170,7 +171,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             execute = connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
         } catch (Exception e) {
             logger.error(e.getMessage());
-            data.forEach(row -> forceUpdate(result, connectorMapper, config, pkField, row));
+            data.forEach(row -> forceUpdate(result, connectorMapper, config, pkFields, row));
         }
 
         if (null != execute) {
@@ -180,7 +181,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     result.getSuccessData().add(data.get(i));
                     continue;
                 }
-                forceUpdate(result, connectorMapper, config, pkField, data.get(i));
+                forceUpdate(result, connectorMapper, config, pkFields, data.get(i));
             }
         }
         return result;
@@ -223,7 +224,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 获取查询数据行是否存在
         String tableName = commandConfig.getTable().getName();
-        Set<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
+        List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
         StringBuilder queryCount = new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(tableName).append(quotation).append(" WHERE ");
         // id = ? AND uid = ?
         PrimaryKeyUtil.buildSql(queryCount, primaryKeys, quotation, " AND ", " = ? ", true);
@@ -341,7 +342,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
         String table = commandConfig.getTable().getName();
-        Set<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
+        List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
         if (StringUtil.isNotBlank(queryFilterSql)) {
@@ -492,7 +493,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             logger.error("Table name can not be empty.");
             throw new ConnectorException("Table name can not be empty.");
         }
-        Set<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
+        List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
         SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, fields, queryFilterSQL, buildSqlWithQuotation());
         return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
     }
@@ -550,18 +551,24 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return args;
     }
 
-    private void forceUpdate(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField,
+    private void forceUpdate(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, List<Field> pkFields,
                              Map row) {
         if (isUpdate(config.getEvent()) || isInsert(config.getEvent())) {
             // 存在执行覆盖更新，否则写入
             final String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
-            final String event = existRow(connectorMapper, queryCount, row.get(pkField.getName())) ? ConnectorConstant.OPERTION_UPDATE : ConnectorConstant.OPERTION_INSERT;
+            int size = pkFields.size();
+            Object[] args = new Object[size];
+            for (int i = 0; i < size; i++) {
+                args[i] = row.get(pkFields.get(i).getName());
+            }
+            final String event = existRow(connectorMapper, queryCount, args) ? ConnectorConstant.OPERTION_UPDATE
+                    : ConnectorConstant.OPERTION_INSERT;
             logger.warn("{}表执行{}失败, 重新执行{}, {}", config.getTableName(), config.getEvent(), event, row);
-            writer(result, connectorMapper, config, pkField, row, event);
+            writer(result, connectorMapper, config, pkFields, row, event);
         }
     }
 
-    private void writer(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, Field pkField, Map row,
+    private void writer(Result result, DatabaseConnectorMapper connectorMapper, WriterBatchConfig config, List<Field> pkFields, Map row,
                         String event) {
         // 1、获取 SQL
         String sql = config.getCommand().get(event);
@@ -572,9 +579,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             if (isDelete(event)) {
                 fields.clear();
             } else if (isUpdate(event)) {
-                fields.remove(pkField);
+                fields.remove(pkFields);
             }
-            fields.add(pkField);
+            fields.addAll(pkFields);
         }
 
         try {
@@ -593,12 +600,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
     }
 
-    private boolean existRow(DatabaseConnectorMapper connectorMapper, String sql, Object value) {
+    private boolean existRow(DatabaseConnectorMapper connectorMapper, String sql, Object[] args) {
         int rowNum = 0;
         try {
-            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, new Object[]{value}, Integer.class));
+            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, Integer.class, args));
         } catch (Exception e) {
-            logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, value);
+            logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, args);
         }
         return rowNum > 0;
     }
@@ -606,6 +613,23 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     private boolean isPk(Map<String, List<String>> tables, String tableName, String name) {
         List<String> pk = tables.get(tableName);
         return !CollectionUtils.isEmpty(pk) && pk.contains(name);
+    }
+
+    private void removeFieldWithPk(List<Field> fields, List<Field> pkFields) {
+        if (CollectionUtils.isEmpty(fields) || CollectionUtils.isEmpty(pkFields)) {
+            return;
+        }
+
+        pkFields.forEach(pkField -> {
+            Iterator<Field> iterator = fields.iterator();
+            while (iterator.hasNext()) {
+                Field next = iterator.next();
+                if (next != null && StringUtil.equals(next.getName(), pkField.getName())) {
+                    iterator.remove();
+                    break;
+                }
+            }
+        });
     }
 
 }

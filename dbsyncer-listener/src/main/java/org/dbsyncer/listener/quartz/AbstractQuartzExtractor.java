@@ -97,7 +97,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
     private void execute(TableGroupCommand tableGroupCommand, int index) {
         final Map<String, String> command = tableGroupCommand.getCommand();
-        final Set<String> primaryKeys = tableGroupCommand.getPrimaryKeys();
+        final List<String> primaryKeys = tableGroupCommand.getPrimaryKeys();
 
         // 检查增量点
         ConnectorMapper connectionMapper = connectorFactory.connect(connectorConfig);

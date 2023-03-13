@@ -20,7 +20,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author AE86
@@ -35,9 +34,9 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         List<SqlTable> sqlTables = cfg.getSqlTables();
         List<Table> tables = new ArrayList<>();
         if (!CollectionUtils.isEmpty(sqlTables)) {
-            sqlTables.forEach(s -> {
-                tables.add(new Table(s.getSqlName(), TableTypeEnum.TABLE.getCode(), Collections.EMPTY_SET, Collections.EMPTY_LIST, s.getSql()));
-            });
+            sqlTables.forEach(s ->
+                tables.add(new Table(s.getSqlName(), TableTypeEnum.TABLE.getCode(), Collections.EMPTY_LIST, Collections.EMPTY_LIST, s.getSql()))
+            );
         }
         return tables;
     }
@@ -75,7 +74,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         // 获取过滤SQL
         String queryFilterSql = getQueryFilterSql(commandConfig.getFilter());
         Table table = commandConfig.getTable();
-        Set<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
+        List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
 
         // 获取查询SQL
         Map<String, String> map = new HashMap<>();

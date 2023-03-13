@@ -5,14 +5,14 @@ import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.util.PrimaryKeyUtil;
 
-import java.util.Set;
+import java.util.List;
 
 public final class DQLSqlServerConnector extends AbstractDQLConnector {
 
     @Override
     public String getPageSql(PageSql config) {
         String quotation = config.getQuotation();
-        Set<String> primaryKeys = config.getPrimaryKeys();
+        List<String> primaryKeys = config.getPrimaryKeys();
         StringBuilder orderBy = new StringBuilder();
         PrimaryKeyUtil.buildSql(orderBy, primaryKeys, quotation, " AND ", " = ? ", true);
         return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, orderBy.toString(), config.getQuerySql());

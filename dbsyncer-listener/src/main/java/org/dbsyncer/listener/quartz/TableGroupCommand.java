@@ -1,20 +1,20 @@
 package org.dbsyncer.listener.quartz;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class TableGroupCommand {
 
-    private Set<String> primaryKeys;
+    private List<String> primaryKeys;
 
     private Map<String, String> command;
 
-    public TableGroupCommand(Set<String> primaryKeys, Map<String, String> command) {
+    public TableGroupCommand(List<String> primaryKeys, Map<String, String> command) {
         this.primaryKeys = primaryKeys;
         this.command = command;
     }
 
-    public Set<String> getPrimaryKeys() {
+    public List<String> getPrimaryKeys() {
         return primaryKeys;
     }
 

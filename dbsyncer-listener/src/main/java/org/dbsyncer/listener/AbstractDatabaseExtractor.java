@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -73,7 +72,7 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
         for (Table t : sourceTable) {
             String sql = t.getSql();
             String sqlName = t.getName();
-            Set<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(t);
+            List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(t);
             String tableName = tableMap.get(sqlName);
             Assert.hasText(sql, "The sql is null.");
             Assert.hasText(tableName, "The tableName is null.");
@@ -102,7 +101,7 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
      * @param primaryKeys
      * @return
      */
-    protected Integer[] getPrimaryKeyIndexArray(List<Field> column, Set<String> primaryKeys) {
+    protected Integer[] getPrimaryKeyIndexArray(List<Field> column, List<String> primaryKeys) {
         List<Integer> indexList = new ArrayList<>();
         for (Field f : column) {
             if (primaryKeys.contains(f.getName())) {

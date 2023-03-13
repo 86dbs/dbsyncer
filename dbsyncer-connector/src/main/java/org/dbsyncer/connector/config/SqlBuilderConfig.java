@@ -4,7 +4,6 @@ import org.dbsyncer.connector.database.Database;
 import org.dbsyncer.connector.model.Field;
 
 import java.util.List;
-import java.util.Set;
 
 public class SqlBuilderConfig {
 
@@ -14,7 +13,7 @@ public class SqlBuilderConfig {
     // 表名
     private String tableName;
     // 主键列表
-    private Set<String> primaryKeys;
+    private List<String> primaryKeys;
     // 字段
     private List<Field> fields;
     // 过滤条件
@@ -22,7 +21,7 @@ public class SqlBuilderConfig {
     // 引号
     private String quotation;
 
-    public SqlBuilderConfig(Database database, String schema, String tableName, Set<String> primaryKeys, List<Field> fields, String queryFilter, String quotation) {
+    public SqlBuilderConfig(Database database, String schema, String tableName, List<String> primaryKeys, List<Field> fields, String queryFilter, String quotation) {
         this.database = database;
         this.schema = schema;
         this.tableName = tableName;
@@ -44,7 +43,7 @@ public class SqlBuilderConfig {
         return tableName;
     }
 
-    public Set<String> getPrimaryKeys() {
+    public List<String> getPrimaryKeys() {
         return primaryKeys;
     }
 

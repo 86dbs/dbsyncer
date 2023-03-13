@@ -22,7 +22,7 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
         List<Field> fields = config.getFields();
         String quotation = config.getQuotation();
         StringBuilder sql = new StringBuilder();
-        Set<String> primaryKeys = config.getPrimaryKeys();
+        List<String> primaryKeys = config.getPrimaryKeys();
         int size = fields.size();
         sql.append("UPDATE ").append(config.getSchema()).append(quotation).append(tableName).append(quotation).append(" SET ");
         for (int i = 0; i < size; i++) {
