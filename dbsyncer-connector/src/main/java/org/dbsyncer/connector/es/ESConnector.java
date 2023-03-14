@@ -126,7 +126,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             }
             properties.forEach((k, v) -> {
                 String columnType = (String) v.get("type");
-                fields.add(new Field(k, columnType, ESFieldTypeEnum.getType(columnType), StringUtil.equals(config.getPrimaryKey(), k)));
+                fields.add(new Field(k, columnType, ESFieldTypeEnum.getType(columnType)));
             });
         } catch (IOException e) {
             logger.error(e.getMessage());
@@ -188,11 +188,12 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
         final Result result = new Result();
         final ESConfig cfg = connectorMapper.getConfig();
-        final Field pkField = getPrimaryKeyField(config.getFields());
-        final String primaryKeyName = pkField.getName();
+        final List<Field> pkFields = getPrimaryKeys(config.getFields());
         try {
             BulkRequest request = new BulkRequest();
-            data.forEach(row -> addRequest(request, cfg.getIndex(), cfg.getType(), config.getEvent(), String.valueOf(row.get(primaryKeyName)), row));
+            // 默认取第一个主键
+            final String pk = pkFields.get(0).getName();
+            data.forEach(row -> addRequest(request, cfg.getIndex(), cfg.getType(), config.getEvent(), String.valueOf(row.get(pk)), row));
 
             BulkResponse response = connectorMapper.getConnection().bulk(request, RequestOptions.DEFAULT);
             RestStatus restStatus = response.status();
@@ -232,7 +233,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         Table table = commandConfig.getTable();
         if (!CollectionUtils.isEmpty(table.getColumn())) {
-            getPrimaryKeyField(table.getColumn());
+            getPrimaryKeys(table.getColumn());
         }
         return Collections.EMPTY_MAP;
     }

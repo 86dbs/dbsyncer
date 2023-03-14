@@ -16,33 +16,6 @@
         </div>
     </div>
     <div class="form-group">
-        <label class="col-sm-2 control-label">SQL <strong class="driverVerifcateRequired">*</strong></label>
-        <div class="col-sm-10">
-            <textarea class="form-control dbsyncer_textarea_resize_none" maxlength="8192" dbsyncer-valid="require"
-                      id="sql" name="sql" rows="10"
-                      th:text="${connector?.config?.sql}?:'SELECT T1.* FROM &quot;USER&quot; T1'"></textarea>
-        </div>
-    </div>
-    <div class="form-group">
-        <div class="col-sm-6"></div>
-        <div class="col-sm-6 text-right">
-            <a href="javascript:beautifySql();"><span class="fa fa-magic fa-1x fa-flip-horizontal dbsyncer_pointer"
-                                                      title="美化SQL"></span>美化SQL</a>
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">主表 <strong class="driverVerifcateRequired">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="table" type="text" maxlength="32" dbsyncer-valid="require"
-                   placeholder="USER" th:value="${connector?.config?.table}"/>
-        </div>
-        <label class="col-sm-2 control-label">主键 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="如果使用的表没有主键，可以自定义主键（大小写必须一致，添加表映射关系时，主键不能为空）。"></i><strong class="driverVerifcateRequired">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="primaryKey" type="text" maxlength="32" dbsyncer-valid="require"
-                   placeholder="ID" th:value="${connector?.config?.primaryKey}"/>
-        </div>
-    </div>
-    <div class="form-group">
         <label class="col-sm-2 control-label">URL <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-10">
             <textarea class="form-control dbsyncer_textarea_resize_none" dbsyncer-valid="require" maxlength="1024" name="url" rows="5"
@@ -81,6 +54,9 @@
         </div>
     </div>
 
+    <!-- SQL配置 -->
+    <div th:replace="connector/addSQL :: content"></div>
+
     <script type="text/javascript">
         $(function () {
             $('#dropSlotOnCloseSwitch').bootstrapSwitch({
@@ -92,6 +68,8 @@
             });
             // 初始化select插件
             initSelectIndex($(".select-control"), 1);
+
+            $("#sql").val("SELECT T1.* FROM \"USER\" T1");
         })
     </script>
 </div>

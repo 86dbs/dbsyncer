@@ -16,16 +16,11 @@ public interface Extractor {
     void close();
 
     /**
-     * 添加监听器（获取增量数据）
+     * 注册监听事件（获取增量数据）
      *
      * @param event
      */
-    void addListener(Event event);
-
-    /**
-     * 清空监听器
-     */
-    void clearAllListener();
+    void register(Event event);
 
     /**
      * 数据变更事件

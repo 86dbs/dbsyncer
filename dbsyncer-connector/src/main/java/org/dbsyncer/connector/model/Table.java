@@ -22,15 +22,20 @@ public class Table {
     private String type;
 
     /**
-     * 主键
+     * 主键列表
      */
-    private String primaryKey;
+    private List<String> primaryKeys;
 
     /**
      * 属性字段
      * 格式：[{"name":"ID","typeName":"INT","type":"4"},{"name":"NAME","typeName":"VARCHAR","type":"12"}]
      */
     private List<Field> column;
+
+    /**
+     * sql
+     */
+    private String sql;
 
     // 总数
     private long count;
@@ -43,49 +48,55 @@ public class Table {
     }
 
     public Table(String name, String type) {
-        this(name, type, null, null);
+        this(name, type, null, null, null);
     }
 
-    public Table(String name, String type, String primaryKey, List<Field> column) {
+    public Table(String name, String type, List<String> primaryKeys, List<Field> column, String sql) {
         this.name = name;
         this.type = type;
-        this.primaryKey = primaryKey;
+        this.primaryKeys = primaryKeys;
         this.column = column;
+        this.sql = sql;
     }
 
     public String getName() {
         return name;
     }
 
-    public Table setName(String name) {
+    public void setName(String name) {
         this.name = name;
-        return this;
     }
 
     public String getType() {
         return type;
     }
 
-    public Table setType(String type) {
+    public void setType(String type) {
         this.type = type;
-        return this;
     }
 
-    public String getPrimaryKey() {
-        return primaryKey;
+    public List<String> getPrimaryKeys() {
+        return primaryKeys;
     }
 
-    public void setPrimaryKey(String primaryKey) {
-        this.primaryKey = primaryKey;
+    public void setPrimaryKeys(List<String> primaryKeys) {
+        this.primaryKeys = primaryKeys;
     }
 
     public List<Field> getColumn() {
         return column;
     }
 
-    public Table setColumn(List<Field> column) {
+    public void setColumn(List<Field> column) {
         this.column = column;
-        return this;
+    }
+
+    public String getSql() {
+        return sql;
+    }
+
+    public void setSql(String sql) {
+        this.sql = sql;
     }
 
     public long getCount() {

@@ -24,9 +24,9 @@ public class DqlOracleExtractor extends OracleExtractor {
     }
 
     @Override
-    protected int getPKIndex(List<Field> column, String primaryKey) {
+    protected Integer[] getPrimaryKeyIndexArray(List<Field> column, List<String> primaryKeys) {
         // ROW_ID
-        return 0;
+        return new Integer[]{0};
     }
 
 }

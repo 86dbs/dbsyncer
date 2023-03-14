@@ -14,21 +14,14 @@
         </div>
     </div>
     <div class="form-group">
+        <label class="col-sm-2 control-label">URL <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：http://192.168.1.100:9200,http://192.168.1.200:9200"></i> <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-4">
+            <input class="form-control" name="url" type="text" maxlength="1024" dbsyncer-valid="require" th:value="${connector?.config?.url}?:'http://127.0.0.1:9200'"/>
+        </div>
         <label class="col-sm-2 control-label">index <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-4">
             <input class="form-control" name="index" type="text" maxlength="32" dbsyncer-valid="require" placeholder="test" th:value="${connector?.config?.index}?:'test'"/>
         </div>
-        <label class="col-sm-2 control-label">主键 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="如果使用的表没有主键，可以自定义主键（大小写必须一致，添加表映射关系时，主键不能为空）。"></i><strong class="driverVerifcateRequired">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="primaryKey" type="text" maxlength="32" dbsyncer-valid="require" placeholder="id" th:value="${connector?.config?.primaryKey}?:'id'"/>
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">地址 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：http://192.168.1.100:9200,http://192.168.1.200:9200"></i> <strong class="driverVerifcateRequired">*</strong></label>
-        <div class="col-sm-4">
-            <textarea id="sql" name="url" class="form-control dbsyncer_textarea_resize_none" maxlength="1024" dbsyncer-valid="require" rows="2" th:text="${connector?.config?.url}?:'http://127.0.0.1:9200'"></textarea>
-        </div>
-        <div class="col-sm-6"></div>
     </div>
 
     <script type="text/javascript">

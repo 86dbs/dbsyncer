@@ -44,11 +44,6 @@ public class Field {
     public Field() {
     }
 
-    public Field(String name, String labelName) {
-        this.name = name;
-        this.labelName = labelName;
-    }
-
     public Field(String name, String typeName, int type) {
         this.name = name;
         this.typeName = typeName;

@@ -31,7 +31,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String buildSqlWithQuotation() {
+    public String buildSqlWithQuotation() {
         return "\"";
     }
 

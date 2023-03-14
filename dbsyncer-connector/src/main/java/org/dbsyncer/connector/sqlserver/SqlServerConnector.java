@@ -11,6 +11,7 @@ import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +33,11 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getPageSql(PageSql config) {
-        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, config.getPk(), config.getQuerySql());
+        String quotation = config.getQuotation();
+        List<String> primaryKeys = config.getPrimaryKeys();
+        StringBuilder orderBy = new StringBuilder();
+        PrimaryKeyUtil.buildSql(orderBy, primaryKeys, quotation, " AND ", " = ? ", true);
+        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, orderBy.toString(), config.getQuerySql());
     }
 
     @Override
