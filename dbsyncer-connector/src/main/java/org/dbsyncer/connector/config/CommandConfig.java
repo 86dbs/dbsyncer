@@ -19,20 +19,13 @@ public class CommandConfig {
 
     private Table table;
 
-    private Table originalTable;
-
     private List<Filter> filter;
 
     private AbstractConnectorConfig connectorConfig;
 
-    public CommandConfig(String type, Table table, Table originalTable, AbstractConnectorConfig connectorConfig) {
-        this(type, table, originalTable, connectorConfig, null);
-    }
-
-    public CommandConfig(String type, Table table, Table originalTable, AbstractConnectorConfig connectorConfig, List<Filter> filter) {
+    public CommandConfig(String type, Table table, AbstractConnectorConfig connectorConfig, List<Filter> filter) {
         this.type = type;
         this.table = table;
-        this.originalTable = originalTable;
         this.filter = filter;
         this.connectorConfig = connectorConfig;
     }
@@ -47,10 +40,6 @@ public class CommandConfig {
 
     public List<Filter> getFilter() {
         return filter;
-    }
-
-    public Table getOriginalTable() {
-        return originalTable;
     }
 
     public AbstractConnectorConfig getConnectorConfig() {

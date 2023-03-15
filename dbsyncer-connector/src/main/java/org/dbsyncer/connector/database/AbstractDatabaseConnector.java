@@ -224,7 +224,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 获取查询数据行是否存在
         String tableName = commandConfig.getTable().getName();
-        List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
         StringBuilder queryCount = new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(tableName).append(quotation).append(" WHERE ");
         // id = ? AND uid = ?
         PrimaryKeyUtil.buildSql(queryCount, primaryKeys, quotation, " AND ", " = ? ", true);
@@ -342,7 +342,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
         String table = commandConfig.getTable().getName();
-        List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
         if (StringUtil.isNotBlank(queryFilterSql)) {
@@ -493,7 +493,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             logger.error("Table name can not be empty.");
             throw new ConnectorException("Table name can not be empty.");
         }
-        List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
         SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, fields, queryFilterSQL, buildSqlWithQuotation());
         return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
     }

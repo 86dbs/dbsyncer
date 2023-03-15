@@ -22,25 +22,19 @@ public abstract class PrimaryKeyUtil {
      * @param table
      * @return
      */
-    public static List<String> findOriginalTablePrimaryKey(Table table) {
+    public static List<String> findTablePrimaryKeys(Table table) {
         if (null == table) {
             throw new ConnectorException("The table is null.");
         }
 
-        // 获取自定义主键
-        if (!CollectionUtils.isEmpty(table.getPrimaryKeys())) {
-            return Collections.unmodifiableList(table.getPrimaryKeys());
-        }
-
-        // 获取表原始主键
+        // 获取表同步的主键字段
         List<String> primaryKeys = new ArrayList<>();
-        List<Field> column = table.getColumn();
-        if (!CollectionUtils.isEmpty(column)) {
-            for (Field c : column) {
-                if (c.isPk() && !primaryKeys.contains(c.getName())) {
+        if (!CollectionUtils.isEmpty(table.getColumn())) {
+            table.getColumn().forEach(c -> {
+                if (c.isPk()) {
                     primaryKeys.add(c.getName());
                 }
-            }
+            });
         }
 
         if (CollectionUtils.isEmpty(primaryKeys)) {

@@ -72,7 +72,7 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
         for (Table t : sourceTable) {
             String sql = t.getSql();
             String sqlName = t.getName();
-            List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(t);
+            List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(t);
             String tableName = tableMap.get(sqlName);
             Assert.hasText(sql, "The sql is null.");
             Assert.hasText(tableName, "The tableName is null.");
