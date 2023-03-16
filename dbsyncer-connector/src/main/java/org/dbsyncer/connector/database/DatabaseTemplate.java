@@ -1019,23 +1019,6 @@ public class DatabaseTemplate implements JdbcOperations {
         return result;
     }
 
-    private Object invoke(Object object, int superClassLevel, String fieldName) {
-        try {
-            Class clazz = object.getClass();
-            for (int i = 0; i < superClassLevel; i++) {
-                clazz = clazz.getSuperclass();
-            }
-            Field declaredField = clazz.getDeclaredField(fieldName);
-            declaredField.setAccessible(true);
-            return declaredField.get(object);
-        } catch (NoSuchFieldException e) {
-            logger.error(e.getMessage());
-        } catch (IllegalAccessException e) {
-            logger.error(e.getMessage());
-        }
-        throw new ConnectorException(String.format("Can't invoke '%s'.", fieldName));
-    }
-
     @Override
     public int[] batchUpdate(String sql, List<Object[]> batchArgs) throws DataAccessException {
         return batchUpdate(sql, batchArgs, new int[0]);
@@ -1518,6 +1501,22 @@ public class DatabaseTemplate implements JdbcOperations {
         return result;
     }
 
+    private Object invoke(Object object, int superClassLevel, String fieldName) {
+        try {
+            Class clazz = object.getClass();
+            for (int i = 0; i < superClassLevel; i++) {
+                clazz = clazz.getSuperclass();
+            }
+            Field declaredField = clazz.getDeclaredField(fieldName);
+            declaredField.setAccessible(true);
+            return declaredField.get(object);
+        } catch (NoSuchFieldException e) {
+            logger.error(e.getMessage());
+        } catch (IllegalAccessException e) {
+            logger.error(e.getMessage());
+        }
+        throw new ConnectorException(String.format("Can't invoke '%s'.", fieldName));
+    }
 
     /**
      * Invocation handler that suppresses close calls on JDBC Connections.
