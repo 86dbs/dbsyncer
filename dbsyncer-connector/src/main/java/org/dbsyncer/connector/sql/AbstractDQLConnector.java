@@ -74,10 +74,13 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         // 获取过滤SQL
         String queryFilterSql = getQueryFilterSql(commandConfig.getFilter());
         Table table = commandConfig.getTable();
+        Map<String, String> map = new HashMap<>();
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
+        if (CollectionUtils.isEmpty(primaryKeys)) {
+            return map;
+        }
 
         // 获取查询SQL
-        Map<String, String> map = new HashMap<>();
         String querySql = table.getSql();
 
         // 存在条件

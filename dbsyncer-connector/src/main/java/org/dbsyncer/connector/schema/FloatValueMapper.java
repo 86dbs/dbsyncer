@@ -19,6 +19,10 @@ public class FloatValueMapper extends AbstractValueMapper<Float> {
             BigDecimal bigDecimal = (BigDecimal) val;
             return bigDecimal.floatValue();
         }
+        if (val instanceof Double) {
+            Double dbl = (Double) val;
+            return dbl.floatValue();
+        }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }
