@@ -40,7 +40,7 @@ public class ConnectionTest {
                     @Override
                     public void setValues(PreparedStatement ps, int i) {
                         try {
-                            SimpleConnection connection = (SimpleConnection) databaseTemplate.getConnection();
+                            SimpleConnection connection = databaseTemplate.getSimpleConnection();
                             OracleConnection conn = (OracleConnection) connection.getConnection();
                             Clob clob = conn.createClob();
                             clob.setString(1, new String("中文888".getBytes(Charset.defaultCharset())));
@@ -212,7 +212,7 @@ public class ConnectionTest {
         final String tableNamePattern = "sw_test";
         final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(createMysqlConfig());
         connectorMapper.execute(databaseTemplate -> {
-            SimpleConnection connection = (SimpleConnection) databaseTemplate.getConnection();
+            SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             String databaseCatalog = conn.getCatalog();
             String schemaNamePattern = null == schema ? conn.getSchema() : schema;
@@ -233,7 +233,7 @@ public class ConnectionTest {
         final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(config);
         List<Table> tables = new ArrayList<>();
         connectorMapper.execute(databaseTemplate -> {
-            SimpleConnection connection = (SimpleConnection) databaseTemplate.getConnection();
+            SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             String databaseCatalog = null == catalog ? conn.getCatalog() : catalog;
             String schemaNamePattern = null == schema ? conn.getSchema() : schema;

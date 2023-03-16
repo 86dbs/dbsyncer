@@ -3,6 +3,7 @@ package org.dbsyncer.connector.database;
 import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.connector.database.ds.SimpleConnection;
 import org.dbsyncer.connector.database.ds.SimpleDataSource;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.slf4j.Logger;
@@ -25,7 +26,7 @@ public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, 
         Connection connection = null;
         try {
             connection = getConnection();
-            return (T) callback.apply(new DatabaseTemplate(connection));
+            return (T) callback.apply(new DatabaseTemplate((SimpleConnection) connection));
         } catch (EmptyResultDataAccessException e) {
             throw e;
         } catch (Exception e) {

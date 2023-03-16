@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.database.ds;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,10 +15,12 @@ public class SimpleConnection implements Connection {
     private final Connection connection;
     private final SimpleDataSource simpleDataSource;
     private final long activeTime = Instant.now().toEpochMilli();
+    private boolean oracleDriver;
 
     public SimpleConnection(SimpleDataSource simpleDataSource, Connection connection) {
         this.simpleDataSource = simpleDataSource;
         this.connection = connection;
+        oracleDriver = StringUtil.equals(simpleDataSource.getDriverClassName(), "oracle.jdbc.OracleDriver");
     }
 
     @Override
@@ -314,5 +317,9 @@ public class SimpleConnection implements Connection {
 
     public Connection getConnection() {
         return connection;
+    }
+
+    public boolean isOracleDriver() {
+        return oracleDriver;
     }
 }

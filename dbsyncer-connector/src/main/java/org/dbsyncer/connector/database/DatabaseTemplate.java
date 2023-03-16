@@ -1,5 +1,7 @@
 package org.dbsyncer.connector.database;
 
+import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.connector.database.ds.SimpleConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -51,6 +53,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 import org.springframework.util.StringUtils;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -64,6 +67,7 @@ import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -78,13 +82,13 @@ public class DatabaseTemplate implements JdbcOperations {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private Connection connection;
+    private SimpleConnection connection;
 
-    public DatabaseTemplate(Connection connection) {
+    public DatabaseTemplate(SimpleConnection connection) {
         this.connection = connection;
     }
 
-    public Connection getConnection() {
+    public SimpleConnection getSimpleConnection() {
         return connection;
     }
 
@@ -975,7 +979,20 @@ public class DatabaseTemplate implements JdbcOperations {
                         }
                         ps.addBatch();
                     }
-                    return ps.executeBatch();
+
+                    int[] executeBatch = ps.executeBatch();
+                    // Oracle批量执行的结果, 不管成功或失败都是[-2, -2, ..]. 这里进行反射，获取真实的行数，如果影响行数不符合预期，统一返回[0, 0, ..]
+                    if (connection.isOracleDriver()) {
+                        // oracle.jdbc.driver.OraclePreparedStatementWrapper.preparedStatement(T4CPreparedStatement<OraclePreparedStatement<OracleStatement.rowsProcessed)
+                        Object preparedStatement = invoke(ps, 0, "preparedStatement");
+                        Integer rowsProcessed = (Integer) invoke(preparedStatement, 2, "rowsProcessed");
+                        // 不符合预期值（实际处理的行数少于提交的行数）
+                        if (batchSize != rowsProcessed.intValue()) {
+                            Arrays.fill(executeBatch, 0);
+                            return executeBatch;
+                        }
+                    }
+                    return executeBatch;
                 } else {
                     List<Integer> rowsAffected = new ArrayList<>();
                     for (int i = 0; i < batchSize; i++) {
@@ -1000,6 +1017,23 @@ public class DatabaseTemplate implements JdbcOperations {
 
         Assert.state(result != null, "No result array");
         return result;
+    }
+
+    private Object invoke(Object object, int superClassLevel, String fieldName) {
+        try {
+            Class clazz = object.getClass();
+            for (int i = 0; i < superClassLevel; i++) {
+                clazz = clazz.getSuperclass();
+            }
+            Field declaredField = clazz.getDeclaredField(fieldName);
+            declaredField.setAccessible(true);
+            return declaredField.get(object);
+        } catch (NoSuchFieldException e) {
+            logger.error(e.getMessage());
+        } catch (IllegalAccessException e) {
+            logger.error(e.getMessage());
+        }
+        throw new ConnectorException(String.format("Can't invoke '%s'.", fieldName));
     }
 
     @Override
