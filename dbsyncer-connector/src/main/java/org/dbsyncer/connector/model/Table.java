@@ -22,11 +22,6 @@ public class Table {
     private String type;
 
     /**
-     * 主键列表
-     */
-    private List<String> primaryKeys;
-
-    /**
      * 属性字段
      * 格式：[{"name":"ID","typeName":"INT","type":"4"},{"name":"NAME","typeName":"VARCHAR","type":"12"}]
      */
@@ -48,13 +43,12 @@ public class Table {
     }
 
     public Table(String name, String type) {
-        this(name, type, null, null, null);
+        this(name, type, null, null);
     }
 
-    public Table(String name, String type, List<String> primaryKeys, List<Field> column, String sql) {
+    public Table(String name, String type, List<Field> column, String sql) {
         this.name = name;
         this.type = type;
-        this.primaryKeys = primaryKeys;
         this.column = column;
         this.sql = sql;
     }
@@ -73,14 +67,6 @@ public class Table {
 
     public void setType(String type) {
         this.type = type;
-    }
-
-    public List<String> getPrimaryKeys() {
-        return primaryKeys;
-    }
-
-    public void setPrimaryKeys(List<String> primaryKeys) {
-        this.primaryKeys = primaryKeys;
     }
 
     public List<Field> getColumn() {

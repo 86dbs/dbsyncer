@@ -35,7 +35,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         List<Table> tables = new ArrayList<>();
         if (!CollectionUtils.isEmpty(sqlTables)) {
             sqlTables.forEach(s ->
-                tables.add(new Table(s.getSqlName(), TableTypeEnum.TABLE.getCode(), Collections.EMPTY_LIST, Collections.EMPTY_LIST, s.getSql()))
+                tables.add(new Table(s.getSqlName(), TableTypeEnum.TABLE.getCode(), Collections.EMPTY_LIST, s.getSql()))
             );
         }
         return tables;
@@ -74,10 +74,13 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         // 获取过滤SQL
         String queryFilterSql = getQueryFilterSql(commandConfig.getFilter());
         Table table = commandConfig.getTable();
-        List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
+        Map<String, String> map = new HashMap<>();
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
+        if (CollectionUtils.isEmpty(primaryKeys)) {
+            return map;
+        }
 
         // 获取查询SQL
-        Map<String, String> map = new HashMap<>();
         String querySql = table.getSql();
 
         // 存在条件

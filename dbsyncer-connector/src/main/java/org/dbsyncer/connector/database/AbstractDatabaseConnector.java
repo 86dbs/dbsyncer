@@ -84,7 +84,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         List<Field> fields = new ArrayList<>();
         final String schema = getSchema(connectorMapper.getConfig());
         connectorMapper.execute(databaseTemplate -> {
-            SimpleConnection connection = (SimpleConnection) databaseTemplate.getConnection();
+            SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             String catalog = conn.getCatalog();
             String schemaNamePattern = null == schema ? conn.getSchema() : schema;
@@ -110,7 +110,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 1、获取select SQL
         String queryCountSql = command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
-        Assert.hasText(queryCountSql, "查询总数语句不能为空.");
+        if (StringUtil.isBlank(queryCountSql)) {
+            return 0;
+        }
 
         // 2、返回结果集
         return connectorMapper.execute(databaseTemplate -> {
@@ -224,13 +226,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 获取查询数据行是否存在
         String tableName = commandConfig.getTable().getName();
-        List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
-        StringBuilder queryCount = new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(tableName).append(quotation).append(" WHERE ");
-        // id = ? AND uid = ?
-        PrimaryKeyUtil.buildSql(queryCount, primaryKeys, quotation, " AND ", " = ? ", true);
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
+        if (!CollectionUtils.isEmpty(primaryKeys)) {
+            StringBuilder queryCount = new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(tableName).append(quotation).append(" WHERE ");
+            // id = ? AND uid = ?
+            PrimaryKeyUtil.buildSql(queryCount, primaryKeys, quotation, " AND ", " = ? ", true);
 
-        String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
-        map.put(queryCountExist, queryCount.toString());
+            String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
+            map.put(queryCountExist, queryCount.toString());
+        }
         return map;
     }
 
@@ -303,7 +307,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         List<Field> fields = new ArrayList<>(columnCount);
         Map<String, List<String>> tables = new HashMap<>();
         try {
-            Connection connection = databaseTemplate.getConnection();
+            Connection connection = databaseTemplate.getSimpleConnection();
             DatabaseMetaData md = connection.getMetaData();
             final String catalog = connection.getCatalog();
             schema = StringUtil.isNotBlank(schema) ? schema : null;
@@ -342,16 +346,18 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
         String table = commandConfig.getTable().getName();
-        List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
-        if (StringUtil.isNotBlank(queryFilterSql)) {
-            sql.append(queryFilterSql);
+        if (!CollectionUtils.isEmpty(primaryKeys)) {
+            sql.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
+            if (StringUtil.isNotBlank(queryFilterSql)) {
+                sql.append(queryFilterSql);
+            }
+            sql.append(" GROUP BY ");
+            // id,uid
+            PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, ",", "", true);
+            sql.append(") DBSYNCER_T");
         }
-        sql.append(" GROUP BY ");
-        // id,uid
-        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, ",", "", true);
-        sql.append(") DBSYNCER_T");
         return sql.toString();
     }
 
@@ -403,7 +409,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     private List<Table> getTable(DatabaseConnectorMapper connectorMapper, String catalog, String schema, String tableNamePattern) {
         return connectorMapper.execute(databaseTemplate -> {
             List<Table> tables = new ArrayList<>();
-            SimpleConnection connection = (SimpleConnection) databaseTemplate.getConnection();
+            SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             String databaseCatalog = null == catalog ? conn.getCatalog() : catalog;
             String schemaNamePattern = null == schema ? conn.getSchema() : schema;
@@ -493,9 +499,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             logger.error("Table name can not be empty.");
             throw new ConnectorException("Table name can not be empty.");
         }
-        List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(commandConfig.getOriginalTable());
-        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, fields, queryFilterSQL, buildSqlWithQuotation());
-        return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
+        if (!CollectionUtils.isEmpty(primaryKeys)) {
+            SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, fields, queryFilterSQL, buildSqlWithQuotation());
+            return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
+        }
+        return "";
     }
 
     /**

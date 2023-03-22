@@ -98,6 +98,10 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
         return new SimpleConnection(this, DatabaseUtil.getConnection(driverClassName, url, username, password));
     }
 
+    public String getDriverClassName() {
+        return driverClassName;
+    }
+
     public BlockingQueue<SimpleConnection> getPool() {
         return pool;
     }

@@ -154,8 +154,8 @@ public class ParserFactory implements Parser {
         AbstractConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
-        Table sTable = new Table(sourceTable.getName(), sourceTable.getType(), sourceTable.getPrimaryKeys(), new ArrayList<>(), sourceTable.getSql());
-        Table tTable = new Table(targetTable.getName(), targetTable.getType(), targetTable.getPrimaryKeys(), new ArrayList<>(), sourceTable.getSql());
+        Table sTable = new Table(sourceTable.getName(), sourceTable.getType(), new ArrayList<>(), sourceTable.getSql());
+        Table tTable = new Table(targetTable.getName(), targetTable.getType(), new ArrayList<>(), sourceTable.getSql());
         List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
         if (!CollectionUtils.isEmpty(fieldMapping)) {
             fieldMapping.forEach(m -> {
@@ -167,8 +167,8 @@ public class ParserFactory implements Parser {
                 }
             });
         }
-        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable, sourceTable, sConnConfig, tableGroup.getFilter());
-        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), tTable, targetTable, tConnConfig);
+        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable, sConnConfig, tableGroup.getFilter());
+        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), tTable, tConnConfig, null);
         // 获取连接器同步参数
         Map<String, String> command = connectorFactory.getCommand(sourceConfig, targetConfig);
         return command;
@@ -249,7 +249,7 @@ public class ParserFactory implements Parser {
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
         // 获取同步字段
         Picker picker = new Picker(fieldMapping);
-        List<String> primaryKeys = PrimaryKeyUtil.findOriginalTablePrimaryKey(tableGroup.getSourceTable());
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
 
         int pageSize = mapping.getReadNum();
         int batchSize = mapping.getBatchNum();

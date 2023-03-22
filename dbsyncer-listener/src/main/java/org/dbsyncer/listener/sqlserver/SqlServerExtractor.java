@@ -296,7 +296,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
             ResultSet rs = null;
             T apply = null;
             try {
-                ps = databaseTemplate.getConnection().prepareStatement(preparedQuerySql);
+                ps = databaseTemplate.getSimpleConnection().prepareStatement(preparedQuerySql);
                 if (null != statementPreparer) {
                     statementPreparer.accept(ps);
                 }
