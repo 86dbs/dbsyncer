@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.sql;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.constant.DatabaseConstant;
 import org.dbsyncer.connector.model.PageSql;
@@ -11,11 +12,9 @@ public final class DQLSqlServerConnector extends AbstractDQLConnector {
 
     @Override
     public String getPageSql(PageSql config) {
-        String quotation = config.getQuotation();
         List<String> primaryKeys = config.getPrimaryKeys();
-        StringBuilder orderBy = new StringBuilder();
-        PrimaryKeyUtil.buildSql(orderBy, primaryKeys, quotation, " AND ", " = ? ", true);
-        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, orderBy.toString(), config.getQuerySql());
+        String orderBy = StringUtil.join(primaryKeys, ",");
+        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, orderBy, config.getQuerySql());
     }
 
     @Override
