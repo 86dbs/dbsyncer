@@ -398,6 +398,21 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
+     * 获取架构名
+     *
+     * @param config
+     * @param quotation
+     * @return
+     */
+    protected String getSchema(DatabaseConfig config, String quotation) {
+        StringBuilder schema = new StringBuilder();
+        if (StringUtil.isNotBlank(config.getSchema())) {
+            schema.append(quotation).append(config.getSchema()).append(quotation).append(".");
+        }
+        return schema.toString();
+    }
+
+    /**
      * 获取表列表
      *
      * @param connectorMapper
@@ -505,21 +520,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
         }
         return "";
-    }
-
-    /**
-     * 获取架构名
-     *
-     * @param config
-     * @param quotation
-     * @return
-     */
-    private String getSchema(DatabaseConfig config, String quotation) {
-        StringBuilder schema = new StringBuilder();
-        if (StringUtil.isNotBlank(config.getSchema())) {
-            schema.append(quotation).append(config.getSchema()).append(quotation).append(".");
-        }
-        return schema.toString();
     }
 
     /**

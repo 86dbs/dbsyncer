@@ -15,7 +15,7 @@ public class SqlBuilderQueryCursor extends SqlBuilderQuery {
     public String buildSql(SqlBuilderConfig config) {
         // 分页语句
         Database database = config.getDatabase();
-        PageSql pageSql = new PageSql(config, buildQuerySql(config), config.getPrimaryKeys());
+        PageSql pageSql = new PageSql(config, buildQuerySql(config), config.getQuotation(), config.getPrimaryKeys());
         return database.getPageCursorSql(pageSql);
     }
 

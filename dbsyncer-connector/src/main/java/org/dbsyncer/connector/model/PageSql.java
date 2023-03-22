@@ -14,15 +14,10 @@ public class PageSql {
 
     private List<String> primaryKeys;
 
-    public PageSql(String querySql, String quotation, List<String> primaryKeys) {
-        this.querySql = querySql;
-        this.quotation = quotation;
-        this.primaryKeys = primaryKeys;
-    }
-
-    public PageSql(SqlBuilderConfig sqlBuilderConfig, String querySql, List<String> primaryKeys) {
+    public PageSql(SqlBuilderConfig sqlBuilderConfig, String querySql, String quotation, List<String> primaryKeys) {
         this.sqlBuilderConfig = sqlBuilderConfig;
         this.querySql = querySql;
+        this.quotation = quotation;
         this.primaryKeys = primaryKeys;
     }
 

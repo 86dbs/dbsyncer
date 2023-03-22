@@ -88,7 +88,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
             querySql += queryFilterSql;
         }
         String quotation = buildSqlWithQuotation();
-        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(new PageSql(querySql, quotation, primaryKeys)));
+        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(new PageSql(null, querySql, quotation, primaryKeys)));
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
