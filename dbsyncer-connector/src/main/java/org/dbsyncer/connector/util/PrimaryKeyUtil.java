@@ -7,8 +7,10 @@ import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Table;
 
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,25 @@ public abstract class PrimaryKeyUtil {
         return Collections.unmodifiableList(primaryKeys);
     }
 
+    /**
+     * 返回主键字段类型
+     *
+     * @param fields
+     * @return
+     */
+    public static Map<String, Integer> findPrimaryKeyType(List<Field> fields) {
+        Map<String, Integer> map = new HashMap<>();
+        if (!CollectionUtils.isEmpty(fields)) {
+            fields.forEach(field -> {
+                if (field.isPk()) {
+                    map.put(field.getName(), field.getType());
+                }
+            });
+        }
+
+        return Collections.unmodifiableMap(map);
+    }
+
     public static void buildSql(StringBuilder sql, List<String> primaryKeys, String quotation, String join, String value, boolean skipFirst) {
         AtomicBoolean added = new AtomicBoolean();
         primaryKeys.forEach(pk -> {
@@ -59,6 +80,47 @@ public abstract class PrimaryKeyUtil {
             }
             added.set(true);
         });
+    }
+
+    /**
+     * 游标主键要包含数字类型，否则会导致分页失效
+     *
+     * @param sql
+     * @param primaryKeys
+     * @param quotation
+     * @param join
+     * @param typeAliases
+     * @param skipFirst
+     */
+    public static void buildCursorSql(StringBuilder sql, List<String> primaryKeys, String quotation, String join, Map<String, Integer> typeAliases, boolean skipFirst) {
+        AtomicBoolean added = new AtomicBoolean();
+        AtomicBoolean supportedCursor = new AtomicBoolean();
+        primaryKeys.forEach(pk -> {
+            if (!typeAliases.containsKey(pk)) {
+                throw new ConnectorException(String.format("Can't find type of primary key %s", pk));
+            }
+
+            // skip first pk
+            if (!skipFirst || added.get()) {
+                if (StringUtil.isNotBlank(join)) {
+                    sql.append(join);
+                }
+            }
+            sql.append(quotation).append(pk).append(quotation);
+
+            Integer pkType = typeAliases.get(pk);
+            if (pkType == Types.NUMERIC || pkType == Types.BIGINT || pkType == Types.INTEGER || pkType == Types.TINYINT || pkType == Types.SMALLINT) {
+                sql.append(" > ? ");
+                supportedCursor.set(true);
+            } else {
+                sql.append(" = ? ");
+            }
+            added.set(true);
+        });
+
+        if (!supportedCursor.get()) {
+            throw new ConnectorException("不支持游标查询，主键至少要有一个为数字类型");
+        }
     }
 
     /**
