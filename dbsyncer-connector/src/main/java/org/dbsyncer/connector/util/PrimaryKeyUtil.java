@@ -83,44 +83,34 @@ public abstract class PrimaryKeyUtil {
     }
 
     /**
-     * 游标主键要包含数字类型，否则会导致分页失效
+     * 游标主键必须为数字类型，否则会导致分页失效
      *
-     * @param sql
-     * @param primaryKeys
-     * @param quotation
-     * @param join
      * @param typeAliases
-     * @param skipFirst
+     * @param primaryKeys
+     * @return
      */
-    public static void buildCursorSql(StringBuilder sql, List<String> primaryKeys, String quotation, String join, Map<String, Integer> typeAliases, boolean skipFirst) {
-        AtomicBoolean added = new AtomicBoolean();
-        AtomicBoolean supportedCursor = new AtomicBoolean();
-        primaryKeys.forEach(pk -> {
-            if (!typeAliases.containsKey(pk)) {
-                throw new ConnectorException(String.format("Can't find type of primary key %s", pk));
-            }
-
-            // skip first pk
-            if (!skipFirst || added.get()) {
-                if (StringUtil.isNotBlank(join)) {
-                    sql.append(join);
-                }
-            }
-            sql.append(quotation).append(pk).append(quotation);
-
-            Integer pkType = typeAliases.get(pk);
-            if (pkType == Types.NUMERIC || pkType == Types.BIGINT || pkType == Types.INTEGER || pkType == Types.TINYINT || pkType == Types.SMALLINT) {
-                sql.append(" > ? ");
-                supportedCursor.set(true);
-            } else {
-                sql.append(" = ? ");
-            }
-            added.set(true);
-        });
-
-        if (!supportedCursor.get()) {
-            throw new ConnectorException("不支持游标查询，主键至少要有一个为数字类型");
+    public static boolean isSupportedCursor(Map<String, Integer> typeAliases, List<String> primaryKeys) {
+        if (CollectionUtils.isEmpty(typeAliases) || CollectionUtils.isEmpty(primaryKeys)) {
+            return false;
         }
+
+        for (String pk : primaryKeys) {
+            Integer pkType = typeAliases.get(pk);
+            if (!isSupportedCursorType(pkType)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 是否支持游标类型(数字)
+     *
+     * @param type
+     * @return
+     */
+    private static boolean isSupportedCursorType(Integer type) {
+        return type == Types.NUMERIC || type == Types.BIGINT || type == Types.INTEGER || type == Types.TINYINT || type == Types.SMALLINT;
     }
 
     /**
@@ -159,4 +149,5 @@ public abstract class PrimaryKeyUtil {
         }
         return cursors;
     }
+
 }
