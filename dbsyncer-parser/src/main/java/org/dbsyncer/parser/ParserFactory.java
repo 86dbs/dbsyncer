@@ -9,6 +9,7 @@ import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.spi.ConvertContext;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
@@ -250,7 +251,7 @@ public class ParserFactory implements Parser {
         // 获取同步字段
         Picker picker = new Picker(fieldMapping);
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
-
+        boolean supportedCursor = StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR));
         int pageSize = mapping.getReadNum();
         int batchSize = mapping.getBatchNum();
         final ConnectorMapper sConnectorMapper = connectorFactory.connect(sConfig);
@@ -265,7 +266,8 @@ public class ParserFactory implements Parser {
             }
 
             // 1、获取数据源数据
-            Result reader = connectorFactory.reader(sConnectorMapper, new ReaderConfig(command, new ArrayList<>(), task.getCursors(), task.getPageIndex(), pageSize));
+            ReaderConfig readerConfig = new ReaderConfig(command, new ArrayList<>(), supportedCursor, task.getCursors(), task.getPageIndex(), pageSize);
+            Result reader = connectorFactory.reader(sConnectorMapper, readerConfig);
             List<Map> source = reader.getSuccessData();
             if (CollectionUtils.isEmpty(source)) {
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);

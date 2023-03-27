@@ -7,8 +7,10 @@ import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Table;
 
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,25 @@ public abstract class PrimaryKeyUtil {
         return Collections.unmodifiableList(primaryKeys);
     }
 
+    /**
+     * 返回主键字段类型
+     *
+     * @param fields
+     * @return
+     */
+    public static Map<String, Integer> findPrimaryKeyType(List<Field> fields) {
+        Map<String, Integer> map = new HashMap<>();
+        if (!CollectionUtils.isEmpty(fields)) {
+            fields.forEach(field -> {
+                if (field.isPk()) {
+                    map.put(field.getName(), field.getType());
+                }
+            });
+        }
+
+        return Collections.unmodifiableMap(map);
+    }
+
     public static void buildSql(StringBuilder sql, List<String> primaryKeys, String quotation, String join, String value, boolean skipFirst) {
         AtomicBoolean added = new AtomicBoolean();
         primaryKeys.forEach(pk -> {
@@ -59,6 +80,37 @@ public abstract class PrimaryKeyUtil {
             }
             added.set(true);
         });
+    }
+
+    /**
+     * 游标主键必须为数字类型，否则会导致分页失效
+     *
+     * @param typeAliases
+     * @param primaryKeys
+     * @return
+     */
+    public static boolean isSupportedCursor(Map<String, Integer> typeAliases, List<String> primaryKeys) {
+        if (CollectionUtils.isEmpty(typeAliases) || CollectionUtils.isEmpty(primaryKeys)) {
+            return false;
+        }
+
+        for (String pk : primaryKeys) {
+            Integer pkType = typeAliases.get(pk);
+            if (!isSupportedCursorType(pkType)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 是否支持游标类型(数字)
+     *
+     * @param type
+     * @return
+     */
+    private static boolean isSupportedCursorType(Integer type) {
+        return type == Types.NUMERIC || type == Types.BIGINT || type == Types.INTEGER || type == Types.TINYINT || type == Types.SMALLINT;
     }
 
     /**
@@ -97,4 +149,5 @@ public abstract class PrimaryKeyUtil {
         }
         return cursors;
     }
+
 }

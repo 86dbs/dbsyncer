@@ -98,6 +98,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
     private void execute(TableGroupCommand tableGroupCommand, int index) {
         final Map<String, String> command = tableGroupCommand.getCommand();
         final List<String> primaryKeys = tableGroupCommand.getPrimaryKeys();
+        boolean supportedCursor = StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR));
 
         // 检查增量点
         ConnectorMapper connectionMapper = connectorFactory.connect(connectorConfig);
@@ -106,9 +107,11 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         Object[] cursors = PrimaryKeyUtil.getLastCursors(snapshot.get(index + CURSOR));
 
         while (running) {
-            Result reader = connectorFactory.reader(connectionMapper, new ReaderConfig(point.getCommand(), point.getArgs(), cursors, pageIndex++, READ_NUM));
+            ReaderConfig readerConfig = new ReaderConfig(point.getCommand(), point.getArgs(), supportedCursor, cursors, pageIndex++, READ_NUM);
+            Result reader = connectorFactory.reader(connectionMapper, readerConfig);
             List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
+                cursors = new Object[0];
                 break;
             }
 
@@ -139,6 +142,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
             point.refresh();
 
             if (data.size() < READ_NUM) {
+                cursors = new Object[0];
                 break;
             }
         }
@@ -146,6 +150,8 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         // 持久化
         if (point.refreshed()) {
             snapshot.putAll(point.getPosition());
+        }
+        if (supportedCursor) {
             snapshot.put(index + CURSOR, StringUtil.join(cursors, ","));
         }
 

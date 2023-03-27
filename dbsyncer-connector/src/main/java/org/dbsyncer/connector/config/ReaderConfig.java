@@ -7,13 +7,15 @@ public class ReaderConfig {
 
     private Map<String, String> command;
     private List<Object> args;
+    private boolean supportedCursor;
     private Object[] cursors;
     private int pageIndex;
     private int pageSize;
 
-    public ReaderConfig(Map<String,String> command, List<Object> args, Object[] cursors, int pageIndex, int pageSize) {
+    public ReaderConfig(Map<String,String> command, List<Object> args, boolean supportedCursor, Object[] cursors, int pageIndex, int pageSize) {
         this.command = command;
         this.args = args;
+        this.supportedCursor = supportedCursor;
         this.cursors = cursors;
         this.pageIndex = pageIndex;
         this.pageSize = pageSize;
@@ -37,5 +39,9 @@ public class ReaderConfig {
 
     public int getPageSize() {
         return pageSize;
+    }
+
+    public boolean isSupportedCursor() {
+        return supportedCursor;
     }
 }
