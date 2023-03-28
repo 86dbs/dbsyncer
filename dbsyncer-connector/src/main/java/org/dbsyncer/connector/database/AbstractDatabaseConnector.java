@@ -20,6 +20,7 @@ import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Filter;
 import org.dbsyncer.connector.model.MetaInfo;
+import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.connector.util.PrimaryKeyUtil;
@@ -130,7 +131,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         Assert.hasText(querySql, "查询语句不能为空.");
 
         // 2、设置参数
-        Collections.addAll(config.getArgs(), getPageArgs(config));
+        Collections.addAll(config.getArgs(), config.isSupportedCursor() ? getPageCursorArgs(config) : getPageArgs(config));
 
         // 3、执行SQL
         List<Map<String, Object>> list = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
@@ -249,12 +250,40 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * 是否支持游标查询
+     * 是否使用游标查询
      *
      * @return
      */
     protected boolean enableCursor() {
         return false;
+    }
+
+    /**
+     * 是否支持游标配置
+     *
+     * @param config
+     * @return
+     */
+    protected boolean isSupportedCursor(PageSql config) {
+        final List<String> primaryKeys = config.getPrimaryKeys();
+        final SqlBuilderConfig sqlBuilderConfig = config.getSqlBuilderConfig();
+        final Map<String, Integer> typeAliases = PrimaryKeyUtil.findPrimaryKeyType(sqlBuilderConfig.getFields());
+        return PrimaryKeyUtil.isSupportedCursor(typeAliases, primaryKeys);
+    }
+
+    /**
+     * 如果满足游标，追加主键排序
+     *
+     * @param config
+     * @param sql
+     */
+    protected void appendOrderByPkIfSupportedCursor(PageSql config, StringBuilder sql) {
+        if (isSupportedCursor(config)) {
+            sql.append(" ORDER BY ");
+            final List<String> primaryKeys = config.getPrimaryKeys();
+            final String quotation = config.getQuotation();
+            PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, ",", "", true);
+        }
     }
 
     /**

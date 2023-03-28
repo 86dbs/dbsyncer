@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.database;
 
+import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.model.PageSql;
 
@@ -24,11 +25,21 @@ public interface Database {
     }
 
     /**
-     * 获取分页SQL
+     * 获取分页参数
      *
      * @param config
      * @return
      */
     Object[] getPageArgs(ReaderConfig config);
+
+    /**
+     * 获取游标分页参数
+     *
+     * @param config
+     * @return
+     */
+    default Object[] getPageCursorArgs(ReaderConfig config){
+        throw new ConnectorException("Unsupported override method getPageCursorArgs:" + getClass().getName());
+    }
 
 }
