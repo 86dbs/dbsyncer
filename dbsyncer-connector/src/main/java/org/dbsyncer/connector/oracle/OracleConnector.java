@@ -62,7 +62,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         final List<String> primaryKeys = config.getPrimaryKeys();
         PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, " AND ", " > ? ", skipFirst);
         appendOrderByPkIfSupportedCursor(config, sql);
-        sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
+        sql.append(DatabaseConstant.ORACLE_PAGE_SQL_END);
         return sql.toString();
     }
 
