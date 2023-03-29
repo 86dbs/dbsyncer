@@ -376,18 +376,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
         String table = commandConfig.getTable().getName();
-        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
         StringBuilder sql = new StringBuilder();
-        if (!CollectionUtils.isEmpty(primaryKeys)) {
-            sql.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
-            if (StringUtil.isNotBlank(queryFilterSql)) {
-                sql.append(queryFilterSql);
-            }
-            sql.append(" GROUP BY ");
-            // id,uid
-            PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, ",", "", true);
-            sql.append(") DBSYNCER_T");
+        sql.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
+        if (StringUtil.isNotBlank(queryFilterSql)) {
+            sql.append(queryFilterSql);
         }
+        sql.append(") DBSYNCER_T");
         return sql.toString();
     }
 
