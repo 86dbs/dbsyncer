@@ -211,6 +211,8 @@ $(function () {
     bindMappingTableGroupListClick();
     // 绑定下拉选择事件自动匹配相似表事件
     bindTableSelect();
+    // 绑定多值输入框事件
+    initMultipleInputTags();
     // 绑定删除表关系点击事件
     bindMappingTableGroupDelClick();
 

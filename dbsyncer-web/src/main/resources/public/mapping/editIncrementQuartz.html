@@ -8,19 +8,19 @@
             <div class="col-md-4">
                 <label class="col-sm-3 control-label text-right">Insert*</label>
                 <div class="col-sm-9">
-                    <input name="timingInsert" type="text" class="form-control" dbsyncer-valid="require" th:value="${mapping?.listener?.insert}?:'I'" />
+                    <input name="timingInsert" type="text" class="form-control" data-role="tagsinput" dbsyncer-valid="require" th:value="${mapping?.listener?.insert}?:'I'" />
                 </div>
             </div>
             <div class="col-md-4">
                 <label class="col-sm-3 control-label text-right">Update*</label>
                 <div class="col-sm-9">
-                    <input name="timingUpdate" type="text" class="form-control" dbsyncer-valid="require" th:value="${mapping?.listener?.update}?:'U'"/>
+                    <input name="timingUpdate" type="text" class="form-control" data-role="tagsinput" dbsyncer-valid="require" th:value="${mapping?.listener?.update}?:'U'"/>
                 </div>
             </div>
             <div class="col-md-4">
                 <label class="col-sm-3 control-label text-right">Delete*</label>
                 <div class="col-sm-9">
-                    <input name="timingDelete" type="text" class="form-control" dbsyncer-valid="require" th:value="${mapping?.listener?.delete?:'D'}"/>
+                    <input name="timingDelete" type="text" class="form-control" data-role="tagsinput" dbsyncer-valid="require" th:value="${mapping?.listener?.delete?:'D'}"/>
                 </div>
             </div>
         </div>
