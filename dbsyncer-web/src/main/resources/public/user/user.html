@@ -38,7 +38,11 @@
                     <tr th:each="u,state : ${users}">
                         <td th:text="${u?.username + '(' + u?.nickname + ')'}"/>
                         <td th:text="${u?.roleName}"/>
-                        <td th:text="${u?.mail}"/>
+                        <td>
+                            <a href="javascript:;" th:each="m : ${#strings.listSplit(u?.mail,',')}">
+                                <span class="label label-success">[[${m}]]</span>
+                            </a>
+                        </td>
                         <td>
                             <!-- 管理员或本人权限 -->
                             <button th:if="${currentUser?.roleCode eq 'admin' or currentUser?.username eq u?.username}" type="button" th:id="${u?.username}" class="btn btn-primary editUserBtn">

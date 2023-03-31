@@ -83,7 +83,7 @@ function initSelect($select){
 // 绑定多值输入框事件
 function initMultipleInputTags() {
     $("input[data-role=tagsinput]").tagsinput({
-        maxChars: 24,
+        maxChars: 32,
         maxTags: 5,
         tagClass: 'label label-success',
         trimValue: true
