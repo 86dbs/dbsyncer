@@ -12,3 +12,4 @@ ${AnsiColor.BRIGHT_YELLOW}
 ${AnsiColor.DEFAULT}
 Application Version: ${info.app.version}
 Spring Boot Version: ${spring-boot.version}
+build time: ${info.app.build.time}

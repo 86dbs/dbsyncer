@@ -9,18 +9,61 @@ import org.dbsyncer.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
+import java.util.List;
 
 public final class OracleConnector extends AbstractDatabaseConnector {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     public OracleConnector() {
         VALUE_MAPPERS.put(Types.OTHER, new OracleOtherValueMapper());
     }
 
     @Override
+    public String buildSqlWithQuotation() {
+        return "\"";
+    }
+
+    @Override
     public String getPageSql(PageSql config) {
-        return DatabaseConstant.ORACLE_PAGE_SQL_START + config.getQuerySql() + DatabaseConstant.ORACLE_PAGE_SQL_END;
+        // SELECT * FROM (SELECT A.*, ROWNUM RN FROM (select * from test."my_user" where "id" > ? and "uid" > ? order by "id","uid")A WHERE ROWNUM <= ?) WHERE RN > ?
+        StringBuilder sql = new StringBuilder();
+        sql.append(DatabaseConstant.ORACLE_PAGE_SQL_START);
+        sql.append(config.getQuerySql());
+        appendOrderByPkIfSupportedCursor(config, sql);
+        sql.append(DatabaseConstant.ORACLE_PAGE_SQL_END);
+        return sql.toString();
+    }
+
+    @Override
+    public String getPageCursorSql(PageSql config) {
+        // 不支持游标查询
+        if (!isSupportedCursor(config)) {
+            logger.warn("不支持游标查询，主键包含非数字类型");
+            return "";
+        }
+
+        // SELECT * FROM (SELECT A.*, ROWNUM RN FROM (select * from test."my_user" where "id" > ? and "uid" > ? order by "id","uid")A WHERE ROWNUM <= ?) WHERE RN > ?
+        StringBuilder sql = new StringBuilder();
+        sql.append(DatabaseConstant.ORACLE_PAGE_SQL_START);
+        sql.append(config.getQuerySql());
+        boolean skipFirst = false;
+        // 没有过滤条件
+        if (StringUtil.isBlank(config.getSqlBuilderConfig().getQueryFilter())) {
+            skipFirst = true;
+            sql.append(" WHERE ");
+        }
+        final String quotation = config.getQuotation();
+        final List<String> primaryKeys = config.getPrimaryKeys();
+        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, " AND ", " > ? ", skipFirst);
+        appendOrderByPkIfSupportedCursor(config, sql);
+        sql.append(DatabaseConstant.ORACLE_PAGE_SQL_END);
+        return sql.toString();
     }
 
     @Override
@@ -31,8 +74,23 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildSqlWithQuotation() {
-        return "\"";
+    public Object[] getPageCursorArgs(ReaderConfig config) {
+        int pageSize = config.getPageSize();
+        Object[] cursors = config.getCursors();
+        if (null == cursors) {
+            return new Object[]{pageSize, 0};
+        }
+        int cursorsLen = cursors.length;
+        Object[] newCursors = new Object[cursorsLen + 2];
+        System.arraycopy(cursors, 0, newCursors, 0, cursorsLen);
+        newCursors[cursorsLen] = pageSize;
+        newCursors[cursorsLen + 1] = 0;
+        return newCursors;
+    }
+
+    @Override
+    protected boolean enableCursor() {
+        return true;
     }
 
     @Override

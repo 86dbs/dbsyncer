@@ -1,5 +1,6 @@
 package org.dbsyncer.storage.query;
 
+import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.filter.IntFilter;
@@ -47,11 +48,11 @@ public class Query {
     }
 
     public void addFilter(String name, String value) {
-        booleanFilter.add(new StringFilter(name, value, false));
+        booleanFilter.add(new StringFilter(name, FilterEnum.EQUAL, value, false));
     }
 
     public void addFilter(String name, String value, boolean enableHighLightSearch) {
-        booleanFilter.add(new StringFilter(name, value, enableHighLightSearch));
+        booleanFilter.add(new StringFilter(name, FilterEnum.LIKE, value, enableHighLightSearch));
     }
 
     public void addFilter(String name, int value) {

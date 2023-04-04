@@ -80,6 +80,15 @@ function initSelect($select){
         "selectedTextFormat":"count > 10"
     });
 }
+// 绑定多值输入框事件
+function initMultipleInputTags() {
+    $("input[data-role=tagsinput]").tagsinput({
+        maxChars: 32,
+        maxTags: 5,
+        tagClass: 'label label-success',
+        trimValue: true
+    });
+}
 
 // ******************* 扩展JS表单方法 ***************************
 $.fn.serializeJson = function () {

@@ -9,8 +9,8 @@ import org.dbsyncer.storage.query.AbstractFilter;
 
 public class StringFilter extends AbstractFilter {
 
-    public StringFilter(String name, String value, boolean enableHighLightSearch) {
-        super(name, FilterEnum.EQUAL, value, enableHighLightSearch);
+    public StringFilter(String name, FilterEnum filterEnum, String value, boolean enableHighLightSearch) {
+        super(name, filterEnum, value, enableHighLightSearch);
     }
 
     @Override

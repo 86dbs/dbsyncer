@@ -34,9 +34,9 @@
     <div class="row">
         <!-- 数据源配置 -->
         <div class="col-md-5">
-            <label class="col-sm-3 control-label text-right">标记主键 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="如果使用的数据源表或视图没有主键，可以自定义主键，多个使用英文逗号,拼接"></i></label>
+            <label class="col-sm-3 control-label text-right">标记主键 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="数据源表/视图没有主键，自定义一个或多个主键"></i></label>
             <div class="col-sm-9">
-                <input id="sourceTablePK" class="form-control" type="text" />
+                <input id="sourceTablePK" class="form-control" type="text" data-role="tagsinput"/>
             </div>
         </div>
         <!-- 中间图标 -->
@@ -46,9 +46,9 @@
         <!-- 目标源配置 -->
         <div class="col-md-5">
             <div class="form-group">
-                <label class="col-sm-3 control-label text-right">标记主键 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="如果使用的目标源表或视图没有主键，可以自定义主键，多个使用英文逗号,拼接"></i></label>
+                <label class="col-sm-3 control-label text-right">标记主键 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="目标源表/视图没有主键，自定义一个或多个主键"></i></label>
                 <div class="col-sm-9">
-                    <input id="targetTablePK" class="form-control" type="text" />
+                    <input id="targetTablePK" class="form-control" type="text" data-role="tagsinput" />
                 </div>
             </div>
         </div>

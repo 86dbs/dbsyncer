@@ -4,15 +4,29 @@ var $path = document.location.pathname;
 var $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.substr(1).indexOf("/")+1);
 
 $(document).ready(function () {
+    // token过期，跳转默认页面
+    var $navbar = $("div[class='navbar-header']");
+    if($navbar.length && $navbar.length>0){
+        location.href = $basePath;
+        return;
+    }
+    // 显示登录表单
+    var $loginFormHtml = "<form id=\"loginForm\" name=\"loginForm\" method=\"post\">" +
+        "<dl class=\"admin_login\">" +
+        "<dt><strong id=\"appName\" /></dt>" +
+        "<div id=\"loginTip\" class=\"loginTextTip\"></div>" +
+        "<dd><input type=\"text\" name=\"username\" placeholder=\"请输入帐号\" class=\"loginInput required\" /></dd>" +
+        "<dd><input type=\"password\" name=\"password\" placeholder=\"请输入密码\" class=\"loginInput required\" /></dd>" +
+        "<dd><input type=\"button\" value=\"登录\" class=\"submit_btn\" id=\"loginSubmitBtn\" /></dd>" +
+        "</dl>" +
+        "</form>" +
+        "<div class=\"footerContainer\">" +
+        "<p id=\"appCopyRight\" style=\"text-align:center;\"></p>" +
+        "<p>&nbsp;</p>" +
+        "</div>";
+    $("body").html($loginFormHtml);
     // 兼容IE PlaceHolder
-    $('input[type="text"],input[type="password"]').PlaceHolder({
-        zIndex: '0',
-        top: '12px',
-        left: '14px',
-        fontSize: '15px',
-        color: '#999'
-    });
-
+    $('input[type="text"],input[type="password"]').PlaceHolder({zIndex: '0', top: '12px', left: '14px', fontSize: '15px', color: '#999'});
     // 提交表单
     var $loginSubBtn = $("#loginSubmitBtn");
     $loginSubBtn.click(function () {
@@ -23,7 +37,6 @@ $(document).ready(function () {
             $loginSubBtn.trigger("click");
         }
     });
-
     // 初始化加载版权信息
     initLoginCopyrightInfo();
 });
@@ -43,16 +56,15 @@ function initLoginCopyrightInfo() {
 function showResponse($form, data) {
     $form.find("input").removeAttr('disabled');
     if (data.success == true) {
-        // 加载页面
         location.href = $basePath;
-    } else {
-        // 请求失败
-        $form.find("#loginTip").removeClass("loginTextTip").addClass("loginTextTipError").html(data.resultValue);
-        //用户名密码错误清空输入框
-        $form.find('input:eq(0)').val("");
-        $form.find('input:eq(1)').val("");
-        $form.find('input:eq(0)').focus();
+        return;
     }
+    // 请求失败
+    $form.find("#loginTip").removeClass("loginTextTip").addClass("loginTextTipError").html(data.resultValue);
+    //用户名密码错误清空输入框
+    $form.find('input:eq(0)').val("");
+    $form.find('input:eq(1)').val("");
+    $form.find('input:eq(0)').focus();
 }
 
 function login($form) {
