@@ -40,6 +40,7 @@ public class Application {
             properties.put("info.app.build.time", format);
         }
         properties.put("info.app.version", version);
+        properties.put("spring.thymeleaf.prefix", "classpath:/public/");
         application.setDefaultProperties(properties);
     }
 
