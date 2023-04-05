@@ -33,6 +33,10 @@ public class DecimalValueMapper extends AbstractValueMapper<BigDecimal> {
             Short s = (Short) val;
             return new BigDecimal(s);
         }
+        if (val instanceof Float) {
+            Float f = (Float) val;
+            return new BigDecimal(Float.toString(f));
+        }
         if (val instanceof Boolean) {
             Boolean b = (Boolean) val;
             return new BigDecimal(b ? 1 : 0);
