@@ -72,6 +72,10 @@ public abstract class StringUtil {
         return StringUtils.startsWith(str, prefix);
     }
 
+    public static String toString(Object obj) {
+        return obj == null ? "" : String.valueOf(obj);
+    }
+
     /**
      * 首字母转小写
      *
