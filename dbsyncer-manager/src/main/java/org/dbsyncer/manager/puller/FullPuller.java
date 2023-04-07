@@ -54,18 +54,26 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
     public void start(Mapping mapping) {
         Thread worker = new Thread(() -> {
             final String metaId = mapping.getMetaId();
+            ExecutorService executor = null;
             try {
                 List<TableGroup> list = manager.getSortedTableGroupAll(mapping.getId());
                 Assert.notEmpty(list, "映射关系不能为空");
                 logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
                 map.putIfAbsent(metaId, new Task(metaId));
-                final ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());
+                executor = Executors.newFixedThreadPool(mapping.getThreadNum());
                 Task task = map.get(metaId);
                 doTask(task, mapping, list, executor);
             } catch (Exception e) {
                 logger.error(e.getMessage());
                 logService.log(LogType.SystemLog.ERROR, e.getMessage());
             } finally {
+                try {
+                    if(executor != null){
+                        executor.shutdown();
+                    }
+                } catch (Exception e) {
+                    logService.log(LogType.SystemLog.ERROR, e.getMessage());
+                }
                 map.remove(metaId);
                 publishClosedEvent(metaId);
                 logger.info("结束全量同步：{}, {}", metaId, mapping.getName());
