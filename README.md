@@ -95,10 +95,11 @@ SELECT OBJECT_ID, OBJECT_NAME, OWNER FROM ALL_OBJECTS WHERE OBJECT_TYPE = 'TABLE
 
 ##### PostgreSQL
 * 通过复制流技术监听增量事件，基于内置插件pgoutput、test_decoding实现解析wal日志
-> 修改postgresql.conf文件，重启服务
+> 1、修改postgresql.conf文件，重启服务
 ``` shell
 wal_level=logical
 ```
+> 2、授予账号权限LOGIN和REPLICATION
 
 ##### File
 * 监听文件修改时间得到变化文件，通过文件偏移量读取最新数据

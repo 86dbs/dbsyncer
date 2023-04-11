@@ -109,8 +109,7 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
             }
         }
         Assert.isTrue(!CollectionUtils.isEmpty(indexList), "The primaryKeys is invalid.");
-        Integer[] indexArray = (Integer[]) indexList.toArray();
-        return indexArray;
+        return (Integer[]) indexList.toArray();
     }
 
     private List<Object> queryDqlData(DqlMapper dqlMapper, List<Object> data) {
