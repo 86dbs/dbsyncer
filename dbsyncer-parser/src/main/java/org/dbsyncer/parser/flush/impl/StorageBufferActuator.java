@@ -20,8 +20,8 @@ public class StorageBufferActuator extends AbstractBufferActuator<StorageRequest
     private StorageService storageService;
 
     @Override
-    protected String getPartitionKey(StorageRequest bufferTask) {
-        return bufferTask.getMetaId();
+    protected String getPartitionKey(StorageRequest request) {
+        return request.getMetaId();
     }
 
     @Override
