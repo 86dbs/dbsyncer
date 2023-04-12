@@ -20,10 +20,9 @@ import java.util.stream.Collectors;
 public class FieldPicker {
 
     private TableGroup tableGroup;
-    private List<Field> pkList;
     private List<Node> index;
     private int indexSize;
-    private boolean filterSwitch;
+    private boolean enabledFilter;
     private List<Filter> add;
     private List<Filter> or;
 
@@ -31,9 +30,8 @@ public class FieldPicker {
         this.tableGroup = tableGroup;
     }
 
-    public FieldPicker(TableGroup tableGroup, List<Field> pkList, List<Filter> filter, List<Field> column, List<FieldMapping> fieldMapping) {
+    public FieldPicker(TableGroup tableGroup, List<Filter> filter, List<Field> column, List<FieldMapping> fieldMapping) {
         this.tableGroup = tableGroup;
-        this.pkList = pkList;
         init(filter, column, fieldMapping);
     }
 
@@ -58,7 +56,7 @@ public class FieldPicker {
      * @return
      */
     public boolean filter(Map<String, Object> row) {
-        if (!filterSwitch) {
+        if (!enabledFilter) {
             return true;
         }
         // where (id > 1 and id < 100) or (id = 100 or id =101)
@@ -124,7 +122,7 @@ public class FieldPicker {
         Assert.notEmpty(fieldMapping, "映射关系不能为空.");
 
         // 解析过滤条件
-        if ((filterSwitch = !CollectionUtils.isEmpty(filter))) {
+        if ((enabledFilter = !CollectionUtils.isEmpty(filter))) {
             add = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), OperationEnum.AND.getName())).collect(
                     Collectors.toList());
             or = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), OperationEnum.OR.getName())).collect(Collectors.toList());
@@ -146,10 +144,6 @@ public class FieldPicker {
 
     public TableGroup getTableGroup() {
         return tableGroup;
-    }
-
-    public String getPk() {
-        return pkList.get(0).getName();
     }
 
     final class Node {

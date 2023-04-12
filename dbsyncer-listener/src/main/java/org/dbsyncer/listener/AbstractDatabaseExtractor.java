@@ -25,7 +25,11 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
 
-    private Map<String, DqlMapper> dqlMap = new ConcurrentHashMap<>();
+    /**
+     * 自定义SQL，支持1对多
+     * <p>MY_USER > [用户表1, 用户表2]
+     */
+    private Map<String, List<DqlMapper>> dqlMap = new ConcurrentHashMap<>();
 
     /**
      * 发送增量事件
@@ -42,19 +46,28 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
      * @param event
      */
     protected void sendDqlChangedEvent(RowChangedEvent event) {
-        if (null != event) {
-            DqlMapper dqlMapper = dqlMap.get(event.getSourceTableName());
-            if (null != dqlMapper) {
+        if (null == event) {
+            return;
+        }
+        List<DqlMapper> dqlMappers = dqlMap.get(event.getSourceTableName());
+        if (CollectionUtils.isEmpty(dqlMappers)) {
+            return;
+        }
+
+        boolean processed = false;
+        for (DqlMapper dqlMapper : dqlMappers) {
+            if (!processed) {
                 switch (event.getEvent()) {
                     case ConnectorConstant.OPERTION_UPDATE:
                     case ConnectorConstant.OPERTION_INSERT:
-                        event.setDataList(queryDqlData(dqlMapper, event.getDataList()));
+                        queryDqlData(dqlMapper, event.getDataList());
                         break;
                     default:
                         break;
                 }
-                changedEvent(event);
+                processed = true;
             }
+            changedEvent(new RowChangedEvent(dqlMapper.sqlName, event.getEvent(), event.getDataList()));
         }
     }
 
@@ -66,9 +79,11 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
         AbstractDatabaseConnector connector = (AbstractDatabaseConnector) connectorFactory.getConnector(mapper);
         String quotation = connector.buildSqlWithQuotation();
 
+        // <用户表, MY_USER>
         Map<String, String> tableMap = new HashMap<>();
         mapper.getConfig().getSqlTables().forEach(s -> tableMap.put(s.getSqlName(), s.getTable()));
-
+        // 清空默认表名
+        filterTable.clear();
         for (Table t : sourceTable) {
             String sql = t.getSql();
             String sqlName = t.getName();
@@ -89,8 +104,13 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
             boolean notContainsWhere = !StringUtil.contains(sql, " WHERE ");
             querySql.append(notContainsWhere ? " WHERE " : " AND ");
             PrimaryKeyUtil.buildSql(querySql, primaryKeys, quotation, " AND ", " = ? ", notContainsWhere);
-            DqlMapper dqlMapper = new DqlMapper(mapper, querySql.toString(), column, getPrimaryKeyIndexArray(column, primaryKeys));
-            dqlMap.putIfAbsent(tableName, dqlMapper);
+            DqlMapper dqlMapper = new DqlMapper(mapper, sqlName, querySql.toString(), column, getPrimaryKeyIndexArray(column, primaryKeys));
+            if (!dqlMap.containsKey(tableName)) {
+                dqlMap.putIfAbsent(tableName, new ArrayList<>());
+            }
+            dqlMap.get(tableName).add(dqlMapper);
+            // 注册监听表名
+            filterTable.add(tableName);
         }
     }
 
@@ -109,10 +129,13 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
             }
         }
         Assert.isTrue(!CollectionUtils.isEmpty(indexList), "The primaryKeys is invalid.");
-        return (Integer[]) indexList.toArray();
+        Object[] indexArray = indexList.toArray();
+        Integer[] newIndexArray = new Integer[indexArray.length];
+        System.arraycopy(indexArray, 0, newIndexArray, 0, indexArray.length);
+        return newIndexArray;
     }
 
-    private List<Object> queryDqlData(DqlMapper dqlMapper, List<Object> data) {
+    private void queryDqlData(DqlMapper dqlMapper, List<Object> data) {
         if (!CollectionUtils.isEmpty(data)) {
             Map<String, Object> row = dqlMapper.mapper.execute(databaseTemplate -> {
                 int size = dqlMapper.primaryKeyIndexArray.length;
@@ -127,20 +150,21 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
                 dqlMapper.column.forEach(field -> data.add(row.get(field.getName())));
             }
         }
-        return data;
     }
 
     final class DqlMapper {
         DatabaseConnectorMapper mapper;
+        String sqlName;
         String sql;
         List<Field> column;
         Integer[] primaryKeyIndexArray;
 
-        public DqlMapper(DatabaseConnectorMapper mapper, String sql, List<Field> column, Integer[] primaryKeyIndexArray) {
+        public DqlMapper(DatabaseConnectorMapper mapper, String sqlName, String sql, List<Field> column, Integer[] primaryKeyIndexArray) {
             this.mapper = mapper;
+            this.sqlName = sqlName;
+            this.sql = sql;
             this.column = column;
             this.primaryKeyIndexArray = primaryKeyIndexArray;
-            this.sql = sql;
         }
     }
 
