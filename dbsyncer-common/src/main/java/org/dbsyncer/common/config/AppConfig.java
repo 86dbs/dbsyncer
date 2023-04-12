@@ -1,7 +1,10 @@
 package org.dbsyncer.common.config;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+
+import java.time.LocalDate;
 
 /**
  * @author AE86
@@ -12,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "info.app")
 public class AppConfig {
 
-    private String name;
+    private String name = "DBSyncer";
 
     private String version;
 
@@ -35,6 +38,14 @@ public class AppConfig {
     }
 
     public String getCopyright() {
+        if (StringUtil.isBlank(copyright)) {
+            StringBuilder copy = new StringBuilder();
+            copy.append("&copy;").append(LocalDate.now().getYear()).append(" ");
+            copy.append(name);
+            copy.append("(").append(version).append(")");
+            copy.append("<footer>Designed By <a href='https://gitee.com/ghi/dbsyncer' target='_blank' >AE86</a></footer>");
+            this.copyright = copy.toString();
+        }
         return copyright;
     }
 

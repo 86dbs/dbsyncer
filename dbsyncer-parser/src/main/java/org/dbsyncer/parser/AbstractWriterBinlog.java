@@ -51,6 +51,9 @@ public abstract class AbstractWriterBinlog extends AbstractBinlogService<WriterR
 
         // 1、获取配置信息
         final TableGroup tableGroup = cacheService.get(message.getTableGroupId(), TableGroup.class);
+        if(tableGroup == null){
+            return null;
+        }
 
         // 2、反序列数据
         Map<String, Object> data = new HashMap<>();

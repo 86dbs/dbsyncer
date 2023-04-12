@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
  * @date 2022/9/21 22:20
  */
 @Configuration
-@ConfigurationProperties(prefix = "dbsyncer.parser.flush.increment.data")
+@ConfigurationProperties(prefix = "dbsyncer.parser.flush.data.increment")
 public class IncrementDataConfig {
 
     /**

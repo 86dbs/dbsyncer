@@ -86,10 +86,10 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
         final String sourceTableName = group.getSourceTable().getName();
         final String targetTableName = group.getTargetTable().getName();
         final String event = response.getEvent();
+        final Picker picker = new Picker(group.getFieldMapping());
         final List<Map> sourceDataList = response.getDataList();
 
         // 2、映射字段
-        final Picker picker = new Picker(group.getFieldMapping());
         List<Map> targetDataList = picker.pickData(sourceDataList);
 
         // 3、参数转换
@@ -102,8 +102,8 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
         pluginFactory.convert(group.getPlugin(), context);
 
         // 5、批量执行同步
-        Result result = parserFactory.writeBatch(context, new BatchWriter(tConnectorMapper, group.getCommand(), targetTableName, event,
-                picker.getTargetFields(), targetDataList, bufferActuatorConfig.getWriterBatchCount()));
+        BatchWriter batchWriter = new BatchWriter(tConnectorMapper, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, bufferActuatorConfig.getWriterBatchCount());
+        Result result = parserFactory.writeBatch(context, batchWriter);
 
         // 6、持久化同步结果
         result.setTableGroupId(tableGroup.getId());

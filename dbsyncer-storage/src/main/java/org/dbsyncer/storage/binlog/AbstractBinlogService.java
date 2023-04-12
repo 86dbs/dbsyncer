@@ -150,9 +150,9 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
                     doParse();
                 }
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e);
             } finally {
-                if (locked) {
+                 if (locked) {
                     running = false;
                     binlogLock.unlock();
                 }

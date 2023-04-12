@@ -40,10 +40,6 @@ public abstract class StringUtil {
         return StringUtils.replace(text, searchString, replacement);
     }
 
-    public static String replaceOnce(String text, String searchString, String replacement) {
-        return StringUtils.replaceOnce(text, searchString, replacement);
-    }
-
     public static String join(Iterable<?> iterable, String separator) {
         return StringUtils.join(iterable, separator);
     }
@@ -70,6 +66,10 @@ public abstract class StringUtil {
 
     public static boolean startsWith(CharSequence str, CharSequence prefix) {
         return StringUtils.startsWith(str, prefix);
+    }
+
+    public static String toString(Object obj) {
+        return obj == null ? "" : String.valueOf(obj);
     }
 
     /**
