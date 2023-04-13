@@ -2,7 +2,6 @@ package org.dbsyncer.listener.sqlserver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.LinkedCaseInsensitiveMap;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,8 +56,6 @@ public class LsnPuller {
 
     final class Worker extends Thread {
 
-        private final Map<String, Lsn> maxLsnSnapshot = new LinkedCaseInsensitiveMap<>();
-
         @Override
         public void run() {
             while (!isInterrupted()) {
@@ -67,10 +64,9 @@ public class LsnPuller {
                         TimeUnit.SECONDS.sleep(1);
                         continue;
                     }
-                    maxLsnSnapshot.clear();
                     Lsn maxLsn = null;
                     for (SqlServerExtractor extractor : map.values()) {
-                        maxLsn = getMaxLsn(maxLsnSnapshot, extractor);
+                        maxLsn = extractor.getMaxLsn();
                         if (null != maxLsn && maxLsn.isAvailable() && maxLsn.compareTo(extractor.getLastLsn()) > 0) {
                             extractor.pushStopLsn(maxLsn);
                         }
@@ -87,17 +83,6 @@ public class LsnPuller {
             }
         }
 
-    }
-
-    private Lsn getMaxLsn(Map<String, Lsn> maxLsnSnapshot, SqlServerExtractor extractor) {
-        final String url = extractor.getDatabaseConfigUrl();
-        if (maxLsnSnapshot.containsKey(url)) {
-            return maxLsnSnapshot.get(url);
-        }
-
-        Lsn maxLsn = extractor.getMaxLsn();
-        maxLsnSnapshot.put(url, maxLsn);
-        return maxLsn;
     }
 
 }

@@ -315,7 +315,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
         return (T) execute;
     }
 
-    public Lsn getMaxLsn(){
+    public Lsn getMaxLsn() {
         return queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
     }
 
@@ -327,7 +327,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
                 try {
                     Lsn stopLsn = stopLsnQueue.take();
                     Lsn poll;
-                    while((poll = stopLsnQueue.poll()) != null){
+                    while ((poll = stopLsnQueue.poll()) != null) {
                         stopLsn = poll;
                     }
                     if (!stopLsn.isAvailable() || stopLsn.compareTo(lastLsn) <= 0) {
@@ -339,16 +339,13 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
                     lastLsn = stopLsn;
                     snapshot.put(LSN_POSITION, lastLsn.toString());
                 } catch (Exception e) {
-                    logger.error(e.getMessage());
-                    sleepInMills(1000L);
+                    if (connected) {
+                        logger.error(e.getMessage(), e);
+                        sleepInMills(1000L);
+                    }
                 }
             }
         }
-    }
-
-    public String getDatabaseConfigUrl(){
-        DatabaseConfig config = (DatabaseConfig) connectorConfig;
-        return config.getUrl();
     }
 
     public Lsn getLastLsn() {
@@ -356,7 +353,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     }
 
     public void pushStopLsn(Lsn stopLsn) {
-        if(stopLsnQueue.contains(stopLsn)){
+        if (stopLsnQueue.contains(stopLsn)) {
             return;
         }
         stopLsnQueue.offer(stopLsn);
