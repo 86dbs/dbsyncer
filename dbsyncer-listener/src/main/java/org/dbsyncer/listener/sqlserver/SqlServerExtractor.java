@@ -52,8 +52,8 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     private static final int OFFSET_COLUMNS = 4;
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
-    private static Set<String> tables;
-    private static Set<SqlServerChangeTable> changeTables;
+    private Set<String> tables;
+    private Set<SqlServerChangeTable> changeTables;
     private DatabaseConnectorMapper connectorMapper;
     private Worker worker;
     private Lsn lastLsn;
