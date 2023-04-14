@@ -14,7 +14,7 @@ import java.util.BitSet;
  */
 public class BitValueMapper extends AbstractValueMapper<byte[]> {
 
-    private static final ByteBuffer buffer = ByteBuffer.allocate(4);
+    private final ByteBuffer buffer = ByteBuffer.allocate(4);
 
     @Override
     protected byte[] convert(ConnectorMapper connectorMapper, Object val) {
