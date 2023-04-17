@@ -141,7 +141,7 @@ wal_level=logical
 <img src="http://assets.processon.com/chart_image/5d63b0bce4b0ac2b61877037.png" />
 
 ## 🔗开发依赖
-* [JDK - 1.8.0_40](https://www.oracle.com/java/technologies/jdk8-downloads.html)（推荐版本以上）
+* [JDK - 1.8.0_202](https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html)
 * [Maven - 3.3.9](https://dlcdn.apache.org/maven/maven-3/)（推荐版本以上）
 
 ## ⚙️手动编译
