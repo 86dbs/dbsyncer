@@ -618,7 +618,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             if (isDelete(event)) {
                 fields.clear();
             } else if (isUpdate(event)) {
-                fields.remove(pkFields);
+                removeFieldWithPk(fields, pkFields);
             }
             fields.addAll(pkFields);
         }
