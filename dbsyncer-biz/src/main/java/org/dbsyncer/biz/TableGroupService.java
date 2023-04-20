@@ -27,6 +27,13 @@ public interface TableGroupService {
     String edit(Map<String, String> params);
 
     /**
+     * 刷新表字段
+     *
+     * @param id
+     */
+    String refreshFields(String id);
+
+    /**
      * 删除表关系
      *
      * @param mappingId

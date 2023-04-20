@@ -2,6 +2,7 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.Checker;
+import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.model.Field;
@@ -71,6 +72,18 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         log(LogType.TableGroupLog.UPDATE, model);
 
         return manager.editTableGroup(model);
+    }
+
+    @Override
+    public String refreshFields(String id) {
+        TableGroup tableGroup = manager.getTableGroup(id);
+        Assert.notNull(tableGroup, "Can not find tableGroup.");
+        assertRunning(manager.getMapping(tableGroup.getMappingId()));
+
+        TableGroupChecker checker = (TableGroupChecker) tableGroupChecker;
+        checker.refreshTableFields(tableGroup);
+
+        return manager.editTableGroup(tableGroup);
     }
 
     @Override
