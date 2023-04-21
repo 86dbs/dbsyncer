@@ -1,13 +1,10 @@
 package org.dbsyncer.web.controller;
 
-import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.web.remote.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
@@ -27,9 +24,14 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import org.springframework.web.servlet.support.RequestContextUtils;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Controller
@@ -38,11 +40,16 @@ public class TestController implements InitializingBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
-    private UserService userService;
+    @Resource
+    private RequestMappingHandlerAdapter requestMappingHandlerAdapter;
 
-    @Autowired
-    private MappingService mappingService;
+    @Resource
+    private ApplicationContext applicationContext;
+
+    private Map<String, String> parsePackage = new HashMap<>();
+    private Map<String, InvocableHandlerMethod> handlers = new ConcurrentHashMap<>();
+    private HandlerMethodArgumentResolverComposite resolvers = new HandlerMethodArgumentResolverComposite();
+    private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
     @ResponseBody
     @RequestMapping("/demo")
@@ -83,15 +90,6 @@ public class TestController implements InitializingBean {
         }
         return null;
     }
-
-    @Autowired
-    private RequestMappingHandlerAdapter requestMappingHandlerAdapter;
-    @Autowired
-    private ApplicationContext applicationContext;
-    private Map<String, String> parsePackage = new HashMap<>();
-    private Map<String, InvocableHandlerMethod> handlers = new ConcurrentHashMap<>();
-    private HandlerMethodArgumentResolverComposite resolvers = new HandlerMethodArgumentResolverComposite();
-    private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
     @Override
     public void afterPropertiesSet() {
