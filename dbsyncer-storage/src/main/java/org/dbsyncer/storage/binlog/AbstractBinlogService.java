@@ -27,8 +27,14 @@ import javax.annotation.PostConstruct;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -59,6 +65,8 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
 
     private ReaderTask readerTask = new ReaderTask();
 
+    private AtomicLong activeTasks = new AtomicLong();
+
     @PostConstruct
     private void init() {
         queue = new LinkedBlockingQueue(binlogRecorderConfig.getQueueCapacity());
@@ -82,7 +90,12 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
     @Override
     public void complete(List<String> messageIds) {
         if (!CollectionUtils.isEmpty(messageIds)) {
-            storageService.removeBatch(StorageEnum.BINLOG, messageIds);
+            try {
+                storageService.removeBatch(StorageEnum.BINLOG, messageIds);
+            } catch (Exception e) {
+                logger.error(e.getLocalizedMessage(), e);
+            }
+            messageIds.forEach((id) -> activeTasks.decrementAndGet());
         }
     }
 
@@ -118,7 +131,6 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
                 if (!CollectionUtils.isEmpty(tasks)) {
                     storageService.addBatch(StorageEnum.BINLOG, tasks);
                 }
-                tasks = null;
             } catch (Exception e) {
                 logger.error(e.getMessage());
             }
@@ -136,8 +148,8 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
 
         @Override
         public void run() {
-            // 读取任务数 >= 1/2缓存同步队列容量则继续等待
-            if (running || binlogRecorderConfig.getBatchCount() + getQueue().size() >= getQueueCapacity() / 2) {
+            // 是否运行中 或 还有提交的任务未处理完成
+            if (running || activeTasks.get() > 0) {
                 return;
             }
 
@@ -160,7 +172,7 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
         }
 
         private void doParse() {
-            // 查询[待处理] 或 [处理中 & 处理超时] // TODO 待优化
+            // 查询[待处理] 或 [处理中 & 处理超时]
             Query query = new Query();
             query.setType(StorageEnum.BINLOG);
 
@@ -216,6 +228,7 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
 
             // 如果在更新消息状态的过程中服务被中止，为保证数据的安全性，重启后消息可能会同步2次）
             storageService.editBatch(StorageEnum.BINLOG, updateTasks);
+            activeTasks.set(messages.size());
             getQueue().addAll(messages);
         }
     }
