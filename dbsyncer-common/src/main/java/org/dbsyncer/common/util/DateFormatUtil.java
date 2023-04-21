@@ -59,6 +59,15 @@ public abstract class DateFormatUtil {
             .appendValue(ChronoField.DAY_OF_MONTH, 2)
             .toFormatter();
 
+    private static final DateTimeFormatter TS_FORMAT = new DateTimeFormatterBuilder()
+            .append(NON_ISO_LOCAL_DATE)
+            .appendLiteral(' ')
+            .append(DateTimeFormatter.ISO_LOCAL_TIME)
+            .optionalStart()
+            .appendLiteral(" ")
+            .appendText(ChronoField.ERA, TextStyle.SHORT)
+            .optionalEnd()
+            .toFormatter();
     private static final DateTimeFormatter TS_TZ_FORMAT = new DateTimeFormatterBuilder()
             .append(NON_ISO_LOCAL_DATE)
             .appendLiteral(' ')
@@ -141,6 +150,10 @@ public abstract class DateFormatUtil {
 
     public static Timestamp stringToTimestamp(String s, DateFormat formatter) throws ParseException {
         return new Timestamp(formatter.parse(s).getTime());
+    }
+
+    public static Timestamp timeWithoutTimeZoneToTimestamp(String s) {
+        return Timestamp.valueOf(LocalDateTime.from(DateFormatUtil.TS_FORMAT.parse(s)).atZone(ZoneOffset.UTC).toLocalDateTime());
     }
 
     public static OffsetTime timeWithTimeZone(String s) {

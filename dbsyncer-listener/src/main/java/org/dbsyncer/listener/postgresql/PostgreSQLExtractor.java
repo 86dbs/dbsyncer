@@ -287,7 +287,7 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
                 } catch (IllegalStateException | ListenerException e) {
                     logger.error(e.getMessage());
                 } catch (Exception e) {
-                    logger.error(e.getMessage());
+                    logger.error(e.getMessage(), e);
                     recover();
                 }
             }
