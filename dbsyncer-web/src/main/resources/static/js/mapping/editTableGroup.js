@@ -13,17 +13,17 @@ function submit(data) {
 // 初始化映射关系参数
 function initFieldMappingParams(){
     // 生成JSON参数
-    const row = [];
-    const $fieldMappingList = $("#fieldMappingList");
+    let row = [];
+    let $fieldMappingList = $("#fieldMappingList");
     $fieldMappingList.find("tr").each(function(k,v){
-        const $pk = $(this).find("td:eq(2)").html();
+        let $pk = $(this).find("td:eq(2)").html();
         row.push({
             "source":$(this).find("td:eq(0)").text(),
             "target":$(this).find("td:eq(1)").text(),
             "pk":($pk != "" || $.trim($pk).length > 0)
         });
     });
-    const $fieldMappingTable = $("#fieldMappingTable");
+    let $fieldMappingTable = $("#fieldMappingTable");
     if (0 >= row.length) {
         $fieldMappingTable.addClass("hidden");
     } else {
@@ -34,7 +34,7 @@ function initFieldMappingParams(){
 
 // 获取选择的CheckBox[value]
 function getCheckedBoxSize($checkbox){
-    const checked = [];
+    let checked = [];
     $checkbox.each(function(){
         if($(this).prop('checked')){
             checked.push($(this).attr("id"));
@@ -44,7 +44,7 @@ function getCheckedBoxSize($checkbox){
 }
 // 绑定刷新表字段事件
 function bindRefreshTableFieldsClick() {
-    const $refreshBtn = $("#refreshTableFieldBtn");
+    let $refreshBtn = $("#refreshTableFieldBtn");
     $refreshBtn.bind('click', function(){
         let id = $(this).attr("tableGroupId");
         doPoster("/tableGroup/refreshFields", {'id': id}, function (data) {
@@ -59,9 +59,9 @@ function bindRefreshTableFieldsClick() {
 }
 // 绑定删除表字段复选框事件
 function bindFieldMappingCheckBoxClick(){
-    const $checkboxAll = $('.fieldMappingDeleteCheckboxAll');
-    const $checkbox = $('.fieldMappingDeleteCheckbox');
-    const $delBtn = $("#fieldMappingDelBtn");
+    let $checkboxAll = $('.fieldMappingDeleteCheckboxAll');
+    let $checkbox = $('.fieldMappingDeleteCheckbox');
+    let $delBtn = $("#fieldMappingDelBtn");
     $checkboxAll.iCheck({
         checkboxClass: 'icheckbox_square-red',
         labelHover: false,
@@ -88,20 +88,20 @@ function bindFieldMappingCheckBoxClick(){
 // 绑定字段映射表格点击事件
 function bindFieldMappingListClick(){
     // 行双击事件
-    const $tr = $("#fieldMappingList tr");
+    let $tr = $("#fieldMappingList tr");
     $tr.unbind("dblclick");
     $tr.bind('dblclick', function () {
-        const $pk = $(this).find("td:eq(2)");
-        const $text = $pk.html();
-        const isPk = $text == "" || $.trim($text).length == 0;
+        let $pk = $(this).find("td:eq(2)");
+        let $text = $pk.html();
+        let isPk = $text == "" || $.trim($text).length == 0;
         $pk.html(isPk ? '<i title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i>' : '');
         initFieldMappingParams();
     });
 }
 // 绑定下拉选择事件自动匹配相似字段事件
 function bindTableFieldSelect(){
-    const $sourceSelect = $("#sourceTableField");
-    const $targetSelect = $("#targetTableField");
+    let $sourceSelect = $("#sourceTableField");
+    let $targetSelect = $("#targetTableField");
 
     // 绑定数据源下拉切换事件
     $sourceSelect.on('changed.bs.select',function(e){
@@ -111,10 +111,10 @@ function bindTableFieldSelect(){
 }
 // 绑定添加字段映射点击事件
 function bindFieldMappingAddClick($sourceSelect, $targetSelect){
-    const $btn = $("#fieldMappingAddBtn");
+    let $btn = $("#fieldMappingAddBtn");
     $btn.bind('click', function(){
-        const sField = $sourceSelect.selectpicker("val");
-        const tField = $targetSelect.selectpicker("val");
+        let sField = $sourceSelect.selectpicker("val");
+        let tField = $targetSelect.selectpicker("val");
         sField = sField == null ? "" : sField;
         tField = tField == null ? "" : tField;
         // 非空检查
@@ -124,12 +124,12 @@ function bindFieldMappingAddClick($sourceSelect, $targetSelect){
         }
 
         // 检查重复字段
-        const repeated = false;
-        const $fieldMappingList = $("#fieldMappingList");
-        const $tr = $fieldMappingList.find("tr");
+        let repeated = false;
+        let $fieldMappingList = $("#fieldMappingList");
+        let $tr = $fieldMappingList.find("tr");
         $tr.each(function(k,v){
-            const sf = $(this).find("td:eq(0)").text();
-            const tf = $(this).find("td:eq(1)").text();
+            let sf = $(this).find("td:eq(0)").text();
+            let tf = $(this).find("td:eq(1)").text();
             if (repeated = (sField == sf && tField == tf)) {
                 bootGrowl("映射关系已存在.", "danger");
                 return false;
@@ -137,8 +137,8 @@ function bindFieldMappingAddClick($sourceSelect, $targetSelect){
         });
         if(repeated){ return; }
 
-        const index = $tr.size();
-        const trHtml = "<tr title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td></td><td><input id='fieldIndex_"+ (index + 1) +"' type='checkbox' class='fieldMappingDeleteCheckbox' /></td></tr>";
+        let index = $tr.size();
+        let trHtml = "<tr title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td></td><td><input id='fieldIndex_"+ (index + 1) +"' type='checkbox' class='fieldMappingDeleteCheckbox' /></td></tr>";
         $fieldMappingList.append(trHtml);
 
         initFieldMappingParams();
@@ -149,12 +149,12 @@ function bindFieldMappingAddClick($sourceSelect, $targetSelect){
 }
 // 绑定删除字段映射点击事件
 function bindFieldMappingDelClick(){
-    const $fieldMappingDelBtn = $("#fieldMappingDelBtn");
+    let $fieldMappingDelBtn = $("#fieldMappingDelBtn");
     $fieldMappingDelBtn.unbind("click");
     $fieldMappingDelBtn.click(function () {
-        const ids = getCheckedBoxSize($('.fieldMappingDeleteCheckbox'));
+        let ids = getCheckedBoxSize($('.fieldMappingDeleteCheckbox'));
         if (ids.length > 0) {
-            const len = ids.length;
+            let len = ids.length;
             for(i = 0; i < len; i++){
                 $("#" + ids[i]).parent().parent().parent().remove();
             }
@@ -182,9 +182,9 @@ $(function() {
 
     //保存
     $("#tableGroupSubmitBtn").click(function () {
-        const $form = $("#tableGroupModifyForm");
+        let $form = $("#tableGroupModifyForm");
         if ($form.formValidate() == true) {
-            const data = $form.serializeJson();
+            let data = $form.serializeJson();
             submit(data);
         }
     });
