@@ -21,6 +21,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     public PostgreSQLConnector() {
+        VALUE_MAPPERS.put(Types.BIT, new PostgreSQLBitValueMapper());
         VALUE_MAPPERS.put(Types.OTHER, new PostgreSQLOtherValueMapper());
     }
 

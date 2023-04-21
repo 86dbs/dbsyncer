@@ -84,7 +84,7 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
         } else if ("-infinity".equals(asString())) {
             return Timestamp.from(toInstantFromMicros(PGStatement.DATE_NEGATIVE_INFINITY));
         }
-        return DateFormatUtil.stringToTimestamp(asString());
+        return DateFormatUtil.timeWithoutTimeZoneToTimestamp(asString());
     }
 
     @Override
