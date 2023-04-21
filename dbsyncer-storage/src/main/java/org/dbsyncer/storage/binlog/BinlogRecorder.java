@@ -14,15 +14,6 @@ import java.util.Queue;
 public interface BinlogRecorder {
 
     /**
-     * 获取任务名称
-     *
-     * @return
-     */
-    default String getTaskName() {
-        return getClass().getSimpleName();
-    }
-
-    /**
      * 将任务序列化刷入磁盘
      *
      * @param message
@@ -42,12 +33,5 @@ public interface BinlogRecorder {
      * @return
      */
     Queue getQueue();
-
-    /**
-     * 获取缓存队列容量
-     *
-     * @return
-     */
-    int getQueueCapacity();
 
 }

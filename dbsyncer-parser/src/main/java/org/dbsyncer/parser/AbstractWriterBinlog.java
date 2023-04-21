@@ -76,18 +76,8 @@ public abstract class AbstractWriterBinlog extends AbstractBinlogService<WriterR
     }
 
     @Override
-    public String getTaskName() {
-        return "WriterBinlog";
-    }
-
-    @Override
     public Queue getQueue() {
         return writerBufferActuator.getQueue();
-    }
-
-    @Override
-    public int getQueueCapacity() {
-        return writerBufferActuator.getQueueCapacity();
     }
 
 }

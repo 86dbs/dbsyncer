@@ -19,8 +19,6 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
 
     protected DatabaseConfig config;
 
-    private static final PgColumnValue value = new PgColumnValue();
-
     @Override
     public boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn) {
         if (null == lastReceiveLsn || lastReceiveLsn.asLong() == 0 || startLsn.equals(lastReceiveLsn)) {
@@ -71,8 +69,7 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
      * @return
      */
     protected Object resolveValue(String typeName, String columnValue) {
-        value.setValue(columnValue);
-
+        PgColumnValue value = new PgColumnValue(columnValue);
         if (value.isNull()) {
             // nulls are null
             return null;

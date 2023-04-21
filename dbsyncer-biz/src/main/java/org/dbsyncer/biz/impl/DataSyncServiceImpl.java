@@ -86,6 +86,13 @@ public class DataSyncServiceImpl implements DataSyncService {
     @Override
     public Map getBinlogData(Map row, boolean prettyBytes) throws InvalidProtocolBufferException {
         String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
+        // 1、获取配置信息
+        final TableGroup tableGroup = cacheService.get(tableGroupId, TableGroup.class);
+        if (tableGroup == null) {
+            return Collections.EMPTY_MAP;
+        }
+
+        // 2、获取记录的数据
         byte[] bytes = (byte[]) row.get(ConfigConstant.BINLOG_DATA);
         if (null == bytes) {
             if (prettyBytes) {
@@ -94,15 +101,12 @@ public class DataSyncServiceImpl implements DataSyncService {
             }
             return Collections.EMPTY_MAP;
         }
-        BinlogMap message = BinlogMap.parseFrom(bytes);
 
-        // 1、获取配置信息
-        final TableGroup tableGroup = cacheService.get(tableGroupId, TableGroup.class);
-
-        // 2、反序列数据
+        // 3、反序列
         Map<String, Object> map = new HashMap<>();
         final Picker picker = new Picker(tableGroup.getFieldMapping());
         final Map<String, Field> fieldMap = picker.getSourceFieldMap();
+        BinlogMap message = BinlogMap.parseFrom(bytes);
         message.getRowMap().forEach((k, v) -> {
             if (fieldMap.containsKey(k)) {
                 Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);

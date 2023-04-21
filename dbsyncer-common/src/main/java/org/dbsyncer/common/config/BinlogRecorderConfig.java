@@ -15,7 +15,7 @@ public class BinlogRecorderConfig {
     /**
      * 批量同步数
      */
-    private int batchCount = 1000;
+    private int batchCount = 10000;
 
     /**
      * 最长任务处理耗时（秒）

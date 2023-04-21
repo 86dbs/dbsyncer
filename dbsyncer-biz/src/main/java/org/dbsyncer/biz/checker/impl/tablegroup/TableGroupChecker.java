@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author AE86
@@ -108,6 +109,23 @@ public class TableGroupChecker extends AbstractChecker {
         mergeConfig(mapping, tableGroup);
 
         return tableGroup;
+    }
+
+    /**
+     * 刷新表字段
+     *
+     * @param tableGroup
+     */
+    public void refreshTableFields(TableGroup tableGroup){
+        Mapping mapping = manager.getMapping(tableGroup.getMappingId());
+        Assert.notNull(mapping, "mapping can not be null.");
+
+        Table sourceTable = tableGroup.getSourceTable();
+        Table targetTable = tableGroup.getTargetTable();
+        List<String> sourceTablePks = sourceTable.getColumn().stream().filter(c -> c.isPk()).map(c -> c.getName()).collect(Collectors.toList());
+        List<String> targetTablePks = targetTable.getColumn().stream().filter(c -> c.isPk()).map(c -> c.getName()).collect(Collectors.toList());
+        tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable.getName(), StringUtil.join(sourceTablePks, ",")));
+        tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable.getName(), StringUtil.join(targetTablePks, ",")));
     }
 
     public void mergeConfig(Mapping mapping, TableGroup tableGroup) {

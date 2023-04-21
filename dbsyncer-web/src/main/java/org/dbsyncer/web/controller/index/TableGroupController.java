@@ -37,7 +37,7 @@ public class TableGroupController extends BaseController {
         return "mapping/" + page;
     }
 
-    @RequestMapping(value = "/add")
+    @PostMapping(value = "/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
         try {
@@ -49,12 +49,23 @@ public class TableGroupController extends BaseController {
         }
     }
 
-    @RequestMapping(value = "/edit")
+    @PostMapping(value = "/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(tableGroupService.edit(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e.getClass());
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/refreshFields")
+    @ResponseBody
+    public RestResult refreshFields(@RequestParam(value = "id") String id) {
+        try {
+            return RestResult.restSuccess(tableGroupService.refreshFields(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());
