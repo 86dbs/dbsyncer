@@ -1,6 +1,8 @@
 @echo off
 
-set /p APP_VERSION=Please enter a new version number(1.2.3-RC_0413):
+set CURRENT_DATE=%date:~5,2%%date:~8,2%
+set VERSION=1.2.3-RC_%CURRENT_DATE%
+set /p APP_VERSION=Please enter a new version number(%VERSION%): || set APP_VERSION=%VERSION%
 echo %APP_VERSION%
 
 echo "Clean Project ..."
