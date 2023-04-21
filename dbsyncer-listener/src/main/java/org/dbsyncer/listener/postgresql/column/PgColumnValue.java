@@ -23,6 +23,10 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    public PgColumnValue(String value) {
+        setValue(value);
+    }
+
     @Override
     public String asString() {
         return getValue();

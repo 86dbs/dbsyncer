@@ -136,7 +136,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
                 dataVo.setJson(JsonUtil.objToJson(binlogData));
                 list.add(dataVo);
             } catch (Exception e) {
-                logger.error(e.getLocalizedMessage());
+                logger.error(e.getLocalizedMessage(), e);
             }
         }
         paging.setData(list);

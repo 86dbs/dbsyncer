@@ -9,6 +9,7 @@ import org.apache.commons.io.IOUtils;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.binlog.BinlogColumnValue;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
+import org.dbsyncer.storage.enums.BinlogByteEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,10 +57,6 @@ public abstract class BinlogMessageUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(BinlogMessageUtil.class);
 
-    private static final ByteBuffer buffer = ByteBuffer.allocate(8);
-
-    private static final BinlogColumnValue value = new BinlogColumnValue();
-
     public static BinlogMap toBinlogMap(Map<String, Object> data) {
         BinlogMap.Builder dataBuilder = BinlogMap.newBuilder();
         data.forEach((k, v) -> {
@@ -86,54 +83,40 @@ public abstract class BinlogMessageUtil {
 
             // 时间
             case "java.sql.Timestamp":
-                buffer.clear();
-                Timestamp timestamp = (Timestamp) v;
-                buffer.putLong(timestamp.getTime());
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 8);
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
+                    Timestamp timestamp = (Timestamp) v;
+                    buffer.putLong(timestamp.getTime());
+                });
             case "java.sql.Date":
-                buffer.clear();
-                Date date = (Date) v;
-                buffer.putLong(date.getTime());
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 8);
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
+                    Date date = (Date) v;
+                    buffer.putLong(date.getTime());
+                });
+            case "java.util.Date":
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
+                    java.util.Date uDate = (java.util.Date) v;
+                    buffer.putLong(uDate.getTime());
+                });
             case "java.sql.Time":
-                buffer.clear();
-                Time time = (Time) v;
-                buffer.putLong(time.getTime());
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 8);
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
+                    Time time = (Time) v;
+                    buffer.putLong(time.getTime());
+                });
 
             // 数字
             case "java.lang.Integer":
-                buffer.clear();
-                buffer.putInt((Integer) v);
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 4);
+                return allocateByteBufferToByteString(BinlogByteEnum.INTEGER, buffer -> buffer.putInt((Integer) v));
             case "java.math.BigInteger":
                 BigInteger bigInteger = (BigInteger) v;
-                byte[] bytes = bigInteger.toByteArray();
-                return ByteString.copyFrom(bytes, 0, 8);
+                return ByteString.copyFrom(bigInteger.toByteArray());
             case "java.lang.Long":
-                buffer.clear();
-                buffer.putLong((Long) v);
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 8);
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> buffer.putLong((Long) v));
             case "java.lang.Short":
-                buffer.clear();
-                buffer.putShort((Short) v);
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 2);
+                return allocateByteBufferToByteString(BinlogByteEnum.SHORT, buffer -> buffer.putShort((Short) v));
             case "java.lang.Float":
-                buffer.clear();
-                buffer.putFloat((Float) v);
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 4);
+                return allocateByteBufferToByteString(BinlogByteEnum.FLOAT, buffer -> buffer.putFloat((Float) v));
             case "java.lang.Double":
-                buffer.clear();
-                buffer.putDouble((Double) v);
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 8);
+                return allocateByteBufferToByteString(BinlogByteEnum.DOUBLE, buffer -> buffer.putDouble((Double) v));
             case "java.math.BigDecimal":
                 BigDecimal bigDecimal = (BigDecimal) v;
                 return ByteString.copyFromUtf8(bigDecimal.toString());
@@ -143,26 +126,21 @@ public abstract class BinlogMessageUtil {
 
             // 布尔(1为true;0为false)
             case "java.lang.Boolean":
-                buffer.clear();
-                Boolean b = (Boolean) v;
-                buffer.putShort((short) (b ? 1 : 0));
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 2);
+                return allocateByteBufferToByteString(BinlogByteEnum.SHORT, buffer -> {
+                    Boolean b = (Boolean) v;
+                    buffer.putShort((short) (b ? 1 : 0));
+                });
             case "java.time.LocalDateTime":
-                buffer.clear();
-                buffer.putLong(Timestamp.valueOf((LocalDateTime) v).getTime());
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 8);
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> buffer.putLong(Timestamp.valueOf((LocalDateTime) v).getTime()));
             case "oracle.sql.TIMESTAMP":
-                buffer.clear();
-                TIMESTAMP timeStamp = (TIMESTAMP) v;
-                try {
-                    buffer.putLong(timeStamp.timestampValue().getTime());
-                } catch (SQLException e) {
-                    logger.error(e.getMessage());
-                }
-                buffer.flip();
-                return ByteString.copyFrom(buffer, 8);
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
+                    TIMESTAMP timeStamp = (TIMESTAMP) v;
+                    try {
+                        buffer.putLong(timeStamp.timestampValue().getTime());
+                    } catch (SQLException e) {
+                        logger.error(e.getMessage());
+                    }
+                });
             case "oracle.sql.BLOB":
                 return ByteString.copyFrom(getBytes((BLOB) v));
             case "oracle.sql.CLOB":
@@ -176,8 +154,7 @@ public abstract class BinlogMessageUtil {
     }
 
     public static Object deserializeValue(int type, ByteString v) {
-        value.setValue(v);
-
+        BinlogColumnValue value = new BinlogColumnValue(v);
         if (value.isNull()) {
             return null;
         }
@@ -240,6 +217,13 @@ public abstract class BinlogMessageUtil {
         }
     }
 
+    private static ByteString allocateByteBufferToByteString(BinlogByteEnum byteType, ByteStringMapper mapper) {
+        ByteBuffer buffer = ByteBuffer.allocate(byteType.getByteLength());
+        mapper.apply(buffer);
+        buffer.flip();
+        return ByteString.copyFrom(buffer, byteType.getByteLength());
+    }
+
     private static byte[] getBytes(BLOB blob) {
         InputStream is = null;
         byte[] b = null;
@@ -278,4 +262,9 @@ public abstract class BinlogMessageUtil {
             throw new StorageException(e);
         }
     }
+
+    interface ByteStringMapper {
+        void apply(ByteBuffer buffer);
+    }
+
 }
