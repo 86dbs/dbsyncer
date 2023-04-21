@@ -14,6 +14,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.time.ZoneId;
 import java.util.Properties;
 
 @EnableAsync
@@ -35,9 +36,8 @@ public class Application {
         if (location.exists()) {
             BuildProperties build = new BuildProperties(loadFrom(location, "build"));
             version = build.getVersion();
-            long time = build.getTime().toEpochMilli();
-            String format = DateFormatUtil.timestampToString(new Timestamp(time));
-            properties.put("info.app.build.time", format);
+            String buildTime = build.getTime().atZone(ZoneId.systemDefault()).format(DateFormatUtil.CHINESE_STANDARD_TIME_FORMATTER);
+            properties.put("info.app.build.time", buildTime);
         }
         properties.put("info.app.version", version);
         properties.put("spring.thymeleaf.prefix", "classpath:/public/");
