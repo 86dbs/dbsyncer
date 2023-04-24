@@ -5,7 +5,6 @@ import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.BitSet;
 
 /**
