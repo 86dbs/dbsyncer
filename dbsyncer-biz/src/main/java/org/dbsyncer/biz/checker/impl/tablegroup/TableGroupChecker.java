@@ -9,6 +9,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -26,9 +27,11 @@ import org.springframework.util.Assert;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -76,7 +79,7 @@ public class TableGroupChecker extends AbstractChecker {
         this.modifyConfigModel(tableGroup, params);
 
         // 匹配相似字段映射关系
-        mergeFieldMapping(tableGroup);
+        matchSimilarFieldMapping(tableGroup);
 
         // 合并配置
         mergeConfig(mapping, tableGroup);
@@ -116,7 +119,7 @@ public class TableGroupChecker extends AbstractChecker {
      *
      * @param tableGroup
      */
-    public void refreshTableFields(TableGroup tableGroup){
+    public void refreshTableFields(TableGroup tableGroup) {
         Mapping mapping = manager.getMapping(tableGroup.getMappingId());
         Assert.notNull(mapping, "mapping can not be null.");
 
@@ -184,29 +187,52 @@ public class TableGroupChecker extends AbstractChecker {
         }
     }
 
-    private void mergeFieldMapping(TableGroup tableGroup) {
+    private void matchSimilarFieldMapping(TableGroup tableGroup) {
         List<Field> sCol = tableGroup.getSourceTable().getColumn();
         List<Field> tCol = tableGroup.getTargetTable().getColumn();
         if (CollectionUtils.isEmpty(sCol) || CollectionUtils.isEmpty(tCol)) {
             return;
         }
 
-        // Set集合去重
         Map<String, Field> m1 = new HashMap<>();
         Map<String, Field> m2 = new HashMap<>();
-        List<String> k1 = new LinkedList<>();
-        List<String> k2 = new LinkedList<>();
-        shuffleColumn(sCol, k1, m1);
-        shuffleColumn(tCol, k2, m2);
-        k1.retainAll(k2);
+        Set<String> sourceFieldNames = new LinkedHashSet<>();
+        Set<String> targetFieldNames = new LinkedHashSet<>();
+        shuffleColumn(sCol, sourceFieldNames, m1);
+        shuffleColumn(tCol, targetFieldNames, m2);
 
-        // 有相似字段
-        if (!CollectionUtils.isEmpty(k1)) {
-            k1.forEach(k -> tableGroup.getFieldMapping().add(new FieldMapping(m1.get(k), m2.get(k))));
+        // 模糊匹配相似字段
+        AtomicBoolean existSourcePKFieldMapping = new AtomicBoolean();
+        AtomicBoolean existTargetPKFieldMapping = new AtomicBoolean();
+        sourceFieldNames.forEach(s -> {
+            for (String t : targetFieldNames) {
+                if (StringUtil.equalsIgnoreCase(s, t)) {
+                    Field f1 = m1.get(s);
+                    Field f2 = m2.get(t);
+                    tableGroup.getFieldMapping().add(new FieldMapping(f1, f2));
+                    if (f1.isPk()) {
+                        existSourcePKFieldMapping.set(true);
+                    }
+                    if (f2.isPk()) {
+                        existTargetPKFieldMapping.set(true);
+                    }
+                    break;
+                }
+            }
+        });
+
+        // 沒有主键映射关系，取第一个主键作为映射关系
+        if (!existSourcePKFieldMapping.get() || !existTargetPKFieldMapping.get()) {
+            List<String> sourceTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
+            List<String> targetTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getTargetTable());
+            Assert.isTrue(!CollectionUtils.isEmpty(sourceTablePrimaryKeys) && !CollectionUtils.isEmpty(targetTablePrimaryKeys), "数据源表和目标源表必须包含主键.");
+            String sPK = sourceTablePrimaryKeys.stream().findFirst().get();
+            String tPK = targetTablePrimaryKeys.stream().findFirst().get();
+            tableGroup.getFieldMapping().add(new FieldMapping(m1.get(sPK), m2.get(tPK)));
         }
     }
 
-    private void shuffleColumn(List<Field> col, List<String> key, Map<String, Field> map) {
+    private void shuffleColumn(List<Field> col, Set<String> key, Map<String, Field> map) {
         col.forEach(f -> {
             if (!key.contains(f.getName())) {
                 key.add(f.getName());
