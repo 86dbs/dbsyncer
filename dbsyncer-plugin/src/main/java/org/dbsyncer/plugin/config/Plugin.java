@@ -25,10 +25,6 @@ public class Plugin {
     public Plugin() {
     }
 
-    public Plugin(String name, String className, String version, String fileName) {
-        this(name, className, version, fileName, false);
-    }
-
     public Plugin(String name, String className, String version, String fileName, boolean unmodifiable) {
         this.name = name;
         this.className = className;

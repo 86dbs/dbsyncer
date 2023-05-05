@@ -51,25 +51,21 @@ public class PluginFactory {
 
     private final List<Plugin> plugins = new LinkedList<>();
 
-    @Autowired
-    private Map<String, ConvertService> service;
+    private final Map<String, ConvertService> service = new LinkedHashMap<>();
 
     @Autowired
-    private ProxyApplicationContext applicationContextProxy;
+    private ProxyApplicationContext proxyApplicationContext;
 
     @PostConstruct
     private void init() {
-        Map<String, ConvertService> unmodifiable = new LinkedHashMap<>();
-        if (!CollectionUtils.isEmpty(service)) {
-            service.forEach((k, s) -> {
-                String className = s.getClass().getName();
-                unmodifiable.putIfAbsent(className, s);
-                plugins.add(new Plugin(s.getName(), className, s.getVersion(), "", true));
+        Map<String, ConvertService> services = proxyApplicationContext.getBeansOfType(ConvertService.class);
+        if (!CollectionUtils.isEmpty(services)) {
+            services.forEach((k, s) -> {
+                String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
+                service.putIfAbsent(pluginId, s);
+                plugins.add(new Plugin(s.getName(), s.getClass().getName(), s.getVersion(), "", true));
             });
         }
-
-        service.clear();
-        service.putAll(unmodifiable);
     }
 
     public synchronized void loadPlugins() {
@@ -83,7 +79,7 @@ public class PluginFactory {
         } catch (IOException e) {
             logger.error(e.getMessage());
         }
-        Collection<File> files = FileUtils.listFiles(new File(PLUGIN_PATH), new String[] {"jar"}, true);
+        Collection<File> files = FileUtils.listFiles(new File(PLUGIN_PATH), new String[]{"jar"}, true);
         if (!CollectionUtils.isEmpty(files)) {
             files.forEach(f -> loadPlugin(f));
         }
@@ -109,12 +105,15 @@ public class PluginFactory {
      * @param context
      */
     public void convert(Plugin plugin, ConvertContext context) {
-        if (null != plugin && service.containsKey(plugin.getClassName())) {
-            if (context instanceof AbstractConvertContext) {
-                AbstractConvertContext ctx = (AbstractConvertContext) context;
-                ctx.setContext(applicationContextProxy);
+        if (null != plugin) {
+            String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
+            if (service.containsKey(pluginId)) {
+                if (context instanceof AbstractConvertContext) {
+                    AbstractConvertContext ctx = (AbstractConvertContext) context;
+                    ctx.setContext(proxyApplicationContext);
+                }
+                service.get(pluginId).convert(context);
             }
-            service.get(plugin.getClassName()).convert(context);
         }
     }
 
@@ -125,9 +124,16 @@ public class PluginFactory {
      * @param context
      */
     public void postProcessAfter(Plugin plugin, ConvertContext context) {
-        if (null != plugin && service.containsKey(plugin.getClassName())) {
-            service.get(plugin.getClassName()).postProcessAfter(context);
+        if (null != plugin) {
+            String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
+            if (service.containsKey(pluginId)) {
+                service.get(pluginId).postProcessAfter(context);
+            }
         }
+    }
+
+    public String createPluginId(String pluginClassName, String pluginVersion) {
+        return new StringBuilder(pluginClassName).append("_").append(pluginVersion).toString();
     }
 
     /**
@@ -139,13 +145,13 @@ public class PluginFactory {
         try {
             String fileName = jar.getName();
             URL url = jar.toURI().toURL();
-            URLClassLoader loader = new URLClassLoader(new URL[] {url}, Thread.currentThread().getContextClassLoader());
+            URLClassLoader loader = new URLClassLoader(new URL[]{url}, Thread.currentThread().getContextClassLoader());
             ServiceLoader<ConvertService> services = ServiceLoader.load(ConvertService.class, loader);
             for (ConvertService s : services) {
-                String className = s.getClass().getName();
-                service.put(className, s);
-                plugins.add(new Plugin(s.getName(), className, s.getVersion(), fileName));
-                logger.info("{}, {}_{} {}", fileName, s.getName(), s.getVersion(), className);
+                String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
+                service.putIfAbsent(pluginId, s);
+                plugins.add(new Plugin(s.getName(), s.getClass().getName(), s.getVersion(), fileName, false));
+                logger.info("{}, {}_{} {}", fileName, s.getName(), s.getVersion(), s.getClass().getName());
             }
         } catch (MalformedURLException e) {
             logger.error(e.getMessage());
