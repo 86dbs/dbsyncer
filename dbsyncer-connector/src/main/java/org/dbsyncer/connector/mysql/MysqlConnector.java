@@ -33,7 +33,7 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
     public String getPageCursorSql(PageSql config) {
         // 不支持游标查询
         if (!isSupportedCursor(config)) {
-            logger.warn("不支持游标查询，主键包含非数字类型");
+            logger.debug("不支持游标查询，主键包含非数字类型");
             return "";
         }
 
