@@ -58,9 +58,10 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
             Shard shard = getShard(sharding);
             int pageNum = query.getPageNum() <= 0 ? 1 : query.getPageNum();
             int pageSize = query.getPageSize() <= 0 ? 20 : query.getPageSize();
+            boolean desc = query.getSort().isDesc();
             // 根据修改时间 > 创建时间排序
-            Sort sort = new Sort(new SortField(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortField.Type.LONG, true),
-                    new SortField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SortField.Type.LONG, true));
+            Sort sort = new Sort(new SortField(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortField.Type.LONG, desc),
+                    new SortField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SortField.Type.LONG, desc));
             Option option = new Option();
             option.setQueryTotal(query.isQueryTotal());
             option.setIndexFieldResolverMap(query.getIndexFieldResolverMap());

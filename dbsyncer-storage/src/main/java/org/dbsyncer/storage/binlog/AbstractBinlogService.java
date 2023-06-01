@@ -13,6 +13,7 @@ import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.binlog.proto.BinlogMessage;
 import org.dbsyncer.storage.constant.BinlogConstant;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.storage.enums.BinlogSortEnum;
 import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.BooleanFilter;
@@ -193,6 +194,7 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
             query.setIndexFieldResolverMap(fieldResolvers);
             query.setPageNum(1);
             query.setPageSize(binlogRecorderConfig.getBatchCount());
+            query.setSort(BinlogSortEnum.ASC);
             Paging paging = storageService.query(query);
             if (CollectionUtils.isEmpty(paging.getData())) {
                 return;
