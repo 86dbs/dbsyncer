@@ -46,7 +46,10 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     private static final String GET_MAX_LSN = "select sys.fn_cdc_get_max_lsn()";
     private static final String GET_MIN_LSN = "select sys.fn_cdc_get_min_lsn('#')";
     private static final String GET_INCREMENT_LSN = "select sys.fn_cdc_increment_lsn(?)";
-    private static final String GET_ALL_CHANGES_FOR_TABLE = "select * from cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC, [__$operation] ASC";
+    /**
+     * https://learn.microsoft.com/zh-cn/previous-versions/sql/sql-server-2008/bb510627(v=sql.100)?redirectedfrom=MSDN
+     */
+    private static final String GET_ALL_CHANGES_FOR_TABLE = "select * from cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC";
 
     private static final String LSN_POSITION = "position";
     private static final int OFFSET_COLUMNS = 4;
