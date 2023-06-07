@@ -43,6 +43,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
     private String database;
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
+    private volatile boolean recovery;
 
     @Override
     public void start() {
@@ -121,6 +122,16 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
     }
 
     private void reStart() {
+        try {
+            connectLock.tryLock();
+            if (recovery) {
+                return;
+            }
+            recovery = true;
+        } finally {
+            connectLock.unlock();
+        }
+
         for (int i = 1; i <= RETRY_TIMES; i++) {
             try {
                 if (null != client) {
@@ -130,6 +141,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
 
                 errorEvent(new ListenerException(String.format("重启成功, %s", client.getWorkerThreadName())));
                 logger.error("第{}次重启成功, ThreadName:{} ", i, client.getWorkerThreadName());
+                recovery = false;
                 break;
             } catch (Exception e) {
                 logger.error("第{}次重启异常, ThreadName:{}, {}", i, client.getWorkerThreadName(), e.getMessage());
