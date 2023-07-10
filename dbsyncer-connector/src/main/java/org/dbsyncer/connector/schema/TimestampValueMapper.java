@@ -8,6 +8,7 @@ import org.dbsyncer.connector.ConnectorException;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * @author AE86
@@ -53,6 +54,11 @@ public class TimestampValueMapper extends AbstractValueMapper<Timestamp> {
         if (val instanceof java.util.Date) {
             java.util.Date date = (java.util.Date) val;
             return new Timestamp(date.getTime());
+        }
+
+        if (val instanceof OffsetDateTime) {
+            OffsetDateTime date = (OffsetDateTime) val;
+            return Timestamp.from(date.toInstant());
         }
 
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
