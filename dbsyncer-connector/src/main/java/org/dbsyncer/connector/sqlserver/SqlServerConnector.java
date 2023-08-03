@@ -11,10 +11,11 @@ import org.dbsyncer.connector.database.DatabaseConnectorMapper;
 import org.dbsyncer.connector.enums.TableTypeEnum;
 import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.connector.util.PrimaryKeyUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public final class SqlServerConnector extends AbstractDatabaseConnector {
@@ -22,6 +23,11 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     private static final String QUERY_VIEW = "select name from sysobjects where xtype in('v')";
 
     private static final String QUERY_TABLE = "select name from sys.tables where schema_id = schema_id('%s') and is_ms_shipped = 0";
+
+    /**
+     * 系统函数表达式convert/varchar/getdate
+     */
+    private final String SYS_EXPRESSION = "(convert\\().+?(\\))|(varchar\\().+?(\\))|(getdate\\(\\))";
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
@@ -48,9 +54,10 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     protected String buildSqlFilterWithQuotation(String value) {
         if (StringUtil.isNotBlank(value)) {
-            // 支持SqlServer系统函数（convert/varchar/getdate）
             String val = value.toLowerCase();
-            if (StringUtil.contains(val, "convert") || StringUtil.contains(val, "varchar") || StringUtil.contains(val, "getdate")) {
+            // 支持SqlServer系统函数, Example: (select CONVERT(varchar(10),GETDATE(),120))
+            Matcher matcher = Pattern.compile(SYS_EXPRESSION).matcher(val);
+            if (matcher.find()) {
                 return StringUtil.EMPTY;
             }
         }

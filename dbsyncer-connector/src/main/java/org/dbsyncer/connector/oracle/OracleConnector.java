@@ -15,10 +15,17 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class OracleConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    /**
+     * 系统函数表达式to_char/to_date/to_timestamp/to_number
+     */
+    private final String SYS_EXPRESSION = "(to_char\\().+?(\\))|(to_date\\().+?(\\))|(to_timestamp\\().+?(\\))|(to_number\\().+?(\\))";
 
     public OracleConnector() {
         VALUE_MAPPERS.put(Types.OTHER, new OracleOtherValueMapper());
@@ -96,9 +103,10 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     @Override
     protected String buildSqlFilterWithQuotation(String value) {
         if (StringUtil.isNotBlank(value)) {
-            // 支持Oracle系统函数（to_char/to_date/to_timestamp/to_number）
             String val = value.toLowerCase();
-            if (StringUtil.startsWith(val, "to_") && StringUtil.endsWith(val, ")")) {
+            // 支持Oracle系统函数, Example: to_char(sysdate, 'YYYY-MM-DD HH24:MI:SS')
+            Matcher matcher = Pattern.compile(SYS_EXPRESSION).matcher(val);
+            if (matcher.find()) {
                 return StringUtil.EMPTY;
             }
         }
