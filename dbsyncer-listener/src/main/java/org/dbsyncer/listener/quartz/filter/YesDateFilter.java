@@ -20,10 +20,10 @@ public class YesDateFilter implements QuartzFilter {
         LocalDateTime localDateTime;
         if (!begin) {
             // 2022-08-02 23:59:59
-            localDateTime = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+            localDateTime = LocalDateTime.now().minusDays(1).withHour(23).withMinute(59).withSecond(59).withNano(999999999);
         } else {
             // 2022-08-02 00:00:00
-            localDateTime = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+            localDateTime = LocalDateTime.now().minusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
         }
         return Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
     }

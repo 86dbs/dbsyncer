@@ -5,6 +5,7 @@ import org.dbsyncer.listener.quartz.QuartzFilter;
 import org.dbsyncer.listener.quartz.filter.DateFilter;
 import org.dbsyncer.listener.quartz.filter.TimestampFilter;
 import org.dbsyncer.listener.quartz.filter.YesDateFilter;
+import org.dbsyncer.listener.quartz.filter.YesTimestampFilter;
 
 /**
  * @author AE86
@@ -36,8 +37,15 @@ public enum QuartzFilterEnum {
     /**
      * 昨天日期(结束)
      */
-    DATE_YES_END(6, "$date_yes_end$", "系统昨天日期(结束23:59:59)", new YesDateFilter(false));
-
+    DATE_YES_END(6, "$date_yes_end$", "系统昨天日期(结束23:59:59)", new YesDateFilter(false)),
+    /**
+     * 昨天时间戳(开始)
+     */
+    TIME_STAMP_YES_BEGIN(7, "$timestamp_yes_begin$", "系统昨天时间戳(开始00:00:00)", new YesTimestampFilter(true)),
+    /**
+     * 昨天时间戳(结束)
+     */
+    TIME_STAMP_YES_END(8, "$timestamp_yes_end$", "系统昨天时间戳(结束23:59:59)", new YesTimestampFilter(false));
 
     private Integer index;
     private String type;
