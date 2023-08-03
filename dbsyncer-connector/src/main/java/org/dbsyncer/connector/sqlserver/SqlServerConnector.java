@@ -61,7 +61,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
                 return StringUtil.EMPTY;
             }
         }
-        return buildSqlWithQuotation();
+        return super.buildSqlFilterWithQuotation(value);
     }
 
     @Override

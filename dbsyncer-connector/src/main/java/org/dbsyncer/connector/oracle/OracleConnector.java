@@ -110,7 +110,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
                 return StringUtil.EMPTY;
             }
         }
-        return buildSqlWithQuotation();
+        return super.buildSqlFilterWithQuotation(value);
     }
 
     @Override
