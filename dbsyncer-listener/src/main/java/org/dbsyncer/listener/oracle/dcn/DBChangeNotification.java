@@ -324,6 +324,10 @@ public class DBChangeNotification {
 
         @Override
         public void onDatabaseChangeNotification(DatabaseChangeEvent event) {
+            // 只接收当前注册的监听
+            if (dcr.getRegId() != event.getRegId()) {
+                return;
+            }
             DatabaseChangeEvent.EventType eventType = event.getEventType();
             if(eventType == DatabaseChangeEvent.EventType.OBJCHANGE){
                 for (TableChangeDescription td : event.getTableChangeDescription()) {

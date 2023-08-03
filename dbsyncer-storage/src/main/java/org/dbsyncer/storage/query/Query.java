@@ -1,6 +1,7 @@
 package org.dbsyncer.storage.query;
 
 import org.dbsyncer.connector.enums.FilterEnum;
+import org.dbsyncer.storage.enums.BinlogSortEnum;
 import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.filter.IntFilter;
@@ -33,6 +34,11 @@ public class Query {
     private int pageNum = 1;
 
     private int pageSize = 20;
+
+    /**
+     * 修改时间和创建默认降序返回
+     */
+    private BinlogSortEnum sort = BinlogSortEnum.DESC;
 
     /**
      * 返回值转换器，限Disk使用
@@ -105,6 +111,14 @@ public class Query {
 
     public void setPageSize(int pageSize) {
         this.pageSize = pageSize;
+    }
+
+    public BinlogSortEnum getSort() {
+        return sort;
+    }
+
+    public void setSort(BinlogSortEnum sort) {
+        this.sort = sort;
     }
 
     public Map<String, IndexFieldResolverEnum> getIndexFieldResolverMap() {

@@ -7,6 +7,7 @@ import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 import com.github.shyiko.mysql.binlog.network.*;
 import com.github.shyiko.mysql.binlog.network.protocol.*;
 import com.github.shyiko.mysql.binlog.network.protocol.command.*;
+import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.mysql.deserializer.DeleteDeserializer;
 import org.dbsyncer.listener.mysql.deserializer.UpdateDeserializer;
 import org.dbsyncer.listener.mysql.deserializer.WriteDeserializer;
@@ -26,6 +27,7 @@ import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -78,6 +80,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private volatile PacketChannel channel;
     private volatile boolean connected;
     private Thread worker;
+    private Thread keepAlive;
     private String workerThreadName;
 
     private final Lock connectLock = new ReentrantLock();
@@ -127,16 +130,16 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             }
             setConfig();
             openChannel();
+            connected = true;
+            // new keepalive thread
+            spawnKeepAliveThread();
+
             // dump binary log
             requestBinaryLogStream(channel);
             ensureEventDeserializerHasRequiredEDDs();
 
-            // new Thread
-            this.worker = new Thread(() -> listenForEventPackets(channel));
-            this.worker.setDaemon(false);
-            this.workerThreadName = new StringBuilder("binlog-parser-").append(hostname).append(":").append(port).append("_").append(connectionId).toString();
-            this.worker.setName(workerThreadName);
-            this.worker.start();
+            // new listen thread
+            spawnWorkerThread();
             lifecycleListeners.forEach(listener -> listener.onConnect(this));
         } finally {
             connectLock.unlock();
@@ -149,9 +152,14 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             try {
                 connectLock.lock();
                 closeChannel(channel);
+                connected = false;
                 if (null != this.worker && !worker.isInterrupted()) {
                     this.worker.interrupt();
                     this.worker = null;
+                }
+                if (null != this.keepAlive && !keepAlive.isInterrupted()) {
+                    this.keepAlive.interrupt();
+                    this.keepAlive = null;
                 }
                 lifecycleListeners.forEach(listener -> listener.onDisconnect(this));
             } finally {
@@ -173,6 +181,10 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     @Override
     public void registerLifecycleListener(BinaryLogRemoteClient.LifecycleListener lifecycleListener) {
         lifecycleListeners.add(lifecycleListener);
+    }
+
+    private String createClientId() {
+        return new StringBuilder(hostname).append(":").append(port).append("_").append(connectionId).toString();
     }
 
     private void openChannel() throws IOException {
@@ -212,7 +224,6 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             String position = gtidSet != null ? gtidSet.toString() : binlogFilename + "/" + binlogPosition;
             logger.info("Connected to {}:{} at {} (sid:{}, cid:{})", hostname, port, position, serverId, connectionId);
         }
-        connected = true;
     }
 
     private void listenForEventPackets(final PacketChannel channel) {
@@ -525,7 +536,6 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     }
 
     private void closeChannel(final PacketChannel channel) throws IOException {
-        connected = false;
         if (channel != null && channel.isOpen()) {
             channel.close();
         }
@@ -592,6 +602,49 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             }
         }
         return serverId;
+    }
+
+    private void spawnWorkerThread() {
+        this.worker = new Thread(() -> listenForEventPackets(channel));
+        this.worker.setDaemon(false);
+        this.workerThreadName = new StringBuilder("binlog-parser-").append(createClientId()).toString();
+        this.worker.setName(workerThreadName);
+        this.worker.start();
+    }
+
+    private void spawnKeepAliveThread() {
+        long keepAliveInterval = TimeUnit.SECONDS.toMillis(30);
+        String clientId = createClientId();
+        this.keepAlive = new Thread(() -> {
+            while (connected) {
+                try {
+                    Thread.sleep(keepAliveInterval);
+                } catch (InterruptedException e) {
+                    // expected in case of disconnect
+                }
+                boolean connectionLost = false;
+                try {
+                    channel.write(new PingCommand());
+                } catch (IOException e) {
+                    connectionLost = true;
+                }
+                if (connectionLost) {
+                    if (connected) {
+                        String error = String.format("keepalive: Trying to restore lost connection to %s", clientId);
+                        logger.info(error);
+                        try {
+                            lifecycleListeners.forEach(listener -> listener.onCommunicationFailure(this, new ListenerException(error)));
+                        } catch (Exception e) {
+                            logger.warn("keepalive error", e);
+                        }
+                    }
+                    break;
+                }
+            }
+        });
+        this.keepAlive.setDaemon(false);
+        this.keepAlive.setName(new StringBuilder("binlog-keepalive-").append(clientId).toString());
+        this.keepAlive.start();
     }
 
     @Override

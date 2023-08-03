@@ -10,13 +10,14 @@ import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.model.AbstractConfigModel;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Convert;
+import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.config.Plugin;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -34,10 +35,13 @@ public abstract class AbstractChecker implements Checker {
 
     private static final String SYMBOL = "***";
 
-    @Autowired
+    @Resource
     private Manager manager;
 
-    @Autowired
+    @Resource
+    private PluginFactory pluginFactory;
+
+    @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
 
     /**
@@ -88,13 +92,13 @@ public abstract class AbstractChecker implements Checker {
         }
 
         // 插件配置
-        String pluginClassName = params.get("pluginClassName");
+        String pluginId = params.get("pluginId");
         Plugin plugin = null;
-        if (StringUtil.isNotBlank(pluginClassName)) {
+        if (StringUtil.isNotBlank(pluginId)) {
             List<Plugin> plugins = manager.getPluginAll();
             if (!CollectionUtils.isEmpty(plugins)) {
                 for (Plugin p : plugins) {
-                    if (StringUtil.equals(p.getClassName(), pluginClassName)) {
+                    if (StringUtil.equals(pluginFactory.createPluginId(p.getClassName(), p.getVersion()), pluginId)) {
                         plugin = p;
                         break;
                     }

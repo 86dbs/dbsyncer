@@ -187,10 +187,10 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     private Executor getExecutor(StorageEnum type, String sharding) {
         return tables.computeIfAbsent(sharding, (table) -> {
-            Executor dataTemplate = tables.get(type.getType());
-            Assert.notNull(dataTemplate, "未知的存储类型");
+            Executor executor = tables.get(type.getType());
+            Assert.notNull(executor, "未知的存储类型");
 
-            Executor newExecutor = new Executor(dataTemplate.getType(), dataTemplate.getFields(), dataTemplate.isSystemTable(), dataTemplate.isOrderByUpdateTime());
+            Executor newExecutor = new Executor(executor.getType(), executor.getFields(), executor.isSystemTable(), executor.isOrderByUpdateTime());
             return createTableIfNotExist(table, newExecutor);
         });
     }
@@ -227,7 +227,8 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         if (executor.isOrderByUpdateTime()) {
             sql.append(UnderlineToCamelUtils.camelToUnderline(ConfigConstant.CONFIG_MODEL_UPDATE_TIME)).append(",");
         }
-        sql.append(UnderlineToCamelUtils.camelToUnderline(ConfigConstant.CONFIG_MODEL_CREATE_TIME)).append(" desc");
+        sql.append(UnderlineToCamelUtils.camelToUnderline(ConfigConstant.CONFIG_MODEL_CREATE_TIME));
+        sql.append(" ").append(query.getSort().getCode());
         sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
         args.add((query.getPageNum() - 1) * query.getPageSize());
         args.add(query.getPageSize());
