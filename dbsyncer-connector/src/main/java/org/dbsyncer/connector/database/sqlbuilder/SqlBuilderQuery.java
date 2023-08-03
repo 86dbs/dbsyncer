@@ -30,6 +30,7 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
         List<Field> fields = config.getFields();
         String quotation = config.getQuotation();
         String queryFilter = config.getQueryFilter();
+        Database database = config.getDatabase();
 
         StringBuilder sql = new StringBuilder();
         int size = fields.size();
@@ -40,7 +41,9 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
             if (field.isUnmodifiabled()) {
                 sql.append(field.getName());
             } else {
-                sql.append(quotation).append(field.getName()).append(quotation);
+                sql.append(quotation);
+                sql.append(database.buildFieldName(field));
+                sql.append(quotation);
             }
 
             // "USERNAME" as "myName"

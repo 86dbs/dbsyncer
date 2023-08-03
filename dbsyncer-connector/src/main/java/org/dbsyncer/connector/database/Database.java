@@ -2,6 +2,7 @@ package org.dbsyncer.connector.database;
 
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.ReaderConfig;
+import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.PageSql;
 
 public interface Database {
@@ -42,4 +43,13 @@ public interface Database {
         throw new ConnectorException("Unsupported override method getPageCursorArgs:" + getClass().getName());
     }
 
+    /**
+     * 获取字段名称(可重写实现系统关键字，函数名处理)
+     *
+     * @param field
+     * @return
+     */
+    default String buildFieldName(Field field){
+        return field.getName();
+    }
 }
