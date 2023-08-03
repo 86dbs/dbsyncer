@@ -4,6 +4,8 @@ import org.apache.commons.lang3.StringUtils;
 
 public abstract class StringUtil {
 
+    public static final String EMPTY = "";
+
     public static boolean equals(CharSequence cs1, CharSequence cs2) {
         return StringUtils.equals(cs1, cs2);
     }

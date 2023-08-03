@@ -99,10 +99,10 @@ public final class OracleConnector extends AbstractDatabaseConnector {
             // 支持Oracle系统函数（to_char/to_date/to_timestamp/to_number）
             String val = value.toLowerCase();
             if (StringUtil.startsWith(val, "to_") && StringUtil.endsWith(val, ")")) {
-                return "";
+                return StringUtil.EMPTY;
             }
         }
-        return super.buildSqlFilterWithQuotation(value);
+        return buildSqlWithQuotation();
     }
 
     @Override

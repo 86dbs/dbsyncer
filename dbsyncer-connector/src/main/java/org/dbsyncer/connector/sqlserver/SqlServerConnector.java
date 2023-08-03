@@ -46,6 +46,18 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    protected String buildSqlFilterWithQuotation(String value) {
+        if (StringUtil.isNotBlank(value)) {
+            // 支持SqlServer系统函数（convert/varchar/getdate）
+            String val = value.toLowerCase();
+            if (StringUtil.contains(val, "convert") || StringUtil.contains(val, "varchar") || StringUtil.contains(val, "getdate")) {
+                return StringUtil.EMPTY;
+            }
+        }
+        return buildSqlWithQuotation();
+    }
+
+    @Override
     protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
         // 视图或有过滤条件，走默认方式
         final Table table = commandConfig.getTable();
