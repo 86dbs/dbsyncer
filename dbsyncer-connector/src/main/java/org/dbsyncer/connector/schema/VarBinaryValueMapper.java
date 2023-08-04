@@ -4,6 +4,7 @@ import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 
+import java.nio.ByteBuffer;
 import java.util.BitSet;
 
 /**
@@ -23,6 +24,12 @@ public class VarBinaryValueMapper extends AbstractValueMapper<byte[]> {
         if (val instanceof BitSet) {
             BitSet bitSet = (BitSet) val;
             return toByteArray(bitSet);
+        }
+        if (val instanceof Boolean) {
+            Boolean b = (Boolean) val;
+            ByteBuffer buffer = ByteBuffer.allocate(2);
+            buffer.putShort((short) (b ? 1 : 0));
+            return buffer.array();
         }
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
