@@ -245,12 +245,13 @@ public class ParserFactory implements Parser {
         Map<String, String> command = group.getCommand();
         Assert.notEmpty(command, "执行命令不能为空.");
         List<FieldMapping> fieldMapping = group.getFieldMapping();
-        String sTableName = group.getSourceTable().getName();
+        Table sourceTable = group.getSourceTable();
+        String sTableName = sourceTable.getName();
         String tTableName = group.getTargetTable().getName();
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
         // 获取同步字段
         Picker picker = new Picker(fieldMapping);
-        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
         boolean supportedCursor = StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR));
         int pageSize = mapping.getReadNum();
         int batchSize = mapping.getBatchNum();
@@ -266,7 +267,7 @@ public class ParserFactory implements Parser {
             }
 
             // 1、获取数据源数据
-            ReaderConfig readerConfig = new ReaderConfig(command, new ArrayList<>(), supportedCursor, task.getCursors(), task.getPageIndex(), pageSize);
+            ReaderConfig readerConfig = new ReaderConfig(sourceTable, command, new ArrayList<>(), supportedCursor, task.getCursors(), task.getPageIndex(), pageSize);
             Result reader = connectorFactory.reader(sConnectorMapper, readerConfig);
             List<Map> source = reader.getSuccessData();
             if (CollectionUtils.isEmpty(source)) {

@@ -4,6 +4,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Table;
 
@@ -44,6 +45,29 @@ public abstract class PrimaryKeyUtil {
             throw new ConnectorException(String.format("目标表 %s 缺少主键.", table.getName()));
         }
         return Collections.unmodifiableList(primaryKeys);
+    }
+
+    /**
+     * 返回主键集合
+     *
+     * @param config
+     * @return
+     */
+    public static List<Field> findConfigPrimaryKeys(WriterBatchConfig config) {
+        if (null == config) {
+            throw new ConnectorException("The config is null.");
+        }
+
+        List<Field> list = new ArrayList<>();
+        for (Field f : config.getFields()) {
+            if (f.isPk()) {
+                list.add(f);
+            }
+        }
+        if (CollectionUtils.isEmpty(list)) {
+            throw new ConnectorException("主键为空");
+        }
+        return list;
     }
 
     /**

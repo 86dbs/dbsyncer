@@ -21,6 +21,7 @@ import org.dbsyncer.connector.model.Filter;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.ESUtil;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -41,6 +42,7 @@ import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,6 +163,15 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         builder.from((config.getPageIndex() - 1) * config.getPageSize());
         builder.size(config.getPageSize());
         builder.timeout(TimeValue.timeValueMillis(10));
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(config.getTable());
+        if (!CollectionUtils.isEmpty(primaryKeys)) {
+            primaryKeys.forEach(pk -> builder.sort(pk, SortOrder.ASC));
+            // 深度分页
+            if (!CollectionUtils.isEmpty(config.getCursors())) {
+                builder.from(0);
+                builder.searchAfter(config.getCursors());
+            }
+        }
 
         try {
             SearchRequest rq = new SearchRequest(new String[] {cfg.getIndex()}, builder);
@@ -188,12 +199,12 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
         final Result result = new Result();
         final ESConfig cfg = connectorMapper.getConfig();
-        final List<Field> pkFields = getPrimaryKeys(config.getFields());
+        final List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeys(config);
         try {
             BulkRequest request = new BulkRequest();
             // 默认取第一个主键
             final String pk = pkFields.get(0).getName();
-            data.forEach(row -> addRequest(request, cfg.getIndex(), cfg.getType(), config.getEvent(), String.valueOf(row.get(pk)), row));
+            data.forEach(row -> addRequest(request, cfg.getIndex(), config.getEvent(), String.valueOf(row.get(pk)), row));
 
             BulkResponse response = connectorMapper.getConnection().bulk(request, RequestOptions.DEFAULT);
             RestStatus restStatus = response.status();
@@ -231,10 +242,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        Table table = commandConfig.getTable();
-        if (!CollectionUtils.isEmpty(table.getColumn())) {
-            getPrimaryKeys(table.getColumn());
-        }
+        PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
         return Collections.EMPTY_MAP;
     }
 
@@ -293,21 +301,21 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         }
     }
 
-    private void addRequest(BulkRequest request, String index, String type, String event, String id, Map data) {
+    private void addRequest(BulkRequest request, String index, String event, String id, Map data) {
         if (isUpdate(event)) {
-            UpdateRequest req = new UpdateRequest(index, type, id);
+            UpdateRequest req = new UpdateRequest(index, id);
             req.doc(data, XContentType.JSON);
             request.add(req);
             return;
         }
         if (isInsert(event)) {
-            IndexRequest req = new IndexRequest(index, type, id);
+            IndexRequest req = new IndexRequest(index);
             req.source(data, XContentType.JSON);
             request.add(req);
             return;
         }
         if (isDelete(event)) {
-            request.add(new DeleteRequest(index, type, id));
+            request.add(new DeleteRequest(index, id));
         }
     }
 

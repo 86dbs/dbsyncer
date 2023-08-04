@@ -6,14 +6,37 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.connector.schema.*;
+import org.dbsyncer.connector.schema.BigintValueMapper;
+import org.dbsyncer.connector.schema.BinaryValueMapper;
+import org.dbsyncer.connector.schema.BitValueMapper;
+import org.dbsyncer.connector.schema.BlobValueMapper;
+import org.dbsyncer.connector.schema.CharValueMapper;
+import org.dbsyncer.connector.schema.ClobValueMapper;
+import org.dbsyncer.connector.schema.DateValueMapper;
+import org.dbsyncer.connector.schema.DecimalValueMapper;
+import org.dbsyncer.connector.schema.DoubleValueMapper;
+import org.dbsyncer.connector.schema.FloatValueMapper;
+import org.dbsyncer.connector.schema.IntegerValueMapper;
+import org.dbsyncer.connector.schema.LongVarBinaryValueMapper;
+import org.dbsyncer.connector.schema.LongVarcharValueMapper;
+import org.dbsyncer.connector.schema.NCharValueMapper;
+import org.dbsyncer.connector.schema.NClobValueMapper;
+import org.dbsyncer.connector.schema.NVarcharValueMapper;
+import org.dbsyncer.connector.schema.NumberValueMapper;
+import org.dbsyncer.connector.schema.OtherValueMapper;
+import org.dbsyncer.connector.schema.RealValueMapper;
+import org.dbsyncer.connector.schema.RowIdValueMapper;
+import org.dbsyncer.connector.schema.SmallintValueMapper;
+import org.dbsyncer.connector.schema.TimeValueMapper;
+import org.dbsyncer.connector.schema.TimestampValueMapper;
+import org.dbsyncer.connector.schema.TinyintValueMapper;
+import org.dbsyncer.connector.schema.VarBinaryValueMapper;
+import org.dbsyncer.connector.schema.VarcharValueMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 public abstract class AbstractConnector {
@@ -87,20 +110,6 @@ public abstract class AbstractConnector {
                 }
             }
         }
-    }
-
-    protected List<Field> getPrimaryKeys(List<Field> fields) {
-        List<Field> list = new ArrayList<>();
-
-        for (Field f : fields) {
-            if (f.isPk()) {
-                list.add(f);
-            }
-        }
-        if (CollectionUtils.isEmpty(list)) {
-            throw new ConnectorException("主键为空");
-        }
-        return list;
     }
 
     protected boolean isUpdate(String event) {

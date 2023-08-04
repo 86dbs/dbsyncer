@@ -157,7 +157,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             throw new ConnectorException("writer data can not be empty.");
         }
         List<Field> fields = new ArrayList<>(config.getFields());
-        List<Field> pkFields = getPrimaryKeys(config.getFields());
+        List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeys(config);
         // Update / Delete
         if (!isInsert(event)) {
             if (isDelete(event)) {
