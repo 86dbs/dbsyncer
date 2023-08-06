@@ -14,6 +14,7 @@ import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,11 +85,11 @@ public class KafkaConnector extends AbstractConnector implements Connector<Kafka
 
         Result result = new Result();
         final KafkaConfig cfg = connectorMapper.getConfig();
-        final List<Field> pkNames = getPrimaryKeys(config.getFields());
+        final List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeys(config);
         try {
             String topic = cfg.getTopic();
             // 默认取第一个主键
-            final String pk = pkNames.get(0).getName();
+            final String pk = pkFields.get(0).getName();
             data.forEach(row -> connectorMapper.getConnection().send(topic, String.valueOf(row.get(pk)), row));
             result.addSuccessData(data);
         } catch (Exception e) {

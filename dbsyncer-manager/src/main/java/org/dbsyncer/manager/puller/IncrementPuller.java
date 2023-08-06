@@ -7,16 +7,14 @@ import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
 import org.dbsyncer.listener.quartz.AbstractQuartzExtractor;
-import org.dbsyncer.listener.quartz.TableGroupCommand;
+import org.dbsyncer.listener.quartz.TableGroupQuartzCommand;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.manager.model.FieldPicker;
@@ -145,10 +143,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         // 默认定时抽取
         if (ListenerTypeEnum.isTiming(listenerType)) {
             AbstractQuartzExtractor quartzExtractor = listener.getExtractor(ListenerTypeEnum.TIMING, connectorConfig.getConnectorType(), AbstractQuartzExtractor.class);
-            quartzExtractor.setCommands(list.stream().map(t -> {
-                List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(t.getSourceTable());
-                return new TableGroupCommand(primaryKeys, t.getCommand());
-            }).collect(Collectors.toList()));
+            quartzExtractor.setCommands(list.stream().map(t -> new TableGroupQuartzCommand(t.getSourceTable(), t.getCommand())).collect(Collectors.toList()));
             quartzExtractor.register(new QuartzListener(mapping, list));
             extractor = quartzExtractor;
         }

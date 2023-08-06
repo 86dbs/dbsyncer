@@ -64,7 +64,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
                 Task task = map.get(metaId);
                 doTask(task, mapping, list, executor);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e);
                 logService.log(LogType.SystemLog.ERROR, e.getMessage());
             } finally {
                 try {

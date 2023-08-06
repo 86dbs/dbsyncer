@@ -9,6 +9,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.slf4j.Logger;
@@ -34,7 +35,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private static final String CURSOR = "cursor";
     private static final int READ_NUM = 1000;
-    private List<TableGroupCommand> commands;
+    private List<TableGroupQuartzCommand> commands;
     private String eventFieldName;
     private boolean forceUpdate;
     private Set<String> update;
@@ -95,9 +96,10 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         running = false;
     }
 
-    private void execute(TableGroupCommand tableGroupCommand, int index) {
-        final Map<String, String> command = tableGroupCommand.getCommand();
-        final List<String> primaryKeys = tableGroupCommand.getPrimaryKeys();
+    private void execute(TableGroupQuartzCommand tableGroupQuartzCommand, int index) {
+        final Map<String, String> command = tableGroupQuartzCommand.getCommand();
+        final List<String> primaryKeys = tableGroupQuartzCommand.getPrimaryKeys();
+        final Table table = tableGroupQuartzCommand.getTable();
         boolean supportedCursor = StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR));
 
         // 检查增量点
@@ -107,7 +109,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         Object[] cursors = PrimaryKeyUtil.getLastCursors(snapshot.get(index + CURSOR));
 
         while (running) {
-            ReaderConfig readerConfig = new ReaderConfig(point.getCommand(), point.getArgs(), supportedCursor, cursors, pageIndex++, READ_NUM);
+            ReaderConfig readerConfig = new ReaderConfig(table, point.getCommand(), point.getArgs(), supportedCursor, cursors, pageIndex++, READ_NUM);
             Result reader = connectorFactory.reader(connectionMapper, readerConfig);
             List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
@@ -157,7 +159,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
     }
 
-    public void setCommands(List<TableGroupCommand> commands) {
+    public void setCommands(List<TableGroupQuartzCommand> commands) {
         this.commands = commands;
     }
 

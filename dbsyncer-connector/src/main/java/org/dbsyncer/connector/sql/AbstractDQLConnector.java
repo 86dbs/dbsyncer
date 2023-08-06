@@ -75,7 +75,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         String queryFilterSql = getQueryFilterSql(commandConfig.getFilter());
         Table table = commandConfig.getTable();
         Map<String, String> map = new HashMap<>();
-        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(table);
         if (CollectionUtils.isEmpty(primaryKeys)) {
             return map;
         }
