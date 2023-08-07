@@ -42,7 +42,6 @@
         <commons-io.version>2.5</commons-io.version>
         <lucene-analyzers-smartcn.version>8.8.0</lucene-analyzers-smartcn.version>
         <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
-        <sdoapi.version>11.2.0</sdoapi.version>
         <!--<mysql.version>5.1.40</mysql.version>-->
         <mysql.version>8.0.21</mysql.version>
         <mysql-binlog.version>0.21.0</mysql-binlog.version>
@@ -149,13 +148,6 @@
                 <groupId>com.oracle</groupId>
                 <artifactId>ojdbc6</artifactId>
                 <version>${ojdbc6.version}</version>
-            </dependency>
-
-            <!-- 如出现无法下载，请切换maven仓库地址：http://www.datanucleus.org/downloads/maven2/ -->
-            <dependency>
-                <groupId>oracle</groupId>
-                <artifactId>sdoapi</artifactId>
-                <version>${sdoapi.version}</version>
             </dependency>
 
             <!-- sqlserver-driver -->

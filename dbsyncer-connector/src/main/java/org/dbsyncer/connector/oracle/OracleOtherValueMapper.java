@@ -2,7 +2,7 @@ package org.dbsyncer.connector.oracle;
 
 import com.microsoft.sqlserver.jdbc.Geometry;
 import oracle.jdbc.OracleConnection;
-import oracle.spatial.geometry.JGeometry;
+import org.dbsyncer.connector.oracle.geometry.JGeometry;
 import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;

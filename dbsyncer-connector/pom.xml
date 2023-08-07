@@ -35,10 +35,6 @@
             <groupId>com.oracle</groupId>
             <artifactId>ojdbc6</artifactId>
         </dependency>
-        <dependency>
-            <groupId>oracle</groupId>
-            <artifactId>sdoapi</artifactId>
-        </dependency>
 
         <!-- sqlserver-driver -->
         <dependency>
