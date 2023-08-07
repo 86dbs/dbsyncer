@@ -279,7 +279,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
 
         private boolean isFilterTable(long tableId) {
             final TableMapEventData tableMap = tables.get(tableId);
-            return StringUtil.equals(database, tableMap.getDatabase()) && filterTable.contains(tableMap.getTable());
+            return StringUtil.equalsIgnoreCase(database, tableMap.getDatabase()) && filterTable.contains(tableMap.getTable());
         }
 
     }
