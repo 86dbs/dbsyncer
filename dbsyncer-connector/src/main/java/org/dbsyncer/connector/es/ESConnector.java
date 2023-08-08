@@ -199,7 +199,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
         final Result result = new Result();
         final ESConfig cfg = connectorMapper.getConfig();
-        final List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeys(config);
+        final List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeyFields(config);
         try {
             BulkRequest request = new BulkRequest();
             // 默认取第一个主键

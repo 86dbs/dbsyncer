@@ -1,39 +1,39 @@
 package org.dbsyncer.connector.model;
 
-import org.dbsyncer.connector.config.SqlBuilderConfig;
-
 import java.util.List;
 
 public class PageSql {
 
-    private SqlBuilderConfig sqlBuilderConfig;
-
     private String querySql;
 
-    private String quotation;
+    // 过滤条件
+    private String queryFilter;
 
     private List<String> primaryKeys;
 
-    public PageSql(SqlBuilderConfig sqlBuilderConfig, String querySql, String quotation, List<String> primaryKeys) {
-        this.sqlBuilderConfig = sqlBuilderConfig;
-        this.querySql = querySql;
-        this.quotation = quotation;
-        this.primaryKeys = primaryKeys;
-    }
+    // 字段
+    private List<Field> fields;
 
-    public SqlBuilderConfig getSqlBuilderConfig() {
-        return sqlBuilderConfig;
+    public PageSql(String querySql, String queryFilter, List<String> primaryKeys, List<Field> fields) {
+        this.querySql = querySql;
+        this.queryFilter = queryFilter;
+        this.primaryKeys = primaryKeys;
+        this.fields = fields;
     }
 
     public String getQuerySql() {
         return querySql;
     }
 
-    public String getQuotation() {
-        return quotation;
+    public String getQueryFilter() {
+        return queryFilter;
     }
 
     public List<String> getPrimaryKeys() {
         return primaryKeys;
+    }
+
+    public List<Field> getFields() {
+        return fields;
     }
 }

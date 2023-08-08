@@ -1,9 +1,14 @@
 package org.dbsyncer.connector.enums;
 
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.connector.database.sqlbuilder.*;
+import org.dbsyncer.connector.database.sqlbuilder.SqlBuilder;
+import org.dbsyncer.connector.database.sqlbuilder.SqlBuilderDelete;
+import org.dbsyncer.connector.database.sqlbuilder.SqlBuilderInsert;
+import org.dbsyncer.connector.database.sqlbuilder.SqlBuilderQuery;
+import org.dbsyncer.connector.database.sqlbuilder.SqlBuilderQueryCount;
+import org.dbsyncer.connector.database.sqlbuilder.SqlBuilderQueryExist;
+import org.dbsyncer.connector.database.sqlbuilder.SqlBuilderQueryCursor;
+import org.dbsyncer.connector.database.sqlbuilder.SqlBuilderUpdate;
 
 /**
  * @author AE86
@@ -31,7 +36,15 @@ public enum SqlBuilderEnum {
     /**
      * 查询游标SQL生成器
      */
-    QUERY_CURSOR(ConnectorConstant.OPERTION_QUERY_CURSOR, new SqlBuilderQueryCursor());
+    QUERY_CURSOR(ConnectorConstant.OPERTION_QUERY_CURSOR, new SqlBuilderQueryCursor()),
+    /**
+     * 查询总数
+     */
+    QUERY_COUNT(ConnectorConstant.OPERTION_QUERY_COUNT, new SqlBuilderQueryCount()),
+    /**
+     * 查询行数据是否存在
+     */
+    QUERY_EXIST(ConnectorConstant.OPERTION_QUERY_EXIST, new SqlBuilderQueryExist());
 
     /**
      * SQL构造器名称
@@ -46,15 +59,6 @@ public enum SqlBuilderEnum {
     SqlBuilderEnum(String name, SqlBuilder sqlBuilder) {
         this.name = name;
         this.sqlBuilder = sqlBuilder;
-    }
-
-    public static SqlBuilder getSqlBuilder(String name) throws ConnectorException {
-        for (SqlBuilderEnum e : SqlBuilderEnum.values()) {
-            if (StringUtil.equals(name, e.getName())) {
-                return e.getSqlBuilder();
-            }
-        }
-        throw new ConnectorException(String.format("SqlBuilder name \"%s\" does not exist.", name));
     }
 
     public String getName() {

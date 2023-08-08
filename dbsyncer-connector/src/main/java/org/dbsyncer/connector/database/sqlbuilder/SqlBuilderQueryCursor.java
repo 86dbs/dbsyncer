@@ -2,7 +2,10 @@ package org.dbsyncer.connector.database.sqlbuilder;
 
 import org.dbsyncer.connector.config.SqlBuilderConfig;
 import org.dbsyncer.connector.database.Database;
+import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.PageSql;
+
+import java.util.List;
 
 /**
  * @author AE86
@@ -15,8 +18,11 @@ public class SqlBuilderQueryCursor extends SqlBuilderQuery {
     public String buildSql(SqlBuilderConfig config) {
         // 分页语句
         Database database = config.getDatabase();
-        PageSql pageSql = new PageSql(config, buildQuerySql(config), config.getQuotation(), config.getPrimaryKeys());
-        return database.getPageCursorSql(pageSql);
+        String queryFilter = config.getQueryFilter();
+        List<String> primaryKeys = database.buildPrimaryKeys(config.getPrimaryKeys());
+        List<Field> fields = config.getFields();
+        PageSql pageSql = new PageSql(buildQuerySql(config), queryFilter, primaryKeys, fields);
+        return config.getDatabase().getPageCursorSql(pageSql);
     }
 
 }

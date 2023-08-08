@@ -12,10 +12,13 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 public abstract class PrimaryKeyUtil {
 
@@ -31,39 +34,37 @@ public abstract class PrimaryKeyUtil {
         }
 
         // 获取表同步的主键字段
-        List<String> primaryKeys = new ArrayList<>();
-        if (!CollectionUtils.isEmpty(table.getColumn())) {
-            table.getColumn().forEach(c -> {
-                if (c.isPk()) {
-                    primaryKeys.add(c.getName());
-                }
-            });
-        }
+        List<String> primaryKeys = findPrimaryKeys(table.getColumn());
 
         // 如果存在表字段映射关系，没有配置主键则抛出异常提示
         if (!CollectionUtils.isEmpty(table.getColumn()) && CollectionUtils.isEmpty(primaryKeys)) {
             throw new ConnectorException(String.format("目标表 %s 缺少主键.", table.getName()));
         }
-        return Collections.unmodifiableList(primaryKeys);
+        return primaryKeys;
     }
 
     /**
-     * 返回主键集合
+     * 返回主键名称
+     *
+     * @param fields
+     * @return
+     */
+    public static List<String> findPrimaryKeys(List<Field> fields) {
+        return findPrimaryKeyFields(fields).stream().map(f -> f.getName()).collect(Collectors.toList());
+    }
+
+    /**
+     * 返回主键属性字段集合
      *
      * @param config
      * @return
      */
-    public static List<Field> findConfigPrimaryKeys(WriterBatchConfig config) {
+    public static List<Field> findConfigPrimaryKeyFields(WriterBatchConfig config) {
         if (null == config) {
             throw new ConnectorException("The config is null.");
         }
 
-        List<Field> list = new ArrayList<>();
-        for (Field f : config.getFields()) {
-            if (f.isPk()) {
-                list.add(f);
-            }
-        }
+        List<Field> list = findPrimaryKeyFields(config.getFields());
         if (CollectionUtils.isEmpty(list)) {
             throw new ConnectorException("主键为空");
         }
@@ -71,22 +72,23 @@ public abstract class PrimaryKeyUtil {
     }
 
     /**
-     * 返回主键字段类型
+     * 返回主键属性字段集合
      *
      * @param fields
      * @return
      */
-    public static Map<String, Integer> findPrimaryKeyType(List<Field> fields) {
-        Map<String, Integer> map = new HashMap<>();
+    public static List<Field> findPrimaryKeyFields(List<Field> fields) {
+        List<Field> list = new ArrayList<>();
         if (!CollectionUtils.isEmpty(fields)) {
-            fields.forEach(field -> {
-                if (field.isPk()) {
-                    map.put(field.getName(), field.getType());
+            Set<String> mark = new HashSet<>();
+            fields.forEach(f -> {
+                if (f.isPk() && !mark.contains(f.getName())) {
+                    list.add(f);
+                    mark.add(f.getName());
                 }
             });
         }
-
-        return Collections.unmodifiableMap(map);
+        return Collections.unmodifiableList(list);
     }
 
     public static void buildSql(StringBuilder sql, List<String> primaryKeys, String quotation, String join, String value, boolean skipFirst) {
@@ -109,22 +111,27 @@ public abstract class PrimaryKeyUtil {
     /**
      * 游标主键必须为数字类型，否则会导致分页失效
      *
-     * @param typeAliases
-     * @param primaryKeys
+     * @param fields
      * @return
      */
-    public static boolean isSupportedCursor(Map<String, Integer> typeAliases, List<String> primaryKeys) {
-        if (CollectionUtils.isEmpty(typeAliases) || CollectionUtils.isEmpty(primaryKeys)) {
+    public static boolean isSupportedCursor(List<Field> fields) {
+        if (CollectionUtils.isEmpty(fields)) {
             return false;
         }
 
-        for (String pk : primaryKeys) {
-            Integer pkType = typeAliases.get(pk);
+        Map<String, Integer> typeAliases = new HashMap<>();
+        fields.forEach(field -> {
+            if (field.isPk()) {
+                typeAliases.put(field.getName(), field.getType());
+            }
+        });
+
+        for (Integer pkType : typeAliases.values()) {
             if (!isSupportedCursorType(pkType)) {
                 return false;
             }
         }
-        return true;
+        return !CollectionUtils.isEmpty(typeAliases);
     }
 
     /**

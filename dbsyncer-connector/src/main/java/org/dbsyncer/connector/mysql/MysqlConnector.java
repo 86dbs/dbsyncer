@@ -24,7 +24,9 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
     public String getPageSql(PageSql config) {
         // select * from test.`my_user` where `id` > ? and `uid` > ? order by `id`,`uid` limit ?,?
         StringBuilder sql = new StringBuilder(config.getQuerySql());
-        appendOrderByPkIfSupportedCursor(config, sql);
+        if (PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
+            appendOrderByPk(config, sql);
+        }
         sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
         return sql.toString();
     }
@@ -32,23 +34,23 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
     @Override
     public String getPageCursorSql(PageSql config) {
         // 不支持游标查询
-        if (!isSupportedCursor(config)) {
+        if (!PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
             logger.debug("不支持游标查询，主键包含非数字类型");
-            return "";
+            return StringUtil.EMPTY;
         }
 
         // select * from test.`my_user` where `id` > ? and `uid` > ? order by `id`,`uid` limit ?,?
         StringBuilder sql = new StringBuilder(config.getQuerySql());
         boolean skipFirst = false;
         // 没有过滤条件
-        if (StringUtil.isBlank(config.getSqlBuilderConfig().getQueryFilter())) {
+        if (StringUtil.isBlank(config.getQueryFilter())) {
             skipFirst = true;
             sql.append(" WHERE ");
         }
-        final String quotation = config.getQuotation();
+        final String quotation = buildSqlWithQuotation();
         final List<String> primaryKeys = config.getPrimaryKeys();
         PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, " AND ", " > ? ", skipFirst);
-        appendOrderByPkIfSupportedCursor(config, sql);
+        appendOrderByPk(config, sql);
         sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
         return sql.toString();
     }
@@ -76,7 +78,7 @@ public final class MysqlConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected boolean enableCursor() {
+    public boolean enableCursor() {
         return true;
     }
 

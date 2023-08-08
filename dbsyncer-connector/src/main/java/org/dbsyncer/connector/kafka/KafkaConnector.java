@@ -85,7 +85,7 @@ public class KafkaConnector extends AbstractConnector implements Connector<Kafka
 
         Result result = new Result();
         final KafkaConfig cfg = connectorMapper.getConfig();
-        final List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeys(config);
+        final List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeyFields(config);
         try {
             String topic = cfg.getTopic();
             // 默认取第一个主键

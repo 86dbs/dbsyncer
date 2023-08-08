@@ -404,7 +404,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
         List<Field> fields = executor.getFields();
         List<String> primaryKeys = new ArrayList<>();
         primaryKeys.add(ConfigConstant.CONFIG_MODEL_ID);
-        final SqlBuilderConfig config = new SqlBuilderConfig(connector, "", table, primaryKeys, fields, "", "");
+        final SqlBuilderConfig config = new SqlBuilderConfig(connector, "", table, primaryKeys, fields, "");
 
         String query = SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config);
         String insert = SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(config);

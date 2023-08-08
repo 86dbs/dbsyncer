@@ -8,27 +8,30 @@ import java.util.List;
 public class SqlBuilderConfig {
 
     private Database database;
+
     // 架构名
     private String schema;
+
     // 表名
     private String tableName;
+
     // 主键列表
     private List<String> primaryKeys;
+
     // 字段
     private List<Field> fields;
+
     // 过滤条件
     private String queryFilter;
-    // 引号
-    private String quotation;
 
-    public SqlBuilderConfig(Database database, String schema, String tableName, List<String> primaryKeys, List<Field> fields, String queryFilter, String quotation) {
+    public SqlBuilderConfig(Database database, String schema, String tableName, List<String> primaryKeys,
+                            List<Field> fields, String queryFilter) {
         this.database = database;
         this.schema = schema;
         this.tableName = tableName;
         this.primaryKeys = primaryKeys;
         this.fields = fields;
         this.queryFilter = queryFilter;
-        this.quotation = quotation;
     }
 
     public Database getDatabase() {
@@ -53,9 +56,5 @@ public class SqlBuilderConfig {
 
     public String getQueryFilter() {
         return queryFilter;
-    }
-
-    public String getQuotation() {
-        return quotation;
     }
 }

@@ -157,7 +157,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             throw new ConnectorException("writer data can not be empty.");
         }
         List<Field> fields = new ArrayList<>(config.getFields());
-        List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeys(config);
+        List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeyFields(config);
         // Update / Delete
         if (!isInsert(event)) {
             if (isDelete(event)) {
@@ -193,116 +193,65 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
+        Table table = commandConfig.getTable();
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(table);
+        if (CollectionUtils.isEmpty(primaryKeys)) {
+            return new HashMap<>();
+        }
+
+        String tableName = table.getName();
+        if (StringUtil.isBlank(tableName)) {
+            logger.error("数据源表不能为空.");
+            throw new ConnectorException("数据源表不能为空.");
+        }
+
+        // 架构名
+        String schema = getSchemaWithQuotation((DatabaseConfig) commandConfig.getConnectorConfig());
+        // 同步字段
+        List<Field> column = filterColumn(table.getColumn());
         // 获取过滤SQL
-        final String queryFilterSql = getQueryFilterSql(commandConfig.getFilter());
-        final String quotation = buildSqlWithQuotation();
+        final String queryFilterSql = getQueryFilterSql(commandConfig);
+        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, column, queryFilterSql);
 
         // 获取查询SQL
         Map<String, String> map = new HashMap<>();
-        String schema = getSchema((DatabaseConfig) commandConfig.getConnectorConfig(), quotation);
-        map.put(ConnectorConstant.OPERTION_QUERY, buildSql(ConnectorConstant.OPERTION_QUERY, commandConfig, schema, queryFilterSql));
+        buildSql(map, SqlBuilderEnum.QUERY, config);
         // 是否支持游标
         if (enableCursor()) {
-            map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, buildSql(ConnectorConstant.OPERTION_QUERY_CURSOR, commandConfig, schema, queryFilterSql));
+            buildSql(map, SqlBuilderEnum.QUERY_CURSOR, config);
         }
         // 获取查询总数SQL
-        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, getQueryCountSql(commandConfig, schema, quotation, queryFilterSql));
+        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, getQueryCountSql(commandConfig, primaryKeys, schema, queryFilterSql));
         return map;
     }
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        String quotation = buildSqlWithQuotation();
-        String schema = getSchema((DatabaseConfig) commandConfig.getConnectorConfig(), quotation);
+        Table table = commandConfig.getTable();
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(table);
+        if (CollectionUtils.isEmpty(primaryKeys)) {
+            return new HashMap<>();
+        }
+
+        String tableName = table.getName();
+        if (StringUtil.isBlank(tableName)) {
+            logger.error("目标源表不能为空.");
+            throw new ConnectorException("目标源表不能为空.");
+        }
+
+        // 架构名
+        String schema = getSchemaWithQuotation((DatabaseConfig) commandConfig.getConnectorConfig());
+        // 同步字段
+        List<Field> column = filterColumn(table.getColumn());
+        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, column, null);
 
         // 获取增删改SQL
         Map<String, String> map = new HashMap<>();
-        String insert = SqlBuilderEnum.INSERT.getName();
-        map.put(insert, buildSql(insert, commandConfig, schema, null));
-
-        String update = SqlBuilderEnum.UPDATE.getName();
-        map.put(update, buildSql(update, commandConfig, schema, null));
-
-        String delete = SqlBuilderEnum.DELETE.getName();
-        map.put(delete, buildSql(delete, commandConfig, schema, null));
-
-        // 获取查询数据行是否存在
-        String tableName = commandConfig.getTable().getName();
-        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
-        if (!CollectionUtils.isEmpty(primaryKeys)) {
-            StringBuilder queryCount = new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(tableName).append(quotation).append(" WHERE ");
-            // id = ? AND uid = ?
-            PrimaryKeyUtil.buildSql(queryCount, primaryKeys, quotation, " AND ", " = ? ", true);
-
-            String queryCountExist = ConnectorConstant.OPERTION_QUERY_COUNT_EXIST;
-            map.put(queryCountExist, queryCount.toString());
-        }
+        buildSql(map, SqlBuilderEnum.INSERT, config);
+        buildSql(map, SqlBuilderEnum.UPDATE, config);
+        buildSql(map, SqlBuilderEnum.DELETE, config);
+        buildSql(map, SqlBuilderEnum.QUERY_EXIST, config);
         return map;
-    }
-
-    /**
-     * 查询语句表名和字段带上引号（默认不加）
-     *
-     * @return
-     */
-    public String buildSqlWithQuotation() {
-        return "";
-    }
-
-    /**
-     * 是否使用游标查询
-     *
-     * @return
-     */
-    protected boolean enableCursor() {
-        return false;
-    }
-
-    /**
-     * 是否支持游标配置
-     *
-     * @param config
-     * @return
-     */
-    protected boolean isSupportedCursor(PageSql config) {
-        final List<String> primaryKeys = config.getPrimaryKeys();
-        final SqlBuilderConfig sqlBuilderConfig = config.getSqlBuilderConfig();
-        final Map<String, Integer> typeAliases = PrimaryKeyUtil.findPrimaryKeyType(sqlBuilderConfig.getFields());
-        return PrimaryKeyUtil.isSupportedCursor(typeAliases, primaryKeys);
-    }
-
-    /**
-     * 如果满足游标，追加主键排序
-     *
-     * @param config
-     * @param sql
-     */
-    protected void appendOrderByPkIfSupportedCursor(PageSql config, StringBuilder sql) {
-        if (isSupportedCursor(config)) {
-            sql.append(" ORDER BY ");
-            final List<String> primaryKeys = config.getPrimaryKeys();
-            final String quotation = config.getQuotation();
-            PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, ",", "", true);
-        }
-    }
-
-    /**
-     * 健康检查
-     *
-     * @return
-     */
-    protected String getValidationQuery() {
-        return "select 1";
-    }
-
-    /**
-     * 获取条件值引号
-     *
-     * @param value
-     * @return
-     */
-    protected String buildSqlFilterWithQuotation(String value) {
-        return "'";
     }
 
     /**
@@ -313,6 +262,33 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getSchema(DatabaseConfig config) {
         return config.getSchema();
+    }
+
+    /**
+     * 获取架构名
+     *
+     * @param config
+     * @return
+     */
+    protected String getSchemaWithQuotation(DatabaseConfig config) {
+        StringBuilder schema = new StringBuilder();
+        if (StringUtil.isNotBlank(config.getSchema())) {
+            String quotation = buildSqlWithQuotation();
+            schema.append(quotation).append(config.getSchema()).append(quotation).append(".").toString();
+        }
+        return schema.toString();
+    }
+
+    /**
+     * 满足游标查询条件，追加主键排序
+     *
+     * @param config
+     * @param sql
+     */
+    protected void appendOrderByPk(PageSql config, StringBuilder sql) {
+        sql.append(" ORDER BY ");
+        final String quotation = buildSqlWithQuotation();
+        PrimaryKeyUtil.buildSql(sql, config.getPrimaryKeys(), quotation, ",", "", true);
     }
 
     /**
@@ -369,50 +345,45 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * 获取查询总数SQL
      *
      * @param commandConfig
+     * @param primaryKeys
      * @param schema
-     * @param quotation
      * @param queryFilterSql
      * @return
      */
-    protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
-        String table = commandConfig.getTable().getName();
-        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
-        StringBuilder sql = new StringBuilder();
-        if (!CollectionUtils.isEmpty(primaryKeys)) {
-            sql.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema).append(quotation).append(table).append(quotation);
-            if (StringUtil.isNotBlank(queryFilterSql)) {
-                sql.append(queryFilterSql);
-            }
-            sql.append(" GROUP BY ");
-            // id,uid
-            PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, ",", "", true);
-            sql.append(") DBSYNCER_T");
-        }
-        return sql.toString();
+    protected String getQueryCountSql(CommandConfig commandConfig, List<String> primaryKeys, String schema, String queryFilterSql) {
+        Table table = commandConfig.getTable();
+        String tableName = table.getName();
+        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, table.getColumn(), queryFilterSql);
+        return SqlBuilderEnum.QUERY_COUNT.getSqlBuilder().buildSql(config);
     }
 
     /**
      * 获取查询条件SQL
      *
-     * @param filter
+     * @param commandConfig
      * @return
      */
-    protected String getQueryFilterSql(List<Filter> filter) {
+    protected String getQueryFilterSql(CommandConfig commandConfig) {
+        List<Filter> filter = commandConfig.getFilter();
         if (CollectionUtils.isEmpty(filter)) {
             return "";
         }
+        Table table = commandConfig.getTable();
+        Map<String, Field> fieldMap = new HashMap<>();
+        table.getColumn().forEach(field -> fieldMap.put(field.getName(), field));
+
         // 过滤条件SQL
         StringBuilder sql = new StringBuilder();
 
         // 拼接并且SQL
-        String addSql = getFilterSql(OperationEnum.AND.getName(), filter);
+        String addSql = getFilterSql(fieldMap, OperationEnum.AND.getName(), filter);
         // 如果Add条件存在
         if (StringUtil.isNotBlank(addSql)) {
             sql.append(addSql);
         }
 
         // 拼接或者SQL
-        String orSql = getFilterSql(OperationEnum.OR.getName(), filter);
+        String orSql = getFilterSql(fieldMap, OperationEnum.OR.getName(), filter);
         // 如果Or条件和Add条件都存在
         if (StringUtil.isNotBlank(orSql) && StringUtil.isNotBlank(addSql)) {
             sql.append(" OR ");
@@ -428,18 +399,25 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * 获取架构名
+     * 去重列名
      *
-     * @param config
-     * @param quotation
+     * @param column
      * @return
      */
-    protected String getSchema(DatabaseConfig config, String quotation) {
-        StringBuilder schema = new StringBuilder();
-        if (StringUtil.isNotBlank(config.getSchema())) {
-            schema.append(quotation).append(config.getSchema()).append(quotation).append(".");
+    private List<Field> filterColumn(List<Field> column) {
+        Set<String> mark = new HashSet<>();
+        List<Field> fields = new ArrayList<>();
+        for (Field c : column) {
+            String name = c.getName();
+            if (StringUtil.isBlank(name)) {
+                throw new ConnectorException("The field name can not be empty.");
+            }
+            if (!mark.contains(name)) {
+                fields.add(c);
+                mark.add(name);
+            }
         }
-        return schema.toString();
+        return fields;
     }
 
     /**
@@ -472,11 +450,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     /**
      * 根据过滤条件获取查询SQL
      *
+     * @param fieldMap
      * @param queryOperator and/or
      * @param filter
      * @return
      */
-    private String getFilterSql(String queryOperator, List<Filter> filter) {
+    private String getFilterSql(Map<String, Field> fieldMap, String queryOperator, List<Filter> filter) {
         List<Filter> list = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), queryOperator)).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(list)) {
             return "";
@@ -490,8 +469,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         String quotation = buildSqlWithQuotation();
         for (int i = 0; i < size; i++) {
             c = list.get(i);
+            Field field = fieldMap.get(c.getName());
+            Assert.notNull(field, "条件字段无效.");
             // "USER" = 'zhangsan'
-            sql.append(quotation).append(c.getName()).append(quotation);
+            sql.append(quotation);
+            sql.append(buildFieldName(field));
+            sql.append(quotation);
             sql.append(" ").append(c.getFilter()).append(" ");
             // 如果使用了函数则不加引号
             String filterValueQuotation = buildSqlFilterWithQuotation(c.getValue());
@@ -505,51 +488,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * 获取查询SQL
+     * 生成SQL
      *
-     * @param type           {@link SqlBuilderEnum}
-     * @param commandConfig
-     * @param schema
-     * @param queryFilterSQL
-     * @return
+     * @param map
+     * @param builderType
+     * @param config
      */
-    private String buildSql(String type, CommandConfig commandConfig, String schema, String queryFilterSQL) {
-        Table table = commandConfig.getTable();
-        if (null == table) {
-            logger.error("Table can not be null.");
-            throw new ConnectorException("Table can not be null.");
-        }
-        List<Field> column = table.getColumn();
-        if (CollectionUtils.isEmpty(column)) {
-            return null;
-        }
-        Set<String> mark = new HashSet<>();
-        List<Field> fields = new ArrayList<>();
-        for (Field c : column) {
-            String name = c.getName();
-            if (StringUtil.isBlank(name)) {
-                throw new ConnectorException("The field name can not be empty.");
-            }
-            if (!mark.contains(name)) {
-                fields.add(c);
-                mark.add(name);
-            }
-        }
-        if (CollectionUtils.isEmpty(fields)) {
-            logger.error("The fields can not be empty.");
-            throw new ConnectorException("The fields can not be empty.");
-        }
-        String tableName = table.getName();
-        if (StringUtil.isBlank(tableName)) {
-            logger.error("Table name can not be empty.");
-            throw new ConnectorException("Table name can not be empty.");
-        }
-        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
-        if (!CollectionUtils.isEmpty(primaryKeys)) {
-            SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, fields, queryFilterSQL, buildSqlWithQuotation());
-            return SqlBuilderEnum.getSqlBuilder(type).buildSql(config);
-        }
-        return "";
+    private void buildSql(Map<String, String> map, SqlBuilderEnum builderType, SqlBuilderConfig config) {
+        map.put(builderType.getName(), builderType.getSqlBuilder().buildSql(config));
     }
 
     /**
@@ -594,7 +540,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                              Map row) {
         if (isUpdate(config.getEvent()) || isInsert(config.getEvent())) {
             // 存在执行覆盖更新，否则写入
-            final String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_COUNT_EXIST);
+            final String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_EXIST);
             int size = pkFields.size();
             Object[] args = new Object[size];
             for (int i = 0; i < size; i++) {

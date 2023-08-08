@@ -72,7 +72,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
      */
     protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig, boolean groupByPK) {
         // 获取过滤SQL
-        String queryFilterSql = getQueryFilterSql(commandConfig.getFilter());
+        String queryFilterSql = getQueryFilterSql(commandConfig);
         Table table = commandConfig.getTable();
         Map<String, String> map = new HashMap<>();
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(table);
@@ -87,8 +87,8 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         if (StringUtil.isNotBlank(queryFilterSql)) {
             querySql += queryFilterSql;
         }
-        String quotation = buildSqlWithQuotation();
-        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(new PageSql(null, querySql, quotation, primaryKeys)));
+        PageSql pageSql = new PageSql(querySql, StringUtil.EMPTY, primaryKeys, table.getColumn());
+        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(pageSql));
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
@@ -98,6 +98,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         if (groupByPK) {
             queryCount.append(" GROUP BY ");
             // id,id2
+            String quotation = buildSqlWithQuotation();
             PrimaryKeyUtil.buildSql(queryCount, primaryKeys, quotation, ",", "", true);
         }
         queryCount.append(") DBSYNCER_T");
