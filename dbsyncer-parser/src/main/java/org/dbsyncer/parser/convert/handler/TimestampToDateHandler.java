@@ -4,7 +4,6 @@ import org.dbsyncer.parser.convert.AbstractHandler;
 
 import java.sql.Date;
 import java.sql.Timestamp;
-import java.time.ZoneId;
 
 /**
  * 时间戳转日期
@@ -19,7 +18,7 @@ public class TimestampToDateHandler extends AbstractHandler {
     public Object convert(String args, Object value) {
         if (value instanceof Timestamp) {
             Timestamp t = (Timestamp) value;
-            value = Date.from(t.toLocalDateTime().atZone(ZoneId.systemDefault()).toInstant());
+            value = new Date(t.getTime());
         }
         return value;
     }

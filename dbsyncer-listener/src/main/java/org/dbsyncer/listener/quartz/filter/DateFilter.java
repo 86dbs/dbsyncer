@@ -4,9 +4,9 @@ import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.listener.quartz.QuartzFilter;
 
 import java.sql.Date;
-import java.time.LocalDate;
+import java.time.Instant;
 
-public class DateFilter implements QuartzFilter {
+public class DateFilter implements QuartzFilter<Date> {
 
     private boolean begin;
 
@@ -15,18 +15,18 @@ public class DateFilter implements QuartzFilter {
     }
 
     @Override
-    public Object getObject() {
-        return Date.valueOf(LocalDate.now());
+    public Date getObject() {
+        return new Date(Instant.now().toEpochMilli());
     }
 
     @Override
-    public Object getObject(String s) {
+    public Date getObject(String s) {
         return DateFormatUtil.stringToDate(s);
     }
 
     @Override
-    public String toString(Object value) {
-        return DateFormatUtil.dateToString((Date) value);
+    public String toString(Date value) {
+        return DateFormatUtil.dateToString(value);
     }
 
     @Override
