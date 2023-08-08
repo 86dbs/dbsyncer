@@ -102,7 +102,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
             PrimaryKeyUtil.buildSql(queryCount, primaryKeys, quotation, ",", "", true);
         }
         queryCount.append(") DBSYNCER_T");
-        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, queryCount.toString());
+        map.put(SqlBuilderEnum.QUERY_COUNT.getName(), queryCount.toString());
         return map;
     }
 }

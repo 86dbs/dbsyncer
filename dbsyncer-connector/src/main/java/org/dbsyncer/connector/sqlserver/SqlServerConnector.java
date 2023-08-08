@@ -82,7 +82,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         if (CollectionUtils.isEmpty(primaryKeys)) {
             return primaryKeys;
         }
-        return primaryKeys.stream().map(pk -> SYS_FIELDS.contains(pk) ? convertKey(pk) : pk).collect(Collectors.toList());
+        return primaryKeys.stream().map(pk -> containsKeyword(pk) ? convertKey(pk) : pk).collect(Collectors.toList());
     }
 
     @Override
