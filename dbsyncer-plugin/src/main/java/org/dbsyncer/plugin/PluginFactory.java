@@ -158,7 +158,11 @@ public class PluginFactory implements DisposableBean {
                 String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
                 // 先释放历史版本
                 if (service.containsKey(pluginId)) {
-                    service.get(pluginId).close();
+                    try {
+                        service.get(pluginId).close();
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                    }
                     service.remove(pluginId);
                 }
                 service.putIfAbsent(pluginId, s);
