@@ -5,7 +5,7 @@ import org.dbsyncer.listener.quartz.QuartzFilter;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
-public class YesTimestampFilter implements QuartzFilter {
+public class YesTimestampFilter implements QuartzFilter<Timestamp> {
 
     private boolean begin;
 
@@ -14,7 +14,7 @@ public class YesTimestampFilter implements QuartzFilter {
     }
 
     @Override
-    public Object getObject() {
+    public Timestamp getObject() {
         if (begin) {
             // 2022-08-02 00:00:00
             return Timestamp.valueOf(LocalDateTime.now().minusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0));
@@ -24,14 +24,13 @@ public class YesTimestampFilter implements QuartzFilter {
     }
 
     @Override
-    public Object getObject(String s) {
+    public Timestamp getObject(String s) {
         return new Timestamp(Long.parseLong(s));
     }
 
     @Override
-    public String toString(Object value) {
-        Timestamp ts = (Timestamp) value;
-        return String.valueOf(ts.getTime());
+    public String toString(Timestamp value) {
+        return String.valueOf(value.getTime());
     }
 
     @Override

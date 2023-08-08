@@ -7,7 +7,7 @@ import java.sql.Date;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-public class YesDateFilter implements QuartzFilter {
+public class YesDateFilter implements QuartzFilter<Date> {
 
     private boolean begin;
 
@@ -16,7 +16,7 @@ public class YesDateFilter implements QuartzFilter {
     }
 
     @Override
-    public Object getObject() {
+    public Date getObject() {
         LocalDateTime localDateTime;
         if (!begin) {
             // 2022-08-02 23:59:59
@@ -25,17 +25,17 @@ public class YesDateFilter implements QuartzFilter {
             // 2022-08-02 00:00:00
             localDateTime = LocalDateTime.now().minusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
         }
-        return Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+        return new Date(localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
     }
 
     @Override
-    public Object getObject(String s) {
+    public Date getObject(String s) {
         return DateFormatUtil.stringToDate(s);
     }
 
     @Override
-    public String toString(Object value) {
-        return DateFormatUtil.dateToString((Date) value);
+    public String toString(Date value) {
+        return DateFormatUtil.dateToString(value);
     }
 
     @Override

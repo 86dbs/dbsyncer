@@ -82,7 +82,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
             }
         } catch (Exception e) {
             errorEvent(e);
-            logger.error(e.getMessage());
+            logger.error(e.getMessage(), e);
         } finally {
             if (locked) {
                 taskLock.unlock();

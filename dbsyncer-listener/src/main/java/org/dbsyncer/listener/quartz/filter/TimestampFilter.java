@@ -5,7 +5,7 @@ import org.dbsyncer.listener.quartz.QuartzFilter;
 import java.sql.Timestamp;
 import java.time.Instant;
 
-public class TimestampFilter implements QuartzFilter {
+public class TimestampFilter implements QuartzFilter<Timestamp> {
 
     private boolean begin;
 
@@ -14,19 +14,18 @@ public class TimestampFilter implements QuartzFilter {
     }
 
     @Override
-    public Object getObject() {
+    public Timestamp getObject() {
         return new Timestamp(Instant.now().toEpochMilli());
     }
 
     @Override
-    public Object getObject(String s) {
+    public Timestamp getObject(String s) {
         return new Timestamp(Long.parseLong(s));
     }
 
     @Override
-    public String toString(Object value) {
-        Timestamp ts = (Timestamp) value;
-        return String.valueOf(ts.getTime());
+    public String toString(Timestamp value) {
+        return String.valueOf(value.getTime());
     }
 
     @Override

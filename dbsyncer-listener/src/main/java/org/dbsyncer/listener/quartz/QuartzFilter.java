@@ -1,13 +1,13 @@
 package org.dbsyncer.listener.quartz;
 
-public interface QuartzFilter {
+public interface QuartzFilter<T> {
 
     /**
      * 获取默认参数
      *
      * @return
      */
-    Object getObject();
+    T getObject();
 
     /**
      * 反解参数
@@ -15,7 +15,7 @@ public interface QuartzFilter {
      * @param s
      * @return
      */
-    Object getObject(String s);
+    T getObject(String s);
 
     /**
      * 转String类型
@@ -23,7 +23,7 @@ public interface QuartzFilter {
      * @param value
      * @return
      */
-    String toString(Object value);
+    String toString(T value);
 
     /**
      * 是否开始字段

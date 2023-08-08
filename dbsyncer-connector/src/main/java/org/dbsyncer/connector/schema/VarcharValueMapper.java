@@ -5,10 +5,10 @@ import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 
 /**
  * @author AE86
@@ -33,6 +33,10 @@ public class VarcharValueMapper extends AbstractValueMapper<String> {
 
         if (val instanceof Date) {
             return DateFormatUtil.dateToString((Date) val);
+        }
+
+        if (val instanceof java.util.Date) {
+            return DateFormatUtil.dateToString((java.util.Date) val);
         }
 
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
