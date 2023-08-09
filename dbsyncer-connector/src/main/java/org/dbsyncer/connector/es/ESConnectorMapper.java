@@ -6,20 +6,18 @@ import org.dbsyncer.connector.config.ESConfig;
 import org.dbsyncer.connector.util.ESUtil;
 import org.elasticsearch.Version;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.MainResponse;
 
-public final class ESConnectorMapper implements ConnectorMapper<ESConfig, RestHighLevelClient> {
+public final class ESConnectorMapper implements ConnectorMapper<ESConfig, EasyRestHighLevelClient> {
     private ESConfig config;
-    private RestHighLevelClient client;
-    private Version version;
+    private EasyRestHighLevelClient client;
 
     public ESConnectorMapper(ESConfig config) {
         this.config = config;
         this.client = ESUtil.getConnection(config);
         try {
             MainResponse info = client.info(RequestOptions.DEFAULT);
-            version = Version.fromString(info.getVersion().getNumber());
+            client.setVersion(Version.fromString(info.getVersion().getNumber()));;
         } catch (Exception e) {
             throw new ConnectorException(String.format("获取ES版本信息异常 %s, %s", config.getUrl(), e.getMessage()));
         }
@@ -36,12 +34,12 @@ public final class ESConnectorMapper implements ConnectorMapper<ESConfig, RestHi
     }
 
     @Override
-    public RestHighLevelClient getConnection() {
+    public EasyRestHighLevelClient getConnection() {
         return client;
     }
 
     public Version getVersion() {
-        return version;
+        return client.getVersion();
     }
 
     @Override
