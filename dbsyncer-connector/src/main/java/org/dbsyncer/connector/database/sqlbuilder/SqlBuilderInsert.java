@@ -1,8 +1,9 @@
 package org.dbsyncer.connector.database.sqlbuilder;
 
-import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
 import org.dbsyncer.connector.database.AbstractSqlBuilder;
+import org.dbsyncer.connector.database.Database;
+import org.dbsyncer.connector.model.Field;
 
 import java.util.List;
 
@@ -15,18 +16,19 @@ public class SqlBuilderInsert extends AbstractSqlBuilder {
 
     @Override
     public String buildSql(SqlBuilderConfig config) {
-        String tableName = config.getTableName();
+        Database database = config.getDatabase();
+        String quotation = database.buildSqlWithQuotation();
         List<Field> fields = config.getFields();
-        String quotation = config.getQuotation();
 
-        StringBuilder sql = new StringBuilder();
         StringBuilder fs = new StringBuilder();
         StringBuilder vs = new StringBuilder();
         int size = fields.size();
         int end = size - 1;
         for (int i = 0; i < size; i++) {
             // "USERNAME"
-            fs.append(quotation).append(fields.get(i).getName()).append(quotation);
+            fs.append(quotation);
+            fs.append(database.buildFieldName(fields.get(i)));
+            fs.append(quotation);
             vs.append("?");
             //如果不是最后一个字段
             if (i < end) {
@@ -35,8 +37,12 @@ public class SqlBuilderInsert extends AbstractSqlBuilder {
             }
         }
         // INSERT INTO "USER"("USERNAME","AGE") VALUES (?,?)
-        sql.insert(0, "INSERT INTO ").append(config.getSchema()).append(quotation).append(tableName).append(quotation).append("(").append(fs).append(") VALUES (")
-                .append(vs).append(")");
+        StringBuilder sql = new StringBuilder("INSERT INTO ");
+        sql.append(config.getSchema());
+        sql.append(quotation);
+        sql.append(database.buildTableName(config.getTableName()));
+        sql.append(quotation);
+        sql.append("(").append(fs).append(") VALUES (").append(vs).append(")");
         return sql.toString();
     }
 

@@ -15,6 +15,7 @@ import org.dbsyncer.connector.model.Table;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -33,7 +34,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     /**
      * 系统关键字段名
      */
-    private final String SYS_FIELD_EXPRESSION = "(convert)";
+    private final Set<String> SYS_FIELDS = CollectionUtils.newHashSet("convert", "user", "type", "version", "close", "bulk", "source");
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
@@ -54,20 +55,11 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     public Object[] getPageArgs(ReaderConfig config) {
         int pageSize = config.getPageSize();
         int pageIndex = config.getPageIndex();
-        return new Object[]{(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
+        return new Object[] {(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
     }
 
     @Override
-    public String buildFieldName(Field field) {
-        // 处理系统关键字
-        if (containsKeyword(SYS_FIELD_EXPRESSION, field.getName())) {
-            return new StringBuilder("[").append(field.getName()).append("]").toString();
-        }
-        return field.getName();
-    }
-
-    @Override
-    protected String buildSqlFilterWithQuotation(String value) {
+    public String buildSqlFilterWithQuotation(String value) {
         // 支持SqlServer系统函数, Example: (select CONVERT(varchar(10),GETDATE(),120))
         if (containsKeyword(SYS_EXPRESSION, value)) {
             return StringUtil.EMPTY;
@@ -76,16 +68,35 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
+    public String buildTableName(String tableName) {
+        return containsKeyword(tableName) ? convertKey(tableName) : tableName;
+    }
+
+    @Override
+    public String buildFieldName(Field field) {
+        return containsKeyword(field.getName()) ? convertKey(field.getName()) : field.getName();
+    }
+
+    @Override
+    public List<String> buildPrimaryKeys(List<String> primaryKeys) {
+        if (CollectionUtils.isEmpty(primaryKeys)) {
+            return primaryKeys;
+        }
+        return primaryKeys.stream().map(pk -> containsKeyword(pk) ? convertKey(pk) : pk).collect(Collectors.toList());
+    }
+
+    @Override
+    protected String getQueryCountSql(CommandConfig commandConfig, List<String> primaryKeys, String schema, String queryFilterSql) {
         // 视图或有过滤条件，走默认方式
         final Table table = commandConfig.getTable();
         if (StringUtil.isNotBlank(queryFilterSql) || TableTypeEnum.isView(table.getType())) {
-            return new StringBuilder("SELECT COUNT(1) FROM ").append(schema).append(quotation).append(table.getName()).append(quotation).append(queryFilterSql).toString();
+            return super.getQueryCountSql(commandConfig, primaryKeys, schema, queryFilterSql);
         }
 
         DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
         // 从存储过程查询（定时更新总数，可能存在误差）
-        return String.format("select rows from sysindexes where id = object_id('%s.%s') and indid in (0, 1)", cfg.getSchema(), table.getName());
+        return String.format("select rows from sysindexes where id = object_id('%s.%s') and indid in (0, 1)", cfg.getSchema(),
+                table.getName());
     }
 
     private List<Table> getTables(DatabaseConnectorMapper connectorMapper, String sql, TableTypeEnum type) {
@@ -94,6 +105,23 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
             return tableNames.stream().map(name -> new Table(name, type.getCode())).collect(Collectors.toList());
         }
         return new ArrayList<>();
+    }
+
+    private String convertKey(String key) {
+        return new StringBuilder("[").append(key).append("]").toString();
+    }
+
+    /**
+     * 是否包含系统关键字
+     *
+     * @param val
+     * @return
+     */
+    private boolean containsKeyword(String val) {
+        if (StringUtil.isNotBlank(val)) {
+            return SYS_FIELDS.contains(val.toLowerCase());
+        }
+        return false;
     }
 
     /**

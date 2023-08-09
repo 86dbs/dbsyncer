@@ -9,6 +9,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.plugin.config.Plugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
  * @date 2019/10/1 13:26
  */
 @Component
-public class PluginFactory {
+public class PluginFactory implements DisposableBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -64,6 +65,12 @@ public class PluginFactory {
                 String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
                 service.putIfAbsent(pluginId, s);
                 plugins.add(new Plugin(s.getName(), s.getClass().getName(), s.getVersion(), "", true));
+                logger.info("初始化插件, {}_{} {}", s.getName(), s.getVersion(), s.getClass().getName());
+                try {
+                    s.init();
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
             });
         }
     }
@@ -149,13 +156,40 @@ public class PluginFactory {
             ServiceLoader<ConvertService> services = ServiceLoader.load(ConvertService.class, loader);
             for (ConvertService s : services) {
                 String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
+                // 先释放历史版本
+                if (service.containsKey(pluginId)) {
+                    try {
+                        service.get(pluginId).close();
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                    }
+                    service.remove(pluginId);
+                }
                 service.putIfAbsent(pluginId, s);
                 plugins.add(new Plugin(s.getName(), s.getClass().getName(), s.getVersion(), fileName, false));
-                logger.info("{}, {}_{} {}", fileName, s.getName(), s.getVersion(), s.getClass().getName());
+                logger.info("初始化插件 {}, {}_{} {}", fileName, s.getName(), s.getVersion(), s.getClass().getName());
+                try {
+                    s.init();
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
             }
         } catch (MalformedURLException e) {
             logger.error(e.getMessage());
         }
 
+    }
+
+    @Override
+    public void destroy() {
+        service.values().forEach(s -> {
+            logger.info("关闭插件, {}_{} {}", s.getName(), s.getVersion(), s.getClass().getName());
+            try {
+                s.close();
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
+        });
+        service.clear();
     }
 }

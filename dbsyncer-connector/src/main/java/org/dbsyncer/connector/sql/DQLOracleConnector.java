@@ -24,7 +24,7 @@ public final class DQLOracleConnector extends AbstractDQLConnector {
     }
 
     @Override
-    protected String getValidationQuery() {
+    public String getValidationQuery() {
         return "select 1 from dual";
     }
 

@@ -42,7 +42,9 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         StringBuilder sql = new StringBuilder();
         sql.append(DatabaseConstant.ORACLE_PAGE_SQL_START);
         sql.append(config.getQuerySql());
-        appendOrderByPkIfSupportedCursor(config, sql);
+        if (PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
+            appendOrderByPk(config, sql);
+        }
         sql.append(DatabaseConstant.ORACLE_PAGE_SQL_END);
         return sql.toString();
     }
@@ -50,9 +52,9 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     @Override
     public String getPageCursorSql(PageSql config) {
         // 不支持游标查询
-        if (!isSupportedCursor(config)) {
+        if (!PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
             logger.debug("不支持游标查询，主键包含非数字类型");
-            return "";
+            return StringUtil.EMPTY;
         }
 
         // SELECT * FROM (SELECT A.*, ROWNUM RN FROM (select * from test."my_user" where "id" > ? and "uid" > ? order by "id","uid")A WHERE ROWNUM <= ?) WHERE RN > ?
@@ -61,14 +63,14 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         sql.append(config.getQuerySql());
         boolean skipFirst = false;
         // 没有过滤条件
-        if (StringUtil.isBlank(config.getSqlBuilderConfig().getQueryFilter())) {
+        if (StringUtil.isBlank(config.getQueryFilter())) {
             skipFirst = true;
             sql.append(" WHERE ");
         }
-        final String quotation = config.getQuotation();
+        final String quotation = buildSqlWithQuotation();
         final List<String> primaryKeys = config.getPrimaryKeys();
         PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, " AND ", " > ? ", skipFirst);
-        appendOrderByPkIfSupportedCursor(config, sql);
+        appendOrderByPk(config, sql);
         sql.append(DatabaseConstant.ORACLE_PAGE_SQL_END);
         return sql.toString();
     }
@@ -96,12 +98,12 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected boolean enableCursor() {
+    public boolean enableCursor() {
         return true;
     }
 
     @Override
-    protected String buildSqlFilterWithQuotation(String value) {
+    public String buildSqlFilterWithQuotation(String value) {
         if (StringUtil.isNotBlank(value)) {
             String val = value.toLowerCase();
             // 支持Oracle系统函数, Example: to_char(sysdate, 'YYYY-MM-DD HH24:MI:SS')
@@ -114,15 +116,15 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String getValidationQuery() {
+    public String getValidationQuery() {
         return "select 1 from dual";
     }
 
     @Override
-    protected String getQueryCountSql(CommandConfig commandConfig, String schema, String quotation, String queryFilterSql) {
+    protected String getQueryCountSql(CommandConfig commandConfig, List<String> primaryKeys, String schema, String queryFilterSql) {
         final Table table = commandConfig.getTable();
         if (StringUtil.isNotBlank(queryFilterSql) || TableTypeEnum.isView(table.getType())) {
-            return super.getQueryCountSql(commandConfig, schema, quotation, queryFilterSql);
+            return super.getQueryCountSql(commandConfig, primaryKeys, schema, queryFilterSql);
         }
 
         // 从系统表查询

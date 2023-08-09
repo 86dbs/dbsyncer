@@ -1,11 +1,11 @@
 package org.dbsyncer.connector.database.sqlbuilder;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
 import org.dbsyncer.connector.database.AbstractSqlBuilder;
 import org.dbsyncer.connector.database.Database;
+import org.dbsyncer.connector.model.Field;
+import org.dbsyncer.connector.model.PageSql;
 
 import java.util.List;
 
@@ -19,20 +19,21 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
     @Override
     public String buildSql(SqlBuilderConfig config) {
         // 分页语句
-        Database database = config.getDatabase();
-        PageSql pageSql = new PageSql(config, buildQuerySql(config), config.getQuotation(), config.getPrimaryKeys());
-        return database.getPageSql(pageSql);
+        List<String> primaryKeys = config.getPrimaryKeys();
+        String queryFilter = config.getQueryFilter();
+        List<Field> fields = config.getFields();
+        PageSql pageSql = new PageSql(buildQuerySql(config), queryFilter, primaryKeys, fields);
+        return config.getDatabase().getPageSql(pageSql);
     }
 
     @Override
     public String buildQuerySql(SqlBuilderConfig config) {
-        String tableName = config.getTableName();
-        List<Field> fields = config.getFields();
-        String quotation = config.getQuotation();
-        String queryFilter = config.getQueryFilter();
         Database database = config.getDatabase();
+        String quotation = database.buildSqlWithQuotation();
+        List<Field> fields = config.getFields();
+        String queryFilter = config.getQueryFilter();
 
-        StringBuilder sql = new StringBuilder();
+        StringBuilder sql = new StringBuilder("SELECT ");
         int size = fields.size();
         int end = size - 1;
         Field field = null;
@@ -57,7 +58,9 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
             }
         }
         // SELECT "ID","NAME" FROM "USER"
-        sql.insert(0, "SELECT ").append(" FROM ").append(config.getSchema()).append(quotation).append(tableName).append(quotation);
+        sql.append(" FROM ").append(config.getSchema()).append(quotation);
+        sql.append(database.buildTableName(config.getTableName()));
+        sql.append(quotation);
         // 解析查询条件
         if (StringUtil.isNotBlank(queryFilter)) {
             sql.append(queryFilter);

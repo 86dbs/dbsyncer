@@ -11,6 +11,13 @@ package org.dbsyncer.common.spi;
 public interface ConvertService {
 
     /**
+     * 初始化加载
+     */
+    default void init(){
+
+    }
+
+    /**
      * 全量同步/增量同步
      *
      * @param context 上下文
@@ -43,4 +50,9 @@ public interface ConvertService {
         return getClass().getSimpleName();
     }
 
+    /**
+     * 关闭服务(上传相同插件或服务关闭时触发)
+     */
+    default void close() {
+    }
 }
