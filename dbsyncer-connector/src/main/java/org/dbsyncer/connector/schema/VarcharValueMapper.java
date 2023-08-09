@@ -23,6 +23,10 @@ public class VarcharValueMapper extends AbstractValueMapper<String> {
             return new String((byte[]) val);
         }
 
+        if (val instanceof Integer) {
+            return Integer.toString((Integer) val);
+        }
+
         if (val instanceof LocalDateTime) {
             return ((LocalDateTime) val).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         }
