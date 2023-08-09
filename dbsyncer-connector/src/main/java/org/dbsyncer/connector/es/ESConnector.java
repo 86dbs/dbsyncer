@@ -152,11 +152,14 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             ESConfig config = connectorMapper.getConfig();
             SearchSourceBuilder builder = new SearchSourceBuilder();
             genSearchSourceBuilder(builder, command);
-            builder.trackTotalHits(true);
+            // 7.x 版本以上
+            if (Version.V_7_0_0.onOrBefore(connectorMapper.getVersion())) {
+                builder.trackTotalHits(true);
+            }
             builder.from(0);
             builder.size(0);
             SearchRequest request = new SearchRequest(new String[] {config.getIndex()}, builder);
-            SearchResponse response = connectorMapper.getConnection().search(request, RequestOptions.DEFAULT);
+            SearchResponse response = connectorMapper.getConnection().searchWithVersion(request, RequestOptions.DEFAULT);
             return response.getHits().getTotalHits().value;
         } catch (IOException e) {
             logger.error(e.getMessage());
@@ -184,7 +187,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
         try {
             SearchRequest rq = new SearchRequest(new String[] {cfg.getIndex()}, builder);
-            SearchResponse searchResponse = connectorMapper.getConnection().search(rq, RequestOptions.DEFAULT);
+            SearchResponse searchResponse = connectorMapper.getConnection().searchWithVersion(rq, RequestOptions.DEFAULT);
             SearchHits hits = searchResponse.getHits();
             SearchHit[] searchHits = hits.getHits();
             List<Map<String, Object>> list = new ArrayList<>();

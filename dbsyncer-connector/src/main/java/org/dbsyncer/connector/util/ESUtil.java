@@ -12,6 +12,7 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.ESConfig;
+import org.dbsyncer.connector.es.EasyRestHighLevelClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -29,7 +30,7 @@ public abstract class ESUtil {
     private ESUtil() {
     }
 
-    public static RestHighLevelClient getConnection(ESConfig config) {
+    public static EasyRestHighLevelClient getConnection(ESConfig config) {
         String[] ipAddress = StringUtil.split(config.getUrl(), ",");
         HttpHost[] hosts = Arrays.stream(ipAddress).map(node -> HttpHost.create(node)).filter(Objects::nonNull).toArray(
                 HttpHost[]::new);
@@ -40,7 +41,7 @@ public abstract class ESUtil {
             SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(new TrustAllStrategy()).build();
             SSLIOSessionStrategy sessionStrategy = new SSLIOSessionStrategy(sslContext, NoopHostnameVerifier.INSTANCE);
             builder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider).setSSLStrategy(sessionStrategy));
-            final RestHighLevelClient client = new RestHighLevelClient(builder);
+            final EasyRestHighLevelClient client = new EasyRestHighLevelClient(builder);
             client.ping(RequestOptions.DEFAULT);
             return client;
         } catch (Exception e) {
