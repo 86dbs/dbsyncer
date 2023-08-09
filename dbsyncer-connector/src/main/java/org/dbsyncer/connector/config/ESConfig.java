@@ -30,12 +30,6 @@ public class ESConfig extends AbstractConnectorConfig {
      */
     private String index;
 
-    /**
-     * 类型(相当于表), 6.x 每个索引对应一个type；7.x版本不再引入type概念
-     */
-    @Deprecated
-    private String type = "_doc";
-
     public String getUrl() {
         return url;
     }
@@ -66,14 +60,6 @@ public class ESConfig extends AbstractConnectorConfig {
 
     public void setIndex(String index) {
         this.index = index;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
     }
 
 }

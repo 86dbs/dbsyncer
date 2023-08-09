@@ -22,6 +22,7 @@ import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.ESUtil;
 import org.dbsyncer.connector.util.PrimaryKeyUtil;
+import org.elasticsearch.Version;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -105,6 +106,14 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             GetIndexResponse indexResponse = connectorMapper.getConnection().indices().get(request, RequestOptions.DEFAULT);
             MappingMetadata mappingMetaData = indexResponse.getMappings().get(config.getIndex());
             List<Table> tables = new ArrayList<>();
+            // 6.x 版本
+            if (Version.V_7_0_0.after(connectorMapper.getVersion())) {
+                Map<String, Object> sourceMap = mappingMetaData.sourceAsMap();
+                sourceMap.keySet().forEach(tableName -> tables.add(new Table(tableName)));
+                return tables;
+            }
+
+            // 7.x 版本以上
             tables.add(new Table(mappingMetaData.type()));
             return tables;
         } catch (IOException e) {
@@ -115,26 +124,26 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
 
     @Override
     public MetaInfo getMetaInfo(ESConnectorMapper connectorMapper, String tableName) {
-        ESConfig config = connectorMapper.getConfig();
         List<Field> fields = new ArrayList<>();
         try {
+            ESConfig config = connectorMapper.getConfig();
             GetIndexRequest request = new GetIndexRequest(config.getIndex());
             GetIndexResponse indexResponse = connectorMapper.getConnection().indices().get(request, RequestOptions.DEFAULT);
             MappingMetadata mappingMetaData = indexResponse.getMappings().get(config.getIndex());
-            Map<String, Object> propertiesMap = mappingMetaData.getSourceAsMap();
-            Map<String, Map> properties = (Map<String, Map>) propertiesMap.get(ESUtil.PROPERTIES);
-            if (CollectionUtils.isEmpty(properties)) {
-                throw new ConnectorException("查询字段不能为空.");
+            Map<String, Object> sourceMap = mappingMetaData.sourceAsMap();
+            // 6.x 版本
+            if (Version.V_7_0_0.after(connectorMapper.getVersion())) {
+                parseProperties(fields, (Map) sourceMap.get(tableName));
+                return new MetaInfo().setColumn(fields);
             }
-            properties.forEach((k, v) -> {
-                String columnType = (String) v.get("type");
-                fields.add(new Field(k, columnType, ESFieldTypeEnum.getType(columnType)));
-            });
+
+            // 7.x 版本以上
+            parseProperties(fields, sourceMap);
+            return new MetaInfo().setColumn(fields);
         } catch (IOException e) {
             logger.error(e.getMessage());
             throw new ConnectorException(e);
         }
-        return new MetaInfo().setColumn(fields);
     }
 
     @Override
@@ -244,6 +253,18 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
         return Collections.EMPTY_MAP;
+    }
+
+    private void parseProperties(List<Field> fields, Map<String, Object> sourceMap) {
+        Map<String, Object> properties = (Map<String, Object>) sourceMap.get(ESUtil.PROPERTIES);
+        if (CollectionUtils.isEmpty(properties)) {
+            throw new ConnectorException("查询字段不能为空.");
+        }
+        properties.forEach((fieldName, c) -> {
+            Map fieldDesc = (Map) c;
+            String columnType = (String) fieldDesc.get("type");
+            fields.add(new Field(fieldName, columnType, ESFieldTypeEnum.getType(columnType)));
+        });
     }
 
     private void genSearchSourceBuilder(SearchSourceBuilder builder, Map<String, String> command) {
