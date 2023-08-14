@@ -20,6 +20,13 @@ public interface MappingService {
     String add(Map<String, String> params);
 
     /**
+     * 复制驱动
+     *
+     * @param id
+     */
+    String copy(String id);
+
+    /**
      * 修改驱动
      *
      * @param params

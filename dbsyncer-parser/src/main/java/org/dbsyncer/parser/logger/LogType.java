@@ -115,7 +115,8 @@ public interface LogType {
         DELETE("32", "删除"),
         RUNNING("33", "启动"),
         STOP("34", "停止"),
-        CLEAR_DATA("35", "清空同步数据");
+        CLEAR_DATA("35", "清空同步数据"),
+        COPY("36", "复制");
 
         private String type;
         private String message;
@@ -149,7 +150,8 @@ public interface LogType {
         UPDATE("41", "修改"),
         DELETE("42", "删除"),
         INCREMENT_FAILED("43", "增量同步异常"),
-        FULL_FAILED("44", "全量同步异常");
+        FULL_FAILED("44", "全量同步异常"),
+        COPY("45", "复制");
 
         private String type;
         private String message;
@@ -180,8 +182,7 @@ public interface LogType {
      */
     enum MetaLog implements LogType {
         DELETE("50", "删除"),
-        CLEAR("51", "删除数据"),
-        TASK("52", "任务");
+        CLEAR("51", "删除数据");
 
         private String type;
         private String message;

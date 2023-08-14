@@ -89,6 +89,8 @@ public interface Manager extends Executor {
 
     String editTableGroup(TableGroup model);
 
+    void removeTableGroup(String id);
+
     TableGroup getTableGroup(String tableGroupId);
 
     List<TableGroup> getTableGroupAll(String mappingId);

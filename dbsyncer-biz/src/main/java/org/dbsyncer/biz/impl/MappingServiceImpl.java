@@ -8,17 +8,24 @@ import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
+import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.logger.LogType;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +49,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Autowired
     private ConnectorService connectorService;
 
+    @Autowired
+    private SnowflakeIdWorker snowflakeIdWorker;
+
     @Override
     public String add(Map<String, String> params) {
         ConfigModel model = mappingChecker.checkAddConfigModel(params);
@@ -56,6 +66,36 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         }
 
         return id;
+    }
+
+    @Override
+    public String copy(String id) {
+        Mapping mapping = manager.getMapping(id);
+        Assert.notNull(mapping, "The mapping id is invalid.");
+
+        String json = JsonUtil.objToJson(mapping);
+        Mapping newMapping = JsonUtil.jsonToObj(json, Mapping.class);
+        newMapping.setName(mapping.getName() + "(复制)");
+        newMapping.setId(String.valueOf(snowflakeIdWorker.nextId()));
+        newMapping.setUpdateTime(Instant.now().toEpochMilli());
+        mappingChecker.addMeta(newMapping);
+
+        manager.addConfigModel(newMapping);
+        log(LogType.MappingLog.COPY, newMapping);
+
+        // 复制映射表关系
+        List<TableGroup> groupList = manager.getTableGroupAll(mapping.getId());
+        if(!CollectionUtils.isEmpty(groupList)){
+            groupList.forEach(tableGroup -> {
+                String tableGroupJson = JsonUtil.objToJson(tableGroup);
+                TableGroup newTableGroup = JsonUtil.jsonToObj(tableGroupJson, TableGroup.class);
+                newTableGroup.setId(String.valueOf(snowflakeIdWorker.nextId()));
+                newTableGroup.setMappingId(newMapping.getId());
+                manager.addTableGroup(newTableGroup);
+                log(LogType.TableGroupLog.COPY, newTableGroup);
+            });
+        }
+        return String.format("复制成功[%s]", newMapping.getName());
     }
 
     @Override
@@ -91,7 +131,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             // 删除tableGroup
             List<TableGroup> groupList = manager.getTableGroupAll(id);
             if (!CollectionUtils.isEmpty(groupList)) {
-                groupList.forEach(t -> manager.removeConfigModel(t.getId()));
+                groupList.forEach(t -> manager.removeTableGroup(t.getId()));
             }
 
             // 删除驱动
