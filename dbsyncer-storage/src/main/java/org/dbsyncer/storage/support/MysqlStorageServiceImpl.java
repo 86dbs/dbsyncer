@@ -123,7 +123,12 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     protected void delete(String sharding, Query query) {
-
+        Executor executor = getExecutor(query.getType(), sharding);
+        StringBuilder sql = new StringBuilder("DELETE FROM `").append(executor.getTable()).append("`");
+        List<Object> params = new ArrayList<>();
+        buildQuerySqlWithParams(query, params, sql, new ArrayList<>());
+        final List<Object[]> args = params.stream().map(val -> new Object[]{val}).collect(Collectors.toList());
+        connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql.toString(), args));
     }
 
     @Override
@@ -270,6 +275,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     private void buildQuerySqlWithFilters(List<AbstractFilter> filters, List<Object> args, StringBuilder sql, List<AbstractFilter> highLightKeys) {
         // 过滤值
         int size = filters.size();
+        String quotation = connector.buildSqlWithQuotation();
         for (int i = 0; i < size; i++) {
             AbstractFilter p = filters.get(i);
 
@@ -281,15 +287,15 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
             String name = UnderlineToCamelUtils.camelToUnderline(p.getName());
             switch (filterEnum) {
                 case EQUAL:
-                    sql.append(name).append(" = ?");
+                    sql.append(quotation).append(name).append(quotation).append(" = ?");
                     args.add(p.getValue());
                     break;
                 case LIKE:
-                    sql.append(name).append(" LIKE ?");
+                    sql.append(quotation).append(name).append(quotation).append(" LIKE ?");
                     args.add(new StringBuilder("%").append(p.getValue()).append("%"));
                     break;
                 case LT:
-                    sql.append(name).append(" < ?");
+                    sql.append(quotation).append(name).append(quotation).append(" < ?");
                     args.add(p.getValue());
                     break;
             }

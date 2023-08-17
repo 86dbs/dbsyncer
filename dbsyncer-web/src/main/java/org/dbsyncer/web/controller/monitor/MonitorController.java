@@ -101,7 +101,7 @@ public class MonitorController extends BaseController {
         connectorService.refreshHealth();
     }
 
-    @Scheduled(fixedRate = 15000)
+    @Scheduled(fixedRate = 30000)
     public void deleteExpiredDataAndLog() {
         monitorService.deleteExpiredDataAndLog();
     }

@@ -95,13 +95,8 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
     @Override
     protected void delete(String sharding, Query query) {
         Shard shard = getShard(sharding);
-        BooleanFilter baseQuery = query.getBooleanFilter();
-        List<AbstractFilter> filters = baseQuery.getFilters();
-        List<BooleanFilter> clauses = baseQuery.getClauses();
-        if (CollectionUtils.isEmpty(clauses) && CollectionUtils.isEmpty(filters)) {
-            throw new StorageException("必须包含删除条件");
-        }
-        shard.delete(buildQuery(filters, clauses, new HashSet<>()));
+        BooleanFilter q = query.getBooleanFilter();
+        shard.delete(buildQuery(q.getFilters(), q.getClauses(), new HashSet<>()));
     }
 
     @Override

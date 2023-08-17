@@ -3,6 +3,7 @@ package org.dbsyncer.storage;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.storage.enums.StorageEnum;
+import org.dbsyncer.storage.query.BooleanFilter;
 import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.strategy.Strategy;
 import org.slf4j.Logger;
@@ -83,6 +84,11 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     @Override
     public void delete(Query query) {
+        BooleanFilter q = query.getBooleanFilter();
+        if (CollectionUtils.isEmpty(q.getClauses()) && CollectionUtils.isEmpty(q.getFilters())) {
+            throw new StorageException("必须包含删除条件");
+        }
+
         boolean locked = false;
         try {
             locked = lock.tryLock(3, TimeUnit.SECONDS);
