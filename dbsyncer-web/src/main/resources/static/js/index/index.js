@@ -188,7 +188,7 @@ function doPost(url) {
 
 // 创建定时器
 function createTimer($projectGroupSelect){
-    doGetWithoutLoading("/monitor/getRefreshInterval",{}, function (data) {
+    doGetWithoutLoading("/monitor/getRefreshIntervalSeconds",{}, function (data) {
         if (data.success == true) {
             timer = setInterval(function(){
                 backIndexPage($projectGroupSelect.selectpicker('val'));

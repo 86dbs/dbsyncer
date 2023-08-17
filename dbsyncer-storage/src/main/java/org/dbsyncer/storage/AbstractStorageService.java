@@ -37,6 +37,8 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     protected abstract Paging select(String sharding, Query query);
 
+    protected abstract void delete(String sharding, Query query);
+
     protected abstract void deleteAll(String sharding);
 
     protected abstract void batchInsert(StorageEnum type, String sharding, List<Map> list);
@@ -77,6 +79,24 @@ public abstract class AbstractStorageService implements StorageService, Disposab
             }
         }
         return new Paging(query.getPageNum(), query.getPageSize());
+    }
+
+    @Override
+    public void delete(Query query) {
+        boolean locked = false;
+        try {
+            locked = lock.tryLock(3, TimeUnit.SECONDS);
+            if (locked) {
+                String sharding = getSharding(query.getType(), query.getMetaId());
+                delete(sharding, query);
+            }
+        } catch (InterruptedException e) {
+            logger.warn("tryLock error", e.getLocalizedMessage());
+        } finally {
+            if (locked) {
+                lock.unlock();
+            }
+        }
     }
 
     @Override

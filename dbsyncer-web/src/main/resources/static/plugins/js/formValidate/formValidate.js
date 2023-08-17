@@ -23,10 +23,20 @@ $.fn.formValidate = function(opt) {
 }
 
 var formValidateMethod = function($this){
+	let errorClassName = "dbsyncerVerifcateError";
 	if ($this.val() == "") {
-		$this.addClass("dbsyncerVerifcateError").attr("data-original-title", "必填").tooltip({trigger : 'manual'}).tooltip('show');
+		$this.addClass(errorClassName).attr("data-original-title", "必填").tooltip({trigger : 'manual'}).tooltip('show');
 		return false;
 	}
-	$this.tooltip('hide').removeClass("dbsyncerVerifcateError");
+	// 数字类型校验
+	if ($this.attr("type") == "number") {
+		let max = parseInt($this.attr("max"));
+		let min = parseInt($this.attr("min"));
+		if($this.val() > max || $this.val() < min){
+			$this.addClass(errorClassName).attr("data-original-title", "有效范围应在" + min + "-" + max).tooltip({trigger: 'manual'}).tooltip('show');
+			return false;
+		}
+	}
+	$this.tooltip('hide').removeClass(errorClassName);
 	return true;
 }

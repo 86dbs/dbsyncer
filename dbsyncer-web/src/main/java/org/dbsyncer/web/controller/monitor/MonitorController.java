@@ -101,6 +101,11 @@ public class MonitorController extends BaseController {
         connectorService.refreshHealth();
     }
 
+    @Scheduled(fixedRate = 15000)
+    public void deleteExpiredDataAndLog() {
+        monitorService.deleteExpiredDataAndLog();
+    }
+
     @GetMapping("/queryData")
     @ResponseBody
     public RestResult queryData(HttpServletRequest request) {
@@ -180,11 +185,11 @@ public class MonitorController extends BaseController {
     }
 
     @ResponseBody
-    @GetMapping("/getRefreshInterval")
+    @GetMapping("/getRefreshIntervalSeconds")
     public RestResult getRefreshInterval() {
         try {
             SystemConfigVo config = systemConfigService.getSystemConfigVo();
-            return RestResult.restSuccess(config.getRefreshInterval());
+            return RestResult.restSuccess(config.getRefreshIntervalSeconds());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());

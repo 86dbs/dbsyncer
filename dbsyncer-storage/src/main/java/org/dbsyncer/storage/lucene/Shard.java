@@ -91,6 +91,18 @@ public class Shard {
         }
     }
 
+    public void delete(Query query) {
+        try {
+            indexWriter.deleteDocuments(query);
+            indexWriter.flush();
+            indexWriter.commit();
+            indexWriter.forceMergeDeletes();
+            indexWriter.deleteUnusedFiles();
+        } catch (IOException e) {
+            logger.error(e.getLocalizedMessage(), e);
+        }
+    }
+
     public void deleteAll() {
         // Fix Bug: this IndexReader is closed. 直接删除文件
         try {
@@ -245,6 +257,10 @@ public class Shard {
         indexWriter = new IndexWriter(directory, config);
         // 创建索引的读取器
         indexReader = DirectoryReader.open(indexWriter);
+    }
+
+    public Analyzer getAnalyzer() {
+        return analyzer;
     }
 
     interface Callback {

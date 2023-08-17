@@ -122,6 +122,11 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     }
 
     @Override
+    protected void delete(String sharding, Query query) {
+
+    }
+
+    @Override
     protected void deleteAll(String sharding) {
         tables.computeIfPresent(sharding, (k, executor) -> {
             String sql = getExecutorSql(executor, k);

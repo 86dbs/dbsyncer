@@ -15,14 +15,42 @@ public class SystemConfig extends ConfigModel {
         super.setType(ConfigConstant.SYSTEM);
     }
 
-    private int refreshInterval = 5;
+    /**
+     * 同步数据过期时间（天）
+     */
+    private int expireDataDays = 7;
 
-    public int getRefreshInterval() {
-        return refreshInterval;
+    /**
+     * 系统日志过期时间（天）
+     */
+    private int expireLogDays = 30;
+
+    /**
+     * 刷新页面间隔（秒）
+     */
+    private int refreshIntervalSeconds = 5;
+
+    public int getExpireDataDays() {
+        return expireDataDays;
     }
 
-    public void setRefreshInterval(int refreshInterval) {
-        this.refreshInterval = refreshInterval;
+    public void setExpireDataDays(int expireDataDays) {
+        this.expireDataDays = expireDataDays;
     }
 
+    public int getExpireLogDays() {
+        return expireLogDays;
+    }
+
+    public void setExpireLogDays(int expireLogDays) {
+        this.expireLogDays = expireLogDays;
+    }
+
+    public int getRefreshIntervalSeconds() {
+        return refreshIntervalSeconds;
+    }
+
+    public void setRefreshIntervalSeconds(int refreshIntervalSeconds) {
+        this.refreshIntervalSeconds = refreshIntervalSeconds;
+    }
 }

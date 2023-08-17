@@ -53,12 +53,13 @@ public class SystemConfigChecker extends AbstractChecker {
         SystemConfig systemConfig = manager.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");
 
+        // 同步数据过期时间（天）
+        systemConfig.setExpireDataDays(NumberUtil.toInt(params.get("expireDataDays"), systemConfig.getExpireDataDays()));
+        // 系统日志过期时间（天）
+        systemConfig.setExpireLogDays(NumberUtil.toInt(params.get("expireLogDays"), systemConfig.getExpireLogDays()));
         // 刷新监控间隔（秒）
-        String refreshInterval = params.get("refreshInterval");
-        if (StringUtil.isNotBlank(refreshInterval)) {
-            int time = NumberUtil.toInt(refreshInterval, 10);
-            systemConfig.setRefreshInterval(time);
-        }
+        systemConfig.setRefreshIntervalSeconds(NumberUtil.toInt(params.get("refreshIntervalSeconds"), systemConfig.getRefreshIntervalSeconds()));
+
         logService.log(LogType.SystemLog.INFO, "修改系统配置");
 
         // 修改基本配置

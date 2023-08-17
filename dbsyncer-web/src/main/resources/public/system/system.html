@@ -16,9 +16,21 @@
             <div class="col-md-3"></div>
             <div class="col-md-6">
                 <div class="form-group">
+                    <label class="col-sm-4 control-label">同步数据过期时间(天) <strong class="driverVerifcateRequired">*</strong></label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" min="1" max="180" dbsyncer-valid="require" name="expireDataDays" th:value="${config?.expireDataDays}"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label">系统日志过期时间(天) <strong class="driverVerifcateRequired">*</strong></label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" min="1" max="180" dbsyncer-valid="require" name="expireLogDays" th:value="${config?.expireLogDays}"/>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label class="col-sm-4 control-label">刷新监控频率(秒) <strong class="driverVerifcateRequired">*</strong></label>
                     <div class="col-sm-8">
-                        <input type="number" class="form-control" max="100" min="1" dbsyncer-valid="require" name="refreshInterval" th:value="${config?.refreshInterval}"/>
+                        <input type="number" class="form-control" min="1" max="60" dbsyncer-valid="require" name="refreshIntervalSeconds" th:value="${config?.refreshIntervalSeconds}"/>
                     </div>
                 </div>
                 <div class="form-group">
