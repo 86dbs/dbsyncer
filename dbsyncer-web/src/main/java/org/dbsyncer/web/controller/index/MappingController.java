@@ -44,6 +44,17 @@ public class MappingController extends BaseController {
         return "mapping/" + page;
     }
 
+    @PostMapping("/copy")
+    @ResponseBody
+    public RestResult add(@RequestParam("id") String id) {
+        try {
+            return RestResult.restSuccess(mappingService.copy(id));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
     @PostMapping(value = "/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
@@ -51,7 +62,7 @@ public class MappingController extends BaseController {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(mappingService.add(params));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -63,7 +74,7 @@ public class MappingController extends BaseController {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(mappingService.edit(params));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -74,7 +85,7 @@ public class MappingController extends BaseController {
         try {
             return RestResult.restSuccess(mappingService.remove(id));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -85,7 +96,7 @@ public class MappingController extends BaseController {
         try {
             return RestResult.restSuccess(mappingService.start(id));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -96,7 +107,7 @@ public class MappingController extends BaseController {
         try {
             return RestResult.restSuccess(mappingService.stop(id));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -107,7 +118,7 @@ public class MappingController extends BaseController {
         try {
             return RestResult.restSuccess(mappingService.getMapping(id));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -118,7 +129,7 @@ public class MappingController extends BaseController {
         try {
             return RestResult.restSuccess(mappingService.getMappingAll());
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }

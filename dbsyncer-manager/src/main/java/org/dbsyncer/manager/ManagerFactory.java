@@ -174,6 +174,11 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     }
 
     @Override
+    public void removeTableGroup(String id) {
+        operationTemplate.remove(new OperationConfig(id, GroupStrategyEnum.TABLE));
+    }
+
+    @Override
     public TableGroup getTableGroup(String tableGroupId) {
         return operationTemplate.queryObject(TableGroup.class, tableGroupId);
     }

@@ -17,7 +17,7 @@ public final class ESConnectorMapper implements ConnectorMapper<ESConfig, EasyRe
         this.client = ESUtil.getConnection(config);
         try {
             MainResponse info = client.info(RequestOptions.DEFAULT);
-            client.setVersion(Version.fromString(info.getVersion().getNumber()));;
+            client.setVersion(Version.fromString(info.getVersion().getNumber()));
         } catch (Exception e) {
             throw new ConnectorException(String.format("获取ES版本信息异常 %s, %s", config.getUrl(), e.getMessage()));
         }

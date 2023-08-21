@@ -2,6 +2,7 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
+import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.metric.MetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.CpuMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.DiskMetricDetailFormatter;
@@ -21,6 +22,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.monitor.Monitor;
 import org.dbsyncer.monitor.enums.DiskMetricEnum;
 import org.dbsyncer.monitor.enums.MetricEnum;
@@ -31,8 +33,13 @@ import org.dbsyncer.monitor.model.MetricResponse;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
+import org.dbsyncer.storage.enums.StorageEnum;
+import org.dbsyncer.storage.query.BooleanFilter;
+import org.dbsyncer.storage.query.Query;
+import org.dbsyncer.storage.query.filter.LongFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -41,6 +48,8 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -66,6 +75,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Resource
     private ScheduledTaskService scheduledTaskService;
+
+    @Resource
+    private StorageService storageService;
+
+    @Resource
+    private SystemConfigService systemConfigService;
 
     private Map<String, MetricDetailFormatter> metricDetailFormatterMap = new LinkedHashMap<>();
 
@@ -170,6 +185,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
+    public void deleteExpiredDataAndLog() {
+        deleteExpiredData();
+        deleteExpiredLog();
+    }
+
+    @Override
     public List<StorageDataStatusEnum> getStorageDataStatusEnumAll() {
         return monitor.getStorageDataStatusEnumAll();
     }
@@ -217,6 +238,32 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         if (StringUtil.isNotBlank(msg)) {
             sendNotifyMessage("同步失败", msg);
         }
+    }
+
+    private void deleteExpiredData() {
+        List<MetaVo> metaAll = getMetaAll();
+        if (!CollectionUtils.isEmpty(metaAll)) {
+            Query query = new Query();
+            query.setType(StorageEnum.DATA);
+            int expireDataDays = systemConfigService.getSystemConfigVo().getExpireDataDays();
+            long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireDataDays)).getTime();
+            LongFilter expiredFilter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime);
+            query.setBooleanFilter(new BooleanFilter().add(expiredFilter));
+            metaAll.forEach(metaVo -> {
+                query.setMetaId(metaVo.getId());
+                storageService.delete(query);
+            });
+        }
+    }
+
+    private void deleteExpiredLog() {
+        Query query = new Query();
+        query.setType(StorageEnum.LOG);
+        int expireLogDays = systemConfigService.getSystemConfigVo().getExpireLogDays();
+        long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireLogDays)).getTime();
+        LongFilter expiredFilter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime);
+        query.setBooleanFilter(new BooleanFilter().add(expiredFilter));
+        storageService.delete(query);
     }
 
     private MetaVo convertMeta2Vo(Meta meta) {

@@ -1,7 +1,6 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.AppReportMetricVo;
-import org.dbsyncer.biz.vo.MessageVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.monitor.enums.MetricEnum;
@@ -70,6 +69,11 @@ public interface MonitorService {
      * @return
      */
     String clearLog();
+
+    /**
+     * 删除过期的数据和日志
+     */
+    void deleteExpiredDataAndLog();
 
     /**
      * 获取所有同步数据状态类型

@@ -477,7 +477,7 @@ function showChartTable() {
 // 创建定时器
 function createTimer() {
     showChartTable();
-    doGetWithoutLoading("/monitor/getRefreshInterval", {}, function (data) {
+    doGetWithoutLoading("/monitor/getRefreshIntervalSeconds", {}, function (data) {
         if (data.success == true) {
             timer = setInterval(function () {
                 showChartTable();

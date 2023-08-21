@@ -113,6 +113,17 @@ public class MappingChecker extends AbstractChecker {
         return mapping;
     }
 
+    public void addMeta(Mapping mapping) {
+        Meta meta = new Meta();
+        meta.setMappingId(mapping.getId());
+
+        // 修改基本配置
+        this.modifyConfigModel(meta, new HashMap<>());
+
+        String id = manager.addConfigModel(meta);
+        mapping.setMetaId(id);
+    }
+
     /**
      * 更新元信息
      *
@@ -197,17 +208,6 @@ public class MappingChecker extends AbstractChecker {
 
         meta.setUpdateTime(Instant.now().toEpochMilli());
         manager.editConfigModel(meta);
-    }
-
-    private void addMeta(Mapping mapping) {
-        Meta meta = new Meta();
-        meta.setMappingId(mapping.getId());
-
-        // 修改基本配置
-        this.modifyConfigModel(meta, new HashMap<>());
-
-        String id = manager.addConfigModel(meta);
-        mapping.setMetaId(id);
     }
 
     private void getMetaTotal(Meta meta, String model) {

@@ -75,13 +75,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
             }
 
             Set<String> highLightKeys = new HashSet<>();
-            BooleanQuery build = null;
-            if (!CollectionUtils.isEmpty(filters)) {
-                build = buildQueryWithFilters(filters, highLightKeys);
-            } else {
-                build = buildQueryWithBooleanFilters(clauses, highLightKeys);
-            }
-
+            BooleanQuery build = buildQuery(filters, clauses, highLightKeys);
             option.setQuery(build);
 
             // 高亮查询
@@ -96,6 +90,13 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         } catch (IOException e) {
             throw new StorageException(e);
         }
+    }
+
+    @Override
+    protected void delete(String sharding, Query query) {
+        Shard shard = getShard(sharding);
+        BooleanFilter q = query.getBooleanFilter();
+        shard.delete(buildQuery(q.getFilters(), q.getClauses(), new HashSet<>()));
     }
 
     @Override
@@ -138,6 +139,13 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
             m.getValue().close();
         }
         shards.clear();
+    }
+
+    private BooleanQuery buildQuery(List<AbstractFilter> filters, List<BooleanFilter> clauses, Set<String> highLightKeys) {
+        if (!CollectionUtils.isEmpty(filters)) {
+            return buildQueryWithFilters(filters, highLightKeys);
+        }
+        return buildQueryWithBooleanFilters(clauses, highLightKeys);
     }
 
     private BooleanQuery buildQueryWithFilters(List<AbstractFilter> filters, Set<String> highLightKeys) {

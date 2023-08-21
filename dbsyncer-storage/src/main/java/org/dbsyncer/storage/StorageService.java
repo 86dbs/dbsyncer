@@ -23,6 +23,13 @@ public interface StorageService {
     Paging query(Query query);
 
     /**
+     * 根据条件删除
+     *
+     * @param query
+     */
+    void delete(Query query);
+
+    /**
      * 清空数据/日志
      *
      * @param type

@@ -96,7 +96,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
             TableGroup model = manager.getTableGroup(id);
             log(LogType.TableGroupLog.DELETE, model);
-            manager.removeConfigModel(id);
+            manager.removeTableGroup(id);
         });
 
         // 合并驱动公共字段

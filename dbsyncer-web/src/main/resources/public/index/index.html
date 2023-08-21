@@ -196,6 +196,7 @@
                                                 <li th:if="${m?.meta?.state ne 1}" th:url="'/mapping/start?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-check-circle-o well-sign-green"></i>&nbsp;&nbsp;启动</a></li>
                                                 <!-- 运行中 -->
                                                 <li th:if="${m?.meta?.state eq 1}" th:url="'/mapping/stop?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-times-circle-o well-sign-red"></i>&nbsp;&nbsp;停止</a></li>
+                                                <li th:url="'/mapping/copy?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-copy"></i>&nbsp;复制</a></li>
                                                 <!-- 未运行 -->
                                                 <li th:if="${m?.meta?.state ne 1}" th:url="'/mapping/remove?id='+${m?.id}" confirm="true" confirmMessage="确认删除驱动?"><a href="javascript:;"><i class="fa fa-trash well-sign-red"></i>&nbsp;&nbsp;删除</a></li>
                                             </ul>
