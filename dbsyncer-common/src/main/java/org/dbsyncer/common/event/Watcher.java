@@ -7,7 +7,7 @@ import java.util.Map;
  * @Author AE86
  * @Date 2020-05-11 22:50
  */
-public interface Event {
+public interface Watcher {
 
     /**
      * 数据变更事件

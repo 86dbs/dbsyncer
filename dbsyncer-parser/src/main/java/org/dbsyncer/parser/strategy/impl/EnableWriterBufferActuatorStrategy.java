@@ -20,10 +20,7 @@ public final class EnableWriterBufferActuatorStrategy extends AbstractWriterBinl
 
     @Override
     public void execute(String tableGroupId, String event, Map<String, Object> data) {
-        // 缓存队列满时转写磁盘
-        if (!writerBufferActuator.offer(new WriterRequest(tableGroupId, event, data))) {
-            super.flush(tableGroupId, event, data);
-        }
+        writerBufferActuator.offer(new WriterRequest(tableGroupId, event, data));
     }
 
     @Override

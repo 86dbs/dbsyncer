@@ -1,6 +1,6 @@
 package org.dbsyncer.listener;
 
-import org.dbsyncer.common.event.Event;
+import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.event.RowChangedEvent;
 
 public interface Extractor {
@@ -18,9 +18,9 @@ public interface Extractor {
     /**
      * 注册监听事件（获取增量数据）
      *
-     * @param event
+     * @param watcher
      */
-    void register(Event event);
+    void register(Watcher watcher);
 
     /**
      * 数据变更事件

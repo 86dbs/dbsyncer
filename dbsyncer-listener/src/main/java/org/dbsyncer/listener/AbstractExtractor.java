@@ -1,6 +1,6 @@
 package org.dbsyncer.listener;
 
-import org.dbsyncer.common.event.Event;
+import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -42,14 +42,14 @@ public abstract class AbstractExtractor implements Extractor {
     protected List<Table> sourceTable;
     protected Map<String, String> snapshot;
     protected String metaId;
-    private Event consumer;
+    private Watcher watcher;
     private BlockingQueue<RowChangedEvent> queue;
-    private Thread consumerThread;
-    private volatile boolean enableConsumerThread;
+    private Thread consumer;
+    private volatile boolean enableConsumer;
     private Lock lock = new ReentrantLock();
     private Condition isFull;
     private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
-    private static final int FLUSH_DELAYED_SECONDS = 30;
+    private static final int FLUSH_DELAYED_SECONDS = 20;
     private long updateTime;
 
 
@@ -57,15 +57,15 @@ public abstract class AbstractExtractor implements Extractor {
     public void start() {
         this.lock = new ReentrantLock();
         this.isFull = lock.newCondition();
-        enableConsumerThread = true;
-        consumerThread = new Thread(() -> {
-            while (enableConsumerThread) {
+        enableConsumer = true;
+        consumer = new Thread(() -> {
+            while (enableConsumer) {
                 try {
                     // 取走BlockingQueue里排在首位的对象,若BlockingQueue为空,阻断进入等待状态直到Blocking有新的对象被加入为止
                     RowChangedEvent event = queue.take();
                     if (null != event) {
                         // TODO 待优化多表并行模型
-                        consumer.changedEvent(event);
+                        watcher.changedEvent(event);
                         // 更新增量点
                         refreshEvent(event);
                         updateTime = Instant.now().toEpochMilli();
@@ -77,22 +77,22 @@ public abstract class AbstractExtractor implements Extractor {
                 }
             }
         });
-        consumerThread.setName(new StringBuilder("extractor-consumer-").append(metaId).toString());
-        consumerThread.setDaemon(false);
-        consumerThread.start();
+        consumer.setName(new StringBuilder("extractor-consumer-").append(metaId).toString());
+        consumer.setDaemon(false);
+        consumer.start();
     }
 
     @Override
     public void close() {
-        enableConsumerThread = false;
-        if (consumerThread != null && !enableConsumerThread) {
-            consumerThread.interrupt();
+        enableConsumer = false;
+        if (consumer != null && !enableConsumer) {
+            consumer.interrupt();
         }
     }
 
     @Override
-    public void register(Event consumer) {
-        this.consumer = consumer;
+    public void register(Watcher watcher) {
+        this.watcher = watcher;
     }
 
     @Override
@@ -119,23 +119,26 @@ public abstract class AbstractExtractor implements Extractor {
 
     @Override
     public void flushEvent() {
-        // 30s内更新，执行写入
+        // 20s内更新，执行写入
         if (updateTime > 0 && updateTime > Timestamp.valueOf(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS)).getTime()) {
-            forceFlushEvent();
+            if (!CollectionUtils.isEmpty(snapshot)) {
+                watcher.flushEvent(snapshot);
+            }
         }
     }
 
 
     @Override
     public void forceFlushEvent() {
+        logger.info("snapshot：{}", snapshot);
         if (!CollectionUtils.isEmpty(snapshot)) {
-            consumer.flushEvent(snapshot);
+            watcher.flushEvent(snapshot);
         }
     }
 
     @Override
     public void errorEvent(Exception e) {
-        consumer.errorEvent(e);
+        watcher.errorEvent(e);
     }
 
     /**
@@ -172,11 +175,11 @@ public abstract class AbstractExtractor implements Extractor {
             if (lock) {
                 if (!queue.offer(event)) {
                     // 容量上限，阻塞重试
-                    while (!queue.offer(event)) {
+                    while (!queue.offer(event) && enableConsumer) {
                         try {
                             this.isFull.await(pollInterval.toMillis(), TimeUnit.MILLISECONDS);
                         } catch (InterruptedException e) {
-                            logger.error(e.getMessage(), e);
+                            break;
                         }
                     }
                 }

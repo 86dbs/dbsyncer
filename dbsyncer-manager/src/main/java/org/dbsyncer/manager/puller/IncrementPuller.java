@@ -1,6 +1,6 @@
 package org.dbsyncer.manager.puller;
 
-import org.dbsyncer.common.event.Event;
+import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
@@ -171,14 +171,14 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             extractor.setSourceTable(sourceTable);
             extractor.setSnapshot(meta.getSnapshot());
             extractor.setMetaId(meta.getId());
-            extractor.setQueue(new LinkedBlockingQueue<>(8162));
+            extractor.setQueue(new LinkedBlockingQueue<>(8192));
             return extractor;
         }
 
         throw new ManagerException("未知的监听配置.");
     }
 
-    abstract class AbstractConsumer implements Event {
+    abstract class AbstractConsumer implements Watcher {
         protected Mapping mapping;
 
         @Override
