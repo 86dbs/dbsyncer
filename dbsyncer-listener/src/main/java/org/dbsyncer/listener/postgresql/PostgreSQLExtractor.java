@@ -68,6 +68,7 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
                 return;
             }
 
+            super.start();
             connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(connectorConfig);
             config = connectorMapper.getConfig();
 
@@ -117,6 +118,7 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
     public void close() {
         try {
             connected = false;
+            super.close();
             if (null != worker && !worker.isInterrupted()) {
                 worker.interrupt();
                 worker = null;

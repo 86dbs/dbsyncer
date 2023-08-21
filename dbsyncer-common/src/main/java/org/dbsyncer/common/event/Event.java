@@ -24,24 +24,10 @@ public interface Event {
     void flushEvent(Map<String, String> snapshot);
 
     /**
-     * 强制写入增量点事件
-     *
-     * @param snapshot
-     */
-    void forceFlushEvent(Map<String,String> snapshot);
-
-    /**
      * 异常事件
      *
      * @param e
      */
     void errorEvent(Exception e);
-
-    /**
-     * 中断异常
-     *
-     * @param e
-     */
-    void interruptException(Exception e);
 
 }

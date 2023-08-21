@@ -35,22 +35,10 @@ public interface Extractor {
     void flushEvent();
 
     /**
-     * 强制刷新增量点事件
-     */
-    void forceFlushEvent();
-
-    /**
      * 异常事件
      *
      * @param e
      */
     void errorEvent(Exception e);
-
-    /**
-     * 中断异常
-     *
-     * @param e
-     */
-    void interruptException(Exception e);
 
 }

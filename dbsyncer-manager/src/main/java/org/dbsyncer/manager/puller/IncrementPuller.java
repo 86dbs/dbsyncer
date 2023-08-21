@@ -3,7 +3,6 @@ package org.dbsyncer.manager.puller;
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
-import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
@@ -31,11 +30,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -44,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
 /**
@@ -55,7 +51,7 @@ import java.util.stream.Collectors;
  * @date 2020/04/26 15:28
  */
 @Component
-public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob {
+public class IncrementPuller extends AbstractPuller {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -78,11 +74,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
     private ConnectorFactory connectorFactory;
 
     private Map<String, Extractor> map = new ConcurrentHashMap<>();
-
-    @PostConstruct
-    private void init() {
-        scheduledTaskService.start(3000, this);
-    }
 
     @Override
     public void start(Mapping mapping) {
@@ -126,12 +117,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         logger.info("关闭成功:{}", metaId);
     }
 
-    @Override
-    public void run() {
-        // 定时同步增量信息
-        map.forEach((k, v) -> v.flushEvent());
-    }
-
     private AbstractExtractor getExtractor(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta) throws InstantiationException, IllegalAccessException {
         AbstractConnectorConfig connectorConfig = connector.getConfig();
         ListenerConfig listenerConfig = mapping.getListener();
@@ -144,14 +129,14 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         if (ListenerTypeEnum.isTiming(listenerType)) {
             AbstractQuartzExtractor quartzExtractor = listener.getExtractor(ListenerTypeEnum.TIMING, connectorConfig.getConnectorType(), AbstractQuartzExtractor.class);
             quartzExtractor.setCommands(list.stream().map(t -> new TableGroupQuartzCommand(t.getSourceTable(), t.getCommand())).collect(Collectors.toList()));
-            quartzExtractor.register(new QuartzListener(mapping, list));
+            quartzExtractor.register(new QuartzConsumer(mapping, list));
             extractor = quartzExtractor;
         }
 
         // 基于日志抽取
         if (ListenerTypeEnum.isLog(listenerType)) {
             extractor = listener.getExtractor(ListenerTypeEnum.LOG, connectorConfig.getConnectorType(), AbstractExtractor.class);
-            extractor.register(new LogListener(mapping, list, extractor));
+            extractor.register(new LogConsumer(mapping, list));
         }
 
         if (null != extractor) {
@@ -173,33 +158,19 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             extractor.setSourceTable(sourceTable);
             extractor.setSnapshot(meta.getSnapshot());
             extractor.setMetaId(meta.getId());
+            extractor.setQueue(new LinkedBlockingQueue<>(8162));
             return extractor;
         }
 
         throw new ManagerException("未知的监听配置.");
     }
 
-    abstract class AbstractListener implements Event {
-        private static final int FLUSH_DELAYED_SECONDS = 30;
+    abstract class AbstractConsumer implements Event {
         protected Mapping mapping;
-        protected String metaId;
 
         @Override
         public void flushEvent(Map<String, String> snapshot) {
-            // 30s内更新，执行写入
-            Meta meta = manager.getMeta(metaId);
-            LocalDateTime lastSeconds = LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS);
-            if (meta.getUpdateTime() > Timestamp.valueOf(lastSeconds).getTime()) {
-                if (!CollectionUtils.isEmpty(snapshot)) {
-                    logger.debug("{}", snapshot);
-                }
-                forceFlushEvent(snapshot);
-            }
-        }
-
-        @Override
-        public void forceFlushEvent(Map<String, String> snapshot) {
-            Meta meta = manager.getMeta(metaId);
+            Meta meta = manager.getMeta(mapping.getMetaId());
             if (null != meta) {
                 meta.setSnapshot(snapshot);
                 manager.editConfigModel(meta);
@@ -209,12 +180,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         @Override
         public void errorEvent(Exception e) {
             logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
-        }
-
-        @Override
-        public void interruptException(Exception e) {
-            errorEvent(e);
-            close(metaId);
         }
     }
 
@@ -235,13 +200,12 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
      * <li>依次执行同步关系A >> B 然后 A >> C ...</li>
      * </ol>
      */
-    final class QuartzListener extends AbstractListener {
+    final class QuartzConsumer extends AbstractConsumer {
 
         private List<FieldPicker> tablePicker;
 
-        public QuartzListener(Mapping mapping, List<TableGroup> tableGroups) {
+        public QuartzConsumer(Mapping mapping, List<TableGroup> tableGroups) {
             this.mapping = mapping;
-            this.metaId = mapping.getMetaId();
             this.tablePicker = new LinkedList<>();
             tableGroups.forEach(t -> tablePicker.add(new FieldPicker(PickerUtil.mergeTableGroupConfig(mapping, t))));
         }
@@ -277,19 +241,13 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
      * <li>该模式下，会监听表所有字段.</li>
      * </ol>
      */
-    final class LogListener extends AbstractListener {
+    final class LogConsumer extends AbstractConsumer {
 
-        private Extractor extractor;
         private Map<String, List<FieldPicker>> tablePicker;
-        private AtomicInteger eventCounter;
-        private static final int MAX_LOG_CACHE_SIZE = 128;
 
-        public LogListener(Mapping mapping, List<TableGroup> tableGroups, Extractor extractor) {
+        public LogConsumer(Mapping mapping, List<TableGroup> tableGroups) {
             this.mapping = mapping;
-            this.metaId = mapping.getMetaId();
-            this.extractor = extractor;
             this.tablePicker = new LinkedHashMap<>();
-            this.eventCounter = new AtomicInteger();
             tableGroups.forEach(t -> {
                 final Table table = t.getSourceTable();
                 final String tableName = table.getName();
@@ -311,14 +269,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
                         parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);
                     }
                 });
-                eventCounter.set(0);
-                return;
-            }
-
-            // 防止挤压无效的增量数据，刷新最新的有效记录点
-            if (eventCounter.incrementAndGet() >= MAX_LOG_CACHE_SIZE) {
-                extractor.forceFlushEvent();
-                eventCounter.set(0);
             }
         }
     }

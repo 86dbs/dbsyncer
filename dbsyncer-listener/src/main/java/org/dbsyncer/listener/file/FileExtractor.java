@@ -69,6 +69,7 @@ public class FileExtractor extends AbstractExtractor {
             final FileConfig config = connectorMapper.getConfig();
             final String mapperCacheKey = connectorFactory.getConnector(connectorMapper).getConnectorMapperCacheKey(connectorConfig);
             connected = true;
+            super.start();
 
             separator = config.getSeparator();
             initPipeline(config.getFileDir());
@@ -79,7 +80,6 @@ public class FileExtractor extends AbstractExtractor {
             for (String fileName : pipeline.keySet()) {
                 parseEvent(fileName);
             }
-            forceFlushEvent();
 
             worker = new Worker();
             worker.setName(new StringBuilder("file-parser-").append(mapperCacheKey).append("_").append(worker.hashCode()).toString());
@@ -115,6 +115,7 @@ public class FileExtractor extends AbstractExtractor {
     @Override
     public void close() {
         try {
+            super.close();
             closePipelineAndWatch();
             connected = false;
             if (null != worker && !worker.isInterrupted()) {

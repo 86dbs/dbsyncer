@@ -11,10 +11,16 @@ import org.dbsyncer.listener.config.ListenerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @version 1.0.0
@@ -32,11 +38,51 @@ public abstract class AbstractExtractor implements Extractor {
     protected List<Table> sourceTable;
     protected Map<String, String> snapshot;
     protected String metaId;
-    protected Event watcher;
+    private Event consumer;
+    private BlockingQueue<RowChangedEvent> queue;
+    private Thread consumerThread;
+    private volatile boolean enableConsumerThread;
+    private Lock lock = new ReentrantLock();
+    private Condition isFull;
+    private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
 
     @Override
-    public void register(Event event) {
-        watcher = event;
+    public void start() {
+        this.lock = new ReentrantLock();
+        this.isFull = lock.newCondition();
+        enableConsumerThread = true;
+        consumerThread = new Thread(()->{
+            while (enableConsumerThread) {
+                try {
+                    // 取走BlockingQueue里排在首位的对象,若BlockingQueue为空,阻断进入等待状态直到Blocking有新的对象被加入为止
+                    RowChangedEvent event = queue.take();
+                    if (null != event) {
+                        // TODO 待优化多表并行模型
+                        consumer.changedEvent(event);
+                    }
+                } catch (InterruptedException e) {
+                    break;
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+        });
+        consumerThread.setName(new StringBuilder("extractor-consumer-").append(metaId).toString());
+        consumerThread.setDaemon(false);
+        consumerThread.start();
+    }
+
+    @Override
+    public void close() {
+        enableConsumerThread = false;
+        if (consumerThread != null && !enableConsumerThread) {
+            consumerThread.interrupt();
+        }
+    }
+
+    @Override
+    public void register(Event consumer) {
+        this.consumer = consumer;
     }
 
     @Override
@@ -63,23 +109,12 @@ public abstract class AbstractExtractor implements Extractor {
 
     @Override
     public void flushEvent() {
-        watcher.flushEvent(snapshot);
-    }
-
-    @Override
-    public void forceFlushEvent() {
-        logger.info("Force flush:{}", snapshot);
-        watcher.forceFlushEvent(snapshot);
+        consumer.flushEvent(snapshot);
     }
 
     @Override
     public void errorEvent(Exception e) {
-        watcher.errorEvent(e);
-    }
-
-    @Override
-    public void interruptException(Exception e) {
-        watcher.interruptException(e);
+        consumer.errorEvent(e);
     }
 
     protected void sleepInMills(long timeout) {
@@ -98,7 +133,16 @@ public abstract class AbstractExtractor implements Extractor {
      */
     private void processEvent(boolean permitEvent, RowChangedEvent event) {
         if (permitEvent) {
-            watcher.changedEvent(event);
+            if (!queue.offer(event)) {
+                // 容量上限，阻塞重试
+                while (!queue.offer(event)) {
+                    try {
+                        this.isFull.await(pollInterval.toMillis(), TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException e) {
+                        logger.error(e.getMessage(), e);
+                    }
+                }
+            }
         }
     }
 
@@ -133,5 +177,9 @@ public abstract class AbstractExtractor implements Extractor {
 
     public void setMetaId(String metaId) {
         this.metaId = metaId;
+    }
+
+    public void setQueue(BlockingQueue<RowChangedEvent> queue) {
+        this.queue = queue;
     }
 }

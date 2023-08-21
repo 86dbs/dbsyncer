@@ -53,6 +53,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                 logger.error("MysqlExtractor is already started");
                 return;
             }
+            super.start();
             run();
             connected = true;
         } catch (Exception e) {
@@ -68,6 +69,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
         try {
             connectLock.lock();
             connected = false;
+            super.close();
             if (null != client) {
                 client.disconnect();
             }
@@ -147,7 +149,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                 logger.error("第{}次重启异常, ThreadName:{}, {}", i, client.getWorkerThreadName(), e.getMessage());
                 // 无法连接，关闭任务
                 if (i == RETRY_TIMES) {
-                    interruptException(new ListenerException(String.format("重启异常, %s, %s", client.getWorkerThreadName(), e.getMessage())));
+                    errorEvent(new ListenerException(String.format("重启异常, %s, %s", client.getWorkerThreadName(), e.getMessage())));
                 }
             }
             try {
@@ -201,7 +203,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                     String log = String.format("线程[%s]执行异常。由于MySQL配置了过期binlog文件自动删除机制，已无法找到原binlog文件%s。建议先保存驱动（加载最新的binlog文件），再启动驱动。",
                             client.getWorkerThreadName(),
                             client.getBinlogFilename());
-                    interruptException(new ListenerException(log));
+                    errorEvent(new ListenerException(log));
                     return;
                 }
             }
@@ -268,8 +270,6 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
             if (header.getEventType() == EventType.ROTATE) {
                 RotateEventData data = event.getData();
                 refresh(data.getBinlogFilename(), data.getBinlogPosition());
-                forceFlushEvent();
-                return;
             }
         }
 

@@ -62,7 +62,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     private Lsn lastLsn;
     private String serverName;
     private String schema;
-    private LinkedBlockingQueue<Lsn> stopLsnQueue = new LinkedBlockingQueue<>();
+    private LinkedBlockingQueue<Lsn> stopLsnQueue = new LinkedBlockingQueue<>(256);
 
     @Override
     public void start() {
@@ -73,6 +73,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
                 return;
             }
             connected = true;
+            super.start();
             connect();
             readTables();
             Assert.notEmpty(tables, "No tables available");
@@ -99,6 +100,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     @Override
     public void close() {
         if (connected) {
+            super.close();
             LsnPuller.removeExtractor(metaId);
             if (null != worker && !worker.isInterrupted()) {
                 worker.interrupt();
@@ -359,6 +361,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
         if (stopLsnQueue.contains(stopLsn)) {
             return;
         }
+        // TODO 优化采用阻塞写
         stopLsnQueue.offer(stopLsn);
     }
 }
