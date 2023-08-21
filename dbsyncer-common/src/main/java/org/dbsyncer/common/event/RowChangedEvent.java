@@ -22,6 +22,8 @@ public class RowChangedEvent {
     private String event;
     private List<Object> dataList;
     private Map<String, Object> dataMap;
+    private String nextFileName;
+    private Object position;
 
     public RowChangedEvent(int tableGroupIndex, String event, Map<String, Object> data) {
         this.tableGroupIndex = tableGroupIndex;
@@ -65,6 +67,24 @@ public class RowChangedEvent {
 
     public void setDataMap(Map<String, Object> dataMap) {
         this.dataMap = dataMap;
+    }
+
+    public String getNextFileName() {
+        return nextFileName;
+    }
+
+    public RowChangedEvent setNextFileName(String nextFileName) {
+        this.nextFileName = nextFileName;
+        return this;
+    }
+
+    public Object getPosition() {
+        return position;
+    }
+
+    public RowChangedEvent setPosition(Object position) {
+        this.position = position;
+        return this;
     }
 
     @Override

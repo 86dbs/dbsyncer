@@ -80,6 +80,11 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
         }
     }
 
+    @Override
+    protected void refreshEvent(RowChangedEvent event) {
+        refreshSnapshot(event.getNextFileName(), (Long) event.getPosition());
+    }
+
     private void run() throws Exception {
         final DatabaseConfig config = (DatabaseConfig) connectorConfig;
         if (StringUtil.isBlank(config.getUrl())) {
@@ -92,15 +97,20 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
         final Host host = cluster.get(MASTER);
         final String username = config.getUsername();
         final String password = config.getPassword();
-        final String pos = snapshot.get(BINLOG_POSITION);
+        boolean containsPos = snapshot.containsKey(BINLOG_POSITION);
         client = new BinaryLogRemoteClient(host.getIp(), host.getPort(), username, password);
         client.setBinlogFilename(snapshot.get(BINLOG_FILENAME));
-        client.setBinlogPosition(StringUtil.isBlank(pos) ? 0 : Long.parseLong(pos));
+        client.setBinlogPosition(containsPos ? Long.parseLong(snapshot.get(BINLOG_POSITION)) : 0);
         client.setTableMapEventByTableId(tables);
         client.registerEventListener(new MysqlEventListener());
         client.registerLifecycleListener(new MysqlLifecycleListener());
 
         client.connect();
+
+        if (!containsPos) {
+            refreshSnapshot(client.getBinlogFilename(), client.getBinlogPosition());
+            super.forceFlushEvent();
+        }
     }
 
     private List<Host> readNodes(String url) {
@@ -168,12 +178,15 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
     private void refresh(String binlogFilename, long nextPosition) {
         if (StringUtil.isNotBlank(binlogFilename)) {
             client.setBinlogFilename(binlogFilename);
-            snapshot.put(BINLOG_FILENAME, binlogFilename);
         }
         if (0 < nextPosition) {
             client.setBinlogPosition(nextPosition);
-            snapshot.put(BINLOG_POSITION, String.valueOf(nextPosition));
         }
+    }
+
+    private void refreshSnapshot(String binlogFilename, long nextPosition) {
+        snapshot.put(BINLOG_FILENAME, binlogFilename);
+        snapshot.put(BINLOG_POSITION, String.valueOf(nextPosition));
     }
 
     final class MysqlLifecycleListener implements BinaryLogRemoteClient.LifecycleListener {
@@ -238,7 +251,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
-                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, after));
+                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, after).setNextFileName(client.getBinlogFilename()).setPosition(client.getBinlogPosition()));
                     });
                 }
                 return;
@@ -249,7 +262,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m).collect(Collectors.toList());
-                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, after));
+                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, after).setNextFileName(client.getBinlogFilename()).setPosition(client.getBinlogPosition()));
                     });
                 }
                 return;
@@ -260,7 +273,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m).collect(Collectors.toList());
-                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before));
+                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before).setNextFileName(client.getBinlogFilename()).setPosition(client.getBinlogPosition()));
                     });
                 }
                 return;

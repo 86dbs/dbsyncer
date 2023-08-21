@@ -110,6 +110,11 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
         }
     }
 
+    @Override
+    protected void refreshEvent(RowChangedEvent event) {
+        snapshot.put(LSN_POSITION, event.getPosition().toString());
+    }
+
     private void close(AutoCloseable closeable) {
         if (null != closeable) {
             try {
@@ -134,6 +139,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
             lastLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
             if (null != lastLsn && lastLsn.isAvailable()) {
                 snapshot.put(LSN_POSITION, lastLsn.toString());
+                super.forceFlushEvent();
                 return;
             }
             // Shouldn't happen if the agent is running, but it is better to guard against such situation
@@ -244,26 +250,26 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
             });
 
             if (!CollectionUtils.isEmpty(list)) {
-                parseEvent(list);
+                parseEvent(list, stopLsn);
             }
         });
     }
 
-    private void parseEvent(List<CDCEvent> list) {
+    private void parseEvent(List<CDCEvent> list, Lsn stopLsn) {
         for (CDCEvent event : list) {
             int code = event.getCode();
             if (TableOperationEnum.isUpdateAfter(code)) {
-                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, event.getRow()));
+                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, event.getRow()).setPosition(stopLsn));
                 continue;
             }
 
             if (TableOperationEnum.isInsert(code)) {
-                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, event.getRow()));
+                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, event.getRow()).setPosition(stopLsn));
                 continue;
             }
 
             if (TableOperationEnum.isDelete(code)) {
-                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow()));
+                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow()).setPosition(stopLsn));
             }
         }
     }

@@ -3,6 +3,7 @@ package org.dbsyncer.manager.puller;
 import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
+import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -51,7 +53,7 @@ import java.util.stream.Collectors;
  * @date 2020/04/26 15:28
  */
 @Component
-public class IncrementPuller extends AbstractPuller {
+public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -74,6 +76,11 @@ public class IncrementPuller extends AbstractPuller {
     private ConnectorFactory connectorFactory;
 
     private Map<String, Extractor> map = new ConcurrentHashMap<>();
+
+    @PostConstruct
+    private void init() {
+        scheduledTaskService.start(3000, this);
+    }
 
     @Override
     public void start(Mapping mapping) {
@@ -115,6 +122,12 @@ public class IncrementPuller extends AbstractPuller {
         map.remove(metaId);
         publishClosedEvent(metaId);
         logger.info("关闭成功:{}", metaId);
+    }
+
+    @Override
+    public void run() {
+        // 定时同步增量信息
+        map.forEach((k, v) -> v.flushEvent());
     }
 
     private AbstractExtractor getExtractor(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta) throws InstantiationException, IllegalAccessException {
@@ -183,30 +196,11 @@ public class IncrementPuller extends AbstractPuller {
         }
     }
 
-    /**
-     * </p>定时模式
-     * <ol>
-     * <li>根据过滤条件筛选</li>
-     * </ol>
-     * </p>同步关系：
-     * </p>数据源表 >> 目标源表
-     * <ul>
-     * <li>A >> B</li>
-     * <li>A >> C</li>
-     * <li>E >> F</li>
-     * </ul>
-     * </p>PS：
-     * <ol>
-     * <li>依次执行同步关系A >> B 然后 A >> C ...</li>
-     * </ol>
-     */
     final class QuartzConsumer extends AbstractConsumer {
 
-        private List<FieldPicker> tablePicker;
-
+        private List<FieldPicker> tablePicker = new LinkedList<>();
         public QuartzConsumer(Mapping mapping, List<TableGroup> tableGroups) {
             this.mapping = mapping;
-            this.tablePicker = new LinkedList<>();
             tableGroups.forEach(t -> tablePicker.add(new FieldPicker(PickerUtil.mergeTableGroupConfig(mapping, t))));
         }
 
@@ -221,33 +215,12 @@ public class IncrementPuller extends AbstractPuller {
         }
     }
 
-    /**
-     * </p>日志模式
-     * <ol>
-     * <li>监听表增量数据</li>
-     * <li>根据过滤条件筛选</li>
-     * </ol>
-     * </p>同步关系：
-     * </p>数据源表 >> 目标源表
-     * <ul>
-     * <li>A >> B</li>
-     * <li>A >> C</li>
-     * <li>E >> F</li>
-     * </ul>
-     * </p>PS：
-     * <ol>
-     * <li>为减少开销而选择复用监听器实例, 启动时只需创建一个数据源连接器.</li>
-     * <li>关系A >> B和A >> C会复用A监听的数据, A监听到增量数据，会发送给B和C.</li>
-     * <li>该模式下，会监听表所有字段.</li>
-     * </ol>
-     */
     final class LogConsumer extends AbstractConsumer {
 
-        private Map<String, List<FieldPicker>> tablePicker;
+        private Map<String, List<FieldPicker>> tablePicker = new LinkedHashMap<>();
 
         public LogConsumer(Mapping mapping, List<TableGroup> tableGroups) {
             this.mapping = mapping;
-            this.tablePicker = new LinkedHashMap<>();
             tableGroups.forEach(t -> {
                 final Table table = t.getSourceTable();
                 final String tableName = table.getName();

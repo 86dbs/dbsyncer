@@ -4,6 +4,7 @@ import org.dbsyncer.common.event.Event;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.model.Table;
@@ -11,7 +12,10 @@ import org.dbsyncer.listener.config.ListenerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -45,13 +49,16 @@ public abstract class AbstractExtractor implements Extractor {
     private Lock lock = new ReentrantLock();
     private Condition isFull;
     private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
+    private static final int FLUSH_DELAYED_SECONDS = 30;
+    private long updateTime;
+
 
     @Override
     public void start() {
         this.lock = new ReentrantLock();
         this.isFull = lock.newCondition();
         enableConsumerThread = true;
-        consumerThread = new Thread(()->{
+        consumerThread = new Thread(() -> {
             while (enableConsumerThread) {
                 try {
                     // 取走BlockingQueue里排在首位的对象,若BlockingQueue为空,阻断进入等待状态直到Blocking有新的对象被加入为止
@@ -59,6 +66,9 @@ public abstract class AbstractExtractor implements Extractor {
                     if (null != event) {
                         // TODO 待优化多表并行模型
                         consumer.changedEvent(event);
+                        // 更新增量点
+                        refreshEvent(event);
+                        updateTime = Instant.now().toEpochMilli();
                     }
                 } catch (InterruptedException e) {
                     break;
@@ -109,12 +119,32 @@ public abstract class AbstractExtractor implements Extractor {
 
     @Override
     public void flushEvent() {
-        consumer.flushEvent(snapshot);
+        // 30s内更新，执行写入
+        if (updateTime > 0 && updateTime > Timestamp.valueOf(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS)).getTime()) {
+            forceFlushEvent();
+        }
+    }
+
+
+    @Override
+    public void forceFlushEvent() {
+        if (!CollectionUtils.isEmpty(snapshot)) {
+            consumer.flushEvent(snapshot);
+        }
     }
 
     @Override
     public void errorEvent(Exception e) {
         consumer.errorEvent(e);
+    }
+
+    /**
+     * 更新增量点
+     *
+     * @param event
+     */
+    protected void refreshEvent(RowChangedEvent event) {
+        // nothing to do
     }
 
     protected void sleepInMills(long timeout) {
@@ -132,16 +162,28 @@ public abstract class AbstractExtractor implements Extractor {
      * @param event
      */
     private void processEvent(boolean permitEvent, RowChangedEvent event) {
-        if (permitEvent) {
-            if (!queue.offer(event)) {
-                // 容量上限，阻塞重试
-                while (!queue.offer(event)) {
-                    try {
-                        this.isFull.await(pollInterval.toMillis(), TimeUnit.MILLISECONDS);
-                    } catch (InterruptedException e) {
-                        logger.error(e.getMessage(), e);
+        if (!permitEvent) {
+            return;
+        }
+
+        boolean lock = false;
+        try {
+            lock = this.lock.tryLock();
+            if (lock) {
+                if (!queue.offer(event)) {
+                    // 容量上限，阻塞重试
+                    while (!queue.offer(event)) {
+                        try {
+                            this.isFull.await(pollInterval.toMillis(), TimeUnit.MILLISECONDS);
+                        } catch (InterruptedException e) {
+                            logger.error(e.getMessage(), e);
+                        }
                     }
                 }
+            }
+        } finally {
+            if (lock) {
+                this.lock.unlock();
             }
         }
     }
