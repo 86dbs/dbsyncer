@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferResponse;
 
 import java.util.LinkedList;
@@ -13,9 +14,7 @@ import java.util.Map;
  */
 public class WriterResponse extends AbstractWriter implements BufferResponse {
 
-    private static final String SYMBOL = "-";
     private List<Map> dataList = new LinkedList<>();
-    private List<String> messageIds = new LinkedList<>();
 
     private boolean isMerged;
 
@@ -26,15 +25,11 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
 
     @Override
     public String getSuffixName() {
-        return SYMBOL.concat(getEvent());
+        return StringUtil.SYMBOL.concat(getEvent());
     }
 
     public List<Map> getDataList() {
         return dataList;
-    }
-
-    public List<String> getMessageIds() {
-        return messageIds;
     }
 
     public boolean isMerged() {

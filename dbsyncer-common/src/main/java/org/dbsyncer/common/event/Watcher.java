@@ -32,4 +32,15 @@ public interface Watcher {
      */
     void errorEvent(Exception e);
 
+    /**
+     * 刷新Meta更新时间
+     */
+    void refreshMetaUpdateTime();
+
+    /**
+     * 获取Meta更新时间
+     *
+     * @return
+     */
+    long getMetaUpdateTime();
 }

@@ -4,13 +4,13 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.vo.BinlogColumnVo;
 import org.dbsyncer.biz.vo.MessageVo;
-import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.model.Field;
+import org.dbsyncer.manager.Manager;
 import org.dbsyncer.monitor.Monitor;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Meta;
@@ -51,7 +51,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     private Monitor monitor;
 
     @Resource
-    private CacheService cacheService;
+    private Manager manager;
 
     @Resource
     private BufferActuator writerBufferActuator;
@@ -87,7 +87,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     public Map getBinlogData(Map row, boolean prettyBytes) throws InvalidProtocolBufferException {
         String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
         // 1、获取配置信息
-        final TableGroup tableGroup = cacheService.get(tableGroupId, TableGroup.class);
+        final TableGroup tableGroup = manager.getTableGroup(tableGroupId);
         if (tableGroup == null) {
             return Collections.EMPTY_MAP;
         }
@@ -152,10 +152,11 @@ public class DataSyncServiceImpl implements DataSyncService {
             writerBufferActuator.offer(new WriterRequest(tableGroupId, event, binlogData));
             monitor.removeData(metaId, messageId);
             // 更新失败数
-            Meta meta = cacheService.get(metaId, Meta.class);
+            Meta meta = manager.getMeta(metaId);
             Assert.notNull(meta, "Meta can not be null.");
             meta.getFail().decrementAndGet();
             meta.setUpdateTime(Instant.now().toEpochMilli());
+            manager.editConfigModel(meta);
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
         }

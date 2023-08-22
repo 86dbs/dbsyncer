@@ -49,8 +49,7 @@ public abstract class AbstractExtractor implements Extractor {
     private Lock lock = new ReentrantLock();
     private Condition isFull;
     private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
-    private static final int FLUSH_DELAYED_SECONDS = 20;
-    private long updateTime;
+    private final int FLUSH_DELAYED_SECONDS = 20;
 
     @Override
     public void start() {
@@ -68,12 +67,12 @@ public abstract class AbstractExtractor implements Extractor {
                         // 更新增量点
                         refreshEvent(event);
                     }
+                    watcher.refreshMetaUpdateTime();
                 } catch (InterruptedException e) {
                     break;
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }
-                updateTime = Instant.now().toEpochMilli();
             }
         });
         consumer.setName(new StringBuilder("extractor-consumer-").append(metaId).toString());
@@ -119,7 +118,7 @@ public abstract class AbstractExtractor implements Extractor {
     @Override
     public void flushEvent() {
         // 20s内更新，执行写入
-        if (updateTime > 0 && updateTime > Timestamp.valueOf(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS)).getTime()) {
+        if (watcher.getMetaUpdateTime() > Timestamp.valueOf(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS)).getTime()) {
             if (!CollectionUtils.isEmpty(snapshot)) {
                 watcher.flushEvent(snapshot);
             }

@@ -18,7 +18,6 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.parser.model.WriterResponse;
 import org.dbsyncer.parser.strategy.FlushStrategy;
-import org.dbsyncer.parser.strategy.ParserStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
@@ -50,9 +49,6 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     private FlushStrategy flushStrategy;
 
     @Autowired
-    private ParserStrategy parserStrategy;
-
-    @Autowired
     private CacheService cacheService;
 
     @Autowired
@@ -66,9 +62,6 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     @Override
     protected void partition(WriterRequest request, WriterResponse response) {
         response.getDataList().add(request.getRow());
-        if (StringUtil.isNotBlank(request.getMessageId())) {
-            response.getMessageIds().add(request.getMessageId());
-        }
         if (response.isMerged()) {
             return;
         }
@@ -112,9 +105,6 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
 
         // 7、执行批量处理后的
         pluginFactory.postProcessAfter(group.getPlugin(), context);
-
-        // 8、完成处理
-        parserStrategy.complete(response.getMessageIds());
     }
 
     @Override

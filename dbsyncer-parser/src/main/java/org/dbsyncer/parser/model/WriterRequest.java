@@ -11,23 +11,12 @@ import java.util.Map;
  */
 public class WriterRequest extends AbstractWriter implements BufferRequest {
 
-    private String messageId;
-
     private Map row;
 
     public WriterRequest(String tableGroupId, String event, Map row) {
-        this(null, tableGroupId, event, row);
-    }
-
-    public WriterRequest(String messageId, String tableGroupId, String event, Map row) {
         setTableGroupId(tableGroupId);
         setEvent(event);
-        this.messageId = messageId;
         this.row = row;
-    }
-
-    public String getMessageId() {
-        return messageId;
     }
 
     public Map getRow() {

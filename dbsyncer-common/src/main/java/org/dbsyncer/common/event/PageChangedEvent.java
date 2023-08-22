@@ -12,7 +12,7 @@ import java.util.Map;
  * @Author AE86
  * @Date 2023-08-20 20:00
  */
-public class PageChangedEvent extends CommonChangedEvent {
+public final class PageChangedEvent extends CommonChangedEvent {
 
     private int tableGroupIndex;
 

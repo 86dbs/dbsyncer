@@ -174,7 +174,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             // 2、设置参数
             execute = connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
         } catch (Exception e) {
-            logger.error(e.getMessage());
             data.forEach(row -> forceUpdate(result, connectorMapper, config, pkFields, row));
         }
 

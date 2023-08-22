@@ -182,6 +182,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
     abstract class AbstractConsumer<E extends ChangedEvent> implements Watcher {
         protected Mapping mapping;
+        protected Meta meta;
 
         public abstract void onChange(E e);
 
@@ -192,16 +193,23 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
         @Override
         public void flushEvent(Map<String, String> snapshot) {
-            Meta meta = manager.getMeta(mapping.getMetaId());
-            if (null != meta) {
-                meta.setSnapshot(snapshot);
-                manager.editConfigModel(meta);
-            }
+            meta.setSnapshot(snapshot);
+            manager.editConfigModel(meta);
         }
 
         @Override
         public void errorEvent(Exception e) {
             logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
+        }
+
+        @Override
+        public void refreshMetaUpdateTime() {
+            meta.setUpdateTime(Instant.now().toEpochMilli());
+        }
+
+        @Override
+        public long getMetaUpdateTime() {
+            return meta.getUpdateTime();
         }
     }
 
@@ -210,6 +218,8 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         private List<FieldPicker> tablePicker = new LinkedList<>();
         public QuartzConsumer(Mapping mapping, List<TableGroup> tableGroups) {
             this.mapping = mapping;
+            this.meta = manager.getMeta(mapping.getMetaId());
+            Assert.notNull(meta, "The meta is null.");
             tableGroups.forEach(t -> tablePicker.add(new FieldPicker(PickerUtil.mergeTableGroupConfig(mapping, t))));
         }
 
@@ -230,6 +240,8 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
         public LogConsumer(Mapping mapping, List<TableGroup> tableGroups) {
             this.mapping = mapping;
+            this.meta = manager.getMeta(mapping.getMetaId());
+            Assert.notNull(meta, "The meta is null.");
             tableGroups.forEach(t -> {
                 final Table table = t.getSourceTable();
                 final String tableName = table.getName();
