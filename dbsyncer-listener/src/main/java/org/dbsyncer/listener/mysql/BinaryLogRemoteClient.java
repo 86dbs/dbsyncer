@@ -342,7 +342,8 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             if (serverSupportsSSL) {
                 SSLRequestCommand sslRequestCommand = new SSLRequestCommand();
                 sslRequestCommand.setCollation(collation);
-                channel.write(sslRequestCommand, packetNumber++);
+//                channel.write(sslRequestCommand, packetNumber++);
+                channel.write(sslRequestCommand);
                 SSLSocketFactory sslSocketFactory = sslMode == SSLMode.REQUIRED || sslMode == SSLMode.PREFERRED ?
                         DEFAULT_REQUIRED_SSL_MODE_SOCKET_FACTORY :
                         new DefaultSSLSocketFactory();
@@ -351,10 +352,14 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 usingSSLSocket = true;
             }
         }
-        AuthenticateCommand authenticateCommand = new AuthenticateCommand(schema, username, password,
-                greetingPacket.getScramble());
-        authenticateCommand.setCollation(collation);
-        channel.write(authenticateCommand, packetNumber);
+
+//        AuthenticateCommand authenticateCommand = new AuthenticateCommand(schema, username, password,
+//                greetingPacket.getScramble());
+//        authenticateCommand.setCollation(collation);
+//        channel.write(authenticateCommand, packetNumber);
+
+        AuthenticateSecurityPasswordCommand authenticateCommand = new AuthenticateSecurityPasswordCommand(schema, username, password, greetingPacket.getScramble(),collation);
+        channel.write(authenticateCommand);
         byte[] authenticationResult = channel.read();
         /* ok */
         if (authenticationResult[0] != (byte) 0x00) {
@@ -388,7 +393,8 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             String scramble = buffer.readZeroTerminatedString();
 
             Command switchCommand = new AuthenticateNativePasswordCommand(scramble, password);
-            channel.write(switchCommand, (usingSSLSocket ? 4 : 3));
+//            channel.write(switchCommand, (usingSSLSocket ? 4 : 3));
+            channel.write(switchCommand);
             byte[] authResult = channel.read();
 
             if (authResult[0] != (byte) 0x00) {
