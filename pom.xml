@@ -44,7 +44,7 @@
         <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
         <!--<mysql.version>5.1.40</mysql.version>-->
         <mysql.version>8.0.21</mysql.version>
-        <mysql-binlog.version>0.21.0</mysql-binlog.version>
+        <mysql-binlog.version>0.27.0</mysql-binlog.version>
         <mssql-jdbc.version>7.4.1.jre8</mssql-jdbc.version>
         <antlr4-runtime.version>4.7.2</antlr4-runtime.version>
         <postgresql.version>42.3.3</postgresql.version>
@@ -178,7 +178,7 @@
             </dependency>
 
             <dependency>
-                <groupId>com.github.shyiko</groupId>
+                <groupId>com.zendesk</groupId>
                 <artifactId>mysql-binlog-connector-java</artifactId>
                 <version>${mysql-binlog.version}</version>
             </dependency>
