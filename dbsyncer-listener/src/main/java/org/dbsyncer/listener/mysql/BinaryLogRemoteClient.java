@@ -1,6 +1,7 @@
 package org.dbsyncer.listener.mysql;
 
 import com.github.shyiko.mysql.binlog.GtidSet;
+import com.github.shyiko.mysql.binlog.MariadbGtidSet;
 import com.github.shyiko.mysql.binlog.event.*;
 import com.github.shyiko.mysql.binlog.event.deserialization.*;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
@@ -58,6 +59,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             }, null);
         }
     };
+    private static final SSLSocketFactory DEFAULT_VERIFY_CA_SSL_MODE_SOCKET_FACTORY = new DefaultSSLSocketFactory();
 
     // https://dev.mysql.com/doc/internals/en/sending-more-than-16mbyte.html
     private static final int MAX_PACKET_LENGTH = 16777215;
@@ -84,12 +86,14 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private String workerThreadName;
 
     private final Lock connectLock = new ReentrantLock();
+    private boolean gtidEnabled = false;
     private final Object gtidSetAccessLock = new Object();
     private GtidSet gtidSet;
     private String gtid;
     private boolean tx;
     private boolean gtidSetFallbackToPurged;
     private boolean useBinlogFilenamePositionInGtidMode;
+    private Boolean isMariaDB;
 
     private final List<BinaryLogRemoteClient.EventListener> eventListeners = new CopyOnWriteArrayList<>();
     private final List<BinaryLogRemoteClient.LifecycleListener> lifecycleListeners = new CopyOnWriteArrayList<>();
@@ -135,7 +139,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             spawnKeepAliveThread();
 
             // dump binary log
-            requestBinaryLogStream(channel);
+            requestBinaryLogStream();
             ensureEventDeserializerHasRequiredEDDs();
 
             // new listen thread
@@ -200,23 +204,23 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             throw new IOException("Failed to connect to MySQL on " + hostname + ":" + port + ". Please make sure it's running.", e);
         }
         GreetingPacket greetingPacket = receiveGreeting(channel);
-        authenticate(channel, greetingPacket);
+        detectMariaDB(greetingPacket);
+        tryUpgradeToSSL(greetingPacket);
+        new Authenticator(greetingPacket, channel, schema, username, password).authenticate();
+        channel.authenticationComplete();
+
         connectionId = greetingPacket.getThreadId();
         if ("".equals(binlogFilename)) {
-            synchronized (gtidSetAccessLock) {
-                if (gtidSet != null && "".equals(gtidSet.toString()) && gtidSetFallbackToPurged) {
-                    gtidSet = new GtidSet(fetchGtidPurged(channel));
-                }
-            }
+            setupGtidSet();
         }
         if (binlogFilename == null) {
-            fetchBinlogFilenameAndPosition(channel);
+            fetchBinlogFilenameAndPosition();
         }
         if (binlogPosition < 4) {
             logger.warn("Binary log position adjusted from {} to {}", binlogPosition, 4);
             binlogPosition = 4;
         }
-        ChecksumType checksumType = fetchBinlogChecksum(channel);
+        ChecksumType checksumType = fetchBinlogChecksum();
         if (checksumType != ChecksumType.NONE) {
             confirmSupportOfChecksum(channel, checksumType);
         }
@@ -224,6 +228,37 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             String position = gtidSet != null ? gtidSet.toString() : binlogFilename + "/" + binlogPosition;
             logger.info("Connected to {}:{} at {} (sid:{}, cid:{})", hostname, port, position, serverId, connectionId);
         }
+    }
+
+    private void detectMariaDB(GreetingPacket packet) {
+        String serverVersion = packet.getServerVersion();
+        if (serverVersion == null) {
+            return;
+        }
+        this.isMariaDB = serverVersion.toLowerCase().contains("mariadb");
+    }
+
+    private boolean tryUpgradeToSSL(GreetingPacket greetingPacket) throws IOException {
+        if (sslMode != SSLMode.DISABLED) {
+            boolean serverSupportsSSL = (greetingPacket.getServerCapabilities() & ClientCapabilities.SSL) != 0;
+            if (!serverSupportsSSL && (sslMode == SSLMode.REQUIRED || sslMode == SSLMode.VERIFY_CA ||
+                    sslMode == SSLMode.VERIFY_IDENTITY)) {
+                throw new IOException("MySQL server does not support SSL");
+            }
+            if (serverSupportsSSL) {
+                SSLRequestCommand sslRequestCommand = new SSLRequestCommand();
+                int collation = greetingPacket.getServerCollation();
+                sslRequestCommand.setCollation(collation);
+                channel.write(sslRequestCommand);
+                SSLSocketFactory sslSocketFactory = sslMode == SSLMode.REQUIRED || sslMode == SSLMode.PREFERRED ?
+                                        DEFAULT_REQUIRED_SSL_MODE_SOCKET_FACTORY :
+                                        DEFAULT_VERIFY_CA_SSL_MODE_SOCKET_FACTORY;
+                channel.upgradeToSSL(sslSocketFactory, sslMode == SSLMode.VERIFY_IDENTITY ? new TLSHostnameVerifier() : null);
+                logger.info("SSL enabled");
+                return true;
+            }
+        }
+        return false;
     }
 
     private void listenForEventPackets(final PacketChannel channel) {
@@ -275,10 +310,22 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private void ensureEventDeserializerHasRequiredEDDs() {
         ensureEventDataDeserializerIfPresent(EventType.ROTATE, RotateEventDataDeserializer.class);
         synchronized (gtidSetAccessLock) {
-            if (gtidSet != null) {
+            if (this.gtidEnabled) {
                 ensureEventDataDeserializerIfPresent(EventType.GTID, GtidEventDataDeserializer.class);
                 ensureEventDataDeserializerIfPresent(EventType.QUERY, QueryEventDataDeserializer.class);
+                ensureEventDataDeserializerIfPresent(EventType.ANNOTATE_ROWS, AnnotateRowsEventDataDeserializer.class);
+                ensureEventDataDeserializerIfPresent(EventType.MARIADB_GTID, MariadbGtidEventDataDeserializer.class);
+                ensureEventDataDeserializerIfPresent(EventType.MARIADB_GTID_LIST, MariadbGtidListEventDataDeserializer.class);
             }
+        }
+    }
+
+    protected void checkError(byte[] packet) throws IOException {
+        if (packet[0] == (byte) 0xFF /* error */) {
+            byte[] bytes = Arrays.copyOfRange(packet, 1, packet.length);
+            ErrorPacket errorPacket = new ErrorPacket(bytes);
+            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
+                    errorPacket.getSqlState());
         }
     }
 
@@ -294,16 +341,45 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         return new GreetingPacket(initialHandshakePacket);
     }
 
-    private void requestBinaryLogStream(final PacketChannel channel) throws IOException {
-        // http://bugs.mysql.com/bug.php?id=71178
-        long serverId = blocking ? this.serverId : 0;
+    private void requestBinaryLogStream() throws IOException {
+        long serverId = blocking ? this.serverId : 0; // http://bugs.mysql.com/bug.php?id=71178
+        if (this.isMariaDB) {
+            requestBinaryLogStreamMaria(serverId);
+            return;
+        }
+
+        requestBinaryLogStreamMysql(serverId);
+    }
+
+    private void requestBinaryLogStreamMysql(long serverId) throws IOException {
         Command dumpBinaryLogCommand;
         synchronized (gtidSetAccessLock) {
-            if (gtidSet != null) {
+            if (this.gtidEnabled) {
                 dumpBinaryLogCommand = new DumpBinaryLogGtidCommand(serverId,
                         useBinlogFilenamePositionInGtidMode ? binlogFilename : "",
                         useBinlogFilenamePositionInGtidMode ? binlogPosition : 4,
                         gtidSet);
+            } else {
+                dumpBinaryLogCommand = new DumpBinaryLogCommand(serverId, binlogFilename, binlogPosition);
+            }
+        }
+        channel.write(dumpBinaryLogCommand);
+    }
+
+    private void requestBinaryLogStreamMaria(long serverId) throws IOException {
+        Command dumpBinaryLogCommand;
+        synchronized (gtidSetAccessLock) {
+            if (this.gtidEnabled) {
+                channel.write(new QueryCommand("SET @mariadb_slave_capability=4"));
+                checkError(channel.read());
+                logger.info(gtidSet.toString());
+                channel.write(new QueryCommand("SET @slave_connect_state = '" + gtidSet.toString() + "'"));
+                checkError(channel.read());
+                channel.write(new QueryCommand("SET @slave_gtid_strict_mode = 0"));
+                checkError(channel.read());
+                channel.write(new QueryCommand("SET @slave_gtid_ignore_duplicates = 0"));
+                checkError(channel.read());
+                dumpBinaryLogCommand = new DumpBinaryLogCommand(serverId, "", 0L, false);
             } else {
                 dumpBinaryLogCommand = new DumpBinaryLogCommand(serverId, binlogFilename, binlogPosition);
             }
@@ -328,98 +404,42 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         }
     }
 
-    private void authenticate(final PacketChannel channel, GreetingPacket greetingPacket) throws IOException {
-        int collation = greetingPacket.getServerCollation();
-        int packetNumber = 1;
-
-        boolean usingSSLSocket = false;
-        if (sslMode != SSLMode.DISABLED) {
-            boolean serverSupportsSSL = (greetingPacket.getServerCapabilities() & ClientCapabilities.SSL) != 0;
-            if (!serverSupportsSSL && (sslMode == SSLMode.REQUIRED || sslMode == SSLMode.VERIFY_CA ||
-                    sslMode == SSLMode.VERIFY_IDENTITY)) {
-                throw new IOException("MySQL server does not support SSL");
-            }
-            if (serverSupportsSSL) {
-                SSLRequestCommand sslRequestCommand = new SSLRequestCommand();
-                sslRequestCommand.setCollation(collation);
-//                channel.write(sslRequestCommand, packetNumber++);
-                channel.write(sslRequestCommand);
-                SSLSocketFactory sslSocketFactory = sslMode == SSLMode.REQUIRED || sslMode == SSLMode.PREFERRED ?
-                        DEFAULT_REQUIRED_SSL_MODE_SOCKET_FACTORY :
-                        new DefaultSSLSocketFactory();
-
-                channel.upgradeToSSL(sslSocketFactory, sslMode == SSLMode.VERIFY_IDENTITY ? new TLSHostnameVerifier() : null);
-                usingSSLSocket = true;
-            }
-        }
-
-//        AuthenticateCommand authenticateCommand = new AuthenticateCommand(schema, username, password,
-//                greetingPacket.getScramble());
-//        authenticateCommand.setCollation(collation);
-//        channel.write(authenticateCommand, packetNumber);
-
-        AuthenticateSecurityPasswordCommand authenticateCommand = new AuthenticateSecurityPasswordCommand(schema, username, password, greetingPacket.getScramble(),collation);
-        channel.write(authenticateCommand);
-        byte[] authenticationResult = channel.read();
-        /* ok */
-        if (authenticationResult[0] != (byte) 0x00) {
-            /* error */
-            if (authenticationResult[0] == (byte) 0xFF) {
-                byte[] bytes = Arrays.copyOfRange(authenticationResult, 1, authenticationResult.length);
-                ErrorPacket errorPacket = new ErrorPacket(bytes);
-                throw new AuthenticationException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
-                        errorPacket.getSqlState());
-            } else if (authenticationResult[0] == (byte) 0xFE) {
-                switchAuthentication(channel, authenticationResult, usingSSLSocket);
-            } else {
-                throw new AuthenticationException("Unexpected authentication result (" + authenticationResult[0] + ")");
-            }
-        }
-    }
-
-    private void switchAuthentication(final PacketChannel channel, byte[] authenticationResult, boolean usingSSLSocket)
-            throws IOException {
-        /*
-            Azure-MySQL likes to tell us to switch authentication methods, even though
-            we haven't advertised that we support any.  It uses this for some-odd
-            reason to send the real password scramble.
-        */
-        ByteArrayInputStream buffer = new ByteArrayInputStream(authenticationResult);
-        //noinspection ResultOfMethodCallIgnored
-        buffer.read(1);
-
-        String authName = buffer.readZeroTerminatedString();
-        if ("mysql_native_password".equals(authName)) {
-            String scramble = buffer.readZeroTerminatedString();
-
-            Command switchCommand = new AuthenticateNativePasswordCommand(scramble, password);
-//            channel.write(switchCommand, (usingSSLSocket ? 4 : 3));
-            channel.write(switchCommand);
-            byte[] authResult = channel.read();
-
-            if (authResult[0] != (byte) 0x00) {
-                byte[] bytes = Arrays.copyOfRange(authResult, 1, authResult.length);
-                ErrorPacket errorPacket = new ErrorPacket(bytes);
-                throw new AuthenticationException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
-                        errorPacket.getSqlState());
-            }
-        } else {
-            throw new AuthenticationException("Unsupported authentication type: " + authName);
-        }
-    }
-
-    private String fetchGtidPurged(final PacketChannel channel) throws IOException {
+    private String fetchGtidPurged() throws IOException {
         channel.write(new QueryCommand("show global variables like 'gtid_purged'"));
-        ResultSetRowPacket[] resultSet = readResultSet(channel);
+        ResultSetRowPacket[] resultSet = readResultSet();
         if (resultSet.length != 0) {
             return resultSet[0].getValue(1).toUpperCase();
         }
         return "";
     }
 
-    private void fetchBinlogFilenameAndPosition(final PacketChannel channel) throws IOException {
+    private void setupGtidSet() throws IOException {
+        if (!this.gtidEnabled)
+            return;
+
+        synchronized (gtidSetAccessLock) {
+            if (this.isMariaDB) {
+                if (gtidSet == null) {
+                    gtidSet = new MariadbGtidSet("");
+                } else if (!(gtidSet instanceof MariadbGtidSet)) {
+                    throw new RuntimeException("Connected to MariaDB but given a mysql GTID set!");
+                }
+            } else {
+                if (gtidSet == null && gtidSetFallbackToPurged) {
+                    gtidSet = new GtidSet(fetchGtidPurged());
+                } else if (gtidSet == null) {
+                    gtidSet = new GtidSet("");
+                } else if (gtidSet instanceof MariadbGtidSet) {
+                    throw new RuntimeException("Connected to Mysql but given a MariaDB GTID set!");
+                }
+            }
+        }
+
+    }
+
+    private void fetchBinlogFilenameAndPosition() throws IOException {
         channel.write(new QueryCommand("show master status"));
-        ResultSetRowPacket[] resultSet = readResultSet(channel);
+        ResultSetRowPacket[] resultSet = readResultSet();
         if (resultSet.length == 0) {
             throw new IOException("Failed to determine binlog filename/position");
         }
@@ -428,9 +448,9 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         binlogPosition = Long.parseLong(resultSetRow.getValue(1));
     }
 
-    private ChecksumType fetchBinlogChecksum(final PacketChannel channel) throws IOException {
+    private ChecksumType fetchBinlogChecksum() throws IOException {
         channel.write(new QueryCommand("show global variables like 'binlog_checksum'"));
-        ResultSetRowPacket[] resultSet = readResultSet(channel);
+        ResultSetRowPacket[] resultSet = readResultSet();
         if (resultSet.length == 0) {
             return ChecksumType.NONE;
         }
@@ -440,13 +460,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private void confirmSupportOfChecksum(final PacketChannel channel, ChecksumType checksumType) throws IOException {
         channel.write(new QueryCommand("set @master_binlog_checksum= @@global.binlog_checksum"));
         byte[] statementResult = channel.read();
-        /* error */
-        if (statementResult[0] == (byte) 0xFF) {
-            byte[] bytes = Arrays.copyOfRange(statementResult, 1, statementResult.length);
-            ErrorPacket errorPacket = new ErrorPacket(bytes);
-            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
-                    errorPacket.getSqlState());
-        }
+        checkError(statementResult);
         eventDeserializer.setChecksumType(checksumType);
     }
 
@@ -525,8 +539,8 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         }
     }
 
-    private ResultSetRowPacket[] readResultSet(final PacketChannel channel) throws IOException {
-        List<ResultSetRowPacket> resultSet = new LinkedList<ResultSetRowPacket>();
+    private ResultSetRowPacket[] readResultSet() throws IOException {
+        List<ResultSetRowPacket> resultSet = new LinkedList();
         byte[] statementResult = channel.read();
         if (statementResult[0] == (byte) 0xFF /* error */) {
             byte[] bytes = Arrays.copyOfRange(statementResult, 1, statementResult.length);
@@ -733,21 +747,32 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     }
 
     /**
-     * @param gtidSet GTID set (can be an empty string).
-     *                <p>NOTE #1: Any value but null will switch BinaryLogRemoteClient into a GTID mode (this will also set binlogFilename
-     *                to "" (provided it's null) forcing MySQL to send events starting from the oldest known binlog (keep in mind that
-     *                connection will fail if gtid_purged is anything but empty (unless {@link #setGtidSetFallbackToPurged(boolean)} is set
-     *                to true))).
-     *                <p>NOTE #2: GTID set is automatically updated with each incoming GTID event (provided GTID mode is on).
+     * @param gtidStr GTID set string (can be an empty string).
+     * <p>NOTE #1: Any value but null will switch BinaryLogRemoteClient into a GTID mode (this will also set binlogFilename
+     * to "" (provided it's null) forcing MySQL to send events starting from the oldest known binlog (keep in mind
+     * that connection will fail if gtid_purged is anything but empty (unless
+     * {@link #setGtidSetFallbackToPurged(boolean)} is set to true))).
+     * <p>NOTE #2: GTID set is automatically updated with each incoming GTID event (provided GTID mode is on).
      * @see #getGtidSet()
      * @see #setGtidSetFallbackToPurged(boolean)
      */
-    public void setGtidSet(String gtidSet) {
-        if (gtidSet != null && this.binlogFilename == null) {
+    public void setGtidSet(String gtidStr) {
+        if (gtidStr == null)
+            return;
+
+        this.gtidEnabled = true;
+
+        if (this.binlogFilename == null) {
             this.binlogFilename = "";
         }
         synchronized (gtidSetAccessLock) {
-            this.gtidSet = gtidSet != null ? new GtidSet(gtidSet) : null;
+            if (!gtidStr.equals("")) {
+                if (MariadbGtidSet.isMariaGtidSet(gtidStr)) {
+                    this.gtidSet = new MariadbGtidSet(gtidStr);
+                } else {
+                    this.gtidSet = new GtidSet(gtidStr);
+                }
+            }
         }
     }
 
