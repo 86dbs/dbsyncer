@@ -1,8 +1,10 @@
 package org.dbsyncer.listener.file;
 
 import org.apache.commons.io.IOUtils;
+import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.file.BufferedRandomAccessFile;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.FileConfig;
@@ -29,6 +31,7 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -106,6 +109,8 @@ public class FileExtractor extends AbstractExtractor {
                 raf.seek(NumberUtil.toLong(snapshot.get(filePosKey), 0L));
             } else {
                 raf.seek(raf.length());
+                snapshot.put(filePosKey, String.valueOf(raf.getFilePointer()));
+                super.forceFlushEvent();
             }
 
             pipeline.put(fileName, new PipelineResolver(fileSchema.getFields(), raf));
@@ -124,6 +129,13 @@ public class FileExtractor extends AbstractExtractor {
             }
         } catch (Exception e) {
             logger.error("关闭失败:{}", e.getMessage());
+        }
+    }
+
+    @Override
+    protected void refreshEvent(ChangedEvent event) {
+        if (event.getNextFileName() != null && event.getPosition() != null) {
+            snapshot.put(event.getNextFileName(), String.valueOf(event.getPosition()));
         }
     }
 
@@ -150,15 +162,25 @@ public class FileExtractor extends AbstractExtractor {
             final RandomAccessFile raf = pipelineResolver.raf;
 
             final String filePosKey = getFilePosKey(fileName);
+            List<List> list = new ArrayList<>();
             String line;
             while (null != (line = pipelineResolver.readLine())) {
-                snapshot.put(filePosKey, String.valueOf(raf.getFilePointer()));
                 if (StringUtil.isNotBlank(line)) {
-                    List<Object> row = fileResolver.parseList(pipelineResolver.fields, separator, line);
-                    changedEvent(new RowChangedEvent(fileName, ConnectorConstant.OPERTION_UPDATE, row));
+                    list.add(fileResolver.parseList(pipelineResolver.fields, separator, line));
                 }
             }
 
+            if (!CollectionUtils.isEmpty(list)) {
+                int size = list.size();
+                for (int i = 0; i < size; i++) {
+                    RowChangedEvent event = new RowChangedEvent(fileName, ConnectorConstant.OPERTION_UPDATE, list.get(i));
+                    if (i == size - 1) {
+                        event.setNextFileName(filePosKey);
+                        event.setPosition(raf.getFilePointer());
+                    }
+                    changeEvent(event);
+                }
+            }
         }
     }
 

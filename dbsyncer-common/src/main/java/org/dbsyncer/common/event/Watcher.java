@@ -3,6 +3,8 @@ package org.dbsyncer.common.event;
 import java.util.Map;
 
 /**
+ * 数据变更监听器
+ *
  * @version 1.0.0
  * @Author AE86
  * @Date 2020-05-11 22:50
@@ -14,10 +16,10 @@ public interface Watcher {
      *
      * @param event
      */
-    void changedEvent(RowChangedEvent event);
+    void changeEvent(ChangedEvent event);
 
     /**
-     * 写入增量点事件
+     * 持久化增量点事件
      *
      * @param snapshot
      */

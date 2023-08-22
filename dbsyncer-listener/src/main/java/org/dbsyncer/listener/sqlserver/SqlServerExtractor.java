@@ -1,6 +1,7 @@
 package org.dbsyncer.listener.sqlserver;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
+import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -16,13 +17,17 @@ import org.springframework.util.Assert;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -62,7 +67,11 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     private Lsn lastLsn;
     private String serverName;
     private String schema;
-    private LinkedBlockingQueue<Lsn> stopLsnQueue = new LinkedBlockingQueue<>(256);
+    private final int BUFFER_CAPACITY = 256;
+    private BlockingQueue<Lsn> buffer = new LinkedBlockingQueue<>(BUFFER_CAPACITY);
+    private Lock lock = new ReentrantLock();
+    private Condition isFull = lock.newCondition();
+    private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
 
     @Override
     public void start() {
@@ -111,8 +120,10 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     }
 
     @Override
-    protected void refreshEvent(RowChangedEvent event) {
-        snapshot.put(LSN_POSITION, event.getPosition().toString());
+    protected void refreshEvent(ChangedEvent event) {
+        if (event.getPosition() != null) {
+            snapshot.put(LSN_POSITION, event.getPosition().toString());
+        }
     }
 
     private void close(AutoCloseable closeable) {
@@ -256,20 +267,22 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     }
 
     private void parseEvent(List<CDCEvent> list, Lsn stopLsn) {
-        for (CDCEvent event : list) {
-            int code = event.getCode();
-            if (TableOperationEnum.isUpdateAfter(code)) {
-                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, event.getRow()).setPosition(stopLsn));
+        int size = list.size();
+        for (int i = 0; i < size; i++) {
+            boolean isEnd = i == size - 1;
+            CDCEvent event = list.get(i);
+            if (TableOperationEnum.isUpdateAfter(event.getCode())) {
+                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, event.getRow(), null, (isEnd ? stopLsn : null)));
                 continue;
             }
 
-            if (TableOperationEnum.isInsert(code)) {
-                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, event.getRow()).setPosition(stopLsn));
+            if (TableOperationEnum.isInsert(event.getCode())) {
+                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, event.getRow(), null, (isEnd ? stopLsn : null)));
                 continue;
             }
 
-            if (TableOperationEnum.isDelete(code)) {
-                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow()).setPosition(stopLsn));
+            if (TableOperationEnum.isDelete(event.getCode())) {
+                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), null, (isEnd ? stopLsn : null)));
             }
         }
     }
@@ -336,9 +349,9 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
         public void run() {
             while (!isInterrupted() && connected) {
                 try {
-                    Lsn stopLsn = stopLsnQueue.take();
+                    Lsn stopLsn = buffer.take();
                     Lsn poll;
-                    while ((poll = stopLsnQueue.poll()) != null) {
+                    while ((poll = buffer.poll()) != null) {
                         stopLsn = poll;
                     }
                     if (!stopLsn.isAvailable() || stopLsn.compareTo(lastLsn) <= 0) {
@@ -349,6 +362,8 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
 
                     lastLsn = stopLsn;
                     snapshot.put(LSN_POSITION, lastLsn.toString());
+                } catch (InterruptedException e) {
+                    break;
                 } catch (Exception e) {
                     if (connected) {
                         logger.error(e.getMessage(), e);
@@ -364,10 +379,28 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     }
 
     public void pushStopLsn(Lsn stopLsn) {
-        if (stopLsnQueue.contains(stopLsn)) {
+        if (buffer.contains(stopLsn)) {
             return;
         }
-        // TODO 优化采用阻塞写
-        stopLsnQueue.offer(stopLsn);
+        boolean lock = false;
+        try {
+            lock = this.lock.tryLock();
+            if (lock) {
+                if (!buffer.offer(stopLsn)) {
+                    logger.warn("[{}]缓存队列容量已达上限，正在重试", this.getClass().getSimpleName(), BUFFER_CAPACITY);
+                    while (!buffer.offer(stopLsn) && connected) {
+                        try {
+                            this.isFull.await(pollInterval.toMillis(), TimeUnit.MILLISECONDS);
+                        } catch (InterruptedException e) {
+                            break;
+                        }
+                    }
+                }
+            }
+        } finally {
+            if (lock) {
+                this.lock.unlock();
+            }
+        }
     }
 }

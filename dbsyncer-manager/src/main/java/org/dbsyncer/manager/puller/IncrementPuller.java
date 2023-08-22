@@ -1,5 +1,7 @@
 package org.dbsyncer.manager.puller;
 
+import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.common.event.PageChangedEvent;
 import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
@@ -178,8 +180,15 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         throw new ManagerException("未知的监听配置.");
     }
 
-    abstract class AbstractConsumer implements Watcher {
+    abstract class AbstractConsumer<E extends ChangedEvent> implements Watcher {
         protected Mapping mapping;
+
+        public abstract void onChange(E e);
+
+        @Override
+        public void changeEvent(ChangedEvent event) {
+            onChange((E) event);
+        }
 
         @Override
         public void flushEvent(Map<String, String> snapshot) {
@@ -196,7 +205,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         }
     }
 
-    final class QuartzConsumer extends AbstractConsumer {
+    final class QuartzConsumer extends AbstractConsumer<PageChangedEvent> {
 
         private List<FieldPicker> tablePicker = new LinkedList<>();
         public QuartzConsumer(Mapping mapping, List<TableGroup> tableGroups) {
@@ -205,17 +214,17 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         }
 
         @Override
-        public void changedEvent(RowChangedEvent rowChangedEvent) {
-            final FieldPicker picker = tablePicker.get(rowChangedEvent.getTableGroupIndex());
+        public void onChange(PageChangedEvent event) {
+            final FieldPicker picker = tablePicker.get(event.getTableGroupIndex());
             TableGroup tableGroup = picker.getTableGroup();
-            rowChangedEvent.setSourceTableName(tableGroup.getSourceTable().getName());
+            event.setSourceTableName(tableGroup.getSourceTable().getName());
 
             // 处理过程有异常向上抛
-            parser.execute(mapping, tableGroup, rowChangedEvent);
+            parser.execute(mapping, tableGroup, event);
         }
     }
 
-    final class LogConsumer extends AbstractConsumer {
+    final class LogConsumer extends AbstractConsumer<RowChangedEvent> {
 
         private Map<String, List<FieldPicker>> tablePicker = new LinkedHashMap<>();
 
@@ -231,15 +240,15 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         }
 
         @Override
-        public void changedEvent(RowChangedEvent rowChangedEvent) {
+        public void onChange(RowChangedEvent event) {
             // 处理过程有异常向上抛
-            List<FieldPicker> pickers = tablePicker.get(rowChangedEvent.getSourceTableName());
+            List<FieldPicker> pickers = tablePicker.get(event.getSourceTableName());
             if (!CollectionUtils.isEmpty(pickers)) {
                 pickers.forEach(picker -> {
-                    final Map<String, Object> dataMap = picker.getColumns(rowChangedEvent.getDataList());
-                    if (picker.filter(dataMap)) {
-                        rowChangedEvent.setDataMap(dataMap);
-                        parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);
+                    final Map<String, Object> changedRow = picker.getColumns(event.getDataList());
+                    if (picker.filter(changedRow)) {
+                        event.setChangedRow(changedRow);
+                        parser.execute(mapping, picker.getTableGroup(), event);
                     }
                 });
             }

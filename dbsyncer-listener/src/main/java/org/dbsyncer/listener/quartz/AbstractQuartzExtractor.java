@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.quartz;
 
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.event.PageChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.spi.ConnectorMapper;
@@ -33,8 +33,8 @@ import java.util.stream.Stream;
 public abstract class AbstractQuartzExtractor extends AbstractExtractor implements ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private static final String CURSOR = "cursor";
-    private static final int READ_NUM = 1000;
+    private final String CURSOR = "cursor";
+    private final int READ_NUM = 1000;
     private List<TableGroupQuartzCommand> commands;
     private String eventFieldName;
     private boolean forceUpdate;
@@ -119,27 +119,24 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
                 break;
             }
 
-            Object event = null;
             for (Map<String, Object> row : data) {
                 if (forceUpdate) {
-                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
+                    changeEvent(new PageChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
                     continue;
                 }
 
-                event = row.get(eventFieldName);
-                if (update.contains(event)) {
-                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
+                Object eventValue = row.get(eventFieldName);
+                if (update.contains(eventValue)) {
+                    changeEvent(new PageChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
                     continue;
                 }
-                if (insert.contains(event)) {
-                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_INSERT, row));
+                if (insert.contains(eventValue)) {
+                    changeEvent(new PageChangedEvent(index, ConnectorConstant.OPERTION_INSERT, row));
                     continue;
                 }
-                if (delete.contains(event)) {
-                    changedEvent(new RowChangedEvent(index, ConnectorConstant.OPERTION_DELETE, row));
-                    continue;
+                if (delete.contains(eventValue)) {
+                    changeEvent(new PageChangedEvent(index, ConnectorConstant.OPERTION_DELETE, row));
                 }
-
             }
             // 更新记录点
             cursors = PrimaryKeyUtil.getLastCursors(data, primaryKeys);

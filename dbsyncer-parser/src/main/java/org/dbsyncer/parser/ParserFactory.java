@@ -1,7 +1,7 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.cache.CacheService;
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.FullConvertContext;
 import org.dbsyncer.common.model.Result;
@@ -308,9 +308,9 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent event) {
-        logger.debug("Table[{}] {}, data:{}", event.getSourceTableName(), event.getEvent(), event.getDataMap());
-        parserStrategy.execute(tableGroup.getId(), event.getEvent(), event.getDataMap());
+    public void execute(Mapping mapping, TableGroup tableGroup, ChangedEvent event) {
+        logger.debug("Table[{}] {}, data:{}", event.getSourceTableName(), event.getEvent(), event.getChangedRow());
+        parserStrategy.execute(tableGroup.getId(), event.getEvent(), event.getChangedRow());
     }
 
     /**

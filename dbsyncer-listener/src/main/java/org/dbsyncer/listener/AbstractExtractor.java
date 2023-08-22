@@ -1,7 +1,7 @@
 package org.dbsyncer.listener;
 
+import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.Watcher;
-import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -43,7 +43,7 @@ public abstract class AbstractExtractor implements Extractor {
     protected Map<String, String> snapshot;
     protected String metaId;
     private Watcher watcher;
-    private BlockingQueue<RowChangedEvent> queue;
+    private BlockingQueue<ChangedEvent> queue;
     private Thread consumer;
     private volatile boolean enableConsumer;
     private Lock lock = new ReentrantLock();
@@ -51,7 +51,6 @@ public abstract class AbstractExtractor implements Extractor {
     private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
     private static final int FLUSH_DELAYED_SECONDS = 20;
     private long updateTime;
-
 
     @Override
     public void start() {
@@ -62,19 +61,19 @@ public abstract class AbstractExtractor implements Extractor {
             while (enableConsumer) {
                 try {
                     // 取走BlockingQueue里排在首位的对象,若BlockingQueue为空,阻断进入等待状态直到Blocking有新的对象被加入为止
-                    RowChangedEvent event = queue.take();
+                    ChangedEvent event = queue.take();
                     if (null != event) {
                         // TODO 待优化多表并行模型
-                        watcher.changedEvent(event);
+                        watcher.changeEvent(event);
                         // 更新增量点
                         refreshEvent(event);
-                        updateTime = Instant.now().toEpochMilli();
                     }
                 } catch (InterruptedException e) {
                     break;
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }
+                updateTime = Instant.now().toEpochMilli();
             }
         });
         consumer.setName(new StringBuilder("extractor-consumer-").append(metaId).toString());
@@ -96,7 +95,7 @@ public abstract class AbstractExtractor implements Extractor {
     }
 
     @Override
-    public void changedEvent(RowChangedEvent event) {
+    public void changeEvent(ChangedEvent event) {
         if (null != event) {
             switch (event.getEvent()) {
                 case ConnectorConstant.OPERTION_UPDATE:
@@ -127,7 +126,6 @@ public abstract class AbstractExtractor implements Extractor {
         }
     }
 
-
     @Override
     public void forceFlushEvent() {
         logger.info("snapshot：{}", snapshot);
@@ -146,7 +144,7 @@ public abstract class AbstractExtractor implements Extractor {
      *
      * @param event
      */
-    protected void refreshEvent(RowChangedEvent event) {
+    protected void refreshEvent(ChangedEvent event) {
         // nothing to do
     }
 
@@ -164,7 +162,7 @@ public abstract class AbstractExtractor implements Extractor {
      * @param permitEvent
      * @param event
      */
-    private void processEvent(boolean permitEvent, RowChangedEvent event) {
+    private void processEvent(boolean permitEvent, ChangedEvent event) {
         if (!permitEvent) {
             return;
         }
@@ -224,7 +222,7 @@ public abstract class AbstractExtractor implements Extractor {
         this.metaId = metaId;
     }
 
-    public void setQueue(BlockingQueue<RowChangedEvent> queue) {
+    public void setQueue(BlockingQueue<ChangedEvent> queue) {
         this.queue = queue;
     }
 }

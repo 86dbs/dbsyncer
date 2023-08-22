@@ -5,7 +5,11 @@ package org.dbsyncer.listener.oracle.dcn;
 
 import oracle.jdbc.OracleDriver;
 import oracle.jdbc.OracleStatement;
-import oracle.jdbc.dcn.*;
+import oracle.jdbc.dcn.DatabaseChangeEvent;
+import oracle.jdbc.dcn.DatabaseChangeListener;
+import oracle.jdbc.dcn.DatabaseChangeRegistration;
+import oracle.jdbc.dcn.RowChangeDescription;
+import oracle.jdbc.dcn.TableChangeDescription;
 import oracle.jdbc.driver.OracleConnection;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.StringUtil;
@@ -20,9 +24,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -53,10 +60,8 @@ public class DBChangeNotification {
     private OracleConnection conn;
     private DatabaseChangeRegistration dcr;
     private Map<Integer, String> tables;
-    private Worker worker;
     private Set<String> filterTable;
     private List<RowEventListener> listeners = new ArrayList<>();
-    private BlockingQueue<DCNEvent> queue = new LinkedBlockingQueue<>(100);
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
 
@@ -101,12 +106,6 @@ public class DBChangeNotification {
             clean(statement, regId, callback);
             statement.setDatabaseChangeRegistration(dcr);
 
-            // 启动消费线程
-            worker = new Worker();
-            worker.setName(new StringBuilder("dcn-parser-").append(host).append(":").append(port).append("_").append(regId).toString());
-            worker.setDaemon(false);
-            worker.start();
-
             // 配置监听表
             for (Map.Entry<Integer, String> m : tables.entrySet()) {
                 String sql = String.format(QUERY_TABLE_SQL, m.getValue());
@@ -137,10 +136,6 @@ public class DBChangeNotification {
 
     public void close() {
         connected = false;
-        if (null != worker && !worker.isInterrupted()) {
-            worker.interrupt();
-            worker = null;
-        }
         try {
             if (null != conn) {
                 conn.unregisterDatabaseChangeNotification(dcr);
@@ -155,8 +150,6 @@ public class DBChangeNotification {
         if (null != rs) {
             try {
                 rs.close();
-            } catch (SQLException e) {
-                logger.error(e.getMessage());
             } catch (Exception e) {
                 logger.error(e.getMessage());
             }
@@ -320,6 +313,24 @@ public class DBChangeNotification {
         T apply(ResultSet rs) throws SQLException;
     }
 
+    private void parseEvent(DCNEvent event) {
+        List<Object> data = new ArrayList<>();
+        if (event.getCode() == TableChangeDescription.TableOperation.UPDATE.getCode()) {
+            read(event.getTableName(), event.getRowId(), data);
+            listeners.forEach(listener -> listener.onEvents(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, data)));
+            return;
+        }
+
+        if (event.getCode() == TableChangeDescription.TableOperation.INSERT.getCode()) {
+            read(event.getTableName(), event.getRowId(), data);
+            listeners.forEach(listener -> listener.onEvents(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, data)));
+            return;
+        }
+
+        data.add(event.getRowId());
+        listeners.forEach(listener -> listener.onEvents(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, data)));
+    }
+
     final class DCNListener implements DatabaseChangeListener {
 
         @Override
@@ -329,7 +340,7 @@ public class DBChangeNotification {
                 return;
             }
             DatabaseChangeEvent.EventType eventType = event.getEventType();
-            if(eventType == DatabaseChangeEvent.EventType.OBJCHANGE){
+            if (eventType == DatabaseChangeEvent.EventType.OBJCHANGE) {
                 for (TableChangeDescription td : event.getTableChangeDescription()) {
                     RowChangeDescription[] rds = td.getRowChangeDescription();
                     for (RowChangeDescription rd : rds) {
@@ -338,14 +349,7 @@ public class DBChangeNotification {
                             logger.info("Table[{}] {}", tableName, rd.getRowOperation().name());
                             continue;
                         }
-                        try {
-                            // 如果BlockQueue没有空间,则调用此方法的线程被阻断直到BlockingQueue里面有空间再继续
-                            queue.put(new DCNEvent(tableName, rd.getRowid().stringValue(),
-                                    rd.getRowOperation().getCode()));
-                        } catch (InterruptedException ex) {
-                            logger.error("Table[{}], RowId:{}, Code:{}, Error:{}", tableName,
-                                    rd.getRowid().stringValue(), rd.getRowOperation().getCode(), ex.getMessage());
-                        }
+                        parseEvent(new DCNEvent(tableName, rd.getRowid().stringValue(), rd.getRowOperation().getCode()));
                     }
                 }
                 return;
@@ -372,39 +376,4 @@ public class DBChangeNotification {
 
     }
 
-    final class Worker extends Thread {
-
-        @Override
-        public void run() {
-            while (!isInterrupted() && connected) {
-                try {
-                    // 取走BlockingQueue里排在首位的对象,若BlockingQueue为空,阻断进入等待状态直到Blocking有新的对象被加入为止
-                    DCNEvent event = queue.take();
-                    if (null != event) {
-                        parseEvent(event);
-                    }
-                } catch (InterruptedException e) {
-                    break;
-                } catch (Exception e) {
-                    logger.error(e.getMessage());
-                }
-            }
-        }
-
-        private void parseEvent(DCNEvent event) {
-            List<Object> data = new ArrayList<>();
-            if (event.getCode() == TableChangeDescription.TableOperation.UPDATE.getCode()) {
-                read(event.getTableName(), event.getRowId(), data);
-                listeners.forEach(listener -> listener.onEvents(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, data)));
-
-            } else if (event.getCode() == TableChangeDescription.TableOperation.INSERT.getCode()) {
-                read(event.getTableName(), event.getRowId(), data);
-                listeners.forEach(listener -> listener.onEvents(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, data)));
-
-            } else {
-                data.add(event.getRowId());
-                listeners.forEach(listener -> listener.onEvents(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, data)));
-            }
-        }
-    }
 }
