@@ -11,7 +11,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.AbstractExtractor;
-import org.dbsyncer.listener.Extractor;
+import org.dbsyncer.common.spi.Extractor;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
@@ -186,6 +186,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         @Override
         public void changeEvent(ChangedEvent event) {
             onChange((E) event);
+            meta.setUpdateTime(Instant.now().toEpochMilli());
         }
 
         @Override
@@ -197,11 +198,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         @Override
         public void errorEvent(Exception e) {
             logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
-        }
-
-        @Override
-        public void refreshMetaUpdateTime() {
-            meta.setUpdateTime(Instant.now().toEpochMilli());
         }
 
         @Override
@@ -231,7 +227,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
     }
 
     final class LogConsumer extends AbstractConsumer<RowChangedEvent> {
-
+        private Extractor extractor;
         private Map<String, List<FieldPicker>> tablePicker = new LinkedHashMap<>();
 
         public LogConsumer(Mapping mapping, List<TableGroup> tableGroups) {
@@ -258,7 +254,12 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
                         parser.execute(picker.getTableGroup(), event);
                     }
                 });
+                extractor.refreshEvent(event);
             }
+        }
+
+        public void setExtractor(Extractor extractor) {
+            this.extractor = extractor;
         }
     }
 
