@@ -1,15 +1,10 @@
 package org.dbsyncer.common.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
-
 /**
  * @author AE86
  * @version 1.0.0
  * @date 2022/7/14 23:50
  */
-@Configuration
-@ConfigurationProperties(prefix = "dbsyncer.storage.binlog.recorder")
 public class BinlogRecorderConfig {
 
     /**

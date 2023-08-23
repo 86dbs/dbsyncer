@@ -57,8 +57,7 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
     @Autowired
     private SnowflakeIdWorker snowflakeIdWorker;
 
-    @Autowired
-    private BinlogRecorderConfig binlogRecorderConfig;
+    private BinlogRecorderConfig binlogRecorderConfig = new BinlogRecorderConfig();
 
     private Queue<BinlogMessage> queue;
 
