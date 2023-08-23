@@ -27,12 +27,11 @@ import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,20 +53,19 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private Manager manager;
 
-    @Qualifier("taskExecutor")
-    @Autowired
+    @Resource
     private Executor taskExecutor;
 
-    @Autowired
-    private BufferActuator writerBufferActuator;
+    @Resource
+    private BufferActuator syncBufferActuator;
 
-    @Autowired
+    @Resource
     private BufferActuator storageBufferActuator;
 
-    @Autowired
+    @Resource
     private ScheduledTaskService scheduledTaskService;
 
     private volatile boolean running;
@@ -198,8 +196,8 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
         report.setInsert(mappingReportMetric.getInsert());
         report.setUpdate(mappingReportMetric.getUpdate());
         report.setDelete(mappingReportMetric.getDelete());
-        report.setQueueUp(writerBufferActuator.getQueue().size());
-        report.setQueueCapacity(writerBufferActuator.getQueueCapacity());
+        report.setQueueUp(syncBufferActuator.getQueue().size());
+        report.setQueueCapacity(syncBufferActuator.getQueueCapacity());
         return report;
     }
 

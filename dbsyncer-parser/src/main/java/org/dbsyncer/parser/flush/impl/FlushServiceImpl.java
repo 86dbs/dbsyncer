@@ -13,9 +13,9 @@ import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.util.BinlogMessageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -35,16 +35,16 @@ public class FlushServiceImpl implements FlushService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private StorageService storageService;
 
-    @Autowired
+    @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
 
-    @Autowired
+    @Resource
     private BufferActuator storageBufferActuator;
 
-    @Autowired
+    @Resource
     private IncrementDataConfig flushDataConfig;
 
     @Override
@@ -76,10 +76,7 @@ public class FlushServiceImpl implements FlushService {
                 logger.warn("可能存在Blob或inputStream大文件类型, 无法序列化:{}", r);
             }
 
-            // 缓存队列满时，打印日志
-            if (!storageBufferActuator.offer(new StorageRequest(metaId, row))) {
-                logger.error("缓存队列容量已达上限, 无法持久化:{}", r);
-            }
+            storageBufferActuator.offer(new StorageRequest(metaId, row));
         });
     }
 

@@ -89,7 +89,7 @@ public class ParserFactory implements Parser {
     private ApplicationContext applicationContext;
 
     @Resource
-    private BufferActuator writerBufferActuator;
+    private BufferActuator syncBufferActuator;
 
     @Override
     public ConnectorMapper connect(AbstractConnectorConfig config) {
@@ -306,9 +306,8 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(Mapping mapping, TableGroup tableGroup, ChangedEvent event) {
-        logger.debug("Table[{}] {}, data:{}", event.getSourceTableName(), event.getEvent(), event.getChangedRow());
-        writerBufferActuator.offer(new WriterRequest(tableGroup.getId(), event.getEvent(), event.getChangedRow()));
+    public void execute(TableGroup tableGroup, ChangedEvent event) {
+        syncBufferActuator.offer(new WriterRequest(tableGroup.getId(), event.getEvent(), event.getChangedRow()));
     }
 
     /**

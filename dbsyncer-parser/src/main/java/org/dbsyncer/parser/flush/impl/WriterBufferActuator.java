@@ -1,7 +1,6 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.cache.CacheService;
-import org.dbsyncer.common.config.BufferActuatorConfig;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.IncrementConvertContext;
 import org.dbsyncer.common.model.Result;
@@ -21,38 +20,35 @@ import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 
 /**
+ * 同步任务缓冲执行器
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2022/3/27 16:50
  */
-@Component
 public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, WriterResponse> {
 
-    @Autowired
+    @Resource
     private ConnectorFactory connectorFactory;
 
-    @Autowired
+    @Resource
     private ParserFactory parserFactory;
 
-    @Autowired
+    @Resource
     private PluginFactory pluginFactory;
 
-    @Autowired
+    @Resource
     private FlushStrategy flushStrategy;
 
-    @Autowired
+    @Resource
     private CacheService cacheService;
-
-    @Autowired
-    private BufferActuatorConfig bufferActuatorConfig;
 
     @Override
     protected String getPartitionKey(WriterRequest request) {
@@ -62,12 +58,17 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     @Override
     protected void partition(WriterRequest request, WriterResponse response) {
         response.getDataList().add(request.getRow());
-        if (response.isMerged()) {
-            return;
+        if (!response.isMerged()) {
+            response.setTableGroupId(request.getTableGroupId());
+            response.setEvent(request.getEvent());
+            response.setMerged(true);
         }
-        response.setTableGroupId(request.getTableGroupId());
-        response.setEvent(request.getEvent());
-        response.setMerged(true);
+    }
+
+    @Override
+    protected boolean skipPartition(WriterRequest nextRequest, WriterResponse response) {
+        // 并发场景，同一条数据可能连续触发Insert > Delete > Insert，批处理任务中出现不同事件时，跳过分区处理
+        return !StringUtil.equals(nextRequest.getEvent(), response.getEvent());
     }
 
     @Override
@@ -95,7 +96,7 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
         pluginFactory.convert(group.getPlugin(), context);
 
         // 5、批量执行同步
-        BatchWriter batchWriter = new BatchWriter(tConnectorMapper, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, bufferActuatorConfig.getWriterBatchCount());
+        BatchWriter batchWriter = new BatchWriter(tConnectorMapper, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, getConfig().getWriterBatchCount());
         Result result = parserFactory.writeBatch(context, batchWriter);
 
         // 6、持久化同步结果
@@ -105,12 +106,6 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
 
         // 7、执行批量处理后的
         pluginFactory.postProcessAfter(group.getPlugin(), context);
-    }
-
-    @Override
-    protected boolean skipPartition(WriterRequest nextRequest, WriterResponse response) {
-        // 并发场景，同一条数据可能连续触发Insert > Delete > Insert，批处理任务中出现不同事件时，跳过分区处理
-        return !StringUtil.equals(nextRequest.getEvent(), response.getEvent());
     }
 
     /**

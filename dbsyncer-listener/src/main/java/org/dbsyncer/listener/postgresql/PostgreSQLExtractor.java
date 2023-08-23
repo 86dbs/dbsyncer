@@ -70,7 +70,6 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
                 return;
             }
 
-            super.start();
             connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(connectorConfig);
             config = connectorMapper.getConfig();
 
@@ -120,7 +119,6 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
     public void close() {
         try {
             connected = false;
-            super.close();
             if (null != worker && !worker.isInterrupted()) {
                 worker.interrupt();
                 worker = null;
@@ -134,7 +132,7 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
     }
 
     @Override
-    protected void refreshEvent(ChangedEvent event) {
+    public void refreshEvent(ChangedEvent event) {
         snapshot.put(LSN_POSITION, String.valueOf(event.getPosition()));
     }
 

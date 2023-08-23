@@ -54,7 +54,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     private Manager manager;
 
     @Resource
-    private BufferActuator writerBufferActuator;
+    private BufferActuator syncBufferActuator;
 
     @Override
     public MessageVo getMessageVo(String metaId, String messageId) {
@@ -149,7 +149,7 @@ public class DataSyncServiceImpl implements DataSyncService {
             if (StringUtil.isNotBlank(retryDataParams)) {
                 JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
             }
-            writerBufferActuator.offer(new WriterRequest(tableGroupId, event, binlogData));
+            syncBufferActuator.offer(new WriterRequest(tableGroupId, event, binlogData));
             monitor.removeData(metaId, messageId);
             // 更新失败数
             Meta meta = manager.getMeta(metaId);

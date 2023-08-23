@@ -13,18 +13,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @version 1.0.0
@@ -43,50 +36,7 @@ public abstract class AbstractExtractor implements Extractor {
     protected Map<String, String> snapshot;
     protected String metaId;
     private Watcher watcher;
-    private BlockingQueue<ChangedEvent> queue;
-    private Thread consumer;
-    private volatile boolean enableConsumer;
-    private Lock lock = new ReentrantLock();
-    private Condition isFull;
-    private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
     private final int FLUSH_DELAYED_SECONDS = 20;
-
-    @Override
-    public void start() {
-        this.lock = new ReentrantLock();
-        this.isFull = lock.newCondition();
-        enableConsumer = true;
-        consumer = new Thread(() -> {
-            while (enableConsumer) {
-                try {
-                    // 取走BlockingQueue里排在首位的对象,若BlockingQueue为空,阻断进入等待状态直到Blocking有新的对象被加入为止
-                    ChangedEvent event = queue.take();
-                    if (null != event) {
-                        // TODO 待优化多表并行模型
-                        watcher.changeEvent(event);
-                        // 更新增量点
-                        refreshEvent(event);
-                    }
-                    watcher.refreshMetaUpdateTime();
-                } catch (InterruptedException e) {
-                    break;
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
-        });
-        consumer.setName(new StringBuilder("extractor-consumer-").append(metaId).toString());
-        consumer.setDaemon(false);
-        consumer.start();
-    }
-
-    @Override
-    public void close() {
-        enableConsumer = false;
-        if (consumer != null && !enableConsumer) {
-            consumer.interrupt();
-        }
-    }
 
     @Override
     public void register(Watcher watcher) {
@@ -116,6 +66,11 @@ public abstract class AbstractExtractor implements Extractor {
     }
 
     @Override
+    public void refreshEvent(ChangedEvent event) {
+        // nothing to do
+    }
+
+    @Override
     public void flushEvent() {
         // 20s内更新，执行写入
         if (watcher.getMetaUpdateTime() > Timestamp.valueOf(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS)).getTime()) {
@@ -138,15 +93,6 @@ public abstract class AbstractExtractor implements Extractor {
         watcher.errorEvent(e);
     }
 
-    /**
-     * 更新增量点
-     *
-     * @param event
-     */
-    protected void refreshEvent(ChangedEvent event) {
-        // nothing to do
-    }
-
     protected void sleepInMills(long timeout) {
         try {
             TimeUnit.MILLISECONDS.sleep(timeout);
@@ -162,29 +108,10 @@ public abstract class AbstractExtractor implements Extractor {
      * @param event
      */
     private void processEvent(boolean permitEvent, ChangedEvent event) {
-        if (!permitEvent) {
-            return;
-        }
-
-        boolean lock = false;
-        try {
-            lock = this.lock.tryLock();
-            if (lock) {
-                if (!queue.offer(event)) {
-                    // 容量上限，阻塞重试
-                    while (!queue.offer(event) && enableConsumer) {
-                        try {
-                            this.isFull.await(pollInterval.toMillis(), TimeUnit.MILLISECONDS);
-                        } catch (InterruptedException e) {
-                            break;
-                        }
-                    }
-                }
-            }
-        } finally {
-            if (lock) {
-                this.lock.unlock();
-            }
+        if (permitEvent) {
+            watcher.changeEvent(event);
+            // TODO 待优化回调
+            refreshEvent(event);
         }
     }
 
@@ -221,7 +148,4 @@ public abstract class AbstractExtractor implements Extractor {
         this.metaId = metaId;
     }
 
-    public void setQueue(BlockingQueue<ChangedEvent> queue) {
-        this.queue = queue;
-    }
 }

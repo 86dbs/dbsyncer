@@ -161,11 +161,10 @@ public interface Parser {
     /**
      * 增量同步
      *
-     * @param mapping
      * @param tableGroup
      * @param changedEvent
      */
-    void execute(Mapping mapping, TableGroup tableGroup, ChangedEvent changedEvent);
+    void execute(TableGroup tableGroup, ChangedEvent changedEvent);
 
     /**
      * 批执行

@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferResponse;
 
 import java.util.LinkedList;
@@ -13,7 +14,6 @@ import java.util.Map;
  */
 public class StorageResponse implements BufferResponse {
 
-    private static final String EMPTY = "";
     private String metaId;
     private List<Map> dataList = new LinkedList<>();
 
@@ -40,6 +40,6 @@ public class StorageResponse implements BufferResponse {
 
     @Override
     public String getSuffixName() {
-        return EMPTY;
+        return StringUtil.EMPTY;
     }
 }

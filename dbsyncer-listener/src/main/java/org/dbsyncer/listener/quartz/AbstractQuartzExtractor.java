@@ -64,7 +64,6 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
         taskKey = UUIDUtil.getUUID();
         running = true;
-        super.start();
 
         scheduledTaskService.start(taskKey, listenerConfig.getCron(), this);
         logger.info("启动定时任务:{} >> {}", taskKey, listenerConfig.getCron());
@@ -93,7 +92,6 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
     @Override
     public void close() {
-        super.close();
         scheduledTaskService.stop(taskKey);
         running = false;
     }

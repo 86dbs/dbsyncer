@@ -30,6 +30,13 @@ public interface Extractor {
     void changeEvent(ChangedEvent event);
 
     /**
+     * 更新增量点
+     *
+     * @param event
+     */
+    void refreshEvent(ChangedEvent event);
+
+    /**
      * 刷新增量点事件
      */
     void flushEvent();

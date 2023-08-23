@@ -82,7 +82,6 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
                 return;
             }
             connected = true;
-            super.start();
             connect();
             readTables();
             Assert.notEmpty(tables, "No tables available");
@@ -109,7 +108,6 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     @Override
     public void close() {
         if (connected) {
-            super.close();
             LsnPuller.removeExtractor(metaId);
             if (null != worker && !worker.isInterrupted()) {
                 worker.interrupt();
@@ -120,7 +118,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     }
 
     @Override
-    protected void refreshEvent(ChangedEvent event) {
+    public void refreshEvent(ChangedEvent event) {
         if (event.getPosition() != null) {
             snapshot.put(LSN_POSITION, event.getPosition().toString());
         }

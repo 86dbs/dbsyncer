@@ -21,7 +21,6 @@ public class OracleExtractor extends AbstractDatabaseExtractor {
     @Override
     public void start() {
         try {
-            super.start();
             final DatabaseConfig config = (DatabaseConfig) connectorConfig;
             String username = config.getUsername();
             String password = config.getPassword();
@@ -38,7 +37,6 @@ public class OracleExtractor extends AbstractDatabaseExtractor {
 
     @Override
     public void close() {
-        super.close();
         if (null != client) {
             client.close();
         }

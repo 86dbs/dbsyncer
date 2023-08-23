@@ -72,7 +72,6 @@ public class FileExtractor extends AbstractExtractor {
             final FileConfig config = connectorMapper.getConfig();
             final String mapperCacheKey = connectorFactory.getConnector(connectorMapper).getConnectorMapperCacheKey(connectorConfig);
             connected = true;
-            super.start();
 
             separator = config.getSeparator();
             initPipeline(config.getFileDir());
@@ -120,7 +119,6 @@ public class FileExtractor extends AbstractExtractor {
     @Override
     public void close() {
         try {
-            super.close();
             closePipelineAndWatch();
             connected = false;
             if (null != worker && !worker.isInterrupted()) {
@@ -133,7 +131,7 @@ public class FileExtractor extends AbstractExtractor {
     }
 
     @Override
-    protected void refreshEvent(ChangedEvent event) {
+    public void refreshEvent(ChangedEvent event) {
         if (event.getNextFileName() != null && event.getPosition() != null) {
             snapshot.put(event.getNextFileName(), String.valueOf(event.getPosition()));
         }

@@ -65,7 +65,6 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                 logger.error("MysqlExtractor is already started");
                 return;
             }
-            super.start();
             run();
             connected = true;
         } catch (Exception e) {
@@ -81,7 +80,6 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
         try {
             connectLock.lock();
             connected = false;
-            super.close();
             if (null != client) {
                 client.disconnect();
             }
@@ -93,7 +91,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
     }
 
     @Override
-    protected void refreshEvent(ChangedEvent event) {
+    public void refreshEvent(ChangedEvent event) {
         refreshSnapshot(event.getNextFileName(), (Long) event.getPosition());
     }
 

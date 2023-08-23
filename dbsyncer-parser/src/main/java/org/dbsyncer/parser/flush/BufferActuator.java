@@ -7,7 +7,19 @@ import java.util.Queue;
  * @version 1.0.0
  * @date 2022/3/27 17:34
  */
-public interface BufferActuator {
+public interface BufferActuator extends Cloneable {
+
+    /**
+     * 提交任务
+     *
+     * @param request
+     */
+    void offer(BufferRequest request);
+
+    /**
+     * 批量执行
+     */
+    void batchExecute();
 
     /**
      * 获取缓存队列
@@ -22,13 +34,5 @@ public interface BufferActuator {
      * @return
      */
     int getQueueCapacity();
-
-    /**
-     * 提交任务
-     *
-     * @param request
-     * @return true/false
-     */
-    boolean offer(BufferRequest request);
 
 }

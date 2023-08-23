@@ -2,8 +2,8 @@ package org.dbsyncer.manager.puller;
 
 import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.PageChangedEvent;
-import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
 /**
@@ -173,7 +172,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             extractor.setSourceTable(sourceTable);
             extractor.setSnapshot(meta.getSnapshot());
             extractor.setMetaId(meta.getId());
-            extractor.setQueue(new LinkedBlockingQueue<>(8192));
             return extractor;
         }
 
@@ -181,7 +179,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
     }
 
     abstract class AbstractConsumer<E extends ChangedEvent> implements Watcher {
-        protected Mapping mapping;
         protected Meta meta;
 
         public abstract void onChange(E e);
@@ -217,7 +214,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
         private List<FieldPicker> tablePicker = new LinkedList<>();
         public QuartzConsumer(Mapping mapping, List<TableGroup> tableGroups) {
-            this.mapping = mapping;
             this.meta = manager.getMeta(mapping.getMetaId());
             Assert.notNull(meta, "The meta is null.");
             tableGroups.forEach(t -> tablePicker.add(new FieldPicker(PickerUtil.mergeTableGroupConfig(mapping, t))));
@@ -230,7 +226,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             event.setSourceTableName(tableGroup.getSourceTable().getName());
 
             // 处理过程有异常向上抛
-            parser.execute(mapping, tableGroup, event);
+            parser.execute(tableGroup, event);
         }
     }
 
@@ -239,7 +235,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         private Map<String, List<FieldPicker>> tablePicker = new LinkedHashMap<>();
 
         public LogConsumer(Mapping mapping, List<TableGroup> tableGroups) {
-            this.mapping = mapping;
             this.meta = manager.getMeta(mapping.getMetaId());
             Assert.notNull(meta, "The meta is null.");
             tableGroups.forEach(t -> {
@@ -260,7 +255,7 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
                     final Map<String, Object> changedRow = picker.getColumns(event.getDataList());
                     if (picker.filter(changedRow)) {
                         event.setChangedRow(changedRow);
-                        parser.execute(mapping, picker.getTableGroup(), event);
+                        parser.execute(picker.getTableGroup(), event);
                     }
                 });
             }
