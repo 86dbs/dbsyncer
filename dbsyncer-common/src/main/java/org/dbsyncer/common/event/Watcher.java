@@ -1,7 +1,5 @@
 package org.dbsyncer.common.event;
 
-import org.dbsyncer.common.spi.Extractor;
-
 import java.util.Map;
 
 /**
@@ -40,6 +38,4 @@ public interface Watcher {
      * @return
      */
     long getMetaUpdateTime();
-
-    default void setExtractor(Extractor extractor){}
 }

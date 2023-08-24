@@ -5,7 +5,6 @@ import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
-import org.dbsyncer.common.spi.Extractor;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.constant.ConnectorConstant;
@@ -43,7 +42,6 @@ public abstract class AbstractExtractor implements Extractor {
     @Override
     public void register(Watcher watcher) {
         this.watcher = watcher;
-        watcher.setExtractor(this);
     }
 
     @Override

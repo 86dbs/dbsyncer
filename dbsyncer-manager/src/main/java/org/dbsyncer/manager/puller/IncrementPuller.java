@@ -9,11 +9,11 @@ import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
-import org.dbsyncer.common.spi.Extractor;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.AbstractExtractor;
+import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
@@ -221,8 +221,8 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
     }
 
     final class QuartzConsumer extends AbstractConsumer<PageChangedEvent> {
-
         private List<FieldPicker> tablePicker = new LinkedList<>();
+
         public QuartzConsumer(Meta meta, Mapping mapping, List<TableGroup> tableGroups) {
             this.meta = meta;
             tableGroups.forEach(t -> tablePicker.add(new FieldPicker(PickerUtil.mergeTableGroupConfig(mapping, t))));
@@ -240,7 +240,6 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
     }
 
     final class LogConsumer extends AbstractConsumer<RowChangedEvent> {
-        private Extractor extractor;
         private Map<String, List<FieldPicker>> tablePicker = new LinkedHashMap<>();
 
         public LogConsumer(Meta meta, Mapping mapping, List<TableGroup> tableGroups) {
@@ -269,10 +268,6 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
                     }
                 });
             }
-        }
-
-        public void setExtractor(Extractor extractor) {
-            this.extractor = extractor;
         }
     }
 
