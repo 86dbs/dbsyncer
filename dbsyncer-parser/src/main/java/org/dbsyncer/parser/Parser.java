@@ -161,10 +161,10 @@ public interface Parser {
     /**
      * 增量同步
      *
-     * @param tableGroup
-     * @param changedEvent
+     * @param tableGroupId 表关系ID
+     * @param changedEvent 增量事件
      */
-    void execute(TableGroup tableGroup, ChangedEvent changedEvent);
+    void execute(String tableGroupId, ChangedEvent changedEvent);
 
     /**
      * 批执行

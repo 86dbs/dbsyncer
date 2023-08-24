@@ -1,17 +1,19 @@
 package org.dbsyncer.manager.puller;
 
 import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.event.PageChangedEvent;
+import org.dbsyncer.common.event.RefreshOffsetEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.common.spi.Extractor;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.AbstractExtractor;
-import org.dbsyncer.common.spi.Extractor;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
@@ -30,6 +32,7 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -54,7 +57,7 @@ import java.util.stream.Collectors;
  * @date 2020/04/26 15:28
  */
 @Component
-public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob {
+public class IncrementPuller extends AbstractPuller implements ApplicationListener<RefreshOffsetEvent>, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -126,6 +129,18 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
     }
 
     @Override
+    public void onApplicationEvent(RefreshOffsetEvent event) {
+        List<ChangedOffset> offsetList = event.getOffsetList();
+        if (!CollectionUtils.isEmpty(offsetList)) {
+            offsetList.forEach(offset -> {
+                if (offset.isRefreshOffset() && map.containsKey(offset.getMetaId())) {
+                    map.get(offset.getMetaId()).refreshEvent(offset);
+                }
+            });
+        }
+    }
+
+    @Override
     public void run() {
         // 定时同步增量信息
         map.forEach((k, v) -> v.flushEvent());
@@ -134,7 +149,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
     private AbstractExtractor getExtractor(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta) throws InstantiationException, IllegalAccessException {
         AbstractConnectorConfig connectorConfig = connector.getConfig();
         ListenerConfig listenerConfig = mapping.getListener();
-
         // timing/log
         final String listenerType = listenerConfig.getListenerType();
 
@@ -143,14 +157,14 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         if (ListenerTypeEnum.isTiming(listenerType)) {
             AbstractQuartzExtractor quartzExtractor = listener.getExtractor(ListenerTypeEnum.TIMING, connectorConfig.getConnectorType(), AbstractQuartzExtractor.class);
             quartzExtractor.setCommands(list.stream().map(t -> new TableGroupQuartzCommand(t.getSourceTable(), t.getCommand())).collect(Collectors.toList()));
-            quartzExtractor.register(new QuartzConsumer(mapping, list));
+            quartzExtractor.register(new QuartzConsumer(meta, mapping, list));
             extractor = quartzExtractor;
         }
 
         // 基于日志抽取
         if (ListenerTypeEnum.isLog(listenerType)) {
             extractor = listener.getExtractor(ListenerTypeEnum.LOG, connectorConfig.getConnectorType(), AbstractExtractor.class);
-            extractor.register(new LogConsumer(mapping, list));
+            extractor.register(new LogConsumer(meta, mapping, list));
         }
 
         if (null != extractor) {
@@ -185,8 +199,8 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
 
         @Override
         public void changeEvent(ChangedEvent event) {
+            event.getChangedOffset().setMetaId(meta.getId());
             onChange((E) event);
-            meta.setUpdateTime(Instant.now().toEpochMilli());
         }
 
         @Override
@@ -209,9 +223,8 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
     final class QuartzConsumer extends AbstractConsumer<PageChangedEvent> {
 
         private List<FieldPicker> tablePicker = new LinkedList<>();
-        public QuartzConsumer(Mapping mapping, List<TableGroup> tableGroups) {
-            this.meta = manager.getMeta(mapping.getMetaId());
-            Assert.notNull(meta, "The meta is null.");
+        public QuartzConsumer(Meta meta, Mapping mapping, List<TableGroup> tableGroups) {
+            this.meta = meta;
             tableGroups.forEach(t -> tablePicker.add(new FieldPicker(PickerUtil.mergeTableGroupConfig(mapping, t))));
         }
 
@@ -221,8 +234,8 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             TableGroup tableGroup = picker.getTableGroup();
             event.setSourceTableName(tableGroup.getSourceTable().getName());
 
-            // 处理过程有异常向上抛
-            parser.execute(tableGroup, event);
+            // 定时暂不支持触发刷新增量点事件
+            parser.execute(tableGroup.getId(), event);
         }
     }
 
@@ -230,9 +243,8 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         private Extractor extractor;
         private Map<String, List<FieldPicker>> tablePicker = new LinkedHashMap<>();
 
-        public LogConsumer(Mapping mapping, List<TableGroup> tableGroups) {
-            this.meta = manager.getMeta(mapping.getMetaId());
-            Assert.notNull(meta, "The meta is null.");
+        public LogConsumer(Meta meta, Mapping mapping, List<TableGroup> tableGroups) {
+            this.meta = meta;
             tableGroups.forEach(t -> {
                 final Table table = t.getSourceTable();
                 final String tableName = table.getName();
@@ -247,14 +259,15 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
             // 处理过程有异常向上抛
             List<FieldPicker> pickers = tablePicker.get(event.getSourceTableName());
             if (!CollectionUtils.isEmpty(pickers)) {
+                // 触发刷新增量点事件
+                event.getChangedOffset().setRefreshOffset(true);
                 pickers.forEach(picker -> {
                     final Map<String, Object> changedRow = picker.getColumns(event.getDataList());
                     if (picker.filter(changedRow)) {
                         event.setChangedRow(changedRow);
-                        parser.execute(picker.getTableGroup(), event);
+                        parser.execute(picker.getTableGroup().getId(), event);
                     }
                 });
-                extractor.refreshEvent(event);
             }
         }
 

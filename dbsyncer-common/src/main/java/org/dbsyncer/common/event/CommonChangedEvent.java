@@ -27,13 +27,9 @@ public class CommonChangedEvent implements ChangedEvent {
      */
     private Map<String, Object> changedRow;
     /**
-     * 增量文件名称
-     */
-    private String nextFileName;
-    /**
      * 增量偏移量
      */
-    private Object position;
+    private ChangedOffset changedOffset = new ChangedOffset();
 
     public String getSourceTableName() {
         return sourceTableName;
@@ -59,20 +55,16 @@ public class CommonChangedEvent implements ChangedEvent {
         this.changedRow = changedRow;
     }
 
-    public String getNextFileName() {
-        return nextFileName;
+    @Override
+    public ChangedOffset getChangedOffset() {
+        return changedOffset;
     }
 
     public void setNextFileName(String nextFileName) {
-        this.nextFileName = nextFileName;
+        changedOffset.setNextFileName(nextFileName);
     }
 
-    public Object getPosition() {
-        return position;
-    }
-
-    public CommonChangedEvent setPosition(Object position) {
-        this.position = position;
-        return this;
+    public void setPosition(Object position) {
+        changedOffset.setPosition(position);
     }
 }

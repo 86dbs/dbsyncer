@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.cache.CacheService;
+import org.dbsyncer.common.event.RefreshOffsetEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.IncrementConvertContext;
 import org.dbsyncer.common.model.Result;
@@ -20,6 +21,7 @@ import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
@@ -50,6 +52,9 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     @Resource
     private CacheService cacheService;
 
+    @Resource
+    private ApplicationContext applicationContext;
+
     @Override
     protected String getPartitionKey(WriterRequest request) {
         return request.getTableGroupId();
@@ -58,6 +63,7 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     @Override
     protected void partition(WriterRequest request, WriterResponse response) {
         response.getDataList().add(request.getRow());
+        response.getOffsetList().add(request.getChangedOffset());
         if (!response.isMerged()) {
             response.setTableGroupId(request.getTableGroupId());
             response.setEvent(request.getEvent());
@@ -106,6 +112,9 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
 
         // 7、执行批量处理后的
         pluginFactory.postProcessAfter(group.getPlugin(), context);
+
+        // 8.发布刷新增量点事件
+        applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
     }
 
     /**

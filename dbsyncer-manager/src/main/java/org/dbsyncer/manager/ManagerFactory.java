@@ -341,7 +341,7 @@ public class ManagerFactory implements Manager, ApplicationListener<ClosedEvent>
     @Override
     public void onApplicationEvent(ClosedEvent event) {
         // 异步监听任务关闭事件
-        changeMetaState(event.getId(), MetaEnum.READY);
+        changeMetaState(event.getMetaId(), MetaEnum.READY);
     }
 
     private Puller getPuller(Mapping mapping) {

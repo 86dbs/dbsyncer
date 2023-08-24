@@ -1,7 +1,7 @@
 package org.dbsyncer.listener.file;
 
 import org.apache.commons.io.IOUtils;
-import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.file.BufferedRandomAccessFile;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -131,9 +131,9 @@ public class FileExtractor extends AbstractExtractor {
     }
 
     @Override
-    public void refreshEvent(ChangedEvent event) {
-        if (event.getNextFileName() != null && event.getPosition() != null) {
-            snapshot.put(event.getNextFileName(), String.valueOf(event.getPosition()));
+    public void refreshEvent(ChangedOffset offset) {
+        if (offset.getNextFileName() != null && offset.getPosition() != null) {
+            snapshot.put(offset.getNextFileName(), String.valueOf(offset.getPosition()));
         }
     }
 

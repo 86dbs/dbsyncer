@@ -4,6 +4,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.vo.BinlogColumnVo;
 import org.dbsyncer.biz.vo.MessageVo;
+import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
@@ -149,7 +150,10 @@ public class DataSyncServiceImpl implements DataSyncService {
             if (StringUtil.isNotBlank(retryDataParams)) {
                 JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
             }
-            syncBufferActuator.offer(new WriterRequest(tableGroupId, event, binlogData));
+            // TODO 待获取源表名称
+            RowChangedEvent changedEvent = new RowChangedEvent(StringUtil.EMPTY, event, Collections.EMPTY_LIST);
+            changedEvent.setChangedRow(binlogData);
+            syncBufferActuator.offer(new WriterRequest(tableGroupId, changedEvent));
             monitor.removeData(metaId, messageId);
             // 更新失败数
             Meta meta = manager.getMeta(metaId);

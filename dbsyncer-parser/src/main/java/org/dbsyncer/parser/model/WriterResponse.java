@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferResponse;
 
@@ -16,6 +17,8 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
 
     private List<Map> dataList = new LinkedList<>();
 
+    private List<ChangedOffset> offsetList = new LinkedList<>();
+
     private boolean isMerged;
 
     @Override
@@ -30,6 +33,10 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
 
     public List<Map> getDataList() {
         return dataList;
+    }
+
+    public List<ChangedOffset> getOffsetList() {
+        return offsetList;
     }
 
     public boolean isMerged() {

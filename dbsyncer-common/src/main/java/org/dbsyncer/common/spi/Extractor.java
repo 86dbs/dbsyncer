@@ -1,6 +1,7 @@
 package org.dbsyncer.common.spi;
 
 import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.event.Watcher;
 
 public interface Extractor {
@@ -32,9 +33,9 @@ public interface Extractor {
     /**
      * 更新增量点
      *
-     * @param event
+     * @param offset
      */
-    void refreshEvent(ChangedEvent event);
+    void refreshEvent(ChangedOffset offset);
 
     /**
      * 刷新增量点事件

@@ -10,7 +10,7 @@ import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
 import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 import com.github.shyiko.mysql.binlog.network.ServerException;
-import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -91,8 +91,8 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
     }
 
     @Override
-    public void refreshEvent(ChangedEvent event) {
-        refreshSnapshot(event.getNextFileName(), (Long) event.getPosition());
+    public void refreshEvent(ChangedOffset offset) {
+        refreshSnapshot(offset.getNextFileName(), (Long) offset.getPosition());
     }
 
     private void run() throws Exception {

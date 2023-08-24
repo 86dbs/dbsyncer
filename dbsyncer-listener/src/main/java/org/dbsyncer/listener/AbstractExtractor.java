@@ -1,6 +1,7 @@
 package org.dbsyncer.listener;
 
 import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -68,7 +69,7 @@ public abstract class AbstractExtractor implements Extractor {
     }
 
     @Override
-    public void refreshEvent(ChangedEvent event) {
+    public void refreshEvent(ChangedOffset offset) {
         // nothing to do
     }
 
@@ -76,6 +77,7 @@ public abstract class AbstractExtractor implements Extractor {
     public void flushEvent() {
         // 20s内更新，执行写入
         if (watcher.getMetaUpdateTime() > Timestamp.valueOf(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS)).getTime()) {
+            logger.info("snapshot：{}", snapshot);
             if (!CollectionUtils.isEmpty(snapshot)) {
                 watcher.flushEvent(snapshot);
             }

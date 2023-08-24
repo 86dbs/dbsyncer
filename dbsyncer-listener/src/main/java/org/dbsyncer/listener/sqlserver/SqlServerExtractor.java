@@ -1,7 +1,7 @@
 package org.dbsyncer.listener.sqlserver;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
-import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -118,9 +118,9 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     }
 
     @Override
-    public void refreshEvent(ChangedEvent event) {
-        if (event.getPosition() != null) {
-            snapshot.put(LSN_POSITION, event.getPosition().toString());
+    public void refreshEvent(ChangedOffset offset) {
+        if (offset.getPosition() != null) {
+            snapshot.put(LSN_POSITION, offset.getPosition().toString());
         }
     }
 

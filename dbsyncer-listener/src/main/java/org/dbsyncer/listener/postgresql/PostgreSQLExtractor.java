@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.postgresql;
 
-import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.BooleanUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -132,8 +132,8 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
     }
 
     @Override
-    public void refreshEvent(ChangedEvent event) {
-        snapshot.put(LSN_POSITION, String.valueOf(event.getPosition()));
+    public void refreshEvent(ChangedOffset offset) {
+        snapshot.put(LSN_POSITION, String.valueOf(offset.getPosition()));
     }
 
     private void connect() throws SQLException {
@@ -282,8 +282,8 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
                     RowChangedEvent event = messageDecoder.processMessage(msg);
                     if(event != null){
                         event.setPosition(lsn.asString());
+                        sendChangedEvent(event);
                     }
-                    sendChangedEvent(event);
 
                     // feedback
                     stream.setAppliedLSN(lsn);

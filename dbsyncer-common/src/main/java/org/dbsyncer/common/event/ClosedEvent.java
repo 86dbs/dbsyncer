@@ -10,9 +10,9 @@ import org.springframework.context.event.ApplicationContextEvent;
  * @Author AE86
  * @Date 2020-04-26 22:45
  */
-public class ClosedEvent extends ApplicationContextEvent {
+public final class ClosedEvent extends ApplicationContextEvent {
 
-    private String id;
+    private String metaId;
 
     /**
      * Create a new ContextStartedEvent.
@@ -20,12 +20,12 @@ public class ClosedEvent extends ApplicationContextEvent {
      * @param source the {@code ApplicationContext} that the event is raised for
      *               (must not be {@code null})
      */
-    public ClosedEvent(ApplicationContext source, String id) {
+    public ClosedEvent(ApplicationContext source, String metaId) {
         super(source);
-        this.id = id;
+        this.metaId = metaId;
     }
 
-    public String getId() {
-        return id;
+    public String getMetaId() {
+        return metaId;
     }
 }

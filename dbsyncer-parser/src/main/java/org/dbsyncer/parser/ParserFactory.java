@@ -306,8 +306,8 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(TableGroup tableGroup, ChangedEvent event) {
-        syncBufferActuator.offer(new WriterRequest(tableGroup.getId(), event.getEvent(), event.getChangedRow()));
+    public void execute(String tableGroupId, ChangedEvent event) {
+        syncBufferActuator.offer(new WriterRequest(tableGroupId, event));
     }
 
     /**

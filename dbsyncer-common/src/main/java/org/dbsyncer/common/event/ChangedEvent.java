@@ -36,16 +36,10 @@ public interface ChangedEvent {
     Map<String, Object> getChangedRow();
 
     /**
-     * 获取增量文件名称
-     * @return
-     */
-    String getNextFileName();
-
-    /**
      * 获取增量偏移量
      *
      * @return
      */
-    Object getPosition();
+    ChangedOffset getChangedOffset();
 
 }
