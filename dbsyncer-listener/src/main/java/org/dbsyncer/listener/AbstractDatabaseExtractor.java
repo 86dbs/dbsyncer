@@ -1,5 +1,6 @@
 package org.dbsyncer.listener;
 
+import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -36,8 +37,8 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
      *
      * @param event
      */
-    protected void sendChangedEvent(RowChangedEvent event) {
-        changedEvent(event);
+    protected void sendChangedEvent(ChangedEvent event) {
+        changeEvent(event);
     }
 
     /**
@@ -45,7 +46,7 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
      *
      * @param event
      */
-    protected void sendDqlChangedEvent(RowChangedEvent event) {
+    protected void sendDqlChangedEvent(ChangedEvent event) {
         if (null == event) {
             return;
         }
@@ -54,20 +55,22 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
             return;
         }
 
+        RowChangedEvent changedEvent = (RowChangedEvent) event;
         boolean processed = false;
         for (DqlMapper dqlMapper : dqlMappers) {
             if (!processed) {
                 switch (event.getEvent()) {
                     case ConnectorConstant.OPERTION_UPDATE:
                     case ConnectorConstant.OPERTION_INSERT:
-                        queryDqlData(dqlMapper, event.getDataList());
+                        queryDqlData(dqlMapper, changedEvent.getDataList());
                         break;
                     default:
                         break;
                 }
                 processed = true;
             }
-            changedEvent(new RowChangedEvent(dqlMapper.sqlName, event.getEvent(), event.getDataList()));
+            changedEvent.setSourceTableName(dqlMapper.sqlName);
+            changeEvent(changedEvent);
         }
     }
 

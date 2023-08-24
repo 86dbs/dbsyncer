@@ -1,7 +1,16 @@
 package org.dbsyncer.listener.mysql;
 
-import com.github.shyiko.mysql.binlog.event.*;
+import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
+import com.github.shyiko.mysql.binlog.event.Event;
+import com.github.shyiko.mysql.binlog.event.EventHeader;
+import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
+import com.github.shyiko.mysql.binlog.event.EventType;
+import com.github.shyiko.mysql.binlog.event.RotateEventData;
+import com.github.shyiko.mysql.binlog.event.TableMapEventData;
+import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
+import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 import com.github.shyiko.mysql.binlog.network.ServerException;
+import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -14,7 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -78,6 +90,11 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
         }
     }
 
+    @Override
+    public void refreshEvent(ChangedOffset offset) {
+        refreshSnapshot(offset.getNextFileName(), (Long) offset.getPosition());
+    }
+
     private void run() throws Exception {
         final DatabaseConfig config = (DatabaseConfig) connectorConfig;
         if (StringUtil.isBlank(config.getUrl())) {
@@ -90,15 +107,20 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
         final Host host = cluster.get(MASTER);
         final String username = config.getUsername();
         final String password = config.getPassword();
-        final String pos = snapshot.get(BINLOG_POSITION);
+        boolean containsPos = snapshot.containsKey(BINLOG_POSITION);
         client = new BinaryLogRemoteClient(host.getIp(), host.getPort(), username, password);
         client.setBinlogFilename(snapshot.get(BINLOG_FILENAME));
-        client.setBinlogPosition(StringUtil.isBlank(pos) ? 0 : Long.parseLong(pos));
+        client.setBinlogPosition(containsPos ? Long.parseLong(snapshot.get(BINLOG_POSITION)) : 0);
         client.setTableMapEventByTableId(tables);
         client.registerEventListener(new MysqlEventListener());
         client.registerLifecycleListener(new MysqlLifecycleListener());
 
         client.connect();
+
+        if (!containsPos) {
+            refreshSnapshot(client.getBinlogFilename(), client.getBinlogPosition());
+            super.forceFlushEvent();
+        }
     }
 
     private List<Host> readNodes(String url) {
@@ -147,7 +169,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                 logger.error("第{}次重启异常, ThreadName:{}, {}", i, client.getWorkerThreadName(), e.getMessage());
                 // 无法连接，关闭任务
                 if (i == RETRY_TIMES) {
-                    interruptException(new ListenerException(String.format("重启异常, %s, %s", client.getWorkerThreadName(), e.getMessage())));
+                    errorEvent(new ListenerException(String.format("重启异常, %s, %s", client.getWorkerThreadName(), e.getMessage())));
                 }
             }
             try {
@@ -166,12 +188,15 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
     private void refresh(String binlogFilename, long nextPosition) {
         if (StringUtil.isNotBlank(binlogFilename)) {
             client.setBinlogFilename(binlogFilename);
-            snapshot.put(BINLOG_FILENAME, binlogFilename);
         }
         if (0 < nextPosition) {
             client.setBinlogPosition(nextPosition);
-            snapshot.put(BINLOG_POSITION, String.valueOf(nextPosition));
         }
+    }
+
+    private void refreshSnapshot(String binlogFilename, long nextPosition) {
+        snapshot.put(BINLOG_FILENAME, binlogFilename);
+        snapshot.put(BINLOG_POSITION, String.valueOf(nextPosition));
     }
 
     final class MysqlLifecycleListener implements BinaryLogRemoteClient.LifecycleListener {
@@ -201,7 +226,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                     String log = String.format("线程[%s]执行异常。由于MySQL配置了过期binlog文件自动删除机制，已无法找到原binlog文件%s。建议先保存驱动（加载最新的binlog文件），再启动驱动。",
                             client.getWorkerThreadName(),
                             client.getBinlogFilename());
-                    interruptException(new ListenerException(log));
+                    errorEvent(new ListenerException(log));
                     return;
                 }
             }
@@ -236,7 +261,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
-                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, after));
+                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, after, client.getBinlogFilename(), client.getBinlogPosition()));
                     });
                 }
                 return;
@@ -247,7 +272,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m).collect(Collectors.toList());
-                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, after));
+                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, after, client.getBinlogFilename(), client.getBinlogPosition()));
                     });
                 }
                 return;
@@ -258,7 +283,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m).collect(Collectors.toList());
-                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before));
+                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, client.getBinlogFilename(), client.getBinlogPosition()));
                     });
                 }
                 return;
@@ -268,8 +293,6 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
             if (header.getEventType() == EventType.ROTATE) {
                 RotateEventData data = event.getData();
                 refresh(data.getBinlogFilename(), data.getBinlogPosition());
-                forceFlushEvent();
-                return;
             }
         }
 

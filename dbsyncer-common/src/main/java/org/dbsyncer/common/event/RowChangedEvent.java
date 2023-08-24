@@ -3,10 +3,7 @@
  */
 package org.dbsyncer.common.event;
 
-import org.dbsyncer.common.util.JsonUtil;
-
 import java.util.List;
-import java.util.Map;
 
 /**
  * 监听行变更事件
@@ -15,60 +12,23 @@ import java.util.Map;
  * @Author AE86
  * @Date 2020-06-15 20:00
  */
-public class RowChangedEvent {
-
-    private int tableGroupIndex;
-    private String sourceTableName;
-    private String event;
+public final class RowChangedEvent extends CommonChangedEvent {
     private List<Object> dataList;
-    private Map<String, Object> dataMap;
-
-    public RowChangedEvent(int tableGroupIndex, String event, Map<String, Object> data) {
-        this.tableGroupIndex = tableGroupIndex;
-        this.event = event;
-        this.dataMap = data;
-    }
 
     public RowChangedEvent(String sourceTableName, String event, List<Object> data) {
-        this.sourceTableName = sourceTableName;
-        this.event = event;
+        this(sourceTableName, event, data, null, null);
+    }
+
+    public RowChangedEvent(String sourceTableName, String event, List<Object> data, String nextFileName, Object position) {
+        setSourceTableName(sourceTableName);
+        setEvent(event);
+        setNextFileName(nextFileName);
+        setPosition(position);
         this.dataList = data;
-    }
-
-    public int getTableGroupIndex() {
-        return tableGroupIndex;
-    }
-
-    public String getSourceTableName() {
-        return sourceTableName;
-    }
-
-    public void setSourceTableName(String sourceTableName) {
-        this.sourceTableName = sourceTableName;
-    }
-
-    public String getEvent() {
-        return event;
     }
 
     public List<Object> getDataList() {
         return dataList;
     }
 
-    public void setDataList(List<Object> dataList) {
-        this.dataList = dataList;
-    }
-
-    public Map<String, Object> getDataMap() {
-        return dataMap;
-    }
-
-    public void setDataMap(Map<String, Object> dataMap) {
-        this.dataMap = dataMap;
-    }
-
-    @Override
-    public String toString() {
-        return JsonUtil.objToJson(this);
-    }
 }

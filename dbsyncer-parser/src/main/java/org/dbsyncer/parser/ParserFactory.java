@@ -1,7 +1,7 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.cache.CacheService;
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.FullConvertContext;
 import org.dbsyncer.common.model.Result;
@@ -25,6 +25,7 @@ import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
+import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.BatchWriter;
@@ -34,20 +35,19 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
+import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.parser.strategy.FlushStrategy;
-import org.dbsyncer.parser.strategy.ParserStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,31 +67,29 @@ public class ParserFactory implements Parser {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private ConnectorFactory connectorFactory;
 
-    @Autowired
+    @Resource
     private PluginFactory pluginFactory;
 
-    @Autowired
+    @Resource
     private CacheService cacheService;
 
-    @Autowired
+    @Resource
     private LogService logService;
 
-    @Autowired
+    @Resource
     private FlushStrategy flushStrategy;
 
-    @Autowired
-    @Qualifier("taskExecutor")
+    @Resource
     private Executor taskExecutor;
 
-    @Qualifier("webApplicationContext")
-    @Autowired
+    @Resource
     private ApplicationContext applicationContext;
 
-    @Autowired
-    private ParserStrategy parserStrategy;
+    @Resource
+    private BufferActuator syncBufferActuator;
 
     @Override
     public ConnectorMapper connect(AbstractConnectorConfig config) {
@@ -308,9 +306,8 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(Mapping mapping, TableGroup tableGroup, RowChangedEvent event) {
-        logger.debug("Table[{}] {}, data:{}", event.getSourceTableName(), event.getEvent(), event.getDataMap());
-        parserStrategy.execute(tableGroup.getId(), event.getEvent(), event.getDataMap());
+    public void execute(String tableGroupId, ChangedEvent event) {
+        syncBufferActuator.offer(new WriterRequest(tableGroupId, event));
     }
 
     /**

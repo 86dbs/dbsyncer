@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.oracle;
 
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.connector.model.Field;
 
 import java.util.List;
@@ -19,7 +19,7 @@ public class DqlOracleExtractor extends OracleExtractor {
     }
 
     @Override
-    public void sendChangedEvent(RowChangedEvent event) {
+    public void sendChangedEvent(ChangedEvent event) {
         super.sendDqlChangedEvent(event);
     }
 

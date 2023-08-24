@@ -1,9 +1,12 @@
 package org.dbsyncer.listener;
 
-import org.dbsyncer.common.event.Event;
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.common.event.ChangedOffset;
+import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.common.spi.Extractor;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.model.Table;
@@ -11,6 +14,8 @@ import org.dbsyncer.listener.config.ListenerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,15 +37,17 @@ public abstract class AbstractExtractor implements Extractor {
     protected List<Table> sourceTable;
     protected Map<String, String> snapshot;
     protected String metaId;
-    protected Event watcher;
+    private Watcher watcher;
+    private final int FLUSH_DELAYED_SECONDS = 20;
 
     @Override
-    public void register(Event event) {
-        watcher = event;
+    public void register(Watcher watcher) {
+        this.watcher = watcher;
+        watcher.setExtractor(this);
     }
 
     @Override
-    public void changedEvent(RowChangedEvent event) {
+    public void changeEvent(ChangedEvent event) {
         if (null != event) {
             switch (event.getEvent()) {
                 case ConnectorConstant.OPERTION_UPDATE:
@@ -62,24 +69,32 @@ public abstract class AbstractExtractor implements Extractor {
     }
 
     @Override
+    public void refreshEvent(ChangedOffset offset) {
+        // nothing to do
+    }
+
+    @Override
     public void flushEvent() {
-        watcher.flushEvent(snapshot);
+        // 20s内更新，执行写入
+        if (watcher.getMetaUpdateTime() > Timestamp.valueOf(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS)).getTime()) {
+            logger.info("snapshot：{}", snapshot);
+            if (!CollectionUtils.isEmpty(snapshot)) {
+                watcher.flushEvent(snapshot);
+            }
+        }
     }
 
     @Override
     public void forceFlushEvent() {
-        logger.info("Force flush:{}", snapshot);
-        watcher.forceFlushEvent(snapshot);
+        logger.info("snapshot：{}", snapshot);
+        if (!CollectionUtils.isEmpty(snapshot)) {
+            watcher.flushEvent(snapshot);
+        }
     }
 
     @Override
     public void errorEvent(Exception e) {
         watcher.errorEvent(e);
-    }
-
-    @Override
-    public void interruptException(Exception e) {
-        watcher.interruptException(e);
     }
 
     protected void sleepInMills(long timeout) {
@@ -96,9 +111,9 @@ public abstract class AbstractExtractor implements Extractor {
      * @param permitEvent
      * @param event
      */
-    private void processEvent(boolean permitEvent, RowChangedEvent event) {
+    private void processEvent(boolean permitEvent, ChangedEvent event) {
         if (permitEvent) {
-            watcher.changedEvent(event);
+            watcher.changeEvent(event);
         }
     }
 
@@ -134,4 +149,5 @@ public abstract class AbstractExtractor implements Extractor {
     public void setMetaId(String metaId) {
         this.metaId = metaId;
     }
+
 }

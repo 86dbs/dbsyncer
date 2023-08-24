@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.postgresql;
 
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.event.ChangedEvent;
 
 /**
  * @author AE86
@@ -16,7 +16,7 @@ public class DqlPostgreSQLExtractor extends PostgreSQLExtractor {
     }
 
     @Override
-    public void sendChangedEvent(RowChangedEvent event) {
+    public void sendChangedEvent(ChangedEvent event) {
         super.sendDqlChangedEvent(event);
     }
 }

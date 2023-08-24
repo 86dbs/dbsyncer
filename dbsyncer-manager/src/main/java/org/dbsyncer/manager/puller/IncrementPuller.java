@@ -1,15 +1,19 @@
 package org.dbsyncer.manager.puller;
 
-import org.dbsyncer.common.event.Event;
+import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.common.event.ChangedOffset;
+import org.dbsyncer.common.event.PageChangedEvent;
+import org.dbsyncer.common.event.RefreshOffsetEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.common.spi.Extractor;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.AbstractExtractor;
-import org.dbsyncer.listener.Extractor;
 import org.dbsyncer.listener.Listener;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
@@ -28,14 +32,13 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -44,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -55,7 +57,7 @@ import java.util.stream.Collectors;
  * @date 2020/04/26 15:28
  */
 @Component
-public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob {
+public class IncrementPuller extends AbstractPuller implements ApplicationListener<RefreshOffsetEvent>, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -127,6 +129,18 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
     }
 
     @Override
+    public void onApplicationEvent(RefreshOffsetEvent event) {
+        List<ChangedOffset> offsetList = event.getOffsetList();
+        if (!CollectionUtils.isEmpty(offsetList)) {
+            offsetList.forEach(offset -> {
+                if (offset.isRefreshOffset() && map.containsKey(offset.getMetaId())) {
+                    map.get(offset.getMetaId()).refreshEvent(offset);
+                }
+            });
+        }
+    }
+
+    @Override
     public void run() {
         // 定时同步增量信息
         map.forEach((k, v) -> v.flushEvent());
@@ -135,7 +149,6 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
     private AbstractExtractor getExtractor(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta) throws InstantiationException, IllegalAccessException {
         AbstractConnectorConfig connectorConfig = connector.getConfig();
         ListenerConfig listenerConfig = mapping.getListener();
-
         // timing/log
         final String listenerType = listenerConfig.getListenerType();
 
@@ -144,14 +157,14 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         if (ListenerTypeEnum.isTiming(listenerType)) {
             AbstractQuartzExtractor quartzExtractor = listener.getExtractor(ListenerTypeEnum.TIMING, connectorConfig.getConnectorType(), AbstractQuartzExtractor.class);
             quartzExtractor.setCommands(list.stream().map(t -> new TableGroupQuartzCommand(t.getSourceTable(), t.getCommand())).collect(Collectors.toList()));
-            quartzExtractor.register(new QuartzListener(mapping, list));
+            quartzExtractor.register(new QuartzConsumer(meta, mapping, list));
             extractor = quartzExtractor;
         }
 
         // 基于日志抽取
         if (ListenerTypeEnum.isLog(listenerType)) {
             extractor = listener.getExtractor(ListenerTypeEnum.LOG, connectorConfig.getConnectorType(), AbstractExtractor.class);
-            extractor.register(new LogListener(mapping, list, extractor));
+            extractor.register(new LogConsumer(meta, mapping, list));
         }
 
         if (null != extractor) {
@@ -179,31 +192,21 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         throw new ManagerException("未知的监听配置.");
     }
 
-    abstract class AbstractListener implements Event {
-        private static final int FLUSH_DELAYED_SECONDS = 30;
-        protected Mapping mapping;
-        protected String metaId;
+    abstract class AbstractConsumer<E extends ChangedEvent> implements Watcher {
+        protected Meta meta;
+
+        public abstract void onChange(E e);
 
         @Override
-        public void flushEvent(Map<String, String> snapshot) {
-            // 30s内更新，执行写入
-            Meta meta = manager.getMeta(metaId);
-            LocalDateTime lastSeconds = LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS);
-            if (meta.getUpdateTime() > Timestamp.valueOf(lastSeconds).getTime()) {
-                if (!CollectionUtils.isEmpty(snapshot)) {
-                    logger.debug("{}", snapshot);
-                }
-                forceFlushEvent(snapshot);
-            }
+        public void changeEvent(ChangedEvent event) {
+            event.getChangedOffset().setMetaId(meta.getId());
+            onChange((E) event);
         }
 
         @Override
-        public void forceFlushEvent(Map<String, String> snapshot) {
-            Meta meta = manager.getMeta(metaId);
-            if (null != meta) {
-                meta.setSnapshot(snapshot);
-                manager.editConfigModel(meta);
-            }
+        public void flushEvent(Map<String, String> snapshot) {
+            meta.setSnapshot(snapshot);
+            manager.editConfigModel(meta);
         }
 
         @Override
@@ -212,84 +215,36 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         }
 
         @Override
-        public void interruptException(Exception e) {
-            errorEvent(e);
-            close(metaId);
+        public long getMetaUpdateTime() {
+            return meta.getUpdateTime();
         }
     }
 
-    /**
-     * </p>定时模式
-     * <ol>
-     * <li>根据过滤条件筛选</li>
-     * </ol>
-     * </p>同步关系：
-     * </p>数据源表 >> 目标源表
-     * <ul>
-     * <li>A >> B</li>
-     * <li>A >> C</li>
-     * <li>E >> F</li>
-     * </ul>
-     * </p>PS：
-     * <ol>
-     * <li>依次执行同步关系A >> B 然后 A >> C ...</li>
-     * </ol>
-     */
-    final class QuartzListener extends AbstractListener {
+    final class QuartzConsumer extends AbstractConsumer<PageChangedEvent> {
 
-        private List<FieldPicker> tablePicker;
-
-        public QuartzListener(Mapping mapping, List<TableGroup> tableGroups) {
-            this.mapping = mapping;
-            this.metaId = mapping.getMetaId();
-            this.tablePicker = new LinkedList<>();
+        private List<FieldPicker> tablePicker = new LinkedList<>();
+        public QuartzConsumer(Meta meta, Mapping mapping, List<TableGroup> tableGroups) {
+            this.meta = meta;
             tableGroups.forEach(t -> tablePicker.add(new FieldPicker(PickerUtil.mergeTableGroupConfig(mapping, t))));
         }
 
         @Override
-        public void changedEvent(RowChangedEvent rowChangedEvent) {
-            final FieldPicker picker = tablePicker.get(rowChangedEvent.getTableGroupIndex());
+        public void onChange(PageChangedEvent event) {
+            final FieldPicker picker = tablePicker.get(event.getTableGroupIndex());
             TableGroup tableGroup = picker.getTableGroup();
-            rowChangedEvent.setSourceTableName(tableGroup.getSourceTable().getName());
+            event.setSourceTableName(tableGroup.getSourceTable().getName());
 
-            // 处理过程有异常向上抛
-            parser.execute(mapping, tableGroup, rowChangedEvent);
+            // 定时暂不支持触发刷新增量点事件
+            parser.execute(tableGroup.getId(), event);
         }
     }
 
-    /**
-     * </p>日志模式
-     * <ol>
-     * <li>监听表增量数据</li>
-     * <li>根据过滤条件筛选</li>
-     * </ol>
-     * </p>同步关系：
-     * </p>数据源表 >> 目标源表
-     * <ul>
-     * <li>A >> B</li>
-     * <li>A >> C</li>
-     * <li>E >> F</li>
-     * </ul>
-     * </p>PS：
-     * <ol>
-     * <li>为减少开销而选择复用监听器实例, 启动时只需创建一个数据源连接器.</li>
-     * <li>关系A >> B和A >> C会复用A监听的数据, A监听到增量数据，会发送给B和C.</li>
-     * <li>该模式下，会监听表所有字段.</li>
-     * </ol>
-     */
-    final class LogListener extends AbstractListener {
-
+    final class LogConsumer extends AbstractConsumer<RowChangedEvent> {
         private Extractor extractor;
-        private Map<String, List<FieldPicker>> tablePicker;
-        private AtomicInteger eventCounter;
-        private static final int MAX_LOG_CACHE_SIZE = 128;
+        private Map<String, List<FieldPicker>> tablePicker = new LinkedHashMap<>();
 
-        public LogListener(Mapping mapping, List<TableGroup> tableGroups, Extractor extractor) {
-            this.mapping = mapping;
-            this.metaId = mapping.getMetaId();
-            this.extractor = extractor;
-            this.tablePicker = new LinkedHashMap<>();
-            this.eventCounter = new AtomicInteger();
+        public LogConsumer(Meta meta, Mapping mapping, List<TableGroup> tableGroups) {
+            this.meta = meta;
             tableGroups.forEach(t -> {
                 final Table table = t.getSourceTable();
                 final String tableName = table.getName();
@@ -300,26 +255,24 @@ public class IncrementPuller extends AbstractPuller implements ScheduledTaskJob 
         }
 
         @Override
-        public void changedEvent(RowChangedEvent rowChangedEvent) {
+        public void onChange(RowChangedEvent event) {
             // 处理过程有异常向上抛
-            List<FieldPicker> pickers = tablePicker.get(rowChangedEvent.getSourceTableName());
+            List<FieldPicker> pickers = tablePicker.get(event.getSourceTableName());
             if (!CollectionUtils.isEmpty(pickers)) {
+                // 触发刷新增量点事件
+                event.getChangedOffset().setRefreshOffset(true);
                 pickers.forEach(picker -> {
-                    final Map<String, Object> dataMap = picker.getColumns(rowChangedEvent.getDataList());
-                    if (picker.filter(dataMap)) {
-                        rowChangedEvent.setDataMap(dataMap);
-                        parser.execute(mapping, picker.getTableGroup(), rowChangedEvent);
+                    final Map<String, Object> changedRow = picker.getColumns(event.getDataList());
+                    if (picker.filter(changedRow)) {
+                        event.setChangedRow(changedRow);
+                        parser.execute(picker.getTableGroup().getId(), event);
                     }
                 });
-                eventCounter.set(0);
-                return;
             }
+        }
 
-            // 防止挤压无效的增量数据，刷新最新的有效记录点
-            if (eventCounter.incrementAndGet() >= MAX_LOG_CACHE_SIZE) {
-                extractor.forceFlushEvent();
-                eventCounter.set(0);
-            }
+        public void setExtractor(Extractor extractor) {
+            this.extractor = extractor;
         }
     }
 

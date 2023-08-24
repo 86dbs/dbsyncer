@@ -1,5 +1,7 @@
 package org.dbsyncer.listener.postgresql;
 
+import org.dbsyncer.common.event.ChangedOffset;
+import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.BooleanUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;
@@ -129,6 +131,11 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
         }
     }
 
+    @Override
+    public void refreshEvent(ChangedOffset offset) {
+        snapshot.put(LSN_POSITION, String.valueOf(offset.getPosition()));
+    }
+
     private void connect() throws SQLException {
         Properties props = new Properties();
         PGProperty.USER.set(props, config.getUsername());
@@ -182,6 +189,7 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
                 throw new ListenerException("No maximum LSN recorded in the database");
             }
             snapshot.put(LSN_POSITION, lsn.asString());
+            super.forceFlushEvent();
         }
 
         this.startLsn = LogSequenceNumber.valueOf(snapshot.get(LSN_POSITION));
@@ -251,12 +259,6 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
         }
     }
 
-    private void flushLsn(LogSequenceNumber lsn) {
-        if (null != lsn && lsn.asLong() > 0) {
-            snapshot.put(LSN_POSITION, lsn.asString());
-        }
-    }
-
     final class Worker extends Thread {
 
         @Override
@@ -276,9 +278,12 @@ public class PostgreSQLExtractor extends AbstractDatabaseExtractor {
                         continue;
                     }
 
-                    flushLsn(lsn);
                     // process decoder
-                    sendChangedEvent(messageDecoder.processMessage(msg));
+                    RowChangedEvent event = messageDecoder.processMessage(msg);
+                    if(event != null){
+                        event.setPosition(lsn.asString());
+                        sendChangedEvent(event);
+                    }
 
                     // feedback
                     stream.setAppliedLSN(lsn);

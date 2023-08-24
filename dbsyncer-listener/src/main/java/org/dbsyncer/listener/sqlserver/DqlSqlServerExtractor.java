@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.sqlserver;
 
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.event.ChangedEvent;
 
 /**
  * @author AE86
@@ -16,7 +16,7 @@ public class DqlSqlServerExtractor extends SqlServerExtractor {
     }
 
     @Override
-    public void sendChangedEvent(RowChangedEvent event) {
+    public void sendChangedEvent(ChangedEvent event) {
         super.sendDqlChangedEvent(event);
     }
 }

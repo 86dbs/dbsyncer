@@ -1,5 +1,7 @@
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.parser.flush.BufferRequest;
 
 import java.util.Map;
@@ -11,27 +13,22 @@ import java.util.Map;
  */
 public class WriterRequest extends AbstractWriter implements BufferRequest {
 
-    private String messageId;
-
     private Map row;
 
-    public WriterRequest(String tableGroupId, String event, Map row) {
-        this(null, tableGroupId, event, row);
-    }
+    private ChangedOffset changedOffset;
 
-    public WriterRequest(String messageId, String tableGroupId, String event, Map row) {
+    public WriterRequest(String tableGroupId, ChangedEvent event) {
         setTableGroupId(tableGroupId);
-        setEvent(event);
-        this.messageId = messageId;
-        this.row = row;
-    }
-
-    public String getMessageId() {
-        return messageId;
+        setEvent(event.getEvent());
+        this.row = event.getChangedRow();
+        this.changedOffset = event.getChangedOffset();
     }
 
     public Map getRow() {
         return row;
     }
 
+    public ChangedOffset getChangedOffset() {
+        return changedOffset;
+    }
 }

@@ -1,7 +1,8 @@
-package org.dbsyncer.listener;
+package org.dbsyncer.common.spi;
 
-import org.dbsyncer.common.event.Event;
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.common.event.ChangedOffset;
+import org.dbsyncer.common.event.Watcher;
 
 public interface Extractor {
 
@@ -18,16 +19,23 @@ public interface Extractor {
     /**
      * 注册监听事件（获取增量数据）
      *
-     * @param event
+     * @param watcher
      */
-    void register(Event event);
+    void register(Watcher watcher);
 
     /**
      * 数据变更事件
      *
      * @param event
      */
-    void changedEvent(RowChangedEvent event);
+    void changeEvent(ChangedEvent event);
+
+    /**
+     * 更新增量点
+     *
+     * @param offset
+     */
+    void refreshEvent(ChangedOffset offset);
 
     /**
      * 刷新增量点事件
@@ -45,12 +53,5 @@ public interface Extractor {
      * @param e
      */
     void errorEvent(Exception e);
-
-    /**
-     * 中断异常
-     *
-     * @param e
-     */
-    void interruptException(Exception e);
 
 }

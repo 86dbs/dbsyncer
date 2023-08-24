@@ -1,34 +1,31 @@
 package org.dbsyncer.common.event;
 
+import org.dbsyncer.common.spi.Extractor;
+
 import java.util.Map;
 
 /**
+ * 数据变更监听器
+ *
  * @version 1.0.0
  * @Author AE86
  * @Date 2020-05-11 22:50
  */
-public interface Event {
+public interface Watcher {
 
     /**
      * 数据变更事件
      *
      * @param event
      */
-    void changedEvent(RowChangedEvent event);
+    void changeEvent(ChangedEvent event);
 
     /**
-     * 写入增量点事件
+     * 持久化增量点事件
      *
      * @param snapshot
      */
     void flushEvent(Map<String, String> snapshot);
-
-    /**
-     * 强制写入增量点事件
-     *
-     * @param snapshot
-     */
-    void forceFlushEvent(Map<String,String> snapshot);
 
     /**
      * 异常事件
@@ -38,10 +35,11 @@ public interface Event {
     void errorEvent(Exception e);
 
     /**
-     * 中断异常
+     * 获取Meta更新时间
      *
-     * @param e
+     * @return
      */
-    void interruptException(Exception e);
+    long getMetaUpdateTime();
 
+    default void setExtractor(Extractor extractor){}
 }
