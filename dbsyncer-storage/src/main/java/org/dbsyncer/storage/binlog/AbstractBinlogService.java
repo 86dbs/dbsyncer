@@ -144,12 +144,10 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
 
         private final Lock lock = new ReentrantLock();
 
-        private volatile boolean running;
-
         @Override
         public void run() {
             // 是否运行中 或 还有提交的任务未处理完成
-            if (running || activeTasks.get() > 0) {
+            if (activeTasks.get() > 0) {
                 return;
             }
 
@@ -158,14 +156,12 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
             try {
                 locked = binlogLock.tryLock();
                 if (locked) {
-                    running = true;
                     doParse();
                 }
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             } finally {
                  if (locked) {
-                    running = false;
                     binlogLock.unlock();
                 }
             }

@@ -34,7 +34,6 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private Class<Response> responseClazz;
     private final Lock taskLock = new ReentrantLock();
-    private volatile boolean running;
     private final Lock queueLock = new ReentrantLock(true);
     private final Condition isFull = queueLock.newCondition();
     private final Duration OFFER_INTERVAL = Duration.of(500, ChronoUnit.MILLIS);
@@ -121,22 +120,16 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     @Override
     public void batchExecute() {
-        if (running) {
-            return;
-        }
-
         boolean locked = false;
         try {
             locked = taskLock.tryLock();
             if (locked) {
-                running = true;
                 submit();
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         } finally {
             if (locked) {
-                running = false;
                 taskLock.unlock();
             }
         }
