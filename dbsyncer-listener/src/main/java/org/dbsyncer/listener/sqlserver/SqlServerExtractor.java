@@ -69,7 +69,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     private String schema;
     private final int BUFFER_CAPACITY = 256;
     private BlockingQueue<Lsn> buffer = new LinkedBlockingQueue<>(BUFFER_CAPACITY);
-    private Lock lock = new ReentrantLock();
+    private Lock lock = new ReentrantLock(true);
     private Condition isFull = lock.newCondition();
     private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
 
@@ -380,24 +380,19 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
         if (buffer.contains(stopLsn)) {
             return;
         }
-        boolean lock = false;
-        try {
-            lock = this.lock.tryLock();
-            if (lock) {
-                if (!buffer.offer(stopLsn)) {
-                    logger.warn("[{}]缓存队列容量已达上限，正在重试", this.getClass().getSimpleName(), BUFFER_CAPACITY);
-                    while (!buffer.offer(stopLsn) && connected) {
-                        try {
-                            this.isFull.await(pollInterval.toMillis(), TimeUnit.MILLISECONDS);
-                        } catch (InterruptedException e) {
-                            break;
-                        }
+        if (!buffer.offer(stopLsn)) {
+            try {
+                lock.lock();
+                while (!buffer.offer(stopLsn) && connected) {
+                    logger.warn("[{}]缓存队列容量已达上限[{}], 正在阻塞重试.", this.getClass().getSimpleName(), BUFFER_CAPACITY);
+                    try {
+                        this.isFull.await(pollInterval.toMillis(), TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException e) {
+                        break;
                     }
                 }
-            }
-        } finally {
-            if (lock) {
-                this.lock.unlock();
+            } finally {
+                lock.unlock();
             }
         }
     }

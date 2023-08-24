@@ -145,7 +145,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
 
     private void reStart() {
         try {
-            connectLock.tryLock();
+            connectLock.lock();
             if (recovery) {
                 return;
             }

@@ -43,7 +43,7 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
     private Set<String> delete;
     private String taskKey;
     private volatile boolean running;
-    private final Lock lock = new ReentrantLock(true);
+    private final Lock lock = new ReentrantLock();
 
     /**
      * 获取增量参数

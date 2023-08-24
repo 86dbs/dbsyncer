@@ -32,7 +32,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     @Autowired
     private Map<String, Strategy> map;
 
-    private final Lock lock = new ReentrantLock(true);
+    private final Lock lock = new ReentrantLock();
 
     private volatile boolean tryDeleteAll;
 
@@ -107,19 +107,14 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     @Override
     public void clear(StorageEnum type, String metaId) {
-        boolean locked = false;
         try {
-            locked = lock.tryLock();
-            if (locked) {
-                tryDeleteAll = true;
-                String sharding = getSharding(type, metaId);
-                deleteAll(sharding);
-            }
+            lock.lock();
+            tryDeleteAll = true;
+            String sharding = getSharding(type, metaId);
+            deleteAll(sharding);
         } finally {
-            if (locked) {
-                tryDeleteAll = false;
-                lock.unlock();
-            }
+            tryDeleteAll = false;
+            lock.unlock();
         }
     }
 

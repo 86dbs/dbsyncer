@@ -142,7 +142,7 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
      */
     final class ReaderTask implements ScheduledTaskJob {
 
-        private final Lock lock = new ReentrantLock(true);
+        private final Lock lock = new ReentrantLock();
 
         private volatile boolean running;
 
