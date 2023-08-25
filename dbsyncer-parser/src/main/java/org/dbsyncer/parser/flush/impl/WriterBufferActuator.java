@@ -27,6 +27,7 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 /**
  * 同步任务缓冲执行器
@@ -51,6 +52,9 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
 
     @Resource
     private CacheService cacheService;
+
+    @Resource
+    private Executor taskExecutor;
 
     @Resource
     private ApplicationContext applicationContext;
@@ -101,20 +105,20 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
         final IncrementConvertContext context = new IncrementConvertContext(sConnectorMapper, tConnectorMapper, sourceTableName, targetTableName, event, sourceDataList, targetDataList);
         pluginFactory.convert(group.getPlugin(), context);
 
-        // 5、批量执行同步
+        // 5、批量执行同步 TODO 待实现多表并行
         BatchWriter batchWriter = new BatchWriter(tConnectorMapper, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, getConfig().getWriterBatchCount());
-        Result result = parserFactory.writeBatch(context, batchWriter);
+        Result result = parserFactory.writeBatch(context, batchWriter, taskExecutor);
 
-        // 6、持久化同步结果
+        // 6.发布刷新增量点事件
+        applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
+
+        // 7、持久化同步结果
         result.setTableGroupId(tableGroup.getId());
         result.setTargetTableGroupName(targetTableName);
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, event);
 
-        // 7、执行批量处理后的
+        // 8、执行批量处理后的
         pluginFactory.postProcessAfter(group.getPlugin(), context);
-
-        // 8.发布刷新增量点事件
-        applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
     }
 
     /**

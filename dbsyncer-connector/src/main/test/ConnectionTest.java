@@ -114,12 +114,11 @@ public class ConnectionTest {
         long begin = Instant.now().toEpochMilli();
         final int threadSize = 10;
         final ExecutorService pool = Executors.newFixedThreadPool(threadSize);
-        //final String sql = "insert into t_course2 (id,course,score,user_id,memo) VALUES (?,?,?,?,?)";
-        final String sql = "INSERT INTO `vote_record_memory` (`id`, `user_id`, `vote_num`, `group_id`, `status`, `create_time`) VALUES (?, ?, ?, ?, ?, ?)";
+        final String sql = "INSERT INTO `vote_records` (`id`, `user_id`, `vote_num`, `group_id`, `status`, `create_time`) VALUES (?, ?, ?, ?, ?, ?)";
 
         // 模拟1000w条数据
         List<Object[]> dataList = new ArrayList<>();
-        for (int i = 1; i <= 10000002; i++) {
+        for (int i = 2000002; i <= 5000000; i++) {
             // 442001, 'dA8LeJLtX9MgQgDe7H1O', 9620, 1, 2, '2022-11-17 16:35:21'
             Object[] args = new Object[6];
             args[0] = i;
@@ -132,14 +131,14 @@ public class ConnectionTest {
 
             if (i % 10000 == 0) {
                 System.out.println(i + "-----------------正在处理");
-                batchInsert(connectorMapper, pool, sql, dataList, 1000);
+                batchUpdate(connectorMapper, pool, sql, dataList, 1000);
                 dataList.clear();
             }
         }
 
         if(!CollectionUtils.isEmpty(dataList)){
             System.out.println("-----------------正在处理剩余数据");
-            batchInsert(connectorMapper, pool, sql, dataList, 1000);
+            batchUpdate(connectorMapper, pool, sql, dataList, 1000);
         }
 
         pool.shutdown();
@@ -153,7 +152,7 @@ public class ConnectionTest {
         long begin = Instant.now().toEpochMilli();
         final int threadSize = 10;
         final ExecutorService pool = Executors.newFixedThreadPool(threadSize);
-        final String sql = "UPDATE `test`.`my_big_table` SET `name` = ?, `last_time` = now() WHERE `id` = ?";
+        final String sql = "UPDATE `test`.`vote_records` SET `user_id` = ?, `create_time` = now() WHERE `id` = ?";
 
         // 模拟100w条数据
         int k = 10;
@@ -168,16 +167,48 @@ public class ConnectionTest {
 
                 if (i % 10000 == 0) {
                     System.out.println(i + "-----------------正在处理");
-                    batchUpdateBlocking(connectorMapper, pool, sql, dataList, 1000);
+                    batchUpdate(connectorMapper, pool, sql, dataList, 1000);
                     dataList.clear();
                 }
             }
 
             if (!CollectionUtils.isEmpty(dataList)) {
                 System.out.println("-----------------正在处理剩余数据");
-                batchUpdateBlocking(connectorMapper, pool, sql, dataList, 1000);
+                batchUpdate(connectorMapper, pool, sql, dataList, 1000);
             }
             k--;
+        }
+
+        pool.shutdown();
+        logger.info("总共耗时：{}秒", (Instant.now().toEpochMilli() - begin) / 1000);
+    }
+
+    @Test
+    public void testBatchDelete() {
+        final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(createMysqlConfig());
+
+        long begin = Instant.now().toEpochMilli();
+        final int threadSize = 10;
+        final ExecutorService pool = Executors.newFixedThreadPool(threadSize);
+        final String sql = "delete from `test`.`vote_records` WHERE `id` = ?";
+
+        List<Object[]> dataList = new ArrayList<>();
+        for (int i = 1; i <= 3259000; i++) {
+            // 'dA8LeJLtX9MgQgDe7H1O', '2022-11-17 16:35:21', 1
+            Object[] args = new Object[1];
+            args[0] = i;
+            dataList.add(args);
+
+            if (i % 10000 == 0) {
+                System.out.println(i + "-----------------正在处理");
+                batchUpdate(connectorMapper, pool, sql, dataList, 1000);
+                dataList.clear();
+            }
+        }
+
+        if (!CollectionUtils.isEmpty(dataList)) {
+            System.out.println("-----------------正在处理剩余数据");
+            batchUpdate(connectorMapper, pool, sql, dataList, 1000);
         }
 
         pool.shutdown();
@@ -195,7 +226,7 @@ public class ConnectionTest {
         return s.toString();
     }
 
-    private void batchInsert(DatabaseConnectorMapper connectorMapper, ExecutorService pool, String sql, List<Object[]> dataList, int batchSize) {
+    private void batchUpdate(DatabaseConnectorMapper connectorMapper, ExecutorService pool, String sql, List<Object[]> dataList, int batchSize) {
         int total = dataList.size();
         int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
         final CountDownLatch latch = new CountDownLatch(taskSize);
@@ -214,42 +245,6 @@ public class ConnectionTest {
 
             pool.submit(() -> {
                 try {
-                    connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, data));
-                } catch (Exception e) {
-                    logger.error(e.getMessage());
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            logger.error(e.getMessage());
-        }
-    }
-
-    private void batchUpdateBlocking(DatabaseConnectorMapper connectorMapper, ExecutorService pool, String sql, List<Object[]> dataList, int batchSize) {
-        int total = dataList.size();
-        int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
-        final CyclicBarrier barrier = new CyclicBarrier(taskSize);
-        final CountDownLatch latch = new CountDownLatch(taskSize);
-        int fromIndex = 0;
-        int toIndex = batchSize;
-        for (int i = 0; i < taskSize; i++) {
-            final List<Object[]> data;
-            if (toIndex > total) {
-                toIndex = fromIndex + (total % batchSize);
-                data = dataList.subList(fromIndex, toIndex);
-            } else {
-                data = dataList.subList(fromIndex, toIndex);
-                fromIndex += batchSize;
-                toIndex += batchSize;
-            }
-
-            pool.submit(() -> {
-                try {
-                    barrier.await();
                     connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, data));
                 } catch (Exception e) {
                     logger.error(e.getMessage());
@@ -347,7 +342,7 @@ public class ConnectionTest {
 
     private DatabaseConfig createMysqlConfig() {
         DatabaseConfig config = new DatabaseConfig();
-        config.setUrl("jdbc:mysql://127.0.0.1:3306/test?rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true&failOverReadOnly=false");
+        config.setUrl("jdbc:mysql://127.0.0.1:3305/test?rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true&failOverReadOnly=false");
         config.setUsername("root");
         config.setPassword("123");
         config.setDriverClassName("com.mysql.cj.jdbc.Driver");

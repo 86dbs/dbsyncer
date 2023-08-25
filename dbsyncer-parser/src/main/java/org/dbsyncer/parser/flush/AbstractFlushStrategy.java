@@ -7,9 +7,9 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.strategy.FlushStrategy;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.time.Instant;
 
 /**
@@ -19,13 +19,13 @@ import java.time.Instant;
  */
 public abstract class AbstractFlushStrategy implements FlushStrategy {
 
-    @Autowired
+    @Resource
     private FlushService flushService;
 
-    @Autowired
+    @Resource
     private CacheService cacheService;
 
-    @Autowired
+    @Resource
     private IncrementDataConfig flushDataConfig;
 
     @Override

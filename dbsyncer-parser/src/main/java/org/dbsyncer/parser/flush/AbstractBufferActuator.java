@@ -180,8 +180,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
-            final BufferResponse resp = (BufferResponse) response;
-            logger.info("[{}{}]{}, {}ms", key, resp.getSuffixName(), resp.getTaskSize(), (Instant.now().toEpochMilli() - now));
+            logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
         });
         map.clear();
         map = null;

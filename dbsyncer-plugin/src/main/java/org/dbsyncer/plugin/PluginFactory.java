@@ -10,10 +10,10 @@ import org.dbsyncer.plugin.config.Plugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -54,7 +54,7 @@ public class PluginFactory implements DisposableBean {
 
     private final Map<String, ConvertService> service = new LinkedHashMap<>();
 
-    @Autowired
+    @Resource
     private ProxyApplicationContext proxyApplicationContext;
 
     @PostConstruct
