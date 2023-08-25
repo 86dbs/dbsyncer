@@ -21,7 +21,7 @@ import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 
 /**
  * @author AE86
@@ -154,9 +154,9 @@ public interface Parser {
      * @param task
      * @param mapping
      * @param tableGroup
-     * @param executorService
+     * @param executor
      */
-    void execute(Task task, Mapping mapping, TableGroup tableGroup, ExecutorService executorService);
+    void execute(Task task, Mapping mapping, TableGroup tableGroup, Executor executor);
 
     /**
      * 增量同步
@@ -171,8 +171,9 @@ public interface Parser {
      *
      * @param context
      * @param batchWriter
+     * @param executor
      * @return
      */
-    Result writeBatch(ConvertContext context, BatchWriter batchWriter);
+    Result writeBatch(ConvertContext context, BatchWriter batchWriter, Executor executor);
 
 }

@@ -55,7 +55,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 
 /**
  * @author AE86
@@ -81,9 +80,6 @@ public class ParserFactory implements Parser {
 
     @Resource
     private FlushStrategy flushStrategy;
-
-    @Resource
-    private Executor taskExecutor;
 
     @Resource
     private ApplicationContext applicationContext;
@@ -229,7 +225,7 @@ public class ParserFactory implements Parser {
     }
 
     @Override
-    public void execute(Task task, Mapping mapping, TableGroup tableGroup, ExecutorService executorService) {
+    public void execute(Task task, Mapping mapping, TableGroup tableGroup, Executor executor) {
         final String metaId = task.getId();
         final String sourceConnectorId = mapping.getSourceConnectorId();
         final String targetConnectorId = mapping.getTargetConnectorId();
@@ -285,17 +281,17 @@ public class ParserFactory implements Parser {
 
             // 5、写入目标源
             BatchWriter batchWriter = new BatchWriter(tConnectorMapper, command, tTableName, event, picker.getTargetFields(), target, batchSize);
-            Result result = writeBatch(context, batchWriter, executorService);
+            Result result = writeBatch(context, batchWriter, executor);
 
-            // 6、同步完成后通知插件做后置处理
-            pluginFactory.postProcessAfter(group.getPlugin(), context);
-
-            // 7、更新结果
+            // 6、更新结果
             task.setPageIndex(task.getPageIndex() + 1);
             task.setCursors(PrimaryKeyUtil.getLastCursors(source, primaryKeys));
             result.setTableGroupId(tableGroup.getId());
             result.setTargetTableGroupName(tTableName);
             flush(task, result);
+
+            // 7、同步完成后通知插件做后置处理
+            pluginFactory.postProcessAfter(group.getPlugin(), context);
 
             // 8、判断尾页
             if (source.size() < pageSize) {
@@ -310,27 +306,8 @@ public class ParserFactory implements Parser {
         syncBufferActuator.offer(new WriterRequest(tableGroupId, event));
     }
 
-    /**
-     * 批量写入
-     *
-     * @param context
-     * @param batchWriter
-     * @return
-     */
     @Override
-    public Result writeBatch(ConvertContext context, BatchWriter batchWriter) {
-        return writeBatch(context, batchWriter, taskExecutor);
-    }
-
-    /**
-     * 批量写入
-     *
-     * @param context
-     * @param batchWriter
-     * @param taskExecutor
-     * @return
-     */
-    private Result writeBatch(ConvertContext context, BatchWriter batchWriter, Executor taskExecutor) {
+    public Result writeBatch(ConvertContext context, BatchWriter batchWriter, Executor executor) {
         final Result result = new Result();
         // 终止同步数据到目标源库
         if (context.isTerminated()) {
@@ -368,7 +345,7 @@ public class ParserFactory implements Parser {
                 toIndex += batchSize;
             }
 
-            taskExecutor.execute(() -> {
+            executor.execute(() -> {
                 try {
                     Result w = connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, data));
                     result.addSuccessData(w.getSuccessData());

@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -68,7 +69,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
                 logService.log(LogType.SystemLog.ERROR, e.getMessage());
             } finally {
                 try {
-                    if(executor != null){
+                    if (executor != null) {
                         executor.shutdown();
                     }
                 } catch (Exception e) {
@@ -98,7 +99,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
         flush(event.getTask());
     }
 
-    private void doTask(Task task, Mapping mapping, List<TableGroup> list, ExecutorService executorService) {
+    private void doTask(Task task, Mapping mapping, List<TableGroup> list, Executor executor) {
         // 记录开始时间
         long now = Instant.now().toEpochMilli();
         task.setBeginTime(now);
@@ -116,7 +117,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
 
         int i = task.getTableGroupIndex();
         while (i < list.size()) {
-            parser.execute(task, mapping, list.get(i), executorService);
+            parser.execute(task, mapping, list.get(i), executor);
             if (!task.isRunning()) {
                 break;
             }

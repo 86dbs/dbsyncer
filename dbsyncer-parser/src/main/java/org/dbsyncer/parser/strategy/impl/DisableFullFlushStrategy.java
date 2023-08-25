@@ -7,7 +7,8 @@ import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.annotation.Resource;
 
 /**
  * 不记录全量数据, 只记录增量同步数据, 将异常记录到系统日志中
@@ -20,7 +21,7 @@ public final class DisableFullFlushStrategy extends AbstractFlushStrategy {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private LogService logService;
 
     @Override
