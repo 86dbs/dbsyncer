@@ -33,10 +33,9 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private Class<Response> responseClazz;
-    private final Lock TASK_LOCK = new ReentrantLock(true);
-    private volatile boolean running;
-    private final Lock BUFFER_LOCK = new ReentrantLock();
-    private final Condition IS_FULL = BUFFER_LOCK.newCondition();
+    private final Lock taskLock = new ReentrantLock();
+    private final Lock queueLock = new ReentrantLock(true);
+    private final Condition isFull = queueLock.newCondition();
     private final Duration OFFER_INTERVAL = Duration.of(500, ChronoUnit.MILLIS);
     private BufferActuatorConfig config;
     private BlockingQueue<Request> queue;
@@ -101,49 +100,37 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     @Override
     public void offer(BufferRequest request) {
-        boolean lock = false;
-        try {
-            lock = BUFFER_LOCK.tryLock();
-            if (lock) {
-                if (!queue.offer((Request) request)) {
+        if (!queue.offer((Request) request)) {
+            try {
+                // 公平锁，有序执行，容量上限，阻塞重试
+                queueLock.lock();
+                while (!queue.offer((Request) request)) {
                     logger.warn("[{}]缓存队列容量已达上限[{}], 正在阻塞重试.", this.getClass().getSimpleName(), getQueueCapacity());
-
-                    // 容量上限，阻塞重试
-                    while (!queue.offer((Request) request)) {
-                        try {
-                            IS_FULL.await(OFFER_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
-                        } catch (InterruptedException e) {
-                            break;
-                        }
+                    try {
+                        isFull.await(OFFER_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException e) {
+                        break;
                     }
                 }
-            }
-        } finally {
-            if (lock) {
-                BUFFER_LOCK.unlock();
+            } finally {
+                queueLock.unlock();
             }
         }
     }
 
     @Override
     public void batchExecute() {
-        if (running) {
-            return;
-        }
-
         boolean locked = false;
         try {
-            locked = TASK_LOCK.tryLock();
+            locked = taskLock.tryLock();
             if (locked) {
-                running = true;
                 submit();
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         } finally {
             if (locked) {
-                running = false;
-                TASK_LOCK.unlock();
+                taskLock.unlock();
             }
         }
     }

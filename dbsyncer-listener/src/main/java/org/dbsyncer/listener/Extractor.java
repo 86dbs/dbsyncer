@@ -1,4 +1,4 @@
-package org.dbsyncer.common.spi;
+package org.dbsyncer.listener;
 
 import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.ChangedOffset;

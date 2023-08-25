@@ -32,9 +32,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     @Autowired
     private Map<String, Strategy> map;
 
-    private final Lock lock = new ReentrantLock(true);
-
-    private volatile boolean tryDeleteAll;
+    private final Lock lock = new ReentrantLock();
 
     protected abstract Paging select(String sharding, Query query);
 
@@ -61,10 +59,6 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     @Override
     public Paging query(Query query) {
-        if (tryDeleteAll) {
-            return new Paging(query.getPageNum(), query.getPageSize());
-        }
-
         boolean locked = false;
         try {
             locked = lock.tryLock(3, TimeUnit.SECONDS);
@@ -91,13 +85,11 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
         boolean locked = false;
         try {
-            locked = lock.tryLock(3, TimeUnit.SECONDS);
+            locked = lock.tryLock();
             if (locked) {
                 String sharding = getSharding(query.getType(), query.getMetaId());
                 delete(sharding, query);
             }
-        } catch (InterruptedException e) {
-            logger.warn("tryLock error", e.getLocalizedMessage());
         } finally {
             if (locked) {
                 lock.unlock();
@@ -107,19 +99,12 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     @Override
     public void clear(StorageEnum type, String metaId) {
-        boolean locked = false;
         try {
-            locked = lock.tryLock();
-            if (locked) {
-                tryDeleteAll = true;
-                String sharding = getSharding(type, metaId);
-                deleteAll(sharding);
-            }
+            lock.lock();
+            String sharding = getSharding(type, metaId);
+            deleteAll(sharding);
         } finally {
-            if (locked) {
-                tryDeleteAll = false;
-                lock.unlock();
-            }
+            lock.unlock();
         }
     }
 
