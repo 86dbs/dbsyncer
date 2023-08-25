@@ -105,16 +105,16 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
         BatchWriter batchWriter = new BatchWriter(tConnectorMapper, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, getConfig().getWriterBatchCount());
         Result result = parserFactory.writeBatch(context, batchWriter);
 
-        // 6、持久化同步结果
+        // 6.发布刷新增量点事件
+        applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
+
+        // 7、持久化同步结果
         result.setTableGroupId(tableGroup.getId());
         result.setTargetTableGroupName(targetTableName);
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, event);
 
-        // 7、执行批量处理后的
+        // 8、执行批量处理后的
         pluginFactory.postProcessAfter(group.getPlugin(), context);
-
-        // 8.发布刷新增量点事件
-        applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
     }
 
     /**

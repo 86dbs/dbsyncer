@@ -13,7 +13,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.io.IOException;
-import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.util.Properties;
 
@@ -41,6 +40,10 @@ public class Application {
         }
         properties.put("info.app.version", version);
         properties.put("spring.thymeleaf.prefix", "classpath:/public/");
+        properties.put("management.endpoints.web.base-path", "/app");
+        properties.put("management.endpoints.web.exposure.include", "*");
+        properties.put("management.endpoint.health.show-details", "always");
+        properties.put("management.health.elasticsearch.enabled", false);
         application.setDefaultProperties(properties);
     }
 
