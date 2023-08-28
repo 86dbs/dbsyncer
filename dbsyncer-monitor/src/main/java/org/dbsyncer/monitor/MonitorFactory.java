@@ -57,10 +57,10 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
     private Manager manager;
 
     @Resource
-    private Executor taskExecutor;
+    private Executor writeExecutor;
 
     @Resource
-    private BufferActuator syncBufferActuator;
+    private BufferActuator generalBufferActuator;
 
     @Resource
     private BufferActuator storageBufferActuator;
@@ -172,7 +172,7 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
 
     @Override
     public List<MetricResponse> getMetricInfo() {
-        ThreadPoolTaskExecutor threadTask = (ThreadPoolTaskExecutor) taskExecutor;
+        ThreadPoolTaskExecutor threadTask = (ThreadPoolTaskExecutor) writeExecutor;
         ThreadPoolExecutor pool = threadTask.getThreadPoolExecutor();
 
         List<MetricResponse> list = new ArrayList<>();
@@ -196,8 +196,8 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
         report.setInsert(mappingReportMetric.getInsert());
         report.setUpdate(mappingReportMetric.getUpdate());
         report.setDelete(mappingReportMetric.getDelete());
-        report.setQueueUp(syncBufferActuator.getQueue().size());
-        report.setQueueCapacity(syncBufferActuator.getQueueCapacity());
+        report.setQueueUp(generalBufferActuator.getQueue().size());
+        report.setQueueCapacity(generalBufferActuator.getQueueCapacity());
         return report;
     }
 

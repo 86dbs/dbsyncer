@@ -5,11 +5,11 @@ import org.dbsyncer.common.util.UUIDUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -27,7 +27,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService, Disposabl
     /**
      * 定时任务线程池
      */
-    @Autowired
+    @Resource
     private ThreadPoolTaskScheduler taskScheduler;
 
     private Map<String, ScheduledFuture> map = new ConcurrentHashMap<>();

@@ -45,6 +45,11 @@ public abstract class AbstractExtractor implements Extractor {
     }
 
     @Override
+    public void closeEvent() {
+        watcher.closeEvent();
+    }
+
+    @Override
     public void changeEvent(ChangedEvent event) {
         if (null != event) {
             switch (event.getEvent()) {

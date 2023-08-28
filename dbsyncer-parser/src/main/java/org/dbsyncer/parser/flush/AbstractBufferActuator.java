@@ -1,10 +1,14 @@
 package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.common.config.BufferActuatorConfig;
+import org.dbsyncer.common.scheduled.ScheduledTaskJob;
+import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.lang.reflect.ParameterizedType;
 import java.time.Duration;
 import java.time.Instant;
@@ -29,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @version 1.0.0
  * @date 2022/3/27 17:36
  */
-public abstract class AbstractBufferActuator<Request extends BufferRequest, Response extends BufferResponse> implements BufferActuator {
+public abstract class AbstractBufferActuator<Request extends BufferRequest, Response extends BufferResponse> implements BufferActuator, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private Class<Response> responseClazz;
@@ -37,8 +41,13 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     private final Lock queueLock = new ReentrantLock(true);
     private final Condition isFull = queueLock.newCondition();
     private final Duration OFFER_INTERVAL = Duration.of(500, ChronoUnit.MILLIS);
-    private BufferActuatorConfig config;
     private BlockingQueue<Request> queue;
+
+    @Resource
+    private BufferActuatorConfig bufferActuatorConfig;
+
+    @Resource
+    private ScheduledTaskService scheduledTaskService;
 
     public AbstractBufferActuator() {
         int level = 5;
@@ -54,14 +63,18 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         Assert.notNull(responseClazz, String.format("%s的父类%s泛型参数Response为空.", getClass().getName(), AbstractBufferActuator.class.getName()));
     }
 
+    @PostConstruct
+    public void init() {
+        buildBufferActuatorConfig();
+        scheduledTaskService.start(bufferActuatorConfig.getPeriodMillisecond(), this);
+    }
+
     /**
      * 初始化配置
-     *
-     * @param config
      */
-    public void buildConfig(BufferActuatorConfig config) {
-        this.config = config;
-        this.queue = new LinkedBlockingQueue(config.getQueueCapacity());
+    protected void buildBufferActuatorConfig() {
+        this.queue = new LinkedBlockingQueue(bufferActuatorConfig.getQueueCapacity());
+        logger.info("初始化{}容量：{}", this.getClass().getSimpleName(), bufferActuatorConfig.getQueueCapacity());
     }
 
     /**
@@ -119,7 +132,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     }
 
     @Override
-    public void batchExecute() {
+    public void run() {
         boolean locked = false;
         try {
             locked = taskLock.tryLock();
@@ -142,12 +155,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     @Override
     public int getQueueCapacity() {
-        return config.getQueueCapacity();
-    }
-
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        return super.clone();
+        return bufferActuatorConfig.getQueueCapacity();
     }
 
     private void submit() throws IllegalAccessException, InstantiationException {
@@ -157,7 +165,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
         AtomicLong batchCounter = new AtomicLong();
         Map<String, Response> map = new LinkedHashMap<>();
-        while (!queue.isEmpty() && batchCounter.get() < config.getBatchCount()) {
+        while (!queue.isEmpty() && batchCounter.get() < bufferActuatorConfig.getBatchCount()) {
             Request poll = queue.poll();
             String key = getPartitionKey(poll);
             if (!map.containsKey(key)) {
@@ -180,14 +188,18 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
-            logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
+            logger.info("{}[{}{}]{}, {}ms", this.getClass().getSimpleName(), key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
         });
         map.clear();
         map = null;
         batchCounter = null;
     }
 
-    public BufferActuatorConfig getConfig() {
-        return config;
+    public BufferActuatorConfig getBufferActuatorConfig() {
+        return bufferActuatorConfig;
+    }
+
+    public void setBufferActuatorConfig(BufferActuatorConfig bufferActuatorConfig) {
+        this.bufferActuatorConfig = bufferActuatorConfig;
     }
 }

@@ -24,6 +24,11 @@ public interface Extractor {
     void register(Watcher watcher);
 
     /**
+     * 关闭事件
+     */
+    void closeEvent();
+
+    /**
      * 数据变更事件
      *
      * @param event

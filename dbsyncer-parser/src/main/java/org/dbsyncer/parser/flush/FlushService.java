@@ -1,7 +1,5 @@
 package org.dbsyncer.parser.flush;
 
-import org.springframework.scheduling.annotation.Async;
-
 import java.util.List;
 import java.util.Map;
 
@@ -13,7 +11,6 @@ public interface FlushService {
      * @param type
      * @param error
      */
-    @Async("taskExecutor")
     void asyncWrite(String type, String error);
 
     /**
@@ -26,5 +23,5 @@ public interface FlushService {
      * @param success
      * @param data
      */
-    void write(String metaId, String tableGroupId, String targetTableGroupName, String event, boolean success, List<Map> data, String error);
+    void asyncWrite(String metaId, String tableGroupId, String targetTableGroupName, String event, boolean success, List<Map> data, String error);
 }

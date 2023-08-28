@@ -2,9 +2,9 @@ package org.dbsyncer.manager.puller;
 
 import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.ChangedOffset;
-import org.dbsyncer.common.event.ScanChangedEvent;
 import org.dbsyncer.common.event.RefreshOffsetEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.event.ScanChangedEvent;
 import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
@@ -23,12 +23,14 @@ import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.manager.model.FieldPicker;
 import org.dbsyncer.parser.Parser;
+import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +81,9 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
     @Resource
     private ConnectorFactory connectorFactory;
 
+    @Resource
+    private TableGroupBufferActuator tableGroupBufferActuator;
+
     private Map<String, Extractor> map = new ConcurrentHashMap<>();
 
     @PostConstruct
@@ -121,6 +126,7 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
     public void close(String metaId) {
         Extractor extractor = map.get(metaId);
         if (null != extractor) {
+            extractor.closeEvent();
             extractor.close();
         }
         map.remove(metaId);
@@ -194,6 +200,8 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
 
     abstract class AbstractConsumer<E extends ChangedEvent> implements Watcher {
         protected Meta meta;
+        protected Map<String, TableGroupBufferActuator> router = new ConcurrentHashMap<>();
+        private final int MAX_BUFFER_ACTUATOR_SIZE = 10;
 
         public abstract void onChange(E e);
 
@@ -218,6 +226,37 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
         public long getMetaUpdateTime() {
             return meta.getUpdateTime();
         }
+
+        @Override
+        public void closeEvent() {
+            router.values().forEach(bufferActuator -> bufferActuator.stop());
+        }
+
+        protected void execute(String tableGroupId, ChangedEvent event) {
+            if (router.containsKey(tableGroupId)) {
+                router.get(tableGroupId).offer(new WriterRequest(tableGroupId, event));
+                return;
+            }
+            parser.execute(tableGroupId, event);
+        }
+
+        protected void buildBufferActuator(String tableGroupId) {
+            // TODO 暂定执行器上限，待替换为LRU模型
+            if (router.size() >= MAX_BUFFER_ACTUATOR_SIZE) {
+                return;
+            }
+            router.computeIfAbsent(tableGroupId, k -> {
+                try {
+                    TableGroupBufferActuator newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuator.clone();
+                    newBufferActuator.setTableGroupId(tableGroupId);
+                    newBufferActuator.buildConfig();
+                    return newBufferActuator;
+                } catch (CloneNotSupportedException ex) {
+                    logger.error(ex.getMessage(), ex);
+                }
+                return null;
+            });
+        }
     }
 
     final class QuartzConsumer extends AbstractConsumer<ScanChangedEvent> {
@@ -225,7 +264,10 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
 
         public QuartzConsumer(Meta meta, Mapping mapping, List<TableGroup> tableGroups) {
             this.meta = meta;
-            tableGroups.forEach(t -> tablePicker.add(new FieldPicker(PickerUtil.mergeTableGroupConfig(mapping, t))));
+            tableGroups.forEach(t -> {
+                tablePicker.add(new FieldPicker(PickerUtil.mergeTableGroupConfig(mapping, t)));
+                buildBufferActuator(t.getId());
+            });
         }
 
         @Override
@@ -235,7 +277,7 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
             event.setSourceTableName(tableGroup.getSourceTable().getName());
 
             // 定时暂不支持触发刷新增量点事件
-            parser.execute(tableGroup.getId(), event);
+            execute(tableGroup.getId(), event);
         }
     }
 
@@ -250,7 +292,9 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
                 tablePicker.putIfAbsent(tableName, new ArrayList<>());
                 TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, t);
                 tablePicker.get(tableName).add(new FieldPicker(group, group.getFilter(), table.getColumn(), group.getFieldMapping()));
+                buildBufferActuator(group.getId());
             });
+
         }
 
         @Override
@@ -264,7 +308,7 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
                     final Map<String, Object> changedRow = picker.getColumns(event.getDataList());
                     if (picker.filter(changedRow)) {
                         event.setChangedRow(changedRow);
-                        parser.execute(picker.getTableGroup().getId(), event);
+                        execute(picker.getTableGroup().getId(), event);
                     }
                 });
             }

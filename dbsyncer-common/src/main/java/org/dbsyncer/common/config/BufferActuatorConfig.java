@@ -4,13 +4,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * 缓冲区配置
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2022/7/14 23:50
  */
 @Configuration
-@ConfigurationProperties(prefix = "dbsyncer.parser.flush.buffer.actuator")
-public class BufferActuatorConfig {
+@ConfigurationProperties(prefix = "dbsyncer.parser.buffer.actuator")
+public class BufferActuatorConfig implements Cloneable {
 
     /**
      * 写批量数
@@ -62,5 +64,10 @@ public class BufferActuatorConfig {
 
     public void setPeriodMillisecond(int periodMillisecond) {
         this.periodMillisecond = periodMillisecond;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

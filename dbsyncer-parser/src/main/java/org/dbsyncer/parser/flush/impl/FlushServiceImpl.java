@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 /**
  * 持久化
@@ -47,18 +48,23 @@ public class FlushServiceImpl implements FlushService {
     @Resource
     private IncrementDataConfig flushDataConfig;
 
+    @Resource
+    private Executor flushExecutor;
+
     @Override
     public void asyncWrite(String type, String error) {
-        Map<String, Object> params = new HashMap();
-        params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
-        params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
-        params.put(ConfigConstant.CONFIG_MODEL_JSON, substring(error));
-        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, Instant.now().toEpochMilli());
-        storageService.add(StorageEnum.LOG, params);
+        flushExecutor.execute(() -> {
+            Map<String, Object> params = new HashMap();
+            params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
+            params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
+            params.put(ConfigConstant.CONFIG_MODEL_JSON, substring(error));
+            params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, Instant.now().toEpochMilli());
+            storageService.add(StorageEnum.LOG, params);
+        });
     }
 
     @Override
-    public void write(String metaId, String tableGroupId, String targetTableGroupName, String event, boolean success, List<Map> data, String error) {
+    public void asyncWrite(String metaId, String tableGroupId, String targetTableGroupName, String event, boolean success, List<Map> data, String error) {
         long now = Instant.now().toEpochMilli();
         data.forEach(r -> {
             Map<String, Object> row = new HashMap();
