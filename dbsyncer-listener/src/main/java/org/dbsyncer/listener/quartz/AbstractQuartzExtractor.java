@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.quartz;
 
-import org.dbsyncer.common.event.PageChangedEvent;
+import org.dbsyncer.common.event.ScanChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.spi.ConnectorMapper;
@@ -119,21 +119,21 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
 
             for (Map<String, Object> row : data) {
                 if (forceUpdate) {
-                    changeEvent(new PageChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
+                    changeEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
                     continue;
                 }
 
                 Object eventValue = row.get(eventFieldName);
                 if (update.contains(eventValue)) {
-                    changeEvent(new PageChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
+                    changeEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
                     continue;
                 }
                 if (insert.contains(eventValue)) {
-                    changeEvent(new PageChangedEvent(index, ConnectorConstant.OPERTION_INSERT, row));
+                    changeEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_INSERT, row));
                     continue;
                 }
                 if (delete.contains(eventValue)) {
-                    changeEvent(new PageChangedEvent(index, ConnectorConstant.OPERTION_DELETE, row));
+                    changeEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_DELETE, row));
                 }
             }
             // 更新记录点

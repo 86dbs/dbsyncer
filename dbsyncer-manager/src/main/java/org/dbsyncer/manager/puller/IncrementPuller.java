@@ -2,7 +2,7 @@ package org.dbsyncer.manager.puller;
 
 import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.ChangedOffset;
-import org.dbsyncer.common.event.PageChangedEvent;
+import org.dbsyncer.common.event.ScanChangedEvent;
 import org.dbsyncer.common.event.RefreshOffsetEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.event.Watcher;
@@ -143,7 +143,7 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
     @Override
     public void run() {
         // 定时同步增量信息
-        map.forEach((k, v) -> v.flushEvent());
+        map.values().forEach(extractor -> extractor.flushEvent());
     }
 
     private AbstractExtractor getExtractor(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta) throws InstantiationException, IllegalAccessException {
@@ -220,7 +220,7 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
         }
     }
 
-    final class QuartzConsumer extends AbstractConsumer<PageChangedEvent> {
+    final class QuartzConsumer extends AbstractConsumer<ScanChangedEvent> {
         private List<FieldPicker> tablePicker = new LinkedList<>();
 
         public QuartzConsumer(Meta meta, Mapping mapping, List<TableGroup> tableGroups) {
@@ -229,7 +229,7 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
         }
 
         @Override
-        public void onChange(PageChangedEvent event) {
+        public void onChange(ScanChangedEvent event) {
             final FieldPicker picker = tablePicker.get(event.getTableGroupIndex());
             TableGroup tableGroup = picker.getTableGroup();
             event.setSourceTableName(tableGroup.getSourceTable().getName());
