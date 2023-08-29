@@ -1,8 +1,11 @@
 package org.dbsyncer.parser.flush;
 
+import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.config.BufferActuatorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.parser.model.Meta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -49,6 +52,9 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     @Resource
     private ScheduledTaskService scheduledTaskService;
 
+    @Resource
+    private CacheService cacheService;
+
     public AbstractBufferActuator() {
         int level = 5;
         Class<?> aClass = getClass();
@@ -94,6 +100,17 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     protected abstract void partition(Request request, Response response);
 
     /**
+     * 驱动是否运行中
+     *
+     * @param request
+     * @return
+     */
+    protected boolean isRunning(BufferRequest request) {
+        Meta meta = cacheService.get(request.getMetaId(), Meta.class);
+        return meta != null && MetaEnum.isRunning(meta.getState());
+    }
+
+    /**
      * 是否跳过分区处理
      *
      * @param nextRequest
@@ -117,7 +134,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
             try {
                 // 公平锁，有序执行，容量上限，阻塞重试
                 queueLock.lock();
-                while (!queue.offer((Request) request)) {
+                while (isRunning(request) && !queue.offer((Request) request)) {
                     logger.warn("[{}]缓存队列容量已达上限[{}], 正在阻塞重试.", this.getClass().getSimpleName(), getQueueCapacity());
                     try {
                         isFull.await(OFFER_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);

@@ -24,6 +24,11 @@ public class WriterRequest extends AbstractWriter implements BufferRequest {
         this.changedOffset = event.getChangedOffset();
     }
 
+    @Override
+    public String getMetaId() {
+        return changedOffset.getMetaId();
+    }
+    
     public Map getRow() {
         return row;
     }

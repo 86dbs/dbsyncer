@@ -6,6 +6,7 @@ import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.ThreadPoolUtil;
 import org.dbsyncer.common.util.UUIDUtil;
+import org.dbsyncer.parser.flush.BufferRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -37,9 +38,16 @@ public final class TableGroupBufferActuator extends GeneralBufferActuator implem
 
     private String tableGroupId;
 
+    private volatile boolean running;
+
     @Override
     public void init() {
         // nothing to do
+    }
+
+    @Override
+    protected boolean isRunning(BufferRequest request) {
+        return running;
     }
 
     public void buildConfig() {
@@ -49,6 +57,7 @@ public final class TableGroupBufferActuator extends GeneralBufferActuator implem
             // TODO 暂定容量上限
             newConfig.setQueueCapacity(50000);
             setBufferActuatorConfig(newConfig);
+            running = true;
             super.buildBufferActuatorConfig();
             taskKey = UUIDUtil.getUUID();
             String threadNamePrefix = new StringBuilder("writeExecutor-").append(tableGroupId).append(StringUtil.SYMBOL).toString();
@@ -66,6 +75,7 @@ public final class TableGroupBufferActuator extends GeneralBufferActuator implem
     }
 
     public void stop() {
+        running = false;
         if (threadPoolTaskExecutor != null) {
             threadPoolTaskExecutor.shutdown();
         }

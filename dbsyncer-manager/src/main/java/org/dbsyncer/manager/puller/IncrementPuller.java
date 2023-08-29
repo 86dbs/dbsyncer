@@ -200,7 +200,7 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
 
     abstract class AbstractConsumer<E extends ChangedEvent> implements Watcher {
         protected Meta meta;
-        protected Map<String, TableGroupBufferActuator> router = new ConcurrentHashMap<>();
+        private Map<String, TableGroupBufferActuator> router = new ConcurrentHashMap<>();
         private final int MAX_BUFFER_ACTUATOR_SIZE = 10;
 
         public abstract void onChange(E e);
@@ -246,15 +246,16 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
                 return;
             }
             router.computeIfAbsent(tableGroupId, k -> {
+                TableGroupBufferActuator newBufferActuator = null;
                 try {
-                    TableGroupBufferActuator newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuator.clone();
+                    newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuator.clone();
                     newBufferActuator.setTableGroupId(tableGroupId);
                     newBufferActuator.buildConfig();
                     return newBufferActuator;
                 } catch (CloneNotSupportedException ex) {
                     logger.error(ex.getMessage(), ex);
                 }
-                return null;
+                return newBufferActuator;
             });
         }
     }
@@ -294,7 +295,6 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
                 tablePicker.get(tableName).add(new FieldPicker(group, group.getFilter(), table.getColumn(), group.getFieldMapping()));
                 buildBufferActuator(group.getId());
             });
-
         }
 
         @Override

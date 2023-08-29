@@ -7,4 +7,10 @@ package org.dbsyncer.parser.flush;
  */
 public interface BufferRequest {
 
+    /**
+     * 获取驱动ID
+     *
+     * @return
+     */
+    String getMetaId();
 }
