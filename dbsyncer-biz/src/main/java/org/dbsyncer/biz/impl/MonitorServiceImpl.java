@@ -15,6 +15,7 @@ import org.dbsyncer.biz.vo.DataVo;
 import org.dbsyncer.biz.vo.LogVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.biz.vo.MetricResponseVo;
+import org.dbsyncer.common.event.PreloadCompletedEvent;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -43,6 +44,7 @@ import org.dbsyncer.storage.query.filter.LongFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -63,7 +65,7 @@ import java.util.stream.Collectors;
  * @date 2020/04/27 10:20
  */
 @Service
-public class MonitorServiceImpl extends BaseServiceImpl implements MonitorService, ScheduledTaskJob {
+public class MonitorServiceImpl extends BaseServiceImpl implements MonitorService, ScheduledTaskJob, ApplicationListener<PreloadCompletedEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -81,6 +83,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Resource
     private SystemConfigService systemConfigService;
+
+    private boolean preloadCompleted;
 
     private Map<String, MetricDetailFormatter> metricDetailFormatterMap = new LinkedHashMap<>();
 
@@ -186,8 +190,10 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public void deleteExpiredDataAndLog() {
-        deleteExpiredData();
-        deleteExpiredLog();
+        if (preloadCompleted) {
+            deleteExpiredData();
+            deleteExpiredLog();
+        }
     }
 
     @Override
@@ -308,4 +314,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }).collect(Collectors.toList());
     }
 
+    @Override
+    public void onApplicationEvent(PreloadCompletedEvent event) {
+        preloadCompleted = true;
+    }
 }
