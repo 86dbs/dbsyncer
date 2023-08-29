@@ -80,7 +80,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      */
     protected void buildQueueConfig() {
         this.queue = new LinkedBlockingQueue(config.getBufferQueueCapacity());
-        logger.info("初始化{}容量：{}", this.getClass().getSimpleName(), config.getBufferQueueCapacity());
+        logger.info("{} initialized with queue capacity: {}", this.getClass().getSimpleName(), config.getBufferQueueCapacity());
     }
 
     /**

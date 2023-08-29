@@ -8,6 +8,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.manager.Manager;
+import org.dbsyncer.manager.puller.BufferActuatorRouter;
 import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.monitor.enums.StatisticEnum;
 import org.dbsyncer.monitor.enums.TaskMetricEnum;
@@ -64,6 +65,9 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
 
     @Resource
     private BufferActuator storageBufferActuator;
+
+    @Resource
+    private BufferActuatorRouter bufferActuatorRouter;
 
     @Resource
     private ScheduledTaskService scheduledTaskService;
@@ -196,8 +200,10 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
         report.setInsert(mappingReportMetric.getInsert());
         report.setUpdate(mappingReportMetric.getUpdate());
         report.setDelete(mappingReportMetric.getDelete());
-        report.setQueueUp(generalBufferActuator.getQueue().size());
-        report.setQueueCapacity(generalBufferActuator.getQueueCapacity());
+        // 堆积数据(通用执行器 + 表执行器)
+        report.setQueueUp(bufferActuatorRouter.getQueueSize().addAndGet(generalBufferActuator.getQueue().size()));
+        // 容量(通用执行器 + 表执行器)
+        report.setQueueCapacity( bufferActuatorRouter.getQueueCapacity().addAndGet(generalBufferActuator.getQueueCapacity()));
         return report;
     }
 

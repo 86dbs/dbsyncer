@@ -596,7 +596,7 @@ public class DatabaseTemplate implements JdbcOperations {
         } catch (SQLException ex) {
             // Release Connection early, to avoid potential connection pool deadlock
             // in the case when the exception translator hasn't been initialized yet.
-            if (psc instanceof ParameterDisposer) {
+             if (psc instanceof ParameterDisposer) {
                 ((ParameterDisposer) psc).cleanupParameters();
             }
             String sql = getSql(psc);
