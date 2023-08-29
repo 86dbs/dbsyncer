@@ -1,5 +1,6 @@
 package org.dbsyncer.manager.template;
 
+import org.dbsyncer.common.event.PreloadCompletedEvent;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -20,11 +21,12 @@ import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -41,17 +43,20 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private Parser parser;
 
-    @Autowired
+    @Resource
     private Manager manager;
 
-    @Autowired
+    @Resource
     private StorageService storageService;
 
-    @Autowired
+    @Resource
     private OperationTemplate operationTemplate;
+
+    @Resource
+    private ApplicationContext applicationContext;
 
     public void execute(CommandEnum commandEnum) {
         Query query = new Query();
@@ -162,6 +167,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
         // Launch drivers
         launch();
+
+        // publish event
+        applicationContext.publishEvent(new PreloadCompletedEvent(applicationContext));
     }
 
 }
