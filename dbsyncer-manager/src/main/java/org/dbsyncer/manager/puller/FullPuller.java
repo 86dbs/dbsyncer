@@ -36,7 +36,7 @@ import java.util.concurrent.Executors;
  * @date 2020/04/26 15:28
  */
 @Component
-public class FullPuller extends AbstractPuller implements ApplicationListener<FullRefreshEvent> {
+public final class FullPuller extends AbstractPuller implements ApplicationListener<FullRefreshEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

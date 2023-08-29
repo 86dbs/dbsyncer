@@ -65,7 +65,7 @@ public class PluginFactory implements DisposableBean {
                 String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
                 service.putIfAbsent(pluginId, s);
                 plugins.add(new Plugin(s.getName(), s.getClass().getName(), s.getVersion(), "", true));
-                logger.info("初始化插件, {}_{} {}", s.getName(), s.getVersion(), s.getClass().getName());
+                logger.info("{}_{} {}", s.getName(), s.getVersion(), s.getClass().getName());
                 try {
                     s.init();
                 } catch (Exception e) {
@@ -167,7 +167,7 @@ public class PluginFactory implements DisposableBean {
                 }
                 service.putIfAbsent(pluginId, s);
                 plugins.add(new Plugin(s.getName(), s.getClass().getName(), s.getVersion(), fileName, false));
-                logger.info("初始化插件 {}, {}_{} {}", fileName, s.getName(), s.getVersion(), s.getClass().getName());
+                logger.info("{}, {}_{} {}", fileName, s.getName(), s.getVersion(), s.getClass().getName());
                 try {
                     s.init();
                 } catch (Exception e) {
@@ -183,7 +183,7 @@ public class PluginFactory implements DisposableBean {
     @Override
     public void destroy() {
         service.values().forEach(s -> {
-            logger.info("关闭插件, {}_{} {}", s.getName(), s.getVersion(), s.getClass().getName());
+            logger.info("{}_{} {}", s.getName(), s.getVersion(), s.getClass().getName());
             try {
                 s.close();
             } catch (Exception e) {
