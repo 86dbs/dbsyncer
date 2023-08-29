@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.cache.CacheService;
+import org.dbsyncer.common.config.GeneralBufferConfig;
 import org.dbsyncer.common.event.RefreshOffsetEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.IncrementConvertContext;
@@ -22,21 +23,30 @@ import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
 /**
- * 同步任务缓冲执行器
+ * 通用执行器（单线程消费，多线程批量写，按序执行）
  *
  * @author AE86
  * @version 1.0.0
  * @date 2022/3/27 16:50
  */
-public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, WriterResponse> {
+@Component
+public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest, WriterResponse> {
+
+    @Resource
+    private GeneralBufferConfig generalBufferConfig;
+
+    @Resource
+    private Executor generalExecutor;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -54,10 +64,13 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
     private CacheService cacheService;
 
     @Resource
-    private Executor taskExecutor;
-
-    @Resource
     private ApplicationContext applicationContext;
+
+    @PostConstruct
+    public void init() {
+        setConfig(generalBufferConfig);
+        buildConfig();
+    }
 
     @Override
     protected String getPartitionKey(WriterRequest request) {
@@ -105,9 +118,9 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
         final IncrementConvertContext context = new IncrementConvertContext(sConnectorMapper, tConnectorMapper, sourceTableName, targetTableName, event, sourceDataList, targetDataList);
         pluginFactory.convert(group.getPlugin(), context);
 
-        // 5、批量执行同步 TODO 待实现多表并行
-        BatchWriter batchWriter = new BatchWriter(tConnectorMapper, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, getConfig().getWriterBatchCount());
-        Result result = parserFactory.writeBatch(context, batchWriter, taskExecutor);
+        // 5、批量执行同步
+        BatchWriter batchWriter = new BatchWriter(tConnectorMapper, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, generalBufferConfig.getBufferWriterCount());
+        Result result = parserFactory.writeBatch(context, batchWriter, generalExecutor);
 
         // 6.发布刷新增量点事件
         applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
@@ -132,5 +145,9 @@ public class WriterBufferActuator extends AbstractBufferActuator<WriterRequest, 
         Connector conn = cacheService.get(connectorId, Connector.class);
         Assert.notNull(conn, "Connector can not be null.");
         return conn.getConfig();
+    }
+
+    public void setGeneralExecutor(Executor generalExecutor) {
+        this.generalExecutor = generalExecutor;
     }
 }

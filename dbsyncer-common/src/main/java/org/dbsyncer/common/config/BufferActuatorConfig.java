@@ -1,66 +1,64 @@
 package org.dbsyncer.common.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
-
 /**
+ * 缓冲区配置
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2022/7/14 23:50
  */
-@Configuration
-@ConfigurationProperties(prefix = "dbsyncer.parser.flush.buffer.actuator")
-public class BufferActuatorConfig {
+public abstract class BufferActuatorConfig {
 
     /**
-     * 写批量数
+     * 单次执行任务数
      */
-    private int writerBatchCount = 100;
+    private int bufferWriterCount = 100;
 
     /**
-     * 批量同步数
+     * 每次消费缓存队列的任务数
      */
-    private int batchCount = 1000;
+    private int bufferPullCount = 1000;
 
     /**
-     * 工作线任务队列
+     * 缓存队列容量
      */
-    private int queueCapacity = 5_0000;
+    private int bufferQueueCapacity = 3_0000;
 
     /**
-     * 同步间隔（毫秒）
+     * 定时消费缓存队列间隔(毫秒)
      */
-    private int periodMillisecond = 300;
+    private int bufferPeriodMillisecond = 300;
 
-    public int getWriterBatchCount() {
-        return writerBatchCount;
+    public int getBufferWriterCount() {
+        return bufferWriterCount;
     }
 
-    public void setWriterBatchCount(int writerBatchCount) {
-        this.writerBatchCount = writerBatchCount;
+    public void setBufferWriterCount(int bufferWriterCount) {
+        this.bufferWriterCount = bufferWriterCount;
     }
 
-    public int getBatchCount() {
-        return batchCount;
+    public int getBufferPullCount() {
+        return bufferPullCount;
     }
 
-    public void setBatchCount(int batchCount) {
-        this.batchCount = batchCount;
+    public void setBufferPullCount(int bufferPullCount) {
+        this.bufferPullCount = bufferPullCount;
     }
 
-    public int getQueueCapacity() {
-        return queueCapacity;
+    public int getBufferQueueCapacity() {
+        return bufferQueueCapacity;
     }
 
-    public void setQueueCapacity(int queueCapacity) {
-        this.queueCapacity = queueCapacity;
+    public void setBufferQueueCapacity(int bufferQueueCapacity) {
+        this.bufferQueueCapacity = bufferQueueCapacity;
     }
 
-    public int getPeriodMillisecond() {
-        return periodMillisecond;
+    public int getBufferPeriodMillisecond() {
+        return bufferPeriodMillisecond;
     }
 
-    public void setPeriodMillisecond(int periodMillisecond) {
-        this.periodMillisecond = periodMillisecond;
+    public void setBufferPeriodMillisecond(int bufferPeriodMillisecond) {
+        this.bufferPeriodMillisecond = bufferPeriodMillisecond;
     }
+
 }

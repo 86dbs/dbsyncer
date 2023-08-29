@@ -145,6 +145,7 @@ public class FullPuller extends AbstractPuller implements ApplicationListener<Fu
 
         meta.setBeginTime(task.getBeginTime());
         meta.setEndTime(task.getEndTime());
+        meta.setUpdateTime(Instant.now().toEpochMilli());
         Map<String, String> snapshot = meta.getSnapshot();
         snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(task.getPageIndex()));
         snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.join(task.getCursors(), ","));

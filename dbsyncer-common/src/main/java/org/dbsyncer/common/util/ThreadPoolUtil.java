@@ -1,53 +1,36 @@
-package org.dbsyncer.common.config;
+package org.dbsyncer.common.util;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionHandler;
 
-/**
- * @author AE86
- * @version 1.0.0
- * @date 2020-04-26 23:40
- */
-@Configuration
-@ConfigurationProperties(prefix = "dbsyncer.web.task.executor")
-public class TaskExecutorConfig {
+public abstract class ThreadPoolUtil {
 
     /**
-     * 工作线程数
+     * 新建线程池
+     *
+     * @param corePoolSize 核心线程数
+     * @param maxPoolSize 最大线程数
+     * @param queueCapacity 队列容量
+     * @param keepAliveSeconds 空闲线程销毁时间（秒）
+     * @param threadNamePrefix 线程前缀名称
+     * @return
      */
-    private int coreSize = Runtime.getRuntime().availableProcessors() * 2;
-
-    /**
-     * 最大工作线程数
-     */
-    private int maxSize = 64;
-
-    /**
-     * 工作线任务队列
-     */
-    private int queueCapacity = 1000;
-
-    @Bean("taskExecutor")
-    public Executor taskExecutor() {
+    public static ThreadPoolTaskExecutor newThreadPoolTaskExecutor(int corePoolSize, int maxPoolSize, int queueCapacity, int keepAliveSeconds, String threadNamePrefix) {
         //注意这一行日志：2. do submit,taskCount [101], completedTaskCount [87], activeCount [5], queueSize [9]
         //这说明提交任务到线程池的时候，调用的是submit(Callable task)这个方法，当前已经提交了101个任务，完成了87个，当前有5个线程在处理任务，还剩9个任务在队列中等待，线程池的基本情况一路了然；
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         //核心线程数10：线程池创建时候初始化的线程数
-        executor.setCorePoolSize(coreSize);
+        executor.setCorePoolSize(corePoolSize);
         //最大线程数128：线程池最大的线程数，只有在缓冲队列满了之后才会申请超过核心线程数的线程
         //maxPoolSize 当系统负载大道最大值时,核心线程数已无法按时处理完所有任务,这是就需要增加线程.每秒200个任务需要20个线程,那么当每秒1000个任务时,则需要(1000-queueCapacity)*(20/200),即60个线程,可将maxPoolSize设置为60;
-        executor.setMaxPoolSize(maxSize);
+        executor.setMaxPoolSize(maxPoolSize);
         //缓冲队列：用来缓冲执行任务的队列
         executor.setQueueCapacity(queueCapacity);
         //允许线程的空闲时间30秒：当超过了核心线程出之外的线程在空闲时间到达之后会被销毁
-        executor.setKeepAliveSeconds(30);
+        executor.setKeepAliveSeconds(keepAliveSeconds);
         //线程池名的前缀：设置好了之后可以方便我们定位处理任务所在的线程池
-        executor.setThreadNamePrefix("taskExecutor-");
+        executor.setThreadNamePrefix(threadNamePrefix);
         //理线程池对拒绝任务的处策略：这里采用了CallerRunsPolicy策略，当线程池没有处理能力的时候，该策略会直接在 execute 方法的调用线程中运行被拒绝的任务；如果执行程序已关闭，则会丢弃该任务
         /*CallerRunsPolicy：线程调用运行该任务的 execute 本身。此策略提供简单的反馈控制机制，能够减缓新任务的提交速度。
         这个策略显然不想放弃执行任务。但是由于池中已经没有任何资源了，那么就直接使用调用该execute的线程本身来执行。（开始我总不想丢弃任务的执行，但是对某些应用场景来讲，很有可能造成当前线程也被阻塞。如果所有线程都是不能执行的，很可能导致程序没法继续跑了。需要视业务情景而定吧。）
@@ -64,7 +47,7 @@ public class TaskExecutorConfig {
         return executor;
     }
 
-    public RejectedExecutionHandler rejectedExecutionHandler() {
+    private static RejectedExecutionHandler rejectedExecutionHandler() {
         return (r, executor) -> {
             try {
                 executor.getQueue().put(r);
@@ -73,29 +56,4 @@ public class TaskExecutorConfig {
             }
         };
     }
-
-    public int getQueueCapacity() {
-        return queueCapacity;
-    }
-
-    public void setQueueCapacity(int queueCapacity) {
-        this.queueCapacity = queueCapacity;
-    }
-
-    public int getCoreSize() {
-        return coreSize;
-    }
-
-    public void setCoreSize(int coreSize) {
-        this.coreSize = coreSize;
-    }
-
-    public int getMaxSize() {
-        return maxSize;
-    }
-
-    public void setMaxSize(int maxSize) {
-        this.maxSize = maxSize;
-    }
-
 }

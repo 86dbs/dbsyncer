@@ -14,8 +14,8 @@ import java.util.concurrent.RejectedExecutionHandler;
  * @date 2022/4/29 10:27
  */
 @Configuration
-@ConfigurationProperties(prefix = "dbsyncer.web.task.scheduler")
-public class TaskSchedulerConfig implements SchedulingConfigurer {
+@ConfigurationProperties(prefix = "dbsyncer.web.scheduler")
+public class SchedulerConfig implements SchedulingConfigurer {
 
     /**
      * 工作线程数

@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.flush.impl;
 
-import org.dbsyncer.common.config.IncrementDataConfig;
+import org.dbsyncer.common.config.StorageConfig;
 import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferActuator;
@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 /**
  * 持久化
@@ -45,20 +46,25 @@ public class FlushServiceImpl implements FlushService {
     private BufferActuator storageBufferActuator;
 
     @Resource
-    private IncrementDataConfig flushDataConfig;
+    private StorageConfig storageConfig;
+
+    @Resource
+    private Executor storageExecutor;
 
     @Override
     public void asyncWrite(String type, String error) {
-        Map<String, Object> params = new HashMap();
-        params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
-        params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
-        params.put(ConfigConstant.CONFIG_MODEL_JSON, substring(error));
-        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, Instant.now().toEpochMilli());
-        storageService.add(StorageEnum.LOG, params);
+        storageExecutor.execute(() -> {
+            Map<String, Object> params = new HashMap();
+            params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
+            params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
+            params.put(ConfigConstant.CONFIG_MODEL_JSON, substring(error));
+            params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, Instant.now().toEpochMilli());
+            storageService.add(StorageEnum.LOG, params);
+        });
     }
 
     @Override
-    public void write(String metaId, String tableGroupId, String targetTableGroupName, String event, boolean success, List<Map> data, String error) {
+    public void asyncWrite(String metaId, String tableGroupId, String targetTableGroupName, String event, boolean success, List<Map> data, String error) {
         long now = Instant.now().toEpochMilli();
         data.forEach(r -> {
             Map<String, Object> row = new HashMap();
@@ -87,7 +93,7 @@ public class FlushServiceImpl implements FlushService {
      * @return
      */
     private String substring(String error) {
-        return StringUtil.substring(error, 0, flushDataConfig.getMaxErrorLength());
+        return StringUtil.substring(error, 0, storageConfig.getMaxErrorLength());
     }
 
 }

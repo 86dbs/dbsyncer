@@ -160,7 +160,7 @@ public final class OperationTemplate {
         }
     }
 
-    static class Group {
+    class Group {
 
         private List<String> index;
 

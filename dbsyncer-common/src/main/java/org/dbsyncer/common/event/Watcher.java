@@ -38,4 +38,10 @@ public interface Watcher {
      * @return
      */
     long getMetaUpdateTime();
+
+    /**
+     * 关闭事件
+     *
+     */
+    void closeEvent();
 }

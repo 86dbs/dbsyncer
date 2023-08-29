@@ -13,11 +13,10 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.monitor.Monitor;
-import org.dbsyncer.parser.flush.BufferActuator;
+import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.util.BinlogMessageUtil;
@@ -55,7 +54,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     private Manager manager;
 
     @Resource
-    private BufferActuator syncBufferActuator;
+    private Parser parser;
 
     @Override
     public MessageVo getMessageVo(String metaId, String messageId) {
@@ -150,10 +149,11 @@ public class DataSyncServiceImpl implements DataSyncService {
             if (StringUtil.isNotBlank(retryDataParams)) {
                 JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
             }
-            // TODO 待获取源表名称
-            RowChangedEvent changedEvent = new RowChangedEvent(StringUtil.EMPTY, event, Collections.EMPTY_LIST);
+            TableGroup tableGroup = manager.getTableGroup(tableGroupId);
+            String sourceTableName = tableGroup.getSourceTable().getName();
+            RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, Collections.EMPTY_LIST);
             changedEvent.setChangedRow(binlogData);
-            syncBufferActuator.offer(new WriterRequest(tableGroupId, changedEvent));
+            parser.execute(tableGroupId, changedEvent);
             monitor.removeData(metaId, messageId);
             // 更新失败数
             Meta meta = manager.getMeta(metaId);

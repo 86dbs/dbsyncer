@@ -1,10 +1,16 @@
 package org.dbsyncer.parser.flush;
 
+import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.config.BufferActuatorConfig;
+import org.dbsyncer.common.scheduled.ScheduledTaskJob;
+import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.parser.model.Meta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.lang.reflect.ParameterizedType;
 import java.time.Duration;
 import java.time.Instant;
@@ -29,16 +35,22 @@ import java.util.concurrent.locks.ReentrantLock;
  * @version 1.0.0
  * @date 2022/3/27 17:36
  */
-public abstract class AbstractBufferActuator<Request extends BufferRequest, Response extends BufferResponse> implements BufferActuator {
+public abstract class AbstractBufferActuator<Request extends BufferRequest, Response extends BufferResponse> implements BufferActuator, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private Class<Response> responseClazz;
     private final Lock taskLock = new ReentrantLock();
     private final Lock queueLock = new ReentrantLock(true);
     private final Condition isFull = queueLock.newCondition();
-    private final Duration OFFER_INTERVAL = Duration.of(500, ChronoUnit.MILLIS);
+    private final Duration offerInterval = Duration.of(500, ChronoUnit.MILLIS);
     private BufferActuatorConfig config;
     private BlockingQueue<Request> queue;
+
+    @Resource
+    private ScheduledTaskService scheduledTaskService;
+
+    @Resource
+    private CacheService cacheService;
 
     public AbstractBufferActuator() {
         int level = 5;
@@ -56,12 +68,19 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     /**
      * 初始化配置
-     *
-     * @param config
      */
-    public void buildConfig(BufferActuatorConfig config) {
-        this.config = config;
-        this.queue = new LinkedBlockingQueue(config.getQueueCapacity());
+    protected void buildConfig() {
+        Assert.notNull(config, "请先配置缓存执行器，setConfig(BufferActuatorConfig config)");
+        buildQueueConfig();
+        scheduledTaskService.start(config.getBufferPeriodMillisecond(), this);
+    }
+
+    /**
+     * 初始化缓存队列配置
+     */
+    protected void buildQueueConfig() {
+        this.queue = new LinkedBlockingQueue(config.getBufferQueueCapacity());
+        logger.info("初始化{}容量：{}", this.getClass().getSimpleName(), config.getBufferQueueCapacity());
     }
 
     /**
@@ -79,6 +98,17 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      * @param response
      */
     protected abstract void partition(Request request, Response response);
+
+    /**
+     * 驱动是否运行中
+     *
+     * @param request
+     * @return
+     */
+    protected boolean isRunning(BufferRequest request) {
+        Meta meta = cacheService.get(request.getMetaId(), Meta.class);
+        return meta != null && MetaEnum.isRunning(meta.getState());
+    }
 
     /**
      * 是否跳过分区处理
@@ -104,10 +134,10 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
             try {
                 // 公平锁，有序执行，容量上限，阻塞重试
                 queueLock.lock();
-                while (!queue.offer((Request) request)) {
+                while (isRunning(request) && !queue.offer((Request) request)) {
                     logger.warn("[{}]缓存队列容量已达上限[{}], 正在阻塞重试.", this.getClass().getSimpleName(), getQueueCapacity());
                     try {
-                        isFull.await(OFFER_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
+                        isFull.await(offerInterval.toMillis(), TimeUnit.MILLISECONDS);
                     } catch (InterruptedException e) {
                         break;
                     }
@@ -119,7 +149,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     }
 
     @Override
-    public void batchExecute() {
+    public void run() {
         boolean locked = false;
         try {
             locked = taskLock.tryLock();
@@ -142,12 +172,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     @Override
     public int getQueueCapacity() {
-        return config.getQueueCapacity();
-    }
-
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        return super.clone();
+        return config.getBufferQueueCapacity();
     }
 
     private void submit() throws IllegalAccessException, InstantiationException {
@@ -157,7 +182,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
         AtomicLong batchCounter = new AtomicLong();
         Map<String, Response> map = new LinkedHashMap<>();
-        while (!queue.isEmpty() && batchCounter.get() < config.getBatchCount()) {
+        while (!queue.isEmpty() && batchCounter.get() < config.getBufferPullCount()) {
             Request poll = queue.poll();
             String key = getPartitionKey(poll);
             if (!map.containsKey(key)) {
@@ -187,7 +212,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         batchCounter = null;
     }
 
-    public BufferActuatorConfig getConfig() {
-        return config;
+    public void setConfig(BufferActuatorConfig config) {
+        this.config = config;
     }
 }
