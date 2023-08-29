@@ -57,7 +57,7 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
     private Manager manager;
 
     @Resource
-    private Executor writeExecutor;
+    private Executor generalExecutor;
 
     @Resource
     private BufferActuator generalBufferActuator;
@@ -172,7 +172,7 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
 
     @Override
     public List<MetricResponse> getMetricInfo() {
-        ThreadPoolTaskExecutor threadTask = (ThreadPoolTaskExecutor) writeExecutor;
+        ThreadPoolTaskExecutor threadTask = (ThreadPoolTaskExecutor) generalExecutor;
         ThreadPoolExecutor pool = threadTask.getThreadPoolExecutor();
 
         List<MetricResponse> list = new ArrayList<>();

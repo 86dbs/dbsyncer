@@ -1,14 +1,11 @@
 package org.dbsyncer.parser.flush.impl;
 
-import org.dbsyncer.common.config.BufferActuatorConfig;
-import org.dbsyncer.common.config.WriteExecutorConfig;
+import org.dbsyncer.common.config.TableGroupBufferConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.ThreadPoolUtil;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.parser.flush.BufferRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
@@ -24,13 +21,11 @@ import javax.annotation.Resource;
 @Component
 public final class TableGroupBufferActuator extends GeneralBufferActuator implements Cloneable {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    @Resource
+    private TableGroupBufferConfig tableGroupBufferConfig;
 
     @Resource
     private ScheduledTaskService scheduledTaskService;
-
-    @Resource
-    private WriteExecutorConfig writeExecutorConfig;
 
     private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
@@ -51,22 +46,16 @@ public final class TableGroupBufferActuator extends GeneralBufferActuator implem
     }
 
     public void buildConfig() {
-        BufferActuatorConfig actuatorConfig = super.getBufferActuatorConfig();
-        try {
-            BufferActuatorConfig newConfig = (BufferActuatorConfig) actuatorConfig.clone();
-            // TODO 暂定容量上限
-            newConfig.setQueueCapacity(50000);
-            setBufferActuatorConfig(newConfig);
-            running = true;
-            super.buildBufferActuatorConfig();
-            taskKey = UUIDUtil.getUUID();
-            String threadNamePrefix = new StringBuilder("writeExecutor-").append(tableGroupId).append(StringUtil.SYMBOL).toString();
-            threadPoolTaskExecutor = ThreadPoolUtil.newThreadPoolTaskExecutor(5, 5, 1000, 30, threadNamePrefix);
-            setWriteExecutor(threadPoolTaskExecutor);
-            scheduledTaskService.start(taskKey, getBufferActuatorConfig().getPeriodMillisecond(), this);
-        } catch (CloneNotSupportedException e) {
-            logger.error(e.getMessage(), e);
-        }
+        super.setConfig(tableGroupBufferConfig);
+        super.buildQueueConfig();
+        taskKey = UUIDUtil.getUUID();
+        int coreSize = tableGroupBufferConfig.getThreadCoreSize();
+        int queueCapacity = tableGroupBufferConfig.getThreadQueueCapacity();
+        String threadNamePrefix = new StringBuilder("TableGroupExecutor-").append(tableGroupId).append(StringUtil.SYMBOL).toString();
+        threadPoolTaskExecutor = ThreadPoolUtil.newThreadPoolTaskExecutor(coreSize, coreSize, queueCapacity, 30, threadNamePrefix);
+        setGeneralExecutor(threadPoolTaskExecutor);
+        running = true;
+        scheduledTaskService.start(taskKey, tableGroupBufferConfig.getBufferPeriodMillisecond(), this);
     }
 
     @Override

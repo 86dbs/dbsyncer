@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.flush.impl;
 
-import org.dbsyncer.common.config.IncrementDataConfig;
+import org.dbsyncer.common.config.StorageConfig;
 import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferActuator;
@@ -46,14 +46,14 @@ public class FlushServiceImpl implements FlushService {
     private BufferActuator storageBufferActuator;
 
     @Resource
-    private IncrementDataConfig flushDataConfig;
+    private StorageConfig storageConfig;
 
     @Resource
-    private Executor flushExecutor;
+    private Executor storageExecutor;
 
     @Override
     public void asyncWrite(String type, String error) {
-        flushExecutor.execute(() -> {
+        storageExecutor.execute(() -> {
             Map<String, Object> params = new HashMap();
             params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
@@ -93,7 +93,7 @@ public class FlushServiceImpl implements FlushService {
      * @return
      */
     private String substring(String error) {
-        return StringUtil.substring(error, 0, flushDataConfig.getMaxErrorLength());
+        return StringUtil.substring(error, 0, storageConfig.getMaxErrorLength());
     }
 
 }

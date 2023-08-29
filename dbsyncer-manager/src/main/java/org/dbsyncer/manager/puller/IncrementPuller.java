@@ -1,5 +1,6 @@
 package org.dbsyncer.manager.puller;
 
+import org.dbsyncer.common.config.TableGroupBufferConfig;
 import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.event.RefreshOffsetEvent;
@@ -62,6 +63,9 @@ import java.util.stream.Collectors;
 public class IncrementPuller extends AbstractPuller implements ApplicationListener<RefreshOffsetEvent>, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Resource
+    private TableGroupBufferConfig tableGroupBufferConfig;
 
     @Resource
     private Parser parser;
@@ -242,7 +246,7 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
 
         protected void buildBufferActuator(String tableGroupId) {
             // TODO 暂定执行器上限，待替换为LRU模型
-            if (router.size() >= MAX_BUFFER_ACTUATOR_SIZE) {
+            if (router.size() >= tableGroupBufferConfig.getMaxBufferActuatorSize()) {
                 return;
             }
             router.computeIfAbsent(tableGroupId, k -> {
@@ -251,7 +255,6 @@ public class IncrementPuller extends AbstractPuller implements ApplicationListen
                     newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuator.clone();
                     newBufferActuator.setTableGroupId(tableGroupId);
                     newBufferActuator.buildConfig();
-                    return newBufferActuator;
                 } catch (CloneNotSupportedException ex) {
                     logger.error(ex.getMessage(), ex);
                 }

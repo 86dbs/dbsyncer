@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.cache.CacheService;
+import org.dbsyncer.common.config.GeneralBufferConfig;
 import org.dbsyncer.common.event.RefreshOffsetEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.IncrementConvertContext;
@@ -25,6 +26,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +43,10 @@ import java.util.concurrent.Executor;
 public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest, WriterResponse> {
 
     @Resource
-    private Executor writeExecutor;
+    private GeneralBufferConfig generalBufferConfig;
+
+    @Resource
+    private Executor generalExecutor;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -60,6 +65,12 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Resource
     private ApplicationContext applicationContext;
+
+    @PostConstruct
+    public void init() {
+        setConfig(generalBufferConfig);
+        buildConfig();
+    }
 
     @Override
     protected String getPartitionKey(WriterRequest request) {
@@ -108,8 +119,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         pluginFactory.convert(group.getPlugin(), context);
 
         // 5、批量执行同步
-        BatchWriter batchWriter = new BatchWriter(tConnectorMapper, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, getBufferActuatorConfig().getWriterBatchCount());
-        Result result = parserFactory.writeBatch(context, batchWriter, writeExecutor);
+        BatchWriter batchWriter = new BatchWriter(tConnectorMapper, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, generalBufferConfig.getBufferWriterCount());
+        Result result = parserFactory.writeBatch(context, batchWriter, generalExecutor);
 
         // 6.发布刷新增量点事件
         applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
@@ -136,11 +147,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         return conn.getConfig();
     }
 
-    public Executor getWriteExecutor() {
-        return writeExecutor;
-    }
-
-    public void setWriteExecutor(Executor writeExecutor) {
-        this.writeExecutor = writeExecutor;
+    public void setGeneralExecutor(Executor generalExecutor) {
+        this.generalExecutor = generalExecutor;
     }
 }

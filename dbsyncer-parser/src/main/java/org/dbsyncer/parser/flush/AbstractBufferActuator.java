@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.lang.reflect.ParameterizedType;
 import java.time.Duration;
@@ -43,11 +42,9 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     private final Lock taskLock = new ReentrantLock();
     private final Lock queueLock = new ReentrantLock(true);
     private final Condition isFull = queueLock.newCondition();
-    private final Duration OFFER_INTERVAL = Duration.of(500, ChronoUnit.MILLIS);
+    private final Duration offerInterval = Duration.of(500, ChronoUnit.MILLIS);
+    private BufferActuatorConfig config;
     private BlockingQueue<Request> queue;
-
-    @Resource
-    private BufferActuatorConfig bufferActuatorConfig;
 
     @Resource
     private ScheduledTaskService scheduledTaskService;
@@ -69,18 +66,21 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         Assert.notNull(responseClazz, String.format("%s的父类%s泛型参数Response为空.", getClass().getName(), AbstractBufferActuator.class.getName()));
     }
 
-    @PostConstruct
-    public void init() {
-        buildBufferActuatorConfig();
-        scheduledTaskService.start(bufferActuatorConfig.getPeriodMillisecond(), this);
-    }
-
     /**
      * 初始化配置
      */
-    protected void buildBufferActuatorConfig() {
-        this.queue = new LinkedBlockingQueue(bufferActuatorConfig.getQueueCapacity());
-        logger.info("初始化{}容量：{}", this.getClass().getSimpleName(), bufferActuatorConfig.getQueueCapacity());
+    protected void buildConfig() {
+        Assert.notNull(config, "请先配置缓存执行器，setConfig(BufferActuatorConfig config)");
+        buildQueueConfig();
+        scheduledTaskService.start(config.getBufferPeriodMillisecond(), this);
+    }
+
+    /**
+     * 初始化缓存队列配置
+     */
+    protected void buildQueueConfig() {
+        this.queue = new LinkedBlockingQueue(config.getBufferQueueCapacity());
+        logger.info("初始化{}容量：{}", this.getClass().getSimpleName(), config.getBufferQueueCapacity());
     }
 
     /**
@@ -137,7 +137,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
                 while (isRunning(request) && !queue.offer((Request) request)) {
                     logger.warn("[{}]缓存队列容量已达上限[{}], 正在阻塞重试.", this.getClass().getSimpleName(), getQueueCapacity());
                     try {
-                        isFull.await(OFFER_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
+                        isFull.await(offerInterval.toMillis(), TimeUnit.MILLISECONDS);
                     } catch (InterruptedException e) {
                         break;
                     }
@@ -172,7 +172,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     @Override
     public int getQueueCapacity() {
-        return bufferActuatorConfig.getQueueCapacity();
+        return config.getBufferQueueCapacity();
     }
 
     private void submit() throws IllegalAccessException, InstantiationException {
@@ -182,7 +182,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
         AtomicLong batchCounter = new AtomicLong();
         Map<String, Response> map = new LinkedHashMap<>();
-        while (!queue.isEmpty() && batchCounter.get() < bufferActuatorConfig.getBatchCount()) {
+        while (!queue.isEmpty() && batchCounter.get() < config.getBufferPullCount()) {
             Request poll = queue.poll();
             String key = getPartitionKey(poll);
             if (!map.containsKey(key)) {
@@ -205,18 +205,14 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
-            logger.info("{}[{}{}]{}, {}ms", this.getClass().getSimpleName(), key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
+            logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
         });
         map.clear();
         map = null;
         batchCounter = null;
     }
 
-    public BufferActuatorConfig getBufferActuatorConfig() {
-        return bufferActuatorConfig;
-    }
-
-    public void setBufferActuatorConfig(BufferActuatorConfig bufferActuatorConfig) {
-        this.bufferActuatorConfig = bufferActuatorConfig;
+    public void setConfig(BufferActuatorConfig config) {
+        this.config = config;
     }
 }

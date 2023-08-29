@@ -1,7 +1,7 @@
 package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.cache.CacheService;
-import org.dbsyncer.common.config.IncrementDataConfig;
+import org.dbsyncer.common.config.StorageConfig;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -26,7 +26,7 @@ public abstract class AbstractFlushStrategy implements FlushStrategy {
     private CacheService cacheService;
 
     @Resource
-    private IncrementDataConfig flushDataConfig;
+    private StorageConfig storageConfig;
 
     @Override
     public void flushFullData(String metaId, Result result, String event) {
@@ -41,13 +41,13 @@ public abstract class AbstractFlushStrategy implements FlushStrategy {
     protected void flush(String metaId, Result result, String event) {
         refreshTotal(metaId, result);
 
-        if (flushDataConfig.isWriterFail() && !CollectionUtils.isEmpty(result.getFailData())) {
-            final String error = StringUtil.substring(result.getError().toString(), 0, flushDataConfig.getMaxErrorLength());
+        if (storageConfig.isWriterFail() && !CollectionUtils.isEmpty(result.getFailData())) {
+            final String error = StringUtil.substring(result.getError().toString(), 0, storageConfig.getMaxErrorLength());
             flushService.asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, false, result.getFailData(), error);
         }
 
         // 是否写增量数据
-        if (flushDataConfig.isWriterSuccess() && !CollectionUtils.isEmpty(result.getSuccessData())) {
+        if (storageConfig.isWriterSuccess() && !CollectionUtils.isEmpty(result.getSuccessData())) {
             flushService.asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, true, result.getSuccessData(), "");
         }
     }

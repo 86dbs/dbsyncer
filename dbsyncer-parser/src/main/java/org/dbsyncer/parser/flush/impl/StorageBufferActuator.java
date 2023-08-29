@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.flush.impl;
 
+import org.dbsyncer.common.config.StorageConfig;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.StorageResponse;
@@ -7,6 +8,7 @@ import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
 /**
@@ -20,7 +22,16 @@ import javax.annotation.Resource;
 public final class StorageBufferActuator extends AbstractBufferActuator<StorageRequest, StorageResponse> {
 
     @Resource
+    private StorageConfig storageConfig;
+
+    @Resource
     private StorageService storageService;
+
+    @PostConstruct
+    public void init() {
+        setConfig(storageConfig);
+        buildConfig();
+    }
 
     @Override
     protected String getPartitionKey(StorageRequest request) {
