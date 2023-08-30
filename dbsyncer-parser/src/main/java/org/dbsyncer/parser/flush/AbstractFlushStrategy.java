@@ -41,13 +41,13 @@ public abstract class AbstractFlushStrategy implements FlushStrategy {
     protected void flush(String metaId, Result result, String event) {
         refreshTotal(metaId, result);
 
-        if (storageConfig.isWriterFail() && !CollectionUtils.isEmpty(result.getFailData())) {
+        if (storageConfig.isWriteFail() && !CollectionUtils.isEmpty(result.getFailData())) {
             final String error = StringUtil.substring(result.getError().toString(), 0, storageConfig.getMaxErrorLength());
             flushService.asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, false, result.getFailData(), error);
         }
 
         // 是否写增量数据
-        if (storageConfig.isWriterSuccess() && !CollectionUtils.isEmpty(result.getSuccessData())) {
+        if (storageConfig.isWriteSuccess() && !CollectionUtils.isEmpty(result.getSuccessData())) {
             flushService.asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, true, result.getSuccessData(), "");
         }
     }
