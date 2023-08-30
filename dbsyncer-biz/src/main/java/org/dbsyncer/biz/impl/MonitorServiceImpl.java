@@ -27,7 +27,6 @@ import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.monitor.Monitor;
 import org.dbsyncer.monitor.enums.DiskMetricEnum;
 import org.dbsyncer.monitor.enums.MetricEnum;
-import org.dbsyncer.monitor.enums.TaskMetricEnum;
 import org.dbsyncer.monitor.enums.ThreadPoolMetricEnum;
 import org.dbsyncer.monitor.model.AppReportMetric;
 import org.dbsyncer.monitor.model.MetricResponse;
@@ -90,8 +89,6 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @PostConstruct
     private void init() {
-        metricDetailFormatterMap.putIfAbsent(TaskMetricEnum.STORAGE_ACTIVE.getCode(), new ValueMetricDetailFormatter());
-        metricDetailFormatterMap.putIfAbsent(TaskMetricEnum.STORAGE_REMAINING_CAPACITY.getCode(), new ValueMetricDetailFormatter());
         metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.CORE_SIZE.getCode(), new ValueMetricDetailFormatter());
         metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.TASK_SUBMITTED.getCode(), new ValueMetricDetailFormatter());
         metricDetailFormatterMap.putIfAbsent(ThreadPoolMetricEnum.QUEUE_UP.getCode(), new ValueMetricDetailFormatter());

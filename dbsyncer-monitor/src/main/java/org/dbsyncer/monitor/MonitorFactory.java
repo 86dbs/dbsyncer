@@ -11,7 +11,6 @@ import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.puller.BufferActuatorRouter;
 import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.monitor.enums.StatisticEnum;
-import org.dbsyncer.monitor.enums.TaskMetricEnum;
 import org.dbsyncer.monitor.enums.ThreadPoolMetricEnum;
 import org.dbsyncer.monitor.model.AppReportMetric;
 import org.dbsyncer.monitor.model.MappingReportMetric;
@@ -180,8 +179,6 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
         ThreadPoolExecutor pool = threadTask.getThreadPoolExecutor();
 
         List<MetricResponse> list = new ArrayList<>();
-        list.add(createTaskMetricResponse(TaskMetricEnum.STORAGE_ACTIVE, storageBufferActuator.getQueue().size()));
-        list.add(createTaskMetricResponse(TaskMetricEnum.STORAGE_REMAINING_CAPACITY, storageBufferActuator.getQueueCapacity() - storageBufferActuator.getQueue().size()));
         list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.CORE_SIZE, pool.getCorePoolSize()));
         list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.TASK_SUBMITTED, pool.getTaskCount()));
         list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.QUEUE_UP, pool.getQueue().size()));
@@ -200,10 +197,12 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
         report.setInsert(mappingReportMetric.getInsert());
         report.setUpdate(mappingReportMetric.getUpdate());
         report.setDelete(mappingReportMetric.getDelete());
-        // 堆积数据(通用执行器 + 表执行器)
+        // 堆积任务(通用执行器 + 表执行器)
         report.setQueueUp(bufferActuatorRouter.getQueueSize().addAndGet(generalBufferActuator.getQueue().size()));
-        // 容量(通用执行器 + 表执行器)
-        report.setQueueCapacity( bufferActuatorRouter.getQueueCapacity().addAndGet(generalBufferActuator.getQueueCapacity()));
+        report.setQueueCapacity(bufferActuatorRouter.getQueueCapacity().addAndGet(generalBufferActuator.getQueueCapacity()));
+        // 持久化任务
+        report.setStorageQueueUp(storageBufferActuator.getQueue().size());
+        report.setStorageQueueCapacity(storageBufferActuator.getQueueCapacity());
         return report;
     }
 
@@ -284,10 +283,6 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
     }
 
     private MetricResponse createThreadPoolMetricResponse(ThreadPoolMetricEnum metricEnum, Object value) {
-        return new MetricResponse(metricEnum.getCode(), metricEnum.getGroup(), metricEnum.getMetricName(), Arrays.asList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), value)));
-    }
-
-    private MetricResponse createTaskMetricResponse(TaskMetricEnum metricEnum, Object value) {
         return new MetricResponse(metricEnum.getCode(), metricEnum.getGroup(), metricEnum.getMetricName(), Arrays.asList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), value)));
     }
 

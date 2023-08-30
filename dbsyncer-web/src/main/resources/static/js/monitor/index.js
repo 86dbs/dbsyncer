@@ -261,7 +261,7 @@ function showLog($logList, arr, append) {
 
 // 堆积数据
 function showQueueChart(queueUp, queueCapacity) {
-    var option = {
+    let option = {
         title: {
             text: "堆积数据",
             x: 'center',
@@ -306,8 +306,8 @@ function showQueueChart(queueUp, queueCapacity) {
 }
 
 // 事件分类
-function showEventChart(ins, upd, del) {
-    var option = {
+function showEventChart(success, fail, ins, upd, del) {
+    let option = {
         title: {
             text: '事件分类',
             left: 'center'
@@ -341,49 +341,58 @@ function showEventChart(ins, upd, del) {
     };
     echarts.init(document.getElementById('eventChart')).setOption(option);
 
+    $("#totalSpan").html(success + fail);
+    $("#successSpan").html(success);
+    $("#failSpan").html(fail);
     $("#insertSpan").html(ins);
     $("#updateSpan").html(upd);
     $("#deleteSpan").html(del);
 }
 
 // 统计成功失败
-function showTotalChart(success, fail) {
-    var option = {
+function showStorageChart(queueUp, queueCapacity) {
+    let option = {
         title: {
-            text: '已完成数据',
-            left: 'center'
+            text: "持久化",
+            x: 'center',
+            y: 'top'
         },
         tooltip: {
-            trigger: 'item'
-        },
-        legend: {
-            orient: 'vertical',
-            left: 'left',
+            formatter: "{a}: {c}",
+            position: 'top'
         },
         series: [
             {
-                name: '已完成',
-                type: 'pie',
-                radius: '50%',
-                data: [
-                    {value: success, name: '成功'},
-                    {value: fail, name: '失败'}
-                ],
-                emphasis: {
-                    itemStyle: {
-                        shadowBlur: 10,
-                        shadowOffsetX: 0,
-                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                name: "待处理",
+                animation: true,
+                type: 'gauge',
+                min: 0,
+                max: queueCapacity,
+                splitNumber: 2,
+                axisLine: {            // 坐标轴线
+                    lineStyle: {       // 属性lineStyle控制线条样式
+                        color: [[0.3, '#67e0e3'], [0.7, '#37a2da'], [1, '#fd666d']],
+                        width: 5
                     }
-                }
+                },
+                axisTick: {            // 坐标轴小标记
+                    length: 10,        // 属性length控制线长
+                    lineStyle: {       // 属性lineStyle控制线条样式
+                        color: 'auto'
+                    }
+                },
+                splitLine: {           // 分隔线
+                    length: 10,         // 属性length控制线长
+                    lineStyle: {       // 属性lineStyle（详见lineStyle）控制线条样式
+                        color: 'auto'
+                    }
+                },
+                detail: {fontSize: 12, offsetCenter: [0, '65%']},
+                data: [{value: queueUp, name: ''}]
             }
         ]
     };
-    echarts.init(document.getElementById('totalChart')).setOption(option);
-
-    $("#totalSpan").html(success + fail);
-    $("#successSpan").html(success);
-    $("#failSpan").html(fail);
+    echarts.init(document.getElementById('storageChart')).setOption(option);
 }
 
 // CPU历史
@@ -416,7 +425,7 @@ function showCpuChart(cpu) {
 
 // 内存历史
 function showMemoryChart(memory) {
-    var option = {
+    let option = {
         title: {
             show: true,
             text: '内存(MB)',
@@ -446,7 +455,7 @@ function showMemoryChart(memory) {
 
 // 指标列表
 function showMetricTable(metrics) {
-    var html = '';
+    let html = '';
     $.each(metrics, function (i) {
         html += '<tr>';
         html += '   <td style="width:5%;">' + (i + 1) + '</td>';
@@ -461,10 +470,10 @@ function showMetricTable(metrics) {
 function showChartTable() {
     doGetWithoutLoading("/monitor/queryAppReportMetric", {}, function (data) {
         if (data.success == true) {
-            var report = data.resultValue;
-            showTotalChart(report.success, report.fail);
-            showEventChart(report.insert, report.update, report.delete);
+            let report = data.resultValue;
+            showEventChart(report.success, report.fail, report.insert, report.update, report.delete);
             showQueueChart(report.queueUp, report.queueCapacity);
+            showStorageChart(report.storageQueueUp, report.storageQueueCapacity);
             showCpuChart(report.cpu);
             showMemoryChart(report.memory);
             showMetricTable(report.metrics);
