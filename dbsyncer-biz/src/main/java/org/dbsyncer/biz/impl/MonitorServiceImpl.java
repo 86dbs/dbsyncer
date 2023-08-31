@@ -294,13 +294,13 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private List<MetricResponseVo> getMetrics(List<MetricResponse> metrics) {
-        // 线程池状态
-        List<MetricResponse> metricList = monitor.getMetricInfo();
         // 系统指标
-        metricList.addAll(metrics);
+        List<MetricResponse> metricList = monitor.getMetricInfo();
+        // 线程池状态
+        metrics.addAll(metricList);
 
         // 转换显示
-        return metricList.stream().map(metric -> {
+        return metrics.stream().map(metric -> {
             MetricResponseVo vo = new MetricResponseVo();
             BeanUtils.copyProperties(metric, vo);
             MetricDetailFormatter detailFormatter = metricDetailFormatterMap.get(vo.getCode());

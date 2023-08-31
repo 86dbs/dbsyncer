@@ -24,7 +24,8 @@ public class SqlBuilderQueryCount extends SqlBuilderQuery {
         String queryFilter = config.getQueryFilter();
 
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT COUNT(1) FROM (SELECT 1 FROM ").append(schema);
+        sql.append("SELECT COUNT(1) FROM (SELECT 1 AS ").append(quotation).append("_ROW").append(quotation).append(" FROM ");
+        sql.append(schema);
         sql.append(quotation);
         sql.append(database.buildTableName(tableName));
         sql.append(quotation);
