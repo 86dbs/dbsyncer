@@ -11,6 +11,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -87,4 +88,9 @@ public final class BufferActuatorRouter implements DisposableBean {
         router.values().forEach(map -> map.values().forEach(actuator -> total.addAndGet(actuator.getQueueCapacity())));
         return total;
     }
+
+    public Map<String, Map<String, TableGroupBufferActuator>> getRouter() {
+        return Collections.unmodifiableMap(router);
+    }
+
 }

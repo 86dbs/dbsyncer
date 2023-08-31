@@ -10,46 +10,30 @@ package org.dbsyncer.monitor.enums;
 public enum ThreadPoolMetricEnum {
 
     /**
-     * 已提交
+     * 核心线程
      */
-    CORE_SIZE("thread.pool.core.size", "线程池", "核心数"),
-    /**
-     * 已提交
-     */
-    TASK_SUBMITTED("thread.pool.task.submitted", "线程池", "已提交"),
+    CORE_SIZE("线程"),
     /**
      * 排队中
      */
-    QUEUE_UP("thread.pool.queue.up", "线程池", "排队中"),
+    QUEUE_UP("排队中"),
     /**
      * 处理中
      */
-    ACTIVE("thread.pool.active", "线程池", "处理中"),
+    ACTIVE("处理中"),
     /**
      * 已完成
      */
-    COMPLETED("thread.pool.completed", "线程池", "已完成"),
+    COMPLETED("完成"),
     /**
      * 空闲队列
      */
-    REMAINING_CAPACITY("thread.pool.remaining.capacity", "线程池", "空闲队列");
+    REMAINING_CAPACITY("空闲队列");
 
-    private String code;
-    private String group;
     private String metricName;
 
-    ThreadPoolMetricEnum(String code, String group, String metricName) {
-        this.code = code;
-        this.group = group;
+    ThreadPoolMetricEnum(String metricName) {
         this.metricName = metricName;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public String getGroup() {
-        return group;
     }
 
     public String getMetricName() {

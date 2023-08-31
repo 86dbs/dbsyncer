@@ -134,6 +134,11 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         pluginFactory.postProcessAfter(group.getPlugin(), context);
     }
 
+    @Override
+    public Executor getExecutor() {
+        return generalExecutor;
+    }
+
     /**
      * 获取连接器配置
      *

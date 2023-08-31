@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.flush;
 
 import java.util.Queue;
+import java.util.concurrent.Executor;
 
 /**
  * @author AE86
@@ -29,5 +30,12 @@ public interface BufferActuator {
      * @return
      */
     int getQueueCapacity();
+
+    /**
+     * 获取线程池
+     *
+     * @return
+     */
+    Executor getExecutor();
 
 }

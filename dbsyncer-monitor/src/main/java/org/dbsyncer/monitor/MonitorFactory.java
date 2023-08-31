@@ -9,6 +9,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.puller.BufferActuatorRouter;
+import org.dbsyncer.monitor.enums.BufferActuatorMetricEnum;
 import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.monitor.enums.StatisticEnum;
 import org.dbsyncer.monitor.enums.ThreadPoolMetricEnum;
@@ -39,7 +40,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -55,9 +55,6 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
 
     @Resource
     private Manager manager;
-
-    @Resource
-    private Executor generalExecutor;
 
     @Resource
     private BufferActuator generalBufferActuator;
@@ -76,6 +73,8 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
     private LocalDateTime queryTime;
 
     private final MappingReportMetric mappingReportMetric = new MappingReportMetric();
+
+    private final int SHOW_BUFFER_ACTUATOR_SIZE = 6;
 
     @PostConstruct
     private void init() {
@@ -175,17 +174,34 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
 
     @Override
     public List<MetricResponse> getMetricInfo() {
-        ThreadPoolTaskExecutor threadTask = (ThreadPoolTaskExecutor) generalExecutor;
-        ThreadPoolExecutor pool = threadTask.getThreadPoolExecutor();
-
         List<MetricResponse> list = new ArrayList<>();
-        list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.CORE_SIZE, pool.getCorePoolSize()));
-        list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.TASK_SUBMITTED, pool.getTaskCount()));
-        list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.QUEUE_UP, pool.getQueue().size()));
-        list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.ACTIVE, pool.getActiveCount()));
-        list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.COMPLETED, pool.getCompletedTaskCount()));
-        list.add(createThreadPoolMetricResponse(ThreadPoolMetricEnum.REMAINING_CAPACITY, pool.getQueue().remainingCapacity()));
+        collect(list, generalBufferActuator, BufferActuatorMetricEnum.GENERAL);
+        collect(list, storageBufferActuator, BufferActuatorMetricEnum.STORAGE);
+        if (!CollectionUtils.isEmpty(bufferActuatorRouter.getRouter())) {
+            List<MetricResponse> tableResult = new ArrayList<>();
+            bufferActuatorRouter.getRouter().forEach((metaId, group) -> {
+                group.forEach((k, bufferActuator) ->
+                        collect(tableResult, bufferActuator, BufferActuatorMetricEnum.TABLE_GROUP)
+                );
+            });
+            // TODO sort by active
+            list.addAll(tableResult.size() <= SHOW_BUFFER_ACTUATOR_SIZE ? tableResult : tableResult.subList(0, SHOW_BUFFER_ACTUATOR_SIZE));
+        }
         return list;
+    }
+
+    private void collect(List<MetricResponse> result, BufferActuator bufferActuator, BufferActuatorMetricEnum metricEnum) {
+        ThreadPoolTaskExecutor threadTask = (ThreadPoolTaskExecutor) bufferActuator.getExecutor();
+        ThreadPoolExecutor pool = threadTask.getThreadPoolExecutor();
+        StringBuilder msg = new StringBuilder();
+        msg.append(ThreadPoolMetricEnum.CORE_SIZE.getMetricName()).append(StringUtil.COLON).append(pool.getCorePoolSize()).append(StringUtil.SPACE);
+        msg.append(ThreadPoolMetricEnum.QUEUE_UP.getMetricName()).append(StringUtil.COLON).append(pool.getQueue().size()).append(StringUtil.SPACE);
+        msg.append(ThreadPoolMetricEnum.ACTIVE.getMetricName()).append(StringUtil.COLON).append(pool.getActiveCount()).append(StringUtil.SPACE);
+        msg.append(ThreadPoolMetricEnum.REMAINING_CAPACITY.getMetricName()).append(StringUtil.COLON).append(pool.getQueue().remainingCapacity()).append(StringUtil.SPACE);
+        msg.append("堆积").append(StringUtil.COLON).append(bufferActuator.getQueue().size()).append(StringUtil.SPACE);
+        msg.append("容量").append(StringUtil.COLON).append(bufferActuator.getQueueCapacity()).append(StringUtil.SPACE);
+        msg.append(ThreadPoolMetricEnum.COMPLETED.getMetricName()).append(StringUtil.COLON).append(pool.getCompletedTaskCount());
+        result.add(new MetricResponse(metricEnum.getCode(), metricEnum.getGroup(), metricEnum.getMetricName(), Arrays.asList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), msg.toString()))));
     }
 
     @Override
@@ -280,10 +296,6 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
      */
     private long getMappingDelete(List<Meta> metaAll) {
         return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DATA_EVENT, ConnectorConstant.OPERTION_DELETE));
-    }
-
-    private MetricResponse createThreadPoolMetricResponse(ThreadPoolMetricEnum metricEnum, Object value) {
-        return new MetricResponse(metricEnum.getCode(), metricEnum.getGroup(), metricEnum.getMetricName(), Arrays.asList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), value)));
     }
 
     private long queryMappingMetricCount(List<Meta> metaAll, QueryMappingOperation operation) {

@@ -6,13 +6,17 @@ import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.StorageResponse;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageEnum;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 
 /**
- * 持久化任务缓冲执行器
+ * 持久化执行器
  *
  * @author AE86
  * @version 1.0.0
@@ -21,11 +25,16 @@ import javax.annotation.Resource;
 @Component
 public final class StorageBufferActuator extends AbstractBufferActuator<StorageRequest, StorageResponse> {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     @Resource
     private StorageConfig storageConfig;
 
     @Resource
     private StorageService storageService;
+
+    @Resource
+    private Executor storageExecutor;
 
     @PostConstruct
     public void init() {
@@ -46,7 +55,23 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
 
     @Override
     protected void pull(StorageResponse response) {
-        storageService.addBatch(StorageEnum.DATA, response.getMetaId(), response.getDataList());
+        final CountDownLatch latch = new CountDownLatch(1);
+        storageExecutor.execute(() -> {
+            try {
+                storageService.addBatch(StorageEnum.DATA, response.getMetaId(), response.getDataList());
+            } finally {
+                latch.countDown();
+            }
+        });
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage());
+        }
     }
 
+    @Override
+    public Executor getExecutor() {
+        return storageExecutor;
+    }
 }

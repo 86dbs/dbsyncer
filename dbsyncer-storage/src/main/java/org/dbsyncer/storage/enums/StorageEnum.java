@@ -22,6 +22,7 @@ public enum StorageEnum {
     /**
      * Binlog：缓存队列数据
      */
+    @Deprecated
     BINLOG("binlog");
 
     private String type;
