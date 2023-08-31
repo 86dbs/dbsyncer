@@ -1,8 +1,13 @@
 package org.dbsyncer.storage.support;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
@@ -24,7 +29,11 @@ import org.dbsyncer.storage.util.DocumentUtil;
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -46,10 +55,11 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
 
     @PostConstruct
     private void init() {
+        // 废弃binlog
+        FileUtils.deleteQuietly(new File(PATH + "binlog"));
         // 创建配置和日志索引shard
         getShard(getSharding(StorageEnum.CONFIG, null));
         getShard(getSharding(StorageEnum.LOG, null));
-        getShard(getSharding(StorageEnum.BINLOG, null));
     }
 
     @Override
@@ -210,9 +220,6 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
                     break;
                 case CONFIG:
                     docs.add(DocumentUtil.convertConfig2Doc(r));
-                    break;
-                case BINLOG:
-                    docs.add(DocumentUtil.convertBinlog2Doc(r));
                     break;
                 default:
                     break;
