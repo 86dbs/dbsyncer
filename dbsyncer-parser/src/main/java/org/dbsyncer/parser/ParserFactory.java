@@ -190,8 +190,7 @@ public class ParserFactory implements Parser {
 
     @Override
     public <T> T parseObject(String json, Class<T> clazz) {
-        T t = JsonUtil.jsonToObj(json, clazz);
-        return t;
+        return JsonUtil.jsonToObj(json, clazz);
     }
 
     @Override

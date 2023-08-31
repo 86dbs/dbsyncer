@@ -1,20 +1,18 @@
 package org.dbsyncer.biz.checker.impl.system;
 
 import org.dbsyncer.biz.checker.AbstractChecker;
-import org.dbsyncer.common.util.NumberUtil;
-import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.common.util.BeanUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
-import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.util.Map;
 
 /**
@@ -27,10 +25,10 @@ public class SystemConfigChecker extends AbstractChecker {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private Manager manager;
 
-    @Autowired
+    @Resource
     private LogService logService;
 
     @Override
@@ -52,14 +50,7 @@ public class SystemConfigChecker extends AbstractChecker {
 
         SystemConfig systemConfig = manager.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");
-
-        // 同步数据过期时间（天）
-        systemConfig.setExpireDataDays(NumberUtil.toInt(params.get("expireDataDays"), systemConfig.getExpireDataDays()));
-        // 系统日志过期时间（天）
-        systemConfig.setExpireLogDays(NumberUtil.toInt(params.get("expireLogDays"), systemConfig.getExpireLogDays()));
-        // 刷新监控间隔（秒）
-        systemConfig.setRefreshIntervalSeconds(NumberUtil.toInt(params.get("refreshIntervalSeconds"), systemConfig.getRefreshIntervalSeconds()));
-
+        BeanUtil.mapToBean(params, systemConfig);
         logService.log(LogType.SystemLog.INFO, "修改系统配置");
 
         // 修改基本配置

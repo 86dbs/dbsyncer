@@ -30,12 +30,12 @@ public class StorageConfig extends BufferActuatorConfig {
     /**
      * 是否记录同步成功数据
      */
-    private boolean writerSuccess;
+    private boolean writeSuccess;
 
     /**
      * 是否记录同步失败数据
      */
-    private boolean writerFail;
+    private boolean writeFail;
 
     /**
      * 最大记录异常信息长度
@@ -63,20 +63,20 @@ public class StorageConfig extends BufferActuatorConfig {
         this.threadQueueCapacity = threadQueueCapacity;
     }
 
-    public boolean isWriterSuccess() {
-        return writerSuccess;
+    public boolean isWriteSuccess() {
+        return writeSuccess;
     }
 
-    public void setWriterSuccess(boolean writerSuccess) {
-        this.writerSuccess = writerSuccess;
+    public void setWriteSuccess(boolean writeSuccess) {
+        this.writeSuccess = writeSuccess;
     }
 
-    public boolean isWriterFail() {
-        return writerFail;
+    public boolean isWriteFail() {
+        return writeFail;
     }
 
-    public void setWriterFail(boolean writerFail) {
-        this.writerFail = writerFail;
+    public void setWriteFail(boolean writeFail) {
+        this.writeFail = writeFail;
     }
 
     public int getMaxErrorLength() {

@@ -25,8 +25,10 @@ public class BigintValueMapper extends AbstractValueMapper<Long> {
             return bitInt.longValue();
         }
         if (val instanceof Integer) {
-            Integer integer = (Integer) val;
-            return new Long(integer);
+            return new Long((Integer) val);
+        }
+        if (val instanceof String) {
+            return new Long((String) val);
         }
 
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
