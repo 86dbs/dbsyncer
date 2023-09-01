@@ -34,7 +34,23 @@ public enum TimingExtractorEnum {
     /**
      * Elasticsearch
      */
-    ELASTIC_SEARCH(ConnectorEnum.ELASTIC_SEARCH.getType(), ESQuartzExtractor.class);
+    ELASTIC_SEARCH(ConnectorEnum.ELASTIC_SEARCH.getType(), ESQuartzExtractor.class),
+    /**
+     * DqlMysql
+     */
+    DQL_MYSQL(ConnectorEnum.DQL_MYSQL.getType(), DatabaseQuartzExtractor.class),
+    /**
+     * DqlOracle
+     */
+    DQL_ORACLE(ConnectorEnum.DQL_ORACLE.getType(), DatabaseQuartzExtractor.class),
+    /**
+     * DqlSqlServer
+     */
+    DQL_SQL_SERVER(ConnectorEnum.DQL_SQL_SERVER.getType(), DatabaseQuartzExtractor.class),
+    /**
+     * DqlPostgreSQL
+     */
+    DQL_POSTGRE_SQL(ConnectorEnum.DQL_POSTGRE_SQL.getType(), DatabaseQuartzExtractor.class);
 
     private String type;
     private Class clazz;

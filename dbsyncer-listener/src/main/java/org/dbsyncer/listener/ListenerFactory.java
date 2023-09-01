@@ -8,11 +8,12 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 @Component
 public class ListenerFactory implements Listener {
 
-    private Map<ListenerTypeEnum, ExtractorMapper> map = new LinkedHashMap<>();
+    private Map<ListenerTypeEnum, Function<String, Class>> map = new LinkedHashMap<>();
 
     @PostConstruct
     private void init() {
@@ -22,17 +23,13 @@ public class ListenerFactory implements Listener {
 
     @Override
     public <T> T getExtractor(ListenerTypeEnum listenerTypeEnum, String connectorType, Class<T> valueType) throws IllegalAccessException, InstantiationException {
-        ExtractorMapper mapper = map.get(listenerTypeEnum);
-        if (null == mapper) {
+        Function function = map.get(listenerTypeEnum);
+        if (null == function) {
             throw new ListenerException(String.format("Unsupported type \"%s\" for extractor \"%s\".", listenerTypeEnum, connectorType));
         }
 
-        Class<T> clazz = (Class<T>) mapper.getExtractor(connectorType);
+        Class<T> clazz = (Class<T>) function.apply(connectorType);
         return clazz.newInstance();
-    }
-
-    interface ExtractorMapper {
-        Class getExtractor(String connectorType);
     }
 
 }
