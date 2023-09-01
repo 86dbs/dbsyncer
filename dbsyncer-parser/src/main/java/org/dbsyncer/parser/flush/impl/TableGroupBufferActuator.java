@@ -47,6 +47,7 @@ public final class TableGroupBufferActuator extends GeneralBufferActuator implem
 
     public void buildConfig() {
         super.setConfig(tableGroupBufferConfig);
+        super.buildLock();
         super.buildQueueConfig();
         taskKey = UUIDUtil.getUUID();
         int coreSize = tableGroupBufferConfig.getThreadCoreSize();
