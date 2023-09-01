@@ -5,6 +5,7 @@ import com.github.shyiko.mysql.binlog.event.Event;
 import com.github.shyiko.mysql.binlog.event.EventHeader;
 import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
 import com.github.shyiko.mysql.binlog.event.EventType;
+import com.github.shyiko.mysql.binlog.event.QueryEventData;
 import com.github.shyiko.mysql.binlog.event.RotateEventData;
 import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
@@ -287,6 +288,12 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
                     });
                 }
                 return;
+            }
+
+            if (client.isEnableDDL() && EventType.QUERY == header.getEventType()) {
+                refresh(header);
+                QueryEventData data = event.getData();
+                logger.info("database:{}, sql:{}", data.getDatabase(), data.getSql());
             }
 
             // 切换binlog

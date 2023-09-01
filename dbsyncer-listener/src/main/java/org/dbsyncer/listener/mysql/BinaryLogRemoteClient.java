@@ -74,7 +74,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private EventDeserializer eventDeserializer;
     private Map<Long, TableMapEventData> tableMapEventByTableId;
     private boolean blocking = true;
-    private boolean simpleEventModel = false;
+    private boolean enableDDL = false;
     private long serverId = 65535;
     private volatile String binlogFilename;
     private volatile long binlogPosition = 4;
@@ -583,7 +583,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         eventDataDeserializers.put(EventType.EXT_DELETE_ROWS, (new DeleteDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
         eventDataDeserializers.put(EventType.XID, new XidEventDataDeserializer());
 
-        if (simpleEventModel) {
+        if (enableDDL) {
             eventDataDeserializers.put(EventType.INTVAR, new IntVarEventDataDeserializer());
             eventDataDeserializers.put(EventType.QUERY, new QueryEventDataDeserializer());
             eventDataDeserializers.put(EventType.ROWS_QUERY, new RowsQueryEventDataDeserializer());
@@ -710,14 +710,12 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         this.tableMapEventByTableId = tableMapEventByTableId;
     }
 
-    @Override
-    public boolean isSimpleEventModel() {
-        return simpleEventModel;
+    public boolean isEnableDDL() {
+        return enableDDL;
     }
 
-    @Override
-    public void setSimpleEventModel(boolean simpleEventModel) {
-        this.simpleEventModel = simpleEventModel;
+    public void setEnableDDL(boolean enableDDL) {
+        this.enableDDL = enableDDL;
     }
 
     @Override
