@@ -6,13 +6,10 @@ import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.StorageResponse;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageEnum;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 
 /**
@@ -24,8 +21,6 @@ import java.util.concurrent.Executor;
  */
 @Component
 public final class StorageBufferActuator extends AbstractBufferActuator<StorageRequest, StorageResponse> {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
     private StorageConfig storageConfig;
@@ -55,19 +50,7 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
 
     @Override
     protected void pull(StorageResponse response) {
-        final CountDownLatch latch = new CountDownLatch(1);
-        storageExecutor.execute(() -> {
-            try {
-                storageService.addBatch(StorageEnum.DATA, response.getMetaId(), response.getDataList());
-            } finally {
-                latch.countDown();
-            }
-        });
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            logger.error(e.getMessage());
-        }
+        storageExecutor.execute(() -> storageService.addBatch(StorageEnum.DATA, response.getMetaId(), response.getDataList()));
     }
 
     @Override

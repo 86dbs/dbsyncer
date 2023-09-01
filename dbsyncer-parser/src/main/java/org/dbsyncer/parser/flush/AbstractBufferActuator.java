@@ -89,7 +89,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      */
     protected void buildLock(){
         taskLock = new ReentrantLock();
-        queueLock = new ReentrantLock();
+        queueLock = new ReentrantLock(true);
         isFull = queueLock.newCondition();
     }
 
