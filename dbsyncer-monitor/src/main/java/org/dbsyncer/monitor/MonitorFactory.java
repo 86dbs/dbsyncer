@@ -196,7 +196,7 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
                         TableGroup tableGroup = manager.getTableGroup(actuator.getTableGroupId());
                         String metricName = new StringBuilder()
                                 .append(tableGroup.getSourceTable().getName())
-                                .append(" >> ")
+                                .append(" > ")
                                 .append(tableGroup.getTargetTable().getName()).toString();
                         tableList.add(collect(bufferActuator, tableGroupCode, mapping.getName(), metricName));
                     }
