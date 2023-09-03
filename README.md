@@ -154,11 +154,10 @@ $ ./build.sh
 ```
 
 ## 🐞常见问题
-* MySQL无法连接。默认使用的驱动版本为5.1.40，如果为mysql8需要手动替换驱动 [mysql-connector-java-8.0.21.jar](https://gitee.com/ghi/dbsyncer/attach_files) 
+* MySQL无法连接。默认使用的驱动版本为8.0.21，如果为mysql5.x需要手动替换驱动 [mysql-connector-java-5.1.40.jar](https://gitee.com/ghi/dbsyncer/attach_files) 
 * SQLServer无法连接。案例：[驱动程序无法通过使用安全套接字层(SSL)加密与 SQL Server 建立安全连接。错误:“The server selected protocol version TLS10 is not accepted by client preferences [TLS12]”](https://gitee.com/ghi/dbsyncer/issues/I4PL46?from=project-issue) 
 * 同步数据乱码。案例：[mysql8表导入sqlserver2008R2后，sqlserver表nvarchar字段内容为乱码](https://gitee.com/ghi/dbsyncer/issues/I4JXY0) 
-* [如何开启远程debug模式？](https://gitee.com/ghi/dbsyncer/issues/I63F6R) 
-* 有其他问题、建议或需求（如想支持某中间件，记得补充使用的版本号），欢迎大家提[【issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!
+* [如何开启远程debug模式？](https://gitee.com/ghi/dbsyncer/issues/I63F6R)  
 
 ## 🏆性能测试
 |  类型 | 耗时 | 数据量 |  机器配置 |
@@ -172,7 +171,9 @@ $ ./build.sh
 * QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" /></a>
 
 ## 🤝贡献支持
-* 为了能让项目得到更好的可持续的发展，我们期望获得更多的支持者，我们将把所得款项用于项目研发和推广。您可以通过如下方式支持我们:
-我们会把详细的捐赠记录登记在[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C)。
-
-<img src="https://images.gitee.com/uploads/images/2021/1110/001937_717dfb9d_376718.png" title="DBSyncer款项用于研发推广" width="200" height="200" />
+* 如有比较着急的需求或建议（想支持某版本的中间件，最好能描述清楚你的原始需求，作者会帮你提供一些建议方案），欢迎大家[【新建issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!
+* DBSyncer研发团队目标：**取之社区，用于社区**。为了能让项目得到可持续发展，我们期望获得更多的支持者! 
+1.  **内推项目** 如您觉得项目不错，可推荐到公司，建立长期稳定的商业合作，提供更专业的技术服务。（入群联系群主）
+2.  **参与开发** 项目成员来自于不同公司，汇聚了不同专业的大佬，相信一定能找到您比较感兴趣的方向，欢迎加入团队！（入群联系群主）
+3.  **扫赞赏码**[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C) 款项主要用于项目研发和推广，会定期通过线上活动，与大家一起讨论问题，随机回馈粉丝们一些礼物。
+<img src="https://images.gitee.com/uploads/images/2021/1110/001937_717dfb9d_376718.png" title="DBSyncer款项用于研发推广" width="400" height="400" />
