@@ -102,17 +102,23 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         return true;
     }
 
+    /**
+     * TODO 待废弃 推荐使用系统参数表达式$xxx$
+     *
+     * @param value
+     * @return
+     */
     @Override
-    public String buildSqlFilterWithQuotation(String value) {
+    public String buildFilterValue(String value) {
         if (StringUtil.isNotBlank(value)) {
             String val = value.toLowerCase();
             // 支持Oracle系统函数, Example: to_char(sysdate, 'YYYY-MM-DD HH24:MI:SS')
             Matcher matcher = Pattern.compile(SYS_EXPRESSION).matcher(val);
             if (matcher.find()) {
-                return StringUtil.EMPTY;
+                return value;
             }
         }
-        return super.buildSqlFilterWithQuotation(value);
+        return super.buildFilterValue(value);
     }
 
     @Override

@@ -2,7 +2,6 @@ package org.dbsyncer.connector.database;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.PageSql;
@@ -18,16 +17,6 @@ public interface Database {
      */
     default String buildSqlWithQuotation() {
         return StringUtil.EMPTY;
-    }
-
-    /**
-     * 获取条件值引号
-     *
-     * @param value
-     * @return
-     */
-    default String buildSqlFilterWithQuotation(String value) {
-        return "'";
     }
 
     /**
