@@ -52,7 +52,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
-     * 系统函数表达式$select max(update_time)$
+     * 系统函数表达式$convert()$
      */
     private final String SYS_EXPRESSION = "^[$].*[$]$";
 

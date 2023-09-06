@@ -34,7 +34,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     /**
      * 系统关键字段名
      */
-    private final Set<String> SYS_FIELDS = CollectionUtils.newHashSet("convert", "user", "type", "version", "close", "bulk", "source");
+    private final Set<String> SYS_FIELDS = CollectionUtils.newHashSet("convert", "user", "type", "version", "close", "bulk", "source", "current_date");
 
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
