@@ -43,11 +43,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public abstract class AbstractDatabaseConnector extends AbstractConnector implements Connector<DatabaseConnectorMapper, DatabaseConfig>, Database {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    /**
+     * 系统函数表达式$convert()$
+     */
+    private final String SYS_EXPRESSION = "^[$].*[$]$";
 
     @Override
     public ConnectorMapper connect(DatabaseConfig config) {
@@ -375,14 +382,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         StringBuilder sql = new StringBuilder();
 
         // 拼接并且SQL
-        String addSql = getFilterSql(fieldMap, OperationEnum.AND.getName(), filter);
+        String addSql = buildFilterSql(fieldMap, OperationEnum.AND.getName(), filter);
         // 如果Add条件存在
         if (StringUtil.isNotBlank(addSql)) {
             sql.append(addSql);
         }
 
         // 拼接或者SQL
-        String orSql = getFilterSql(fieldMap, OperationEnum.OR.getName(), filter);
+        String orSql = buildFilterSql(fieldMap, OperationEnum.OR.getName(), filter);
         // 如果Or条件和Add条件都存在
         if (StringUtil.isNotBlank(orSql) && StringUtil.isNotBlank(addSql)) {
             sql.append(" OR ");
@@ -454,7 +461,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * @param filter
      * @return
      */
-    private String getFilterSql(Map<String, Field> fieldMap, String queryOperator, List<Filter> filter) {
+    private String buildFilterSql(Map<String, Field> fieldMap, String queryOperator, List<Filter> filter) {
         List<Filter> list = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), queryOperator)).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(list)) {
             return "";
@@ -476,14 +483,30 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             sql.append(quotation);
             sql.append(" ").append(c.getFilter()).append(" ");
             // 如果使用了函数则不加引号
-            String filterValueQuotation = buildSqlFilterWithQuotation(c.getValue());
-            sql.append(filterValueQuotation).append(c.getValue()).append(filterValueQuotation);
+            sql.append(buildFilterValue(c.getValue()));
             if (i < end) {
                 sql.append(" ").append(queryOperator).append(" ");
             }
         }
         sql.append(")");
         return sql.toString();
+    }
+
+    /**
+     * 获取条件值引号（如包含系统表达式则排除引号）
+     *
+     * @param value
+     * @return
+     */
+    protected String buildFilterValue(String value) {
+        if (StringUtil.isNotBlank(value)) {
+            // 系统函数表达式 $select max(update_time)$
+            Matcher matcher = Pattern.compile(SYS_EXPRESSION).matcher(value);
+            if (matcher.find()) {
+                return StringUtil.substring(value, 1, value.length() - 1);
+            }
+        }
+        return new StringBuilder(StringUtil.SINGLE_QUOTATION).append(value).append(StringUtil.SINGLE_QUOTATION).toString();
     }
 
     /**

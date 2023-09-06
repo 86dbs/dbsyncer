@@ -58,13 +58,20 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         return new Object[] {(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
     }
 
+    /**
+     * TODO 待废弃 推荐使用系统参数表达式$xxx$
+     *
+     * @param value
+     * @return
+     */
+    @Deprecated
     @Override
-    public String buildSqlFilterWithQuotation(String value) {
+    public String buildFilterValue(String value) {
         // 支持SqlServer系统函数, Example: (select CONVERT(varchar(10),GETDATE(),120))
         if (containsKeyword(SYS_EXPRESSION, value)) {
-            return StringUtil.EMPTY;
+            return value;
         }
-        return super.buildSqlFilterWithQuotation(value);
+        return super.buildFilterValue(value);
     }
 
     @Override
@@ -118,10 +125,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
      * @return
      */
     private boolean containsKeyword(String val) {
-        if (StringUtil.isNotBlank(val)) {
-            return SYS_FIELDS.contains(val.toLowerCase());
-        }
-        return false;
+        return StringUtil.isNotBlank(val) && SYS_FIELDS.contains(val.toLowerCase());
     }
 
     /**

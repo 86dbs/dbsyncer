@@ -12,6 +12,8 @@ public abstract class StringUtil {
 
     public static final String SPACE = " ";
 
+    public static final String SINGLE_QUOTATION = "'";
+
     public static final String FORWARD_SLASH = "/";
 
     public static boolean equals(CharSequence cs1, CharSequence cs2) {
