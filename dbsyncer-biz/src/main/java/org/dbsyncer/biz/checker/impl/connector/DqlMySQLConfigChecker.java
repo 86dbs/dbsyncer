@@ -11,7 +11,7 @@ import java.util.Map;
  * @date 2020/1/8 15:17
  */
 @Component
-public class DqlMysqlConfigChecker extends AbstractDataBaseConfigChecker {
+public class DqlMySQLConfigChecker extends AbstractDataBaseConfigChecker {
 
     @Override
     public void modify(DatabaseConfig connectorConfig, Map<String, String> params) {

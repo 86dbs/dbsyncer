@@ -7,7 +7,7 @@ import org.dbsyncer.connector.model.PageSql;
 
 import java.util.Map;
 
-public final class DQLMysqlConnector extends AbstractDQLConnector {
+public final class DQLMySQLConnector extends AbstractDQLConnector {
 
     @Override
     public String getPageSql(PageSql config) {

@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public final class MysqlConnector extends AbstractDatabaseConnector {
+public final class MySQLConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

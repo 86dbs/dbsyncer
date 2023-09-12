@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.enums;
 
+import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
@@ -10,10 +11,10 @@ import org.dbsyncer.connector.config.KafkaConfig;
 import org.dbsyncer.connector.es.ESConnector;
 import org.dbsyncer.connector.file.FileConnector;
 import org.dbsyncer.connector.kafka.KafkaConnector;
-import org.dbsyncer.connector.mysql.MysqlConnector;
+import org.dbsyncer.connector.mysql.MySQLConnector;
 import org.dbsyncer.connector.oracle.OracleConnector;
 import org.dbsyncer.connector.postgresql.PostgreSQLConnector;
-import org.dbsyncer.connector.sql.DQLMysqlConnector;
+import org.dbsyncer.connector.sql.DQLMySQLConnector;
 import org.dbsyncer.connector.sql.DQLOracleConnector;
 import org.dbsyncer.connector.sql.DQLPostgreSQLConnector;
 import org.dbsyncer.connector.sql.DQLSqlServerConnector;
@@ -29,9 +30,9 @@ import org.dbsyncer.connector.sqlserver.SqlServerConnector;
 public enum ConnectorEnum {
 
     /**
-     * Mysql 连接器
+     * MySQL 连接器
      */
-    MYSQL("Mysql", new MysqlConnector(), DatabaseConfig.class),
+    MYSQL("MySQL", new MySQLConnector(), DatabaseConfig.class),
     /**
      * Oracle 连接器
      */
@@ -57,9 +58,9 @@ public enum ConnectorEnum {
      */
     FILE("File", new FileConnector(), FileConfig.class),
     /**
-     * DqlMysql 连接器
+     * DqlMySQL 连接器
      */
-    DQL_MYSQL("DqlMysql", new DQLMysqlConnector(), DatabaseConfig.class),
+    DQL_MYSQL("DqlMySQL", new DQLMySQLConnector(), DatabaseConfig.class),
     /**
      * DqlOracle 连接器
      */
@@ -80,41 +81,25 @@ public enum ConnectorEnum {
     private Connector connector;
 
     // 配置
-    private Class<?> configClass;
+    private Class<? extends AbstractConnectorConfig> configClass;
 
-    ConnectorEnum(String type, Connector connector, Class<?> configClass) {
+    ConnectorEnum(String type, Connector connector, Class<? extends AbstractConnectorConfig> configClass) {
         this.type = type;
         this.connector = connector;
         this.configClass = configClass;
     }
 
     /**
-     * 获取连接器
+     * 获取连接枚举
      *
      * @param type
      * @return
      * @throws ConnectorException
      */
-    public static Connector getConnector(String type) throws ConnectorException {
+    public static ConnectorEnum getConnectorEnum(String type) throws ConnectorException {
         for (ConnectorEnum e : ConnectorEnum.values()) {
-            if (StringUtil.equals(type, e.getType())) {
-                return e.getConnector();
-            }
-        }
-        throw new ConnectorException(String.format("Connector type \"%s\" does not exist.", type));
-    }
-
-    /**
-     * 获取连接配置
-     *
-     * @param type
-     * @return
-     * @throws ConnectorException
-     */
-    public static Class<?> getConfigClass(String type) throws ConnectorException {
-        for (ConnectorEnum e : ConnectorEnum.values()) {
-            if (StringUtil.equals(type, e.getType())) {
-                return e.getConfigClass();
+            if (StringUtil.equalsIgnoreCase(type, e.getType())) {
+                return e;
             }
         }
         throw new ConnectorException(String.format("Connector type \"%s\" does not exist.", type));
@@ -128,7 +113,7 @@ public enum ConnectorEnum {
         return connector;
     }
 
-    public Class<?> getConfigClass() {
+    public Class<? extends AbstractConnectorConfig> getConfigClass() {
         return configClass;
     }
 }
