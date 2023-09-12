@@ -11,10 +11,10 @@ import org.dbsyncer.connector.config.KafkaConfig;
 import org.dbsyncer.connector.es.ESConnector;
 import org.dbsyncer.connector.file.FileConnector;
 import org.dbsyncer.connector.kafka.KafkaConnector;
-import org.dbsyncer.connector.mysql.MysqlConnector;
+import org.dbsyncer.connector.mysql.MySQLConnector;
 import org.dbsyncer.connector.oracle.OracleConnector;
 import org.dbsyncer.connector.postgresql.PostgreSQLConnector;
-import org.dbsyncer.connector.sql.DQLMysqlConnector;
+import org.dbsyncer.connector.sql.DQLMySQLConnector;
 import org.dbsyncer.connector.sql.DQLOracleConnector;
 import org.dbsyncer.connector.sql.DQLPostgreSQLConnector;
 import org.dbsyncer.connector.sql.DQLSqlServerConnector;
@@ -32,7 +32,7 @@ public enum ConnectorEnum {
     /**
      * MySQL 连接器
      */
-    MYSQL("MySQL", new MysqlConnector(), DatabaseConfig.class),
+    MYSQL("MySQL", new MySQLConnector(), DatabaseConfig.class),
     /**
      * Oracle 连接器
      */
@@ -60,7 +60,7 @@ public enum ConnectorEnum {
     /**
      * DqlMySQL 连接器
      */
-    DQL_MYSQL("DqlMySQL", new DQLMysqlConnector(), DatabaseConfig.class),
+    DQL_MYSQL("DqlMySQL", new DQLMySQLConnector(), DatabaseConfig.class),
     /**
      * DqlOracle 连接器
      */
