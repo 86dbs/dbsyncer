@@ -16,10 +16,10 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 
@@ -33,13 +33,13 @@ public class ConnectorChecker extends AbstractChecker {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private Manager manager;
 
-    @Autowired
+    @Resource
     private LogService logService;
 
-    @Autowired
+    @Resource
     private Map<String, ConnectorConfigChecker> map;
 
     @Override
@@ -95,10 +95,8 @@ public class ConnectorChecker extends AbstractChecker {
     }
 
     private AbstractConnectorConfig getConfig(String connectorType) {
-        Class<AbstractConnectorConfig> configClass = (Class<AbstractConnectorConfig>) ConnectorEnum.getConfigClass(connectorType);
-        Assert.notNull(configClass, String.format("不支持该连接器类型:%s", connectorType));
         try {
-            AbstractConnectorConfig config = configClass.newInstance();
+            AbstractConnectorConfig config = ConnectorEnum.getConnectorEnum(connectorType).getConfigClass().newInstance();
             config.setConnectorType(connectorType);
             return config;
         } catch (Exception e) {

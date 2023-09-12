@@ -181,8 +181,9 @@ public class ParserFactory implements Parser {
         Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
         Assert.notNull(connector, "Connector can not be null.");
         String connectorType = (String) config.get("connectorType");
-        Class<?> configClass = ConnectorEnum.getConfigClass(connectorType);
-        AbstractConnectorConfig obj = (AbstractConnectorConfig) JsonUtil.jsonToObj(config.toString(), configClass);
+        ConnectorEnum connectorEnum = ConnectorEnum.getConnectorEnum(connectorType);
+        AbstractConnectorConfig obj = JsonUtil.jsonToObj(config.toString(), connectorEnum.getConfigClass());
+        obj.setConnectorType(connectorEnum.getType());
         connector.setConfig(obj);
 
         return connector;

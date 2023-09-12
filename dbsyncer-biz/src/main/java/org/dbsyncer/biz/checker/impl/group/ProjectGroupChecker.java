@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -23,7 +24,7 @@ import java.util.Map;
 @Component
 public class ProjectGroupChecker extends AbstractChecker {
 
-    @Autowired
+    @Resource
     private Manager manager;
 
     /**

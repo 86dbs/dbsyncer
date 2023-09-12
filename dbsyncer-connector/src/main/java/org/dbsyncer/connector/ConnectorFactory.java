@@ -182,9 +182,7 @@ public class ConnectorFactory implements DisposableBean {
      * @return
      */
     private Connector getConnector(String connectorType) {
-        // 获取连接器类型
-        Assert.hasText(connectorType, "ConnectorType can not be empty.");
-        return ConnectorEnum.getConnector(connectorType);
+        return ConnectorEnum.getConnectorEnum(connectorType).getConnector();
     }
 
     /**
