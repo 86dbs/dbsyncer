@@ -2,6 +2,7 @@ package org.dbsyncer.listener;
 
 import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.ChangedOffset;
+import org.dbsyncer.common.event.DDLChangedEvent;
 import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -64,6 +65,11 @@ public abstract class AbstractExtractor implements Extractor {
                     break;
             }
         }
+    }
+
+    @Override
+    public void changeEvent(DDLChangedEvent event) {
+        watcher.changeEvent(event);
     }
 
     @Override

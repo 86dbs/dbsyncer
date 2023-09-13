@@ -2,6 +2,7 @@ package org.dbsyncer.listener;
 
 import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.ChangedOffset;
+import org.dbsyncer.common.event.DDLChangedEvent;
 import org.dbsyncer.common.event.Watcher;
 
 public interface Extractor {
@@ -29,6 +30,13 @@ public interface Extractor {
      * @param event
      */
     void changeEvent(ChangedEvent event);
+
+    /**
+     * DDL变更事件
+     *
+     * @param event
+     */
+    void changeEvent(DDLChangedEvent event);
 
     /**
      * 更新增量点
