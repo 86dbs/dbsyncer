@@ -7,7 +7,7 @@ import org.dbsyncer.common.event.ChangedEvent;
  * @version 1.0.0
  * @date 2022/5/28 22:02
  */
-public class DqlMysqlExtractor extends MysqlExtractor {
+public class DqlMySQLExtractor extends MySQLExtractor {
 
     @Override
     public void start() {

@@ -42,7 +42,7 @@ import static java.util.regex.Pattern.compile;
  * @Author AE86
  * @Date 2020-05-12 21:14
  */
-public class MysqlExtractor extends AbstractDatabaseExtractor {
+public class MySQLExtractor extends AbstractDatabaseExtractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
