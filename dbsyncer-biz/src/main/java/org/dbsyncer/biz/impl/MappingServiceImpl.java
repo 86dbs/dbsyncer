@@ -12,6 +12,7 @@ import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -202,6 +204,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         BeanUtils.copyProperties(s, sConn);
         ConnectorVo tConn = new ConnectorVo(connectorService.isAlive(t.getId()));
         BeanUtils.copyProperties(t, tConn);
+
+        // 按升序展示表
+        Collections.sort(sConn.getTable(), Comparator.comparing(Table::getName));
+        Collections.sort(tConn.getTable(), Comparator.comparing(Table::getName));
 
         // 元信息
         Meta meta = manager.getMeta(mapping.getMetaId());

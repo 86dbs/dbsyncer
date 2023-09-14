@@ -181,6 +181,12 @@
                 <groupId>com.zendesk</groupId>
                 <artifactId>mysql-binlog-connector-java</artifactId>
                 <version>${mysql-binlog.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.github.luben</groupId>
+                        <artifactId>zstd-jni</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
