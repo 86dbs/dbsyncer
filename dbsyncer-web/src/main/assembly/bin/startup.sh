@@ -40,7 +40,7 @@ echo $SERVER_OPTS
 # execute commond
 java $SERVER_OPTS \
 -Dfile.encoding=utf8 \
--Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$APP_DIR/lib \
+-Djava.ext.dirs=$APP_DIR/lib \
 -Dspring.config.location=$CONFIG_PATH \
 $APP > /dev/null & echo $! > $APP_DIR/tmp.pid
 echo 'Start successfully!';
