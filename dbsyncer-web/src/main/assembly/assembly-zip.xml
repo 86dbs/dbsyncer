@@ -1,4 +1,5 @@
 <assembly>
+    <id>bin</id>
     <formats>
         <!--支持 zip，tar，tar.gz，tar.bz2，jar，dir，war 等 -->
         <format>zip</format>
