@@ -5,8 +5,8 @@ import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.file.FileExtractor;
 import org.dbsyncer.listener.kafka.KafkaExtractor;
-import org.dbsyncer.listener.mysql.DqlMysqlExtractor;
-import org.dbsyncer.listener.mysql.MysqlExtractor;
+import org.dbsyncer.listener.mysql.DqlMySQLExtractor;
+import org.dbsyncer.listener.mysql.MySQLExtractor;
 import org.dbsyncer.listener.oracle.DqlOracleExtractor;
 import org.dbsyncer.listener.oracle.OracleExtractor;
 import org.dbsyncer.listener.postgresql.DqlPostgreSQLExtractor;
@@ -26,7 +26,7 @@ public enum LogExtractorEnum {
     /**
      * Mysql
      */
-    MYSQL(ConnectorEnum.MYSQL.getType(), MysqlExtractor.class),
+    MYSQL(ConnectorEnum.MYSQL.getType(), MySQLExtractor.class),
     /**
      * Oracle
      */
@@ -50,7 +50,7 @@ public enum LogExtractorEnum {
     /**
      * DqlMysql
      */
-    DQL_MYSQL(ConnectorEnum.DQL_MYSQL.getType(), DqlMysqlExtractor.class),
+    DQL_MYSQL(ConnectorEnum.DQL_MYSQL.getType(), DqlMySQLExtractor.class),
     /**
      * DqlOracle
      */

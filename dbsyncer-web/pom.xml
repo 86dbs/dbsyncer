@@ -96,6 +96,7 @@
                         </goals>
                     </execution>
                 </executions>
+                <version>3.3.0</version>
             </plugin>
 
             <plugin>

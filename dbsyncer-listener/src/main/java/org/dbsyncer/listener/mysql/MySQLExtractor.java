@@ -12,6 +12,7 @@ import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
 import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 import com.github.shyiko.mysql.binlog.network.ServerException;
 import org.dbsyncer.common.event.ChangedOffset;
+import org.dbsyncer.common.event.DDLChangedEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.DatabaseConfig;
@@ -42,7 +43,7 @@ import static java.util.regex.Pattern.compile;
  * @Author AE86
  * @Date 2020-05-12 21:14
  */
-public class MysqlExtractor extends AbstractDatabaseExtractor {
+public class MySQLExtractor extends AbstractDatabaseExtractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -293,6 +294,7 @@ public class MysqlExtractor extends AbstractDatabaseExtractor {
             if (client.isEnableDDL() && EventType.QUERY == header.getEventType()) {
                 refresh(header);
                 QueryEventData data = event.getData();
+                changeEvent(new DDLChangedEvent(data.getDatabase(), "", data.getSql()));
                 logger.info("database:{}, sql:{}", data.getDatabase(), data.getSql());
             }
 

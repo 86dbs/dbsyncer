@@ -2,6 +2,7 @@ package org.dbsyncer.manager.puller;
 
 import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.ChangedOffset;
+import org.dbsyncer.common.event.DDLChangedEvent;
 import org.dbsyncer.common.event.RefreshOffsetEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
 import org.dbsyncer.common.event.ScanChangedEvent;
@@ -11,6 +12,7 @@ import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.Extractor;
@@ -251,10 +253,12 @@ public final class IncrementPuller extends AbstractPuller implements Application
     }
 
     final class LogConsumer extends AbstractConsumer<RowChangedEvent> {
+        private Mapping mapping;
         private Map<String, List<FieldPicker>> tablePicker = new LinkedHashMap<>();
 
         public LogConsumer(Meta meta, Mapping mapping, List<TableGroup> tableGroups) {
             this.meta = meta;
+            this.mapping = mapping;
             tableGroups.forEach(t -> {
                 final Table table = t.getSourceTable();
                 final String tableName = table.getName();
@@ -280,6 +284,11 @@ public final class IncrementPuller extends AbstractPuller implements Application
                     }
                 });
             }
+        }
+
+        @Override
+        public void changeEvent(DDLChangedEvent event) {
+            // TODO 解析ddl
         }
     }
 
