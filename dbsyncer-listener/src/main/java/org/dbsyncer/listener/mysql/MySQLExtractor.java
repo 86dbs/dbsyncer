@@ -11,6 +11,7 @@ import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
 import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 import com.github.shyiko.mysql.binlog.network.ServerException;
+import org.dbsyncer.common.column.Lexer;
 import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.event.DDLChangedEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
@@ -47,10 +48,11 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String BINLOG_FILENAME = "fileName";
-    private static final String BINLOG_POSITION = "position";
-    private static final int RETRY_TIMES = 10;
-    private static final int MASTER = 0;
+    private final String BINLOG_FILENAME = "fileName";
+    private final String BINLOG_POSITION = "position";
+    private final String DDL_PREFIX = "ALTER";
+    private final int RETRY_TIMES = 10;
+    private final int MASTER = 0;
     private Map<Long, TableMapEventData> tables = new HashMap<>();
     private BinaryLogClient client;
     private List<Host> cluster;
@@ -293,9 +295,7 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
 
             if (client.isEnableDDL() && EventType.QUERY == header.getEventType()) {
                 refresh(header);
-                QueryEventData data = event.getData();
-                changeEvent(new DDLChangedEvent(data.getDatabase(), "", data.getSql()));
-                logger.info("database:{}, sql:{}", data.getDatabase(), data.getSql());
+                parseDDL(event.getData());
             }
 
             // 切换binlog
@@ -305,13 +305,32 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
             }
         }
 
+        private void parseDDL(QueryEventData data) {
+            if (StringUtil.startsWith(data.getSql(), DDL_PREFIX)) {
+                // ALTER TABLE `test`.`my_user` MODIFY COLUMN `name` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL AFTER `id`
+                Lexer lexer = new Lexer(data.getSql());
+                lexer.nextToken('.');
+                lexer.nextToken('`');
+                lexer.nextToken('`');
+                final DDLChangedEvent event = new DDLChangedEvent(data.getDatabase(), lexer.token(), data.getSql());
+                if (isFilterTable(event.getDatabase(), event.getSourceTableName())) {
+                    logger.info("database:{}, sourceTableName:{}, sql:{}", event.getDatabase(), event.getSourceTableName(), data.getSql());
+                    changeEvent(event);
+                }
+            }
+        }
+
         private String getTableName(long tableId) {
             return tables.get(tableId).getTable();
         }
 
         private boolean isFilterTable(long tableId) {
             final TableMapEventData tableMap = tables.get(tableId);
-            return StringUtil.equalsIgnoreCase(database, tableMap.getDatabase()) && filterTable.contains(tableMap.getTable());
+            return isFilterTable(tableMap.getDatabase(), tableMap.getTable());
+        }
+
+        private boolean isFilterTable(String dbName, String tableName) {
+            return StringUtil.equalsIgnoreCase(database, dbName) && filterTable.contains(tableName);
         }
 
     }

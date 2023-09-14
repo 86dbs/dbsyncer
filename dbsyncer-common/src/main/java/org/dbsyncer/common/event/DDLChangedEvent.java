@@ -10,16 +10,16 @@ public class DDLChangedEvent {
     /**
      * 变更表名称
      */
-    private String tableName;
+    private String sourceTableName;
 
     /**
      * 变更SQL
      */
     private String sql;
 
-    public DDLChangedEvent(String database, String tableName, String sql) {
+    public DDLChangedEvent(String database, String sourceTableName, String sql) {
         this.database = database;
-        this.tableName = tableName;
+        this.sourceTableName = sourceTableName;
         this.sql = sql;
     }
 
@@ -27,8 +27,8 @@ public class DDLChangedEvent {
         return database;
     }
 
-    public String getTableName() {
-        return tableName;
+    public String getSourceTableName() {
+        return sourceTableName;
     }
 
     public String getSql() {
