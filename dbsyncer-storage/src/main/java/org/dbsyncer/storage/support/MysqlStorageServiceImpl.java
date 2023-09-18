@@ -24,7 +24,6 @@ import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.util.UnderlineToCamelUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -32,6 +31,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,13 +60,12 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String PREFIX_TABLE = "dbsyncer_";
-    private static final String SHOW_TABLE = "show tables where Tables_in_%s = '%s'";
-    private static final String SHOW_DATA_TABLE = "show tables where Tables_in_%s like \"%s\"";
-    private static final String DROP_TABLE = "DROP TABLE %s";
-    private static final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
+    private final String PREFIX_TABLE = "dbsyncer_";
+    private final String SHOW_TABLE = "show tables where Tables_in_%s = '%s'";
+    private final String DROP_TABLE = "DROP TABLE %s";
+    private final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
 
-    @Autowired
+    @Resource
     private ConnectorFactory connectorFactory;
 
     private Map<String, Executor> tables = new ConcurrentHashMap<>();

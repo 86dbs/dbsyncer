@@ -66,7 +66,7 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
         try {
             connectLock.lock();
             if (connected) {
-                logger.error("MysqlExtractor is already started");
+                logger.error("MySQLExtractor is already started");
                 return;
             }
             run();
@@ -106,7 +106,7 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
         }
         database = DatabaseUtil.getDatabaseName(config.getUrl());
         cluster = readNodes(config.getUrl());
-        Assert.notEmpty(cluster, "Mysql连接地址有误.");
+        Assert.notEmpty(cluster, "MySQL连接地址有误.");
 
         final Host host = cluster.get(MASTER);
         final String username = config.getUsername();
@@ -296,6 +296,7 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
             if (client.isEnableDDL() && EventType.QUERY == header.getEventType()) {
                 refresh(header);
                 parseDDL(event.getData());
+                return;
             }
 
             // 切换binlog
@@ -311,11 +312,10 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
                 Lexer lexer = new Lexer(data.getSql());
                 lexer.nextToken('.');
                 lexer.nextToken('`');
-                lexer.nextToken('`');
-                final DDLChangedEvent event = new DDLChangedEvent(data.getDatabase(), lexer.token(), data.getSql());
-                if (isFilterTable(event.getDatabase(), event.getSourceTableName())) {
-                    logger.info("database:{}, sourceTableName:{}, sql:{}", event.getDatabase(), event.getSourceTableName(), data.getSql());
-                    changeEvent(event);
+                String tableName = lexer.nextToken('`');
+                if (isFilterTable(data.getDatabase(), tableName)) {
+                    logger.info("sql:{}", data.getSql());
+                    changeEvent(new DDLChangedEvent(data.getDatabase(), tableName, data.getSql()));
                 }
             }
         }
