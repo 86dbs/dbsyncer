@@ -61,7 +61,7 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final String PREFIX_TABLE = "dbsyncer_";
-    private static final String SHOW_TABLE = "show tables where Tables_in_%s = \"%s\"";
+    private static final String SHOW_TABLE = "show tables where Tables_in_%s = '%s'";
     private static final String SHOW_DATA_TABLE = "show tables where Tables_in_%s like \"%s\"";
     private static final String DROP_TABLE = "DROP TABLE %s";
     private static final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
