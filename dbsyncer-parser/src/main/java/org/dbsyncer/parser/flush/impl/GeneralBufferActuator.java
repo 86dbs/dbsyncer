@@ -7,8 +7,10 @@ import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.IncrementConvertContext;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.spi.ConnectorMapper;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.parser.ParserFactory;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.BatchWriter;
@@ -79,11 +81,14 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Override
     protected void partition(WriterRequest request, WriterResponse response) {
-        response.getDataList().add(request.getRow());
+        if (!CollectionUtils.isEmpty(request.getRow())) {
+            response.getDataList().add(request.getRow());
+        }
         response.getOffsetList().add(request.getChangedOffset());
         if (!response.isMerged()) {
             response.setTableGroupId(request.getTableGroupId());
             response.setEvent(request.getEvent());
+            response.setSql(request.getSql());
             response.setMerged(true);
         }
     }
@@ -91,7 +96,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Override
     protected boolean skipPartition(WriterRequest nextRequest, WriterResponse response) {
         // 并发场景，同一条数据可能连续触发Insert > Delete > Insert，批处理任务中出现不同事件时，跳过分区处理
-        return !StringUtil.equals(nextRequest.getEvent(), response.getEvent());
+        // 跳过表结构修改事件（保证表结构修改原子性）
+        return !StringUtil.equals(nextRequest.getEvent(), response.getEvent()) || isDDLEvent(response.getEvent());
     }
 
     @Override
@@ -105,6 +111,13 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         final String event = response.getEvent();
         final Picker picker = new Picker(group.getFieldMapping());
         final List<Map> sourceDataList = response.getDataList();
+
+        // TODO ddl解析
+        if (isDDLEvent(response.getEvent())) {
+            applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
+            flushStrategy.flushIncrementData(mapping.getMetaId(), new Result(), event);
+            return;
+        }
 
         // 2、映射字段
         List<Map> targetDataList = picker.pickData(sourceDataList);
@@ -137,6 +150,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Override
     public Executor getExecutor() {
         return generalExecutor;
+    }
+
+    private boolean isDDLEvent(String event) {
+        return StringUtil.equals(event, ConnectorConstant.OPERTION_ALTER);
     }
 
     /**

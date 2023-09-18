@@ -19,6 +19,8 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
 
     private List<ChangedOffset> offsetList = new LinkedList<>();
 
+    private String sql;
+
     private boolean isMerged;
 
     @Override
@@ -37,6 +39,14 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
 
     public List<ChangedOffset> getOffsetList() {
         return offsetList;
+    }
+
+    public String getSql() {
+        return sql;
+    }
+
+    public void setSql(String sql) {
+        this.sql = sql;
     }
 
     public boolean isMerged() {

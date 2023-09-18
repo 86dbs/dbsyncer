@@ -2,7 +2,6 @@ package org.dbsyncer.listener;
 
 import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.ChangedOffset;
-import org.dbsyncer.common.event.DDLChangedEvent;
 import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -61,15 +60,14 @@ public abstract class AbstractExtractor implements Extractor {
                     // 是否支持监听删除事件
                     processEvent(!listenerConfig.isBanDelete(), event);
                     break;
+                case ConnectorConstant.OPERTION_ALTER:
+                    // 表结构变更事件
+                    watcher.changeEvent(event);
+                    break;
                 default:
                     break;
             }
         }
-    }
-
-    @Override
-    public void changeEvent(DDLChangedEvent event) {
-        watcher.changeEvent(event);
     }
 
     @Override

@@ -50,7 +50,6 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
 
     private final String BINLOG_FILENAME = "fileName";
     private final String BINLOG_POSITION = "position";
-    private final String DDL_PREFIX = "ALTER";
     private final int RETRY_TIMES = 10;
     private final int MASTER = 0;
     private Map<Long, TableMapEventData> tables = new HashMap<>();
@@ -113,6 +112,7 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
         final String password = config.getPassword();
         boolean containsPos = snapshot.containsKey(BINLOG_POSITION);
         client = new BinaryLogRemoteClient(host.getIp(), host.getPort(), username, password);
+        client.setEnableDDL(true);
         client.setBinlogFilename(snapshot.get(BINLOG_FILENAME));
         client.setBinlogPosition(containsPos ? Long.parseLong(snapshot.get(BINLOG_POSITION)) : 0);
         client.setTableMapEventByTableId(tables);
@@ -307,7 +307,7 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
         }
 
         private void parseDDL(QueryEventData data) {
-            if (StringUtil.startsWith(data.getSql(), DDL_PREFIX)) {
+            if (StringUtil.startsWith(data.getSql(), ConnectorConstant.OPERTION_ALTER)) {
                 // ALTER TABLE `test`.`my_user` MODIFY COLUMN `name` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL AFTER `id`
                 Lexer lexer = new Lexer(data.getSql());
                 lexer.nextToken('.');
@@ -315,7 +315,7 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
                 String tableName = lexer.nextToken('`');
                 if (isFilterTable(data.getDatabase(), tableName)) {
                     logger.info("sql:{}", data.getSql());
-                    changeEvent(new DDLChangedEvent(data.getDatabase(), tableName, data.getSql()));
+                    changeEvent(new DDLChangedEvent(data.getDatabase(), tableName, ConnectorConstant.OPERTION_ALTER, data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
                 }
             }
         }
