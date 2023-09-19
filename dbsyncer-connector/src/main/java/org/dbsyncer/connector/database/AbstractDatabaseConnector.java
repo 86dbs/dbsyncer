@@ -642,12 +642,16 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public Result writerDDL(DatabaseConnectorMapper connectorMapper, DDLConfig config) {
-        String event = config.getEvent();
-        // 1、获取SQL
-        String executeSql = config.getTargetSql();
-        Assert.hasText(executeSql, "执行SQL语句不能为空.");
         Result result = new Result();
-        connectorMapper.executeDDL(executeSql);
+        try {
+            Assert.hasText(config.getSql(), "执行SQL语句不能为空.");
+            connectorMapper.execute(databaseTemplate -> {
+                databaseTemplate.execute(config.getSql());
+                return true;
+            });
+        } catch (Exception e) {
+            result.getError().append(String.format("执行ddl: %s, 异常：%s", config.getSql(), e.getMessage()));
+        }
         return result;
     }
 }

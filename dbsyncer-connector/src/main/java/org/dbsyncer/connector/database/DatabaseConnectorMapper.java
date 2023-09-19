@@ -37,21 +37,6 @@ public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, 
         }
     }
 
-    public void executeDDL(String sql){
-        Connection connection = null;
-        try {
-            connection = getConnection();
-            new DatabaseTemplate((SimpleConnection) connection).execute(sql);
-        } catch (EmptyResultDataAccessException e) {
-            throw e;
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-            throw new ConnectorException(e.getMessage(), e.getCause());
-        } finally {
-            DatabaseUtil.close(connection);
-        }
-    }
-
     @Override
     public DatabaseConfig getConfig() {
         return config;

@@ -97,6 +97,17 @@ public interface Connector<M, C> {
     Result writer(M connectorMapper, WriterBatchConfig config);
 
     /**
+     * 执行DDL命令
+     *
+     * @param connectorMapper
+     * @param ddlConfig
+     * @return
+     */
+    default Result writerDDL(M connectorMapper, DDLConfig ddlConfig){
+        throw new ConnectorException("Unsupported method.");
+    }
+
+    /**
      * 获取数据源同步参数
      *
      * @param commandConfig
@@ -111,6 +122,4 @@ public interface Connector<M, C> {
      * @return
      */
     Map<String, String> getTargetCommand(CommandConfig commandConfig);
-
-    Result writerDDL(M connectorMapper, DDLConfig ddlConfig);
 }

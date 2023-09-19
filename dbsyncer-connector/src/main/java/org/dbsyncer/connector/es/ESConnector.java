@@ -9,7 +9,6 @@ import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.config.ESConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.config.WriterBatchConfig;
@@ -257,11 +256,6 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
         return Collections.EMPTY_MAP;
-    }
-
-    @Override
-    public Result writerDDL(ESConnectorMapper connectorMapper, DDLConfig ddlConfig) {
-        return null;
     }
 
     private void parseProperties(List<Field> fields, Map<String, Object> sourceMap) {

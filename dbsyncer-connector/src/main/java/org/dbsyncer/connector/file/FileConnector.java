@@ -10,7 +10,6 @@ import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.config.FileConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.config.WriterBatchConfig;
@@ -22,7 +21,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -205,11 +208,6 @@ public final class FileConnector extends AbstractConnector implements Connector<
         Map<String, String> command = new HashMap<>();
         command.put(FILE_NAME, commandConfig.getTable().getName());
         return command;
-    }
-
-    @Override
-    public Result writerDDL(FileConnectorMapper connectorMapper, DDLConfig ddlConfig) {
-        return null;
     }
 
 }

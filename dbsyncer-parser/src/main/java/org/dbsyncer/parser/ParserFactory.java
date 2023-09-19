@@ -3,7 +3,6 @@ package org.dbsyncer.parser;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
-import org.dbsyncer.common.model.DDLConvertContext;
 import org.dbsyncer.common.model.FullConvertContext;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.spi.ConnectorMapper;
@@ -13,7 +12,6 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
@@ -405,19 +403,4 @@ public class ParserFactory implements Parser {
         return getConnector(connectorId).getConfig();
     }
 
-    public Result writeSql(DDLConvertContext context, Executor generalExecutor) {
-        Result result = new Result();
-        // 终止同步数据到目标源库
-        if (context.isTerminated()) {
-            result.getSuccessData();
-            return result;
-        }
-        String tableName = context.getSourceTableName();
-        String event = context.getEvent();
-        ConnectorMapper connectorMapper = context.getTargetConnectorMapper();
-        result =connectorFactory.executeSql(connectorMapper,new DDLConfig(tableName,event,
-                context.getTargetSql()));
-        return result;
-
-    }
 }

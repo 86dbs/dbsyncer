@@ -172,6 +172,13 @@ public class ConnectorFactory implements DisposableBean {
         return result;
     }
 
+    public Result writerDDL(ConnectorMapper connectorMapper, DDLConfig ddlConfig) {
+        Connector connector = getConnector(connectorMapper);
+        Result result = connector.writerDDL(connectorMapper, ddlConfig);
+        Assert.notNull(result, "Connector writer batch result can not null");
+        return result;
+    }
+
     public Connector getConnector(ConnectorMapper connectorMapper) {
         return getConnector(connectorMapper.getConnectorType());
     }
@@ -194,12 +201,5 @@ public class ConnectorFactory implements DisposableBean {
     private void disconnect(ConnectorMapper connectorMapper) {
         Assert.notNull(connectorMapper, "ConnectorMapper can not be null.");
         getConnector(connectorMapper).disconnect(connectorMapper);
-    }
-
-    public Result executeSql(ConnectorMapper connectorMapper, DDLConfig ddlConfig) {
-        Connector connector = getConnector(connectorMapper);
-        Result result = connector.writerDDL(connectorMapper, ddlConfig);
-        Assert.notNull(result, "Connector writer batch result can not null");
-        return result;
     }
 }

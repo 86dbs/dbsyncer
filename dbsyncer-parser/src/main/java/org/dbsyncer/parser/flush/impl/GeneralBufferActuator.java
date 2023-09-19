@@ -1,27 +1,23 @@
 package org.dbsyncer.parser.flush.impl;
 
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.statement.alter.Alter;
-import net.sf.jsqlparser.statement.alter.AlterExpression;
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.config.GeneralBufferConfig;
 import org.dbsyncer.common.event.RefreshOffsetEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
-import org.dbsyncer.common.model.DDLConvertContext;
 import org.dbsyncer.common.model.IncrementConvertContext;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.connector.database.DatabaseConnectorMapper;
+import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.parser.ParserFactory;
+import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.BatchWriter;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
@@ -75,6 +71,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Resource
     private ApplicationContext applicationContext;
 
+    @Resource
+    private DDLParser ddlParser;
+
     @PostConstruct
     public void init() {
         setConfig(generalBufferConfig);
@@ -109,7 +108,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Override
     protected void pull(WriterResponse response) {
-        // 1、获取配置信息
+        // 0、获取配置信息
         final TableGroup tableGroup = cacheService.get(response.getTableGroupId(), TableGroup.class);
         final Mapping mapping = cacheService.get(tableGroup.getMappingId(), Mapping.class);
         final TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
@@ -119,43 +118,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         final Picker picker = new Picker(group.getFieldMapping());
         final List<Map> sourceDataList = response.getDataList();
 
-        // TODO ddl解析
+        // 1、ddl解析
         if (isDDLEvent(response.getEvent())) {
-            applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
-            final ConnectorMapper sConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getSourceConnectorId()));
-            final ConnectorMapper tConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
-            //转换到目标数据源的sql语句
-            String sourceSql = response.getSql();
-            DDLConvertContext ddlConvertContext = new DDLConvertContext(sConnectorMapper, tConnectorMapper, sourceTableName, targetTableName, event,sourceSql);
-//            ddlConvertContext.convertSql();
-            //先确定转换的sql,源数据库类型的sql-》目标数据库类型的sql
-            //如果都是db，那么db只是对应的字段进行映射，意思是只替换映射字段
-            if (sConnectorMapper instanceof DatabaseConnectorMapper && tConnectorMapper instanceof  DatabaseConnectorMapper){
-                try {
-                    Alter alter = (Alter) CCJSqlParserUtil.parse(sourceSql);
-                    for (AlterExpression alterExpression:alter.getAlterExpressions()) {
-                        for (AlterExpression.ColumnDataType columnDataType:alterExpression.getColDataTypeList()) {
-                            String columName = columnDataType.getColumnName();
-                            columName = columName.replaceAll("`","");
-                            for (FieldMapping fieldMapping :group.getFieldMapping()) {
-                                if (fieldMapping.getSource().getName().equals(columName)){
-                                    columnDataType.setColumnName(fieldMapping.getTarget().getName());
-                                    break;
-                                }
-                            }
-                        }
-                        ddlConvertContext.setTargetSql(alter.toString());
-                    }
-                } catch (JSQLParserException e) {
-//                    throw new RuntimeException(e);
-                    ddlConvertContext.convertSql();
-                }
-            }else{//如果有一方不是db，解析sql，进行填充
-                ddlConvertContext.convertSql();
-            }
-            //进行sql执行
-            Result result = parserFactory.writeSql(ddlConvertContext, generalExecutor);
-            flushStrategy.flushIncrementData(mapping.getMetaId(), result, event);
+            parseDDl(response, mapping, group);
             return;
         }
 
@@ -194,6 +159,35 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     private boolean isDDLEvent(String event) {
         return StringUtil.equals(event, ConnectorConstant.OPERTION_ALTER);
+    }
+
+    /**
+     * 解析DDL
+     *
+     * @param response
+     * @param mapping
+     * @param group
+     */
+    private void parseDDl(WriterResponse response, Mapping mapping, TableGroup group) {
+        AbstractConnectorConfig sConnConfig = getConnectorConfig(mapping.getSourceConnectorId());
+        AbstractConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
+        // 0.生成目标表执行SQL(暂支持MySQL) fixme AE86 暂内测MySQL作为试运行版本
+        if (StringUtil.equals(sConnConfig.getConnectorType(), tConnConfig.getConnectorType()) && StringUtil.equals(ConnectorEnum.MYSQL.getType(), tConnConfig.getConnectorType())) {
+            final String targetTableName = group.getTargetTable().getName();
+            DDLConfig targetDDLConfig = ddlParser.parseDDlConfig(response.getSql(), targetTableName);
+            final ConnectorMapper tConnectorMapper = connectorFactory.connect(tConnConfig);
+            Result result = connectorFactory.writerDDL(tConnectorMapper, targetDDLConfig);
+            result.setTableGroupId(group.getId());
+            result.setTargetTableGroupName(targetTableName);
+            applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
+            flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
+        }
+        // TODO life
+        // 1.获取目标表最新的属性字段
+        // 2.更新TableGroup.targetTable
+        // 3.更新表字段映射（添加相似字段）
+        // 4.更新TableGroup.command
+        // 5.合并驱动配置
     }
 
     /**
