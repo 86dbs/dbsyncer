@@ -10,6 +10,7 @@ import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.config.FileConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.config.WriterBatchConfig;
@@ -204,6 +205,11 @@ public final class FileConnector extends AbstractConnector implements Connector<
         Map<String, String> command = new HashMap<>();
         command.put(FILE_NAME, commandConfig.getTable().getName());
         return command;
+    }
+
+    @Override
+    public Result writerDDL(FileConnectorMapper connectorMapper, DDLConfig ddlConfig) {
+        return null;
     }
 
 }

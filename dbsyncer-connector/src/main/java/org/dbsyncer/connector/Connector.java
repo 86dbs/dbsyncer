@@ -3,6 +3,7 @@ package org.dbsyncer.connector;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.model.MetaInfo;
@@ -110,4 +111,6 @@ public interface Connector<M, C> {
      * @return
      */
     Map<String, String> getTargetCommand(CommandConfig commandConfig);
+
+    Result writerDDL(M connectorMapper, DDLConfig ddlConfig);
 }

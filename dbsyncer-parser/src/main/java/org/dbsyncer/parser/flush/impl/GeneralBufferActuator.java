@@ -4,6 +4,7 @@ import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.config.GeneralBufferConfig;
 import org.dbsyncer.common.event.RefreshOffsetEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
+import org.dbsyncer.common.model.DDLConvertContext;
 import org.dbsyncer.common.model.IncrementConvertContext;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.spi.ConnectorMapper;
@@ -115,6 +116,14 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         // TODO ddl解析
         if (isDDLEvent(response.getEvent())) {
             applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
+            final ConnectorMapper sConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getSourceConnectorId()));
+            final ConnectorMapper tConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
+            //转换到目标数据源的sql语句
+            String sourceSql = response.getSql();
+            DDLConvertContext ddlConvertContext = new DDLConvertContext(sConnectorMapper, tConnectorMapper, sourceTableName, targetTableName, event,sourceSql);
+            ddlConvertContext.convertSql();
+            //进行sql执行
+            Result result = parserFactory.writeSql(ddlConvertContext, generalExecutor);
             flushStrategy.flushIncrementData(mapping.getMetaId(), new Result(), event);
             return;
         }

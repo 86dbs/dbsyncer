@@ -8,6 +8,7 @@ import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.config.KafkaConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.config.WriterBatchConfig;
@@ -109,5 +110,10 @@ public class KafkaConnector extends AbstractConnector implements Connector<Kafka
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         return Collections.EMPTY_MAP;
+    }
+
+    @Override
+    public Result writerDDL(KafkaConnectorMapper connectorMapper, DDLConfig ddlConfig) {
+        return null;
     }
 }

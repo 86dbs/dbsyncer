@@ -8,6 +8,7 @@ import org.dbsyncer.connector.AbstractConnector;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.config.SqlBuilderConfig;
@@ -639,4 +640,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         });
     }
 
+    @Override
+    public Result writerDDL(DatabaseConnectorMapper connectorMapper, DDLConfig config) {
+        String event = config.getEvent();
+        // 1、获取SQL
+        String executeSql = config.getTargetSql();
+        Assert.hasText(executeSql, "执行SQL语句不能为空.");
+        Result result = new Result();
+        connectorMapper.executeDDL(executeSql);
+        return result;
+    }
 }
