@@ -18,6 +18,7 @@ import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.BatchWriter;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
@@ -174,7 +175,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         // 0.生成目标表执行SQL(暂支持MySQL) fixme AE86 暂内测MySQL作为试运行版本
         if (StringUtil.equals(sConnConfig.getConnectorType(), tConnConfig.getConnectorType()) && StringUtil.equals(ConnectorEnum.MYSQL.getType(), tConnConfig.getConnectorType())) {
             final String targetTableName = group.getTargetTable().getName();
-            DDLConfig targetDDLConfig = ddlParser.parseDDlConfig(response.getSql(), targetTableName);
+            final List<FieldMapping> fieldMappings = group.getFieldMapping();//获得字段映射关系
+            DDLConfig targetDDLConfig = ddlParser.parseDDlConfig(response.getSql(), targetTableName,fieldMappings);
             final ConnectorMapper tConnectorMapper = connectorFactory.connect(tConnConfig);
             Result result = connectorFactory.writerDDL(tConnectorMapper, targetDDLConfig);
             result.setTableGroupId(group.getId());
@@ -188,6 +190,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         // 3.更新表字段映射（添加相似字段）
         // 4.更新TableGroup.command
         // 5.合并驱动配置
+
     }
 
     /**
