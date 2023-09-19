@@ -124,7 +124,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             ddlConvertContext.convertSql();
             //进行sql执行
             Result result = parserFactory.writeSql(ddlConvertContext, generalExecutor);
-            flushStrategy.flushIncrementData(mapping.getMetaId(), new Result(), event);
+            flushStrategy.flushIncrementData(mapping.getMetaId(), result, event);
             return;
         }
 
