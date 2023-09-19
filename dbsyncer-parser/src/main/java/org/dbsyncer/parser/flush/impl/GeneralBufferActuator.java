@@ -112,11 +112,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         final TableGroup tableGroup = cacheService.get(response.getTableGroupId(), TableGroup.class);
         final Mapping mapping = cacheService.get(tableGroup.getMappingId(), Mapping.class);
         final TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
-        final String sourceTableName = group.getSourceTable().getName();
-        final String targetTableName = group.getTargetTable().getName();
-        final String event = response.getEvent();
-        final Picker picker = new Picker(group.getFieldMapping());
-        final List<Map> sourceDataList = response.getDataList();
 
         // 1、ddl解析
         if (isDDLEvent(response.getEvent())) {
@@ -124,6 +119,11 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             return;
         }
 
+        final String sourceTableName = group.getSourceTable().getName();
+        final String targetTableName = group.getTargetTable().getName();
+        final String event = response.getEvent();
+        final Picker picker = new Picker(group.getFieldMapping());
+        final List<Map> sourceDataList = response.getDataList();
         // 2、映射字段
         List<Map> targetDataList = picker.pickData(sourceDataList);
 
