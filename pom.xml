@@ -54,6 +54,7 @@
         <protobuf.version>3.21.1</protobuf.version>
         <log4j2.version>2.17.1</log4j2.version>
         <junit.version>4.12</junit.version>
+        <jsql-parse.version>4.7</jsql-parse.version>
     </properties>
 
     <!-- 镜像仓库地址 -->
@@ -226,6 +227,12 @@
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>${junit.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.jsqlparser</groupId>
+                <artifactId>jsqlparser</artifactId>
+                <version>${jsql-parse.version}</version>
             </dependency>
 
         </dependencies>
