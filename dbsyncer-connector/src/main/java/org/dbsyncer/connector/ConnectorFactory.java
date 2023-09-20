@@ -189,7 +189,7 @@ public class ConnectorFactory implements DisposableBean {
      * @param connectorType
      * @return
      */
-    private Connector getConnector(String connectorType) {
+    public Connector getConnector(String connectorType) {
         return ConnectorEnum.getConnectorEnum(connectorType).getConnector();
     }
 

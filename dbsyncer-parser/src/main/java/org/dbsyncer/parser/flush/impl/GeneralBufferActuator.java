@@ -13,12 +13,13 @@ import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ConnectorEnum;
+import org.dbsyncer.connector.model.MetaInfo;
+import org.dbsyncer.parser.Parser;
 import org.dbsyncer.parser.ParserFactory;
 import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.BatchWriter;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
@@ -28,7 +29,8 @@ import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -49,6 +51,8 @@ import java.util.concurrent.Executor;
 @Component
 public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest, WriterResponse> {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     @Resource
     private GeneralBufferConfig generalBufferConfig;
 
@@ -59,7 +63,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     private ConnectorFactory connectorFactory;
 
     @Resource
-    private ParserFactory parserFactory;
+    private Parser parser;
 
     @Resource
     private PluginFactory pluginFactory;
@@ -75,7 +79,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Resource
     private DDLParser ddlParser;
-
 
     @PostConstruct
     public void init() {
@@ -141,7 +144,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         // 5、批量执行同步
         BatchWriter batchWriter = new BatchWriter(tConnectorMapper, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, generalBufferConfig.getBufferWriterCount());
-        Result result = parserFactory.writeBatch(context, batchWriter, generalExecutor);
+        Result result = parser.writeBatch(context, batchWriter, generalExecutor);
 
         // 6.发布刷新增量点事件
         applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
@@ -171,29 +174,46 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
      * @param mapping
      * @param group
      */
-    private void parseDDl(WriterResponse response, Mapping mapping, TableGroup group) {
-        AbstractConnectorConfig sConnConfig = getConnectorConfig(mapping.getSourceConnectorId());
-        AbstractConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
-        // 0.生成目标表执行SQL(暂支持MySQL) fixme AE86 暂内测MySQL作为试运行版本
-        if (StringUtil.equals(sConnConfig.getConnectorType(), tConnConfig.getConnectorType()) && StringUtil.equals(ConnectorEnum.MYSQL.getType(), tConnConfig.getConnectorType())) {
-            final String targetTableName = group.getTargetTable().getName();
-            final List<FieldMapping> fieldMappings = group.getFieldMapping();//获得字段映射关系
-            DDLConfig targetDDLConfig = ddlParser.parseDDlConfig(response.getSql(), targetTableName,fieldMappings);
-            final ConnectorMapper tConnectorMapper = connectorFactory.connect(tConnConfig);
-            Result result = connectorFactory.writerDDL(tConnectorMapper, targetDDLConfig);
-            result.setTableGroupId(group.getId());
-            result.setTargetTableGroupName(targetTableName);
-            applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
-            flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
+    private void parseDDl(WriterResponse response, Mapping mapping, TableGroup tableGroup) {
+        try {
+            AbstractConnectorConfig sConnConfig = getConnectorConfig(mapping.getSourceConnectorId());
+            AbstractConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
+            String sConnType = sConnConfig.getConnectorType();
+            String tConnType = tConnConfig.getConnectorType();
+            // 0.生成目标表执行SQL(暂支持MySQL) fixme AE86 暂内测MySQL作为试运行版本
+            if (StringUtil.equals(sConnType, tConnType) && StringUtil.equals(ConnectorEnum.MYSQL.getType(), tConnType)) {
+                String targetTableName = tableGroup.getTargetTable().getName();
+                DDLConfig targetDDLConfig = ddlParser.parseDDlConfig(response.getSql(), tConnType, targetTableName);
+                final ConnectorMapper tConnectorMapper = connectorFactory.connect(tConnConfig);
+                Result result = connectorFactory.writerDDL(tConnectorMapper, targetDDLConfig);
+                result.setTableGroupId(tableGroup.getId());
+                result.setTargetTableGroupName(targetTableName);
+
+                // TODO life
+                // 1.获取目标表最新的属性字段
+                MetaInfo metaInfo = parser.getMetaInfo(mapping.getTargetConnectorId(), targetTableName);
+                // 1.1 参考 org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker.refreshTableFields
+                // 1.2 要注意，表支持自定义主键，要兼容处理
+
+                // 2.更新TableGroup.targetTable
+                tableGroup.getTargetTable().setColumn(metaInfo.getColumn());
+
+                // 3.更新表字段映射（添加相似字段）
+                // 3.1 参考 org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker.matchSimilarFieldMapping
+
+                // 4.合并驱动配置 & 更新TableGroup.command
+                // 4.1 参考 org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker.mergeConfig
+
+                // 5.持久化存储 & 更新缓存
+                // 5.1 参考 org.dbsyncer.manager.ManagerFactory.editConfigModel
+                // 将方法移动到parser模块，就可以复用实现
+
+                applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
+                flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
         }
-        // TODO life
-        // 1.获取目标表最新的属性字段
-
-        // 2.更新TableGroup.targetTable
-        // 3.更新表字段映射（添加相似字段）
-        // 4.更新TableGroup.command
-        // 5.合并驱动配置
-
     }
 
     /**
