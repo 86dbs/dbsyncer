@@ -28,6 +28,7 @@ import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -74,6 +75,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Resource
     private DDLParser ddlParser;
+
 
     @PostConstruct
     public void init() {
@@ -186,6 +188,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         }
         // TODO life
         // 1.获取目标表最新的属性字段
+
         // 2.更新TableGroup.targetTable
         // 3.更新表字段映射（添加相似字段）
         // 4.更新TableGroup.command
@@ -209,4 +212,5 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     public void setGeneralExecutor(Executor generalExecutor) {
         this.generalExecutor = generalExecutor;
     }
+
 }
