@@ -1,6 +1,8 @@
 package org.dbsyncer.parser.ddl;
 
+import java.util.List;
 import org.dbsyncer.connector.config.DDLConfig;
+import org.dbsyncer.parser.model.FieldMapping;
 
 public interface DDLParser {
 
@@ -12,5 +14,6 @@ public interface DDLParser {
      * @param targetTableName 目标表
      * @return
      */
-    DDLConfig parseDDlConfig(String sql, String targetConnectorType, String targetTableName);
+    DDLConfig parseDDlConfig(String sql, String targetConnectorType, String targetTableName,
+            List<FieldMapping> fieldMappings);
 }
