@@ -3,6 +3,8 @@ package org.dbsyncer.parser.ddl.alter;
 import java.util.LinkedList;
 import java.util.List;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
+import net.sf.jsqlparser.statement.create.table.Index;
+import net.sf.jsqlparser.statement.create.table.Index.ColumnParams;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.model.Field;
@@ -18,6 +20,19 @@ public class AddStrategy implements ExpressionStrategy{
     @Override
     public void parse(AlterExpression expression, DDLConfig ddlConfig,
             List<FieldMapping> fieldMappingList) {
+        if (expression.getColDataTypeList() !=null){
+            parseAddColumn(expression,ddlConfig,fieldMappingList);
+        }
+        if (expression.getIndex() !=null){
+            parseAddIndex(expression,ddlConfig,fieldMappingList);
+        }
+    }
+
+    //解析增加列
+    //exampleSql: ALTER TABLE cost ADD duan INT after(before) `tmp`;
+    private void parseAddColumn(AlterExpression expression, DDLConfig ddlConfig,
+            List<FieldMapping> fieldMappingList){
+        //如果是增加列
         for (AlterExpression.ColumnDataType columnDataType : expression.getColDataTypeList()) {
             boolean findColumn = false;
             List<String> columnSpecs = new LinkedList<>();
@@ -44,5 +59,26 @@ public class AddStrategy implements ExpressionStrategy{
             Field field = new Field(columName,columnDataType.getColDataType().getDataType(),0);//感觉不需要都行，只需要名称，后续可以自己刷新
             ddlConfig.getAddFields().add(field);
         }
+    }
+
+    /**
+     * 新增索引
+     * exampleSql: ALTER TABLE test_table add index name (tmp);
+     * @param expression
+     * @param ddlConfig
+     * @param fieldMappingList
+     */
+    private void parseAddIndex(AlterExpression expression, DDLConfig ddlConfig,
+            List<FieldMapping> fieldMappingList){
+        Index index = expression.getIndex();
+        List<ColumnParams> columnNames = index.getColumns();
+        List<ColumnParams> targetNames = new LinkedList<>();
+        for (ColumnParams columnParams : columnNames) {
+            FieldMapping fieldMapping = fieldMappingList.stream().filter(x->x.getSource().getName().equals(
+                    columnParams.getColumnName())).findFirst().get();
+            ColumnParams target =new ColumnParams(fieldMapping.getTarget().getName(),columnParams.getParams());
+            targetNames.add(target);
+        }
+        index.setColumns(targetNames);
     }
 }
