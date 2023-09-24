@@ -1,7 +1,9 @@
 package org.dbsyncer.connector.config;
 
+import java.util.LinkedList;
 import java.util.List;
 import net.sf.jsqlparser.statement.alter.AlterOperation;
+import org.dbsyncer.connector.enums.DDLOperationEnum;
 import org.dbsyncer.connector.model.Field;
 
 public class DDLConfig {
@@ -10,11 +12,11 @@ public class DDLConfig {
      */
     private String sql;
 
-    private AlterOperation operation;
+    private DDLOperationEnum ddlOperationEnum;
 
-    private List<Field> addFields;
+    private List<Field> addFields = new LinkedList<>();
 
-    private List<Field> removeFields;
+    private List<Field> removeFields = new LinkedList<>();
 
     //记录源表的源字段名称
     private String sourceColumnName;
@@ -62,11 +64,11 @@ public class DDLConfig {
         this.changedColumnName = changedColumnName;
     }
 
-    public AlterOperation getOperation() {
-        return operation;
+    public DDLOperationEnum getDdlOperationEnum() {
+        return ddlOperationEnum;
     }
 
-    public void setOperation(AlterOperation operation) {
-        this.operation = operation;
+    public void setDdlOperationEnum(DDLOperationEnum ddlOperationEnum) {
+        this.ddlOperationEnum = ddlOperationEnum;
     }
 }

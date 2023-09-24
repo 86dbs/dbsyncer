@@ -15,6 +15,7 @@ import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ConnectorEnum;
+import org.dbsyncer.connector.enums.DDLOperationEnum;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.parser.Parser;
@@ -203,7 +204,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
                 // TODO life
                 // 1.获取目标表最新的属性字段
-                MetaInfo tagertMetaInfo = parser.getMetaInfo(mapping.getTargetConnectorId(), targetTableName);
+                MetaInfo targetMetaInfo = parser.getMetaInfo(mapping.getTargetConnectorId(), targetTableName);
                 MetaInfo originMetaInfo = parser.getMetaInfo(mapping.getSourceConnectorId(),tableGroup.getSourceTable().getName());
                 // 1.1 参考 org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker.refreshTableFields
                 //上面已经是刷新了
@@ -213,29 +214,13 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
                 // 2.更新TableGroup.targetTable
                 tableGroup.getSourceTable().setColumn(originMetaInfo.getColumn());
-                tableGroup.getTargetTable().setColumn(tagertMetaInfo.getColumn());
+                tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
 
                 // 3.更新表字段映射(根据保留的更改的属性，进行更改)
                 List<FieldMapping> fieldMappingList = tableGroup.getFieldMapping(); // 获得刚开始filedMapping
                 List<FieldMapping> targetMappingList = new LinkedList<>();//替换完成后的filedMapping
-                for (FieldMapping fieldMapping:fieldMappingList) {
-                    String fieldSourceName = fieldMapping.getSource().getName();
-                    String filedTargetName = fieldMapping.getTarget().getName();
-                    //找到更改的源表的名称，也就是找到了对应的映射关系，这样就可以从源表找到更改后的名称进行对应，
-                    if (fieldSourceName.equals(targetDDLConfig.getSourceColumnName())){
-                        //找到源表的字段
-                        if (targetDDLConfig.getSourceColumnName().equals(targetDDLConfig.getChangedColumnName())){//说明字段名没有改变，只是改变了属性
-                            Field source = originMetaInfo.getColumn().stream()
-                                    .filter(x->x.getName().equals(fieldSourceName)).findFirst().get();
-                            Field target = tagertMetaInfo.getColumn().stream()
-                                    .filter(x->x.getName().equals(filedTargetName)).findFirst().get();
-                            //替换
-                            targetMappingList.add(new FieldMapping(source,target)) ;
-                            continue;
-                        }
-                    }
-                    targetMappingList.add(fieldMapping);
-                }
+                refreshFiledMapping(targetMappingList,fieldMappingList,originMetaInfo,targetMetaInfo,targetDDLConfig);
+
                 tableGroup.setFieldMapping(targetMappingList);
                 // 4.合并驱动配置 & 更新TableGroup.command 合并驱动应该不需要了，我只是把该替换的地方替换掉了，原来的还是保持一致，应该需要更新TableGroup.command
                 // 4.1 参考 org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker.mergeConfig
@@ -251,6 +236,61 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
+    }
+
+
+    //根据原来的映射关系和更改的字段进行新关系的映射组合
+    private void refreshFiledMapping(List<FieldMapping> targetMappingList, List<FieldMapping> fieldMappingList,MetaInfo originMetaInfo,
+            MetaInfo targetMetaInfo,DDLConfig targetDDLConfig) {
+        //处理映射关系
+        for (FieldMapping fieldMapping:fieldMappingList) {
+            String fieldSourceName = fieldMapping.getSource().getName();
+            String filedTargetName = fieldMapping.getTarget().getName();
+            //找到更改的源表的名称，也就是找到了对应的映射关系，这样就可以从源表找到更改后的名称进行对应，
+            if (fieldSourceName.equals(targetDDLConfig.getSourceColumnName())){
+                //找到源表的字段
+                if (targetDDLConfig.getDdlOperationEnum() == DDLOperationEnum.ALTER_MODIFY){//说明字段名没有改变，只是改变了属性
+                    Field source = originMetaInfo.getColumn().stream()
+                            .filter(x->x.getName().equals(fieldSourceName)).findFirst().get();
+                    Field target = targetMetaInfo.getColumn().stream()
+                            .filter(x->x.getName().equals(filedTargetName)).findFirst().get();
+                    //替换
+                    targetMappingList.add(new FieldMapping(source,target)) ;
+                    continue;
+                }else if (targetDDLConfig.getDdlOperationEnum() == DDLOperationEnum.ALTER_CHANGE){//改变名称
+                    Field source = originMetaInfo.getColumn().stream()
+                            .filter(x->x.getName().equals(targetDDLConfig.getChangedColumnName())).findFirst().get();
+                    Field target = targetMetaInfo.getColumn().stream()
+                            .filter(x->x.getName().equals(targetDDLConfig.getChangedColumnName())).findFirst().get();
+                    //替换
+                    targetMappingList.add(new FieldMapping(source,target)) ;
+                    continue;
+                }
+            }
+            targetMappingList.add(fieldMapping);
+        }
+
+        if (DDLOperationEnum.ALTER_ADD == targetDDLConfig.getDdlOperationEnum()){
+            //处理新增的映射关系
+            List<Field> addFields = targetDDLConfig.getAddFields();
+            for (Field field:addFields) {
+                Field source = originMetaInfo.getColumn().stream()
+                        .filter(x->x.getName().equals(field.getName())).findFirst().get();
+                Field target = targetMetaInfo.getColumn().stream()
+                        .filter(x->x.getName().equals(field.getName())).findFirst().get();
+                FieldMapping fieldMapping =new FieldMapping(source,target);
+                targetMappingList.add(fieldMapping);
+            }
+        }
+
+        if (DDLOperationEnum.ALTER_DROP == targetDDLConfig.getDdlOperationEnum()){
+            //处理删除字段的映射关系
+            List<Field> removeFields = targetDDLConfig.getRemoveFields();
+            for (Field field:removeFields) {
+                targetMappingList.removeIf(x->x.getSource().getName().equals(field.getName()));
+            }
+        }
+
     }
 
     /**

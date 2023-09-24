@@ -11,6 +11,9 @@ import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
 import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 import com.github.shyiko.mysql.binlog.network.ServerException;
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.column.Lexer;
 import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.event.DDLChangedEvent;
@@ -308,15 +311,19 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
 
         private void parseDDL(QueryEventData data) {
             if (StringUtil.startsWith(data.getSql(), ConnectorConstant.OPERTION_ALTER)) {
-                // ALTER TABLE `test`.`my_user` MODIFY COLUMN `name` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL AFTER `id`
-                Lexer lexer = new Lexer(data.getSql());
-                lexer.nextToken('.');
-                lexer.nextToken('`');
-                String tableName = lexer.nextToken('`');
-                if (isFilterTable(data.getDatabase(), tableName)) {
-                    logger.info("sql:{}", data.getSql());
-                    changeEvent(new DDLChangedEvent(data.getDatabase(), tableName, ConnectorConstant.OPERTION_ALTER, data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
+                try {
+                    Alter alter = (Alter) CCJSqlParserUtil.parse(data.getSql());
+                    String tableName =alter.getTable().getName();
+                    tableName = StringUtil.replace(tableName,"`","");
+                    // ALTER TABLE `test`.`my_user` MODIFY COLUMN `name` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL AFTER `id`
+                    if (isFilterTable(data.getDatabase(), tableName)) {
+                        logger.info("sql:{}", data.getSql());
+                        changeEvent(new DDLChangedEvent(data.getDatabase(), tableName, ConnectorConstant.OPERTION_ALTER, data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
+                    }
+                } catch (JSQLParserException e) {
+                    throw new RuntimeException(e);
                 }
+
             }
         }
 
