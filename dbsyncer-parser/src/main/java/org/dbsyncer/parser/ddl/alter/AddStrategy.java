@@ -21,12 +21,12 @@ public class AddStrategy implements AlterStrategy {
 
     @Override
     public void parse(AlterExpression expression, DDLConfig ddlConfig,
-            List<FieldMapping> origionFiledMapping) {
+            List<FieldMapping> originFiledMapping) {
         if (expression.getColDataTypeList() != null) {
-            parseAddColumn(expression, ddlConfig, origionFiledMapping);
+            parseAddColumn(expression, ddlConfig, originFiledMapping);
         }
         if (expression.getIndex() != null) {
-            parseAddIndex(expression, origionFiledMapping);
+            parseAddIndex(expression, originFiledMapping);
         }
         ddlConfig.setDdlOperationEnum(DDLOperationEnum.ALTER_ADD);
     }
