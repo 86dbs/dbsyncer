@@ -81,7 +81,7 @@ public class AddStrategy implements AlterStrategy {
         List<ColumnParams> targetNames = new LinkedList<>();
         for (ColumnParams columnParams : columnNames) {
             FieldMapping fieldMapping = fieldMappingList.stream()
-                    .filter(x -> x.getSource().getName().equals(
+                    .filter(x -> StringUtil.equals(x.getSource().getName(),
                             columnParams.getColumnName())).findFirst().get();
             ColumnParams target = new ColumnParams(fieldMapping.getTarget().getName(),
                     columnParams.getParams());
