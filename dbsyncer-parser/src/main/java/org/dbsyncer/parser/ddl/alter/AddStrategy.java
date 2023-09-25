@@ -26,8 +26,9 @@ public class AddStrategy implements AlterStrategy {
             parseAddColumn(expression, ddlConfig, origionFiledMapping);
         }
         if (expression.getIndex() != null) {
-            parseAddIndex(expression, ddlConfig, origionFiledMapping);
+            parseAddIndex(expression, origionFiledMapping);
         }
+        ddlConfig.setDdlOperationEnum(DDLOperationEnum.ALTER_ADD);
     }
 
     //解析增加列
@@ -64,17 +65,16 @@ public class AddStrategy implements AlterStrategy {
                     0);//感觉不需要都行，只需要名称，后续可以自己刷新
             ddlConfig.getAddFields().add(field);
         }
-        ddlConfig.setDdlOperationEnum(DDLOperationEnum.ALTER_ADD);
+
     }
 
     /**
      * 新增索引 exampleSql: ALTER TABLE test_table add index name (tmp);
      *
      * @param expression
-     * @param ddlConfig
      * @param fieldMappingList
      */
-    private void parseAddIndex(AlterExpression expression, DDLConfig ddlConfig,
+    private void parseAddIndex(AlterExpression expression,
             List<FieldMapping> fieldMappingList) {
         Index index = expression.getIndex();
         List<ColumnParams> columnNames = index.getColumns();
