@@ -312,18 +312,16 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
         private void parseDDL(QueryEventData data) {
             if (StringUtil.startsWith(data.getSql(), ConnectorConstant.OPERTION_ALTER)) {
                 try {
-                    Alter alter = (Alter) CCJSqlParserUtil.parse(data.getSql());
-                    String tableName =alter.getTable().getName();
-                    tableName = StringUtil.replace(tableName,"`","");
                     // ALTER TABLE `test`.`my_user` MODIFY COLUMN `name` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL AFTER `id`
+                    Alter alter = (Alter) CCJSqlParserUtil.parse(data.getSql());
+                    String tableName = StringUtil.replace(alter.getTable().getName(),"`","");
                     if (isFilterTable(data.getDatabase(), tableName)) {
                         logger.info("sql:{}", data.getSql());
                         changeEvent(new DDLChangedEvent(data.getDatabase(), tableName, ConnectorConstant.OPERTION_ALTER, data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
                     }
                 } catch (JSQLParserException e) {
-                    throw new RuntimeException(e);
+                    logger.error(e.getMessage(), e);
                 }
-
             }
         }
 

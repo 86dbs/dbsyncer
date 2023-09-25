@@ -1,10 +1,10 @@
 package org.dbsyncer.connector.config;
 
-import java.util.LinkedList;
-import java.util.List;
-import net.sf.jsqlparser.statement.alter.AlterOperation;
 import org.dbsyncer.connector.enums.DDLOperationEnum;
 import org.dbsyncer.connector.model.Field;
+
+import java.util.LinkedList;
+import java.util.List;
 
 public class DDLConfig {
     /**
