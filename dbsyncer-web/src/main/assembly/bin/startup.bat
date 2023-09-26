@@ -29,4 +29,4 @@ rem jmxremote model
 rem SERVER_OPTS=%SERVER_OPTS% %JMXREMOTE_HOSTNAME% %JMXREMOTE_PORT% %JMXREMOTE_SSL% %JMXREMOTE_AUTH% %JMXREMOTE_ACCESS% %JMXREMOTE_PASSWORD%
 
 echo %SERVER_OPTS%
-java %SERVER_OPTS% -Dfile.encoding=GBK -Djava.ext.dirs="%JAVA_HOME%"\jre\lib\ext;./lib -Dspring.config.location=%cd%\conf\application.properties org.dbsyncer.web.Application
+java %SERVER_OPTS% -Dfile.encoding=GBK -Djava.ext.dirs=%JAVA_HOME%\jre\lib\ext;./lib -Dspring.config.location=%cd%\conf\application.properties org.dbsyncer.web.Application
