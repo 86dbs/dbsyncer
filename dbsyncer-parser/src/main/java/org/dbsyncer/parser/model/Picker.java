@@ -82,7 +82,7 @@ public class Picker {
         return Collections.unmodifiableList(fields);
     }
 
-    public Map<String, Field> getSourceFieldMap() {
-        return sourceFields.stream().filter(f -> null != f).collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
+    public Map<String, Field> getTargetFieldMap() {
+        return targetFields.stream().filter(f -> null != f).collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
     }
 }

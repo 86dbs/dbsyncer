@@ -105,7 +105,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         // 3、反序列
         Map<String, Object> map = new HashMap<>();
         final Picker picker = new Picker(tableGroup.getFieldMapping());
-        final Map<String, Field> fieldMap = picker.getSourceFieldMap();
+        final Map<String, Field> fieldMap = picker.getTargetFieldMap();
         BinlogMap message = BinlogMap.parseFrom(bytes);
         message.getRowMap().forEach((k, v) -> {
             if (fieldMap.containsKey(k)) {
@@ -152,6 +152,7 @@ public class DataSyncServiceImpl implements DataSyncService {
             TableGroup tableGroup = manager.getTableGroup(tableGroupId);
             String sourceTableName = tableGroup.getSourceTable().getName();
             RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, Collections.EMPTY_LIST);
+            // TODO 应转换为源字段
             changedEvent.setChangedRow(binlogData);
             parser.execute(tableGroupId, changedEvent);
             monitor.removeData(metaId, messageId);
