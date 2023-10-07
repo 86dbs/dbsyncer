@@ -269,7 +269,7 @@ public class ParserFactory implements Parser {
             }
 
             // 2、映射字段
-            List<Map> target = picker.pickData(source);
+            List<Map> target = picker.pickTargetData(source);
 
             // 3、参数转换
             ConvertUtil.convert(group.getConvert(), target);

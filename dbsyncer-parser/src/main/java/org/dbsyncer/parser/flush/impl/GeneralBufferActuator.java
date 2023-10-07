@@ -139,7 +139,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         final Picker picker = new Picker(group.getFieldMapping());
         final List<Map> sourceDataList = response.getDataList();
         // 2、映射字段
-        List<Map> targetDataList = picker.pickData(sourceDataList);
+        List<Map> targetDataList = picker.pickTargetData(sourceDataList);
 
         // 3、参数转换
         ConvertUtil.convert(group.getConvert(), targetDataList);
@@ -190,6 +190,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             String tConnType = tConnConfig.getConnectorType();
             // 0.生成目标表执行SQL(暂支持MySQL) fixme AE86 暂内测MySQL作为试运行版本
             if (StringUtil.equals(sConnType, tConnType) && StringUtil.equals(ConnectorEnum.MYSQL.getType(), tConnType)) {
+                // 1.转换为目标SQL，执行到目标库
                 String targetTableName = tableGroup.getTargetTable().getName();
                 List<FieldMapping> originalFieldMappings = tableGroup.getFieldMapping();
                 DDLConfig targetDDLConfig = ddlParser.parseDDlConfig(response.getSql(), tConnType, targetTableName, originalFieldMappings);
@@ -198,30 +199,23 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 result.setTableGroupId(tableGroup.getId());
                 result.setTargetTableGroupName(targetTableName);
 
-                // TODO life
-                // 1.获取目标表最新的属性字段
+                // 2.获取目标表最新的属性字段
                 MetaInfo targetMetaInfo = parser.getMetaInfo(mapping.getTargetConnectorId(), targetTableName);
                 MetaInfo originMetaInfo = parser.getMetaInfo(mapping.getSourceConnectorId(), tableGroup.getSourceTable().getName());
-                // 1.1 参考 org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker.refreshTableFields
-                //上面已经是刷新了
-
-                // 1.2 要注意，表支持自定义主键，要兼容处理
-                //主键问题还未涉及到这种情况，可能还没写，可能要是删除主键会需要考虑，其他的情况我应该不会动
-
-                // 2.更新TableGroup.targetTable
-                tableGroup.getSourceTable().setColumn(originMetaInfo.getColumn());
-                tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
 
                 // 3.更新表字段映射(根据保留的更改的属性，进行更改)
+                tableGroup.getSourceTable().setColumn(originMetaInfo.getColumn());
+                tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
                 tableGroup.setFieldMapping(ddlParser.refreshFiledMappings(originalFieldMappings, originMetaInfo, targetMetaInfo, targetDDLConfig));
-                // 4.合并驱动配置 & 更新TableGroup.command 合并驱动应该不需要了，我只是把该替换的地方替换掉了，原来的还是保持一致，应该需要更新TableGroup.command
-                // 4.1 参考 org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker.mergeConfig
+
+                // 4.更新执行命令
                 Map<String, String> commands = parser.getCommand(mapping, tableGroup);
                 tableGroup.setCommand(commands);
-                // 5.持久化存储 & 更新缓存
-                // 5.1 参考 org.dbsyncer.manager.ManagerFactory.editConfigModel
-                // 将方法移动到parser模块，就可以复用实现
+
+                // 5.持久化存储 & 更新缓存配置
                 flushCache(tableGroup);
+
+                // 6.发布更新事件，持久化增量数据
                 applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
                 flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
                 return;
