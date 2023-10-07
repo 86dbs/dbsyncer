@@ -1,6 +1,13 @@
 package org.dbsyncer.common.event;
 
-public class DDLChangedEvent {
+/**
+ * DDL变更事件
+ *
+ * @version 1.0.0
+ * @Author AE86
+ * @Date 2023-09-18 23:00
+ */
+public class DDLChangedEvent extends CommonChangedEvent {
 
     /**
      * 变更数据库
@@ -8,27 +15,21 @@ public class DDLChangedEvent {
     private String database;
 
     /**
-     * 变更表名称
-     */
-    private String tableName;
-
-    /**
      * 变更SQL
      */
     private String sql;
 
-    public DDLChangedEvent(String database, String tableName, String sql) {
+    public DDLChangedEvent(String database, String sourceTableName, String event, String sql, String nextFileName, Object position) {
+        setSourceTableName(sourceTableName);
+        setEvent(event);
+        setNextFileName(nextFileName);
+        setPosition(position);
         this.database = database;
-        this.tableName = tableName;
         this.sql = sql;
     }
 
     public String getDatabase() {
         return database;
-    }
-
-    public String getTableName() {
-        return tableName;
     }
 
     public String getSql() {

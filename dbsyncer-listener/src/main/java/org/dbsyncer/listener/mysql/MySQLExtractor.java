@@ -11,6 +11,10 @@ import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
 import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 import com.github.shyiko.mysql.binlog.network.ServerException;
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.statement.alter.Alter;
+import org.dbsyncer.common.column.Lexer;
 import org.dbsyncer.common.event.ChangedOffset;
 import org.dbsyncer.common.event.DDLChangedEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
@@ -47,10 +51,10 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String BINLOG_FILENAME = "fileName";
-    private static final String BINLOG_POSITION = "position";
-    private static final int RETRY_TIMES = 10;
-    private static final int MASTER = 0;
+    private final String BINLOG_FILENAME = "fileName";
+    private final String BINLOG_POSITION = "position";
+    private final int RETRY_TIMES = 10;
+    private final int MASTER = 0;
     private Map<Long, TableMapEventData> tables = new HashMap<>();
     private BinaryLogClient client;
     private List<Host> cluster;
@@ -64,7 +68,7 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
         try {
             connectLock.lock();
             if (connected) {
-                logger.error("MysqlExtractor is already started");
+                logger.error("MySQLExtractor is already started");
                 return;
             }
             run();
@@ -104,13 +108,14 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
         }
         database = DatabaseUtil.getDatabaseName(config.getUrl());
         cluster = readNodes(config.getUrl());
-        Assert.notEmpty(cluster, "Mysql连接地址有误.");
+        Assert.notEmpty(cluster, "MySQL连接地址有误.");
 
         final Host host = cluster.get(MASTER);
         final String username = config.getUsername();
         final String password = config.getPassword();
         boolean containsPos = snapshot.containsKey(BINLOG_POSITION);
         client = new BinaryLogRemoteClient(host.getIp(), host.getPort(), username, password);
+        client.setEnableDDL(true);
         client.setBinlogFilename(snapshot.get(BINLOG_FILENAME));
         client.setBinlogPosition(containsPos ? Long.parseLong(snapshot.get(BINLOG_POSITION)) : 0);
         client.setTableMapEventByTableId(tables);
@@ -293,9 +298,8 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
 
             if (client.isEnableDDL() && EventType.QUERY == header.getEventType()) {
                 refresh(header);
-                QueryEventData data = event.getData();
-                changeEvent(new DDLChangedEvent(data.getDatabase(), "", data.getSql()));
-                logger.info("database:{}, sql:{}", data.getDatabase(), data.getSql());
+                parseDDL(event.getData());
+                return;
             }
 
             // 切换binlog
@@ -305,13 +309,33 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
             }
         }
 
+        private void parseDDL(QueryEventData data) {
+            if (StringUtil.startsWith(data.getSql(), ConnectorConstant.OPERTION_ALTER)) {
+                try {
+                    // ALTER TABLE `test`.`my_user` MODIFY COLUMN `name` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL AFTER `id`
+                    Alter alter = (Alter) CCJSqlParserUtil.parse(data.getSql());
+                    String tableName = StringUtil.replace(alter.getTable().getName(),"`","");
+                    if (isFilterTable(data.getDatabase(), tableName)) {
+                        logger.info("sql:{}", data.getSql());
+                        changeEvent(new DDLChangedEvent(data.getDatabase(), tableName, ConnectorConstant.OPERTION_ALTER, data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
+                    }
+                } catch (JSQLParserException e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+        }
+
         private String getTableName(long tableId) {
             return tables.get(tableId).getTable();
         }
 
         private boolean isFilterTable(long tableId) {
             final TableMapEventData tableMap = tables.get(tableId);
-            return StringUtil.equalsIgnoreCase(database, tableMap.getDatabase()) && filterTable.contains(tableMap.getTable());
+            return isFilterTable(tableMap.getDatabase(), tableMap.getTable());
+        }
+
+        private boolean isFilterTable(String dbName, String tableName) {
+            return StringUtil.equalsIgnoreCase(database, dbName) && filterTable.contains(tableName);
         }
 
     }

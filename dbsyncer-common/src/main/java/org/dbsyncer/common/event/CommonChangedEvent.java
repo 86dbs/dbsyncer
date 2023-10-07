@@ -31,6 +31,7 @@ public class CommonChangedEvent implements ChangedEvent {
      */
     private ChangedOffset changedOffset = new ChangedOffset();
 
+    @Override
     public String getSourceTableName() {
         return sourceTableName;
     }
@@ -39,6 +40,7 @@ public class CommonChangedEvent implements ChangedEvent {
         this.sourceTableName = sourceTableName;
     }
 
+    @Override
     public String getEvent() {
         return event;
     }
@@ -47,6 +49,7 @@ public class CommonChangedEvent implements ChangedEvent {
         this.event = event;
     }
 
+    @Override
     public Map<String, Object> getChangedRow() {
         return changedRow;
     }

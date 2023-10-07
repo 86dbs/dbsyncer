@@ -3,6 +3,7 @@ package org.dbsyncer.connector;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.model.MetaInfo;
@@ -94,6 +95,17 @@ public interface Connector<M, C> {
      * @return
      */
     Result writer(M connectorMapper, WriterBatchConfig config);
+
+    /**
+     * 执行DDL命令
+     *
+     * @param connectorMapper
+     * @param ddlConfig
+     * @return
+     */
+    default Result writerDDL(M connectorMapper, DDLConfig ddlConfig){
+        throw new ConnectorException("Unsupported method.");
+    }
 
     /**
      * 获取数据源同步参数

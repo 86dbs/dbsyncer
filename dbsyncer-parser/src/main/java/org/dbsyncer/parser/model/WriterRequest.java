@@ -2,6 +2,7 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.ChangedOffset;
+import org.dbsyncer.common.event.DDLChangedEvent;
 import org.dbsyncer.parser.flush.BufferRequest;
 
 import java.util.Map;
@@ -17,11 +18,16 @@ public class WriterRequest extends AbstractWriter implements BufferRequest {
 
     private ChangedOffset changedOffset;
 
+    private String sql;
+
     public WriterRequest(String tableGroupId, ChangedEvent event) {
         setTableGroupId(tableGroupId);
         setEvent(event.getEvent());
         this.row = event.getChangedRow();
         this.changedOffset = event.getChangedOffset();
+        if(event instanceof DDLChangedEvent){
+            sql = ((DDLChangedEvent) event).getSql();
+        }
     }
 
     @Override
@@ -35,5 +41,9 @@ public class WriterRequest extends AbstractWriter implements BufferRequest {
 
     public ChangedOffset getChangedOffset() {
         return changedOffset;
+    }
+
+    public String getSql() {
+        return sql;
     }
 }

@@ -19,14 +19,6 @@ public interface Watcher {
     void changeEvent(ChangedEvent event);
 
     /**
-     * DDL变更事件
-     *
-     * @param event
-     */
-    default void changeEvent(DDLChangedEvent event) {
-    }
-
-    /**
      * 持久化增量点事件
      *
      * @param snapshot

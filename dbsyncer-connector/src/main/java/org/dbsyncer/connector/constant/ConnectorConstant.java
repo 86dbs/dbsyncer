@@ -23,6 +23,11 @@ public class ConnectorConstant {
     public static final String OPERTION_DELETE = "DELETE";
 
     /**
+     * 表结构更改
+     */
+    public static final String OPERTION_ALTER = "ALTER";
+
+    /**
      * 查询
      */
     public static final String OPERTION_QUERY = "QUERY";

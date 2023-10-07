@@ -5,6 +5,7 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.CommandConfig;
+import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -171,6 +172,13 @@ public class ConnectorFactory implements DisposableBean {
         return result;
     }
 
+    public Result writerDDL(ConnectorMapper connectorMapper, DDLConfig ddlConfig) {
+        Connector connector = getConnector(connectorMapper);
+        Result result = connector.writerDDL(connectorMapper, ddlConfig);
+        Assert.notNull(result, "Connector writer batch result can not null");
+        return result;
+    }
+
     public Connector getConnector(ConnectorMapper connectorMapper) {
         return getConnector(connectorMapper.getConnectorType());
     }
@@ -181,7 +189,7 @@ public class ConnectorFactory implements DisposableBean {
      * @param connectorType
      * @return
      */
-    private Connector getConnector(String connectorType) {
+    public Connector getConnector(String connectorType) {
         return ConnectorEnum.getConnectorEnum(connectorType).getConnector();
     }
 
@@ -194,5 +202,4 @@ public class ConnectorFactory implements DisposableBean {
         Assert.notNull(connectorMapper, "ConnectorMapper can not be null.");
         getConnector(connectorMapper).disconnect(connectorMapper);
     }
-
 }

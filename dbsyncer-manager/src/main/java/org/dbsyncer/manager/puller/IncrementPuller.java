@@ -2,6 +2,7 @@ package org.dbsyncer.manager.puller;
 
 import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.ChangedOffset;
+import org.dbsyncer.common.event.CommonChangedEvent;
 import org.dbsyncer.common.event.DDLChangedEvent;
 import org.dbsyncer.common.event.RefreshOffsetEvent;
 import org.dbsyncer.common.event.RowChangedEvent;
@@ -12,7 +13,6 @@ import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.Extractor;
@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -199,9 +200,16 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
         public abstract void onChange(E e);
 
+        public void onDDLChanged(DDLChangedEvent event) {
+        }
+
         @Override
         public void changeEvent(ChangedEvent event) {
             event.getChangedOffset().setMetaId(meta.getId());
+            if (event instanceof DDLChangedEvent) {
+                onDDLChanged((DDLChangedEvent) event);
+                return;
+            }
             onChange((E) event);
         }
 
@@ -221,11 +229,11 @@ public final class IncrementPuller extends AbstractPuller implements Application
             return meta.getUpdateTime();
         }
 
-        protected void bind(String tableGroupId){
+        protected void bind(String tableGroupId) {
             bufferActuatorRouter.bind(meta.getId(), tableGroupId);
         }
 
-        protected void execute(String tableGroupId, E event){
+        protected void execute(String tableGroupId, ChangedEvent event) {
             bufferActuatorRouter.execute(meta.getId(), tableGroupId, event);
         }
     }
@@ -271,25 +279,30 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
         @Override
         public void onChange(RowChangedEvent event) {
+            process(event, picker -> {
+                final Map<String, Object> changedRow = picker.getColumns(event.getDataList());
+                if (picker.filter(changedRow)) {
+                    event.setChangedRow(changedRow);
+                    execute(picker.getTableGroup().getId(), event);
+                }
+            });
+        }
+
+        @Override
+        public void onDDLChanged(DDLChangedEvent event) {
+            process(event, picker -> execute(picker.getTableGroup().getId(), event));
+        }
+
+        private void process(CommonChangedEvent event, Consumer<FieldPicker> consumer) {
             // 处理过程有异常向上抛
             List<FieldPicker> pickers = tablePicker.get(event.getSourceTableName());
             if (!CollectionUtils.isEmpty(pickers)) {
                 // 触发刷新增量点事件
                 event.getChangedOffset().setRefreshOffset(true);
-                pickers.forEach(picker -> {
-                    final Map<String, Object> changedRow = picker.getColumns(event.getDataList());
-                    if (picker.filter(changedRow)) {
-                        event.setChangedRow(changedRow);
-                        execute(picker.getTableGroup().getId(), event);
-                    }
-                });
+                pickers.forEach(picker -> consumer.accept(picker));
             }
         }
 
-        @Override
-        public void changeEvent(DDLChangedEvent event) {
-            // TODO 解析ddl
-        }
     }
 
 }

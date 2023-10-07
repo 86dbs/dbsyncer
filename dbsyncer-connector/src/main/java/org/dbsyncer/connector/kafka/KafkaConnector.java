@@ -110,4 +110,5 @@ public class KafkaConnector extends AbstractConnector implements Connector<Kafka
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         return Collections.EMPTY_MAP;
     }
+
 }
