@@ -37,10 +37,10 @@ JMXREMOTE_PASSWORD="-Dcom.sun.management.jmxremote.password.file=$JMXREMOTE_CONF
 # set IPv4
 #SERVER_OPTS="$SERVER_OPTS -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses"
 echo $SERVER_OPTS
-# execute commond
+# execute command
 java $SERVER_OPTS \
 -Dfile.encoding=utf8 \
--Djava.ext.dirs=$APP_DIR/lib \
+-Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$APP_DIR/lib \
 -Dspring.config.location=$CONFIG_PATH \
 $APP > /dev/null & echo $! > $APP_DIR/tmp.pid
 echo 'Start successfully!';
