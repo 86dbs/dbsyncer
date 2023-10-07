@@ -34,7 +34,7 @@ public class AddStrategy implements AlterStrategy {
     //解析增加列
     //exampleSql: ALTER TABLE cost ADD duan INT after(before) `tmp`;
     private void parseAddColumn(AlterExpression expression, DDLConfig ddlConfig,
-            List<FieldMapping> origionFiledMapping) {
+            List<FieldMapping> originFiledMapping) {
         //如果是增加列
         for (AlterExpression.ColumnDataType columnDataType : expression.getColDataTypeList()) {
             boolean findColumn = false;
@@ -44,7 +44,7 @@ public class AddStrategy implements AlterStrategy {
                 if (findColumn) {
                     //对before（after）字段进行映射
                     String finalSpe = spe;
-                    FieldMapping fieldMapping = origionFiledMapping.stream()
+                    FieldMapping fieldMapping = originFiledMapping.stream()
                             .filter(x -> StringUtil.equals(x.getSource().getName(), finalSpe))
                             .findFirst().get();
                     columnSpecs.add(fieldMapping.getTarget().getName());
@@ -72,15 +72,15 @@ public class AddStrategy implements AlterStrategy {
      * 新增索引 exampleSql: ALTER TABLE test_table add index name (tmp);
      *
      * @param expression
-     * @param fieldMappingList
+     * @param originFiledMapping
      */
     private void parseAddIndex(AlterExpression expression,
-            List<FieldMapping> fieldMappingList) {
+            List<FieldMapping> originFiledMapping) {
         Index index = expression.getIndex();
         List<ColumnParams> columnNames = index.getColumns();
         List<ColumnParams> targetNames = new LinkedList<>();
         for (ColumnParams columnParams : columnNames) {
-            FieldMapping fieldMapping = fieldMappingList.stream()
+            FieldMapping fieldMapping = originFiledMapping.stream()
                     .filter(x -> StringUtil.equals(x.getSource().getName(),
                             columnParams.getColumnName())).findFirst().get();
             ColumnParams target = new ColumnParams(fieldMapping.getTarget().getName(),
