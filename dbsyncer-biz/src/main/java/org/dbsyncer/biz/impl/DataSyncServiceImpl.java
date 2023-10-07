@@ -103,7 +103,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         }
 
         // 3、反序列
-        Map<String, Object> map = new HashMap<>();
+        Map<String, Object> target = new HashMap<>();
         final Picker picker = new Picker(tableGroup.getFieldMapping());
         final Map<String, Field> fieldMap = picker.getTargetFieldMap();
         BinlogMap message = BinlogMap.parseFrom(bytes);
@@ -115,17 +115,17 @@ public class DataSyncServiceImpl implements DataSyncService {
                     if (null != val && val instanceof byte[]) {
                         byte[] b = (byte[]) val;
                         if (b.length > 128) {
-                            map.put(k, String.format("byte[%d]", b.length));
+                            target.put(k, String.format("byte[%d]", b.length));
                             return;
                         }
-                        map.put(k, Arrays.toString(b));
+                        target.put(k, Arrays.toString(b));
                         return;
                     }
                 }
-                map.put(k, val);
+                target.put(k, val);
             }
         });
-        return map;
+        return target;
     }
 
     @Override
@@ -138,7 +138,6 @@ public class DataSyncServiceImpl implements DataSyncService {
         try {
             Map row = monitor.getData(metaId, messageId);
             Map binlogData = getBinlogData(row, false);
-            // 历史数据不支持手动同步
             if (CollectionUtils.isEmpty(binlogData)) {
                 return messageId;
             }
@@ -152,8 +151,9 @@ public class DataSyncServiceImpl implements DataSyncService {
             TableGroup tableGroup = manager.getTableGroup(tableGroupId);
             String sourceTableName = tableGroup.getSourceTable().getName();
             RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, Collections.EMPTY_LIST);
-            // TODO 应转换为源字段
-            changedEvent.setChangedRow(binlogData);
+            // 转换为源字段
+            final Picker picker = new Picker(tableGroup.getFieldMapping());
+            changedEvent.setChangedRow(picker.pickSourceData(binlogData));
             parser.execute(tableGroupId, changedEvent);
             monitor.removeData(metaId, messageId);
             // 更新失败数
