@@ -104,7 +104,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         if (!CollectionUtils.isEmpty(request.getRow())) {
             response.getDataList().add(request.getRow());
         }
-        response.getOffsetList().add(request.getChangedOffset());
+        if (request.getChangedOffset() != null) {
+            response.getOffsetList().add(request.getChangedOffset());
+        }
         if (!response.isMerged()) {
             response.setTableGroupId(request.getTableGroupId());
             response.setEvent(request.getEvent());
