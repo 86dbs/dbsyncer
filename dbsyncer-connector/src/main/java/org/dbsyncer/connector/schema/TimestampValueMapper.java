@@ -6,6 +6,7 @@ import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 
 import java.sql.Date;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -18,12 +19,7 @@ import java.time.OffsetDateTime;
 public class TimestampValueMapper extends AbstractValueMapper<Timestamp> {
 
     @Override
-    protected boolean skipConvert(Object val) {
-        return val instanceof oracle.sql.TIMESTAMP;
-    }
-
-    @Override
-    protected Timestamp convert(ConnectorMapper connectorMapper, Object val) {
+    protected Timestamp convert(ConnectorMapper connectorMapper, Object val) throws SQLException {
         if (val instanceof Date) {
             Date date = (Date) val;
             return new Timestamp(date.getTime());
@@ -54,6 +50,11 @@ public class TimestampValueMapper extends AbstractValueMapper<Timestamp> {
         if (val instanceof java.util.Date) {
             java.util.Date date = (java.util.Date) val;
             return new Timestamp(date.getTime());
+        }
+
+        if (val instanceof oracle.sql.TIMESTAMP) {
+            oracle.sql.TIMESTAMP timestamp = (oracle.sql.TIMESTAMP) val;
+            return timestamp.timestampValue();
         }
 
         if (val instanceof OffsetDateTime) {
