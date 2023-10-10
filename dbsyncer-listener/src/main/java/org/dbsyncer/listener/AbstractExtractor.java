@@ -79,8 +79,8 @@ public abstract class AbstractExtractor implements Extractor {
     public void flushEvent() {
         // 20s内更新，执行写入
         if (watcher.getMetaUpdateTime() > Timestamp.valueOf(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS)).getTime()) {
-            logger.info("snapshot：{}", snapshot);
             if (!CollectionUtils.isEmpty(snapshot)) {
+                logger.info("snapshot：{}", snapshot);
                 watcher.flushEvent(snapshot);
             }
         }
@@ -88,8 +88,8 @@ public abstract class AbstractExtractor implements Extractor {
 
     @Override
     public void forceFlushEvent() {
-        logger.info("snapshot：{}", snapshot);
         if (!CollectionUtils.isEmpty(snapshot)) {
+            logger.info("snapshot：{}", snapshot);
             watcher.flushEvent(snapshot);
         }
     }
