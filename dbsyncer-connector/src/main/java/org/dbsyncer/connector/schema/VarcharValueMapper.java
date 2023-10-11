@@ -4,6 +4,7 @@ import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
+import org.postgresql.util.PGobject;
 
 import java.sql.Date;
 import java.time.LocalDate;
@@ -41,6 +42,11 @@ public class VarcharValueMapper extends AbstractValueMapper<String> {
 
         if (val instanceof java.util.Date) {
             return DateFormatUtil.dateToString((java.util.Date) val);
+        }
+
+        if (val instanceof PGobject) {
+            PGobject pgObject = (PGobject) val;
+            return pgObject.getValue();
         }
 
         throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
