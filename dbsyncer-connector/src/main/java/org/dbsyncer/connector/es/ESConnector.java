@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,6 +71,11 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         filters.putIfAbsent(FilterEnum.GT_AND_EQUAL.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).gte(v)));
         filters.putIfAbsent(FilterEnum.LT_AND_EQUAL.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).lte(v)));
         filters.putIfAbsent(FilterEnum.LIKE.getName(), (builder, k, v) -> builder.filter(QueryBuilders.wildcardQuery(k, v)));
+    }
+
+    public ESConnector() {
+        VALUE_MAPPERS.put(Types.DATE, new ESDateValueMapper());
+        VALUE_MAPPERS.put(Types.OTHER, new ESOtherValueMapper());
     }
 
     @Override
@@ -266,6 +272,13 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         properties.forEach((fieldName, c) -> {
             Map fieldDesc = (Map) c;
             String columnType = (String) fieldDesc.get("type");
+            // 如果时间类型做了format, 按字符串类型处理
+            if (StringUtil.equals(ESFieldTypeEnum.DATE.getCode(), columnType)) {
+                if (fieldDesc.containsKey("format")) {
+                    fields.add(new Field(fieldName, columnType, ESFieldTypeEnum.KEYWORD.getType()));
+                    return;
+                }
+            }
             fields.add(new Field(fieldName, columnType, ESFieldTypeEnum.getType(columnType)));
         });
     }
