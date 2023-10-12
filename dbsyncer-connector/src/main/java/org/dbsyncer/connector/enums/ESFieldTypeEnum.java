@@ -64,7 +64,7 @@ public enum ESFieldTypeEnum {
     /**
      * 弥补object类型不足，格式出现list放object会变为array："test": [{"a":"b},{}]
      */
-    NESTED("nested", Types.VARCHAR),
+    NESTED("nested", Types.OTHER),
     OBJECT("object", Types.VARCHAR),
     IP("ip", Types.VARCHAR),
     TOKEN_COUNT("token_count", Types.BIGINT),
