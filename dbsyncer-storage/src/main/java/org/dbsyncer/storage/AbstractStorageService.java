@@ -68,6 +68,8 @@ public abstract class AbstractStorageService implements StorageService, Disposab
             }
         } catch (InterruptedException e) {
             logger.warn("tryLock error", e.getLocalizedMessage());
+        } catch (IllegalArgumentException e) {
+            logger.warn("查询数据异常，请重试");
         } finally {
             if (locked) {
                 lock.unlock();
