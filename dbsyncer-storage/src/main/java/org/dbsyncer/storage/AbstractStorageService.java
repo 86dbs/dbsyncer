@@ -68,8 +68,8 @@ public abstract class AbstractStorageService implements StorageService, Disposab
             }
         } catch (InterruptedException e) {
             logger.warn("tryLock error", e.getLocalizedMessage());
-        } catch (IllegalArgumentException e) {
-            logger.warn("查询数据异常，请重试");
+        } catch (NullExecutorException e) {
+            // 存储表不存在或已删除，请重试
         } finally {
             if (locked) {
                 lock.unlock();
@@ -92,6 +92,8 @@ public abstract class AbstractStorageService implements StorageService, Disposab
                 String sharding = getSharding(query.getType(), query.getMetaId());
                 delete(sharding, query);
             }
+        } catch (NullExecutorException e) {
+            // 存储表不存在或已删除，请重试
         } finally {
             if (locked) {
                 lock.unlock();
@@ -105,6 +107,8 @@ public abstract class AbstractStorageService implements StorageService, Disposab
             lock.lock();
             String sharding = getSharding(type, metaId);
             deleteAll(sharding);
+        } catch (NullExecutorException e) {
+            // 存储表不存在或已删除，请重试
         } finally {
             lock.unlock();
         }
