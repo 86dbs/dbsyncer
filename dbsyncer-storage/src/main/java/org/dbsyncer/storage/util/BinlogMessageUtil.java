@@ -10,6 +10,7 @@ import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.binlog.BinlogColumnValue;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.enums.BinlogByteEnum;
+import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,6 +81,9 @@ public abstract class BinlogMessageUtil {
             // 字符串
             case "java.lang.String":
                 return ByteString.copyFromUtf8((String) v);
+            case "org.postgresql.util.PGobject":
+                PGobject pgObject = (PGobject) v;
+                return ByteString.copyFromUtf8(pgObject.getValue());
 
             // 时间
             case "java.sql.Timestamp":
