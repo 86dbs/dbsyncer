@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -138,12 +139,17 @@ public class MysqlStorageServiceImpl extends AbstractStorageService {
 
     @Override
     protected void deleteAll(String sharding) {
+        AtomicBoolean systemTable = new AtomicBoolean();
         tables.computeIfPresent(sharding, (k, executor) -> {
+            systemTable.set(executor.systemTable);
             String sql = getExecutorSql(executor, k);
             executeSql(sql);
             return executor;
         });
-        tables.remove(sharding);
+        // 非系统表
+        if(!systemTable.get()){
+            tables.remove(sharding);
+        }
     }
 
     @Override
