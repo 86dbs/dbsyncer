@@ -109,20 +109,25 @@ public class DataSyncServiceImpl implements DataSyncService {
         BinlogMap message = BinlogMap.parseFrom(bytes);
         message.getRowMap().forEach((k, v) -> {
             if (fieldMap.containsKey(k)) {
-                Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);
-                // 处理二进制对象显示
-                if (prettyBytes) {
-                    if (null != val && val instanceof byte[]) {
-                        byte[] b = (byte[]) val;
-                        if (b.length > 128) {
-                            target.put(k, String.format("byte[%d]", b.length));
+                try {
+                    Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);
+                    // 处理二进制对象显示
+                    if (prettyBytes) {
+                        if (null != val && val instanceof byte[]) {
+                            byte[] b = (byte[]) val;
+                            if (b.length > 128) {
+                                target.put(k, String.format("byte[%d]", b.length));
+                                return;
+                            }
+                            target.put(k, Arrays.toString(b));
                             return;
                         }
-                        target.put(k, Arrays.toString(b));
-                        return;
                     }
+                    target.put(k, val);
+                } catch (Exception e) {
+                    logger.warn("解析Binlog数据类型异常：type=[{}], valueType=[{}], value=[{}]", fieldMap.get(k).getType(),
+                            (v == null ? null : v.getClass().getName()), v);
                 }
-                target.put(k, val);
             }
         });
         return target;
