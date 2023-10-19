@@ -319,7 +319,7 @@ public class MySQLExtractor extends AbstractDatabaseExtractor {
                         changeEvent(new DDLChangedEvent(data.getDatabase(), tableName, ConnectorConstant.OPERTION_ALTER, data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
                     }
                 } catch (JSQLParserException e) {
-                    logger.error(e.getMessage(), e);
+                    logger.error("不支持ddl sql，支持标准的sql格式，请查看文档https://gitee.com/ghi/dbsyncer/wikis/%E5%BF%AB%E9%80%9F%E4%BA%86%E8%A7%A3/%E8%A1%A8%E7%BB%93%E6%9E%84%E5%90%8C%E6%AD%A5");
                 }
             }
         }
