@@ -224,6 +224,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+            return;
         }
         logger.warn("暂只支持MYSQL解析DDL");
     }

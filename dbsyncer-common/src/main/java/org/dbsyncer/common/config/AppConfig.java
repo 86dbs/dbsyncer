@@ -21,6 +21,11 @@ public class AppConfig {
 
     private String copyright;
 
+    /**
+     * 是否使用CDN加载静态资源文件
+     */
+    private boolean enableCDN;
+
     public String getName() {
         return name;
     }
@@ -51,5 +56,13 @@ public class AppConfig {
 
     public void setCopyright(String copyright) {
         this.copyright = copyright;
+    }
+
+    public boolean isEnableCDN() {
+        return enableCDN;
+    }
+
+    public void setEnableCDN(boolean enableCDN) {
+        this.enableCDN = enableCDN;
     }
 }
