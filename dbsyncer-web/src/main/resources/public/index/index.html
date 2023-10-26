@@ -60,7 +60,7 @@
                                 <div class="row connectorList">
                                     <!-- 连接__开始 -->
                                     <div class="col-md-1" th:each="c,state : ${connectors}">
-                                        <div th:id="${c?.id}" class="jumbotron dbsyncer_block">
+                                        <div th:id="${c?.id}" class="dbsyncer_block">
                                             <div class="row">
                                                 <img draggable="false" th:src="@{'/img/'+ ${c?.config?.connectorType} + '.png'}">
                                             </div>
@@ -107,14 +107,14 @@
                                 <div class="row mappingList">
                                     <!-- 驱动__开始 -->
                                     <div class="col-md-4" th:each="m,state : ${mappings}">
-                                        <div th:id="${m?.id}" th:class="${m?.model eq 'full'} ? 'jumbotron dbsyncer_block dbsyncer_block_full' : 'jumbotron dbsyncer_block dbsyncer_block_increment'">
+                                        <div th:id="${m?.id}" th:class="${m?.model eq 'full'} ? 'dbsyncer_block dbsyncer_block_full' : 'dbsyncer_block dbsyncer_block_increment'">
                                             <!--驱动标题信息 -->
                                             <div class="row text-center dbsyncer_driver_name" th:text="${m?.name}" th:title="${m?.name}"></div>
 
                                             <div class="row">
                                                 <!--左边驱动信息 -->
                                                 <div class="col-md-5">
-                                                    <div class="well well-lg">
+                                                    <div class="mapping_well">
                                                         <div class="col-md-4">
                                                             <img draggable="false" th:src="@{'/img/'+ ${m?.sourceConnector?.config?.connectorType} + '.png'}">
                                                         </div>
@@ -139,7 +139,7 @@
 
                                                 <!-- 右边驱动信息 -->
                                                 <div class="col-md-5">
-                                                    <div class="well well-lg">
+                                                    <div class="mapping_well">
                                                         <div class="col-md-4">
                                                             <img draggable="false" th:src="@{'/img/'+ ${m?.targetConnector?.config?.connectorType} + '.png'}">
                                                         </div>
