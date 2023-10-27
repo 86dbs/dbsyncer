@@ -10,6 +10,13 @@ function submit(data) {
 }
 
 $(function () {
+    $('#enableCDNSwitch').bootstrapSwitch({
+        onText: "Yes",
+        offText: "No",
+        onColor: "success",
+        offColor: "info",
+        size: "normal"
+    });
     //保存
     $("#updateSystemSubBtn").click(function () {
         var $form = $("#configEditForm");
@@ -18,5 +25,4 @@ $(function () {
             submit(data);
         }
     });
-
 })

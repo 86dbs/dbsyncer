@@ -50,4 +50,11 @@ public interface SystemConfigService {
      * @param file
      */
     void refreshConfig(File file);
+
+    /**
+     * 是否启用CDN加速访问静态资源
+     *
+     * @return
+     */
+    boolean isEnableCDN();
 }

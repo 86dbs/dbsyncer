@@ -2,6 +2,7 @@ package org.dbsyncer.biz.checker.impl.system;
 
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.BeanUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
@@ -47,6 +48,7 @@ public class SystemConfigChecker extends AbstractChecker {
     public ConfigModel checkEditConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "Config check params is null.");
+        params.put("enableCDN", StringUtil.isNotBlank(params.get("enableCDN")) ? "true" : "false");
 
         SystemConfig systemConfig = manager.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");

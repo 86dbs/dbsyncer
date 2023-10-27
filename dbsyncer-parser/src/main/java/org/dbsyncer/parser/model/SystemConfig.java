@@ -30,6 +30,11 @@ public class SystemConfig extends ConfigModel {
      */
     private int refreshIntervalSeconds = 5;
 
+    /**
+     * 是否启用CDN加速访问静态资源(false-禁用；true-启动)
+     */
+    private boolean enableCDN;
+
     public int getExpireDataDays() {
         return expireDataDays;
     }
@@ -52,5 +57,13 @@ public class SystemConfig extends ConfigModel {
 
     public void setRefreshIntervalSeconds(int refreshIntervalSeconds) {
         this.refreshIntervalSeconds = refreshIntervalSeconds;
+    }
+
+    public boolean isEnableCDN() {
+        return enableCDN;
+    }
+
+    public void setEnableCDN(boolean enableCDN) {
+        this.enableCDN = enableCDN;
     }
 }

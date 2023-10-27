@@ -14,10 +14,10 @@ import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.plugin.enums.FileSuffixEnum;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -34,19 +34,19 @@ import java.util.Map;
 @Service
 public class SystemConfigServiceImpl implements SystemConfigService {
 
-    @Autowired
+    @Resource
     private Manager manager;
 
-    @Autowired
+    @Resource
     private Checker systemConfigChecker;
 
-    @Autowired
+    @Resource
     private PreloadTemplate preloadTemplate;
 
-    @Autowired
+    @Resource
     private LogService logService;
 
-    @Autowired
+    @Resource
     private UserConfigService userConfigService;
 
     @Override
@@ -96,6 +96,11 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         } finally {
             FileUtils.deleteQuietly(file);
         }
+    }
+
+    @Override
+    public boolean isEnableCDN() {
+        return getSystemConfig().isEnableCDN();
     }
 
     private SystemConfig getSystemConfig() {
