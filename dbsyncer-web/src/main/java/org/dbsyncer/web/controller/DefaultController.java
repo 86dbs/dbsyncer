@@ -1,6 +1,6 @@
 package org.dbsyncer.web.controller;
 
-import org.dbsyncer.common.config.AppConfig;
+import org.dbsyncer.biz.SystemConfigService;
 import org.springframework.boot.web.server.ErrorPage;
 import org.springframework.boot.web.server.ErrorPageRegistrar;
 import org.springframework.boot.web.server.ErrorPageRegistry;
@@ -17,17 +17,17 @@ import javax.servlet.http.HttpServletRequest;
 public class DefaultController implements ErrorPageRegistrar {
 
     @Resource
-    private AppConfig appConfig;
+    private SystemConfigService systemConfigService;
 
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
-        model.put("enableCDN", appConfig.isEnableCDN());
+        model.put("enableCDN", systemConfigService.isEnableCDN());
         return "index.html";
     }
 
     @RequestMapping({"/login", "/login.html"})
     public String index(ModelMap model) {
-        model.put("enableCDN", appConfig.isEnableCDN());
+        model.put("enableCDN", systemConfigService.isEnableCDN());
         return "login.html";
     }
 
