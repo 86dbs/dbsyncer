@@ -27,7 +27,8 @@
     <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/bootstrap-tagsinput/bootstrap-tagsinput.min.css}"/>
     <link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdn.bootcdn.net/ajax/libs/bootstrap-fileinput/5.1.5/css/fileinput.min.css"/>
     <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/bootstrap-fileinput/fileinput.min.css}"/>
-    <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/icheck/all.css}"/>
+    <link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdn.bootcss.com/iCheck/1.0.2/skins/all.css"/>
+    <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/icheck/all.css}"/>
     <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/loading-plus/loading-plus.css}"/>
     <link type="text/css" rel="stylesheet" th:href="@{/css/common.css}">
     <link type="text/css" rel="stylesheet" th:href="@{/css/index/index.css}">
@@ -65,17 +66,16 @@
 <script th:if="${!enableCDN}" th:src="@{/plugins/js/bootstrap-tagsinput/bootstrap-tagsinput.min.js}"></script>
 <script th:if="${enableCDN}" src="https://cdn.bootcdn.net/ajax/libs/bootstrap-fileinput/5.1.5/js/fileinput.min.js"></script>
 <script th:if="${!enableCDN}" th:src="@{/plugins/js/bootstrap-fileinput/fileinput.min.js}"></script>
-<script th:src="@{/plugins/js/bootstrap-growl/jquery.bootstrap-growl.min.js}"></script>
-<script th:src="@{/plugins/js/bootstrap-fileinput/theme.min.js}"></script>
-<script th:src="@{/plugins/js/bootstrap-fileinput/zh.js}"></script>
-<script th:src="@{/plugins/js/icheck/icheck.min.js}"></script>
-<script th:src="@{/plugins/js/loading-plus/loading-plus.js}"></script>
-<script th:src="@{/plugins/js/placeholder/jquery.placeholder.js}"></script>
-<script th:src="@{/plugins/js/formValidate/formValidate.js}"></script>
 <script th:if="${enableCDN}" src="https://cdn.bootcdn.net/ajax/libs/sql-formatter/13.0.0/sql-formatter.min.js"></script>
 <script th:if="${!enableCDN}" th:src="@{/plugins/js/sql-formatter/sql-formatter.min.js}"></script>
 <script th:if="${enableCDN}" src="https://cdn.bootcdn.net/ajax/libs/echarts/5.3.3/echarts.min.js"></script>
 <script th:if="${!enableCDN}" th:src="@{/plugins/js/echarts/echarts.min.js}"></script>
+<script th:if="${enableCDN}" src="https://cdn.bootcss.com/iCheck/1.0.2/icheck.min.js"></script>
+<script th:if="${!enableCDN}" th:src="@{/plugins/js/icheck/icheck.min.js}"></script>
+<script th:src="@{/plugins/js/bootstrap-growl/jquery.bootstrap-growl.min.js}"></script>
+<script th:src="@{/plugins/js/loading-plus/loading-plus.js}"></script>
+<script th:src="@{/plugins/js/placeholder/jquery.placeholder.js}"></script>
+<script th:src="@{/plugins/js/formValidate/formValidate.js}"></script>
 <script th:src="@{/js/common.js}"></script>
 <script th:src="@{/js/index.js}"></script>
 </html>
