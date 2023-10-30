@@ -97,7 +97,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
         // 从存储过程查询（定时更新总数，可能存在误差）
         return String.format("select rows from sysindexes where id = object_id('%s.%s') and indid in (0, 1)", cfg.getSchema(),
-                table.getName());
+                buildTableName(table.getName()));
     }
 
     private List<Table> getTables(DatabaseConnectorMapper connectorMapper, String sql, TableTypeEnum type) {
