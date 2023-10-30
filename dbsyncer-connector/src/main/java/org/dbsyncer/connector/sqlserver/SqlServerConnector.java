@@ -15,7 +15,6 @@ import org.dbsyncer.connector.model.Table;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -31,11 +30,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
      */
     private final String SYS_EXPRESSION = "(convert\\().+?(\\))|(varchar\\().+?(\\))|(getdate\\(\\))";
 
-    /**
-     * 系统关键字段名
-     */
-    private final Set<String> SYS_FIELDS = CollectionUtils.newHashSet("convert", "user", "type", "version", "close", "bulk", "source", "current_date");
-
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
         DatabaseConfig config = connectorMapper.getConfig();
@@ -46,7 +40,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getPageSql(PageSql config) {
-        List<String> primaryKeys = config.getPrimaryKeys();
+        List<String> primaryKeys = buildPrimaryKeys(config.getPrimaryKeys());
         String orderBy = StringUtil.join(primaryKeys, ",");
         return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, orderBy, config.getQuerySql());
     }
@@ -76,12 +70,12 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     public String buildTableName(String tableName) {
-        return containsKeyword(tableName) ? convertKey(tableName) : tableName;
+        return convertKey(tableName);
     }
 
     @Override
     public String buildFieldName(Field field) {
-        return containsKeyword(field.getName()) ? convertKey(field.getName()) : field.getName();
+        return convertKey(field.getName());
     }
 
     @Override
@@ -89,7 +83,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         if (CollectionUtils.isEmpty(primaryKeys)) {
             return primaryKeys;
         }
-        return primaryKeys.stream().map(pk -> containsKeyword(pk) ? convertKey(pk) : pk).collect(Collectors.toList());
+        return primaryKeys.stream().map(pk -> convertKey(pk)).collect(Collectors.toList());
     }
 
     @Override
@@ -116,16 +110,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     private String convertKey(String key) {
         return new StringBuilder("[").append(key).append("]").toString();
-    }
-
-    /**
-     * 是否包含系统关键字
-     *
-     * @param val
-     * @return
-     */
-    private boolean containsKeyword(String val) {
-        return StringUtil.isNotBlank(val) && SYS_FIELDS.contains(val.toLowerCase());
     }
 
     /**
