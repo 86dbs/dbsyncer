@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.database.ds;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.util.DatabaseUtil;
 
@@ -8,6 +9,7 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
@@ -15,7 +17,14 @@ import java.util.logging.Logger;
 public class SimpleDataSource implements DataSource, AutoCloseable {
 
     private final BlockingQueue<SimpleConnection> pool = new LinkedBlockingQueue<>(300);
-    private long lifeTime = 60 * 1000;
+    /**
+     * 有效期（毫秒），默认60s
+     */
+    private final long KEEP_ALIVE = 60000;
+    /**
+     * 有效检测时间（秒），默认10s
+     */
+    private final int VALID_TIMEOUT_SECONDS = 10;
     private String driverClassName;
     private String url;
     private String username;
@@ -30,21 +39,19 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
     @Override
     public Connection getConnection() throws SQLException {
-        SimpleConnection poll = null;
-        int i = 3;
-        do {
-            if (pool.isEmpty()) {
-                pool.offer(createConnection());
-            }
-            poll = pool.poll();
-            if (null != poll) {
-                break;
-            }
-            i--;
-        } while (i > 1);
-
+        SimpleConnection poll = pool.poll();
         if (null == poll) {
-            poll = createConnection();
+            return createConnection();
+        }
+
+        // 连接无效
+        if (!poll.isValid(VALID_TIMEOUT_SECONDS)) {
+            return createConnection();
+        }
+
+        // 连接过期
+        if (isExpired(poll)) {
+            return createConnection();
         }
         return poll;
     }
@@ -91,26 +98,41 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
     @Override
     public void close() {
-        pool.forEach(c -> c.closeQuietly());
+        pool.forEach(c -> c.close());
     }
 
+    public void close(Connection connection) {
+        if (connection != null && connection instanceof SimpleConnection) {
+            SimpleConnection simpleConnection = (SimpleConnection) connection;
+            // 连接过期
+            if (isExpired(simpleConnection)) {
+                simpleConnection.close();
+                return;
+            }
+
+            // 回收连接
+            pool.offer(simpleConnection);
+        }
+    }
+
+    /**
+     * 连接是否过期
+     *
+     * @param connection
+     * @return
+     */
+    private boolean isExpired(SimpleConnection connection) {
+        return connection.getActiveTime() + KEEP_ALIVE < Instant.now().toEpochMilli();
+    }
+
+    /**
+     * 创建新连接
+     *
+     * @return
+     * @throws SQLException
+     */
     private SimpleConnection createConnection() throws SQLException {
-        return new SimpleConnection(this, DatabaseUtil.getConnection(driverClassName, url, username, password));
+        return new SimpleConnection(DatabaseUtil.getConnection(driverClassName, url, username, password), StringUtil.equals(driverClassName, "oracle.jdbc.OracleDriver"));
     }
 
-    public String getDriverClassName() {
-        return driverClassName;
-    }
-
-    public BlockingQueue<SimpleConnection> getPool() {
-        return pool;
-    }
-
-    public long getLifeTime() {
-        return lifeTime;
-    }
-
-    public void setLifeTime(long lifeTime) {
-        this.lifeTime = lifeTime;
-    }
 }

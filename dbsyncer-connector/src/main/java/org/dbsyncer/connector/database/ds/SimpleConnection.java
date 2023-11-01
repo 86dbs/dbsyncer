@@ -1,26 +1,35 @@
 package org.dbsyncer.connector.database.ds;
 
-import org.dbsyncer.common.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dbsyncer.connector.util.DatabaseUtil;
 
-import java.sql.*;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.CallableStatement;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.NClob;
+import java.sql.PreparedStatement;
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.sql.Struct;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
 public class SimpleConnection implements Connection {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Connection connection;
-    private final SimpleDataSource simpleDataSource;
-    private final long activeTime = Instant.now().toEpochMilli();
+    private final long ACTIVE_TIME = Instant.now().toEpochMilli();
     private boolean oracleDriver;
 
-    public SimpleConnection(SimpleDataSource simpleDataSource, Connection connection) {
-        this.simpleDataSource = simpleDataSource;
+    public SimpleConnection(Connection connection, boolean oracleDriver) {
         this.connection = connection;
-        oracleDriver = StringUtil.equals(simpleDataSource.getDriverClassName(), "oracle.jdbc.OracleDriver");
+        this.oracleDriver = oracleDriver;
     }
 
     @Override
@@ -65,24 +74,7 @@ public class SimpleConnection implements Connection {
 
     @Override
     public void close() {
-        if(activeTime + simpleDataSource.getLifeTime() < Instant.now().toEpochMilli()){
-            closeQuietly();
-            return;
-        }
-
-        // 回收连接
-        simpleDataSource.getPool().offer(this);
-    }
-
-    /**
-     * 断开连接
-     */
-    public void closeQuietly() {
-        try {
-            connection.close();
-        } catch (SQLException e) {
-            logger.error(e.getMessage());
-        }
+        DatabaseUtil.close(connection);
     }
 
     @Override
@@ -317,6 +309,10 @@ public class SimpleConnection implements Connection {
 
     public Connection getConnection() {
         return connection;
+    }
+
+    public long getActiveTime() {
+        return ACTIVE_TIME;
     }
 
     public boolean isOracleDriver() {

@@ -5,7 +5,6 @@ import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.database.ds.SimpleConnection;
 import org.dbsyncer.connector.database.ds.SimpleDataSource;
-import org.dbsyncer.connector.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -33,7 +32,7 @@ public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, 
             logger.error(e.getMessage());
             throw new ConnectorException(e.getMessage(), e.getCause());
         } finally {
-            DatabaseUtil.close(connection);
+            dataSource.close(connection);
         }
     }
 
