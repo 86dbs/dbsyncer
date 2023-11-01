@@ -1,8 +1,6 @@
 package org.dbsyncer.connector.database.ds;
 
 import org.dbsyncer.connector.util.DatabaseUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Array;
 import java.sql.Blob;
@@ -25,7 +23,6 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 
 public class SimpleConnection implements Connection {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Connection connection;
     private final long ACTIVE_TIME = Instant.now().toEpochMilli();
     private boolean oracleDriver;
