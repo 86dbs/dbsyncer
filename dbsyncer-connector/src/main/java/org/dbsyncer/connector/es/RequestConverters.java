@@ -157,10 +157,9 @@ final class RequestConverters {
                     if (Strings.hasLength(action.index())) {
                         metadata.field("_index", action.index());
                     }
+                    // 为了兼容6.x版本，必须传入
                     if (Strings.hasLength(action.type())) {
-                        if (MapperService.SINGLE_MAPPING_NAME.equals(action.type()) == false) {
-                            metadata.field("_type", action.type());
-                        }
+                        metadata.field("_type", action.type());
                     }
                     if (Strings.hasLength(action.id())) {
                         metadata.field("_id", action.id());
