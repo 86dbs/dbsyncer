@@ -36,6 +36,7 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -114,7 +115,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             List<Table> tables = new ArrayList<>();
             // 6.x 版本
             if (Version.V_7_0_0.after(connectorMapper.getVersion())) {
-                Map<String, Object> sourceMap = mappingMetaData.sourceAsMap();
+                Map<String, Object> sourceMap = XContentHelper.convertToMap(mappingMetaData.source().compressedReference(), true, null).v2();
                 sourceMap.keySet().forEach(tableName -> tables.add(new Table(tableName)));
                 return tables;
             }
@@ -136,15 +137,15 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             GetIndexRequest request = new GetIndexRequest(config.getIndex());
             GetIndexResponse indexResponse = connectorMapper.getConnection().indices().get(request, RequestOptions.DEFAULT);
             MappingMetadata mappingMetaData = indexResponse.getMappings().get(config.getIndex());
-            Map<String, Object> sourceMap = mappingMetaData.sourceAsMap();
             // 6.x 版本
             if (Version.V_7_0_0.after(connectorMapper.getVersion())) {
+                Map<String, Object> sourceMap = XContentHelper.convertToMap(mappingMetaData.source().compressedReference(), true, null).v2();
                 parseProperties(fields, (Map) sourceMap.get(tableName));
                 return new MetaInfo().setColumn(fields);
             }
 
             // 7.x 版本以上
-            parseProperties(fields, sourceMap);
+            parseProperties(fields, mappingMetaData.sourceAsMap());
             return new MetaInfo().setColumn(fields);
         } catch (IOException e) {
             logger.error(e.getMessage());
@@ -224,7 +225,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             final String pk = pkFields.get(0).getName();
             data.forEach(row -> addRequest(request, cfg.getIndex(), config.getTableName(), config.getEvent(), String.valueOf(row.get(pk)), row));
 
-            BulkResponse response = connectorMapper.getConnection().bulk(request, RequestOptions.DEFAULT);
+            BulkResponse response = connectorMapper.getConnection().bulkWithVersion(request, RequestOptions.DEFAULT);
             RestStatus restStatus = response.status();
             if (restStatus.getStatus() != RestStatus.OK.getStatus()) {
                 throw new ConnectorException(String.format("error code:%s", restStatus.getStatus()));
