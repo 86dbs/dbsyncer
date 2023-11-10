@@ -30,6 +30,7 @@ import org.dbsyncer.monitor.enums.DiskMetricEnum;
 import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.monitor.model.AppReportMetric;
 import org.dbsyncer.monitor.model.MetricResponse;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -220,7 +221,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         StringBuilder content = new StringBuilder();
         metaAll.forEach(meta -> {
             // 有失败记录
-            if (meta.getFail().get() > 0) {
+            if (MetaEnum.isRunning(meta.getState()) && meta.getFail().get() > 0) {
                 Mapping mapping = monitor.getMapping(meta.getMappingId());
                 if (null != mapping) {
                     ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
