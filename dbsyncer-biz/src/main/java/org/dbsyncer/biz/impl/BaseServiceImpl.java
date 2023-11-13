@@ -1,6 +1,6 @@
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.logger.LogService;
@@ -13,12 +13,14 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
+
 public class BaseServiceImpl {
 
-    @Autowired
-    protected Manager manager;
+    @Resource
+    private ProfileComponent profileComponent;
 
-    @Autowired
+    @Resource
     private LogService logService;
 
     @Autowired
@@ -30,7 +32,7 @@ public class BaseServiceImpl {
     protected final static Object LOCK = new Object();
 
     protected boolean isRunning(String metaId) {
-        Meta meta = manager.getMeta(metaId);
+        Meta meta = profileComponent.getMeta(metaId);
         if (null != meta) {
             int state = meta.getState();
             return MetaEnum.isRunning(state);
@@ -66,7 +68,7 @@ public class BaseServiceImpl {
 
     protected void log(LogType log, TableGroup tableGroup) {
         if (null != tableGroup) {
-            Mapping mapping = manager.getMapping(tableGroup.getMappingId());
+            Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
             if (null != mapping) {
                 // 新增驱动知识库(全量)映射关系:[My_User] >> [My_User_Target]
                 String name = mapping.getName();

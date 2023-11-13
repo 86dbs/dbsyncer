@@ -1,6 +1,5 @@
-package org.dbsyncer.parser;
+package org.dbsyncer.parser.impl;
 
-import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.FullConvertContext;
@@ -8,26 +7,20 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.spi.ConvertContext;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.connector.enums.ConnectorEnum;
-import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.PrimaryKeyUtil;
-import org.dbsyncer.listener.enums.QuartzFilterEnum;
-import org.dbsyncer.parser.enums.ConvertEnum;
+import org.dbsyncer.parser.ParserComponent;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.flush.BufferActuator;
-import org.dbsyncer.parser.logger.LogService;
-import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.BatchWriter;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
@@ -40,7 +33,6 @@ import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
-import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -50,7 +42,6 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -62,7 +53,7 @@ import java.util.concurrent.Executor;
  * @date 2019/9/29 22:38
  */
 @Component
-public class ParserFactory implements Parser {
+public class ParserComponentImpl implements ParserComponent {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -73,13 +64,10 @@ public class ParserFactory implements Parser {
     private PluginFactory pluginFactory;
 
     @Resource
-    private CacheService cacheService;
-
-    @Resource
-    private LogService logService;
-
-    @Resource
     private FlushStrategy flushStrategy;
+
+    @Resource
+    private ProfileComponent profileComponent;
 
     @Resource
     private ApplicationContext applicationContext;
@@ -88,46 +76,13 @@ public class ParserFactory implements Parser {
     private BufferActuator generalBufferActuator;
 
     @Override
-    public ConnectorMapper connect(AbstractConnectorConfig config) {
-        return connectorFactory.connect(config);
-    }
-
-    @Override
-    public boolean refreshConnectorConfig(AbstractConnectorConfig config) {
-        return connectorFactory.refresh(config);
-    }
-
-    @Override
-    public boolean isAliveConnectorConfig(AbstractConnectorConfig config) {
-        boolean alive = false;
-        try {
-            alive = connectorFactory.isAlive(config);
-        } catch (Exception e) {
-            LogType.ConnectorLog logType = LogType.ConnectorLog.FAILED;
-            logService.log(logType, "%s%s", logType.getName(), e.getMessage());
-        }
-        // 断线重连
-        if (!alive) {
-            try {
-                alive = connectorFactory.refresh(config);
-            } catch (Exception e) {
-                logger.error(e.getMessage());
-            }
-            if (alive) {
-                logger.info(LogType.ConnectorLog.RECONNECT_SUCCESS.getMessage());
-            }
-        }
-        return alive;
-    }
-
-    @Override
     public List<Table> getTable(ConnectorMapper config) {
         return connectorFactory.getTable(config);
     }
 
     @Override
     public MetaInfo getMetaInfo(String connectorId, String tableName) {
-        Connector connector = getConnector(connectorId);
+        Connector connector = profileComponent.getConnector(connectorId);
         ConnectorMapper connectorMapper = connectorFactory.connect(connector.getConfig());
         MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorMapper, tableName);
         if (!CollectionUtils.isEmpty(connector.getTable())) {
@@ -172,56 +127,6 @@ public class ParserFactory implements Parser {
     public long getCount(String connectorId, Map<String, String> command) {
         ConnectorMapper connectorMapper = connectorFactory.connect(getConnectorConfig(connectorId));
         return connectorFactory.getCount(connectorMapper, command);
-    }
-
-    @Override
-    public Connector parseConnector(String json) {
-        Map conn = JsonUtil.parseMap(json);
-        Map config = (Map) conn.remove("config");
-        Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
-        Assert.notNull(connector, "Connector can not be null.");
-        String connectorType = (String) config.get("connectorType");
-        ConnectorEnum connectorEnum = ConnectorEnum.getConnectorEnum(connectorType);
-        AbstractConnectorConfig obj = JsonUtil.jsonToObj(config.toString(), connectorEnum.getConfigClass());
-        obj.setConnectorType(connectorEnum.getType());
-        connector.setConfig(obj);
-
-        return connector;
-    }
-
-    @Override
-    public <T> T parseObject(String json, Class<T> clazz) {
-        return JsonUtil.jsonToObj(json, clazz);
-    }
-
-    @Override
-    public List<ConnectorEnum> getConnectorEnumAll() {
-        return Arrays.asList(ConnectorEnum.values());
-    }
-
-    @Override
-    public List<OperationEnum> getOperationEnumAll() {
-        return Arrays.asList(OperationEnum.values());
-    }
-
-    @Override
-    public List<QuartzFilterEnum> getQuartzFilterEnumAll() {
-        return Arrays.asList(QuartzFilterEnum.values());
-    }
-
-    @Override
-    public List<FilterEnum> getFilterEnumAll() {
-        return Arrays.asList(FilterEnum.values());
-    }
-
-    @Override
-    public List<ConvertEnum> getConvertEnumAll() {
-        return Arrays.asList(ConvertEnum.values());
-    }
-
-    @Override
-    public List<StorageDataStatusEnum> getStorageDataStatusEnumAll() {
-        return Arrays.asList(StorageDataStatusEnum.values());
     }
 
     @Override
@@ -381,26 +286,13 @@ public class ParserFactory implements Parser {
     }
 
     /**
-     * 获取连接器
-     *
-     * @param connectorId
-     * @return
-     */
-    private Connector getConnector(String connectorId) {
-        Assert.hasText(connectorId, "Connector id can not be empty.");
-        Connector conn = cacheService.get(connectorId, Connector.class);
-        Assert.notNull(conn, "Connector can not be null.");
-        return conn;
-    }
-
-    /**
      * 获取连接配置
      *
      * @param connectorId
      * @return
      */
     private AbstractConnectorConfig getConnectorConfig(String connectorId) {
-        return getConnector(connectorId).getConfig();
+        return profileComponent.getConnector(connectorId).getConfig();
     }
 
 }

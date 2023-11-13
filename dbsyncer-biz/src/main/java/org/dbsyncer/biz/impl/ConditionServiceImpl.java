@@ -5,10 +5,10 @@ import org.dbsyncer.biz.vo.ConditionVo;
 import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
-import org.dbsyncer.manager.Manager;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.dbsyncer.parser.ProfileComponent;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 /**
@@ -19,14 +19,14 @@ import java.util.List;
 @Component
 public class ConditionServiceImpl implements ConditionService {
 
-    @Autowired
-    private Manager manager;
+    @Resource
+    private ProfileComponent profileComponent;
 
     @Override
     public ConditionVo getCondition() {
-        List<OperationEnum> operationEnumAll = manager.getOperationEnumAll();
-        List<QuartzFilterEnum> quartzFilterEnumAll = manager.getQuartzFilterEnumAll();
-        List<FilterEnum> filterEnumAll = manager.getFilterEnumAll();
+        List<OperationEnum> operationEnumAll = profileComponent.getOperationEnumAll();
+        List<QuartzFilterEnum> quartzFilterEnumAll = profileComponent.getQuartzFilterEnumAll();
+        List<FilterEnum> filterEnumAll = profileComponent.getFilterEnumAll();
         return new ConditionVo(operationEnumAll, quartzFilterEnumAll, filterEnumAll);
     }
 }

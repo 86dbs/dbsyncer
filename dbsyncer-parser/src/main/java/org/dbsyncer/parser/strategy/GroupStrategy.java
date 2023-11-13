@@ -1,4 +1,7 @@
-package org.dbsyncer.manager;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.parser.strategy;
 
 import org.dbsyncer.parser.model.ConfigModel;
 

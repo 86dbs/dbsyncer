@@ -1,13 +1,7 @@
 package org.dbsyncer.manager.puller;
 
-import org.dbsyncer.common.event.ChangedEvent;
 import org.dbsyncer.common.event.ChangedOffset;
-import org.dbsyncer.common.event.CommonChangedEvent;
-import org.dbsyncer.common.event.DDLChangedEvent;
 import org.dbsyncer.common.event.RefreshOffsetEvent;
-import org.dbsyncer.common.event.RowChangedEvent;
-import org.dbsyncer.common.event.ScanChangedEvent;
-import org.dbsyncer.common.event.Watcher;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -21,16 +15,17 @@ import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
 import org.dbsyncer.listener.quartz.AbstractQuartzExtractor;
 import org.dbsyncer.listener.quartz.TableGroupQuartzCommand;
-import org.dbsyncer.manager.Manager;
 import org.dbsyncer.manager.ManagerException;
-import org.dbsyncer.manager.model.FieldPicker;
+import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.consumer.impl.LogConsumer;
+import org.dbsyncer.parser.consumer.impl.QuartzConsumer;
+import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.util.PickerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -42,13 +37,10 @@ import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -67,7 +59,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
     private Listener listener;
 
     @Resource
-    private Manager manager;
+    private ProfileComponent profileComponent;
 
     @Resource
     private LogService logService;
@@ -93,11 +85,11 @@ public final class IncrementPuller extends AbstractPuller implements Application
         final String mappingId = mapping.getId();
         final String metaId = mapping.getMetaId();
         logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
-        Connector connector = manager.getConnector(mapping.getSourceConnectorId());
+        Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
-        List<TableGroup> list = manager.getSortedTableGroupAll(mappingId);
+        List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
         Assert.notEmpty(list, "映射关系不能为空.");
-        Meta meta = manager.getMeta(metaId);
+        Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "Meta不能为空.");
 
         Thread worker = new Thread(() -> {
@@ -105,7 +97,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 long now = Instant.now().toEpochMilli();
                 meta.setBeginTime(now);
                 meta.setEndTime(now);
-                manager.editConfigModel(meta);
+                profileComponent.editConfigModel(meta);
                 map.putIfAbsent(metaId, getExtractor(mapping, connector, list, meta));
                 map.get(metaId).start();
             } catch (Exception e) {
@@ -160,14 +152,14 @@ public final class IncrementPuller extends AbstractPuller implements Application
         if (ListenerTypeEnum.isTiming(listenerType)) {
             AbstractQuartzExtractor quartzExtractor = listener.getExtractor(ListenerTypeEnum.TIMING, connectorConfig.getConnectorType(), AbstractQuartzExtractor.class);
             quartzExtractor.setCommands(list.stream().map(t -> new TableGroupQuartzCommand(t.getSourceTable(), t.getCommand())).collect(Collectors.toList()));
-            quartzExtractor.register(new QuartzConsumer(meta, mapping, list));
+            quartzExtractor.register(new QuartzConsumer().init(bufferActuatorRouter, profileComponent, logService, meta, mapping, list));
             extractor = quartzExtractor;
         }
 
         // 基于日志抽取
         if (ListenerTypeEnum.isLog(listenerType)) {
             extractor = listener.getExtractor(ListenerTypeEnum.LOG, connectorConfig.getConnectorType(), AbstractExtractor.class);
-            extractor.register(new LogConsumer(meta, mapping, list));
+            extractor.register(new LogConsumer().init(bufferActuatorRouter, profileComponent, logService, meta, mapping, list));
         }
 
         if (null != extractor) {
@@ -193,136 +185,6 @@ public final class IncrementPuller extends AbstractPuller implements Application
         }
 
         throw new ManagerException("未知的监听配置.");
-    }
-
-    abstract class AbstractConsumer<E extends ChangedEvent> implements Watcher {
-        protected Meta meta;
-
-        public abstract void onChange(E e);
-
-        public void onDDLChanged(DDLChangedEvent event) {
-        }
-
-        @Override
-        public void changeEvent(ChangedEvent event) {
-            event.getChangedOffset().setMetaId(meta.getId());
-            if (event instanceof DDLChangedEvent) {
-                onDDLChanged((DDLChangedEvent) event);
-                return;
-            }
-            onChange((E) event);
-        }
-
-        @Override
-        public void flushEvent(Map<String, String> snapshot) {
-            meta.setSnapshot(snapshot);
-            manager.editConfigModel(meta);
-        }
-
-        @Override
-        public void errorEvent(Exception e) {
-            logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
-        }
-
-        @Override
-        public long getMetaUpdateTime() {
-            return meta.getUpdateTime();
-        }
-
-        protected void bind(String tableGroupId) {
-            bufferActuatorRouter.bind(meta.getId(), tableGroupId);
-        }
-
-        protected void execute(String tableGroupId, ChangedEvent event) {
-            bufferActuatorRouter.execute(meta.getId(), tableGroupId, event);
-        }
-
-    }
-
-    final class QuartzConsumer extends AbstractConsumer<ScanChangedEvent> {
-        private List<FieldPicker> tablePicker = new LinkedList<>();
-
-        public QuartzConsumer(Meta meta, Mapping mapping, List<TableGroup> tableGroups) {
-            this.meta = meta;
-            tableGroups.forEach(t -> {
-                tablePicker.add(new FieldPicker(PickerUtil.mergeTableGroupConfig(mapping, t)));
-                bind(t.getId());
-            });
-        }
-
-        @Override
-        public void onChange(ScanChangedEvent event) {
-            final FieldPicker picker = tablePicker.get(event.getTableGroupIndex());
-            TableGroup tableGroup = picker.getTableGroup();
-            event.setSourceTableName(tableGroup.getSourceTable().getName());
-
-            // 定时暂不支持触发刷新增量点事件
-            execute(tableGroup.getId(), event);
-        }
-    }
-
-    final class LogConsumer extends AbstractConsumer<RowChangedEvent> {
-        private Mapping mapping;
-        private List<TableGroup> tableGroups;
-        private Map<String, List<FieldPicker>> tablePicker = new LinkedHashMap<>();
-
-        //判断上次是否为ddl，是ddl需要强制刷新下picker
-        private boolean ddlChanged;
-
-        public LogConsumer(Meta meta, Mapping mapping, List<TableGroup> tableGroups) {
-            this.tableGroups = tableGroups;
-            this.meta = meta;
-            this.mapping = mapping;
-            addTablePicker(true);
-        }
-
-        @Override
-        public void onChange(RowChangedEvent event) {
-            // 需要强制刷新 fix https://gitee.com/ghi/dbsyncer/issues/I8DJUR
-            if (ddlChanged) {
-                addTablePicker(false);
-                ddlChanged = false;
-            }
-            process(event, picker -> {
-                final Map<String, Object> changedRow = picker.getColumns(event.getDataList());
-                if (picker.filter(changedRow)) {
-                    event.setChangedRow(changedRow);
-                    execute(picker.getTableGroup().getId(), event);
-                }
-            });
-        }
-
-        @Override
-        public void onDDLChanged(DDLChangedEvent event) {
-            ddlChanged = true;
-            process(event, picker -> execute(picker.getTableGroup().getId(), event));
-        }
-
-        private void process(CommonChangedEvent event, Consumer<FieldPicker> consumer) {
-            // 处理过程有异常向上抛
-            List<FieldPicker> pickers = tablePicker.get(event.getSourceTableName());
-            if (!CollectionUtils.isEmpty(pickers)) {
-                // 触发刷新增量点事件
-                event.getChangedOffset().setRefreshOffset(true);
-                pickers.forEach(picker -> consumer.accept(picker));
-            }
-        }
-
-        private void addTablePicker(boolean bindBufferActuatorRouter) {
-            this.tablePicker.clear();
-            this.tableGroups.forEach(t -> {
-                final Table table = t.getSourceTable();
-                final String tableName = table.getName();
-                tablePicker.putIfAbsent(tableName, new ArrayList<>());
-                TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, t);
-                tablePicker.get(tableName).add(new FieldPicker(group, group.getFilter(), table.getColumn(), group.getFieldMapping()));
-                // 是否注册到路由服务中
-                if (bindBufferActuatorRouter) {
-                    bind(group.getId());
-                }
-            });
-        }
-
     }
 
 }

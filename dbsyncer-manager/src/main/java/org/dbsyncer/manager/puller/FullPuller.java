@@ -3,8 +3,8 @@ package org.dbsyncer.manager.puller;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.util.PrimaryKeyUtil;
-import org.dbsyncer.manager.Manager;
-import org.dbsyncer.parser.Parser;
+import org.dbsyncer.parser.ParserComponent;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.logger.LogService;
@@ -41,10 +41,10 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private Parser parser;
+    private ParserComponent parserComponent;
 
     @Resource
-    private Manager manager;
+    private ProfileComponent profileComponent;
 
     @Resource
     private LogService logService;
@@ -57,7 +57,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             final String metaId = mapping.getMetaId();
             ExecutorService executor = null;
             try {
-                List<TableGroup> list = manager.getSortedTableGroupAll(mapping.getId());
+                List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
                 Assert.notEmpty(list, "映射关系不能为空");
                 logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
                 map.putIfAbsent(metaId, new Task(metaId));
@@ -106,7 +106,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         task.setEndTime(now);
 
         // 获取上次同步点
-        Meta meta = manager.getMeta(task.getId());
+        Meta meta = profileComponent.getMeta(task.getId());
         Map<String, String> snapshot = meta.getSnapshot();
         task.setPageIndex(NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()), ParserEnum.PAGE_INDEX.getDefaultValue()));
         // 反序列化游标值类型(通常为数字或字符串类型)
@@ -117,7 +117,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
         int i = task.getTableGroupIndex();
         while (i < list.size()) {
-            parser.execute(task, mapping, list.get(i), executor);
+            parserComponent.execute(task, mapping, list.get(i), executor);
             if (!task.isRunning()) {
                 break;
             }
@@ -134,7 +134,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     }
 
     private void flush(Task task) {
-        Meta meta = manager.getMeta(task.getId());
+        Meta meta = profileComponent.getMeta(task.getId());
         Assert.notNull(meta, "检查meta为空.");
 
         // 全量的过程中，有新数据则更新总数
@@ -150,7 +150,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(task.getPageIndex()));
         snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.join(task.getCursors(), ","));
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(task.getTableGroupIndex()));
-        manager.editConfigModel(meta);
+        profileComponent.editConfigModel(meta);
     }
 
 }

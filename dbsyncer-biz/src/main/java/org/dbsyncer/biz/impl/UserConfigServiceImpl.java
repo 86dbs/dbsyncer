@@ -7,16 +7,16 @@ import org.dbsyncer.biz.enums.UserRoleEnum;
 import org.dbsyncer.biz.vo.UserInfoVo;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.model.UserInfo;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,13 +35,13 @@ public class UserConfigServiceImpl implements UserConfigService {
 
     private static final String DEFAULT_PASSWORD = "0DPiKuNIrrVmD8IUCuw1hQxNqZc=";
 
-    @Autowired
-    private Manager manager;
+    @Resource
+    private ProfileComponent profileComponent;
 
-    @Autowired
+    @Resource
     private UserConfigChecker userConfigChecker;
 
-    @Autowired
+    @Resource
     private LogService logService;
 
     @Override
@@ -64,7 +64,7 @@ public class UserConfigServiceImpl implements UserConfigService {
         userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password), UserRoleEnum.USER.getCode(), mail));
 
         logService.log(LogType.UserLog.INSERT, String.format("[%s]添加[%s]账号成功", currentUser.getUsername(), username));
-        return manager.editConfigModel(userConfig);
+        return profileComponent.editConfigModel(userConfig);
     }
 
     @Override
@@ -107,7 +107,7 @@ public class UserConfigServiceImpl implements UserConfigService {
             logService.log(LogType.UserLog.UPDATE, String.format("[%s]修改[%s]账号密码成功", currentUser.getUsername(), username));
         }
 
-        return manager.editConfigModel(userConfig);
+        return profileComponent.editConfigModel(userConfig);
     }
 
     @Override
@@ -127,7 +127,7 @@ public class UserConfigServiceImpl implements UserConfigService {
         UserInfo deleteUser = userConfig.getUserInfo(username);
         Assert.notNull(deleteUser, "用户已删除.");
         userConfig.removeUserInfo(username);
-        manager.editConfigModel(userConfig);
+        profileComponent.editConfigModel(userConfig);
         logService.log(LogType.UserLog.DELETE, String.format("[%s]删除[%s]账号成功", currentUser.getUsername(), username));
         return "删除用户成功!";
     }
@@ -168,18 +168,18 @@ public class UserConfigServiceImpl implements UserConfigService {
 
     @Override
     public UserConfig getUserConfig() {
-        UserConfig config = manager.getUserConfig();
+        UserConfig config = profileComponent.getUserConfig();
         if (null != config) {
             return config;
         }
 
         synchronized (this) {
-            config = manager.getUserConfig();
+            config = profileComponent.getUserConfig();
             if (null == config) {
                 config = (UserConfig) userConfigChecker.checkAddConfigModel(new HashMap<>());
                 UserRoleEnum admin = UserRoleEnum.ADMIN;
                 config.getUserInfoList().add(new UserInfo(DEFAULT_USERNAME, DEFAULT_USERNAME, DEFAULT_PASSWORD, admin.getCode(), ""));
-                manager.addConfigModel(config);
+                profileComponent.addConfigModel(config);
             }
             return config;
         }

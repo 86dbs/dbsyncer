@@ -6,14 +6,15 @@ import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.model.Field;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -29,15 +30,18 @@ import java.util.stream.Stream;
 @Service
 public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroupService {
 
-    @Autowired
+    @Resource
     private Checker tableGroupChecker;
+
+    @Resource
+    private ProfileComponent profileComponent;
 
     @Override
     public String add(Map<String, String> params) {
         String mappingId = params.get("mappingId");
-        assertRunning(manager.getMapping(mappingId));
+        assertRunning(profileComponent.getMapping(mappingId));
 
-        synchronized (LOCK){
+        synchronized (LOCK) {
             // table1, table2
             String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), "|");
             String[] targetTableArray = StringUtil.split(params.get("targetTable"), "|");
@@ -50,9 +54,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
                 params.put("targetTable", targetTableArray[i]);
                 TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
                 log(LogType.TableGroupLog.INSERT, model);
-                int tableGroupCount = manager.getTableGroupCount(mappingId);
+                int tableGroupCount = profileComponent.getTableGroupCount(mappingId);
                 model.setIndex(tableGroupCount + 1);
-                id = manager.addTableGroup(model);
+                id = profileComponent.addTableGroup(model);
             }
 
             // 合并驱动公共字段
@@ -64,39 +68,39 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     @Override
     public String edit(Map<String, String> params) {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        TableGroup tableGroup = manager.getTableGroup(id);
+        TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        assertRunning(manager.getMapping(tableGroup.getMappingId()));
+        assertRunning(profileComponent.getMapping(tableGroup.getMappingId()));
 
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
         log(LogType.TableGroupLog.UPDATE, model);
 
-        return manager.editTableGroup(model);
+        return profileComponent.editTableGroup(model);
     }
 
     @Override
     public String refreshFields(String id) {
-        TableGroup tableGroup = manager.getTableGroup(id);
+        TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        assertRunning(manager.getMapping(tableGroup.getMappingId()));
+        assertRunning(profileComponent.getMapping(tableGroup.getMappingId()));
 
         TableGroupChecker checker = (TableGroupChecker) tableGroupChecker;
         checker.refreshTableFields(tableGroup);
 
-        return manager.editTableGroup(tableGroup);
+        return profileComponent.editTableGroup(tableGroup);
     }
 
     @Override
     public boolean remove(String mappingId, String ids) {
         Assert.hasText(mappingId, "Mapping id can not be null");
         Assert.hasText(ids, "TableGroup ids can not be null");
-        assertRunning(manager.getMapping(mappingId));
+        assertRunning(profileComponent.getMapping(mappingId));
 
         // 批量删除表
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
-            TableGroup model = manager.getTableGroup(id);
+            TableGroup model = profileComponent.getTableGroup(id);
             log(LogType.TableGroupLog.DELETE, model);
-            manager.removeTableGroup(id);
+            profileComponent.removeTableGroup(id);
         });
 
         // 合并驱动公共字段
@@ -109,34 +113,34 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Override
     public TableGroup getTableGroup(String id) {
-        TableGroup tableGroup = manager.getTableGroup(id);
+        TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "TableGroup can not be null");
         return tableGroup;
     }
 
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
-        return manager.getSortedTableGroupAll(mappingId);
+        return profileComponent.getSortedTableGroupAll(mappingId);
     }
 
     private void resetTableGroupAllIndex(String mappingId) {
         synchronized (LOCK) {
-            List<TableGroup> list = manager.getSortedTableGroupAll(mappingId);
+            List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
             int size = list.size();
             int i = size;
             while (i > 0) {
                 TableGroup g = list.get(size - i);
                 g.setIndex(i);
-                manager.editConfigModel(g);
+                profileComponent.editConfigModel(g);
                 i--;
             }
         }
     }
 
     private void mergeMappingColumn(String mappingId) {
-        List<TableGroup> groups = manager.getTableGroupAll(mappingId);
+        List<TableGroup> groups = profileComponent.getTableGroupAll(mappingId);
 
-        Mapping mapping = manager.getMapping(mappingId);
+        Mapping mapping = profileComponent.getMapping(mappingId);
         Assert.notNull(mapping, "mapping not exist.");
 
         List<Field> sourceColumn = null;
@@ -148,7 +152,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
         mapping.setSourceColumn(sourceColumn);
         mapping.setTargetColumn(targetColumn);
-        manager.editConfigModel(mapping);
+        profileComponent.editConfigModel(mapping);
     }
 
     private List<Field> pickCommonFields(List<Field> column, List<Field> target) {

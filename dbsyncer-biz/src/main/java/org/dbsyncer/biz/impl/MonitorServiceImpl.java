@@ -30,12 +30,16 @@ import org.dbsyncer.monitor.enums.DiskMetricEnum;
 import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.monitor.model.AppReportMetric;
 import org.dbsyncer.monitor.model.MetricResponse;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.enums.ModelEnum;
+import org.dbsyncer.parser.logger.LogService;
+import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.BooleanFilter;
@@ -73,6 +77,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private Monitor monitor;
 
     @Resource
+    private ProfileComponent profileComponent;
+
+    @Resource
     private DataSyncService dataSyncService;
 
     @Resource
@@ -80,6 +87,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Resource
     private StorageService storageService;
+
+    @Resource
+    private LogService logService;
 
     @Resource
     private SystemConfigService systemConfigService;
@@ -110,7 +120,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public List<MetaVo> getMetaAll() {
-        List<MetaVo> list = monitor.getMetaAll()
+        List<MetaVo> list = profileComponent.getMetaAll()
                 .stream()
                 .map(m -> convertMeta2Vo(m))
                 .sorted(Comparator.comparing(MetaVo::getUpdateTime).reversed())
@@ -120,7 +130,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public MetaVo getMetaVo(String metaId) {
-        Meta meta = monitor.getMeta(metaId);
+        Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "The meta is null.");
 
         return convertMeta2Vo(meta);
@@ -140,7 +150,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         String error = params.get(ConfigConstant.DATA_ERROR);
         String success = params.get(ConfigConstant.DATA_SUCCESS);
 
-        Paging paging = monitor.queryData(getDefaultMetaId(id), pageNum, pageSize, error, success);
+        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, success);
         List<Map> data = (List<Map>) paging.getData();
         List<DataVo> list = new ArrayList<>();
         for (Map row : data) {
@@ -160,7 +170,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     @Override
     public String clearData(String id) {
         Assert.hasText(id, "驱动不存在.");
-        monitor.clearData(id);
+        Meta meta = profileComponent.getMeta(id);
+        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
+        LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
+        logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
+        storageService.clear(StorageEnum.DATA, id);
         return "清空同步数据成功";
     }
 
@@ -169,7 +184,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String json = params.get(ConfigConstant.CONFIG_MODEL_JSON);
-        Paging paging = monitor.queryLog(pageNum, pageSize, json);
+        Query query = new Query(pageNum, pageSize);
+        if (StringUtil.isNotBlank(json)) {
+            query.addFilter(ConfigConstant.CONFIG_MODEL_JSON, json, true);
+        }
+        query.setType(StorageEnum.LOG);
+        Paging paging = storageService.query(query);
         List<Map> data = (List<Map>) paging.getData();
         paging.setData(data.stream()
                 .map(m -> convert2Vo(m, LogVo.class))
@@ -179,7 +199,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public String clearLog() {
-        monitor.clearLog();
+        storageService.clear(StorageEnum.LOG, null);
         return "清空日志成功";
     }
 
@@ -193,7 +213,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public List<StorageDataStatusEnum> getStorageDataStatusEnumAll() {
-        return monitor.getStorageDataStatusEnumAll();
+        return profileComponent.getStorageDataStatusEnumAll();
     }
 
     @Override
@@ -213,7 +233,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     @Override
     public void run() {
         // 预警：驱动出现失败记录，发送通知消息
-        List<Meta> metaAll = monitor.getMetaAll();
+        List<Meta> metaAll = profileComponent.getMetaAll();
         if (CollectionUtils.isEmpty(metaAll)) {
             return;
         }
@@ -222,7 +242,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         metaAll.forEach(meta -> {
             // 有失败记录
             if (MetaEnum.isRunning(meta.getState()) && meta.getFail().get() > 0) {
-                Mapping mapping = monitor.getMapping(meta.getMappingId());
+                Mapping mapping = profileComponent.getMapping(meta.getMappingId());
                 if (null != mapping) {
                     ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
                     content.append("<p>");
@@ -239,6 +259,27 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         if (StringUtil.isNotBlank(msg)) {
             sendNotifyMessage("同步失败", msg);
         }
+    }
+
+    private Paging queryData(String metaId, int pageNum, int pageSize, String error, String success) {
+        // 没有驱动
+        if (StringUtil.isBlank(metaId)) {
+            return new Paging(pageNum, pageSize);
+        }
+        Query query = new Query(pageNum, pageSize);
+        Map<String, IndexFieldResolverEnum> fieldResolvers = new LinkedHashMap<>();
+        fieldResolvers.put(ConfigConstant.BINLOG_DATA, IndexFieldResolverEnum.BINARY);
+        query.setIndexFieldResolverMap(fieldResolvers);
+
+        // 查询异常信息
+        if (StringUtil.isNotBlank(error)) {
+            query.addFilter(ConfigConstant.DATA_ERROR, error, true);
+        }
+        // 查询是否成功, 默认查询失败
+        query.addFilter(ConfigConstant.DATA_SUCCESS, StringUtil.isNotBlank(success) ? NumberUtil.toInt(success) : StorageDataStatusEnum.FAIL.getValue());
+        query.setMetaId(metaId);
+        query.setType(StorageEnum.DATA);
+        return storageService.query(query);
     }
 
     private void deleteExpiredData() {
@@ -268,7 +309,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private MetaVo convertMeta2Vo(Meta meta) {
-        Mapping mapping = monitor.getMapping(meta.getMappingId());
+        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
         Assert.notNull(mapping, "驱动不存在.");
         ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
         MetaVo metaVo = new MetaVo(modelEnum.getName(), mapping.getName());

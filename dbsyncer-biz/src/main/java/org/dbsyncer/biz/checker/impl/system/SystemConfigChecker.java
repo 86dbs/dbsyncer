@@ -3,7 +3,7 @@ package org.dbsyncer.biz.checker.impl.system;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.BeanUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -27,7 +27,7 @@ public class SystemConfigChecker extends AbstractChecker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private Manager manager;
+    private ProfileComponent profileComponent;
 
     @Resource
     private LogService logService;
@@ -40,7 +40,7 @@ public class SystemConfigChecker extends AbstractChecker {
         // 修改基本配置
         this.modifyConfigModel(systemConfig, params);
 
-        manager.addConfigModel(systemConfig);
+        profileComponent.addConfigModel(systemConfig);
         return systemConfig;
     }
 
@@ -50,7 +50,7 @@ public class SystemConfigChecker extends AbstractChecker {
         Assert.notEmpty(params, "Config check params is null.");
         params.put("enableCDN", StringUtil.isNotBlank(params.get("enableCDN")) ? "true" : "false");
 
-        SystemConfig systemConfig = manager.getSystemConfig();
+        SystemConfig systemConfig = profileComponent.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");
         BeanUtil.mapToBean(params, systemConfig);
         logService.log(LogType.SystemLog.INFO, "修改系统配置");

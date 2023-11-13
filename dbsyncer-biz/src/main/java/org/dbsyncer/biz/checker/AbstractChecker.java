@@ -6,7 +6,6 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.model.Filter;
-import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.model.AbstractConfigModel;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Convert;
@@ -34,9 +33,6 @@ public abstract class AbstractChecker implements Checker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final String SYMBOL = "***";
-
-    @Resource
-    private Manager manager;
 
     @Resource
     private PluginFactory pluginFactory;
@@ -95,7 +91,7 @@ public abstract class AbstractChecker implements Checker {
         String pluginId = params.get("pluginId");
         Plugin plugin = null;
         if (StringUtil.isNotBlank(pluginId)) {
-            List<Plugin> plugins = manager.getPluginAll();
+            List<Plugin> plugins = pluginFactory.getPluginAll();
             if (!CollectionUtils.isEmpty(plugins)) {
                 for (Plugin p : plugins) {
                     if (StringUtil.equals(pluginFactory.createPluginId(p.getClassName(), p.getVersion()), pluginId)) {

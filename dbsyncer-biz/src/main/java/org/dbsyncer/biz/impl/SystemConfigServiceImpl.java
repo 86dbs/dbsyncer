@@ -6,12 +6,12 @@ import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.SystemConfigVo;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.manager.Manager;
-import org.dbsyncer.manager.template.PreloadTemplate;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.manager.template.PreloadTemplate;
 import org.dbsyncer.plugin.enums.FileSuffixEnum;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -35,13 +35,13 @@ import java.util.Map;
 public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Resource
-    private Manager manager;
-
-    @Resource
-    private Checker systemConfigChecker;
+    private ProfileComponent profileComponent;
 
     @Resource
     private PreloadTemplate preloadTemplate;
+
+    @Resource
+    private Checker systemConfigChecker;
 
     @Resource
     private LogService logService;
@@ -52,7 +52,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     @Override
     public String edit(Map<String, String> params) {
         ConfigModel model = systemConfigChecker.checkEditConfigModel(params);
-        manager.editConfigModel(model);
+        profileComponent.editConfigModel(model);
         return "修改成功.";
     }
 
@@ -66,9 +66,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         List<ConfigModel> list = new ArrayList<>();
         list.add(getSystemConfig());
         list.add(userConfigService.getUserConfig());
-        manager.getConnectorAll().forEach(config -> list.add(config));
-        manager.getMappingAll().forEach(config -> list.add(config));
-        manager.getMetaAll().forEach(config -> list.add(config));
+        profileComponent.getConnectorAll().forEach(config -> list.add(config));
+        profileComponent.getMappingAll().forEach(config -> list.add(config));
+        profileComponent.getMetaAll().forEach(config -> list.add(config));
         return list;
     }
 
@@ -104,13 +104,13 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     private SystemConfig getSystemConfig() {
-        SystemConfig config = manager.getSystemConfig();
+        SystemConfig config = profileComponent.getSystemConfig();
         if (null != config) {
             return config;
         }
 
         synchronized (this) {
-            config = manager.getSystemConfig();
+            config = profileComponent.getSystemConfig();
             if (null == config) {
                 config = (SystemConfig) systemConfigChecker.checkAddConfigModel(new HashMap<>());
             }

@@ -10,7 +10,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
-import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
@@ -41,7 +41,7 @@ public class MappingChecker extends AbstractChecker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private Manager manager;
+    private ProfileComponent profileComponent;
 
     @Resource
     private TableGroupChecker tableGroupChecker;
@@ -81,7 +81,7 @@ public class MappingChecker extends AbstractChecker {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "MappingChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        Mapping mapping = manager.getMapping(id);
+        Mapping mapping = profileComponent.getMapping(id);
         Assert.notNull(mapping, "Can not find mapping.");
 
         // 修改基本配置
@@ -124,7 +124,7 @@ public class MappingChecker extends AbstractChecker {
         // 修改基本配置
         this.modifyConfigModel(meta, new HashMap<>());
 
-        String id = manager.addConfigModel(meta);
+        String id = profileComponent.addConfigModel(meta);
         mapping.setMetaId(id);
     }
 
@@ -144,7 +144,7 @@ public class MappingChecker extends AbstractChecker {
      * @param params
      */
     public void batchMergeTableGroupConfig(Mapping mapping, Map<String, String> params) {
-        List<TableGroup> groupAll = manager.getTableGroupAll(mapping.getId());
+        List<TableGroup> groupAll = profileComponent.getTableGroupAll(mapping.getId());
         if (!CollectionUtils.isEmpty(groupAll)) {
             // 手动排序
             String[] sortedTableGroupIds = StringUtil.split(params.get("sortedTableGroupIds"), "|");
@@ -153,7 +153,7 @@ public class MappingChecker extends AbstractChecker {
                 groupAll.clear();
                 int size = sortedTableGroupIds.length;
                 int i = size;
-                while (i > 0){
+                while (i > 0) {
                     TableGroup g = tableGroupMap.get(sortedTableGroupIds[size - i]);
                     Assert.notNull(g, "Invalid sorted tableGroup.");
                     g.setIndex(i);
@@ -165,7 +165,7 @@ public class MappingChecker extends AbstractChecker {
             // 合并配置
             for (TableGroup g : groupAll) {
                 tableGroupChecker.mergeConfig(mapping, g);
-                manager.editConfigModel(g);
+                profileComponent.editConfigModel(g);
             }
         }
     }
@@ -194,16 +194,16 @@ public class MappingChecker extends AbstractChecker {
      * @param metaSnapshot
      */
     private void updateMeta(Mapping mapping, String metaSnapshot) {
-        Meta meta = manager.getMeta(mapping.getMetaId());
+        Meta meta = profileComponent.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "驱动meta不存在.");
 
         // 清空状态
         meta.clear();
 
         // 手动配置增量点
-        if(StringUtil.isNotBlank(metaSnapshot)){
+        if (StringUtil.isNotBlank(metaSnapshot)) {
             Map snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
-            if(!CollectionUtils.isEmpty(snapshot)){
+            if (!CollectionUtils.isEmpty(snapshot)) {
                 meta.setSnapshot(snapshot);
             }
         }
@@ -211,7 +211,7 @@ public class MappingChecker extends AbstractChecker {
         getMetaTotal(meta, mapping.getModel());
 
         meta.setUpdateTime(Instant.now().toEpochMilli());
-        manager.editConfigModel(meta);
+        profileComponent.editConfigModel(meta);
     }
 
     private void getMetaTotal(Meta meta, String model) {
@@ -219,7 +219,7 @@ public class MappingChecker extends AbstractChecker {
         if (ModelEnum.isFull(model)) {
             // 统计tableGroup总条数
             AtomicLong count = new AtomicLong(0);
-            List<TableGroup> groupAll = manager.getTableGroupAll(meta.getMappingId());
+            List<TableGroup> groupAll = profileComponent.getTableGroupAll(meta.getMappingId());
             if (!CollectionUtils.isEmpty(groupAll)) {
                 for (TableGroup g : groupAll) {
                     count.getAndAdd(g.getSourceTable().getCount());

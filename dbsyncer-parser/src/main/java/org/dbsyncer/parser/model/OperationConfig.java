@@ -1,8 +1,10 @@
-package org.dbsyncer.manager.model;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.parser.model;
 
-import org.dbsyncer.manager.enums.CommandEnum;
-import org.dbsyncer.manager.enums.GroupStrategyEnum;
-import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.enums.CommandEnum;
+import org.dbsyncer.parser.enums.GroupStrategyEnum;
 
 public class OperationConfig {
 

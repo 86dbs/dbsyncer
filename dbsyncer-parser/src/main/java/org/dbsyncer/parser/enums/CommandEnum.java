@@ -1,8 +1,11 @@
-package org.dbsyncer.manager.enums;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.parser.enums;
 
-import org.dbsyncer.manager.CommandExecutor;
-import org.dbsyncer.manager.command.Persistence;
-import org.dbsyncer.manager.command.Preload;
+import org.dbsyncer.parser.command.CommandExecutor;
+import org.dbsyncer.parser.command.Persistence;
+import org.dbsyncer.parser.command.Preload;
 import org.dbsyncer.storage.constant.ConfigConstant;
 
 /**

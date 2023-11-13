@@ -7,14 +7,15 @@ import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.ParserComponent;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +33,11 @@ import java.util.Map;
 @Component
 public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
 
-    @Autowired
-    private Manager manager;
+    @Resource
+    private ParserComponent parserComponent;
+
+    @Resource
+    private ProfileComponent profileComponent;
 
     @Override
     public void modify(DatabaseConfig connectorConfig, Map<String, String> params) {
@@ -139,7 +143,7 @@ public class OracleConfigChecker extends AbstractDataBaseConfigChecker {
         // 没有自定义主键，获取表元信息
         if (null == pk) {
             Table targetTable = tableGroup.getTargetTable();
-            MetaInfo metaInfo = manager.getMetaInfo(mapping.getTargetConnectorId(), targetTable.getName());
+            MetaInfo metaInfo = parserComponent.getMetaInfo(mapping.getTargetConnectorId(), targetTable.getName());
             List<Field> targetColumn = metaInfo.getColumn();
             targetTable.setColumn(targetColumn);
 

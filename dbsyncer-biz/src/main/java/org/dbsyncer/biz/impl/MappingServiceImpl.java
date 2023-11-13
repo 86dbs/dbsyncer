@@ -3,6 +3,7 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
+import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.vo.ConnectorVo;
@@ -13,6 +14,8 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.manager.ManagerFactory;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -22,10 +25,10 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
@@ -42,24 +45,33 @@ import java.util.stream.Collectors;
 @Service
 public class MappingServiceImpl extends BaseServiceImpl implements MappingService {
 
-    @Autowired
+    @Resource
     private MappingChecker mappingChecker;
 
-    @Autowired
+    @Resource
     private TableGroupService tableGroupService;
 
-    @Autowired
+    @Resource
     private ConnectorService connectorService;
 
-    @Autowired
+    @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
+
+    @Resource
+    private ProfileComponent profileComponent;
+
+    @Resource
+    private MonitorService monitorService;
+
+    @Resource
+    private ManagerFactory managerFactory;
 
     @Override
     public String add(Map<String, String> params) {
         ConfigModel model = mappingChecker.checkAddConfigModel(params);
         log(LogType.MappingLog.INSERT, (Mapping) model);
 
-        String id = manager.addConfigModel(model);
+        String id = profileComponent.addConfigModel(model);
 
         // 匹配相似表 on
         String autoMatchTable = params.get("autoMatchTable");
@@ -72,7 +84,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public String copy(String id) {
-        Mapping mapping = manager.getMapping(id);
+        Mapping mapping = profileComponent.getMapping(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
 
         String json = JsonUtil.objToJson(mapping);
@@ -82,18 +94,18 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         newMapping.setUpdateTime(Instant.now().toEpochMilli());
         mappingChecker.addMeta(newMapping);
 
-        manager.addConfigModel(newMapping);
+        profileComponent.addConfigModel(newMapping);
         log(LogType.MappingLog.COPY, newMapping);
 
         // 复制映射表关系
-        List<TableGroup> groupList = manager.getTableGroupAll(mapping.getId());
-        if(!CollectionUtils.isEmpty(groupList)){
+        List<TableGroup> groupList = profileComponent.getTableGroupAll(mapping.getId());
+        if (!CollectionUtils.isEmpty(groupList)) {
             groupList.forEach(tableGroup -> {
                 String tableGroupJson = JsonUtil.objToJson(tableGroup);
                 TableGroup newTableGroup = JsonUtil.jsonToObj(tableGroupJson, TableGroup.class);
                 newTableGroup.setId(String.valueOf(snowflakeIdWorker.nextId()));
                 newTableGroup.setMappingId(newMapping.getId());
-                manager.addTableGroup(newTableGroup);
+                profileComponent.addTableGroup(newTableGroup);
                 log(LogType.TableGroupLog.COPY, newTableGroup);
             });
         }
@@ -110,7 +122,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             log(LogType.MappingLog.UPDATE, model);
 
             mappingChecker.batchMergeTableGroupConfig(model, params);
-            return manager.editConfigModel(model);
+            return profileComponent.editConfigModel(model);
         }
     }
 
@@ -118,26 +130,26 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String remove(String id) {
         Mapping mapping = assertMappingExist(id);
         String metaId = mapping.getMetaId();
-        Meta meta = manager.getMeta(metaId);
+        Meta meta = profileComponent.getMeta(metaId);
         synchronized (LOCK) {
             assertRunning(metaId);
 
             // 删除数据
-            manager.clearData(metaId);
+            monitorService.clearData(metaId);
             log(LogType.MetaLog.CLEAR, meta);
 
             // 删除meta
-            manager.removeConfigModel(metaId);
+            profileComponent.removeConfigModel(metaId);
             log(LogType.MetaLog.DELETE, meta);
 
             // 删除tableGroup
-            List<TableGroup> groupList = manager.getTableGroupAll(id);
+            List<TableGroup> groupList = profileComponent.getTableGroupAll(id);
             if (!CollectionUtils.isEmpty(groupList)) {
-                groupList.forEach(t -> manager.removeTableGroup(t.getId()));
+                groupList.forEach(t -> profileComponent.removeTableGroup(t.getId()));
             }
 
             // 删除驱动
-            manager.removeConfigModel(id);
+            profileComponent.removeConfigModel(id);
             log(LogType.MappingLog.DELETE, mapping);
         }
         return "驱动删除成功";
@@ -145,13 +157,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public MappingVo getMapping(String id) {
-        Mapping mapping = manager.getMapping(id);
+        Mapping mapping = profileComponent.getMapping(id);
         return convertMapping2Vo(mapping);
     }
 
     @Override
     public List<MappingVo> getMappingAll() {
-        List<MappingVo> list = manager.getMappingAll()
+        List<MappingVo> list = profileComponent.getMappingAll()
                 .stream()
                 .map(m -> convertMapping2Vo(m))
                 .sorted(Comparator.comparing(MappingVo::getUpdateTime).reversed())
@@ -170,7 +182,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             assertRunning(metaId);
 
             // 启动
-            manager.start(mapping);
+            managerFactory.start(mapping);
 
             log(LogType.MappingLog.RUNNING, mapping);
         }
@@ -184,7 +196,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             if (!isRunning(mapping.getMetaId())) {
                 throw new BizException("驱动已停止.");
             }
-            manager.close(mapping);
+            managerFactory.close(mapping);
 
             log(LogType.MappingLog.STOP, mapping);
 
@@ -198,8 +210,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private MappingVo convertMapping2Vo(Mapping mapping) {
         String model = mapping.getModel();
         Assert.notNull(mapping, "Mapping can not be null.");
-        Connector s = manager.getConnector(mapping.getSourceConnectorId());
-        Connector t = manager.getConnector(mapping.getTargetConnectorId());
+        Connector s = profileComponent.getConnector(mapping.getSourceConnectorId());
+        Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
         ConnectorVo sConn = new ConnectorVo(connectorService.isAlive(s.getId()));
         BeanUtils.copyProperties(s, sConn);
         ConnectorVo tConn = new ConnectorVo(connectorService.isAlive(t.getId()));
@@ -210,7 +222,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Collections.sort(tConn.getTable(), Comparator.comparing(Table::getName));
 
         // 元信息
-        Meta meta = manager.getMeta(mapping.getMetaId());
+        Meta meta = profileComponent.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "Meta can not be null.");
         MetaVo metaVo = new MetaVo(ModelEnum.getModelEnum(model).getName(), mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
@@ -227,7 +239,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      * @return
      */
     private Mapping assertMappingExist(String mappingId) {
-        Mapping mapping = manager.getMapping(mappingId);
+        Mapping mapping = profileComponent.getMapping(mappingId);
         Assert.notNull(mapping, "驱动不存在.");
         return mapping;
     }
@@ -239,8 +251,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      */
     private void matchSimilarTable(ConfigModel model) {
         Mapping mapping = (Mapping) model;
-        Connector s = manager.getConnector(mapping.getSourceConnectorId());
-        Connector t = manager.getConnector(mapping.getTargetConnectorId());
+        Connector s = profileComponent.getConnector(mapping.getSourceConnectorId());
+        Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
         if (CollectionUtils.isEmpty(s.getTable()) || CollectionUtils.isEmpty(t.getTable())) {
             return;
         }
@@ -262,13 +274,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     private void clearMetaIfFinished(String metaId) {
-        Meta meta = manager.getMeta(metaId);
+        Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "Mapping meta can not be null.");
         // 完成任务则重置状态
         if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {
             meta.getFail().set(0);
             meta.getSuccess().set(0);
-            manager.editConfigModel(meta);
+            profileComponent.editConfigModel(meta);
         }
     }
 

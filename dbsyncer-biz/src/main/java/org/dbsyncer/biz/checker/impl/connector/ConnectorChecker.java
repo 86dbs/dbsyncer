@@ -6,9 +6,11 @@ import org.dbsyncer.biz.checker.ConnectorConfigChecker;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.ParserComponent;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.logger.LogService;
 import org.dbsyncer.parser.logger.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -34,10 +36,16 @@ public class ConnectorChecker extends AbstractChecker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private Manager manager;
+    private ParserComponent parserComponent;
+
+    @Resource
+    private ProfileComponent profileComponent;
 
     @Resource
     private LogService logService;
+
+    @Resource
+    private ConnectorFactory connectorFactory;
 
     @Resource
     private Map<String, ConnectorConfigChecker> map;
@@ -75,7 +83,7 @@ public class ConnectorChecker extends AbstractChecker {
         printParams(params);
         Assert.notEmpty(params, "ConnectorChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        Connector connector = manager.getConnector(id);
+        Connector connector = profileComponent.getConnector(id);
         Assert.notNull(connector, "Can not find connector.");
 
         // 修改基本配置
@@ -106,14 +114,14 @@ public class ConnectorChecker extends AbstractChecker {
     }
 
     private void setTable(Connector connector) {
-        boolean isAlive = manager.refreshConnectorConfig(connector.getConfig());
+        boolean isAlive = connectorFactory.isAlive(connector.getConfig());
         if (!isAlive) {
             logService.log(LogType.ConnectorLog.FAILED);
         }
         Assert.isTrue(isAlive, "无法连接.");
         // 获取表信息
-        ConnectorMapper connectorMapper = manager.connect(connector.getConfig());
-        List<Table> table = manager.getTable(connectorMapper);
+        ConnectorMapper connectorMapper = connectorFactory.connect(connector.getConfig());
+        List<Table> table = parserComponent.getTable(connectorMapper);
         connector.setTable(table);
     }
 

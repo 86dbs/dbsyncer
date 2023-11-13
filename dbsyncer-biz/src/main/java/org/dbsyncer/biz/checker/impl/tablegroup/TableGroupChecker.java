@@ -10,7 +10,8 @@ import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.PrimaryKeyUtil;
-import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.ParserComponent;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.FieldMapping;
@@ -45,7 +46,10 @@ public class TableGroupChecker extends AbstractChecker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private Manager manager;
+    private ParserComponent parserComponent;
+
+    @Resource
+    private ProfileComponent profileComponent;
 
     @Resource
     private Map<String, ConnectorConfigChecker> map;
@@ -61,7 +65,7 @@ public class TableGroupChecker extends AbstractChecker {
         Assert.hasText(mappingId, "tableGroup mappingId is empty.");
         Assert.hasText(sourceTable, "tableGroup sourceTable is empty.");
         Assert.hasText(targetTable, "tableGroup targetTable is empty.");
-        Mapping mapping = manager.getMapping(mappingId);
+        Mapping mapping = profileComponent.getMapping(mappingId);
         Assert.notNull(mapping, "mapping can not be null.");
 
         // 检查是否存在重复映射关系
@@ -92,9 +96,9 @@ public class TableGroupChecker extends AbstractChecker {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "TableGroupChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        TableGroup tableGroup = manager.getTableGroup(id);
+        TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        Mapping mapping = manager.getMapping(tableGroup.getMappingId());
+        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
         Assert.notNull(mapping, "mapping can not be null.");
         String fieldMappingJson = params.get("fieldMapping");
         Assert.hasText(fieldMappingJson, "TableGroupChecker check params fieldMapping is empty");
@@ -120,7 +124,7 @@ public class TableGroupChecker extends AbstractChecker {
      * @param tableGroup
      */
     public void refreshTableFields(TableGroup tableGroup) {
-        Mapping mapping = manager.getMapping(tableGroup.getMappingId());
+        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
         Assert.notNull(mapping, "mapping can not be null.");
 
         Table sourceTable = tableGroup.getSourceTable();
@@ -138,16 +142,16 @@ public class TableGroupChecker extends AbstractChecker {
         // 处理策略
         dealIncrementStrategy(mapping, group);
 
-        Map<String, String> command = manager.getCommand(mapping, group);
+        Map<String, String> command = parserComponent.getCommand(mapping, group);
         tableGroup.setCommand(command);
 
         // 获取数据源总数
-        long count = ModelEnum.isFull(mapping.getModel()) && !CollectionUtils.isEmpty(command) ? manager.getCount(mapping.getSourceConnectorId(), command) : 0;
+        long count = ModelEnum.isFull(mapping.getModel()) && !CollectionUtils.isEmpty(command) ? parserComponent.getCount(mapping.getSourceConnectorId(), command) : 0;
         tableGroup.getSourceTable().setCount(count);
     }
 
     public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup) {
-        String connectorType = manager.getConnector(mapping.getSourceConnectorId()).getConfig().getConnectorType();
+        String connectorType = profileComponent.getConnector(mapping.getSourceConnectorId()).getConfig().getConnectorType();
         String type = StringUtil.toLowerCaseFirstOne(connectorType).concat("ConfigChecker");
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
@@ -155,7 +159,7 @@ public class TableGroupChecker extends AbstractChecker {
     }
 
     private Table getTable(String connectorId, String tableName, String primaryKeyStr) {
-        MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
+        MetaInfo metaInfo = parserComponent.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接器表信息:" + tableName);
         // 自定义主键
         if (StringUtil.isNotBlank(primaryKeyStr) && !CollectionUtils.isEmpty(metaInfo.getColumn())) {
@@ -173,7 +177,7 @@ public class TableGroupChecker extends AbstractChecker {
     }
 
     private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {
-        List<TableGroup> list = manager.getTableGroupAll(mappingId);
+        List<TableGroup> list = profileComponent.getTableGroupAll(mappingId);
         if (!CollectionUtils.isEmpty(list)) {
             for (TableGroup g : list) {
                 // 数据源表和目标表都存在

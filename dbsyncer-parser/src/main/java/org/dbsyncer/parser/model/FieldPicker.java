@@ -1,4 +1,7 @@
-package org.dbsyncer.manager.model;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.parser.model;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -8,13 +11,15 @@ import org.dbsyncer.connector.enums.FilterEnum;
 import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.Filter;
-import org.dbsyncer.parser.model.FieldMapping;
-import org.dbsyncer.parser.model.TableGroup;
 import org.springframework.util.Assert;
 
 import java.sql.Date;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class FieldPicker {

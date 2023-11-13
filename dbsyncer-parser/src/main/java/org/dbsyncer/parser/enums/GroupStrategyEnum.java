@@ -1,9 +1,12 @@
-package org.dbsyncer.manager.enums;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.parser.enums;
 
-import org.dbsyncer.manager.GroupStrategy;
-import org.dbsyncer.manager.strategy.DefaultGroupStrategy;
-import org.dbsyncer.manager.strategy.PreloadTableGroupStrategy;
-import org.dbsyncer.manager.strategy.TableGroupStrategy;
+import org.dbsyncer.parser.strategy.GroupStrategy;
+import org.dbsyncer.parser.strategy.impl.DefaultGroupStrategy;
+import org.dbsyncer.parser.strategy.impl.PreloadTableGroupStrategy;
+import org.dbsyncer.parser.strategy.impl.TableGroupStrategy;
 
 /**
  * @author AE86

@@ -1,9 +1,11 @@
-package org.dbsyncer.manager.puller;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.config.TableGroupBufferConfig;
 import org.dbsyncer.common.event.ChangedEvent;
-import org.dbsyncer.parser.Parser;
-import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
+import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.WriterRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +18,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 缓存执行器路由
+ *
+ * @Version 1.0.0
+ * @Author AE86
+ * @Date 2023-11-12 01:32
+ */
 @Component
 public final class BufferActuatorRouter implements DisposableBean {
 
@@ -28,7 +37,7 @@ public final class BufferActuatorRouter implements DisposableBean {
     private TableGroupBufferActuator tableGroupBufferActuator;
 
     @Resource
-    private Parser parser;
+    private BufferActuator generalBufferActuator;
 
     /**
      * 驱动缓存执行路由列表
@@ -40,7 +49,7 @@ public final class BufferActuatorRouter implements DisposableBean {
             router.get(metaId).get(tableGroupId).offer(new WriterRequest(tableGroupId, event));
             return;
         }
-        parser.execute(tableGroupId, event);
+        generalBufferActuator.offer(new WriterRequest(tableGroupId, event));
     }
 
     public void bind(String metaId, String tableGroupId) {

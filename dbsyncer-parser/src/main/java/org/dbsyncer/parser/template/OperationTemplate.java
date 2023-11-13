@@ -1,27 +1,34 @@
-package org.dbsyncer.manager.template;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.parser.template;
 
 import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.manager.GroupStrategy;
-import org.dbsyncer.manager.ManagerException;
-import org.dbsyncer.manager.command.PersistenceCommand;
-import org.dbsyncer.manager.enums.CommandEnum;
-import org.dbsyncer.manager.enums.GroupStrategyEnum;
-import org.dbsyncer.manager.model.OperationConfig;
-import org.dbsyncer.manager.model.QueryConfig;
+import org.dbsyncer.parser.ParserException;
+import org.dbsyncer.parser.command.PersistenceCommand;
+import org.dbsyncer.parser.enums.CommandEnum;
+import org.dbsyncer.parser.enums.GroupStrategyEnum;
 import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.OperationConfig;
+import org.dbsyncer.parser.model.QueryConfig;
+import org.dbsyncer.parser.strategy.GroupStrategy;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 操作配置模板
@@ -35,10 +42,10 @@ public final class OperationTemplate {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private StorageService storageService;
 
-    @Autowired
+    @Resource
     private CacheService cacheService;
 
     public <T> List<T> queryAll(Class<T> valueType) {
@@ -46,7 +53,7 @@ public final class OperationTemplate {
             ConfigModel configModel = (ConfigModel) valueType.newInstance();
             return queryAll(new QueryConfig<T>(configModel));
         } catch (Exception e) {
-            throw new ManagerException(e);
+            throw new ParserException(e);
         }
     }
 
@@ -154,13 +161,13 @@ public final class OperationTemplate {
             BeanUtils.copyProperties(o, t);
             return t;
         } catch (InstantiationException e) {
-            throw new ManagerException(e.getMessage());
+            throw new ParserException(e);
         } catch (IllegalAccessException e) {
-            throw new ManagerException(e.getMessage());
+            throw new ParserException(e);
         }
     }
 
-    class Group {
+    public class Group {
 
         private List<String> index;
 

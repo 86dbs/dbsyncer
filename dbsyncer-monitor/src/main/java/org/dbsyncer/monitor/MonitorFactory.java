@@ -4,11 +4,8 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.manager.Manager;
-import org.dbsyncer.manager.puller.BufferActuatorRouter;
 import org.dbsyncer.monitor.enums.BufferActuatorMetricEnum;
 import org.dbsyncer.monitor.enums.MetricEnum;
 import org.dbsyncer.monitor.enums.StatisticEnum;
@@ -18,13 +15,15 @@ import org.dbsyncer.monitor.model.MappingReportMetric;
 import org.dbsyncer.monitor.model.MetricResponse;
 import org.dbsyncer.monitor.model.MetricResponseInfo;
 import org.dbsyncer.monitor.model.Sample;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.BufferActuator;
+import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
@@ -38,11 +37,8 @@ import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -59,7 +55,7 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private Manager manager;
+    private ProfileComponent profileComponent;
 
     @Resource
     private BufferActuator generalBufferActuator;
@@ -73,6 +69,9 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
     @Resource
     private ScheduledTaskService scheduledTaskService;
 
+    @Resource
+    private StorageService storageService;
+
     private volatile boolean running;
 
     private LocalDateTime queryTime;
@@ -84,92 +83,6 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
     @PostConstruct
     private void init() {
         scheduledTaskService.start(5000, this);
-    }
-
-    @Override
-    public Mapping getMapping(String mappingId) {
-        return manager.getMapping(mappingId);
-    }
-
-    @Override
-    public TableGroup getTableGroup(String tableGroupId) {
-        return manager.getTableGroup(tableGroupId);
-    }
-
-    @Override
-    public List<Meta> getMetaAll() {
-        return manager.getMetaAll();
-    }
-
-    @Override
-    public Meta getMeta(String metaId) {
-        return manager.getMeta(metaId);
-    }
-
-    @Override
-    public Paging queryData(String metaId, int pageNum, int pageSize, String error, String success) {
-        // 没有驱动
-        if (StringUtil.isBlank(metaId)) {
-            return new Paging(pageNum, pageSize);
-        }
-        Query query = new Query(pageNum, pageSize);
-        Map<String, IndexFieldResolverEnum> fieldResolvers = new LinkedHashMap<>();
-        fieldResolvers.put(ConfigConstant.BINLOG_DATA, IndexFieldResolverEnum.BINARY);
-        query.setIndexFieldResolverMap(fieldResolvers);
-
-        // 查询异常信息
-        if (StringUtil.isNotBlank(error)) {
-            query.addFilter(ConfigConstant.DATA_ERROR, error, true);
-        }
-        // 查询是否成功, 默认查询失败
-        query.addFilter(ConfigConstant.DATA_SUCCESS, StringUtil.isNotBlank(success) ? NumberUtil.toInt(success) : StorageDataStatusEnum.FAIL.getValue());
-        query.setMetaId(metaId);
-        return manager.queryData(query);
-    }
-
-    @Override
-    public Map getData(String metaId, String messageId) {
-        Query query = new Query(1, 1);
-        Map<String, IndexFieldResolverEnum> fieldResolvers = new LinkedHashMap<>();
-        fieldResolvers.put(ConfigConstant.BINLOG_DATA, IndexFieldResolverEnum.BINARY);
-        query.setIndexFieldResolverMap(fieldResolvers);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);
-        query.setMetaId(metaId);
-        Paging paging = manager.queryData(query);
-        if (!CollectionUtils.isEmpty(paging.getData())) {
-            List<Map> data = (List<Map>) paging.getData();
-            return data.get(0);
-        }
-        return Collections.EMPTY_MAP;
-    }
-
-    @Override
-    public void removeData(String metaId, String messageId) {
-        manager.removeData(metaId, messageId);
-    }
-
-    @Override
-    public void clearData(String metaId) {
-        manager.clearData(metaId);
-    }
-
-    @Override
-    public Paging queryLog(int pageNum, int pageSize, String json) {
-        Query query = new Query(pageNum, pageSize);
-        if (StringUtil.isNotBlank(json)) {
-            query.addFilter(ConfigConstant.CONFIG_MODEL_JSON, json, true);
-        }
-        return manager.queryLog(query);
-    }
-
-    @Override
-    public void clearLog() {
-        manager.clearLog();
-    }
-
-    @Override
-    public List<StorageDataStatusEnum> getStorageDataStatusEnumAll() {
-        return manager.getStorageDataStatusEnumAll();
     }
 
     @Override
@@ -188,12 +101,12 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
             List<MetricResponseInfo> tableList = new ArrayList<>();
             String tableGroupCode = BufferActuatorMetricEnum.TABLE_GROUP.getCode();
             bufferActuatorRouter.getRouter().forEach((metaId, group) -> {
-                Meta meta = manager.getMeta(metaId);
-                Mapping mapping = manager.getMapping(meta.getMappingId());
+                Meta meta = profileComponent.getMeta(metaId);
+                Mapping mapping = profileComponent.getMapping(meta.getMappingId());
                 group.forEach((k, bufferActuator) -> {
                     if (bufferActuator instanceof TableGroupBufferActuator) {
                         TableGroupBufferActuator actuator = bufferActuator;
-                        TableGroup tableGroup = manager.getTableGroup(actuator.getTableGroupId());
+                        TableGroup tableGroup = profileComponent.getTableGroup(actuator.getTableGroupId());
                         String metricName = new StringBuilder()
                                 .append(tableGroup.getSourceTable().getName())
                                 .append(" > ")
@@ -241,7 +154,7 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
         // 刷新报表
         try {
             running = true;
-            final List<Meta> metaAll = manager.getMetaAll();
+            final List<Meta> metaAll = profileComponent.getMetaAll();
             mappingReportMetric.setSuccess(getMappingSuccess(metaAll));
             mappingReportMetric.setFail(getMappingFail(metaAll));
             mappingReportMetric.setInsert(getMappingInsert(metaAll));
@@ -313,7 +226,7 @@ public class MonitorFactory implements Monitor, ScheduledTaskJob {
             operation.accept(query);
             metaAll.forEach(meta -> {
                 query.setMetaId(meta.getId());
-                Paging paging = manager.queryData(query);
+                Paging paging = storageService.query(query);
                 total.getAndAdd(paging.getTotal());
             });
         }

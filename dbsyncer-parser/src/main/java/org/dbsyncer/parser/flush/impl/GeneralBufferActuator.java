@@ -14,7 +14,7 @@ import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.model.MetaInfo;
-import org.dbsyncer.parser.Parser;
+import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.BatchWriter;
@@ -68,7 +68,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     private ConnectorFactory connectorFactory;
 
     @Resource
-    private Parser parser;
+    private ParserComponent parserComponent;
 
     @Resource
     private PluginFactory pluginFactory;
@@ -154,7 +154,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         // 5、批量执行同步
         BatchWriter batchWriter = new BatchWriter(tConnectorMapper, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, generalBufferConfig.getBufferWriterCount());
-        Result result = parser.writeBatch(context, batchWriter, generalExecutor);
+        Result result = parserComponent.writeBatch(context, batchWriter, generalExecutor);
 
         // 6.发布刷新增量点事件
         applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
@@ -202,8 +202,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 result.setTargetTableGroupName(targetTableName);
 
                 // 2.获取目标表最新的属性字段
-                MetaInfo targetMetaInfo = parser.getMetaInfo(mapping.getTargetConnectorId(), targetTableName);
-                MetaInfo originMetaInfo = parser.getMetaInfo(mapping.getSourceConnectorId(), tableGroup.getSourceTable().getName());
+                MetaInfo targetMetaInfo = parserComponent.getMetaInfo(mapping.getTargetConnectorId(), targetTableName);
+                MetaInfo originMetaInfo = parserComponent.getMetaInfo(mapping.getSourceConnectorId(), tableGroup.getSourceTable().getName());
 
                 // 3.更新表字段映射(根据保留的更改的属性，进行更改)
                 tableGroup.getSourceTable().setColumn(originMetaInfo.getColumn());
@@ -211,7 +211,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 tableGroup.setFieldMapping(ddlParser.refreshFiledMappings(originalFieldMappings, originMetaInfo, targetMetaInfo, targetDDLConfig));
 
                 // 4.更新执行命令
-                Map<String, String> commands = parser.getCommand(mapping, tableGroup);
+                Map<String, String> commands = parserComponent.getCommand(mapping, tableGroup);
                 tableGroup.setCommand(commands);
 
                 // 5.持久化存储 & 更新缓存配置

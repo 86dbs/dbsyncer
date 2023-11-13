@@ -1,7 +1,10 @@
-package org.dbsyncer.manager.strategy;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.parser.strategy.impl;
 
-import org.dbsyncer.manager.GroupStrategy;
 import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.strategy.GroupStrategy;
 
 /**
  * @author AE86
