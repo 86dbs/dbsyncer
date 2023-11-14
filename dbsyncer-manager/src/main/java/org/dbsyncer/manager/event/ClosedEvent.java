@@ -1,4 +1,4 @@
-package org.dbsyncer.common.event;
+package org.dbsyncer.manager.event;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ApplicationContextEvent;

@@ -1,4 +1,4 @@
-package org.dbsyncer.common.event;
+package org.dbsyncer.listener;
 
 import java.util.Map;
 

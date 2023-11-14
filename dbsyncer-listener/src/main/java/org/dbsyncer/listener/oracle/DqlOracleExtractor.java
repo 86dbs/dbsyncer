@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.oracle;
 
-import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.listener.ChangedEvent;
 import org.dbsyncer.connector.model.Field;
 
 import java.util.List;

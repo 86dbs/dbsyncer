@@ -1,6 +1,6 @@
 package org.dbsyncer.manager.template;
 
-import org.dbsyncer.common.event.PreloadCompletedEvent;
+import org.dbsyncer.manager.event.PreloadCompletedEvent;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;

@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.listener.oracle.dcn;
 
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.listener.event.RowChangedEvent;
 
 /**
  * 行变更监听器

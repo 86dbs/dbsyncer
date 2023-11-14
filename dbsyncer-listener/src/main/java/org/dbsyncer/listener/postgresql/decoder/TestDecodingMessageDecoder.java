@@ -1,7 +1,7 @@
 package org.dbsyncer.listener.postgresql.decoder;
 
 import org.dbsyncer.common.column.Lexer;
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.postgresql.AbstractMessageDecoder;
 import org.dbsyncer.listener.postgresql.enums.MessageDecoderEnum;

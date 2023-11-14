@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2019-2024 All Rights Reserved.
  */
-package org.dbsyncer.common.event;
+package org.dbsyncer.listener.event;
 
 import java.util.Map;
 

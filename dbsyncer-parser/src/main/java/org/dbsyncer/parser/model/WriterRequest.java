@@ -1,8 +1,8 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.common.event.ChangedEvent;
-import org.dbsyncer.common.event.ChangedOffset;
-import org.dbsyncer.common.event.DDLChangedEvent;
+import org.dbsyncer.listener.ChangedEvent;
+import org.dbsyncer.listener.model.ChangedOffset;
+import org.dbsyncer.listener.event.DDLChangedEvent;
 import org.dbsyncer.parser.flush.BufferRequest;
 
 import java.util.Map;

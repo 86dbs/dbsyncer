@@ -3,9 +3,9 @@
  */
 package org.dbsyncer.parser.consumer;
 
-import org.dbsyncer.common.event.ChangedEvent;
-import org.dbsyncer.common.event.DDLChangedEvent;
-import org.dbsyncer.common.event.Watcher;
+import org.dbsyncer.listener.ChangedEvent;
+import org.dbsyncer.listener.event.DDLChangedEvent;
+import org.dbsyncer.listener.Watcher;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.LogService;

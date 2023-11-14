@@ -2,7 +2,7 @@ package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.common.config.GeneralBufferConfig;
-import org.dbsyncer.common.event.RefreshOffsetEvent;
+import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.IncrementConvertContext;
 import org.dbsyncer.common.model.Result;

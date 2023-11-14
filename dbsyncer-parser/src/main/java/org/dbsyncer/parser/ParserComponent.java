@@ -1,6 +1,6 @@
 package org.dbsyncer.parser;
 
-import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.listener.ChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.spi.ConvertContext;

@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.postgresql;
 
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.database.DatabaseConnectorMapper;

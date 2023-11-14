@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.parser.consumer.impl;
 
-import org.dbsyncer.common.event.ScanChangedEvent;
+import org.dbsyncer.listener.event.ScanChangedEvent;
 import org.dbsyncer.parser.consumer.AbstractConsumer;
 import org.dbsyncer.parser.model.FieldPicker;
 import org.dbsyncer.parser.model.TableGroup;

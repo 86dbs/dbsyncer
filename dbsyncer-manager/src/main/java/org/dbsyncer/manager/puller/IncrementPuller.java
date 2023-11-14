@@ -1,7 +1,7 @@
 package org.dbsyncer.manager.puller;
 
-import org.dbsyncer.common.event.ChangedOffset;
-import org.dbsyncer.common.event.RefreshOffsetEvent;
+import org.dbsyncer.listener.model.ChangedOffset;
+import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;

@@ -1,8 +1,6 @@
 package org.dbsyncer.listener;
 
-import org.dbsyncer.common.event.ChangedEvent;
-import org.dbsyncer.common.event.ChangedOffset;
-import org.dbsyncer.common.event.Watcher;
+import org.dbsyncer.listener.model.ChangedOffset;
 import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;

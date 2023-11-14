@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.postgresql;
 
-import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.listener.ChangedEvent;
 
 /**
  * @author AE86

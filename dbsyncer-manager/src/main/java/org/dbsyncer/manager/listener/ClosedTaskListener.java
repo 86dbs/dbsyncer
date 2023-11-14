@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.manager.listener;
 
-import org.dbsyncer.common.event.ClosedEvent;
+import org.dbsyncer.manager.event.ClosedEvent;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.springframework.context.ApplicationListener;

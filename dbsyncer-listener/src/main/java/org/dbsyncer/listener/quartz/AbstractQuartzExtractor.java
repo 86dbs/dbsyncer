@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.quartz;
 
-import org.dbsyncer.common.event.ScanChangedEvent;
+import org.dbsyncer.listener.event.ScanChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.spi.ConnectorMapper;

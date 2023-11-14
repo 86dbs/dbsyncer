@@ -4,7 +4,7 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.config.TableGroupBufferConfig;
-import org.dbsyncer.common.event.ChangedEvent;
+import org.dbsyncer.listener.ChangedEvent;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.WriterRequest;
 import org.slf4j.Logger;

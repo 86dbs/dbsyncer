@@ -1,4 +1,4 @@
-package org.dbsyncer.common.event;
+package org.dbsyncer.listener.event;
 
 /**
  * DDL变更事件

@@ -11,7 +11,7 @@ import oracle.jdbc.dcn.DatabaseChangeRegistration;
 import oracle.jdbc.dcn.RowChangeDescription;
 import oracle.jdbc.dcn.TableChangeDescription;
 import oracle.jdbc.driver.OracleConnection;
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.ListenerException;

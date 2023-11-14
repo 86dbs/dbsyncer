@@ -4,7 +4,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.vo.BinlogColumnVo;
 import org.dbsyncer.biz.vo.MessageVo;
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;

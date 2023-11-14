@@ -1,7 +1,6 @@
 package org.dbsyncer.listener;
 
-import org.dbsyncer.common.event.ChangedEvent;
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;

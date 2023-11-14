@@ -1,8 +1,8 @@
 package org.dbsyncer.listener.sqlserver;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
-import org.dbsyncer.common.event.ChangedOffset;
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.listener.model.ChangedOffset;
+import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.DatabaseConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;

@@ -3,9 +3,9 @@
  */
 package org.dbsyncer.parser.consumer.impl;
 
-import org.dbsyncer.common.event.CommonChangedEvent;
-import org.dbsyncer.common.event.DDLChangedEvent;
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.listener.event.CommonChangedEvent;
+import org.dbsyncer.listener.event.DDLChangedEvent;
+import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.parser.consumer.AbstractConsumer;
