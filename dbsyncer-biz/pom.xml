@@ -18,12 +18,5 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 
-		<!-- Monitor 监控服务 -->
-		<dependency>
-			<groupId>org.ghi</groupId>
-			<artifactId>dbsyncer-monitor</artifactId>
-			<version>${project.parent.version}</version>
-		</dependency>
-
 	</dependencies>
 </project>

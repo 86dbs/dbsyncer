@@ -24,12 +24,11 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.monitor.Monitor;
-import org.dbsyncer.monitor.enums.BufferActuatorMetricEnum;
-import org.dbsyncer.monitor.enums.DiskMetricEnum;
-import org.dbsyncer.monitor.enums.MetricEnum;
-import org.dbsyncer.monitor.model.AppReportMetric;
-import org.dbsyncer.monitor.model.MetricResponse;
+import org.dbsyncer.biz.enums.BufferActuatorMetricEnum;
+import org.dbsyncer.biz.enums.DiskMetricEnum;
+import org.dbsyncer.biz.enums.MetricEnum;
+import org.dbsyncer.biz.model.AppReportMetric;
+import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.enums.ModelEnum;
@@ -57,6 +56,7 @@ import javax.annotation.Resource;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -74,7 +74,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private Monitor monitor;
+    private MetricReporter metricReporter;
 
     @Resource
     private ProfileComponent profileComponent;
@@ -218,12 +218,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public List<MetricEnum> getMetricEnumAll() {
-        return monitor.getMetricEnumAll();
+        return Arrays.asList(MetricEnum.values());
     }
 
     @Override
     public AppReportMetricVo queryAppReportMetric(List<MetricResponse> metrics) {
-        AppReportMetric appReportMetric = monitor.getAppReportMetric();
+        AppReportMetric appReportMetric = metricReporter.getAppReportMetric();
         AppReportMetricVo vo = new AppReportMetricVo();
         BeanUtils.copyProperties(appReportMetric, vo);
         vo.setMetrics(getMetrics(metrics));
@@ -334,7 +334,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     private List<MetricResponseVo> getMetrics(List<MetricResponse> metrics) {
         // 系统指标
-        List<MetricResponse> metricList = monitor.getMetricInfo();
+        List<MetricResponse> metricList = metricReporter.getMetricInfo();
         // 线程池状态
         metrics.addAll(metricList);
 

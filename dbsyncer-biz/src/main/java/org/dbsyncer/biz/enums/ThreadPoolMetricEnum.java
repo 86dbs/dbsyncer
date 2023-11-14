@@ -1,4 +1,4 @@
-package org.dbsyncer.monitor.enums;
+package org.dbsyncer.biz.enums;
 
 /**
  * 线程池指标

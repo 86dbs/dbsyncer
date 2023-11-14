@@ -1,6 +1,6 @@
 package org.dbsyncer.biz.vo;
 
-import org.dbsyncer.monitor.model.AppReportMetric;
+import org.dbsyncer.biz.model.AppReportMetric;
 
 import java.util.List;
 

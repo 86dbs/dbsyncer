@@ -1,6 +1,6 @@
 package org.dbsyncer.biz.vo;
 
-import org.dbsyncer.monitor.model.MetricResponse;
+import org.dbsyncer.biz.model.MetricResponse;
 
 public class MetricResponseVo extends MetricResponse {
 

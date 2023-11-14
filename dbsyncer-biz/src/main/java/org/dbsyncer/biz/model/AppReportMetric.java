@@ -1,4 +1,4 @@
-package org.dbsyncer.monitor.model;
+package org.dbsyncer.biz.model;
 
 public class AppReportMetric extends MappingReportMetric{
 

@@ -1,32 +1,34 @@
-package org.dbsyncer.monitor.enums;
+package org.dbsyncer.biz.enums;
 
 /**
- * 缓存执行器指标
+ * 硬盘指标
  *
  * @author AE86
  * @version 1.0.0
  * @date 2021/07/23 0:19
  */
-public enum BufferActuatorMetricEnum {
+public enum DiskMetricEnum {
 
     /**
-     * 持久化执行器
+     * 已用
      */
-    STORAGE("buffer.actuator.storage", "持久化执行器", ""),
+    THRESHOLD("disk.space.threshold", "硬盘", "已用"),
+
     /**
-     * 通用执行器
+     * 空闲
      */
-    GENERAL("buffer.actuator.general", "通用执行器", ""),
+    FREE("disk.space.free", "硬盘", "空闲"),
+    
     /**
-     * 表执行器
+     * 总共
      */
-    TABLE_GROUP("buffer.actuator.table.group", "表执行器", "");
+    TOTAL("disk.space.total", "硬盘", "总共"),;
 
     private String code;
     private String group;
     private String metricName;
 
-    BufferActuatorMetricEnum(String code, String group, String metricName) {
+    DiskMetricEnum(String code, String group, String metricName) {
         this.code = code;
         this.group = group;
         this.metricName = metricName;
