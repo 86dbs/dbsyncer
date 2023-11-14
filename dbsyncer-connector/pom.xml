@@ -18,13 +18,6 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-        <!-- Common 公共层 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-common</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
         <!-- Spring-JDBC -->
         <dependency>
             <groupId>org.springframework</groupId>
