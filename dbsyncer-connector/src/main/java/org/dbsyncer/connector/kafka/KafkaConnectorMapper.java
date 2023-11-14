@@ -1,8 +1,8 @@
 package org.dbsyncer.connector.kafka;
 
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.config.KafkaConfig;
 import org.dbsyncer.connector.util.KafkaUtil;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 
 public final class KafkaConnectorMapper implements ConnectorMapper<KafkaConfig, KafkaClient> {
     private KafkaConfig config;

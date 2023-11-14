@@ -1,6 +1,5 @@
 package org.dbsyncer.connector.enums;
 
-import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
@@ -19,6 +18,7 @@ import org.dbsyncer.connector.sql.DQLOracleConnector;
 import org.dbsyncer.connector.sql.DQLPostgreSQLConnector;
 import org.dbsyncer.connector.sql.DQLSqlServerConnector;
 import org.dbsyncer.connector.sqlserver.SqlServerConnector;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 
 /**
  * 支持的连接器类型
@@ -81,9 +81,9 @@ public enum ConnectorEnum {
     private Connector connector;
 
     // 配置
-    private Class<? extends AbstractConnectorConfig> configClass;
+    private Class<? extends ConnectorConfig> configClass;
 
-    ConnectorEnum(String type, Connector connector, Class<? extends AbstractConnectorConfig> configClass) {
+    ConnectorEnum(String type, Connector connector, Class<? extends ConnectorConfig> configClass) {
         this.type = type;
         this.connector = connector;
         this.configClass = configClass;
@@ -113,7 +113,7 @@ public enum ConnectorEnum {
         return connector;
     }
 
-    public Class<? extends AbstractConnectorConfig> getConfigClass() {
+    public Class<? extends ConnectorConfig> getConfigClass() {
         return configClass;
     }
 }

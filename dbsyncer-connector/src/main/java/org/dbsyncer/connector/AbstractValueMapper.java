@@ -1,6 +1,6 @@
 package org.dbsyncer.connector;
 
-import org.dbsyncer.common.spi.ConnectorMapper;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 
 import java.lang.reflect.ParameterizedType;
 
@@ -30,7 +30,7 @@ public abstract class AbstractValueMapper<T> implements ValueMapper {
      * @param val
      * @return
      */
-    protected boolean skipConvert(Object val){
+    protected boolean skipConvert(Object val) {
         return false;
     }
 
@@ -46,14 +46,14 @@ public abstract class AbstractValueMapper<T> implements ValueMapper {
 
     @Override
     public Object convertValue(ConnectorMapper connectorMapper, Object val) throws Exception {
-        if(null != val){
+        if (null != val) {
             // 是否需要跳过转换
-            if(skipConvert(val)){
+            if (skipConvert(val)) {
                 return val;
             }
 
             // 当数据类型不同时，返回转换值
-            if(!val.getClass().equals(parameterClazz)){
+            if (!val.getClass().equals(parameterClazz)) {
                 return convert(connectorMapper, val);
             }
         }

@@ -1,8 +1,8 @@
 package org.dbsyncer.connector.postgresql;
 
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.postgis.Geometry;
 import org.postgis.PGgeometry;
 import org.postgis.binary.BinaryParser;

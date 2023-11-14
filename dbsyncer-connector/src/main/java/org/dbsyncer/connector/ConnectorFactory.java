@@ -1,8 +1,6 @@
 package org.dbsyncer.connector;
 
-import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.DDLConfig;
@@ -11,6 +9,8 @@ import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 
@@ -41,7 +41,7 @@ public class ConnectorFactory implements DisposableBean {
      *
      * @param config
      */
-    public ConnectorMapper connect(AbstractConnectorConfig config) {
+    public ConnectorMapper connect(ConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
         Connector connector = getConnector(config.getConnectorType());
         String cacheKey = connector.getConnectorMapperCacheKey(config);
@@ -68,7 +68,7 @@ public class ConnectorFactory implements DisposableBean {
      * @param config
      * @return
      */
-    public boolean refresh(AbstractConnectorConfig config) {
+    public boolean refresh(ConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
         Connector connector = getConnector(config.getConnectorType());
         String cacheKey = connector.getConnectorMapperCacheKey(config);
@@ -86,7 +86,7 @@ public class ConnectorFactory implements DisposableBean {
      * @param config
      * @return
      */
-    public boolean isAlive(AbstractConnectorConfig config) {
+    public boolean isAlive(ConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
         Connector connector = getConnector(config.getConnectorType());
         String cacheKey = connector.getConnectorMapperCacheKey(config);
@@ -180,7 +180,8 @@ public class ConnectorFactory implements DisposableBean {
     }
 
     public Connector getConnector(ConnectorMapper connectorMapper) {
-        return getConnector(connectorMapper.getConnectorType());
+        ConnectorConfig connectorConfig = (ConnectorConfig) connectorMapper.getConfig();
+        return getConnector(connectorConfig.getConnectorType());
     }
 
     /**

@@ -1,6 +1,6 @@
 package org.dbsyncer.connector.config;
 
-import org.dbsyncer.common.model.AbstractConnectorConfig;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 
 /**
  * @author AE86
@@ -8,7 +8,7 @@ import org.dbsyncer.common.model.AbstractConnectorConfig;
  * @Description: Kafka连接配置
  * @date: 2021年11月4日 下午8:00:00
  */
-public class KafkaConfig extends AbstractConnectorConfig {
+public class KafkaConfig extends ConnectorConfig {
 
     private String bootstrapServers;
     private String topic;

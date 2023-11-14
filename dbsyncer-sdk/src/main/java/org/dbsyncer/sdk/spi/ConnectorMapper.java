@@ -1,7 +1,4 @@
-package org.dbsyncer.common.spi;
-
-
-import org.dbsyncer.common.model.AbstractConnectorConfig;
+package org.dbsyncer.sdk.spi;
 
 /**
  * 连接器实例，管理连接生命周期
@@ -19,28 +16,11 @@ public interface ConnectorMapper<K, V> extends Cloneable {
      *
      * @return
      */
-    default AbstractConnectorConfig getOriginalConfig() {
-        return (AbstractConnectorConfig) getConfig();
-    }
-
-    /**
-     * 获取连接器类型
-     *
-     * @return
-     */
-    default String getConnectorType() {
-        return getOriginalConfig().getConnectorType();
-    }
-
-    /**
-     * 获取连接配置
-     *
-     * @return
-     */
     K getConfig();
 
     /**
      * 设置
+     *
      * @param k
      */
     void setConfig(K k);

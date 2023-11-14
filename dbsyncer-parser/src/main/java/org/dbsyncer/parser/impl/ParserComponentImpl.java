@@ -1,11 +1,7 @@
 package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.listener.ChangedEvent;
-import org.dbsyncer.common.model.AbstractConnectorConfig;
-import org.dbsyncer.common.model.FullConvertContext;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.spi.ConnectorMapper;
-import org.dbsyncer.common.spi.ConvertContext;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
@@ -33,6 +29,10 @@ import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.FullConvertContext;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.spi.ConvertContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -99,8 +99,8 @@ public class ParserComponentImpl implements ParserComponent {
 
     @Override
     public Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup) {
-        AbstractConnectorConfig sConnConfig = getConnectorConfig(mapping.getSourceConnectorId());
-        AbstractConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
+        ConnectorConfig sConnConfig = getConnectorConfig(mapping.getSourceConnectorId());
+        ConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
         Table sTable = new Table(sourceTable.getName(), sourceTable.getType(), new ArrayList<>(), sourceTable.getSql());
@@ -135,9 +135,9 @@ public class ParserComponentImpl implements ParserComponent {
         final String sourceConnectorId = mapping.getSourceConnectorId();
         final String targetConnectorId = mapping.getTargetConnectorId();
 
-        AbstractConnectorConfig sConfig = getConnectorConfig(sourceConnectorId);
+        ConnectorConfig sConfig = getConnectorConfig(sourceConnectorId);
         Assert.notNull(sConfig, "数据源配置不能为空.");
-        AbstractConnectorConfig tConfig = getConnectorConfig(targetConnectorId);
+        ConnectorConfig tConfig = getConnectorConfig(targetConnectorId);
         Assert.notNull(tConfig, "目标源配置不能为空.");
         TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
         Map<String, String> command = group.getCommand();
@@ -291,7 +291,7 @@ public class ParserComponentImpl implements ParserComponent {
      * @param connectorId
      * @return
      */
-    private AbstractConnectorConfig getConnectorConfig(String connectorId) {
+    private ConnectorConfig getConnectorConfig(String connectorId) {
         return profileComponent.getConnector(connectorId).getConfig();
     }
 

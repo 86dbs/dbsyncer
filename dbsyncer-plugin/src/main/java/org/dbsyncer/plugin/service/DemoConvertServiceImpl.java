@@ -1,19 +1,20 @@
 package org.dbsyncer.plugin.service;
 
 import org.dbsyncer.common.config.AppConfig;
-import org.dbsyncer.common.spi.ConvertContext;
-import org.dbsyncer.common.spi.ConvertService;
+import org.dbsyncer.sdk.spi.ConvertContext;
+import org.dbsyncer.sdk.spi.ConvertService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
 
 @Component
 public class DemoConvertServiceImpl implements ConvertService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private AppConfig appConfig;
 
     @Override

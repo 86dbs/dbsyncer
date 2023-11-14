@@ -1,12 +1,10 @@
 package org.dbsyncer.plugin.proxy;
 
-import org.dbsyncer.common.spi.ProxyApplicationContext;
+import org.dbsyncer.sdk.spi.ProxyApplicationContext;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEvent;
@@ -14,9 +12,9 @@ import org.springframework.context.MessageSourceResolvable;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.env.Environment;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Locale;
@@ -30,8 +28,7 @@ import java.util.Map;
 @Component("proxyApplicationContext")
 public class ProxyApplicationContextImpl implements ProxyApplicationContext {
 
-    @Qualifier("webApplicationContext")
-    @Autowired
+    @Resource
     private ApplicationContext applicationContext;
 
     @Override
@@ -250,12 +247,12 @@ public class ProxyApplicationContextImpl implements ProxyApplicationContext {
     }
 
     @Override
-    public Resource[] getResources(String locationPattern) throws IOException {
+    public org.springframework.core.io.Resource[] getResources(String locationPattern) throws IOException {
         return applicationContext.getResources(locationPattern);
     }
 
     @Override
-    public Resource getResource(String location) {
+    public org.springframework.core.io.Resource getResource(String location) {
         return applicationContext.getResource(location);
     }
 

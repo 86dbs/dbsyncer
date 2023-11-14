@@ -1,7 +1,7 @@
 package org.dbsyncer.connector.config;
 
-import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.connector.model.SqlTable;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,7 +13,7 @@ import java.util.Map;
  * @Description: 数据库连接配置
  * @date: 2017年7月20日 下午3:40:59
  */
-public class DatabaseConfig extends AbstractConnectorConfig {
+public class DatabaseConfig extends ConnectorConfig {
 
     /**
      * 驱动

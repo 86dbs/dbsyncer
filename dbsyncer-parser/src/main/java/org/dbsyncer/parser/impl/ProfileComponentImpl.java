@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.parser.impl;
 
-import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -25,6 +24,7 @@ import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.template.OperationTemplate;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -55,7 +55,7 @@ public class ProfileComponentImpl implements ProfileComponent {
         Assert.notNull(connector, "Connector can not be null.");
         String connectorType = (String) config.get("connectorType");
         ConnectorEnum connectorEnum = ConnectorEnum.getConnectorEnum(connectorType);
-        AbstractConnectorConfig obj = JsonUtil.jsonToObj(config.toString(), connectorEnum.getConfigClass());
+        ConnectorConfig obj = JsonUtil.jsonToObj(config.toString(), connectorEnum.getConfigClass());
         obj.setConnectorType(connectorEnum.getType());
         connector.setConfig(obj);
 

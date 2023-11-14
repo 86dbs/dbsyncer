@@ -3,11 +3,11 @@ package org.dbsyncer.connector.oracle;
 import com.microsoft.sqlserver.jdbc.Geometry;
 import oracle.jdbc.OracleConnection;
 import org.dbsyncer.connector.oracle.geometry.JGeometry;
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.database.ds.SimpleConnection;
 import org.dbsyncer.connector.util.DatabaseUtil;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 
 import java.sql.Struct;
 

@@ -3,8 +3,6 @@ package org.dbsyncer.biz.checker.impl.connector;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
-import org.dbsyncer.common.model.AbstractConnectorConfig;
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.enums.ConnectorEnum;
@@ -15,6 +13,8 @@ import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +60,7 @@ public class ConnectorChecker extends AbstractChecker {
 
         Connector connector = new Connector();
         connector.setName(name);
-        AbstractConnectorConfig config = getConfig(connectorType);
+        ConnectorConfig config = getConfig(connectorType);
         connector.setConfig(config);
 
         // 配置连接器配置
@@ -90,7 +90,7 @@ public class ConnectorChecker extends AbstractChecker {
         this.modifyConfigModel(connector, params);
 
         // 配置连接器配置
-        AbstractConnectorConfig config = connector.getConfig();
+        ConnectorConfig config = connector.getConfig();
         String type = StringUtil.toLowerCaseFirstOne(config.getConnectorType()).concat("ConfigChecker");
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
@@ -102,9 +102,9 @@ public class ConnectorChecker extends AbstractChecker {
         return connector;
     }
 
-    private AbstractConnectorConfig getConfig(String connectorType) {
+    private ConnectorConfig getConfig(String connectorType) {
         try {
-            AbstractConnectorConfig config = ConnectorEnum.getConnectorEnum(connectorType).getConfigClass().newInstance();
+            ConnectorConfig config = ConnectorEnum.getConnectorEnum(connectorType).getConfigClass().newInstance();
             config.setConnectorType(connectorType);
             return config;
         } catch (Exception e) {

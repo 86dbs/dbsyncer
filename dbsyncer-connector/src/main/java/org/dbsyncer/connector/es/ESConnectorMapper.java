@@ -1,9 +1,9 @@
 package org.dbsyncer.connector.es;
 
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.ESConfig;
 import org.dbsyncer.connector.util.ESUtil;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.elasticsearch.Version;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.core.MainResponse;

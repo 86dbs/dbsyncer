@@ -1,7 +1,6 @@
 package org.dbsyncer.connector.database;
 
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.AbstractConnector;
@@ -25,6 +24,7 @@ import org.dbsyncer.connector.model.PageSql;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.DatabaseUtil;
 import org.dbsyncer.connector.util.PrimaryKeyUtil;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;

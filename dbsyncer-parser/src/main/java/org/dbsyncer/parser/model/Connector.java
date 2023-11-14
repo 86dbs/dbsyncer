@@ -1,7 +1,7 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.storage.constant.ConfigConstant;
 
 import java.util.List;
@@ -25,7 +25,7 @@ public class Connector extends ConfigModel{
     /**
      * 连接器配置
      */
-    private AbstractConnectorConfig config;
+    private ConnectorConfig config;
 
     public List<Table> getTable() {
         return table;
@@ -36,11 +36,11 @@ public class Connector extends ConfigModel{
         return this;
     }
 
-    public AbstractConnectorConfig getConfig() {
+    public ConnectorConfig getConfig() {
         return config;
     }
 
-    public Connector setConfig(AbstractConnectorConfig config) {
+    public Connector setConfig(ConnectorConfig config) {
         this.config = config;
         return this;
     }

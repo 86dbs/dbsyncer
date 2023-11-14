@@ -2,14 +2,14 @@ package org.dbsyncer.parser;
 
 import org.dbsyncer.listener.ChangedEvent;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.spi.ConnectorMapper;
-import org.dbsyncer.common.spi.ConvertContext;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.parser.model.BatchWriter;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.spi.ConvertContext;
 
 import java.util.List;
 import java.util.Map;

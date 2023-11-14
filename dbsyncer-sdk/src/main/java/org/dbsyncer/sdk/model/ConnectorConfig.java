@@ -1,4 +1,4 @@
-package org.dbsyncer.common.model;
+package org.dbsyncer.sdk.model;
 
 /**
  * 连接器配置
@@ -6,7 +6,7 @@ package org.dbsyncer.common.model;
  * @version 1.0.0
  * @date 2019/9/21 0:01
  */
-public abstract class AbstractConnectorConfig {
+public abstract class ConnectorConfig {
 
     /**
      * 连接器类型
@@ -17,7 +17,7 @@ public abstract class AbstractConnectorConfig {
         return connectorType;
     }
 
-    public AbstractConnectorConfig setConnectorType(String connectorType) {
+    public ConnectorConfig setConnectorType(String connectorType) {
         this.connectorType = connectorType;
         return this;
     }

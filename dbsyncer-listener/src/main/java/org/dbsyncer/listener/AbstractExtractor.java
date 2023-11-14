@@ -1,13 +1,13 @@
 package org.dbsyncer.listener;
 
 import org.dbsyncer.listener.model.ChangedOffset;
-import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.listener.config.ListenerConfig;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +28,7 @@ public abstract class AbstractExtractor implements Extractor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     protected ConnectorFactory connectorFactory;
     protected ScheduledTaskService scheduledTaskService;
-    protected AbstractConnectorConfig connectorConfig;
+    protected ConnectorConfig connectorConfig;
     protected ListenerConfig listenerConfig;
     protected Set<String> filterTable;
     protected List<Table> sourceTable;
@@ -125,7 +125,7 @@ public abstract class AbstractExtractor implements Extractor {
         this.scheduledTaskService = scheduledTaskService;
     }
 
-    public void setConnectorConfig(AbstractConnectorConfig connectorConfig) {
+    public void setConnectorConfig(ConnectorConfig connectorConfig) {
         this.connectorConfig = connectorConfig;
     }
 

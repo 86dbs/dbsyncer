@@ -3,7 +3,6 @@ package org.dbsyncer.listener.quartz;
 import org.dbsyncer.listener.event.ScanChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
@@ -12,6 +11,7 @@ import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.dbsyncer.listener.AbstractExtractor;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -2,7 +2,6 @@ package org.dbsyncer.manager.puller;
 
 import org.dbsyncer.listener.model.ChangedOffset;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
-import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -26,6 +25,7 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -142,7 +142,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
     }
 
     private AbstractExtractor getExtractor(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta) throws InstantiationException, IllegalAccessException {
-        AbstractConnectorConfig connectorConfig = connector.getConfig();
+        ConnectorConfig connectorConfig = connector.getConfig();
         ListenerConfig listenerConfig = mapping.getListener();
         // timing/log
         final String listenerType = listenerConfig.getListenerType();

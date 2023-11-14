@@ -1,12 +1,12 @@
 package org.dbsyncer.plugin;
 
 import org.apache.commons.io.FileUtils;
-import org.dbsyncer.common.model.AbstractConvertContext;
-import org.dbsyncer.common.spi.ConvertContext;
-import org.dbsyncer.common.spi.ConvertService;
-import org.dbsyncer.common.spi.ProxyApplicationContext;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.plugin.config.Plugin;
+import org.dbsyncer.sdk.model.AbstractConvertContext;
+import org.dbsyncer.sdk.spi.ConvertContext;
+import org.dbsyncer.sdk.spi.ConvertService;
+import org.dbsyncer.sdk.spi.ProxyApplicationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;

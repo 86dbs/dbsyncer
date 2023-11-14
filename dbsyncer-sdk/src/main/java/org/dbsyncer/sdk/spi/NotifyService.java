@@ -1,6 +1,6 @@
-package org.dbsyncer.common.spi;
+package org.dbsyncer.sdk.spi;
 
-import org.dbsyncer.common.model.NotifyMessage;
+import org.dbsyncer.sdk.model.NotifyMessage;
 
 /**
  * 通知服务（同步异常、连接器异常、应用异常等消息）

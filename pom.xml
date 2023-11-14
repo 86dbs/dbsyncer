@@ -6,12 +6,12 @@
 
     <groupId>org.ghi</groupId>
     <artifactId>dbsyncer</artifactId>
-    <version>1.2.7_1103</version>
+    <version>2.0.0</version>
     <packaging>pom</packaging>
     <name>dbsyncer</name>
     <url>https://gitee.com/ghi/dbsyncer</url>
 
-    <!-- 管理的子模块(10个) -->
+    <!-- 管理的子模块(11个) -->
     <modules>
         <module>dbsyncer-biz</module>
         <module>dbsyncer-cluster</module>
@@ -21,6 +21,7 @@
         <module>dbsyncer-manager</module>
         <module>dbsyncer-parser</module>
         <module>dbsyncer-plugin</module>
+        <module>dbsyncer-sdk</module>
         <module>dbsyncer-storage</module>
         <module>dbsyncer-web</module>
     </modules>

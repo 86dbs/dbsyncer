@@ -1,19 +1,23 @@
 package org.dbsyncer.plugin.notify;
 
 import org.dbsyncer.common.config.AppConfig;
-import org.dbsyncer.common.model.NotifyMessage;
-import org.dbsyncer.common.spi.NotifyService;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.model.NotifyMessage;
+import org.dbsyncer.sdk.spi.NotifyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
-import javax.mail.*;
+import javax.annotation.Resource;
+import javax.mail.Authenticator;
+import javax.mail.Message;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.util.List;
@@ -33,7 +37,7 @@ public class MailNotifyService implements NotifyService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private AppConfig appConfig;
 
     /**

@@ -1,7 +1,7 @@
 package org.dbsyncer.plugin.notify;
 
-import org.dbsyncer.common.model.NotifyMessage;
-import org.dbsyncer.common.spi.NotifyService;
+import org.dbsyncer.sdk.model.NotifyMessage;
+import org.dbsyncer.sdk.spi.NotifyService;
 
 /**
  * 默认通知服务

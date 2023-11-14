@@ -1,10 +1,10 @@
 package org.dbsyncer.connector.file;
 
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.config.FileConfig;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.FileSchema;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.springframework.util.Assert;
 
 import java.io.File;

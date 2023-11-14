@@ -1,6 +1,6 @@
 package org.dbsyncer.connector.config;
 
-import org.dbsyncer.common.model.AbstractConnectorConfig;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 
 /**
  * @author AE86
@@ -8,7 +8,7 @@ import org.dbsyncer.common.model.AbstractConnectorConfig;
  * @Description: ES连接配置
  * @date: 2021年8月23日 下午8:00:00
  */
-public class ESConfig extends AbstractConnectorConfig {
+public class ESConfig extends ConnectorConfig {
 
     /**
      * 集群地址, http(s)-9200, tcp-9300 http://192.168.1.100:9200,http://192.168.1.200:9200

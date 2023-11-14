@@ -1,12 +1,7 @@
 package org.dbsyncer.parser.flush.impl;
 
-import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.common.config.GeneralBufferConfig;
-import org.dbsyncer.parser.event.RefreshOffsetEvent;
-import org.dbsyncer.common.model.AbstractConnectorConfig;
-import org.dbsyncer.common.model.IncrementConvertContext;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
@@ -14,8 +9,10 @@ import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.model.MetaInfo;
+import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ddl.DDLParser;
+import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.BatchWriter;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -31,6 +28,9 @@ import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.IncrementConvertContext;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.slf4j.Logger;
@@ -186,8 +186,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
      */
     private void parseDDl(WriterResponse response, Mapping mapping, TableGroup tableGroup) {
         try {
-            AbstractConnectorConfig sConnConfig = getConnectorConfig(mapping.getSourceConnectorId());
-            AbstractConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
+            ConnectorConfig sConnConfig = getConnectorConfig(mapping.getSourceConnectorId());
+            ConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
             String sConnType = sConnConfig.getConnectorType();
             String tConnType = tConnConfig.getConnectorType();
             // 0.生成目标表执行SQL(暂支持MySQL) fixme AE86 暂内测MySQL作为试运行版本
@@ -235,7 +235,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
      * @param connectorId
      * @return
      */
-    private AbstractConnectorConfig getConnectorConfig(String connectorId) {
+    private ConnectorConfig getConnectorConfig(String connectorId) {
         Assert.hasText(connectorId, "Connector id can not be empty.");
         Connector conn = cacheService.get(connectorId, Connector.class);
         Assert.notNull(conn, "Connector can not be null.");

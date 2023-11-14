@@ -1,6 +1,6 @@
-package org.dbsyncer.common.model;
+package org.dbsyncer.sdk.model;
 
-import org.dbsyncer.common.spi.ConnectorMapper;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 
 /**
  * @author AE86

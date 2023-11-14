@@ -22,9 +22,9 @@ import org.dbsyncer.storage.query.filter.IntFilter;
 import org.dbsyncer.storage.query.filter.LongFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -48,13 +48,13 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private StorageService storageService;
 
-    @Autowired
+    @Resource
     private ScheduledTaskService scheduledTaskService;
 
-    @Autowired
+    @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
 
     private BinlogRecorderConfig binlogRecorderConfig = new BinlogRecorderConfig();
@@ -161,7 +161,7 @@ public abstract class AbstractBinlogService<Message> implements BinlogRecorder {
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             } finally {
-                 if (locked) {
+                if (locked) {
                     binlogLock.unlock();
                 }
             }

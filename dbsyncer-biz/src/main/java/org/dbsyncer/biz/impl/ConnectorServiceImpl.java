@@ -3,7 +3,6 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.checker.Checker;
-import org.dbsyncer.common.model.AbstractConnectorConfig;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -14,6 +13,7 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,7 +160,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         return health.containsKey(id) && health.get(id);
     }
 
-    private boolean isAliveConnectorConfig(AbstractConnectorConfig config) {
+    private boolean isAliveConnectorConfig(ConnectorConfig config) {
         boolean alive = false;
         try {
             alive = connectorFactory.isAlive(config);

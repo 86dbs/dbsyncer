@@ -1,4 +1,4 @@
-package org.dbsyncer.common.model;
+package org.dbsyncer.sdk.model;
 
 import java.util.List;
 

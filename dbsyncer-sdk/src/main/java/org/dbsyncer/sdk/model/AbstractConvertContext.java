@@ -1,8 +1,8 @@
-package org.dbsyncer.common.model;
+package org.dbsyncer.sdk.model;
 
-import org.dbsyncer.common.spi.ConnectorMapper;
-import org.dbsyncer.common.spi.ConvertContext;
-import org.dbsyncer.common.spi.ProxyApplicationContext;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.spi.ConvertContext;
+import org.dbsyncer.sdk.spi.ProxyApplicationContext;
 
 import java.util.List;
 import java.util.Map;

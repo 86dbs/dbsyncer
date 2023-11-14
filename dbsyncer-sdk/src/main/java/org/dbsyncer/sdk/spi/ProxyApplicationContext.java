@@ -1,4 +1,4 @@
-package org.dbsyncer.common.spi;
+package org.dbsyncer.sdk.spi;
 
 import org.springframework.context.ApplicationContext;
 

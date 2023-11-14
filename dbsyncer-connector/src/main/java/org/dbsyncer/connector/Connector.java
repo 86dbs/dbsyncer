@@ -1,13 +1,13 @@
 package org.dbsyncer.connector;
 
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.config.ReaderConfig;
 import org.dbsyncer.connector.config.WriterBatchConfig;
 import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -103,7 +103,7 @@ public interface Connector<M, C> {
      * @param ddlConfig
      * @return
      */
-    default Result writerDDL(M connectorMapper, DDLConfig ddlConfig){
+    default Result writerDDL(M connectorMapper, DDLConfig ddlConfig) {
         throw new ConnectorException("Unsupported method.");
     }
 

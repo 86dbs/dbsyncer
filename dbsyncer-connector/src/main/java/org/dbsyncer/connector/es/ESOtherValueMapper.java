@@ -1,9 +1,9 @@
 package org.dbsyncer.connector.es;
 
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.postgresql.util.PGobject;
 
 import java.util.Map;

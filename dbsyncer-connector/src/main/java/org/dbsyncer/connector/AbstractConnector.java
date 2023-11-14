@@ -1,6 +1,5 @@
 package org.dbsyncer.connector;
 
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.WriterBatchConfig;
@@ -32,6 +31,7 @@ import org.dbsyncer.connector.schema.TimestampValueMapper;
 import org.dbsyncer.connector.schema.TinyintValueMapper;
 import org.dbsyncer.connector.schema.VarBinaryValueMapper;
 import org.dbsyncer.connector.schema.VarcharValueMapper;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
