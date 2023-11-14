@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.flush.impl;
 
-import org.dbsyncer.cache.CacheService;
+import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.common.config.GeneralBufferConfig;
 import org.dbsyncer.common.event.RefreshOffsetEvent;
 import org.dbsyncer.common.model.AbstractConnectorConfig;

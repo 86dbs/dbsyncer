@@ -3,8 +3,8 @@ package org.dbsyncer.parser.strategy.impl;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.parser.flush.AbstractFlushStrategy;
-import org.dbsyncer.parser.logger.LogService;
-import org.dbsyncer.parser.logger.LogType;
+import org.dbsyncer.parser.LogService;
+import org.dbsyncer.parser.LogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

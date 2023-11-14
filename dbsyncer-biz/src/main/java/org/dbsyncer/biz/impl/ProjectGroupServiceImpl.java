@@ -9,7 +9,7 @@ import org.dbsyncer.biz.vo.ProjectGroupVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.logger.LogType;
+import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.ProjectGroup;

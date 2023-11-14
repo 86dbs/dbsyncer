@@ -1,9 +1,9 @@
 package org.dbsyncer.parser.flush;
 
-import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.config.BufferActuatorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Meta;
 import org.slf4j.Logger;

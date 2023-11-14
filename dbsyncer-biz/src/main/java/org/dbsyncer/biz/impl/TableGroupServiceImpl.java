@@ -7,7 +7,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.logger.LogType;
+import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.storage.constant.ConfigConstant;

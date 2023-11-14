@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.flush;
 
-import org.dbsyncer.cache.CacheService;
+import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.common.config.StorageConfig;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;

@@ -1,4 +1,4 @@
-package org.dbsyncer.parser.message;
+package org.dbsyncer.parser;
 
 public interface MessageService {
 

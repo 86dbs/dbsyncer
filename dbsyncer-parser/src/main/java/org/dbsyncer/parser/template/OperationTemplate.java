@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.parser.template;
 
-import org.dbsyncer.cache.CacheService;
+import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserException;

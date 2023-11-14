@@ -1,5 +1,6 @@
-package org.dbsyncer.cache;
+package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.parser.CacheService;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;

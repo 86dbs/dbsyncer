@@ -1,4 +1,4 @@
-package org.dbsyncer.cache;
+package org.dbsyncer.parser;
 
 import java.util.Map;
 

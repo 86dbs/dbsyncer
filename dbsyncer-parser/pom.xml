@@ -18,13 +18,6 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-        <!-- Cache 缓存服务 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-cache</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
         <!-- Plugin 插件服务 -->
         <dependency>
             <groupId>org.ghi</groupId>
