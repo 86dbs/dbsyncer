@@ -1,9 +1,11 @@
 package org.dbsyncer.manager;
 
+import org.dbsyncer.manager.event.ClosedEvent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -17,13 +19,18 @@ import java.util.Map;
  * @date 2019/9/16 23:59
  */
 @Component
-public class ManagerFactory {
+public class ManagerFactory implements ApplicationListener<ClosedEvent> {
 
     @Resource
     private ProfileComponent profileComponent;
 
     @Resource
     private Map<String, Puller> map;
+
+    @Override
+    public void onApplicationEvent(ClosedEvent event) {
+        changeMetaState(event.getMetaId(), MetaEnum.READY);
+    }
 
     public void start(Mapping mapping) {
         Puller puller = getPuller(mapping);
