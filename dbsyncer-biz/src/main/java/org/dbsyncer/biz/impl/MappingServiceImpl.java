@@ -16,7 +16,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.ModelEnum;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;

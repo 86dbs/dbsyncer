@@ -2,7 +2,7 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
-import org.dbsyncer.parser.enums.ModelEnum;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MessageService;

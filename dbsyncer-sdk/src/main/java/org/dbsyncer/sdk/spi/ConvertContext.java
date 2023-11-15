@@ -28,11 +28,6 @@ public interface ConvertContext {
     void setTerminated(boolean terminated);
 
     /**
-     * Spring上下文
-     */
-    ProxyApplicationContext getContext();
-
-    /**
      * 数据源连接实例
      */
     ConnectorMapper getSourceConnectorMapper();

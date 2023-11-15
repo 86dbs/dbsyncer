@@ -1,14 +1,14 @@
-package org.dbsyncer.parser.enums;
+package org.dbsyncer.sdk.enums;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ParserException;
+import org.dbsyncer.sdk.SdkException;
 
 /**
  * 驱动同步方式枚举
  *
- * @author AE86
- * @version 1.0.0
- * @date 2020/04/21 16:19
+ * @Version 1.0.0
+ * @Author AE86
+ * @Date 2023-11-16 00:51
  */
 public enum ModelEnum {
 
@@ -29,13 +29,13 @@ public enum ModelEnum {
         this.name = name;
     }
 
-    public static ModelEnum getModelEnum(String code) throws ParserException {
+    public static ModelEnum getModelEnum(String code) throws SdkException {
         for (ModelEnum e : ModelEnum.values()) {
             if (StringUtil.equals(code, e.getCode())) {
                 return e;
             }
         }
-        throw new ParserException(String.format("Model code \"%s\" does not exist.", code));
+        throw new SdkException(String.format("Model code \"%s\" does not exist.", code));
     }
 
     public static boolean isFull(String model) {

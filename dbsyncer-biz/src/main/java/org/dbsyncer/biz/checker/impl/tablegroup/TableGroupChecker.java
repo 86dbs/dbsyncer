@@ -12,7 +12,7 @@ import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.ModelEnum;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;

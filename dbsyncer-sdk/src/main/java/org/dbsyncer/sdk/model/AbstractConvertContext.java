@@ -2,7 +2,6 @@ package org.dbsyncer.sdk.model;
 
 import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.dbsyncer.sdk.spi.ConvertContext;
-import org.dbsyncer.sdk.spi.ProxyApplicationContext;
 
 import java.util.List;
 import java.util.Map;
@@ -19,11 +18,6 @@ public abstract class AbstractConvertContext implements ConvertContext {
      * <p>true：目标源不再接收同步数据，默认值false
      */
     private boolean terminated;
-
-    /**
-     * Spring上下文
-     */
-    protected ProxyApplicationContext context;
 
     /**
      * 数据源连接实例
@@ -71,10 +65,6 @@ public abstract class AbstractConvertContext implements ConvertContext {
         this.targetList = targetList;
     }
 
-    public void setContext(ProxyApplicationContext context) {
-        this.context = context;
-    }
-
     @Override
     public boolean isTerminated() {
         return terminated;
@@ -83,11 +73,6 @@ public abstract class AbstractConvertContext implements ConvertContext {
     @Override
     public void setTerminated(boolean terminated) {
         this.terminated = terminated;
-    }
-
-    @Override
-    public ProxyApplicationContext getContext() {
-        return context;
     }
 
     @Override

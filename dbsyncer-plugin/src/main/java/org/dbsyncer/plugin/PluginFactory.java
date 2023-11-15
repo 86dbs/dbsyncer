@@ -3,13 +3,12 @@ package org.dbsyncer.plugin;
 import org.apache.commons.io.FileUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.plugin.config.Plugin;
-import org.dbsyncer.sdk.model.AbstractConvertContext;
 import org.dbsyncer.sdk.spi.ConvertContext;
 import org.dbsyncer.sdk.spi.ConvertService;
-import org.dbsyncer.sdk.spi.ProxyApplicationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -55,11 +54,11 @@ public class PluginFactory implements DisposableBean {
     private final Map<String, ConvertService> service = new LinkedHashMap<>();
 
     @Resource
-    private ProxyApplicationContext proxyApplicationContext;
+    private ApplicationContext applicationContext;
 
     @PostConstruct
     private void init() {
-        Map<String, ConvertService> services = proxyApplicationContext.getBeansOfType(ConvertService.class);
+        Map<String, ConvertService> services = applicationContext.getBeansOfType(ConvertService.class);
         if (!CollectionUtils.isEmpty(services)) {
             services.forEach((k, s) -> {
                 String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
@@ -114,13 +113,10 @@ public class PluginFactory implements DisposableBean {
     public void convert(Plugin plugin, ConvertContext context) {
         if (null != plugin) {
             String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
-            if (service.containsKey(pluginId)) {
-                if (context instanceof AbstractConvertContext) {
-                    AbstractConvertContext ctx = (AbstractConvertContext) context;
-                    ctx.setContext(proxyApplicationContext);
-                }
-                service.get(pluginId).convert(context);
-            }
+            service.computeIfPresent(pluginId, (k, c) -> {
+                c.convert(context);
+                return c;
+            });
         }
     }
 
@@ -133,9 +129,10 @@ public class PluginFactory implements DisposableBean {
     public void postProcessAfter(Plugin plugin, ConvertContext context) {
         if (null != plugin) {
             String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
-            if (service.containsKey(pluginId)) {
-                service.get(pluginId).postProcessAfter(context);
-            }
+            service.computeIfPresent(pluginId, (k, c) -> {
+                c.postProcessAfter(context);
+                return c;
+            });
         }
     }
 

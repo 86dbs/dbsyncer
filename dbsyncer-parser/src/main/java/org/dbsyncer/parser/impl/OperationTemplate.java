@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.parser.template;
+package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;

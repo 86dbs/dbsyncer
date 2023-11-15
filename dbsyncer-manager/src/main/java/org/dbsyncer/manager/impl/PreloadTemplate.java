@@ -1,4 +1,4 @@
-package org.dbsyncer.manager.template;
+package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.manager.event.PreloadCompletedEvent;
 import org.dbsyncer.common.model.Paging;
@@ -14,7 +14,7 @@ import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
-import org.dbsyncer.parser.template.OperationTemplate;
+import org.dbsyncer.parser.impl.OperationTemplate;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;

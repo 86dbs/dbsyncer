@@ -2,7 +2,7 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.listener.config.ListenerConfig;
-import org.dbsyncer.parser.enums.ModelEnum;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.storage.constant.ConfigConstant;
 
 import java.util.List;

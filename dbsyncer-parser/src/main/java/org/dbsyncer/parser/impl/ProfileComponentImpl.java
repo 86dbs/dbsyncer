@@ -23,7 +23,6 @@ import org.dbsyncer.parser.model.QueryConfig;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
-import org.dbsyncer.parser.template.OperationTemplate;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.springframework.stereotype.Component;
