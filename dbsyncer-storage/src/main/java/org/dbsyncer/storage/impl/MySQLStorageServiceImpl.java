@@ -1,4 +1,4 @@
-package org.dbsyncer.storage.support;
+package org.dbsyncer.storage.impl;
 
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.model.Paging;
@@ -58,7 +58,7 @@ import java.util.stream.Stream;
 @Component
 @ConditionalOnProperty(value = "dbsyncer.storage.support.mysql.enabled", havingValue = "true")
 @ConfigurationProperties(prefix = "dbsyncer.storage.support.mysql")
-public class MysqlStorageServiceImpl extends AbstractStorageService {
+public class MySQLStorageServiceImpl extends AbstractStorageService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

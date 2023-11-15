@@ -6,7 +6,7 @@ import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.common.config.AppConfig;
-import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
+import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;

@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.sdk;
+package org.dbsyncer.sdk.client;
 
 /**
  * @Version 1.0.0

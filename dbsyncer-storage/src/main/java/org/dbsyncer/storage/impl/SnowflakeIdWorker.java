@@ -1,4 +1,4 @@
-package org.dbsyncer.common.snowflake;
+package org.dbsyncer.storage.impl;
 
 import org.dbsyncer.common.CommonException;
 import org.springframework.boot.context.properties.ConfigurationProperties;

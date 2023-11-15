@@ -12,7 +12,7 @@ import org.dbsyncer.storage.constant.ConfigConstant;
  * @version 1.0.0
  * @date 2019/12/2 22:53
  */
-public class TableGroupStrategy implements GroupStrategy<TableGroup> {
+public final class TableGroupStrategy implements GroupStrategy<TableGroup> {
 
     @Override
     public String getGroupId(TableGroup model) {

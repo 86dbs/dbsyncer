@@ -1,4 +1,4 @@
-package org.dbsyncer.common.scheduled;
+package org.dbsyncer.connector.scheduled;
 
 public interface ScheduledTaskService {
 

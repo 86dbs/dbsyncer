@@ -2,7 +2,7 @@ package org.dbsyncer.listener.quartz;
 
 import org.dbsyncer.listener.event.ScanChangedEvent;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.scheduled.ScheduledTaskJob;
+import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;

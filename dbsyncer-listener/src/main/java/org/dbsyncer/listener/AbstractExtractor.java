@@ -1,7 +1,7 @@
 package org.dbsyncer.listener;
 
+import org.dbsyncer.connector.scheduled.ScheduledTaskService;
 import org.dbsyncer.listener.model.ChangedOffset;
-import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.constant.ConnectorConstant;

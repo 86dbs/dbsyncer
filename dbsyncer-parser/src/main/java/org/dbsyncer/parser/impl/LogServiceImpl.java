@@ -3,8 +3,9 @@ package org.dbsyncer.parser.impl;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.flush.FlushService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
 
 /**
  * @version 1.0.0
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class LogServiceImpl implements LogService {
 
-    @Autowired
+    @Resource
     private FlushService flushService;
 
     @Override

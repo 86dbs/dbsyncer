@@ -11,7 +11,7 @@ import org.dbsyncer.parser.strategy.GroupStrategy;
  * @version 1.0.0
  * @date 2019/12/2 22:53
  */
-public class DefaultGroupStrategy implements GroupStrategy {
+public final class DefaultGroupStrategy implements GroupStrategy {
 
     @Override
     public String getGroupId(ConfigModel model) {

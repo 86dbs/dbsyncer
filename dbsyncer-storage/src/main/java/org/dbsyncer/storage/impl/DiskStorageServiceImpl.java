@@ -1,4 +1,4 @@
-package org.dbsyncer.storage.support;
+package org.dbsyncer.storage.impl;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.document.Document;

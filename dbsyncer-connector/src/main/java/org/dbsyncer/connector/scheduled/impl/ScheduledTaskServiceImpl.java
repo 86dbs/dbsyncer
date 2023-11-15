@@ -1,8 +1,8 @@
-package org.dbsyncer.common.scheduled.impl;
+package org.dbsyncer.connector.scheduled.impl;
 
 import org.dbsyncer.common.CommonException;
-import org.dbsyncer.common.scheduled.ScheduledTaskJob;
-import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
+import org.dbsyncer.connector.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

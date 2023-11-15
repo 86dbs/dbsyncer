@@ -12,7 +12,7 @@ import org.dbsyncer.storage.constant.ConfigConstant;
  * @version 1.0.0
  * @date 2019/12/2 22:53
  */
-public class PreloadTableGroupStrategy implements GroupStrategy<Mapping> {
+public final class PreloadTableGroupStrategy implements GroupStrategy<Mapping> {
 
     @Override
     public String getGroupId(Mapping model) {

@@ -1,7 +1,6 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.enums.BufferActuatorMetricEnum;
-import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.enums.StatisticEnum;
 import org.dbsyncer.biz.enums.ThreadPoolMetricEnum;
 import org.dbsyncer.biz.model.AppReportMetric;
@@ -10,8 +9,8 @@ import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.model.MetricResponseInfo;
 import org.dbsyncer.biz.model.Sample;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.common.scheduled.ScheduledTaskJob;
-import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
+import org.dbsyncer.connector.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.constant.ConnectorConstant;

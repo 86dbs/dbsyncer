@@ -1,7 +1,7 @@
 package org.dbsyncer.biz.checker;
 
 import org.dbsyncer.biz.enums.SafeInfoEnum;
-import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
+import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
