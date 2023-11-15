@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +48,10 @@ public final class FileConnector extends AbstractConnector implements Connector<
     private static final String FILE_NAME = "fileName";
     private static final String FILE_PATH = "filePath";
     private final FileResolver fileResolver = new FileResolver();
+
+    public FileConnector() {
+        VALUE_MAPPERS.put(Types.BIT, new FileBitValueMapper());
+    }
 
     @Override
     public ConnectorMapper connect(FileConfig config) {
