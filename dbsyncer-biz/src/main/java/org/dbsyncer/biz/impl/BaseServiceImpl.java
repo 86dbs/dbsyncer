@@ -1,16 +1,15 @@
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.MetaEnum;
-import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MessageService;
+import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
@@ -23,7 +22,7 @@ public class BaseServiceImpl {
     @Resource
     private LogService logService;
 
-    @Autowired
+    @Resource
     private MessageService messageService;
 
     /**

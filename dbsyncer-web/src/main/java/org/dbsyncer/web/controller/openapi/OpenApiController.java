@@ -1,5 +1,9 @@
-package org.dbsyncer.web.controller;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.web.controller.openapi;
 
+import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.slf4j.Logger;
@@ -34,9 +38,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * OpenAPI
+ *
+ * @Version 1.0.0
+ * @Author AE86
+ * @Date 2023-11-16 01:38
+ */
 @Controller
-@RequestMapping("/test")
-public class TestController implements InitializingBean {
+@RequestMapping("/gateway")
+public class OpenApiController implements InitializingBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -52,18 +63,17 @@ public class TestController implements InitializingBean {
     private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
     @ResponseBody
-    @RequestMapping("/demo")
-    public String demo(ModelMap modelMap, Long id, String version) {
+    @RequestMapping("/demo.json")
+    public RestResult demo(Long id, String version) {
         logger.info("id:{},version:{}", id, version);
-        modelMap.put("data", RandomUtil.nextInt(1, 100));
-        return id + version;
+        return RestResult.restSuccess(RandomUtil.nextInt(1, 100));
     }
 
     @ResponseBody
-    @RequestMapping("/adapter.json")
+    @RequestMapping("/api.json")
     public Object adapter(HttpServletRequest request, HttpServletResponse response) {
         try {
-            InvocableHandlerMethod invocableMethod = handlers.get("/test/demo");
+            InvocableHandlerMethod invocableMethod = handlers.get("/gateway/demo.json");
             // 模拟参数
             Map<String, Object> params = new HashMap<>();
             params.put("id", 1000L);
@@ -100,7 +110,7 @@ public class TestController implements InitializingBean {
     }
 
     private void initHandlerMapping() {
-        parsePackage.put("/test/", "");
+        parsePackage.put("/gateway/", "");
         RequestMappingHandlerMapping mapping = applicationContext.getBean(RequestMappingHandlerMapping.class);
         // 获取url与类和方法的对应信息
         Map<RequestMappingInfo, HandlerMethod> map = mapping.getHandlerMethods();

@@ -8,7 +8,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -25,6 +24,7 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionEvent;
@@ -59,7 +59,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
      */
     private static final int MAXIMUM_SESSIONS = 1;
 
-    @Autowired
+    @Resource
     private UserConfigService userConfigService;
 
 

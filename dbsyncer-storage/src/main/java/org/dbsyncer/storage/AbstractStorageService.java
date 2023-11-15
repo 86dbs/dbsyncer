@@ -9,9 +9,9 @@ import org.dbsyncer.storage.strategy.Strategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +29,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private Map<String, Strategy> map;
 
     private final Lock lock = new ReentrantLock();
