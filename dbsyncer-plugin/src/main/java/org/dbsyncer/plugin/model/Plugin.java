@@ -1,4 +1,4 @@
-package org.dbsyncer.plugin.config;
+package org.dbsyncer.plugin.model;
 
 /**
  * @author AE86

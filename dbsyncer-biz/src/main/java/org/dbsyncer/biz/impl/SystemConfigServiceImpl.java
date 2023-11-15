@@ -12,7 +12,7 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.manager.impl.PreloadTemplate;
-import org.dbsyncer.plugin.enums.FileSuffixEnum;
+import org.dbsyncer.common.enums.FileSuffixEnum;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;

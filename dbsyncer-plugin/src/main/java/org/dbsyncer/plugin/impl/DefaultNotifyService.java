@@ -1,4 +1,4 @@
-package org.dbsyncer.plugin.notify;
+package org.dbsyncer.plugin.impl;
 
 import org.dbsyncer.sdk.model.NotifyMessage;
 import org.dbsyncer.sdk.spi.NotifyService;

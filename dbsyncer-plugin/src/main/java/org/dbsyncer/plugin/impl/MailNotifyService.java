@@ -1,4 +1,4 @@
-package org.dbsyncer.plugin.notify;
+package org.dbsyncer.plugin.impl;
 
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.StringUtil;

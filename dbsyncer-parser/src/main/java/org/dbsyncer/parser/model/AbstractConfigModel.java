@@ -1,7 +1,7 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.connector.model.Filter;
-import org.dbsyncer.plugin.config.Plugin;
+import org.dbsyncer.plugin.model.Plugin;
 
 import java.util.List;
 import java.util.Map;

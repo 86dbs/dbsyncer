@@ -1,4 +1,4 @@
-package org.dbsyncer.common.file;
+package org.dbsyncer.listener.file;
 
 import java.io.File;
 import java.io.FileNotFoundException;

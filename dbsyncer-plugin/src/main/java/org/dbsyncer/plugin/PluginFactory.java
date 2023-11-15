@@ -2,7 +2,7 @@ package org.dbsyncer.plugin;
 
 import org.apache.commons.io.FileUtils;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.plugin.config.Plugin;
+import org.dbsyncer.plugin.model.Plugin;
 import org.dbsyncer.sdk.spi.ConvertContext;
 import org.dbsyncer.sdk.spi.ConvertService;
 import org.slf4j.Logger;

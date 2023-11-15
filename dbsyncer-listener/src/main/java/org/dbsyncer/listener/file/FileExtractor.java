@@ -3,7 +3,6 @@ package org.dbsyncer.listener.file;
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.listener.model.ChangedOffset;
 import org.dbsyncer.listener.event.RowChangedEvent;
-import org.dbsyncer.common.file.BufferedRandomAccessFile;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;

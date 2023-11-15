@@ -1,4 +1,4 @@
-package org.dbsyncer.plugin.service;
+package org.dbsyncer.plugin.impl;
 
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.sdk.spi.ConvertContext;
