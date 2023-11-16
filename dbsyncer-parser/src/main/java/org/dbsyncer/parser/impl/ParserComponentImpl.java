@@ -76,11 +76,6 @@ public class ParserComponentImpl implements ParserComponent {
     private BufferActuator generalBufferActuator;
 
     @Override
-    public List<Table> getTable(ConnectorMapper config) {
-        return connectorFactory.getTable(config);
-    }
-
-    @Override
     public MetaInfo getMetaInfo(String connectorId, String tableName) {
         Connector connector = profileComponent.getConnector(connectorId);
         ConnectorMapper connectorMapper = connectorFactory.connect(connector.getConfig());

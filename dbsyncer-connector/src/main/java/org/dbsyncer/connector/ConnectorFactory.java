@@ -48,12 +48,14 @@ public class ConnectorFactory implements DisposableBean {
         if (!connectorCache.containsKey(cacheKey)) {
             synchronized (connectorCache) {
                 if (!connectorCache.containsKey(cacheKey)) {
-                    connectorCache.putIfAbsent(cacheKey, connector.connect(config));
+                    ConnectorMapper mapper = connector.connect(config);
+                    Assert.isTrue(connector.isAlive(mapper), "连接配置异常");
+                    connectorCache.putIfAbsent(cacheKey, mapper);
                 }
             }
         }
-        ConnectorMapper connectorMapper = connectorCache.get(cacheKey);
         try {
+            ConnectorMapper connectorMapper = connectorCache.get(cacheKey);
             ConnectorMapper clone = (ConnectorMapper) connectorMapper.clone();
             clone.setConfig(config);
             return clone;
@@ -63,21 +65,20 @@ public class ConnectorFactory implements DisposableBean {
     }
 
     /**
-     * 刷新连接配置
+     * 断开连接
      *
      * @param config
      * @return
      */
-    public boolean refresh(ConnectorConfig config) {
+    public void disconnect(ConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
         Connector connector = getConnector(config.getConnectorType());
         String cacheKey = connector.getConnectorMapperCacheKey(config);
-        if (connectorCache.containsKey(cacheKey)) {
-            disconnect(connectorCache.get(cacheKey));
+        ConnectorMapper connectorMapper = connectorCache.get(cacheKey);
+        if (connectorMapper != null) {
+            disconnect(connectorMapper);
             connectorCache.remove(cacheKey);
         }
-        connect(config);
-        return connector.isAlive(connectorCache.get(cacheKey));
     }
 
     /**
@@ -184,12 +185,6 @@ public class ConnectorFactory implements DisposableBean {
         return getConnector(connectorConfig.getConnectorType());
     }
 
-    /**
-     * 获取连接器
-     *
-     * @param connectorType
-     * @return
-     */
     public Connector getConnector(String connectorType) {
         return ConnectorEnum.getConnectorEnum(connectorType).getConnector();
     }

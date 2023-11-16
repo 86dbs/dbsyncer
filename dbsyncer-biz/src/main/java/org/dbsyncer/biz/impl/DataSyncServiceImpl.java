@@ -4,7 +4,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.vo.BinlogColumnVo;
 import org.dbsyncer.biz.vo.MessageVo;
-import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -12,8 +11,9 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.parser.ParserComponent;
+import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
@@ -53,7 +53,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private ParserComponent parserComponent;
+    private BufferActuatorRouter bufferActuatorRouter;
 
     @Resource
     private ProfileComponent profileComponent;
@@ -164,7 +164,7 @@ public class DataSyncServiceImpl implements DataSyncService {
             // 转换为源字段
             final Picker picker = new Picker(tableGroup.getFieldMapping());
             changedEvent.setChangedRow(picker.pickSourceData(binlogData));
-            parserComponent.execute(tableGroupId, changedEvent);
+            bufferActuatorRouter.execute(metaId, tableGroupId, changedEvent);
             storageService.remove(StorageEnum.DATA, metaId, messageId);
             // 更新失败数
             Meta meta = profileComponent.getMeta(metaId);

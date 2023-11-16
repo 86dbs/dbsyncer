@@ -29,11 +29,7 @@ public class KafkaConnector extends AbstractConnector implements Connector<Kafka
 
     @Override
     public ConnectorMapper connect(KafkaConfig config) {
-        try {
-            return new KafkaConnectorMapper(config);
-        } catch (Exception e) {
-            throw new ConnectorException("无法连接, 请检查配置：" + e.getMessage());
-        }
+        return new KafkaConnectorMapper(config);
     }
 
     @Override

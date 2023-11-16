@@ -79,7 +79,6 @@ public interface LogType {
         UPDATE("21", "修改"),
         DELETE("22", "删除"),
         FAILED("23", "连接失败"),
-        RECONNECT_SUCCESS("24", "重连成功"),
         COPY("25", "复制");
 
         private String type;

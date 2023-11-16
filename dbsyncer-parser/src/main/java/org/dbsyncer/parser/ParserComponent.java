@@ -1,17 +1,14 @@
 package org.dbsyncer.parser;
 
-import org.dbsyncer.listener.ChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.connector.model.MetaInfo;
-import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.listener.ChangedEvent;
 import org.dbsyncer.parser.model.BatchWriter;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.dbsyncer.sdk.spi.ConvertContext;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
@@ -25,14 +22,6 @@ import java.util.concurrent.Executor;
  * @date 2019/10/20 21:11
  */
 public interface ParserComponent {
-
-    /**
-     * 获取连接器表
-     *
-     * @param config
-     * @return
-     */
-    List<Table> getTable(ConnectorMapper config);
 
     /**
      * 获取表元信息

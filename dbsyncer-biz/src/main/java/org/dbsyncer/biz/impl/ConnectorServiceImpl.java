@@ -7,9 +7,9 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -98,9 +98,11 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         }
 
         Connector connector = profileComponent.getConnector(id);
-        log(LogType.ConnectorLog.DELETE, connector);
-
-        profileComponent.removeConfigModel(id);
+        if (connector != null) {
+            connectorFactory.disconnect(connector.getConfig());
+            log(LogType.ConnectorLog.DELETE, connector);
+            profileComponent.removeConfigModel(id);
+        }
         return "删除连接器成功!";
     }
 
@@ -138,7 +140,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         // 更新连接器状态
         Set<String> exist = new HashSet<>();
         list.forEach(c -> {
-            health.put(c.getId(), isAliveConnectorConfig(c.getConfig()));
+            health.put(c.getId(), isAlive(c.getConfig()));
             exist.add(c.getId());
         });
 
@@ -160,26 +162,14 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         return health.containsKey(id) && health.get(id);
     }
 
-    private boolean isAliveConnectorConfig(ConnectorConfig config) {
-        boolean alive = false;
+    private boolean isAlive(ConnectorConfig config) {
         try {
-            alive = connectorFactory.isAlive(config);
+            return connectorFactory.isAlive(config);
         } catch (Exception e) {
             LogType.ConnectorLog logType = LogType.ConnectorLog.FAILED;
             logService.log(logType, "%s%s", logType.getName(), e.getMessage());
+            return false;
         }
-        // 断线重连
-        if (!alive) {
-            try {
-                alive = connectorFactory.refresh(config);
-            } catch (Exception e) {
-                logger.error(e.getMessage());
-            }
-            if (alive) {
-                logger.info(LogType.ConnectorLog.RECONNECT_SUCCESS.getMessage());
-            }
-        }
-        return alive;
     }
 
 }

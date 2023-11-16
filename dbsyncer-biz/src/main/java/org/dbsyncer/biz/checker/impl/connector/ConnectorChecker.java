@@ -6,11 +6,7 @@ import org.dbsyncer.biz.checker.ConnectorConfigChecker;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.enums.ConnectorEnum;
-import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.LogService;
-import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.sdk.model.ConnectorConfig;
@@ -22,7 +18,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -36,13 +31,7 @@ public class ConnectorChecker extends AbstractChecker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private ParserComponent parserComponent;
-
-    @Resource
     private ProfileComponent profileComponent;
-
-    @Resource
-    private LogService logService;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -70,7 +59,8 @@ public class ConnectorChecker extends AbstractChecker {
         checker.modify(config, params);
 
         // 获取表
-        setTable(connector);
+        ConnectorMapper mapper = connectorFactory.connect(connector.getConfig());
+        connector.setTable(connectorFactory.getTable(mapper));
 
         // 修改基本配置
         this.modifyConfigModel(connector, params);
@@ -85,19 +75,21 @@ public class ConnectorChecker extends AbstractChecker {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Connector connector = profileComponent.getConnector(id);
         Assert.notNull(connector, "Can not find connector.");
+        ConnectorConfig config = connector.getConfig();
+        connectorFactory.disconnect(config);
 
         // 修改基本配置
         this.modifyConfigModel(connector, params);
 
         // 配置连接器配置
-        ConnectorConfig config = connector.getConfig();
         String type = StringUtil.toLowerCaseFirstOne(config.getConnectorType()).concat("ConfigChecker");
         ConnectorConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
         checker.modify(config, params);
 
         // 获取表
-        setTable(connector);
+        ConnectorMapper mapper = connectorFactory.connect(config);
+        connector.setTable(connectorFactory.getTable(mapper));
 
         return connector;
     }
@@ -111,18 +103,6 @@ public class ConnectorChecker extends AbstractChecker {
             logger.error(e.getMessage());
             throw new BizException("获取连接器配置异常.");
         }
-    }
-
-    private void setTable(Connector connector) {
-        boolean isAlive = connectorFactory.isAlive(connector.getConfig());
-        if (!isAlive) {
-            logService.log(LogType.ConnectorLog.FAILED);
-        }
-        Assert.isTrue(isAlive, "无法连接.");
-        // 获取表信息
-        ConnectorMapper connectorMapper = connectorFactory.connect(connector.getConfig());
-        List<Table> table = parserComponent.getTable(connectorMapper);
-        connector.setTable(table);
     }
 
 }
