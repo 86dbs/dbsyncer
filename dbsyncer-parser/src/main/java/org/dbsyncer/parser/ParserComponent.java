@@ -2,7 +2,6 @@ package org.dbsyncer.parser;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.connector.model.MetaInfo;
-import org.dbsyncer.listener.ChangedEvent;
 import org.dbsyncer.parser.model.BatchWriter;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
@@ -59,14 +58,6 @@ public interface ParserComponent {
      * @param executor
      */
     void execute(Task task, Mapping mapping, TableGroup tableGroup, Executor executor);
-
-    /**
-     * 增量同步
-     *
-     * @param tableGroupId 表关系ID
-     * @param changedEvent 增量事件
-     */
-    void execute(String tableGroupId, ChangedEvent changedEvent);
 
     /**
      * 批执行

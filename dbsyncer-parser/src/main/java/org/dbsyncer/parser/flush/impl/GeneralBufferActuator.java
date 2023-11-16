@@ -9,13 +9,12 @@ import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.model.MetaInfo;
-import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.parser.ParserComponent;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.BatchWriter;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
@@ -24,15 +23,12 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.parser.model.WriterResponse;
 import org.dbsyncer.parser.strategy.FlushStrategy;
-import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.IncrementConvertContext;
 import org.dbsyncer.sdk.spi.ConnectorMapper;
-import org.dbsyncer.storage.StorageService;
-import org.dbsyncer.storage.enums.StorageEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -41,7 +37,6 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -71,16 +66,13 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     private ParserComponent parserComponent;
 
     @Resource
+    private ProfileComponent profileComponent;
+
+    @Resource
     private PluginFactory pluginFactory;
 
     @Resource
     private FlushStrategy flushStrategy;
-
-    @Resource
-    private CacheService cacheService;
-
-    @Resource
-    private StorageService storageService;
 
     @Resource
     private ApplicationContext applicationContext;
@@ -125,8 +117,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Override
     protected void pull(WriterResponse response) {
         // 0、获取配置信息
-        final TableGroup tableGroup = cacheService.get(response.getTableGroupId(), TableGroup.class);
-        final Mapping mapping = cacheService.get(tableGroup.getMappingId(), Mapping.class);
+        final TableGroup tableGroup = profileComponent.getTableGroup(response.getTableGroupId());
+        final Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
         final TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
 
         // 1、ddl解析
@@ -215,7 +207,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 tableGroup.setCommand(commands);
 
                 // 5.持久化存储 & 更新缓存配置
-                flushCache(tableGroup);
+                profileComponent.editTableGroup(tableGroup);
 
                 // 6.发布更新事件，持久化增量数据
                 applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
@@ -237,31 +229,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
      */
     private ConnectorConfig getConnectorConfig(String connectorId) {
         Assert.hasText(connectorId, "Connector id can not be empty.");
-        Connector conn = cacheService.get(connectorId, Connector.class);
+        Connector conn = profileComponent.getConnector(connectorId);
         Assert.notNull(conn, "Connector can not be null.");
         return conn.getConfig();
-    }
-
-    /**
-     * 持久化驱动配置
-     *
-     * @param tableGroup
-     */
-    private void flushCache(TableGroup tableGroup) {
-        // 1、解析配置
-        ConfigModel model = tableGroup;
-        model.setCreateTime(new Date().getTime());
-        model.setUpdateTime(new Date().getTime());
-        Assert.notNull(model, "ConfigModel can not be null.");
-
-        // 2、持久化
-        Map<String, Object> params = ConfigModelUtil.convertModelToMap(model);
-        logger.debug("params:{}", params);
-        storageService.edit(StorageEnum.CONFIG, params);
-
-        // 3、缓存
-        Assert.notNull(model, "ConfigModel can not be null.");
-        cacheService.put(model.getId(), model);
     }
 
     public void setGeneralExecutor(Executor generalExecutor) {

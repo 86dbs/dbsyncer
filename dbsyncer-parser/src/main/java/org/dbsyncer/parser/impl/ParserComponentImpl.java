@@ -1,6 +1,5 @@
 package org.dbsyncer.parser.impl;
 
-import org.dbsyncer.listener.ChangedEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -16,7 +15,6 @@ import org.dbsyncer.connector.util.PrimaryKeyUtil;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.event.FullRefreshEvent;
-import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.BatchWriter;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
@@ -24,7 +22,6 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
-import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -71,9 +68,6 @@ public class ParserComponentImpl implements ParserComponent {
 
     @Resource
     private ApplicationContext applicationContext;
-
-    @Resource
-    private BufferActuator generalBufferActuator;
 
     @Override
     public MetaInfo getMetaInfo(String connectorId, String tableName) {
@@ -199,11 +193,6 @@ public class ParserComponentImpl implements ParserComponent {
                 break;
             }
         }
-    }
-
-    @Override
-    public void execute(String tableGroupId, ChangedEvent event) {
-        generalBufferActuator.offer(new WriterRequest(tableGroupId, event));
     }
 
     @Override

@@ -3,7 +3,7 @@ package org.dbsyncer.parser.flush;
 import org.dbsyncer.common.config.BufferActuatorConfig;
 import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
 import org.dbsyncer.connector.scheduled.ScheduledTaskService;
-import org.dbsyncer.parser.CacheService;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Meta;
 import org.slf4j.Logger;
@@ -50,7 +50,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     private ScheduledTaskService scheduledTaskService;
 
     @Resource
-    private CacheService cacheService;
+    private ProfileComponent profileComponent;
 
     public AbstractBufferActuator() {
         int level = 5;
@@ -87,7 +87,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     /**
      * 初始化锁
      */
-    protected void buildLock(){
+    protected void buildLock() {
         taskLock = new ReentrantLock();
         queueLock = new ReentrantLock(true);
         isFull = queueLock.newCondition();
@@ -116,7 +116,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      * @return
      */
     protected boolean isRunning(BufferRequest request) {
-        Meta meta = cacheService.get(request.getMetaId(), Meta.class);
+        Meta meta = profileComponent.getMeta(request.getMetaId());
         return meta != null && MetaEnum.isRunning(meta.getState());
     }
 
