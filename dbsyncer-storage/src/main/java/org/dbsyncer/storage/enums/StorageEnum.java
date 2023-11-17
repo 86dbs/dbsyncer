@@ -18,12 +18,7 @@ public enum StorageEnum {
     /**
      * 数据：全量或增量数据
      */
-    DATA("data"),
-    /**
-     * Binlog：缓存队列数据
-     */
-    @Deprecated
-    BINLOG("binlog");
+    DATA("data");
 
     private String type;
 

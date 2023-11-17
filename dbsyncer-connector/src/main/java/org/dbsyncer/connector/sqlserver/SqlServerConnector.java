@@ -25,11 +25,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     private static final String QUERY_TABLE = "select name from sys.tables where schema_id = schema_id('%s') and is_ms_shipped = 0";
 
-    /**
-     * 系统函数表达式convert/varchar/getdate
-     */
-    private final String SYS_EXPRESSION = "(convert\\().+?(\\))|(varchar\\().+?(\\))|(getdate\\(\\))";
-
     @Override
     public List<Table> getTable(DatabaseConnectorMapper connectorMapper) {
         DatabaseConfig config = connectorMapper.getConfig();
@@ -50,22 +45,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         int pageSize = config.getPageSize();
         int pageIndex = config.getPageIndex();
         return new Object[] {(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
-    }
-
-    /**
-     * TODO 待废弃 推荐使用系统参数表达式$xxx$
-     *
-     * @param value
-     * @return
-     */
-    @Deprecated
-    @Override
-    public String buildFilterValue(String value) {
-        // 支持SqlServer系统函数, Example: (select CONVERT(varchar(10),GETDATE(),120))
-        if (containsKeyword(SYS_EXPRESSION, value)) {
-            return value;
-        }
-        return super.buildFilterValue(value);
     }
 
     @Override
