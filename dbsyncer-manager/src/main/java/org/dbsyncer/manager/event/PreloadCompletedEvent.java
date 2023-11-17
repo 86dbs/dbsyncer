@@ -10,6 +10,7 @@ import org.springframework.context.event.ApplicationContextEvent;
  * @Author AE86
  * @Date 2020-08-26 22:45
  */
+@Deprecated
 public final class PreloadCompletedEvent extends ApplicationContextEvent {
 
     /**

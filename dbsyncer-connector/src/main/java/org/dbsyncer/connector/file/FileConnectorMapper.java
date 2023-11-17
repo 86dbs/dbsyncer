@@ -37,6 +37,11 @@ public final class FileConnectorMapper implements ConnectorMapper<FileConfig, St
         }
     }
 
+    @Override
+    public String getServiceUrl() {
+        return config.getFileDir();
+    }
+
     public FileConfig getConfig() {
         return config;
     }

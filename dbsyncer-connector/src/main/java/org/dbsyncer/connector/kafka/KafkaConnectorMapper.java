@@ -14,6 +14,11 @@ public final class KafkaConnectorMapper implements ConnectorMapper<KafkaConfig, 
     }
 
     @Override
+    public String getServiceUrl() {
+        return config.getBootstrapServers();
+    }
+
+    @Override
     public KafkaConfig getConfig() {
         return config;
     }

@@ -24,6 +24,11 @@ public final class ESConnectorMapper implements ConnectorMapper<ESConfig, EasyRe
     }
 
     @Override
+    public String getServiceUrl() {
+        return config.getUrl();
+    }
+
+    @Override
     public ESConfig getConfig() {
         return config;
     }

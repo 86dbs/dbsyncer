@@ -12,6 +12,13 @@ package org.dbsyncer.sdk.spi;
 public interface ConnectorMapper<K, V> extends Cloneable {
 
     /**
+     * 获取服务地址
+     *
+     * @return
+     */
+    String getServiceUrl();
+
+    /**
      * 获取连接配置
      *
      * @return

@@ -3,6 +3,9 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.SystemConfigService;
+import org.dbsyncer.biz.enums.BufferActuatorMetricEnum;
+import org.dbsyncer.biz.enums.DiskMetricEnum;
+import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.metric.MetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.CpuMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.DiskMetricDetailFormatter;
@@ -10,32 +13,28 @@ import org.dbsyncer.biz.metric.impl.DoubleRoundMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.GCMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.MemoryMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.ValueMetricDetailFormatter;
+import org.dbsyncer.biz.model.AppReportMetric;
+import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.vo.AppReportMetricVo;
 import org.dbsyncer.biz.vo.DataVo;
 import org.dbsyncer.biz.vo.LogVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.biz.vo.MetricResponseVo;
-import org.dbsyncer.manager.event.PreloadCompletedEvent;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
-import org.dbsyncer.connector.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.biz.enums.BufferActuatorMetricEnum;
-import org.dbsyncer.biz.enums.DiskMetricEnum;
-import org.dbsyncer.biz.enums.MetricEnum;
-import org.dbsyncer.biz.model.AppReportMetric;
-import org.dbsyncer.biz.model.MetricResponse;
-import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.MetaEnum;
-import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
+import org.dbsyncer.connector.scheduled.ScheduledTaskService;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
@@ -47,7 +46,6 @@ import org.dbsyncer.storage.query.filter.LongFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
-import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -69,7 +67,7 @@ import java.util.stream.Collectors;
  * @date 2020/04/27 10:20
  */
 @Service
-public class MonitorServiceImpl extends BaseServiceImpl implements MonitorService, ScheduledTaskJob, ApplicationListener<PreloadCompletedEvent> {
+public class MonitorServiceImpl extends BaseServiceImpl implements MonitorService, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -93,8 +91,6 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Resource
     private SystemConfigService systemConfigService;
-
-    private boolean preloadCompleted;
 
     private Map<String, MetricDetailFormatter> metricDetailFormatterMap = new LinkedHashMap<>();
 
@@ -205,10 +201,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public void deleteExpiredDataAndLog() {
-        if (preloadCompleted) {
-            deleteExpiredData();
-            deleteExpiredLog();
-        }
+        deleteExpiredData();
+        deleteExpiredLog();
     }
 
     @Override
@@ -350,8 +344,4 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }).collect(Collectors.toList());
     }
 
-    @Override
-    public void onApplicationEvent(PreloadCompletedEvent event) {
-        preloadCompleted = true;
-    }
 }

@@ -1,28 +1,31 @@
 package org.dbsyncer.manager.impl;
 
-import org.dbsyncer.manager.event.PreloadCompletedEvent;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
+import org.dbsyncer.parser.LogService;
+import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.command.PreloadCommand;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.GroupStrategyEnum;
 import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.parser.impl.OperationTemplate;
 import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
-import org.dbsyncer.parser.impl.OperationTemplate;
 import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageEnum;
 import org.dbsyncer.storage.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
@@ -31,6 +34,8 @@ import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.stream.Stream;
 
 /**
  * 预加载配置模板
@@ -54,13 +59,21 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private ManagerFactory managerFactory;
 
     @Resource
+    private ConnectorFactory connectorFactory;
+
+    @Resource
     private PluginFactory pluginFactory;
 
     @Resource
     private StorageService storageService;
 
     @Resource
-    private ApplicationContext applicationContext;
+    private LogService logService;
+
+    @Resource
+    private Executor generalExecutor;
+
+    private boolean preloadCompleted;
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -70,11 +83,22 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         // Load plugins
         pluginFactory.loadPlugins();
 
+        // Load connectorMappers
+        loadConnectorMapper();
+
         // Launch drivers
         launch();
 
-        // publish event
-        applicationContext.publishEvent(new PreloadCompletedEvent(applicationContext));
+        preloadCompleted = true;
+    }
+
+    /**
+     * 是否完成预加载配置
+     *
+     * @return
+     */
+    public boolean isPreloadCompleted() {
+        return preloadCompleted;
     }
 
     public void reload(String json) {
@@ -83,18 +107,14 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             return;
         }
 
-        // Load system
-        reload(map, CommandEnum.PRELOAD_SYSTEM);
-        // Load user
-        reload(map, CommandEnum.PRELOAD_USER);
-        // Load connectors
-        reload(map, CommandEnum.PRELOAD_CONNECTOR);
-        // Load mappings
-        reload(map, CommandEnum.PRELOAD_MAPPING);
-        // Load metas
-        reload(map, CommandEnum.PRELOAD_META);
-        // Load projectGroups
-        reload(map, CommandEnum.PRELOAD_PROJECT_GROUP);
+        // Load configModels
+        Stream.of(CommandEnum.PRELOAD_SYSTEM, CommandEnum.PRELOAD_USER, CommandEnum.PRELOAD_CONNECTOR, CommandEnum.PRELOAD_MAPPING,
+                CommandEnum.PRELOAD_META, CommandEnum.PRELOAD_PROJECT_GROUP).forEach(commandEnum -> reload(map, commandEnum));
+
+        // Load connectorMappers
+        loadConnectorMapper();
+
+        // Launch drivers
         launch();
     }
 
@@ -140,7 +160,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             total += paging.getTotal();
             pageNum++;
         }
-        logger.info("PreLoad {}:{}", modelType, total);
+        logger.info("{}:{}", modelType, total);
     }
 
     private void reload(Map<String, Map> map, CommandEnum commandEnum) {
@@ -170,6 +190,24 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             if (CommandEnum.PRELOAD_MAPPING == commandEnum) {
                 reload(map, CommandEnum.PRELOAD_TABLE_GROUP, operationTemplate.getGroupId(model, GroupStrategyEnum.PRELOAD_TABLE_GROUP));
             }
+        }
+    }
+
+    private void loadConnectorMapper() {
+        List<Connector> list = profileComponent.getConnectorAll();
+        if (!CollectionUtils.isEmpty(list)) {
+            list.forEach(connector -> {
+                generalExecutor.execute(() -> {
+                    try {
+                        connectorFactory.disconnect(connector.getConfig());
+                        ConnectorMapper mapper = connectorFactory.connect(connector.getConfig());
+                        logger.info("Completed connection {} {}", connector.getConfig().getConnectorType(), mapper.getServiceUrl());
+                    } catch (Exception e) {
+                        logger.error("连接配置异常", e);
+                        logService.log(LogType.ConnectorLog.FAILED, e.getMessage());
+                    }
+                });
+            });
         }
     }
 }

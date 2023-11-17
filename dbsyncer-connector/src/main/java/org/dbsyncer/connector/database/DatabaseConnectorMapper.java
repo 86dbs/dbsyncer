@@ -37,6 +37,11 @@ public class DatabaseConnectorMapper implements ConnectorMapper<DatabaseConfig, 
     }
 
     @Override
+    public String getServiceUrl() {
+        return config.getUrl();
+    }
+
+    @Override
     public DatabaseConfig getConfig() {
         return config;
     }
