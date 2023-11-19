@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 @Component
-public class DemoPluginServiceProvider implements PluginService {
+public final class DemoPluginServiceProvider implements PluginService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

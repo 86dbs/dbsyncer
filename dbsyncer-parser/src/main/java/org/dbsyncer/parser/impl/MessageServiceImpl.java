@@ -5,8 +5,8 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.MessageService;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.UserConfig;
-import org.dbsyncer.sdk.model.NotifyMessage;
-import org.dbsyncer.sdk.spi.NotifyService;
+import org.dbsyncer.plugin.model.NotifyMessage;
+import org.dbsyncer.plugin.NotifyService;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;

@@ -2,8 +2,8 @@ package org.dbsyncer.plugin.impl;
 
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.model.NotifyMessage;
-import org.dbsyncer.sdk.spi.NotifyService;
+import org.dbsyncer.plugin.model.NotifyMessage;
+import org.dbsyncer.plugin.NotifyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -33,7 +33,7 @@ import java.util.Properties;
 @Component
 @ConditionalOnProperty(value = "dbsyncer.plugin.notify.mail.enabled", havingValue = "true")
 @ConfigurationProperties(prefix = "dbsyncer.plugin.notify.mail")
-public class MailNotifyService implements NotifyService {
+public final class MailNotifyServiceProvider implements NotifyService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
