@@ -3,8 +3,8 @@ package org.dbsyncer.plugin;
 import org.apache.commons.io.FileUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.plugin.model.Plugin;
-import org.dbsyncer.sdk.spi.ConvertContext;
-import org.dbsyncer.sdk.spi.ConvertService;
+import org.dbsyncer.sdk.plugin.PluginContext;
+import org.dbsyncer.sdk.spi.PluginService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -51,14 +51,14 @@ public class PluginFactory implements DisposableBean {
 
     private final List<Plugin> plugins = new LinkedList<>();
 
-    private final Map<String, ConvertService> service = new LinkedHashMap<>();
+    private final Map<String, PluginService> service = new LinkedHashMap<>();
 
     @Resource
     private ApplicationContext applicationContext;
 
     @PostConstruct
     private void init() {
-        Map<String, ConvertService> services = applicationContext.getBeansOfType(ConvertService.class);
+        Map<String, PluginService> services = applicationContext.getBeansOfType(PluginService.class);
         if (!CollectionUtils.isEmpty(services)) {
             services.forEach((k, s) -> {
                 String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
@@ -110,7 +110,7 @@ public class PluginFactory implements DisposableBean {
      * @param plugin
      * @param context
      */
-    public void convert(Plugin plugin, ConvertContext context) {
+    public void convert(Plugin plugin, PluginContext context) {
         if (null != plugin) {
             String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
             service.computeIfPresent(pluginId, (k, c) -> {
@@ -126,7 +126,7 @@ public class PluginFactory implements DisposableBean {
      * @param plugin
      * @param context
      */
-    public void postProcessAfter(Plugin plugin, ConvertContext context) {
+    public void postProcessAfter(Plugin plugin, PluginContext context) {
         if (null != plugin) {
             String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
             service.computeIfPresent(pluginId, (k, c) -> {
@@ -150,8 +150,8 @@ public class PluginFactory implements DisposableBean {
             String fileName = jar.getName();
             URL url = jar.toURI().toURL();
             URLClassLoader loader = new URLClassLoader(new URL[]{url}, Thread.currentThread().getContextClassLoader());
-            ServiceLoader<ConvertService> services = ServiceLoader.load(ConvertService.class, loader);
-            for (ConvertService s : services) {
+            ServiceLoader<PluginService> services = ServiceLoader.load(PluginService.class, loader);
+            for (PluginService s : services) {
                 String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
                 // 先释放历史版本
                 if (service.containsKey(pluginId)) {

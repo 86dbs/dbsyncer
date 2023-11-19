@@ -1,5 +1,7 @@
 package org.dbsyncer.sdk.spi;
 
+import org.dbsyncer.sdk.plugin.PluginContext;
+
 /**
  * 插件扩展服务接口
  * <p>全量同步/增量同步,扩展转换</p>
@@ -8,28 +10,28 @@ package org.dbsyncer.sdk.spi;
  * @version 1.0.0
  * @date 2021/02/22 20:26
  */
-public interface ConvertService {
+public interface PluginService {
 
     /**
      * 初始化加载
      */
-    default void init(){
+    default void init() {
 
     }
 
     /**
      * 全量同步/增量同步
      *
-     * @param context 上下文
+     * @param pluginContext 上下文
      */
-    void convert(ConvertContext context);
+    void convert(PluginContext pluginContext);
 
     /**
      * 全量同步/增量同步完成后执行处理
      *
-     * @param context 上下文
+     * @param pluginContext 上下文
      */
-    default void postProcessAfter(ConvertContext context) {
+    default void postProcessAfter(PluginContext pluginContext) {
     }
 
     /**

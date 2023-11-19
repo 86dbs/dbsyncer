@@ -6,7 +6,7 @@ import org.dbsyncer.parser.model.BatchWriter;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
-import org.dbsyncer.sdk.spi.ConvertContext;
+import org.dbsyncer.sdk.plugin.PluginContext;
 
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -62,11 +62,11 @@ public interface ParserComponent {
     /**
      * 批执行
      *
-     * @param context
+     * @param pluginContext
      * @param batchWriter
      * @param executor
      * @return
      */
-    Result writeBatch(ConvertContext context, BatchWriter batchWriter, Executor executor);
+    Result writeBatch(PluginContext pluginContext, BatchWriter batchWriter, Executor executor);
 
 }

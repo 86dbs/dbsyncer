@@ -27,9 +27,9 @@ import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.model.FullConvertContext;
+import org.dbsyncer.sdk.plugin.impl.FullPluginContext;
 import org.dbsyncer.sdk.spi.ConnectorMapper;
-import org.dbsyncer.sdk.spi.ConvertContext;
+import org.dbsyncer.sdk.plugin.PluginContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -145,7 +145,7 @@ public class ParserComponentImpl implements ParserComponent {
         final ConnectorMapper sConnectorMapper = connectorFactory.connect(sConfig);
         final ConnectorMapper tConnectorMapper = connectorFactory.connect(tConfig);
         final String event = ConnectorConstant.OPERTION_INSERT;
-        final FullConvertContext context = new FullConvertContext(sConnectorMapper, tConnectorMapper, sTableName, tTableName, event);
+        final FullPluginContext context = new FullPluginContext(sConnectorMapper, tConnectorMapper, sTableName, tTableName, event);
 
         for (; ; ) {
             if (!task.isRunning()) {
@@ -196,10 +196,10 @@ public class ParserComponentImpl implements ParserComponent {
     }
 
     @Override
-    public Result writeBatch(ConvertContext context, BatchWriter batchWriter, Executor executor) {
+    public Result writeBatch(PluginContext pluginContext, BatchWriter batchWriter, Executor executor) {
         final Result result = new Result();
         // 终止同步数据到目标源库
-        if (context.isTerminated()) {
+        if (pluginContext.isTerminated()) {
             result.getSuccessData().addAll(batchWriter.getDataList());
             return result;
         }

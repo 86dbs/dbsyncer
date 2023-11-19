@@ -1,7 +1,6 @@
-package org.dbsyncer.sdk.model;
+package org.dbsyncer.sdk.plugin;
 
 import org.dbsyncer.sdk.spi.ConnectorMapper;
-import org.dbsyncer.sdk.spi.ConvertContext;
 
 import java.util.List;
 import java.util.Map;
@@ -11,7 +10,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2022/6/30 16:00
  */
-public abstract class AbstractConvertContext implements ConvertContext {
+public abstract class AbstractPluginContext implements PluginContext {
 
     /**
      * 是否终止任务

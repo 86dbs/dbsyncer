@@ -1,4 +1,7 @@
-package org.dbsyncer.sdk.spi;
+package org.dbsyncer.sdk.plugin;
+
+import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.spi.ConnectorMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -10,7 +13,14 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2022/10/28 20:26
  */
-public interface ConvertContext {
+public interface PluginContext {
+
+    /**
+     * 获取同步方式
+     *
+     * @return
+     */
+    ModelEnum getModelEnum();
 
     /**
      * 是否终止同步数据到目标源库
