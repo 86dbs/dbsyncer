@@ -27,7 +27,7 @@ import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.plugin.impl.IncrementPluginContext;
+import org.dbsyncer.plugin.impl.IncrementPluginContext;
 import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,5 +1,6 @@
-package org.dbsyncer.sdk.plugin;
+package org.dbsyncer.plugin;
 
+import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.spi.ConnectorMapper;
 
 import java.util.List;
