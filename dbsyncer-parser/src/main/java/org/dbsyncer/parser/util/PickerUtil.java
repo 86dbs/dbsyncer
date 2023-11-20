@@ -2,21 +2,18 @@ package org.dbsyncer.parser.util;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.connector.model.Filter;
 import org.dbsyncer.parser.model.Convert;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Filter;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public abstract class PickerUtil {
-
-    private PickerUtil() {
-    }
 
     /**
      * 合并参数配置、过滤条件、转换配置、插件配置、目标源字段、数据源字段

@@ -1,8 +1,8 @@
 package org.dbsyncer.plugin.impl;
 
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.plugin.AbstractPluginContext;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
 
 /**
  * @author AE86
@@ -11,8 +11,8 @@ import org.dbsyncer.sdk.spi.ConnectorMapper;
  */
 public final class FullPluginContext extends AbstractPluginContext {
 
-    public FullPluginContext(ConnectorMapper sourceConnectorMapper, ConnectorMapper targetConnectorMapper, String sourceTableName, String targetTableName, String event) {
-        super.init(sourceConnectorMapper, targetConnectorMapper, sourceTableName, targetTableName, event, null, null);
+    public FullPluginContext(ConnectorInstance sourceConnectorInstance, ConnectorInstance targetConnectorInstance, String sourceTableName, String targetTableName, String event) {
+        super.init(sourceConnectorInstance, targetConnectorInstance, sourceTableName, targetTableName, event, null, null);
     }
 
     @Override

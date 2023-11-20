@@ -1,7 +1,7 @@
 package org.dbsyncer.sdk.plugin;
 
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ModelEnum;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -40,12 +40,12 @@ public interface PluginContext {
     /**
      * 数据源连接实例
      */
-    ConnectorMapper getSourceConnectorMapper();
+    ConnectorInstance getSourceConnectorInstance();
 
     /**
      * 目标源连接实例
      */
-    ConnectorMapper getTargetConnectorMapper();
+    ConnectorInstance getTargetConnectorInstance();
 
     /**
      * 数据源表

@@ -4,14 +4,14 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.ReaderConfig;
-import org.dbsyncer.connector.config.WriterBatchConfig;
-import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.connector.model.MetaInfo;
-import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.connector.util.PrimaryKeyUtil;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.config.WriterBatchConfig;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.event.FullRefreshEvent;
@@ -26,9 +26,9 @@ import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.plugin.impl.FullPluginContext;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,8 +72,8 @@ public class ParserComponentImpl implements ParserComponent {
     @Override
     public MetaInfo getMetaInfo(String connectorId, String tableName) {
         Connector connector = profileComponent.getConnector(connectorId);
-        ConnectorMapper connectorMapper = connectorFactory.connect(connector.getConfig());
-        MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorMapper, tableName);
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+        MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorInstance, tableName);
         if (!CollectionUtils.isEmpty(connector.getTable())) {
             for (Table t : connector.getTable()) {
                 if (t.getName().equals(tableName)) {
@@ -114,8 +114,8 @@ public class ParserComponentImpl implements ParserComponent {
 
     @Override
     public long getCount(String connectorId, Map<String, String> command) {
-        ConnectorMapper connectorMapper = connectorFactory.connect(getConnectorConfig(connectorId));
-        return connectorFactory.getCount(connectorMapper, command);
+        ConnectorInstance connectorInstance = connectorFactory.connect(getConnectorConfig(connectorId));
+        return connectorFactory.getCount(connectorInstance, command);
     }
 
     @Override
@@ -142,10 +142,10 @@ public class ParserComponentImpl implements ParserComponent {
         boolean supportedCursor = StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR));
         int pageSize = mapping.getReadNum();
         int batchSize = mapping.getBatchNum();
-        final ConnectorMapper sConnectorMapper = connectorFactory.connect(sConfig);
-        final ConnectorMapper tConnectorMapper = connectorFactory.connect(tConfig);
+        final ConnectorInstance sConnectorInstance = connectorFactory.connect(sConfig);
+        final ConnectorInstance tConnectorInstance = connectorFactory.connect(tConfig);
         final String event = ConnectorConstant.OPERTION_INSERT;
-        final FullPluginContext context = new FullPluginContext(sConnectorMapper, tConnectorMapper, sTableName, tTableName, event);
+        final FullPluginContext context = new FullPluginContext(sConnectorInstance, tConnectorInstance, sTableName, tTableName, event);
 
         for (; ; ) {
             if (!task.isRunning()) {
@@ -155,7 +155,7 @@ public class ParserComponentImpl implements ParserComponent {
 
             // 1、获取数据源数据
             ReaderConfig readerConfig = new ReaderConfig(sourceTable, command, new ArrayList<>(), supportedCursor, task.getCursors(), task.getPageIndex(), pageSize);
-            Result reader = connectorFactory.reader(sConnectorMapper, readerConfig);
+            Result reader = connectorFactory.reader(sConnectorInstance, readerConfig);
             List<Map> source = reader.getSuccessData();
             if (CollectionUtils.isEmpty(source)) {
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
@@ -174,7 +174,7 @@ public class ParserComponentImpl implements ParserComponent {
             pluginFactory.convert(group.getPlugin(), context);
 
             // 5、写入目标源
-            BatchWriter batchWriter = new BatchWriter(tConnectorMapper, command, tTableName, event, picker.getTargetFields(), target, batchSize);
+            BatchWriter batchWriter = new BatchWriter(tConnectorInstance, command, tTableName, event, picker.getTargetFields(), target, batchSize);
             Result result = writeBatch(context, batchWriter, executor);
 
             // 6、更新结果
@@ -214,7 +214,7 @@ public class ParserComponentImpl implements ParserComponent {
         int total = dataList.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, dataList));
+            return connectorFactory.writer(batchWriter.getConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, dataList));
         }
 
         // 批量任务, 拆分
@@ -236,7 +236,7 @@ public class ParserComponentImpl implements ParserComponent {
 
             executor.execute(() -> {
                 try {
-                    Result w = connectorFactory.writer(batchWriter.getConnectorMapper(), new WriterBatchConfig(tableName, event, command, fields, data));
+                    Result w = connectorFactory.writer(batchWriter.getConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, data));
                     result.addSuccessData(w.getSuccessData());
                     result.addFailData(w.getFailData());
                     result.getError().append(w.getError());

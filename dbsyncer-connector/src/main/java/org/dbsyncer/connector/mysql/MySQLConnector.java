@@ -1,19 +1,28 @@
 package org.dbsyncer.connector.mysql;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.ReaderConfig;
-import org.dbsyncer.connector.constant.DatabaseConstant;
-import org.dbsyncer.connector.database.AbstractDatabaseConnector;
-import org.dbsyncer.connector.model.PageSql;
-import org.dbsyncer.connector.util.PrimaryKeyUtil;
+import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Component
 public final class MySQLConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final String TYPE = "MySQL";
+
+    @Override
+    public String getConnectorType() {
+        return TYPE;
+    }
 
     @Override
     public String buildSqlWithQuotation() {

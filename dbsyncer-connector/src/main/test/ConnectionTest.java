@@ -2,12 +2,12 @@ import oracle.jdbc.OracleConnection;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.database.DatabaseConnectorMapper;
-import org.dbsyncer.connector.database.ds.SimpleConnection;
-import org.dbsyncer.connector.enums.TableTypeEnum;
-import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Table;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,7 @@ public class ConnectionTest {
 
     @Test
     public void testByte() {
-        final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(createOracleConfig());
+        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(createOracleConfig());
 
         String executeSql = "UPDATE \"my_user\" SET \"name\"=?,\"clo\"=? WHERE \"id\"=?";
         int[] execute = connectorMapper.execute(databaseTemplate ->
@@ -64,7 +64,7 @@ public class ConnectionTest {
 
     @Test
     public void testConnection() throws InterruptedException {
-        final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(createSqlServerConfig());
+        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(createSqlServerConfig());
 
         // 模拟并发
         final int threadSize = 100;
@@ -109,7 +109,7 @@ public class ConnectionTest {
 
     @Test
     public void testBatchInsert() {
-        final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(createMysqlConfig());
+        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(createMysqlConfig());
 
         long begin = Instant.now().toEpochMilli();
         final int threadSize = 10;
@@ -147,7 +147,7 @@ public class ConnectionTest {
 
     @Test
     public void testBatchUpdate() {
-        final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(createMysqlConfig());
+        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(createMysqlConfig());
 
         long begin = Instant.now().toEpochMilli();
         final int threadSize = 10;
@@ -185,7 +185,7 @@ public class ConnectionTest {
 
     @Test
     public void testBatchDelete() {
-        final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(createMysqlConfig());
+        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(createMysqlConfig());
 
         long begin = Instant.now().toEpochMilli();
         final int threadSize = 10;
@@ -226,7 +226,7 @@ public class ConnectionTest {
         return s.toString();
     }
 
-    private void batchUpdate(DatabaseConnectorMapper connectorMapper, ExecutorService pool, String sql, List<Object[]> dataList, int batchSize) {
+    private void batchUpdate(DatabaseConnectorInstance connectorMapper, ExecutorService pool, String sql, List<Object[]> dataList, int batchSize) {
         int total = dataList.size();
         int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
         final CountDownLatch latch = new CountDownLatch(taskSize);
@@ -279,7 +279,7 @@ public class ConnectionTest {
     public void testGetColumnsDetails() {
         final String schema = "root";
         final String tableNamePattern = "sw_test";
-        final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(createMysqlConfig());
+        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(createMysqlConfig());
         connectorMapper.execute(databaseTemplate -> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
@@ -299,7 +299,7 @@ public class ConnectionTest {
     }
 
     private List<Table> getTables(DatabaseConfig config, final String catalog, final String schema, final String tableNamePattern) {
-        final DatabaseConnectorMapper connectorMapper = new DatabaseConnectorMapper(config);
+        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(config);
         List<Table> tables = new ArrayList<>();
         connectorMapper.execute(databaseTemplate -> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();

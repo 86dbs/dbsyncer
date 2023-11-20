@@ -1,7 +1,7 @@
 package org.dbsyncer.listener.quartz;
 
-import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.connector.util.PrimaryKeyUtil;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.util.List;
 import java.util.Map;

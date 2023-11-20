@@ -2,10 +2,10 @@ package org.dbsyncer.parser.ddl.alter;
 
 import net.sf.jsqlparser.statement.alter.AlterExpression;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.DDLConfig;
-import org.dbsyncer.connector.enums.DDLOperationEnum;
 import org.dbsyncer.parser.ddl.AlterStrategy;
 import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.enums.DDLOperationEnum;
 
 import java.util.List;
 

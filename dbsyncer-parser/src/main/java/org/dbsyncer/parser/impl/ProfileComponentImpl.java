@@ -5,9 +5,8 @@ package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.connector.enums.ConnectorEnum;
+import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.CommandEnum;
@@ -23,7 +22,9 @@ import org.dbsyncer.parser.model.QueryConfig;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
+import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -46,6 +47,9 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Resource
     private OperationTemplate operationTemplate;
 
+    @Resource
+    private ConnectorFactory connectorFactory;
+
     @Override
     public Connector parseConnector(String json) {
         Map conn = JsonUtil.parseMap(json);
@@ -53,10 +57,9 @@ public class ProfileComponentImpl implements ProfileComponent {
         Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
         Assert.notNull(connector, "Connector can not be null.");
         String connectorType = (String) config.get("connectorType");
-        ConnectorEnum connectorEnum = ConnectorEnum.getConnectorEnum(connectorType);
-        ConnectorConfig obj = JsonUtil.jsonToObj(config.toString(), connectorEnum.getConfigClass());
-        obj.setConnectorType(connectorEnum.getType());
-        connector.setConfig(obj);
+        ConnectorService connectorService = connectorFactory.getConnectorService(connectorType);
+        Class<ConnectorConfig> configClass = connectorService.getConfigClass();
+        connector.setConfig(JsonUtil.jsonToObj(config.toString(), configClass));
 
         return connector;
     }
@@ -172,11 +175,6 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Override
     public List<Meta> getMetaAll() {
         return operationTemplate.queryAll(Meta.class);
-    }
-
-    @Override
-    public List<ConnectorEnum> getConnectorEnumAll() {
-        return Arrays.asList(ConnectorEnum.values());
     }
 
     @Override

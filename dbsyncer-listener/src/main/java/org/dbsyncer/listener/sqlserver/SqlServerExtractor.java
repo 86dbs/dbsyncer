@@ -4,9 +4,9 @@ import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.dbsyncer.listener.model.ChangedOffset;
 import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.connector.database.DatabaseConnectorMapper;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.listener.AbstractDatabaseExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.enums.TableOperationEnum;
@@ -62,7 +62,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     private volatile boolean connected;
     private Set<String> tables;
     private Set<SqlServerChangeTable> changeTables;
-    private DatabaseConnectorMapper connectorMapper;
+    private DatabaseConnectorInstance connectorInstance;
     private Worker worker;
     private Lsn lastLsn;
     private String serverName;
@@ -136,8 +136,8 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
 
     private void connect() {
         if (connectorFactory.isAlive(connectorConfig)) {
-            connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(connectorConfig);
-            DatabaseConfig cfg = connectorMapper.getConfig();
+            connectorInstance = (DatabaseConnectorInstance) connectorFactory.connect(connectorConfig);
+            DatabaseConfig cfg = connectorInstance.getConfig();
             serverName = cfg.getUrl();
             schema = cfg.getSchema();
         }
@@ -221,7 +221,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     }
 
     private void execute(String... sqlStatements) {
-        connectorMapper.execute(databaseTemplate -> {
+        connectorInstance.execute(databaseTemplate -> {
             for (String sqlStatement : sqlStatements) {
                 if (sqlStatement != null) {
                     logger.info("executing '{}'", sqlStatement);
@@ -313,7 +313,7 @@ public class SqlServerExtractor extends AbstractDatabaseExtractor {
     }
 
     private <T> T query(String preparedQuerySql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
-        Object execute = connectorMapper.execute(databaseTemplate -> {
+        Object execute = connectorInstance.execute(databaseTemplate -> {
             PreparedStatement ps = null;
             ResultSet rs = null;
             T apply = null;

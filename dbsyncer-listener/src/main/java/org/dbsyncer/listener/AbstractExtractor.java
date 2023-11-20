@@ -4,10 +4,10 @@ import org.dbsyncer.connector.scheduled.ScheduledTaskService;
 import org.dbsyncer.listener.model.ChangedOffset;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.listener.config.ListenerConfig;
 import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

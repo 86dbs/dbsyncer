@@ -1,11 +1,8 @@
 package org.dbsyncer.listener;
 
 import org.dbsyncer.listener.enums.ListenerTypeEnum;
-import org.dbsyncer.listener.enums.LogExtractorEnum;
-import org.dbsyncer.listener.enums.TimingExtractorEnum;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -14,12 +11,6 @@ import java.util.function.Function;
 public class ListenerFactory implements Listener {
 
     private Map<ListenerTypeEnum, Function<String, Class>> map = new LinkedHashMap<>();
-
-    @PostConstruct
-    private void init() {
-        map.putIfAbsent(ListenerTypeEnum.LOG, (connectorType) -> LogExtractorEnum.getExtractor(connectorType));
-        map.putIfAbsent(ListenerTypeEnum.TIMING, (connectorType) -> TimingExtractorEnum.getExtractor(connectorType));
-    }
 
     @Override
     public <T> T getExtractor(ListenerTypeEnum listenerTypeEnum, String connectorType, Class<T> valueType) throws IllegalAccessException, InstantiationException {

@@ -2,7 +2,7 @@ package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.util.PrimaryKeyUtil;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;

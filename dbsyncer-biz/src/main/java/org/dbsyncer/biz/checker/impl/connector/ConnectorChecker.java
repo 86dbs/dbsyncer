@@ -5,12 +5,12 @@ import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,8 +59,8 @@ public class ConnectorChecker extends AbstractChecker {
         checker.modify(config, params);
 
         // 获取表
-        ConnectorMapper mapper = connectorFactory.connect(connector.getConfig());
-        connector.setTable(connectorFactory.getTable(mapper));
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+        connector.setTable(connectorFactory.getTable(connectorInstance));
 
         // 修改基本配置
         this.modifyConfigModel(connector, params);
@@ -88,16 +88,18 @@ public class ConnectorChecker extends AbstractChecker {
         checker.modify(config, params);
 
         // 获取表
-        ConnectorMapper mapper = connectorFactory.connect(config);
-        connector.setTable(connectorFactory.getTable(mapper));
+        ConnectorInstance connectorInstance = connectorFactory.connect(config);
+        connector.setTable(connectorFactory.getTable(connectorInstance));
 
         return connector;
     }
 
     private ConnectorConfig getConfig(String connectorType) {
         try {
-            ConnectorConfig config = ConnectorEnum.getConnectorEnum(connectorType).getConfigClass().newInstance();
-            config.setConnectorType(connectorType);
+            ConnectorService connectorService = connectorFactory.getConnectorService(connectorType);
+            Class<ConnectorConfig> configClass = connectorService.getConfigClass();
+            ConnectorConfig config = configClass.newInstance();
+            config.setConnectorType(connectorService.getConnectorType());
             return config;
         } catch (Exception e) {
             logger.error(e.getMessage());

@@ -1,8 +1,8 @@
 package org.dbsyncer.parser.ddl;
 
-import org.dbsyncer.connector.config.DDLConfig;
-import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.model.MetaInfo;
 
 import java.util.List;
 

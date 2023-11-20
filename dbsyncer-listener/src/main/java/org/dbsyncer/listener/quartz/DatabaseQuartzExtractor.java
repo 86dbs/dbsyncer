@@ -2,7 +2,7 @@ package org.dbsyncer.listener.quartz;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.springframework.util.Assert;
 

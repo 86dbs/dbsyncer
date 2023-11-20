@@ -1,5 +1,7 @@
 package org.dbsyncer.connector.model;
 
+import org.dbsyncer.sdk.model.Field;
+
 import java.util.List;
 
 /**

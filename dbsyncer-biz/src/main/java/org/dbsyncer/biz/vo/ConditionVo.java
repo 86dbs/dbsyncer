@@ -1,8 +1,8 @@
 package org.dbsyncer.biz.vo;
 
 import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
+import org.dbsyncer.sdk.enums.OperationEnum;
 
 import java.util.List;
 

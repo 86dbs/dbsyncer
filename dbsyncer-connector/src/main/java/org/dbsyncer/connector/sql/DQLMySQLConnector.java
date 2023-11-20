@@ -1,13 +1,23 @@
 package org.dbsyncer.connector.sql;
 
-import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.ReaderConfig;
-import org.dbsyncer.connector.constant.DatabaseConstant;
-import org.dbsyncer.connector.model.PageSql;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.model.PageSql;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+@Component
 public final class DQLMySQLConnector extends AbstractDQLConnector {
+
+    private final String TYPE = "DqlMySQL";
+
+    @Override
+    public String getConnectorType() {
+        return TYPE;
+    }
 
     @Override
     public String getPageSql(PageSql config) {

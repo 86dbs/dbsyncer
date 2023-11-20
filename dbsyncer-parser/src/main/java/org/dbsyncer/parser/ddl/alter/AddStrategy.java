@@ -6,11 +6,11 @@ import net.sf.jsqlparser.statement.alter.AlterExpression;
 import net.sf.jsqlparser.statement.create.table.Index;
 import net.sf.jsqlparser.statement.create.table.Index.ColumnParams;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.DDLConfig;
-import org.dbsyncer.connector.enums.DDLOperationEnum;
-import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.parser.ddl.AlterStrategy;
 import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.enums.DDLOperationEnum;
+import org.dbsyncer.sdk.model.Field;
 
 /**
  * 解析add的属性 exampleSql: ALTER TABLE cost ADD duan INT after(before) `tmp`;

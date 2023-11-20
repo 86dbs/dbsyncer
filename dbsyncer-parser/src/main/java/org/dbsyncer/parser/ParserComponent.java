@@ -1,11 +1,11 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.parser.model.BatchWriter;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
+import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.plugin.PluginContext;
 
 import java.util.Map;

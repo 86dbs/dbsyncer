@@ -3,9 +3,7 @@
  */
 package org.dbsyncer.parser;
 
-import org.dbsyncer.connector.enums.ConnectorEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.connector.enums.OperationEnum;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -16,6 +14,7 @@ import org.dbsyncer.parser.model.ProjectGroup;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
+import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
@@ -142,13 +141,6 @@ public interface ProfileComponent {
     Meta getMeta(String metaId);
 
     List<Meta> getMetaAll();
-
-    /**
-     * 获取所有连接器类型
-     *
-     * @return
-     */
-    List<ConnectorEnum> getConnectorEnumAll();
 
     /**
      * 获取所有条件类型

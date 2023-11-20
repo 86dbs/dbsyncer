@@ -3,7 +3,7 @@ package org.dbsyncer.connector.file;
 import org.dbsyncer.common.column.Lexer;
 import org.dbsyncer.connector.file.column.ColumnValue;
 import org.dbsyncer.connector.file.column.FileColumnValue;
-import org.dbsyncer.connector.model.Field;
+import org.dbsyncer.sdk.model.Field;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

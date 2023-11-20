@@ -3,8 +3,8 @@ package org.dbsyncer.biz.checker.impl.connector;
 import org.dbsyncer.biz.checker.ConnectorConfigChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.model.SqlTable;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.model.SqlTable;
 import org.springframework.util.Assert;
 
 import java.util.List;

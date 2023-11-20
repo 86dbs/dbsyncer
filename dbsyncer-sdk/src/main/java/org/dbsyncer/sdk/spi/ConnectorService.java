@@ -6,6 +6,8 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 
@@ -21,15 +23,41 @@ import java.util.Map;
  * @Author AE86
  * @Date 2023-11-19 23:24
  */
-public interface ConnectorService<I, C> {
+public interface ConnectorService<I extends ConnectorInstance, C extends ConnectorConfig> {
+
+    /**
+     * 连接器类型
+     */
+    String getConnectorType();
+
+    /**
+     * 是否支持定时策略
+     *
+     * @return
+     */
+    boolean isSupportedTiming();
+
+    /**
+     * 是否支持日志分析
+     *
+     * @return
+     */
+    boolean isSupportedLog();
+
+    /**
+     * 获取配置对象
+     *
+     * @return
+     */
+    Class<C> getConfigClass();
 
     /**
      * 建立连接
      *
-     * @param config
+     * @param connectorConfig
      * @return
      */
-    ConnectorInstance connect(C config);
+    ConnectorInstance connect(C connectorConfig);
 
     /**
      * 断开连接
@@ -49,10 +77,10 @@ public interface ConnectorService<I, C> {
     /**
      * 获取连接缓存key
      *
-     * @param config
+     * @param connectorConfig
      * @return
      */
-    String getConnectorInstanceCacheKey(C config);
+    String getConnectorInstanceCacheKey(C connectorConfig);
 
     /**
      * 获取所有表名
@@ -84,19 +112,19 @@ public interface ConnectorService<I, C> {
      * 分页获取数据源数据
      *
      * @param connectorInstance
-     * @param config
+     * @param connectorConfig
      * @return
      */
-    Result reader(I connectorInstance, ReaderConfig config);
+    Result reader(I connectorInstance, ReaderConfig connectorConfig);
 
     /**
      * 批量写入目标源数据
      *
      * @param connectorInstance
-     * @param config
+     * @param connectorConfig
      * @return
      */
-    Result writer(I connectorInstance, WriterBatchConfig config);
+    Result writer(I connectorInstance, WriterBatchConfig connectorConfig);
 
     /**
      * 执行DDL命令
@@ -124,4 +152,5 @@ public interface ConnectorService<I, C> {
      * @return
      */
     Map<String, String> getTargetCommand(CommandConfig commandConfig);
+
 }

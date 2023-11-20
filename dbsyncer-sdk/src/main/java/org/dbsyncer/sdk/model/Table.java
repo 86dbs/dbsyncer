@@ -18,6 +18,7 @@ public class Table {
 
     /**
      * 表类型[TABLE、VIEW、MATERIALIZED VIEW]
+     * {@link TableTypeEnum}
      */
     private String type;
 

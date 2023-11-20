@@ -13,7 +13,7 @@ import oracle.jdbc.dcn.TableChangeDescription;
 import oracle.jdbc.driver.OracleConnection;
 import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.oracle.event.DCNEvent;
 import org.slf4j.Logger;

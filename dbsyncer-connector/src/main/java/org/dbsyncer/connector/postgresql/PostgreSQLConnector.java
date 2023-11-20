@@ -1,26 +1,37 @@
 package org.dbsyncer.connector.postgresql;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.ReaderConfig;
-import org.dbsyncer.connector.constant.DatabaseConstant;
-import org.dbsyncer.connector.database.AbstractDatabaseConnector;
-import org.dbsyncer.connector.enums.TableTypeEnum;
-import org.dbsyncer.connector.model.PageSql;
-import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.connector.util.PrimaryKeyUtil;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.sql.Types;
 import java.util.List;
 
+@Component
 public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public PostgreSQLConnector() {
+    private final String TYPE = "PostgreSQL";
+
+    @Override
+    public String getConnectorType() {
+        return TYPE;
+    }
+
+    @PostConstruct
+    private void init() {
         VALUE_MAPPERS.put(Types.BIT, new PostgreSQLBitValueMapper());
         VALUE_MAPPERS.put(Types.OTHER, new PostgreSQLOtherValueMapper());
     }

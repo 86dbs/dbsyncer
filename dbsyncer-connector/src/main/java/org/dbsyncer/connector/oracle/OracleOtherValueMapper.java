@@ -2,12 +2,12 @@ package org.dbsyncer.connector.oracle;
 
 import com.microsoft.sqlserver.jdbc.Geometry;
 import oracle.jdbc.OracleConnection;
-import org.dbsyncer.connector.oracle.geometry.JGeometry;
-import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.database.ds.SimpleConnection;
-import org.dbsyncer.connector.util.DatabaseUtil;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.connector.oracle.geometry.JGeometry;
+import org.dbsyncer.sdk.connector.AbstractValueMapper;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
+import org.dbsyncer.sdk.util.DatabaseUtil;
 
 import java.sql.Struct;
 
@@ -30,10 +30,10 @@ public final class OracleOtherValueMapper extends AbstractValueMapper<Struct> {
     }
 
     @Override
-    protected Struct convert(ConnectorMapper connectorMapper, Object val) throws Exception {
+    protected Struct convert(ConnectorInstance connectorInstance, Object val) throws Exception {
         // SqlServer Geometry
         if (val instanceof byte[]) {
-            Object conn = connectorMapper.getConnection();
+            Object conn = connectorInstance.getConnection();
             if (conn instanceof SimpleConnection) {
                 SimpleConnection connection = null;
                 try {

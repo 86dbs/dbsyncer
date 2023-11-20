@@ -15,7 +15,7 @@ import java.util.List;
  */
 public class CommandConfig {
 
-    private String type;
+    private String connectorType;
 
     private Table table;
 
@@ -23,15 +23,15 @@ public class CommandConfig {
 
     private ConnectorConfig connectorConfig;
 
-    public CommandConfig(String type, Table table, ConnectorConfig connectorConfig, List<Filter> filter) {
-        this.type = type;
+    public CommandConfig(String connectorType, Table table, ConnectorConfig connectorConfig, List<Filter> filter) {
+        this.connectorType = connectorType;
         this.table = table;
         this.filter = filter;
         this.connectorConfig = connectorConfig;
     }
 
-    public String getType() {
-        return type;
+    public String getConnectorType() {
+        return connectorType;
     }
 
     public Table getTable() {

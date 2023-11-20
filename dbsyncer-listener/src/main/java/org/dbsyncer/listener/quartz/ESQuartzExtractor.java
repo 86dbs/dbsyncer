@@ -3,12 +3,16 @@ package org.dbsyncer.listener.quartz;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.model.Filter;
-import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.enums.QuartzFilterEnum;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.model.Filter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * ES定时抽取

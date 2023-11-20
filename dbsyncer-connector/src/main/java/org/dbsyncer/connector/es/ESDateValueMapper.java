@@ -1,8 +1,8 @@
 package org.dbsyncer.connector.es;
 
-import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.connector.AbstractValueMapper;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -15,7 +15,7 @@ import java.sql.Timestamp;
 public class ESDateValueMapper extends AbstractValueMapper<java.util.Date> {
 
     @Override
-    protected java.util.Date convert(ConnectorMapper connectorMapper, Object val) {
+    protected java.util.Date convert(ConnectorInstance connectorInstance, Object val) {
         if (val instanceof Timestamp) {
             Timestamp timestamp = (Timestamp) val;
             return new java.util.Date(timestamp.getTime());

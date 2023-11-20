@@ -1,8 +1,8 @@
 package org.dbsyncer.connector.postgresql;
 
-import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.connector.AbstractValueMapper;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 
 /**
  * @author AE86
@@ -12,7 +12,7 @@ import org.dbsyncer.sdk.spi.ConnectorMapper;
 public class PostgreSQLBitValueMapper extends AbstractValueMapper<Boolean> {
 
     @Override
-    protected Boolean convert(ConnectorMapper connectorMapper, Object val) {
+    protected Boolean convert(ConnectorInstance connectorInstance, Object val) {
         if (val instanceof Integer) {
             Integer i = (Integer) val;
             return i == 1;

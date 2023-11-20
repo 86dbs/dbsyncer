@@ -6,16 +6,17 @@ import org.dbsyncer.connector.enums.KafkaFieldTypeEnum;
 import org.dbsyncer.connector.kafka.KafkaClient;
 import org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer;
 import org.dbsyncer.connector.kafka.serialization.MapToJsonSerializer;
-import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.util.KafkaUtil;
+import org.dbsyncer.sdk.model.Field;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**

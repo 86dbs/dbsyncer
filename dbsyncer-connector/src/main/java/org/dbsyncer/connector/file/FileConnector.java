@@ -5,20 +5,21 @@ import org.apache.commons.io.LineIterator;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.AbstractConnector;
-import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.FileConfig;
-import org.dbsyncer.connector.config.ReaderConfig;
-import org.dbsyncer.connector.config.WriterBatchConfig;
-import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.FileSchema;
-import org.dbsyncer.connector.model.MetaInfo;
-import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.config.WriterBatchConfig;
+import org.dbsyncer.sdk.connector.AbstractConnector;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import java.io.File;
@@ -40,26 +41,48 @@ import java.util.stream.Collectors;
  * @version 1.0.0
  * @date 2022/5/5 23:19
  */
-public final class FileConnector extends AbstractConnector implements Connector<FileConnectorMapper, FileConfig> {
+@Component
+public final class FileConnector extends AbstractConnector implements ConnectorService<FileConnectorInstance, FileConfig> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String FILE_NAME = "fileName";
-    private static final String FILE_PATH = "filePath";
+    private final String TYPE = "File";
+    private final String FILE_NAME = "fileName";
+    private final String FILE_PATH = "filePath";
     private final FileResolver fileResolver = new FileResolver();
 
     @Override
-    public ConnectorMapper connect(FileConfig config) {
-        return new FileConnectorMapper(config);
+    public String getConnectorType() {
+        return TYPE;
     }
 
     @Override
-    public void disconnect(FileConnectorMapper connectorMapper) {
+    public boolean isSupportedTiming() {
+        return false;
+    }
+
+    @Override
+    public boolean isSupportedLog() {
+        return true;
+    }
+
+    @Override
+    public Class<FileConfig> getConfigClass() {
+        return FileConfig.class;
+    }
+
+    @Override
+    public ConnectorInstance connect(FileConfig config) {
+        return new FileConnectorInstance(config);
+    }
+
+    @Override
+    public void disconnect(FileConnectorInstance connectorMapper) {
 
     }
 
     @Override
-    public boolean isAlive(FileConnectorMapper connectorMapper) {
+    public boolean isAlive(FileConnectorInstance connectorMapper) {
         String fileDir = connectorMapper.getConnection();
         boolean alive = new File(fileDir).exists();
         if (!alive) {
@@ -77,7 +100,7 @@ public final class FileConnector extends AbstractConnector implements Connector<
     }
 
     @Override
-    public String getConnectorMapperCacheKey(FileConfig config) {
+    public String getConnectorInstanceCacheKey(FileConfig config) {
         String localIP;
         try {
             localIP = InetAddress.getLocalHost().getHostAddress();
@@ -89,18 +112,18 @@ public final class FileConnector extends AbstractConnector implements Connector<
     }
 
     @Override
-    public List<Table> getTable(FileConnectorMapper connectorMapper) {
+    public List<Table> getTable(FileConnectorInstance connectorMapper) {
         return connectorMapper.getFileSchemaList().stream().map(fileSchema -> new Table(fileSchema.getFileName())).collect(Collectors.toList());
     }
 
     @Override
-    public MetaInfo getMetaInfo(FileConnectorMapper connectorMapper, String tableName) {
+    public MetaInfo getMetaInfo(FileConnectorInstance connectorMapper, String tableName) {
         FileSchema fileSchema = connectorMapper.getFileSchema(tableName);
         return new MetaInfo().setColumn(fileSchema.getFields());
     }
 
     @Override
-    public long getCount(FileConnectorMapper connectorMapper, Map<String, String> command) {
+    public long getCount(FileConnectorInstance connectorMapper, Map<String, String> command) {
         AtomicLong count = new AtomicLong();
         FileReader reader = null;
         try {
@@ -119,7 +142,7 @@ public final class FileConnector extends AbstractConnector implements Connector<
     }
 
     @Override
-    public Result reader(FileConnectorMapper connectorMapper, ReaderConfig config) {
+    public Result reader(FileConnectorInstance connectorMapper, ReaderConfig config) {
         List<Map<String, Object>> list = new ArrayList<>();
         FileReader reader = null;
         try {
@@ -154,7 +177,7 @@ public final class FileConnector extends AbstractConnector implements Connector<
     }
 
     @Override
-    public Result writer(FileConnectorMapper connectorMapper, WriterBatchConfig config) {
+    public Result writer(FileConnectorInstance connectorMapper, WriterBatchConfig config) {
         List<Map> data = config.getData();
         if (CollectionUtils.isEmpty(data)) {
             logger.error("writer data can not be empty.");
@@ -162,7 +185,7 @@ public final class FileConnector extends AbstractConnector implements Connector<
         }
 
         final List<Field> fields = config.getFields();
-        final String separator = new String(new char[] {connectorMapper.getConfig().getSeparator()});
+        final String separator = new String(new char[]{connectorMapper.getConfig().getSeparator()});
 
         Result result = new Result();
         OutputStream output = null;

@@ -1,10 +1,20 @@
 package org.dbsyncer.connector.sql;
 
-import org.dbsyncer.connector.config.ReaderConfig;
-import org.dbsyncer.connector.constant.DatabaseConstant;
-import org.dbsyncer.connector.model.PageSql;
+import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.model.PageSql;
+import org.springframework.stereotype.Component;
 
+@Component
 public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
+
+    private final String TYPE = "DqlPostgreSQL";
+
+    @Override
+    public String getConnectorType() {
+        return TYPE;
+    }
 
     @Override
     public String getPageSql(PageSql config) {

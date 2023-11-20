@@ -7,11 +7,11 @@ import org.dbsyncer.listener.event.CommonChangedEvent;
 import org.dbsyncer.listener.event.DDLChangedEvent;
 import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.parser.consumer.AbstractConsumer;
 import org.dbsyncer.parser.model.FieldPicker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
+import org.dbsyncer.sdk.model.Table;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

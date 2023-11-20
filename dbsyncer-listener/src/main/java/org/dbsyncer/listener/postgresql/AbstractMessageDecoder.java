@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.postgresql;
 
-import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.listener.postgresql.column.PgColumnValue;
 import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
 import org.postgresql.replication.LogSequenceNumber;

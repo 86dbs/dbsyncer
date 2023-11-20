@@ -5,10 +5,8 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.config.DDLConfig;
-import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.connector.enums.ConnectorEnum;
-import org.dbsyncer.connector.model.MetaInfo;
+import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.ddl.DDLParser;
@@ -26,9 +24,10 @@ import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.plugin.impl.IncrementPluginContext;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.model.MetaInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -139,13 +138,13 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         ConvertUtil.convert(group.getConvert(), targetDataList);
 
         // 4、插件转换
-        final ConnectorMapper sConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getSourceConnectorId()));
-        final ConnectorMapper tConnectorMapper = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
-        final IncrementPluginContext context = new IncrementPluginContext(sConnectorMapper, tConnectorMapper, sourceTableName, targetTableName, event, sourceDataList, targetDataList);
+        final ConnectorInstance sConnectorInstance = connectorFactory.connect(getConnectorConfig(mapping.getSourceConnectorId()));
+        final ConnectorInstance tConnectorInstance = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
+        final IncrementPluginContext context = new IncrementPluginContext(sConnectorInstance, tConnectorInstance, sourceTableName, targetTableName, event, sourceDataList, targetDataList);
         pluginFactory.convert(group.getPlugin(), context);
 
         // 5、批量执行同步
-        BatchWriter batchWriter = new BatchWriter(tConnectorMapper, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, generalBufferConfig.getBufferWriterCount());
+        BatchWriter batchWriter = new BatchWriter(tConnectorInstance, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, generalBufferConfig.getBufferWriterCount());
         Result result = parserComponent.writeBatch(context, batchWriter, generalExecutor);
 
         // 6.发布刷新增量点事件
@@ -183,13 +182,13 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             String sConnType = sConnConfig.getConnectorType();
             String tConnType = tConnConfig.getConnectorType();
             // 0.生成目标表执行SQL(暂支持MySQL) fixme AE86 暂内测MySQL作为试运行版本
-            if (StringUtil.equals(sConnType, tConnType) && StringUtil.equals(ConnectorEnum.MYSQL.getType(), tConnType)) {
+            if (StringUtil.equals(sConnType, tConnType) && StringUtil.equals("MySQL", tConnType)) {
                 // 1.转换为目标SQL，执行到目标库
                 String targetTableName = tableGroup.getTargetTable().getName();
                 List<FieldMapping> originalFieldMappings = tableGroup.getFieldMapping();
                 DDLConfig targetDDLConfig = ddlParser.parseDDlConfig(response.getSql(), tConnType, targetTableName, originalFieldMappings);
-                final ConnectorMapper tConnectorMapper = connectorFactory.connect(tConnConfig);
-                Result result = connectorFactory.writerDDL(tConnectorMapper, targetDDLConfig);
+                final ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
+                Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
                 result.setTableGroupId(tableGroup.getId());
                 result.setTargetTableGroupName(targetTableName);
 

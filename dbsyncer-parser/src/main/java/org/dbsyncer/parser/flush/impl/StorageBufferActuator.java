@@ -32,7 +32,7 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
     private Executor storageExecutor;
 
     @PostConstruct
-    public void init() {
+    private void init() {
         setConfig(storageConfig);
         buildConfig();
     }

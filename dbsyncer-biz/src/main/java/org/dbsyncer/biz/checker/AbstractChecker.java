@@ -1,11 +1,11 @@
 package org.dbsyncer.biz.checker;
 
 import org.dbsyncer.biz.enums.SafeInfoEnum;
+import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.model.Filter;
 import org.dbsyncer.parser.model.AbstractConfigModel;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Convert;

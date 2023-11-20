@@ -1,15 +1,15 @@
 package org.dbsyncer.listener.postgresql.decoder;
 
-import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.database.DatabaseConnectorMapper;
-import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.connector.model.MetaInfo;
 import org.dbsyncer.listener.ListenerException;
+import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.listener.postgresql.AbstractMessageDecoder;
 import org.dbsyncer.listener.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.listener.postgresql.enums.MessageTypeEnum;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaInfo;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,12 +35,12 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     private static final String GET_TABLE_SCHEMA = "select t.oid,t.relname as tableName from pg_class t inner join (select ns.oid as nspoid, ns.nspname from pg_namespace ns where ns.nspname = '%s') as n on n.nspoid = t.relnamespace where relkind = 'r'";
     private static final Map<Integer, TableId> tables = new LinkedHashMap<>();
     private ConnectorFactory connectorFactory;
-    private DatabaseConnectorMapper connectorMapper;
+    private DatabaseConnectorInstance connectorInstance;
 
     @Override
-    public void postProcessBeforeInitialization(ConnectorFactory connectorFactory, DatabaseConnectorMapper connectorMapper) {
+    public void postProcessBeforeInitialization(ConnectorFactory connectorFactory, DatabaseConnectorInstance connectorInstance) {
         this.connectorFactory = connectorFactory;
-        this.connectorMapper = connectorMapper;
+        this.connectorInstance = connectorInstance;
         initPublication();
         readSchema();
     }
@@ -98,7 +98,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     private void initPublication() {
         String pubName = getPubName();
         String selectPublication = String.format("SELECT COUNT(1) FROM pg_publication WHERE pubname = '%s'", pubName);
-        Integer count = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(selectPublication, Integer.class));
+        Integer count = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(selectPublication, Integer.class));
         if (0 < count) {
             return;
         }
@@ -107,7 +107,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
         try {
             String createPublication = String.format("CREATE PUBLICATION %s FOR ALL TABLES", pubName);
             logger.info("Creating Publication with statement '{}'", createPublication);
-            connectorMapper.execute(databaseTemplate -> {
+            connectorInstance.execute(databaseTemplate -> {
                 databaseTemplate.execute(createPublication);
                 return true;
             });
@@ -118,12 +118,12 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
 
     private void readSchema() {
         final String querySchema = String.format(GET_TABLE_SCHEMA, config.getSchema());
-        List<Map> schemas = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySchema));
+        List<Map> schemas = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySchema));
         if (!CollectionUtils.isEmpty(schemas)) {
             schemas.forEach(map -> {
                 Long oid = (Long) map.get("oid");
                 String tableName = (String) map.get("tableName");
-                MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorMapper, tableName);
+                MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorInstance, tableName);
                 Assert.notEmpty(metaInfo.getColumn(), String.format("The table column for '%s' must not be empty.", tableName));
                 tables.put(oid.intValue(), new TableId(oid.intValue(), tableName, metaInfo.getColumn()));
             });
@@ -156,7 +156,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
             logger.warn("The column size of table '{}' is {}, but we has been received column size is {}.", tableId.tableName, tableId.fields.size(), nColumn);
 
             // The table schema has been changed, we should be get a new table schema from db.
-            MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorMapper, tableId.tableName);
+            MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorInstance, tableId.tableName);
             if (CollectionUtils.isEmpty(metaInfo.getColumn())) {
                 throw new ListenerException(String.format("The table column for '%s' is empty.", tableId.tableName));
             }

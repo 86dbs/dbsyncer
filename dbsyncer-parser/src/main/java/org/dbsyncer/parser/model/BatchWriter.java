@@ -1,14 +1,14 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.model.Field;
 
 import java.util.List;
 import java.util.Map;
 
 public final class BatchWriter {
 
-    private ConnectorMapper connectorMapper;
+    private ConnectorInstance connectorInstance;
     private Map<String, String> command;
     private String tableName;
     private String event;
@@ -16,9 +16,9 @@ public final class BatchWriter {
     private List<Map> dataList;
     private int batchSize;
 
-    public BatchWriter(ConnectorMapper connectorMapper, Map<String, String> command, String tableName, String event,
+    public BatchWriter(ConnectorInstance connectorInstance, Map<String, String> command, String tableName, String event,
                        List<Field> fields, List<Map> dataList, int batchSize) {
-        this.connectorMapper = connectorMapper;
+        this.connectorInstance = connectorInstance;
         this.command = command;
         this.tableName = tableName;
         this.event = event;
@@ -27,8 +27,8 @@ public final class BatchWriter {
         this.batchSize = batchSize;
     }
 
-    public ConnectorMapper getConnectorMapper() {
-        return connectorMapper;
+    public ConnectorInstance getConnectorInstance() {
+        return connectorInstance;
     }
 
     public Map<String, String> getCommand() {

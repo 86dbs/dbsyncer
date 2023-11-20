@@ -4,24 +4,24 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.AbstractConnector;
-import org.dbsyncer.connector.Connector;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.config.CommandConfig;
 import org.dbsyncer.connector.config.ESConfig;
-import org.dbsyncer.connector.config.ReaderConfig;
-import org.dbsyncer.connector.config.WriterBatchConfig;
-import org.dbsyncer.connector.constant.ConnectorConstant;
 import org.dbsyncer.connector.enums.ESFieldTypeEnum;
 import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.connector.enums.OperationEnum;
-import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.connector.model.Filter;
-import org.dbsyncer.connector.model.MetaInfo;
-import org.dbsyncer.connector.model.Table;
 import org.dbsyncer.connector.util.ESUtil;
-import org.dbsyncer.connector.util.PrimaryKeyUtil;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.config.WriterBatchConfig;
+import org.dbsyncer.sdk.connector.AbstractConnector;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.enums.OperationEnum;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Filter;
+import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.spi.ConnectorService;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.elasticsearch.Version;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -47,7 +47,9 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -58,13 +60,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public final class ESConnector extends AbstractConnector implements Connector<ESConnectorMapper, ESConfig> {
+@Component
+public final class ESConnector extends AbstractConnector implements ConnectorService<ESConnectorInstance, ESConfig> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static Map<String, FilterMapper> filters = new LinkedHashMap<>();
+    private final String TYPE = "Elasticsearch";
 
-    static {
+    private final Map<String, FilterMapper> filters = new LinkedHashMap<>();
+
+    @PostConstruct
+    private void init() {
+        VALUE_MAPPERS.put(Types.DATE, new ESDateValueMapper());
+        VALUE_MAPPERS.put(Types.OTHER, new ESOtherValueMapper());
+
         filters.putIfAbsent(FilterEnum.EQUAL.getName(), (builder, k, v) -> builder.must(QueryBuilders.matchQuery(k, v)));
         filters.putIfAbsent(FilterEnum.NOT_EQUAL.getName(), (builder, k, v) -> builder.mustNot(QueryBuilders.matchQuery(k, v)));
         filters.putIfAbsent(FilterEnum.GT.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).gt(v)));
@@ -74,23 +83,38 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         filters.putIfAbsent(FilterEnum.LIKE.getName(), (builder, k, v) -> builder.filter(QueryBuilders.wildcardQuery(k, v)));
     }
 
-    public ESConnector() {
-        VALUE_MAPPERS.put(Types.DATE, new ESDateValueMapper());
-        VALUE_MAPPERS.put(Types.OTHER, new ESOtherValueMapper());
+    @Override
+    public String getConnectorType() {
+        return TYPE;
     }
 
     @Override
-    public ConnectorMapper connect(ESConfig config) {
-        return new ESConnectorMapper(config);
+    public boolean isSupportedTiming() {
+        return true;
     }
 
     @Override
-    public void disconnect(ESConnectorMapper connectorMapper) {
+    public boolean isSupportedLog() {
+        return false;
+    }
+
+    @Override
+    public Class<ESConfig> getConfigClass() {
+        return ESConfig.class;
+    }
+
+    @Override
+    public ConnectorInstance connect(ESConfig config) {
+        return new ESConnectorInstance(config);
+    }
+
+    @Override
+    public void disconnect(ESConnectorInstance connectorMapper) {
         connectorMapper.close();
     }
 
     @Override
-    public boolean isAlive(ESConnectorMapper connectorMapper) {
+    public boolean isAlive(ESConnectorInstance connectorMapper) {
         try {
             RestHighLevelClient client = connectorMapper.getConnection();
             return client.ping(RequestOptions.DEFAULT);
@@ -101,12 +125,12 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
     }
 
     @Override
-    public String getConnectorMapperCacheKey(ESConfig config) {
+    public String getConnectorInstanceCacheKey(ESConfig config) {
         return String.format("%s-%s-%s-%s", config.getConnectorType(), config.getUrl(), config.getIndex(), config.getUsername());
     }
 
     @Override
-    public List<Table> getTable(ESConnectorMapper connectorMapper) {
+    public List<Table> getTable(ESConnectorInstance connectorMapper) {
         try {
             ESConfig config = connectorMapper.getConfig();
             GetIndexRequest request = new GetIndexRequest(config.getIndex());
@@ -130,7 +154,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
     }
 
     @Override
-    public MetaInfo getMetaInfo(ESConnectorMapper connectorMapper, String tableName) {
+    public MetaInfo getMetaInfo(ESConnectorInstance connectorMapper, String tableName) {
         List<Field> fields = new ArrayList<>();
         try {
             ESConfig config = connectorMapper.getConfig();
@@ -154,7 +178,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
     }
 
     @Override
-    public long getCount(ESConnectorMapper connectorMapper, Map<String, String> command) {
+    public long getCount(ESConnectorInstance connectorMapper, Map<String, String> command) {
         try {
             ESConfig config = connectorMapper.getConfig();
             SearchSourceBuilder builder = new SearchSourceBuilder();
@@ -165,7 +189,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
             }
             builder.from(0);
             builder.size(0);
-            SearchRequest request = new SearchRequest(new String[] {config.getIndex()}, builder);
+            SearchRequest request = new SearchRequest(new String[]{config.getIndex()}, builder);
             SearchResponse response = connectorMapper.getConnection().searchWithVersion(request, RequestOptions.DEFAULT);
             return response.getHits().getTotalHits().value;
         } catch (IOException e) {
@@ -175,7 +199,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
     }
 
     @Override
-    public Result reader(ESConnectorMapper connectorMapper, ReaderConfig config) {
+    public Result reader(ESConnectorInstance connectorMapper, ReaderConfig config) {
         ESConfig cfg = connectorMapper.getConfig();
         SearchSourceBuilder builder = new SearchSourceBuilder();
         genSearchSourceBuilder(builder, config.getCommand());
@@ -193,7 +217,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
         }
 
         try {
-            SearchRequest rq = new SearchRequest(new String[] {cfg.getIndex()}, builder);
+            SearchRequest rq = new SearchRequest(new String[]{cfg.getIndex()}, builder);
             SearchResponse searchResponse = connectorMapper.getConnection().searchWithVersion(rq, RequestOptions.DEFAULT);
             SearchHits hits = searchResponse.getHits();
             SearchHit[] searchHits = hits.getHits();
@@ -209,7 +233,7 @@ public final class ESConnector extends AbstractConnector implements Connector<ES
     }
 
     @Override
-    public Result writer(ESConnectorMapper connectorMapper, WriterBatchConfig config) {
+    public Result writer(ESConnectorInstance connectorMapper, WriterBatchConfig config) {
         List<Map> data = config.getData();
         if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(config.getFields())) {
             logger.error("writer data can not be empty.");

@@ -5,16 +5,15 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.SqlBuilderConfig;
-import org.dbsyncer.connector.constant.DatabaseConstant;
-import org.dbsyncer.connector.database.Database;
-import org.dbsyncer.connector.database.DatabaseConnectorMapper;
-import org.dbsyncer.connector.enums.ConnectorEnum;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.config.SqlBuilderConfig;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.connector.database.Database;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.connector.enums.SqlBuilderEnum;
-import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.connector.util.DatabaseUtil;
+import org.dbsyncer.sdk.enums.SqlBuilderEnum;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.NullExecutorException;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -74,7 +73,7 @@ public class MySQLStorageServiceImpl extends AbstractStorageService {
 
     private Database connector;
 
-    private DatabaseConnectorMapper connectorMapper;
+    private DatabaseConnectorInstance connectorInstance;
 
     private DatabaseConfig config;
 
@@ -83,9 +82,9 @@ public class MySQLStorageServiceImpl extends AbstractStorageService {
     @PostConstruct
     private void init() throws InterruptedException {
         logger.info("url:{}", config.getUrl());
-        config.setConnectorType(ConnectorEnum.MYSQL.getType());
-        connectorMapper = (DatabaseConnectorMapper) connectorFactory.connect(config);
-        connector = (Database) connectorFactory.getConnector(connectorMapper);
+        config.setConnectorType("MySQL");
+        connectorInstance = (DatabaseConnectorInstance) connectorFactory.connect(config);
+        connector = (Database) connectorFactory.getConnectorService(config.getConnectorType());
         database = DatabaseUtil.getDatabaseName(config.getUrl());
 
         // 升级脚本
@@ -109,7 +108,7 @@ public class MySQLStorageServiceImpl extends AbstractStorageService {
         }
         List<Object> queryCountArgs = new ArrayList<>();
         String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
-        Long total = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
+        Long total = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
         paging.setTotal(total);
         if (query.isQueryTotal()) {
             return paging;
@@ -118,7 +117,7 @@ public class MySQLStorageServiceImpl extends AbstractStorageService {
         List<AbstractFilter> highLightKeys = new ArrayList<>();
         List<Object> queryArgs = new ArrayList<>();
         String querySql = buildQuerySql(query, executor, queryArgs, highLightKeys);
-        List<Map<String, Object>> data = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
+        List<Map<String, Object>> data = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
         replaceHighLight(highLightKeys, data);
         paging.setData(data);
         return paging;
@@ -134,7 +133,7 @@ public class MySQLStorageServiceImpl extends AbstractStorageService {
         List<Object> params = new ArrayList<>();
         buildQuerySqlWithParams(query, params, sql, new ArrayList<>());
         final List<Object[]> args = params.stream().map(val -> new Object[]{val}).collect(Collectors.toList());
-        connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql.toString(), args));
+        connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql.toString(), args));
     }
 
     @Override
@@ -190,12 +189,12 @@ public class MySQLStorageServiceImpl extends AbstractStorageService {
         }
         final String sql = executor.getDelete();
         final List<Object[]> args = ids.stream().map(id -> new Object[]{id}).collect(Collectors.toList());
-        connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, args));
+        connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, args));
     }
 
     @Override
     public void destroy() {
-        connectorMapper.close();
+        connectorInstance.close();
     }
 
     private void batchExecute(StorageEnum type, String sharding, List<Map> list, ExecuteMapper mapper) {
@@ -209,7 +208,7 @@ public class MySQLStorageServiceImpl extends AbstractStorageService {
         }
         final String sql = mapper.getSql(executor);
         final List<Object[]> args = list.stream().map(row -> mapper.getArgs(executor, row)).collect(Collectors.toList());
-        connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, args));
+        connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, args));
     }
 
     private Executor getExecutor(StorageEnum type, String sharding) {
@@ -399,7 +398,7 @@ public class MySQLStorageServiceImpl extends AbstractStorageService {
         // show tables where Tables_in_dbsyncer = "dbsyncer_config"
         String sql = String.format(SHOW_TABLE, database, table);
         try {
-            connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForMap(sql));
+            connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForMap(sql));
         } catch (EmptyResultDataAccessException e) {
             // 不存在表
             String ddl = readSql(executor.getType(), executor.isSystemTable(), table);
@@ -451,7 +450,7 @@ public class MySQLStorageServiceImpl extends AbstractStorageService {
     }
 
     private void executeSql(String ddl) {
-        connectorMapper.execute(databaseTemplate -> {
+        connectorInstance.execute(databaseTemplate -> {
             databaseTemplate.execute(ddl);
             logger.info(ddl);
             return true;

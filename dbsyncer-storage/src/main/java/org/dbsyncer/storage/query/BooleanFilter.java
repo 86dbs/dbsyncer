@@ -1,7 +1,6 @@
 package org.dbsyncer.storage.query;
 
-
-import org.dbsyncer.connector.enums.OperationEnum;
+import org.dbsyncer.sdk.enums.OperationEnum;
 
 import java.util.ArrayList;
 import java.util.List;

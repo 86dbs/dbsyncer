@@ -1,9 +1,9 @@
 package org.dbsyncer.connector.es;
 
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.connector.AbstractValueMapper;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.postgresql.util.PGobject;
 
 import java.util.Map;
@@ -16,7 +16,7 @@ import java.util.Map;
 public class ESOtherValueMapper extends AbstractValueMapper<Map> {
 
     @Override
-    protected Map convert(ConnectorMapper connectorMapper, Object val) {
+    protected Map convert(ConnectorInstance connectorInstance, Object val) {
         if (val instanceof String) {
             return JsonUtil.jsonToObj((String) val, Map.class);
         }

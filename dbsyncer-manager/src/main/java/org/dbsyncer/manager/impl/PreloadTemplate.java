@@ -19,7 +19,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.plugin.PluginFactory;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageEnum;
@@ -200,8 +200,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 generalExecutor.execute(() -> {
                     try {
                         connectorFactory.disconnect(connector.getConfig());
-                        ConnectorMapper mapper = connectorFactory.connect(connector.getConfig());
-                        logger.info("Completed connection {} {}", connector.getConfig().getConnectorType(), mapper.getServiceUrl());
+                        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+                        logger.info("Completed connection {} {}", connector.getConfig().getConnectorType(), connectorInstance.getServiceUrl());
                     } catch (Exception e) {
                         logger.error("连接配置异常", e);
                         logService.log(LogType.ConnectorLog.FAILED, e.getMessage());

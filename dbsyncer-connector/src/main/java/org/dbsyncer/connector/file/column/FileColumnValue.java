@@ -6,7 +6,6 @@ import org.dbsyncer.common.util.StringUtil;
 
 import java.sql.Date;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
 
 /**
  * @author AE86

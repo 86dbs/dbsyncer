@@ -1,34 +1,38 @@
 package org.dbsyncer.connector.oracle;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.DatabaseConfig;
-import org.dbsyncer.connector.config.ReaderConfig;
-import org.dbsyncer.connector.constant.DatabaseConstant;
-import org.dbsyncer.connector.database.AbstractDatabaseConnector;
-import org.dbsyncer.connector.enums.TableTypeEnum;
-import org.dbsyncer.connector.model.PageSql;
-import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.connector.util.PrimaryKeyUtil;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.sql.Types;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+@Component
 public final class OracleConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    /**
-     * 系统函数表达式to_char/to_date/to_timestamp/to_number
-     */
-    private final String SYS_EXPRESSION = "(to_char\\().+?(\\))|(to_date\\().+?(\\))|(to_timestamp\\().+?(\\))|(to_number\\().+?(\\))";
+    private final String TYPE = "Oracle";
 
-    public OracleConnector() {
+    @PostConstruct
+    private void init() {
         VALUE_MAPPERS.put(Types.OTHER, new OracleOtherValueMapper());
+    }
+
+    @Override
+    public String getConnectorType() {
+        return TYPE;
     }
 
     @Override
@@ -100,25 +104,6 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     @Override
     public boolean enableCursor() {
         return true;
-    }
-
-    /**
-     * TODO 待废弃 推荐使用系统参数表达式$xxx$
-     *
-     * @param value
-     * @return
-     */
-    @Override
-    public String buildFilterValue(String value) {
-        if (StringUtil.isNotBlank(value)) {
-            String val = value.toLowerCase();
-            // 支持Oracle系统函数, Example: to_char(sysdate, 'YYYY-MM-DD HH24:MI:SS')
-            Matcher matcher = Pattern.compile(SYS_EXPRESSION).matcher(val);
-            if (matcher.find()) {
-                return value;
-            }
-        }
-        return super.buildFilterValue(value);
     }
 
     @Override

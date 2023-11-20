@@ -1,6 +1,6 @@
 package org.dbsyncer.listener.oracle;
 
-import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.listener.AbstractDatabaseExtractor;
 import org.dbsyncer.listener.ListenerException;
 import org.dbsyncer.listener.oracle.dcn.DBChangeNotification;

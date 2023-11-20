@@ -2,7 +2,7 @@ package org.dbsyncer.storage.query;
 
 import org.apache.lucene.search.Query;
 import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.connector.model.Filter;
+import org.dbsyncer.sdk.model.Filter;
 
 /**
  * @author AE86

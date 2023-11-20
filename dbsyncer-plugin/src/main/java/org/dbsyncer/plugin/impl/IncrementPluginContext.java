@@ -1,8 +1,8 @@
 package org.dbsyncer.plugin.impl;
 
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.plugin.AbstractPluginContext;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -14,8 +14,8 @@ import java.util.Map;
  */
 public final class IncrementPluginContext extends AbstractPluginContext {
 
-    public IncrementPluginContext(ConnectorMapper sourceConnectorMapper, ConnectorMapper targetConnectorMapper, String sourceTableName, String targetTableName, String event, List<Map> sourceList, List<Map> targetList) {
-        super.init(sourceConnectorMapper, targetConnectorMapper, sourceTableName, targetTableName, event, sourceList, targetList);
+    public IncrementPluginContext(ConnectorInstance sourceConnectorInstance, ConnectorInstance targetConnectorInstance, String sourceTableName, String targetTableName, String event, List<Map> sourceList, List<Map> targetList) {
+        super.init(sourceConnectorInstance, targetConnectorInstance, sourceTableName, targetTableName, event, sourceList, targetList);
     }
 
     @Override

@@ -1,7 +1,7 @@
 package org.dbsyncer.plugin;
 
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.plugin.PluginContext;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -22,12 +22,12 @@ public abstract class AbstractPluginContext implements PluginContext {
     /**
      * 数据源连接实例
      */
-    protected ConnectorMapper sourceConnectorMapper;
+    protected ConnectorInstance sourceConnectorInstance;
 
     /**
      * 目标源连接实例
      */
-    protected ConnectorMapper targetConnectorMapper;
+    protected ConnectorInstance targetConnectorInstance;
 
     /**
      * 数据源表
@@ -54,10 +54,9 @@ public abstract class AbstractPluginContext implements PluginContext {
      */
     protected List<Map> targetList;
 
-    public void init(ConnectorMapper sourceConnectorMapper, ConnectorMapper targetConnectorMapper, String sourceTableName, String targetTableName, String event,
-                              List<Map> sourceList, List<Map> targetList) {
-        this.sourceConnectorMapper = sourceConnectorMapper;
-        this.targetConnectorMapper = targetConnectorMapper;
+    public void init(ConnectorInstance sourceConnectorInstance, ConnectorInstance targetConnectorInstance, String sourceTableName, String targetTableName, String event, List<Map> sourceList, List<Map> targetList) {
+        this.sourceConnectorInstance = sourceConnectorInstance;
+        this.targetConnectorInstance = targetConnectorInstance;
         this.sourceTableName = sourceTableName;
         this.targetTableName = targetTableName;
         this.event = event;
@@ -76,13 +75,13 @@ public abstract class AbstractPluginContext implements PluginContext {
     }
 
     @Override
-    public ConnectorMapper getSourceConnectorMapper() {
-        return sourceConnectorMapper;
+    public ConnectorInstance getSourceConnectorInstance() {
+        return sourceConnectorInstance;
     }
 
     @Override
-    public ConnectorMapper getTargetConnectorMapper() {
-        return targetConnectorMapper;
+    public ConnectorInstance getTargetConnectorInstance() {
+        return targetConnectorInstance;
     }
 
     @Override

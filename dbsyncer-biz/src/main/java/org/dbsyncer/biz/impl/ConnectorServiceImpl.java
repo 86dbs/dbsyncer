@@ -22,6 +22,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -122,9 +123,9 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public List<String> getConnectorTypeAll() {
-        List<String> list = new ArrayList<>();
-        profileComponent.getConnectorEnumAll().forEach(c -> list.add(c.getType()));
-        return list;
+        ArrayList<String> connectorTypes = new ArrayList<>(connectorFactory.getConnectorTypeAll());
+        Collections.sort(connectorTypes, Comparator.comparing(String::toString));
+        return connectorTypes;
     }
 
     @Override

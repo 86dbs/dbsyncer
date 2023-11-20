@@ -1,17 +1,17 @@
 package org.dbsyncer.listener.quartz;
 
-import org.dbsyncer.listener.event.ScanChangedEvent;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
-import org.dbsyncer.connector.config.ReaderConfig;
-import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.connector.util.PrimaryKeyUtil;
+import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
 import org.dbsyncer.listener.AbstractExtractor;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.listener.event.ScanChangedEvent;
+import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,14 +103,14 @@ public abstract class AbstractQuartzExtractor extends AbstractExtractor implemen
         boolean supportedCursor = StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR));
 
         // 检查增量点
-        ConnectorMapper connectionMapper = connectorFactory.connect(connectorConfig);
+        ConnectorInstance connectionInstance = connectorFactory.connect(connectorConfig);
         Point point = checkLastPoint(command, index);
         int pageIndex = 1;
         Object[] cursors = PrimaryKeyUtil.getLastCursors(snapshot.get(index + CURSOR));
 
         while (running) {
             ReaderConfig readerConfig = new ReaderConfig(table, point.getCommand(), point.getArgs(), supportedCursor, cursors, pageIndex++, READ_NUM);
-            Result reader = connectorFactory.reader(connectionMapper, readerConfig);
+            Result reader = connectorFactory.reader(connectionInstance, readerConfig);
             List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
                 cursors = new Object[0];

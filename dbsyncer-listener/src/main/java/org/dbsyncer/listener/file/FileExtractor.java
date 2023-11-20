@@ -7,13 +7,13 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.FileConfig;
-import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.connector.file.FileConnectorMapper;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.connector.file.FileConnectorInstance;
 import org.dbsyncer.connector.file.FileResolver;
-import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.connector.model.FileSchema;
 import org.dbsyncer.listener.AbstractExtractor;
 import org.dbsyncer.listener.ListenerException;
+import org.dbsyncer.sdk.model.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -51,7 +51,7 @@ public class FileExtractor extends AbstractExtractor {
     private static final String CHARSET_NAME = "UTF-8";
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
-    private FileConnectorMapper connectorMapper;
+    private FileConnectorInstance connectorInstance;
     private WatchService watchService;
     private Worker worker;
     private Map<String, PipelineResolver> pipeline = new ConcurrentHashMap<>();
@@ -67,9 +67,9 @@ public class FileExtractor extends AbstractExtractor {
                 return;
             }
 
-            connectorMapper = (FileConnectorMapper) connectorFactory.connect(connectorConfig);
-            final FileConfig config = connectorMapper.getConfig();
-            final String mapperCacheKey = connectorFactory.getConnector(connectorMapper).getConnectorMapperCacheKey(connectorConfig);
+            connectorInstance = (FileConnectorInstance) connectorFactory.connect(connectorConfig);
+            final FileConfig config = connectorInstance.getConfig();
+            final String cacheKey = connectorFactory.getConnectorService(connectorConfig.getConnectorType()).getConnectorInstanceCacheKey(connectorConfig);
             connected = true;
 
             separator = config.getSeparator();
@@ -83,7 +83,7 @@ public class FileExtractor extends AbstractExtractor {
             }
 
             worker = new Worker();
-            worker.setName(new StringBuilder("file-parser-").append(mapperCacheKey).append("_").append(worker.hashCode()).toString());
+            worker.setName(new StringBuilder("file-parser-").append(cacheKey).append("_").append(worker.hashCode()).toString());
             worker.setDaemon(false);
             worker.start();
         } catch (Exception e) {
@@ -96,7 +96,7 @@ public class FileExtractor extends AbstractExtractor {
     }
 
     private void initPipeline(String fileDir) throws IOException {
-        for (FileSchema fileSchema : connectorMapper.getFileSchemaList()) {
+        for (FileSchema fileSchema : connectorInstance.getFileSchemaList()) {
             String fileName = fileSchema.getFileName();
             String file = fileDir.concat(fileName);
             Assert.isTrue(new File(file).exists(), String.format("found not file '%s'", file));

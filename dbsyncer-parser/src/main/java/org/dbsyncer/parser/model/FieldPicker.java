@@ -8,9 +8,9 @@ import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.CompareFilter;
 import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.connector.enums.OperationEnum;
-import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.connector.model.Filter;
+import org.dbsyncer.sdk.enums.OperationEnum;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Filter;
 import org.springframework.util.Assert;
 
 import java.sql.Date;

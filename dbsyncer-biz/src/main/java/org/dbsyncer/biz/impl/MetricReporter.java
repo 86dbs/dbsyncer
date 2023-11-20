@@ -13,7 +13,7 @@ import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
 import org.dbsyncer.connector.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;

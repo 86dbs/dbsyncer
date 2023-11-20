@@ -1,7 +1,7 @@
 package org.dbsyncer.biz.checker.impl.connector;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.DatabaseConfig;
+import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;

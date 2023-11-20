@@ -1,8 +1,8 @@
 package org.dbsyncer.connector.postgresql;
 
-import org.dbsyncer.connector.AbstractValueMapper;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.connector.AbstractValueMapper;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.postgis.Geometry;
 import org.postgis.PGgeometry;
 import org.postgis.binary.BinaryParser;
@@ -38,7 +38,7 @@ public final class PostgreSQLOtherValueMapper extends AbstractValueMapper<byte[]
     }
 
     @Override
-    protected byte[] convert(ConnectorMapper connectorMapper, Object val) {
+    protected byte[] convert(ConnectorInstance connectorInstance, Object val) {
         if (val instanceof String) {
             BinaryParser parser = new BinaryParser();
             Geometry geo = parser.parse((String) val);

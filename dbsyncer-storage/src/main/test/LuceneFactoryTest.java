@@ -37,7 +37,7 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.RandomUtil;
-import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.lucene.Option;

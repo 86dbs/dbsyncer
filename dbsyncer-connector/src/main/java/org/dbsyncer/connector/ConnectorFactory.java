@@ -2,21 +2,27 @@ package org.dbsyncer.connector;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.config.CommandConfig;
-import org.dbsyncer.connector.config.DDLConfig;
-import org.dbsyncer.connector.config.ReaderConfig;
-import org.dbsyncer.connector.config.WriterBatchConfig;
-import org.dbsyncer.connector.enums.ConnectorEnum;
-import org.dbsyncer.connector.model.MetaInfo;
-import org.dbsyncer.connector.model.Table;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.config.WriterBatchConfig;
+import org.dbsyncer.sdk.connector.AbstractConnector;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.spi.ConnectorMapper;
+import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -28,12 +34,28 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ConnectorFactory implements DisposableBean {
 
-    private final Map<String, ConnectorMapper> connectorCache = new ConcurrentHashMap<>();
+    private final Map<String, ConnectorInstance> pool = new ConcurrentHashMap<>();
+
+    private final Map<String, ConnectorService> service = new ConcurrentHashMap<>();
+
+    private final Set<String> connectorTypes = new HashSet<>();
+
+    @Resource
+    private ApplicationContext applicationContext;
+
+    @PostConstruct
+    private void init() {
+        Map<String, ConnectorService> beans = applicationContext.getBeansOfType(ConnectorService.class);
+        if (!CollectionUtils.isEmpty(beans)) {
+            beans.values().forEach(s -> service.putIfAbsent(s.getConnectorType(), s));
+        }
+        service.values().forEach(s -> connectorTypes.add(s.getConnectorType()));
+    }
 
     @Override
     public void destroy() {
-        connectorCache.values().forEach(this::disconnect);
-        connectorCache.clear();
+        pool.values().forEach(this::disconnect);
+        pool.clear();
     }
 
     /**
@@ -41,22 +63,22 @@ public class ConnectorFactory implements DisposableBean {
      *
      * @param config
      */
-    public ConnectorMapper connect(ConnectorConfig config) {
+    public ConnectorInstance connect(ConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
-        Connector connector = getConnector(config.getConnectorType());
-        String cacheKey = connector.getConnectorMapperCacheKey(config);
-        if (!connectorCache.containsKey(cacheKey)) {
-            synchronized (connectorCache) {
-                if (!connectorCache.containsKey(cacheKey)) {
-                    ConnectorMapper mapper = connector.connect(config);
-                    Assert.isTrue(connector.isAlive(mapper), "连接配置异常");
-                    connectorCache.putIfAbsent(cacheKey, mapper);
+        ConnectorService connectorService = getConnectorService(config);
+        String cacheKey = connectorService.getConnectorInstanceCacheKey(config);
+        if (!pool.containsKey(cacheKey)) {
+            synchronized (pool) {
+                if (!pool.containsKey(cacheKey)) {
+                    ConnectorInstance instance = connectorService.connect(config);
+                    Assert.isTrue(connectorService.isAlive(instance), "连接配置异常");
+                    pool.putIfAbsent(cacheKey, instance);
                 }
             }
         }
         try {
-            ConnectorMapper connectorMapper = connectorCache.get(cacheKey);
-            ConnectorMapper clone = (ConnectorMapper) connectorMapper.clone();
+            ConnectorInstance connectorInstance = pool.get(cacheKey);
+            ConnectorInstance clone = (ConnectorInstance) connectorInstance.clone();
             clone.setConfig(config);
             return clone;
         } catch (CloneNotSupportedException e) {
@@ -72,12 +94,11 @@ public class ConnectorFactory implements DisposableBean {
      */
     public void disconnect(ConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
-        Connector connector = getConnector(config.getConnectorType());
-        String cacheKey = connector.getConnectorMapperCacheKey(config);
-        ConnectorMapper connectorMapper = connectorCache.get(cacheKey);
-        if (connectorMapper != null) {
-            disconnect(connectorMapper);
-            connectorCache.remove(cacheKey);
+        String cacheKey = getConnectorService(config).getConnectorInstanceCacheKey(config);
+        ConnectorInstance connectorInstance = pool.get(cacheKey);
+        if (connectorInstance != null) {
+            disconnect(connectorInstance);
+            pool.remove(cacheKey);
         }
     }
 
@@ -89,10 +110,10 @@ public class ConnectorFactory implements DisposableBean {
      */
     public boolean isAlive(ConnectorConfig config) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
-        Connector connector = getConnector(config.getConnectorType());
-        String cacheKey = connector.getConnectorMapperCacheKey(config);
-        if (connectorCache.containsKey(cacheKey)) {
-            return connector.isAlive(connectorCache.get(cacheKey));
+        ConnectorService connectorService = getConnectorService(config);
+        String cacheKey = connectorService.getConnectorInstanceCacheKey(config);
+        if (pool.containsKey(cacheKey)) {
+            return connectorService.isAlive(pool.get(cacheKey));
         }
         return false;
     }
@@ -100,25 +121,25 @@ public class ConnectorFactory implements DisposableBean {
     /**
      * 获取配置表
      *
-     * @param connectionMapper
+     * @param connectorInstance
      * @return
      */
-    public List<Table> getTable(ConnectorMapper connectionMapper) {
-        Assert.notNull(connectionMapper, "ConnectorMapper can not be null.");
-        return getConnector(connectionMapper).getTable(connectionMapper);
+    public List<Table> getTable(ConnectorInstance connectorInstance) {
+        Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
+        return getConnectorService(connectorInstance.getConfig()).getTable(connectorInstance);
     }
 
     /**
      * 获取配置表元信息
      *
-     * @param connectionMapper
+     * @param connectorInstance
      * @param tableName
      * @return
      */
-    public MetaInfo getMetaInfo(ConnectorMapper connectionMapper, String tableName) {
-        Assert.notNull(connectionMapper, "ConnectorMapper can not be null.");
+    public MetaInfo getMetaInfo(ConnectorInstance connectorInstance, String tableName) {
+        Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
         Assert.hasText(tableName, "tableName can not be empty.");
-        return getConnector(connectionMapper).getMetaInfo(connectionMapper, tableName);
+        return getConnectorService(connectorInstance.getConfig()).getMetaInfo(connectorInstance, tableName);
     }
 
     /**
@@ -129,37 +150,43 @@ public class ConnectorFactory implements DisposableBean {
      * @return
      */
     public Map<String, String> getCommand(CommandConfig sourceCommandConfig, CommandConfig targetCommandConfig) {
-        String sType = sourceCommandConfig.getType();
-        String tType = targetCommandConfig.getType();
+        Assert.notNull(sourceCommandConfig, "SourceCommandConfig can not be null.");
+        Assert.notNull(targetCommandConfig, "TargetCommandConfig can not be null.");
         Map<String, String> map = new HashMap<>();
-        Map sCmd = getConnector(sType).getSourceCommand(sourceCommandConfig);
+        Map sCmd = getConnectorService(sourceCommandConfig.getConnectorType()).getSourceCommand(sourceCommandConfig);
         if (!CollectionUtils.isEmpty(sCmd)) {
             map.putAll(sCmd);
         }
 
-        Map tCmd = getConnector(tType).getTargetCommand(targetCommandConfig);
+        Map tCmd = getConnectorService(targetCommandConfig.getConnectorType()).getTargetCommand(targetCommandConfig);
         if (!CollectionUtils.isEmpty(tCmd)) {
             map.putAll(tCmd);
         }
         return map;
     }
 
-    public long getCount(ConnectorMapper connectorMapper, Map<String, String> command) {
-        return getConnector(connectorMapper).getCount(connectorMapper, command);
+    public long getCount(ConnectorInstance connectorInstance, Map<String, String> command) {
+        Assert.notNull(connectorInstance, "ConnectorInstance can not null");
+        Assert.notNull(command, "command can not null");
+        return getConnectorService(connectorInstance.getConfig()).getCount(connectorInstance, command);
     }
 
-    public Result reader(ConnectorMapper connectorMapper, ReaderConfig config) {
-        Result result = getConnector(connectorMapper).reader(connectorMapper, config);
+    public Result reader(ConnectorInstance connectorInstance, ReaderConfig config) {
+        Assert.notNull(connectorInstance, "ConnectorInstance can not null");
+        Assert.notNull(config, "ReaderConfig can not null");
+        Result result = getConnectorService(connectorInstance.getConfig()).reader(connectorInstance, config);
         Assert.notNull(result, "Connector reader result can not null");
         return result;
     }
 
-    public Result writer(ConnectorMapper connectorMapper, WriterBatchConfig config) {
-        Connector connector = getConnector(connectorMapper);
+    public Result writer(ConnectorInstance connectorInstance, WriterBatchConfig config) {
+        Assert.notNull(connectorInstance, "ConnectorInstance can not null");
+        Assert.notNull(config, "WriterBatchConfig can not null");
+        ConnectorService connector = getConnectorService(connectorInstance.getConfig());
         if (connector instanceof AbstractConnector) {
             AbstractConnector conn = (AbstractConnector) connector;
             try {
-                conn.convertProcessBeforeWriter(connectorMapper, config);
+                conn.convertProcessBeforeWriter(connectorInstance, config);
             } catch (Exception e) {
                 Result result = new Result();
                 result.getError().append(e.getMessage());
@@ -168,34 +195,43 @@ public class ConnectorFactory implements DisposableBean {
             }
         }
 
-        Result result = connector.writer(connectorMapper, config);
+        Result result = connector.writer(connectorInstance, config);
         Assert.notNull(result, "Connector writer batch result can not null");
         return result;
     }
 
-    public Result writerDDL(ConnectorMapper connectorMapper, DDLConfig ddlConfig) {
-        Connector connector = getConnector(connectorMapper);
-        Result result = connector.writerDDL(connectorMapper, ddlConfig);
+    public Result writerDDL(ConnectorInstance connectorInstance, DDLConfig ddlConfig) {
+        Assert.notNull(connectorInstance, "ConnectorInstance can not null");
+        Result result = getConnectorService(connectorInstance.getConfig()).writerDDL(connectorInstance, ddlConfig);
         Assert.notNull(result, "Connector writer batch result can not null");
         return result;
     }
 
-    public Connector getConnector(ConnectorMapper connectorMapper) {
-        ConnectorConfig connectorConfig = (ConnectorConfig) connectorMapper.getConfig();
-        return getConnector(connectorConfig.getConnectorType());
+    private ConnectorService getConnectorService(ConnectorConfig connectorConfig) {
+        Assert.notNull(connectorConfig, "ConnectorConfig can not null");
+        return getConnectorService(connectorConfig.getConnectorType());
     }
 
-    public Connector getConnector(String connectorType) {
-        return ConnectorEnum.getConnectorEnum(connectorType).getConnector();
+    public ConnectorService getConnectorService(String connectorType) {
+        ConnectorService connectorService = service.get(connectorType);
+        if (connectorService == null) {
+            Assert.isTrue(false, "Unsupported connector type:" + connectorType);
+        }
+        return connectorService;
+    }
+
+    public Set<String> getConnectorTypeAll() {
+        return connectorTypes;
     }
 
     /**
      * 断开连接
      *
-     * @param connectorMapper
+     * @param connectorInstance
      */
-    private void disconnect(ConnectorMapper connectorMapper) {
-        Assert.notNull(connectorMapper, "ConnectorMapper can not be null.");
-        getConnector(connectorMapper).disconnect(connectorMapper);
+    private void disconnect(ConnectorInstance connectorInstance) {
+        Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
+        getConnectorService(connectorInstance.getConfig()).disconnect(connectorInstance);
     }
+
 }

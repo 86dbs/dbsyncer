@@ -1,8 +1,8 @@
 package org.dbsyncer.parser.ddl;
 
 import net.sf.jsqlparser.statement.alter.AlterExpression;
-import org.dbsyncer.connector.config.DDLConfig;
 import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.sdk.config.DDLConfig;
 
 import java.util.List;
 

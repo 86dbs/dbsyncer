@@ -1,14 +1,23 @@
 package org.dbsyncer.connector.sql;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.ReaderConfig;
-import org.dbsyncer.connector.constant.DatabaseConstant;
-import org.dbsyncer.connector.model.PageSql;
-import org.dbsyncer.connector.util.PrimaryKeyUtil;
+import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.model.PageSql;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Component
 public final class DQLSqlServerConnector extends AbstractDQLConnector {
+
+    private final String TYPE = "DqlSqlServer";
+
+    @Override
+    public String getConnectorType() {
+        return TYPE;
+    }
 
     @Override
     public String getPageSql(PageSql config) {
@@ -23,5 +32,4 @@ public final class DQLSqlServerConnector extends AbstractDQLConnector {
         int pageIndex = config.getPageIndex();
         return new Object[]{(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
     }
-
 }

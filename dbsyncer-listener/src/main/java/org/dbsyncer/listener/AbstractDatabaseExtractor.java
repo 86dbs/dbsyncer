@@ -3,13 +3,13 @@ package org.dbsyncer.listener;
 import org.dbsyncer.listener.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.constant.ConnectorConstant;
-import org.dbsyncer.connector.database.AbstractDatabaseConnector;
-import org.dbsyncer.connector.database.DatabaseConnectorMapper;
-import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.connector.model.MetaInfo;
-import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.connector.util.PrimaryKeyUtil;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
@@ -77,13 +77,13 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
      * 初始化Dql连接配置
      */
     protected void postProcessDqlBeforeInitialization() {
-        DatabaseConnectorMapper mapper = (DatabaseConnectorMapper) connectorFactory.connect(connectorConfig);
-        AbstractDatabaseConnector connector = (AbstractDatabaseConnector) connectorFactory.getConnector(mapper);
-        String quotation = connector.buildSqlWithQuotation();
+        DatabaseConnectorInstance connectorInstance = (DatabaseConnectorInstance) connectorFactory.connect(connectorConfig);
+        AbstractDatabaseConnector connectorService = (AbstractDatabaseConnector) connectorFactory.getConnectorService(connectorConfig.getConnectorType());
+        String quotation = connectorService.buildSqlWithQuotation();
 
         // <用户表, MY_USER>
         Map<String, String> tableMap = new HashMap<>();
-        mapper.getConfig().getSqlTables().forEach(s -> tableMap.put(s.getSqlName(), s.getTable()));
+        connectorInstance.getConfig().getSqlTables().forEach(s -> tableMap.put(s.getSqlName(), s.getTable()));
         // 清空默认表名
         filterTable.clear();
         for (Table t : sourceTable) {
@@ -94,7 +94,7 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
             Assert.hasText(sql, "The sql is null.");
             Assert.hasText(tableName, "The tableName is null.");
 
-            MetaInfo metaInfo = connectorFactory.getMetaInfo(mapper, sqlName);
+            MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorInstance, sqlName);
             final List<Field> column = metaInfo.getColumn();
             Assert.notEmpty(column, String.format("The column of table name '%s' is empty.", sqlName));
 
@@ -106,7 +106,7 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
             boolean notContainsWhere = !StringUtil.contains(sql, " WHERE ");
             querySql.append(notContainsWhere ? " WHERE " : " AND ");
             PrimaryKeyUtil.buildSql(querySql, primaryKeys, quotation, " AND ", " = ? ", notContainsWhere);
-            DqlMapper dqlMapper = new DqlMapper(mapper, sqlName, querySql.toString(), column, getPrimaryKeyIndexArray(column, primaryKeys));
+            DqlMapper dqlMapper = new DqlMapper(connectorInstance, sqlName, querySql.toString(), column, getPrimaryKeyIndexArray(column, primaryKeys));
             if (!dqlMap.containsKey(tableName)) {
                 dqlMap.putIfAbsent(tableName, new ArrayList<>());
             }
@@ -139,7 +139,7 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
 
     private void queryDqlData(DqlMapper dqlMapper, List<Object> data) {
         if (!CollectionUtils.isEmpty(data)) {
-            Map<String, Object> row = dqlMapper.mapper.execute(databaseTemplate -> {
+            Map<String, Object> row = dqlMapper.connectorInstance.execute(databaseTemplate -> {
                 int size = dqlMapper.primaryKeyIndexArray.length;
                 Object[] args = new Object[size];
                 for (int i = 0; i < size; i++) {
@@ -155,14 +155,14 @@ public abstract class AbstractDatabaseExtractor extends AbstractExtractor {
     }
 
     final class DqlMapper {
-        DatabaseConnectorMapper mapper;
+        DatabaseConnectorInstance connectorInstance;
         String sqlName;
         String sql;
         List<Field> column;
         Integer[] primaryKeyIndexArray;
 
-        public DqlMapper(DatabaseConnectorMapper mapper, String sqlName, String sql, List<Field> column, Integer[] primaryKeyIndexArray) {
-            this.mapper = mapper;
+        public DqlMapper(DatabaseConnectorInstance connectorInstance, String sqlName, String sql, List<Field> column, Integer[] primaryKeyIndexArray) {
+            this.connectorInstance = connectorInstance;
             this.sqlName = sqlName;
             this.sql = sql;
             this.column = column;

@@ -1,5 +1,5 @@
 import com.github.shyiko.mysql.binlog.event.*;
-import org.dbsyncer.connector.constant.ConnectorConstant;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.listener.mysql.BinaryLogClient;
 import org.dbsyncer.listener.mysql.BinaryLogRemoteClient;
 import org.junit.Test;
