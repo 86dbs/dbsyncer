@@ -1,4 +1,4 @@
-package org.dbsyncer.connector.scheduled;
+package org.dbsyncer.sdk.scheduled;
 
 /**
  * @version 1.0.0

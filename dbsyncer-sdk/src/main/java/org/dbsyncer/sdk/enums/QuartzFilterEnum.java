@@ -1,11 +1,11 @@
-package org.dbsyncer.connector.enums;
+package org.dbsyncer.sdk.enums;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.quartz.QuartzFilter;
-import org.dbsyncer.connector.quartz.filter.DateFilter;
-import org.dbsyncer.connector.quartz.filter.TimestampFilter;
-import org.dbsyncer.connector.quartz.filter.YesDateFilter;
-import org.dbsyncer.connector.quartz.filter.YesTimestampFilter;
+import org.dbsyncer.sdk.quartz.QuartzFilter;
+import org.dbsyncer.sdk.quartz.filter.DateFilter;
+import org.dbsyncer.sdk.quartz.filter.TimestampFilter;
+import org.dbsyncer.sdk.quartz.filter.YesDateFilter;
+import org.dbsyncer.sdk.quartz.filter.YesTimestampFilter;
 
 /**
  * @author AE86

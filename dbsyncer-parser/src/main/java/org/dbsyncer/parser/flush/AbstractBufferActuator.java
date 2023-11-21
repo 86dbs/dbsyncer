@@ -1,8 +1,8 @@
 package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.common.config.BufferActuatorConfig;
-import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
-import org.dbsyncer.connector.scheduled.ScheduledTaskService;
+import org.dbsyncer.sdk.scheduled.ScheduledTaskJob;
+import org.dbsyncer.sdk.scheduled.ScheduledTaskService;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Meta;

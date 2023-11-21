@@ -15,7 +15,7 @@ import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.AbstractDatabaseListener;
+import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.constant.ConnectorConstant;

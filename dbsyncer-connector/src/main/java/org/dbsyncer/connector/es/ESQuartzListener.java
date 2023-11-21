@@ -4,10 +4,10 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.enums.QuartzFilterEnum;
-import org.dbsyncer.connector.quartz.AbstractQuartzListener;
-import org.dbsyncer.connector.quartz.Point;
-import org.dbsyncer.connector.quartz.QuartzFilter;
+import org.dbsyncer.sdk.enums.QuartzFilterEnum;
+import org.dbsyncer.sdk.listener.AbstractQuartzListener;
+import org.dbsyncer.sdk.quartz.Point;
+import org.dbsyncer.sdk.quartz.QuartzFilter;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.Filter;
 

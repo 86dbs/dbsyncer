@@ -2,7 +2,6 @@ package org.dbsyncer.connector.postgresql.decoder;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.connector.postgresql.AbstractMessageDecoder;
 import org.dbsyncer.connector.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.connector.postgresql.enums.MessageTypeEnum;
@@ -10,6 +9,7 @@ import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,12 +34,12 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     private static final LocalDateTime PG_EPOCH = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
     private static final String GET_TABLE_SCHEMA = "select t.oid,t.relname as tableName from pg_class t inner join (select ns.oid as nspoid, ns.nspname from pg_namespace ns where ns.nspname = '%s') as n on n.nspoid = t.relnamespace where relkind = 'r'";
     private static final Map<Integer, TableId> tables = new LinkedHashMap<>();
-    private ConnectorFactory connectorFactory;
+    private ConnectorService connectorService;
     private DatabaseConnectorInstance connectorInstance;
 
     @Override
-    public void postProcessBeforeInitialization(ConnectorFactory connectorFactory, DatabaseConnectorInstance connectorInstance) {
-        this.connectorFactory = connectorFactory;
+    public void postProcessBeforeInitialization(ConnectorService connectorService, DatabaseConnectorInstance connectorInstance) {
+        this.connectorService = connectorService;
         this.connectorInstance = connectorInstance;
         initPublication();
         readSchema();
@@ -123,7 +123,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
             schemas.forEach(map -> {
                 Long oid = (Long) map.get("oid");
                 String tableName = (String) map.get("tableName");
-                MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorInstance, tableName);
+                MetaInfo metaInfo = connectorService.getMetaInfo(connectorInstance, tableName);
                 Assert.notEmpty(metaInfo.getColumn(), String.format("The table column for '%s' must not be empty.", tableName));
                 tables.put(oid.intValue(), new TableId(oid.intValue(), tableName, metaInfo.getColumn()));
             });
@@ -156,7 +156,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
             logger.warn("The column size of table '{}' is {}, but we has been received column size is {}.", tableId.tableName, tableId.fields.size(), nColumn);
 
             // The table schema has been changed, we should be get a new table schema from db.
-            MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorInstance, tableId.tableName);
+            MetaInfo metaInfo = connectorService.getMetaInfo(connectorInstance, tableId.tableName);
             if (CollectionUtils.isEmpty(metaInfo.getColumn())) {
                 throw new ConnectorException(String.format("The table column for '%s' is empty.", tableId.tableName));
             }

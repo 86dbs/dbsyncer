@@ -1,16 +1,16 @@
-package org.dbsyncer.connector.quartz;
+package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
-import org.dbsyncer.connector.AbstractListener;
-import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
 import org.dbsyncer.sdk.config.ReaderConfig;
-import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.event.ScanChangedEvent;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.quartz.Point;
+import org.dbsyncer.sdk.quartz.TableGroupQuartzCommand;
+import org.dbsyncer.sdk.scheduled.ScheduledTaskJob;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,14 +103,13 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         boolean supportedCursor = StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR));
 
         // 检查增量点
-        ConnectorInstance connectionInstance = connectorFactory.connect(connectorConfig);
         Point point = checkLastPoint(command, index);
         int pageIndex = 1;
         Object[] cursors = PrimaryKeyUtil.getLastCursors(snapshot.get(index + CURSOR));
 
         while (running) {
             ReaderConfig readerConfig = new ReaderConfig(table, point.getCommand(), point.getArgs(), supportedCursor, cursors, pageIndex++, READ_NUM);
-            Result reader = connectorFactory.reader(connectionInstance, readerConfig);
+            Result reader = connectorService.reader(connectorInstance, readerConfig);
             List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
                 cursors = new Object[0];

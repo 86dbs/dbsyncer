@@ -3,13 +3,14 @@ package org.dbsyncer.connector.sqlserver;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.enums.TableOperationEnum;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
-import org.dbsyncer.connector.AbstractDatabaseListener;
+import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -62,7 +63,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     private volatile boolean connected;
     private Set<String> tables;
     private Set<SqlServerChangeTable> changeTables;
-    private DatabaseConnectorInstance connectorInstance;
+    private DatabaseConnectorInstance instance;
     private Worker worker;
     private Lsn lastLsn;
     private String serverName;
@@ -135,9 +136,10 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     private void connect() {
-        if (connectorFactory.isAlive(connectorConfig)) {
-            connectorInstance = (DatabaseConnectorInstance) connectorFactory.connect(connectorConfig);
-            DatabaseConfig cfg = connectorInstance.getConfig();
+        instance = (DatabaseConnectorInstance) connectorInstance;
+        AbstractDatabaseConnector service = (AbstractDatabaseConnector) connectorService;
+        if (service.isAlive(instance)) {
+            DatabaseConfig cfg = instance.getConfig();
             serverName = cfg.getUrl();
             schema = cfg.getSchema();
         }
@@ -221,7 +223,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     private void execute(String... sqlStatements) {
-        connectorInstance.execute(databaseTemplate -> {
+        instance.execute(databaseTemplate -> {
             for (String sqlStatement : sqlStatements) {
                 if (sqlStatement != null) {
                     logger.info("executing '{}'", sqlStatement);
@@ -313,7 +315,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     private <T> T query(String preparedQuerySql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
-        Object execute = connectorInstance.execute(databaseTemplate -> {
+        Object execute = instance.execute(databaseTemplate -> {
             PreparedStatement ps = null;
             ResultSet rs = null;
             T apply = null;

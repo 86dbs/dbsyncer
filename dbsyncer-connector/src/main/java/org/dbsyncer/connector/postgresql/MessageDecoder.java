@@ -1,9 +1,9 @@
 package org.dbsyncer.connector.postgresql;
 
-import org.dbsyncer.sdk.listener.event.RowChangedEvent;
-import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.listener.event.RowChangedEvent;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.postgresql.replication.LogSequenceNumber;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 
@@ -16,7 +16,7 @@ import java.nio.ByteBuffer;
  */
 public interface MessageDecoder {
 
-    default void postProcessBeforeInitialization(ConnectorFactory connectorFactory, DatabaseConnectorInstance connectorInstance) {
+    default void postProcessBeforeInitialization(ConnectorService connectorService, DatabaseConnectorInstance connectorInstance) {
     }
 
     boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn);

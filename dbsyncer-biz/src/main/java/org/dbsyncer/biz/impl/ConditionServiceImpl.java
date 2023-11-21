@@ -3,7 +3,7 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.ConditionService;
 import org.dbsyncer.biz.vo.ConditionVo;
 import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.connector.enums.QuartzFilterEnum;
+import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.springframework.stereotype.Component;

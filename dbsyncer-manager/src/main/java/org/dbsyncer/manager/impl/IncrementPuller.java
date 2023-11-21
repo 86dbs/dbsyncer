@@ -1,12 +1,7 @@
 package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.AbstractListener;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.quartz.AbstractQuartzListener;
-import org.dbsyncer.connector.quartz.TableGroupQuartzCommand;
-import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
-import org.dbsyncer.connector.scheduled.ScheduledTaskService;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.parser.LogService;
@@ -22,10 +17,15 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.listener.AbstractListener;
+import org.dbsyncer.sdk.listener.AbstractQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.quartz.TableGroupQuartzCommand;
+import org.dbsyncer.sdk.scheduled.ScheduledTaskJob;
+import org.dbsyncer.sdk.scheduled.ScheduledTaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -173,7 +173,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 filterTable.add(table.getName());
             });
 
-            abstractListener.setConnectorFactory(connectorFactory);
+            abstractListener.setConnectorService(connectorFactory.getConnectorService(connectorConfig.getConnectorType()));
+            abstractListener.setConnectorInstance(connectorFactory.connect(connectorConfig));
             abstractListener.setScheduledTaskService(scheduledTaskService);
             abstractListener.setConnectorConfig(connectorConfig);
             abstractListener.setListenerConfig(listenerConfig);

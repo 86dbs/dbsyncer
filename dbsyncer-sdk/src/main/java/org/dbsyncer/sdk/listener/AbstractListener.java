@@ -1,15 +1,14 @@
-package org.dbsyncer.connector;
+package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.scheduled.ScheduledTaskService;
+import org.dbsyncer.sdk.scheduled.ScheduledTaskService;
 import org.dbsyncer.sdk.config.ListenerConfig;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.listener.ChangedEvent;
-import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.listener.Watcher;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +28,8 @@ public abstract class AbstractListener implements Listener {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final int FLUSH_DELAYED_SECONDS = 20;
-    protected ConnectorFactory connectorFactory;
+    protected ConnectorInstance connectorInstance;
+    protected ConnectorService connectorService;
     protected ScheduledTaskService scheduledTaskService;
     protected ConnectorConfig connectorConfig;
     protected ListenerConfig listenerConfig;
@@ -119,8 +119,12 @@ public abstract class AbstractListener implements Listener {
         }
     }
 
-    public void setConnectorFactory(ConnectorFactory connectorFactory) {
-        this.connectorFactory = connectorFactory;
+    public void setConnectorInstance(ConnectorInstance connectorInstance) {
+        this.connectorInstance = connectorInstance;
+    }
+
+    public void setConnectorService(ConnectorService connectorService) {
+        this.connectorService = connectorService;
     }
 
     public void setScheduledTaskService(ScheduledTaskService scheduledTaskService) {

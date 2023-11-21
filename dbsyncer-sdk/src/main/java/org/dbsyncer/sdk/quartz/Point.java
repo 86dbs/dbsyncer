@@ -1,4 +1,4 @@
-package org.dbsyncer.connector.quartz;
+package org.dbsyncer.sdk.quartz;
 
 import org.dbsyncer.common.util.StringUtil;
 

@@ -1,15 +1,15 @@
 package org.dbsyncer.connector.file;
 
 import org.apache.commons.io.IOUtils;
-import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.sdk.model.ChangedOffset;
-import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.FileConfig;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.connector.AbstractListener;
+import org.dbsyncer.sdk.listener.AbstractListener;
+import org.dbsyncer.sdk.listener.event.RowChangedEvent;
+import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +48,7 @@ public class FileListener extends AbstractListener {
     private static final String CHARSET_NAME = "UTF-8";
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
-    private FileConnectorInstance connectorInstance;
+    private FileConnectorInstance instance;
     private WatchService watchService;
     private Worker worker;
     private Map<String, PipelineResolver> pipeline = new ConcurrentHashMap<>();
@@ -64,9 +64,9 @@ public class FileListener extends AbstractListener {
                 return;
             }
 
-            connectorInstance = (FileConnectorInstance) connectorFactory.connect(connectorConfig);
-            final FileConfig config = connectorInstance.getConfig();
-            final String cacheKey = connectorFactory.getConnectorService(connectorConfig.getConnectorType()).getConnectorInstanceCacheKey(connectorConfig);
+            instance = (FileConnectorInstance) connectorInstance;
+            final FileConfig config = instance.getConfig();
+            final String cacheKey = connectorService.getConnectorInstanceCacheKey(config);
             connected = true;
 
             separator = config.getSeparator();
@@ -93,7 +93,7 @@ public class FileListener extends AbstractListener {
     }
 
     private void initPipeline(String fileDir) throws IOException {
-        for (FileSchema fileSchema : connectorInstance.getFileSchemaList()) {
+        for (FileSchema fileSchema : instance.getFileSchemaList()) {
             String fileName = fileSchema.getFileName();
             String file = fileDir.concat(fileName);
             Assert.isTrue(new File(file).exists(), String.format("found not file '%s'", file));

@@ -1,4 +1,4 @@
-package org.dbsyncer.connector.quartz;
+package org.dbsyncer.sdk.quartz;
 
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;

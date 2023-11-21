@@ -1,4 +1,4 @@
-package org.dbsyncer.connector.quartz;
+package org.dbsyncer.sdk.quartz;
 
 public interface QuartzFilter<T> {
 

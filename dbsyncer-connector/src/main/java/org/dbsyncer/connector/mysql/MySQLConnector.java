@@ -1,7 +1,7 @@
 package org.dbsyncer.connector.mysql;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.quartz.DatabaseQuartzListener;
+import org.dbsyncer.sdk.quartz.DatabaseQuartzListener;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
