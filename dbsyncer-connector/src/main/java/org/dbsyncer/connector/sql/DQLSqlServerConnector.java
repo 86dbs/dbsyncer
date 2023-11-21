@@ -1,7 +1,7 @@
 package org.dbsyncer.connector.sql;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.quartz.DatabaseQuartzListener;
+import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.connector.sqlserver.DqlSqlServerListener;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;

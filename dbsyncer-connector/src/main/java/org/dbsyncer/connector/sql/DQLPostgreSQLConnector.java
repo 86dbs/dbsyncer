@@ -1,7 +1,7 @@
 package org.dbsyncer.connector.sql;
 
 import org.dbsyncer.connector.postgresql.DqlPostgreSQLListener;
-import org.dbsyncer.sdk.quartz.DatabaseQuartzListener;
+import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;

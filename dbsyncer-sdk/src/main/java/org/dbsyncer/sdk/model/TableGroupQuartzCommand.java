@@ -1,6 +1,5 @@
-package org.dbsyncer.sdk.quartz;
+package org.dbsyncer.sdk.model;
 
-import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.util.List;

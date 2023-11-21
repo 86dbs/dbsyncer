@@ -23,7 +23,7 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.quartz.TableGroupQuartzCommand;
+import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
 import org.dbsyncer.sdk.scheduled.ScheduledTaskJob;
 import org.dbsyncer.sdk.scheduled.ScheduledTaskService;
 import org.slf4j.Logger;

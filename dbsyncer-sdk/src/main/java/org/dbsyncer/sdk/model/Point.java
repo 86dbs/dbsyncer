@@ -1,8 +1,12 @@
-package org.dbsyncer.sdk.quartz;
+package org.dbsyncer.sdk.model;
 
 import org.dbsyncer.common.util.StringUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Point {
 
@@ -33,7 +37,7 @@ public class Point {
     }
 
     public void refresh() {
-        if(StringUtil.isNotBlank(beginKey) && StringUtil.isNotBlank(beginValue)){
+        if (StringUtil.isNotBlank(beginKey) && StringUtil.isNotBlank(beginValue)) {
             position.put(beginKey, beginValue);
             refreshed = true;
         }

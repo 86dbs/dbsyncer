@@ -1,7 +1,7 @@
-package org.dbsyncer.sdk.quartz.filter;
+package org.dbsyncer.sdk.listener.filter;
 
 import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.sdk.quartz.QuartzFilter;
+import org.dbsyncer.sdk.listener.QuartzFilter;
 
 import java.sql.Date;
 import java.time.LocalDateTime;

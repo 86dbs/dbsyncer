@@ -1,10 +1,10 @@
-package org.dbsyncer.sdk.quartz;
+package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.listener.AbstractQuartzListener;
+import org.dbsyncer.sdk.enums.QuartzFilterEnum;
+import org.dbsyncer.sdk.model.Point;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
