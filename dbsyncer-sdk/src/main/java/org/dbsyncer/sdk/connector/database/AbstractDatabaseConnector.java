@@ -78,13 +78,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public void disconnect(DatabaseConnectorInstance connectorMapper) {
-        connectorMapper.close();
+    public void disconnect(DatabaseConnectorInstance connectorInstance) {
+        connectorInstance.close();
     }
 
     @Override
-    public boolean isAlive(DatabaseConnectorInstance connectorMapper) {
-        Integer count = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(getValidationQuery(), Integer.class));
+    public boolean isAlive(DatabaseConnectorInstance connectorInstance) {
+        Integer count = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(getValidationQuery(), Integer.class));
         return null != count && count > 0;
     }
 
@@ -94,15 +94,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public List<Table> getTable(DatabaseConnectorInstance connectorMapper) {
-        return getTable(connectorMapper, null, getSchema(connectorMapper.getConfig()), null);
+    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
+        return getTable(connectorInstance, null, getSchema(connectorInstance.getConfig()), null);
     }
 
     @Override
-    public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorMapper, String tableNamePattern) {
+    public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorInstance, String tableNamePattern) {
         List<Field> fields = new ArrayList<>();
-        final String schema = getSchema(connectorMapper.getConfig());
-        connectorMapper.execute(databaseTemplate -> {
+        final String schema = getSchema(connectorInstance.getConfig());
+        connectorInstance.execute(databaseTemplate -> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             String catalog = conn.getCatalog();
@@ -122,7 +122,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public long getCount(DatabaseConnectorInstance connectorMapper, Map<String, String> command) {
+    public long getCount(DatabaseConnectorInstance connectorInstance, Map<String, String> command) {
         if (CollectionUtils.isEmpty(command)) {
             return 0L;
         }
@@ -134,14 +134,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         // 2、返回结果集
-        return connectorMapper.execute(databaseTemplate -> {
+        return connectorInstance.execute(databaseTemplate -> {
             Long count = databaseTemplate.queryForObject(queryCountSql, Long.class);
             return count == null ? 0 : count;
         });
     }
 
     @Override
-    public Result reader(DatabaseConnectorInstance connectorMapper, ReaderConfig config) {
+    public Result reader(DatabaseConnectorInstance connectorInstance, ReaderConfig config) {
         // 1、获取select SQL
         boolean supportedCursor = enableCursor() && config.isSupportedCursor() && null != config.getCursors();
         String queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY;
@@ -152,14 +152,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         Collections.addAll(config.getArgs(), supportedCursor ? getPageCursorArgs(config) : getPageArgs(config));
 
         // 3、执行SQL
-        List<Map<String, Object>> list = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
+        List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
 
         // 4、返回结果集
         return new Result(list);
     }
 
     @Override
-    public Result writer(DatabaseConnectorInstance connectorMapper, WriterBatchConfig config) {
+    public Result writer(DatabaseConnectorInstance connectorInstance, WriterBatchConfig config) {
         String event = config.getEvent();
         List<Map> data = config.getData();
 
@@ -190,9 +190,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         int[] execute = null;
         try {
             // 2、设置参数
-            execute = connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
+            execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
         } catch (Exception e) {
-            data.forEach(row -> forceUpdate(result, connectorMapper, config, pkFields, row));
+            data.forEach(row -> forceUpdate(result, connectorInstance, config, pkFields, row));
         }
 
         if (null != execute) {
@@ -202,7 +202,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     result.getSuccessData().add(data.get(i));
                     continue;
                 }
-                forceUpdate(result, connectorMapper, config, pkFields, data.get(i));
+                forceUpdate(result, connectorInstance, config, pkFields, data.get(i));
             }
         }
         return result;
@@ -440,14 +440,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     /**
      * 获取表列表
      *
-     * @param connectorMapper
+     * @param connectorInstance
      * @param catalog
      * @param schema
      * @param tableNamePattern
      * @return
      */
-    private List<Table> getTable(DatabaseConnectorInstance connectorMapper, String catalog, String schema, String tableNamePattern) {
-        return connectorMapper.execute(databaseTemplate -> {
+    private List<Table> getTable(DatabaseConnectorInstance connectorInstance, String catalog, String schema, String tableNamePattern) {
+        return connectorInstance.execute(databaseTemplate -> {
             List<Table> tables = new ArrayList<>();
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
@@ -569,7 +569,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return args;
     }
 
-    private void forceUpdate(Result result, DatabaseConnectorInstance connectorMapper, WriterBatchConfig config, List<Field> pkFields,
+    private void forceUpdate(Result result, DatabaseConnectorInstance connectorInstance, WriterBatchConfig config, List<Field> pkFields,
                              Map row) {
         if (isUpdate(config.getEvent()) || isInsert(config.getEvent())) {
             // 存在执行覆盖更新，否则写入
@@ -579,14 +579,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             for (int i = 0; i < size; i++) {
                 args[i] = row.get(pkFields.get(i).getName());
             }
-            final String event = existRow(connectorMapper, queryCount, args) ? ConnectorConstant.OPERTION_UPDATE
+            final String event = existRow(connectorInstance, queryCount, args) ? ConnectorConstant.OPERTION_UPDATE
                     : ConnectorConstant.OPERTION_INSERT;
             logger.warn("{}表执行{}失败, 重新执行{}, {}", config.getTableName(), config.getEvent(), event, row);
-            writer(result, connectorMapper, config, pkFields, row, event);
+            writer(result, connectorInstance, config, pkFields, row, event);
         }
     }
 
-    private void writer(Result result, DatabaseConnectorInstance connectorMapper, WriterBatchConfig config, List<Field> pkFields, Map row,
+    private void writer(Result result, DatabaseConnectorInstance connectorInstance, WriterBatchConfig config, List<Field> pkFields, Map row,
                         String event) {
         // 1、获取 SQL
         String sql = config.getCommand().get(event);
@@ -604,7 +604,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         try {
             // 2、设置参数
-            int execute = connectorMapper.execute(databaseTemplate -> databaseTemplate.update(sql, batchRow(fields, row)));
+            int execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql, batchRow(fields, row)));
             if (execute == 0) {
                 throw new SdkException(String.format("尝试执行[%s]失败", event));
             }
@@ -618,10 +618,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
     }
 
-    private boolean existRow(DatabaseConnectorInstance connectorMapper, String sql, Object[] args) {
+    private boolean existRow(DatabaseConnectorInstance connectorInstance, String sql, Object[] args) {
         int rowNum = 0;
         try {
-            rowNum = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, Integer.class, args));
+            rowNum = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, Integer.class, args));
         } catch (Exception e) {
             logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, args);
         }
@@ -651,11 +651,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public Result writerDDL(DatabaseConnectorInstance connectorMapper, DDLConfig config) {
+    public Result writerDDL(DatabaseConnectorInstance connectorInstance, DDLConfig config) {
         Result result = new Result();
         try {
             Assert.hasText(config.getSql(), "执行SQL语句不能为空.");
-            connectorMapper.execute(databaseTemplate -> {
+            connectorInstance.execute(databaseTemplate -> {
                 databaseTemplate.execute(config.getSql());
                 return true;
             });

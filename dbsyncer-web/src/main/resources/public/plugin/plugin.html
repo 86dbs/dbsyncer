@@ -77,11 +77,11 @@ public class MyPlugin implements ConvertService {
         // 完成同步后调用该方法
        logger.info("插件正在处理同步成功的数据，目标源表:{}，事件:{}，条数:{}", context.getTargetTableName(), context.getEvent(), context.getTargetList().size());
 
-        ConnectorMapper connectorMapper = context.getSourceConnectorMapper();
+        ConnectorInstance connectorInstance = context.getSourceConnectorInstance();
 
         // 获取关系型数据库连接，实现自己的业务逻辑...
-        if (connectorMapper instanceof DatabaseConnectorMapper) {
-            DatabaseConnectorMapper db = (DatabaseConnectorMapper) connectorMapper;
+        if (connectorInstance instanceof DatabaseConnectorInstance) {
+            DatabaseConnectorInstance db = (DatabaseConnectorInstance) connectorInstance;
             // 方式一（推荐）：
             String query = "select * from my_user";
             db.execute(databaseTemplate -> databaseTemplate.queryForList(query));

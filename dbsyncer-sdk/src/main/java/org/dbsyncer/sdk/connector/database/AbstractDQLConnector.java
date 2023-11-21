@@ -26,8 +26,8 @@ import java.util.Map;
 public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
 
     @Override
-    public List<Table> getTable(DatabaseConnectorInstance connectorMapper) {
-        DatabaseConfig cfg = connectorMapper.getConfig();
+    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
+        DatabaseConfig cfg = connectorInstance.getConfig();
         List<SqlTable> sqlTables = cfg.getSqlTables();
         List<Table> tables = new ArrayList<>();
         if (!CollectionUtils.isEmpty(sqlTables)) {
@@ -44,8 +44,8 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorMapper, String sqlName) {
-        DatabaseConfig cfg = connectorMapper.getConfig();
+    public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorInstance, String sqlName) {
+        DatabaseConfig cfg = connectorInstance.getConfig();
         List<SqlTable> sqlTables = cfg.getSqlTables();
         for (SqlTable s : sqlTables) {
             if (StringUtil.equals(s.getSqlName(), sqlName)) {
@@ -54,7 +54,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
                 sql = sql.replace("\r", " ");
                 sql = sql.replace("\n", " ");
                 String queryMetaSql = StringUtil.contains(sql, " WHERE ") ? s.getSql() + " AND 1!=1 " : s.getSql() + " WHERE 1!=1 ";
-                return connectorMapper.execute(databaseTemplate -> super.getMetaInfo(databaseTemplate, queryMetaSql, getSchema(cfg), s.getTable()));
+                return connectorInstance.execute(databaseTemplate -> super.getMetaInfo(databaseTemplate, queryMetaSql, getSchema(cfg), s.getTable()));
             }
         }
         return null;

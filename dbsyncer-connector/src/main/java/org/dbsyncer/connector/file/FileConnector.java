@@ -78,20 +78,20 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     }
 
     @Override
-    public void disconnect(FileConnectorInstance connectorMapper) {
+    public void disconnect(FileConnectorInstance connectorInstance) {
 
     }
 
     @Override
-    public boolean isAlive(FileConnectorInstance connectorMapper) {
-        String fileDir = connectorMapper.getConnection();
+    public boolean isAlive(FileConnectorInstance connectorInstance) {
+        String fileDir = connectorInstance.getConnection();
         boolean alive = new File(fileDir).exists();
         if (!alive) {
             logger.warn("can not find fileDir:{}", fileDir);
             return false;
         }
-        for (FileSchema fileSchema : connectorMapper.getFileSchemaList()) {
-            String filePath = connectorMapper.getFilePath(fileSchema.getFileName());
+        for (FileSchema fileSchema : connectorInstance.getFileSchemaList()) {
+            String filePath = connectorInstance.getFilePath(fileSchema.getFileName());
             if (!new File(filePath).exists()) {
                 logger.warn("can not find file:{}", filePath);
                 alive = false;
@@ -113,18 +113,18 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     }
 
     @Override
-    public List<Table> getTable(FileConnectorInstance connectorMapper) {
-        return connectorMapper.getFileSchemaList().stream().map(fileSchema -> new Table(fileSchema.getFileName())).collect(Collectors.toList());
+    public List<Table> getTable(FileConnectorInstance connectorInstance) {
+        return connectorInstance.getFileSchemaList().stream().map(fileSchema -> new Table(fileSchema.getFileName())).collect(Collectors.toList());
     }
 
     @Override
-    public MetaInfo getMetaInfo(FileConnectorInstance connectorMapper, String tableName) {
-        FileSchema fileSchema = connectorMapper.getFileSchema(tableName);
+    public MetaInfo getMetaInfo(FileConnectorInstance connectorInstance, String tableName) {
+        FileSchema fileSchema = connectorInstance.getFileSchema(tableName);
         return new MetaInfo().setColumn(fileSchema.getFields());
     }
 
     @Override
-    public long getCount(FileConnectorInstance connectorMapper, Map<String, String> command) {
+    public long getCount(FileConnectorInstance connectorInstance, Map<String, String> command) {
         AtomicLong count = new AtomicLong();
         FileReader reader = null;
         try {
@@ -143,12 +143,12 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     }
 
     @Override
-    public Result reader(FileConnectorInstance connectorMapper, ReaderConfig config) {
+    public Result reader(FileConnectorInstance connectorInstance, ReaderConfig config) {
         List<Map<String, Object>> list = new ArrayList<>();
         FileReader reader = null;
         try {
-            FileConfig fileConfig = connectorMapper.getConfig();
-            FileSchema fileSchema = connectorMapper.getFileSchema(config.getCommand().get(FILE_NAME));
+            FileConfig fileConfig = connectorInstance.getConfig();
+            FileSchema fileSchema = connectorInstance.getFileSchema(config.getCommand().get(FILE_NAME));
             final List<Field> fields = fileSchema.getFields();
             Assert.notEmpty(fields, "The fields of file schema is empty.");
             final char separator = fileConfig.getSeparator();
@@ -178,7 +178,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     }
 
     @Override
-    public Result writer(FileConnectorInstance connectorMapper, WriterBatchConfig config) {
+    public Result writer(FileConnectorInstance connectorInstance, WriterBatchConfig config) {
         List<Map> data = config.getData();
         if (CollectionUtils.isEmpty(data)) {
             logger.error("writer data can not be empty.");
@@ -186,12 +186,12 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         }
 
         final List<Field> fields = config.getFields();
-        final String separator = new String(new char[]{connectorMapper.getConfig().getSeparator()});
+        final String separator = new String(new char[]{connectorInstance.getConfig().getSeparator()});
 
         Result result = new Result();
         OutputStream output = null;
         try {
-            final String filePath = connectorMapper.getFilePath(config.getCommand().get(FILE_NAME));
+            final String filePath = connectorInstance.getFilePath(config.getCommand().get(FILE_NAME));
             output = new FileOutputStream(filePath, true);
             List<String> lines = data.stream().map(row -> {
                 List<String> array = new ArrayList<>();

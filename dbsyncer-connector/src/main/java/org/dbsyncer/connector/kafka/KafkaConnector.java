@@ -58,13 +58,13 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     }
 
     @Override
-    public void disconnect(KafkaConnectorInstance connectorMapper) {
-        connectorMapper.close();
+    public void disconnect(KafkaConnectorInstance connectorInstance) {
+        connectorInstance.close();
     }
 
     @Override
-    public boolean isAlive(KafkaConnectorInstance connectorMapper) {
-        return connectorMapper.getConnection().ping();
+    public boolean isAlive(KafkaConnectorInstance connectorInstance) {
+        return connectorInstance.getConnection().ping();
     }
 
     @Override
@@ -73,31 +73,31 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     }
 
     @Override
-    public List<Table> getTable(KafkaConnectorInstance connectorMapper) {
+    public List<Table> getTable(KafkaConnectorInstance connectorInstance) {
         List<Table> topics = new ArrayList<>();
-        topics.add(new Table(connectorMapper.getConfig().getTopic()));
+        topics.add(new Table(connectorInstance.getConfig().getTopic()));
         return topics;
     }
 
     @Override
-    public MetaInfo getMetaInfo(KafkaConnectorInstance connectorMapper, String tableName) {
-        KafkaConfig config = connectorMapper.getConfig();
+    public MetaInfo getMetaInfo(KafkaConnectorInstance connectorInstance, String tableName) {
+        KafkaConfig config = connectorInstance.getConfig();
         List<Field> fields = JsonUtil.jsonToArray(config.getFields(), Field.class);
         return new MetaInfo().setColumn(fields);
     }
 
     @Override
-    public long getCount(KafkaConnectorInstance connectorMapper, Map<String, String> command) {
+    public long getCount(KafkaConnectorInstance connectorInstance, Map<String, String> command) {
         return 0;
     }
 
     @Override
-    public Result reader(KafkaConnectorInstance connectorMapper, ReaderConfig config) {
+    public Result reader(KafkaConnectorInstance connectorInstance, ReaderConfig config) {
         throw new ConnectorException("Full synchronization is not supported");
     }
 
     @Override
-    public Result writer(KafkaConnectorInstance connectorMapper, WriterBatchConfig config) {
+    public Result writer(KafkaConnectorInstance connectorInstance, WriterBatchConfig config) {
         List<Map> data = config.getData();
         if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(config.getFields())) {
             logger.error("writer data can not be empty.");
@@ -105,13 +105,13 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         }
 
         Result result = new Result();
-        final KafkaConfig cfg = connectorMapper.getConfig();
+        final KafkaConfig cfg = connectorInstance.getConfig();
         final List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeyFields(config);
         try {
             String topic = cfg.getTopic();
             // 默认取第一个主键
             final String pk = pkFields.get(0).getName();
-            data.forEach(row -> connectorMapper.getConnection().send(topic, String.valueOf(row.get(pk)), row));
+            data.forEach(row -> connectorInstance.getConnection().send(topic, String.valueOf(row.get(pk)), row));
             result.addSuccessData(data);
         } catch (Exception e) {
             // 记录错误数据

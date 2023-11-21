@@ -36,10 +36,10 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public List<Table> getTable(DatabaseConnectorInstance connectorMapper) {
-        DatabaseConfig config = connectorMapper.getConfig();
-        List<Table> tables = getTables(connectorMapper, String.format(QUERY_TABLE, config.getSchema()), TableTypeEnum.TABLE);
-        tables.addAll(getTables(connectorMapper, QUERY_VIEW, TableTypeEnum.VIEW));
+    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
+        DatabaseConfig config = connectorInstance.getConfig();
+        List<Table> tables = getTables(connectorInstance, String.format(QUERY_TABLE, config.getSchema()), TableTypeEnum.TABLE);
+        tables.addAll(getTables(connectorInstance, QUERY_VIEW, TableTypeEnum.VIEW));
         return tables;
     }
 
@@ -101,8 +101,8 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
                 buildTableName(table.getName()));
     }
 
-    private List<Table> getTables(DatabaseConnectorInstance connectorMapper, String sql, TableTypeEnum type) {
-        List<String> tableNames = connectorMapper.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
+    private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {
+        List<String> tableNames = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
         if (!CollectionUtils.isEmpty(tableNames)) {
             return tableNames.stream().map(name -> new Table(name, type.getCode())).collect(Collectors.toList());
         }

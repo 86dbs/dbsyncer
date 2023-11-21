@@ -32,10 +32,10 @@ public class ConnectionTest {
 
     @Test
     public void testByte() {
-        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(createOracleConfig());
+        final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createOracleConfig());
 
         String executeSql = "UPDATE \"my_user\" SET \"name\"=?,\"clo\"=? WHERE \"id\"=?";
-        int[] execute = connectorMapper.execute(databaseTemplate ->
+        int[] execute = connectorInstance.execute(databaseTemplate ->
                 databaseTemplate.batchUpdate(executeSql, new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(PreparedStatement ps, int i) {
@@ -64,7 +64,7 @@ public class ConnectionTest {
 
     @Test
     public void testConnection() throws InterruptedException {
-        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(createSqlServerConfig());
+        final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createSqlServerConfig());
 
         // 模拟并发
         final int threadSize = 100;
@@ -80,7 +80,7 @@ public class ConnectionTest {
                     // 模拟操作
                     System.out.println(String.format("%s %s:%s", LocalDateTime.now(), Thread.currentThread().getName(), k));
 
-                    Object execute = connectorMapper.execute(tem -> tem.queryForObject("select 1", Integer.class));
+                    Object execute = connectorInstance.execute(tem -> tem.queryForObject("select 1", Integer.class));
                     System.out.println(String.format("%s %s:%s execute=>%s", LocalDateTime.now(), Thread.currentThread().getName(), k, execute));
 
                 } catch (InterruptedException e) {
@@ -109,7 +109,7 @@ public class ConnectionTest {
 
     @Test
     public void testBatchInsert() {
-        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(createMysqlConfig());
+        final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
 
         long begin = Instant.now().toEpochMilli();
         final int threadSize = 10;
@@ -131,14 +131,14 @@ public class ConnectionTest {
 
             if (i % 10000 == 0) {
                 System.out.println(i + "-----------------正在处理");
-                batchUpdate(connectorMapper, pool, sql, dataList, 1000);
+                batchUpdate(connectorInstance, pool, sql, dataList, 1000);
                 dataList.clear();
             }
         }
 
         if(!CollectionUtils.isEmpty(dataList)){
             System.out.println("-----------------正在处理剩余数据");
-            batchUpdate(connectorMapper, pool, sql, dataList, 1000);
+            batchUpdate(connectorInstance, pool, sql, dataList, 1000);
         }
 
         pool.shutdown();
@@ -147,7 +147,7 @@ public class ConnectionTest {
 
     @Test
     public void testBatchUpdate() {
-        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(createMysqlConfig());
+        final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
 
         long begin = Instant.now().toEpochMilli();
         final int threadSize = 10;
@@ -167,14 +167,14 @@ public class ConnectionTest {
 
                 if (i % 10000 == 0) {
                     System.out.println(i + "-----------------正在处理");
-                    batchUpdate(connectorMapper, pool, sql, dataList, 1000);
+                    batchUpdate(connectorInstance, pool, sql, dataList, 1000);
                     dataList.clear();
                 }
             }
 
             if (!CollectionUtils.isEmpty(dataList)) {
                 System.out.println("-----------------正在处理剩余数据");
-                batchUpdate(connectorMapper, pool, sql, dataList, 1000);
+                batchUpdate(connectorInstance, pool, sql, dataList, 1000);
             }
             k--;
         }
@@ -185,7 +185,7 @@ public class ConnectionTest {
 
     @Test
     public void testBatchDelete() {
-        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(createMysqlConfig());
+        final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
 
         long begin = Instant.now().toEpochMilli();
         final int threadSize = 10;
@@ -201,14 +201,14 @@ public class ConnectionTest {
 
             if (i % 10000 == 0) {
                 System.out.println(i + "-----------------正在处理");
-                batchUpdate(connectorMapper, pool, sql, dataList, 1000);
+                batchUpdate(connectorInstance, pool, sql, dataList, 1000);
                 dataList.clear();
             }
         }
 
         if (!CollectionUtils.isEmpty(dataList)) {
             System.out.println("-----------------正在处理剩余数据");
-            batchUpdate(connectorMapper, pool, sql, dataList, 1000);
+            batchUpdate(connectorInstance, pool, sql, dataList, 1000);
         }
 
         pool.shutdown();
@@ -226,7 +226,7 @@ public class ConnectionTest {
         return s.toString();
     }
 
-    private void batchUpdate(DatabaseConnectorInstance connectorMapper, ExecutorService pool, String sql, List<Object[]> dataList, int batchSize) {
+    private void batchUpdate(DatabaseConnectorInstance connectorInstance, ExecutorService pool, String sql, List<Object[]> dataList, int batchSize) {
         int total = dataList.size();
         int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
         final CountDownLatch latch = new CountDownLatch(taskSize);
@@ -245,7 +245,7 @@ public class ConnectionTest {
 
             pool.submit(() -> {
                 try {
-                    connectorMapper.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, data));
+                    connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, data));
                 } catch (Exception e) {
                     logger.error(e.getMessage());
                 } finally {
@@ -279,8 +279,8 @@ public class ConnectionTest {
     public void testGetColumnsDetails() {
         final String schema = "root";
         final String tableNamePattern = "sw_test";
-        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(createMysqlConfig());
-        connectorMapper.execute(databaseTemplate -> {
+        final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
+        connectorInstance.execute(databaseTemplate -> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             String databaseCatalog = conn.getCatalog();
@@ -299,9 +299,9 @@ public class ConnectionTest {
     }
 
     private List<Table> getTables(DatabaseConfig config, final String catalog, final String schema, final String tableNamePattern) {
-        final DatabaseConnectorInstance connectorMapper = new DatabaseConnectorInstance(config);
+        final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(config);
         List<Table> tables = new ArrayList<>();
-        connectorMapper.execute(databaseTemplate -> {
+        connectorInstance.execute(databaseTemplate -> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             String databaseCatalog = null == catalog ? conn.getCatalog() : catalog;

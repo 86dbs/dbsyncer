@@ -83,8 +83,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         // Load plugins
         pluginFactory.loadPlugins();
 
-        // Load connectorMappers
-        loadConnectorMapper();
+        // Load connectorInstances
+        loadConnectorInstance();
 
         // Launch drivers
         launch();
@@ -111,8 +111,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         Stream.of(CommandEnum.PRELOAD_SYSTEM, CommandEnum.PRELOAD_USER, CommandEnum.PRELOAD_CONNECTOR, CommandEnum.PRELOAD_MAPPING,
                 CommandEnum.PRELOAD_META, CommandEnum.PRELOAD_PROJECT_GROUP).forEach(commandEnum -> reload(map, commandEnum));
 
-        // Load connectorMappers
-        loadConnectorMapper();
+        // Load connectorInstances
+        loadConnectorInstance();
 
         // Launch drivers
         launch();
@@ -193,7 +193,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         }
     }
 
-    private void loadConnectorMapper() {
+    private void loadConnectorInstance() {
         List<Connector> list = profileComponent.getConnectorAll();
         if (!CollectionUtils.isEmpty(list)) {
             list.forEach(connector -> {

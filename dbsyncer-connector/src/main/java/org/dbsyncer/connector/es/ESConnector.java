@@ -111,14 +111,14 @@ public final class ESConnector extends AbstractConnector implements ConnectorSer
     }
 
     @Override
-    public void disconnect(ESConnectorInstance connectorMapper) {
-        connectorMapper.close();
+    public void disconnect(ESConnectorInstance connectorInstance) {
+        connectorInstance.close();
     }
 
     @Override
-    public boolean isAlive(ESConnectorInstance connectorMapper) {
+    public boolean isAlive(ESConnectorInstance connectorInstance) {
         try {
-            RestHighLevelClient client = connectorMapper.getConnection();
+            RestHighLevelClient client = connectorInstance.getConnection();
             return client.ping(RequestOptions.DEFAULT);
         } catch (IOException e) {
             logger.error(e.getMessage());
@@ -132,15 +132,15 @@ public final class ESConnector extends AbstractConnector implements ConnectorSer
     }
 
     @Override
-    public List<Table> getTable(ESConnectorInstance connectorMapper) {
+    public List<Table> getTable(ESConnectorInstance connectorInstance) {
         try {
-            ESConfig config = connectorMapper.getConfig();
+            ESConfig config = connectorInstance.getConfig();
             GetIndexRequest request = new GetIndexRequest(config.getIndex());
-            GetIndexResponse indexResponse = connectorMapper.getConnection().indices().get(request, RequestOptions.DEFAULT);
+            GetIndexResponse indexResponse = connectorInstance.getConnection().indices().get(request, RequestOptions.DEFAULT);
             MappingMetadata mappingMetaData = indexResponse.getMappings().get(config.getIndex());
             List<Table> tables = new ArrayList<>();
             // 6.x 版本
-            if (Version.V_7_0_0.after(connectorMapper.getVersion())) {
+            if (Version.V_7_0_0.after(connectorInstance.getVersion())) {
                 Map<String, Object> sourceMap = XContentHelper.convertToMap(mappingMetaData.source().compressedReference(), true, null).v2();
                 sourceMap.keySet().forEach(tableName -> tables.add(new Table(tableName)));
                 return tables;
@@ -156,15 +156,15 @@ public final class ESConnector extends AbstractConnector implements ConnectorSer
     }
 
     @Override
-    public MetaInfo getMetaInfo(ESConnectorInstance connectorMapper, String tableName) {
+    public MetaInfo getMetaInfo(ESConnectorInstance connectorInstance, String tableName) {
         List<Field> fields = new ArrayList<>();
         try {
-            ESConfig config = connectorMapper.getConfig();
+            ESConfig config = connectorInstance.getConfig();
             GetIndexRequest request = new GetIndexRequest(config.getIndex());
-            GetIndexResponse indexResponse = connectorMapper.getConnection().indices().get(request, RequestOptions.DEFAULT);
+            GetIndexResponse indexResponse = connectorInstance.getConnection().indices().get(request, RequestOptions.DEFAULT);
             MappingMetadata mappingMetaData = indexResponse.getMappings().get(config.getIndex());
             // 6.x 版本
-            if (Version.V_7_0_0.after(connectorMapper.getVersion())) {
+            if (Version.V_7_0_0.after(connectorInstance.getVersion())) {
                 Map<String, Object> sourceMap = XContentHelper.convertToMap(mappingMetaData.source().compressedReference(), true, null).v2();
                 parseProperties(fields, (Map) sourceMap.get(tableName));
                 return new MetaInfo().setColumn(fields);
@@ -180,19 +180,19 @@ public final class ESConnector extends AbstractConnector implements ConnectorSer
     }
 
     @Override
-    public long getCount(ESConnectorInstance connectorMapper, Map<String, String> command) {
+    public long getCount(ESConnectorInstance connectorInstance, Map<String, String> command) {
         try {
-            ESConfig config = connectorMapper.getConfig();
+            ESConfig config = connectorInstance.getConfig();
             SearchSourceBuilder builder = new SearchSourceBuilder();
             genSearchSourceBuilder(builder, command);
             // 7.x 版本以上
-            if (Version.V_7_0_0.onOrBefore(connectorMapper.getVersion())) {
+            if (Version.V_7_0_0.onOrBefore(connectorInstance.getVersion())) {
                 builder.trackTotalHits(true);
             }
             builder.from(0);
             builder.size(0);
             SearchRequest request = new SearchRequest(new String[]{config.getIndex()}, builder);
-            SearchResponse response = connectorMapper.getConnection().searchWithVersion(request, RequestOptions.DEFAULT);
+            SearchResponse response = connectorInstance.getConnection().searchWithVersion(request, RequestOptions.DEFAULT);
             return response.getHits().getTotalHits().value;
         } catch (IOException e) {
             logger.error(e.getMessage());
@@ -201,8 +201,8 @@ public final class ESConnector extends AbstractConnector implements ConnectorSer
     }
 
     @Override
-    public Result reader(ESConnectorInstance connectorMapper, ReaderConfig config) {
-        ESConfig cfg = connectorMapper.getConfig();
+    public Result reader(ESConnectorInstance connectorInstance, ReaderConfig config) {
+        ESConfig cfg = connectorInstance.getConfig();
         SearchSourceBuilder builder = new SearchSourceBuilder();
         genSearchSourceBuilder(builder, config.getCommand());
         builder.from((config.getPageIndex() - 1) * config.getPageSize());
@@ -220,7 +220,7 @@ public final class ESConnector extends AbstractConnector implements ConnectorSer
 
         try {
             SearchRequest rq = new SearchRequest(new String[]{cfg.getIndex()}, builder);
-            SearchResponse searchResponse = connectorMapper.getConnection().searchWithVersion(rq, RequestOptions.DEFAULT);
+            SearchResponse searchResponse = connectorInstance.getConnection().searchWithVersion(rq, RequestOptions.DEFAULT);
             SearchHits hits = searchResponse.getHits();
             SearchHit[] searchHits = hits.getHits();
             List<Map<String, Object>> list = new ArrayList<>();
@@ -235,7 +235,7 @@ public final class ESConnector extends AbstractConnector implements ConnectorSer
     }
 
     @Override
-    public Result writer(ESConnectorInstance connectorMapper, WriterBatchConfig config) {
+    public Result writer(ESConnectorInstance connectorInstance, WriterBatchConfig config) {
         List<Map> data = config.getData();
         if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(config.getFields())) {
             logger.error("writer data can not be empty.");
@@ -243,7 +243,7 @@ public final class ESConnector extends AbstractConnector implements ConnectorSer
         }
 
         final Result result = new Result();
-        final ESConfig cfg = connectorMapper.getConfig();
+        final ESConfig cfg = connectorInstance.getConfig();
         final List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeyFields(config);
         try {
             BulkRequest request = new BulkRequest();
@@ -251,7 +251,7 @@ public final class ESConnector extends AbstractConnector implements ConnectorSer
             final String pk = pkFields.get(0).getName();
             data.forEach(row -> addRequest(request, cfg.getIndex(), config.getTableName(), config.getEvent(), String.valueOf(row.get(pk)), row));
 
-            BulkResponse response = connectorMapper.getConnection().bulkWithVersion(request, RequestOptions.DEFAULT);
+            BulkResponse response = connectorInstance.getConnection().bulkWithVersion(request, RequestOptions.DEFAULT);
             RestStatus restStatus = response.status();
             if (restStatus.getStatus() != RestStatus.OK.getStatus()) {
                 throw new ConnectorException(String.format("error code:%s", restStatus.getStatus()));
