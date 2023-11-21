@@ -1,4 +1,4 @@
-package org.dbsyncer.connector.config;
+package org.dbsyncer.sdk.config;
 
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 

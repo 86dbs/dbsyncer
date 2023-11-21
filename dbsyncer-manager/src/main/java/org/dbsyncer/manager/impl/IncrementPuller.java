@@ -3,7 +3,6 @@ package org.dbsyncer.manager.impl;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.AbstractListener;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.config.ListenerConfig;
 import org.dbsyncer.connector.quartz.AbstractQuartzListener;
 import org.dbsyncer.connector.quartz.TableGroupQuartzCommand;
 import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
@@ -21,6 +20,7 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ChangedOffset;
@@ -152,13 +152,13 @@ public final class IncrementPuller extends AbstractPuller implements Application
         if (ListenerTypeEnum.isTiming(listenerType) && listener instanceof AbstractQuartzListener) {
             AbstractQuartzListener quartzListener = (AbstractQuartzListener) listener;
             quartzListener.setCommands(list.stream().map(t -> new TableGroupQuartzCommand(t.getSourceTable(), t.getCommand())).collect(Collectors.toList()));
-            quartzListener.register(new QuartzConsumer().init(bufferActuatorRouter, profileComponent, logService, meta, mapping, list));
+            quartzListener.register(new QuartzConsumer().init(bufferActuatorRouter, profileComponent, logService, meta.getId(), mapping, list));
         }
 
         // 基于日志抽取
         if (ListenerTypeEnum.isLog(listenerType) && listener instanceof AbstractListener) {
             AbstractListener abstractListener = (AbstractListener) listener;
-            abstractListener.register(new LogConsumer().init(bufferActuatorRouter, profileComponent, logService, meta, mapping, list));
+            abstractListener.register(new LogConsumer().init(bufferActuatorRouter, profileComponent, logService, meta.getId(), mapping, list));
         }
 
         if (listener instanceof AbstractListener) {

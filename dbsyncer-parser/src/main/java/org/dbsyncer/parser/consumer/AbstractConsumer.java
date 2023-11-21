@@ -26,15 +26,15 @@ public abstract class AbstractConsumer<E extends ChangedEvent> implements Watche
     private BufferActuatorRouter bufferActuatorRouter;
     private ProfileComponent profileComponent;
     private LogService logService;
-    private Meta meta;
+    private String metaId;
     protected Mapping mapping;
     protected List<TableGroup> tableGroups;
 
-    public AbstractConsumer init(BufferActuatorRouter bufferActuatorRouter, ProfileComponent profileComponent, LogService logService, Meta meta, Mapping mapping, List<TableGroup> tableGroups) {
+    public AbstractConsumer init(BufferActuatorRouter bufferActuatorRouter, ProfileComponent profileComponent, LogService logService, String metaId, Mapping mapping, List<TableGroup> tableGroups) {
         this.bufferActuatorRouter = bufferActuatorRouter;
         this.profileComponent = profileComponent;
         this.logService = logService;
-        this.meta = meta;
+        this.metaId = metaId;
         this.mapping = mapping;
         this.tableGroups = tableGroups;
         postProcessBeforeInitialization();
@@ -50,7 +50,7 @@ public abstract class AbstractConsumer<E extends ChangedEvent> implements Watche
 
     @Override
     public void changeEvent(ChangedEvent event) {
-        event.getChangedOffset().setMetaId(meta.getId());
+        event.getChangedOffset().setMetaId(metaId);
         if (event instanceof DDLChangedEvent) {
             onDDLChanged((DDLChangedEvent) event);
             return;
@@ -60,8 +60,11 @@ public abstract class AbstractConsumer<E extends ChangedEvent> implements Watche
 
     @Override
     public void flushEvent(Map<String, String> snapshot) {
-        meta.setSnapshot(snapshot);
-        profileComponent.editConfigModel(meta);
+        Meta meta = profileComponent.getMeta(metaId);
+        if (meta != null) {
+            meta.setSnapshot(snapshot);
+            profileComponent.editConfigModel(meta);
+        }
     }
 
     @Override
@@ -71,14 +74,15 @@ public abstract class AbstractConsumer<E extends ChangedEvent> implements Watche
 
     @Override
     public long getMetaUpdateTime() {
-        return meta.getUpdateTime();
+        Meta meta = profileComponent.getMeta(metaId);
+        return meta != null ? meta.getUpdateTime() : 0L;
     }
 
     protected void bind(String tableGroupId) {
-        bufferActuatorRouter.bind(meta.getId(), tableGroupId);
+        bufferActuatorRouter.bind(metaId, tableGroupId);
     }
 
     protected void execute(String tableGroupId, ChangedEvent event) {
-        bufferActuatorRouter.execute(meta.getId(), tableGroupId, event);
+        bufferActuatorRouter.execute(metaId, tableGroupId, event);
     }
 }

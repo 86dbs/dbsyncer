@@ -1,8 +1,8 @@
 package org.dbsyncer.connector;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.config.ListenerConfig;
 import org.dbsyncer.connector.scheduled.ScheduledTaskService;
+import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.Listener;
@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractListener implements Listener {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final int FLUSH_DELAYED_SECONDS = 20;
     protected ConnectorFactory connectorFactory;
     protected ScheduledTaskService scheduledTaskService;
     protected ConnectorConfig connectorConfig;
@@ -37,7 +38,6 @@ public abstract class AbstractListener implements Listener {
     protected Map<String, String> snapshot;
     protected String metaId;
     private Watcher watcher;
-    private final int FLUSH_DELAYED_SECONDS = 20;
 
     @Override
     public void register(Watcher watcher) {

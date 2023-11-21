@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.connector.config.ListenerConfig;
+import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.storage.constant.ConfigConstant;
