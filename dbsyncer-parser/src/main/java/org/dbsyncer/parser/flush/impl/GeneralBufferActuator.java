@@ -145,7 +145,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         // 5、批量执行同步
         BatchWriter batchWriter = new BatchWriter(tConnectorInstance, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, generalBufferConfig.getBufferWriterCount());
-        Result result = parserComponent.writeBatch(context, batchWriter, generalExecutor);
+        Result result = parserComponent.writeBatch(context, batchWriter, getExecutor());
 
         // 6.发布刷新增量点事件
         applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
@@ -231,10 +231,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         Connector conn = profileComponent.getConnector(connectorId);
         Assert.notNull(conn, "Connector can not be null.");
         return conn.getConfig();
-    }
-
-    public void setGeneralExecutor(Executor generalExecutor) {
-        this.generalExecutor = generalExecutor;
     }
 
 }

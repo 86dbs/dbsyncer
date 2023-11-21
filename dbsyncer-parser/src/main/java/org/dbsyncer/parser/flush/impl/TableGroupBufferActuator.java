@@ -10,6 +10,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.concurrent.Executor;
 
 /**
  * 表执行器（根据表消费数据，多线程批量写，按序执行）
@@ -45,6 +46,11 @@ public final class TableGroupBufferActuator extends GeneralBufferActuator implem
         return running;
     }
 
+    @Override
+    public Executor getExecutor() {
+        return threadPoolTaskExecutor;
+    }
+
     public void buildConfig() {
         super.setConfig(tableGroupBufferConfig);
         super.buildLock();
@@ -54,7 +60,6 @@ public final class TableGroupBufferActuator extends GeneralBufferActuator implem
         int queueCapacity = tableGroupBufferConfig.getThreadQueueCapacity();
         String threadNamePrefix = new StringBuilder("TableGroupExecutor-").append(tableGroupId).append(StringUtil.SYMBOL).toString();
         threadPoolTaskExecutor = ThreadPoolUtil.newThreadPoolTaskExecutor(coreSize, coreSize, queueCapacity, 30, threadNamePrefix);
-        setGeneralExecutor(threadPoolTaskExecutor);
         running = true;
         scheduledTaskService.start(taskKey, tableGroupBufferConfig.getBufferPeriodMillisecond(), this);
     }

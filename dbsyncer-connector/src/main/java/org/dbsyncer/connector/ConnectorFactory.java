@@ -47,9 +47,11 @@ public class ConnectorFactory implements DisposableBean {
     private void init() {
         Map<String, ConnectorService> beans = applicationContext.getBeansOfType(ConnectorService.class);
         if (!CollectionUtils.isEmpty(beans)) {
-            beans.values().forEach(s -> service.putIfAbsent(s.getConnectorType(), s));
+            beans.values().forEach(s -> {
+                service.putIfAbsent(s.getConnectorType(), s);
+                connectorTypes.add(s.getConnectorType());
+            });
         }
-        service.values().forEach(s -> connectorTypes.add(s.getConnectorType()));
     }
 
     @Override
