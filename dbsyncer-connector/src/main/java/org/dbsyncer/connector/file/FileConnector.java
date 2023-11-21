@@ -7,12 +7,13 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.FileConfig;
-import org.dbsyncer.connector.model.FileSchema;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
@@ -231,6 +232,14 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         Map<String, String> command = new HashMap<>();
         command.put(FILE_NAME, commandConfig.getTable().getName());
         return command;
+    }
+
+    @Override
+    public Listener getListener(String listenerType) {
+        if (ListenerTypeEnum.isLog(listenerType)) {
+            return new FileListener();
+        }
+        return null;
     }
 
 }

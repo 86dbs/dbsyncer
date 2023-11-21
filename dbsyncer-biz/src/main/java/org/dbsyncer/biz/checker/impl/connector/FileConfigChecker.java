@@ -4,7 +4,7 @@ import org.dbsyncer.biz.checker.ConnectorConfigChecker;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.config.FileConfig;
-import org.dbsyncer.connector.model.FileSchema;
+import org.dbsyncer.connector.file.FileSchema;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 

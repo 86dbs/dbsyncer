@@ -15,7 +15,9 @@ import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
+import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -287,6 +289,14 @@ public final class ESConnector extends AbstractConnector implements ConnectorSer
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         PrimaryKeyUtil.findTablePrimaryKeys(commandConfig.getTable());
         return Collections.EMPTY_MAP;
+    }
+
+    @Override
+    public Listener getListener(String listenerType) {
+        if (ListenerTypeEnum.isTiming(listenerType)) {
+            return new ESQuartzListener();
+        }
+        return null;
     }
 
     private void parseProperties(List<Field> fields, Map<String, Object> sourceMap) {

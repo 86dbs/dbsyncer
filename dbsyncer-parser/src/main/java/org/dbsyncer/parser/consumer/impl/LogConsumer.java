@@ -3,9 +3,9 @@
  */
 package org.dbsyncer.parser.consumer.impl;
 
-import org.dbsyncer.listener.event.CommonChangedEvent;
-import org.dbsyncer.listener.event.DDLChangedEvent;
-import org.dbsyncer.listener.event.RowChangedEvent;
+import org.dbsyncer.sdk.listener.event.CommonChangedEvent;
+import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
+import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.parser.consumer.AbstractConsumer;
 import org.dbsyncer.parser.model.FieldPicker;

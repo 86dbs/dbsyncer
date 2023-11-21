@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.event;
 
-import org.dbsyncer.listener.model.ChangedOffset;
+import org.dbsyncer.sdk.model.ChangedOffset;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ApplicationContextEvent;
 

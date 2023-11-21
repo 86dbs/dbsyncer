@@ -1,17 +1,13 @@
 package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.AbstractListener;
 import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.config.ListenerConfig;
+import org.dbsyncer.connector.quartz.AbstractQuartzListener;
+import org.dbsyncer.connector.quartz.TableGroupQuartzCommand;
 import org.dbsyncer.connector.scheduled.ScheduledTaskJob;
 import org.dbsyncer.connector.scheduled.ScheduledTaskService;
-import org.dbsyncer.listener.AbstractExtractor;
-import org.dbsyncer.listener.Extractor;
-import org.dbsyncer.listener.Listener;
-import org.dbsyncer.listener.config.ListenerConfig;
-import org.dbsyncer.listener.enums.ListenerTypeEnum;
-import org.dbsyncer.listener.model.ChangedOffset;
-import org.dbsyncer.listener.quartz.AbstractQuartzExtractor;
-import org.dbsyncer.listener.quartz.TableGroupQuartzCommand;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.parser.LogService;
@@ -25,6 +21,9 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.listener.Listener;
+import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Table;
 import org.slf4j.Logger;
@@ -57,13 +56,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private Listener listener;
-
-    @Resource
-    private ProfileComponent profileComponent;
-
-    @Resource
-    private LogService logService;
+    private BufferActuatorRouter bufferActuatorRouter;
 
     @Resource
     private ScheduledTaskService scheduledTaskService;
@@ -72,9 +65,12 @@ public final class IncrementPuller extends AbstractPuller implements Application
     private ConnectorFactory connectorFactory;
 
     @Resource
-    private BufferActuatorRouter bufferActuatorRouter;
+    private ProfileComponent profileComponent;
 
-    private Map<String, Extractor> map = new ConcurrentHashMap<>();
+    @Resource
+    private LogService logService;
+
+    private Map<String, Listener> map = new ConcurrentHashMap<>();
 
     @PostConstruct
     private void init() {
@@ -99,7 +95,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 meta.setBeginTime(now);
                 meta.setEndTime(now);
                 profileComponent.editConfigModel(meta);
-                map.putIfAbsent(metaId, getExtractor(mapping, connector, list, meta));
+                map.putIfAbsent(metaId, getListener(mapping, connector, list, meta));
                 map.get(metaId).start();
             } catch (Exception e) {
                 close(metaId);
@@ -114,10 +110,10 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     @Override
     public void close(String metaId) {
-        Extractor extractor = map.get(metaId);
-        if (null != extractor) {
+        Listener listener = map.get(metaId);
+        if (null != listener) {
             bufferActuatorRouter.unbind(metaId);
-            extractor.close();
+            listener.close();
         }
         map.remove(metaId);
         publishClosedEvent(metaId);
@@ -139,31 +135,34 @@ public final class IncrementPuller extends AbstractPuller implements Application
     @Override
     public void run() {
         // 定时同步增量信息
-        map.values().forEach(extractor -> extractor.flushEvent());
+        map.values().forEach(listener -> listener.flushEvent());
     }
 
-    private AbstractExtractor getExtractor(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta) throws InstantiationException, IllegalAccessException {
+    private Listener getListener(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta) {
         ConnectorConfig connectorConfig = connector.getConfig();
         ListenerConfig listenerConfig = mapping.getListener();
-        // timing/log
-        final String listenerType = listenerConfig.getListenerType();
+        String listenerType = listenerConfig.getListenerType();
 
-        AbstractExtractor extractor = null;
+        Listener listener = connectorFactory.getListener(connectorConfig.getConnectorType(), listenerType);
+        if (null == listener) {
+            throw new ManagerException(String.format("Unsupported listener type \"%s\".", connectorConfig.getConnectorType()));
+        }
+
         // 默认定时抽取
-        if (ListenerTypeEnum.isTiming(listenerType)) {
-            AbstractQuartzExtractor quartzExtractor = listener.getExtractor(ListenerTypeEnum.TIMING, connectorConfig.getConnectorType(), AbstractQuartzExtractor.class);
-            quartzExtractor.setCommands(list.stream().map(t -> new TableGroupQuartzCommand(t.getSourceTable(), t.getCommand())).collect(Collectors.toList()));
-            quartzExtractor.register(new QuartzConsumer().init(bufferActuatorRouter, profileComponent, logService, meta, mapping, list));
-            extractor = quartzExtractor;
+        if (ListenerTypeEnum.isTiming(listenerType) && listener instanceof AbstractQuartzListener) {
+            AbstractQuartzListener quartzListener = (AbstractQuartzListener) listener;
+            quartzListener.setCommands(list.stream().map(t -> new TableGroupQuartzCommand(t.getSourceTable(), t.getCommand())).collect(Collectors.toList()));
+            quartzListener.register(new QuartzConsumer().init(bufferActuatorRouter, profileComponent, logService, meta, mapping, list));
         }
 
         // 基于日志抽取
-        if (ListenerTypeEnum.isLog(listenerType)) {
-            extractor = listener.getExtractor(ListenerTypeEnum.LOG, connectorConfig.getConnectorType(), AbstractExtractor.class);
-            extractor.register(new LogConsumer().init(bufferActuatorRouter, profileComponent, logService, meta, mapping, list));
+        if (ListenerTypeEnum.isLog(listenerType) && listener instanceof AbstractListener) {
+            AbstractListener abstractListener = (AbstractListener) listener;
+            abstractListener.register(new LogConsumer().init(bufferActuatorRouter, profileComponent, logService, meta, mapping, list));
         }
 
-        if (null != extractor) {
+        if (listener instanceof AbstractListener) {
+            AbstractListener abstractListener = (AbstractListener) listener;
             Set<String> filterTable = new HashSet<>();
             List<Table> sourceTable = new ArrayList<>();
             list.forEach(t -> {
@@ -174,18 +173,17 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 filterTable.add(table.getName());
             });
 
-            extractor.setConnectorFactory(connectorFactory);
-            extractor.setScheduledTaskService(scheduledTaskService);
-            extractor.setConnectorConfig(connectorConfig);
-            extractor.setListenerConfig(listenerConfig);
-            extractor.setFilterTable(filterTable);
-            extractor.setSourceTable(sourceTable);
-            extractor.setSnapshot(meta.getSnapshot());
-            extractor.setMetaId(meta.getId());
-            return extractor;
+            abstractListener.setConnectorFactory(connectorFactory);
+            abstractListener.setScheduledTaskService(scheduledTaskService);
+            abstractListener.setConnectorConfig(connectorConfig);
+            abstractListener.setListenerConfig(listenerConfig);
+            abstractListener.setFilterTable(filterTable);
+            abstractListener.setSourceTable(sourceTable);
+            abstractListener.setSnapshot(meta.getSnapshot());
+            abstractListener.setMetaId(meta.getId());
         }
 
-        throw new ManagerException("未知的监听配置.");
+        return listener;
     }
 
 }

@@ -1,9 +1,12 @@
 package org.dbsyncer.connector.mysql;
 
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.quartz.DatabaseQuartzListener;
 import org.dbsyncer.sdk.config.ReaderConfig;
-import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -22,6 +25,18 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     @Override
     public String getConnectorType() {
         return TYPE;
+    }
+
+    @Override
+    public Listener getListener(String listenerType) {
+        if (ListenerTypeEnum.isTiming(listenerType)) {
+            return new DatabaseQuartzListener();
+        }
+
+        if (ListenerTypeEnum.isLog(listenerType)) {
+            return new MySQLListener();
+        }
+        return null;
     }
 
     @Override

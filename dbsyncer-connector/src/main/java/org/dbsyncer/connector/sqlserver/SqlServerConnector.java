@@ -2,22 +2,23 @@ package org.dbsyncer.connector.sqlserver;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.connector.quartz.DatabaseQuartzListener;
 import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
-import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
-import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
@@ -43,6 +44,18 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public Listener getListener(String listenerType) {
+        if (ListenerTypeEnum.isTiming(listenerType)) {
+            return new DatabaseQuartzListener();
+        }
+
+        if (ListenerTypeEnum.isLog(listenerType)) {
+            return new SqlServerListener();
+        }
+        return null;
+    }
+
+    @Override
     public String getPageSql(PageSql config) {
         List<String> primaryKeys = buildPrimaryKeys(config.getPrimaryKeys());
         String orderBy = StringUtil.join(primaryKeys, ",");
@@ -53,7 +66,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     public Object[] getPageArgs(ReaderConfig config) {
         int pageSize = config.getPageSize();
         int pageIndex = config.getPageIndex();
-        return new Object[] {(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
+        return new Object[]{(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
     }
 
     @Override
@@ -100,18 +113,4 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         return new StringBuilder("[").append(key).append("]").toString();
     }
 
-    /**
-     * 是否包含系统关键字
-     *
-     * @param regex
-     * @param val
-     * @return
-     */
-    private boolean containsKeyword(String regex, String val) {
-        if (StringUtil.isNotBlank(val)) {
-            Matcher matcher = Pattern.compile(regex).matcher(val.toLowerCase());
-            return matcher.find();
-        }
-        return false;
-    }
 }

@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.config.KafkaConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
@@ -129,6 +130,11 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         return Collections.EMPTY_MAP;
+    }
+
+    @Override
+    public Listener getListener(String listenerType) {
+        return null;
     }
 
 }

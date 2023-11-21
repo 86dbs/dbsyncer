@@ -7,6 +7,8 @@ import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
@@ -153,4 +155,11 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      */
     Map<String, String> getTargetCommand(CommandConfig commandConfig);
 
+    /**
+     * 获取监听器
+     *
+     * @param listenerType {@link ListenerTypeEnum}
+     * @return
+     */
+    Listener getListener(String listenerType);
 }

@@ -8,6 +8,7 @@ import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
@@ -89,19 +90,14 @@ public class ConnectorFactory implements DisposableBean {
     }
 
     /**
-     * 断开连接
+     * 获取监听器
      *
-     * @param config
+     * @param connectorType
+     * @param listenerType
      * @return
      */
-    public void disconnect(ConnectorConfig config) {
-        Assert.notNull(config, "ConnectorConfig can not be null.");
-        String cacheKey = getConnectorService(config).getConnectorInstanceCacheKey(config);
-        ConnectorInstance connectorInstance = pool.get(cacheKey);
-        if (connectorInstance != null) {
-            disconnect(connectorInstance);
-            pool.remove(cacheKey);
-        }
+    public Listener getListener(String connectorType, String listenerType) {
+        return getConnectorService(connectorType).getListener(listenerType);
     }
 
     /**
@@ -209,7 +205,7 @@ public class ConnectorFactory implements DisposableBean {
         return result;
     }
 
-    private ConnectorService getConnectorService(ConnectorConfig connectorConfig) {
+    public ConnectorService getConnectorService(ConnectorConfig connectorConfig) {
         Assert.notNull(connectorConfig, "ConnectorConfig can not null");
         return getConnectorService(connectorConfig.getConnectorType());
     }
@@ -229,8 +225,19 @@ public class ConnectorFactory implements DisposableBean {
     /**
      * 断开连接
      *
-     * @param connectorInstance
+     * @param config
+     * @return
      */
+    public void disconnect(ConnectorConfig config) {
+        Assert.notNull(config, "ConnectorConfig can not be null.");
+        String cacheKey = getConnectorService(config).getConnectorInstanceCacheKey(config);
+        ConnectorInstance connectorInstance = pool.get(cacheKey);
+        if (connectorInstance != null) {
+            disconnect(connectorInstance);
+            pool.remove(cacheKey);
+        }
+    }
+
     private void disconnect(ConnectorInstance connectorInstance) {
         Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
         getConnectorService(connectorInstance.getConfig()).disconnect(connectorInstance);

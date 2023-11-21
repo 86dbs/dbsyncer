@@ -1,12 +1,15 @@
 package org.dbsyncer.connector.oracle;
 
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.quartz.DatabaseQuartzListener;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
@@ -33,6 +36,18 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     @Override
     public String getConnectorType() {
         return TYPE;
+    }
+
+    @Override
+    public Listener getListener(String listenerType) {
+        if (ListenerTypeEnum.isTiming(listenerType)) {
+            return new DatabaseQuartzListener();
+        }
+
+        if (ListenerTypeEnum.isLog(listenerType)) {
+            return new OracleListener();
+        }
+        return null;
     }
 
     @Override

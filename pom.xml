@@ -17,7 +17,6 @@
         <module>dbsyncer-cluster</module>
         <module>dbsyncer-common</module>
         <module>dbsyncer-connector</module>
-        <module>dbsyncer-listener</module>
         <module>dbsyncer-manager</module>
         <module>dbsyncer-parser</module>
         <module>dbsyncer-plugin</module>

@@ -1,9 +1,13 @@
 package org.dbsyncer.connector.sql;
 
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.quartz.DatabaseQuartzListener;
+import org.dbsyncer.connector.sqlserver.DqlSqlServerListener;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +21,18 @@ public final class DQLSqlServerConnector extends AbstractDQLConnector {
     @Override
     public String getConnectorType() {
         return TYPE;
+    }
+
+    @Override
+    public Listener getListener(String listenerType) {
+        if (ListenerTypeEnum.isTiming(listenerType)) {
+            return new DatabaseQuartzListener();
+        }
+
+        if (ListenerTypeEnum.isLog(listenerType)) {
+            return new DqlSqlServerListener();
+        }
+        return null;
     }
 
     @Override
