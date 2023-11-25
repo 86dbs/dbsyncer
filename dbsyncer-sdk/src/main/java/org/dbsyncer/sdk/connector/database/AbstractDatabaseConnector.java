@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.connector.database;
 
 import org.dbsyncer.common.model.Result;
@@ -11,6 +14,7 @@ import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -48,6 +52,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * 关系型数据库连接器实现
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2020-01-08 15:17
+ */
 public abstract class AbstractDatabaseConnector extends AbstractConnector implements ConnectorService<DatabaseConnectorInstance, DatabaseConfig>, Database {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -75,6 +86,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     @Override
     public ConnectorInstance connect(DatabaseConfig config) {
         return new DatabaseConnectorInstance(config);
+    }
+
+    @Override
+    public ConfigValidator getConfigValidator() {
+        return null;
     }
 
     @Override

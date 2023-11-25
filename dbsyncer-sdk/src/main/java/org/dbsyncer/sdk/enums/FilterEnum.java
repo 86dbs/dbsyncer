@@ -1,16 +1,19 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.enums;
 
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
-import org.dbsyncer.sdk.connector.CompareFilter;
+import org.dbsyncer.sdk.filter.CompareFilter;
 
 /**
  * 运算符表达式类型
  *
- * @author AE86
- * @version 1.0.0
- * @date 2019/9/26 23:21
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2019-09-26 23:21
  */
 public enum FilterEnum {
 
@@ -47,15 +50,15 @@ public enum FilterEnum {
         String compareValue = StringUtil.replace(filterValue, "%", "");
         compareValue = StringUtil.replace(compareValue, "*", "");
         // 模糊匹配
-        if(startsWith && endsWith){
+        if (startsWith && endsWith) {
             return StringUtil.contains(value, compareValue);
         }
         // 前缀匹配
-        if(endsWith){
+        if (endsWith) {
             return StringUtil.startsWith(value, compareValue);
         }
         // 后缀匹配
-        if(startsWith){
+        if (startsWith) {
             return StringUtil.endsWith(value, compareValue);
         }
         return false;

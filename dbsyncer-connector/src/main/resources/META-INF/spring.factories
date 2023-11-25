@@ -1,3 +1,0 @@
-# 在这里开启自动状态，遵循spring 扫描规则
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-org.dbsyncer.connector.ConnectorConfiguration

@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.storage.impl;
 
 import org.apache.commons.io.FileUtils;
@@ -13,7 +16,7 @@ import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.enums.FilterEnum;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
@@ -39,9 +42,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 将数据存储在磁盘，基于lucene实现
  *
- * @author AE86
- * @version 1.0.0
- * @date 2019/9/10 23:22
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2023-09-10 23:22
  */
 public class DiskStorageServiceImpl extends AbstractStorageService {
 

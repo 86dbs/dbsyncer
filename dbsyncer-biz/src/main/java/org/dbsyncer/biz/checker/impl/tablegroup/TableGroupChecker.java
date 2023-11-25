@@ -1,23 +1,26 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.biz.checker.impl.tablegroup;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
-import org.dbsyncer.biz.checker.ConnectorConfigChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.model.MetaInfo;
-import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
+import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,9 +39,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2020/1/8 15:17
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2020-01-08 15:17
  */
 @Component
 public class TableGroupChecker extends AbstractChecker {
@@ -52,7 +55,7 @@ public class TableGroupChecker extends AbstractChecker {
     private ProfileComponent profileComponent;
 
     @Resource
-    private Map<String, ConnectorConfigChecker> map;
+    private Map<String, ConfigValidator> map;
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
@@ -139,23 +142,12 @@ public class TableGroupChecker extends AbstractChecker {
         // 合并高级配置
         TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
 
-        // 处理策略
-        dealIncrementStrategy(mapping, group);
-
         Map<String, String> command = parserComponent.getCommand(mapping, group);
         tableGroup.setCommand(command);
 
         // 获取数据源总数
         long count = ModelEnum.isFull(mapping.getModel()) && !CollectionUtils.isEmpty(command) ? parserComponent.getCount(mapping.getSourceConnectorId(), command) : 0;
         tableGroup.getSourceTable().setCount(count);
-    }
-
-    public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup) {
-        String connectorType = profileComponent.getConnector(mapping.getSourceConnectorId()).getConfig().getConnectorType();
-        String type = StringUtil.toLowerCaseFirstOne(connectorType).concat("ConfigChecker");
-        ConnectorConfigChecker checker = map.get(type);
-        Assert.notNull(checker, "Checker can not be null.");
-        checker.dealIncrementStrategy(mapping, tableGroup);
     }
 
     private Table getTable(String connectorId, String tableName, String primaryKeyStr) {

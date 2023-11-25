@@ -9,12 +9,23 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>dbsyncer-connector</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>dbsyncer-connector-elasticsearch</module>
+    </modules>
 
     <dependencies>
         <!-- sdk -->
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-sdk</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- dbsyncer-connector-elasticsearch -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-elasticsearch</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

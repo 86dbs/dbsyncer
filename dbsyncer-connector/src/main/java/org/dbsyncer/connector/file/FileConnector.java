@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.file;
 
 import org.apache.commons.io.IOUtils;
@@ -11,6 +14,7 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
@@ -38,9 +42,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/5/5 23:19
+ * 文件连接器实现
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-05-05 23:19
  */
 @Component
 public final class FileConnector extends AbstractConnector implements ConnectorService<FileConnectorInstance, FileConfig> {
@@ -75,6 +81,11 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     @Override
     public ConnectorInstance connect(FileConfig config) {
         return new FileConnectorInstance(config);
+    }
+
+    @Override
+    public ConfigValidator getConfigValidator() {
+        return null;
     }
 
     @Override

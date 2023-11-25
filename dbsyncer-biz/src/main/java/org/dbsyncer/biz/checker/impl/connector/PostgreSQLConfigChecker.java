@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.biz.checker.impl.connector;
 
 import org.dbsyncer.common.util.StringUtil;
@@ -7,12 +10,12 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/4/5 22:14
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-04-05 22:14
  */
 @Component
-public class PostgreSQLConfigChecker extends AbstractDataBaseConfigChecker {
+public class PostgreSQLConfigChecker extends AbstractDataBaseConfigValidator {
     @Override
     public void modify(DatabaseConfig connectorConfig, Map<String, String> params) {
         super.modify(connectorConfig, params);

@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector;
 
 import org.dbsyncer.common.model.Result;
@@ -15,6 +18,7 @@ import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
@@ -29,10 +33,11 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 连接器工厂
  *
- * @author AE86
- * @version 1.0.0
- * @date 2019/9/18 23:30
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2019-09-18 23:30
  */
+@Component
 public class ConnectorFactory implements DisposableBean {
 
     private final Map<String, ConnectorInstance> pool = new ConcurrentHashMap<>();

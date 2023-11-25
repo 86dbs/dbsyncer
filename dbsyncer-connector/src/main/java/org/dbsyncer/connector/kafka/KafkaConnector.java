@@ -1,14 +1,18 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.kafka;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.connector.config.KafkaConfig;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
-import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.config.KafkaConfig;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
@@ -25,6 +29,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Kafka连接器实现
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2021-11-22 23:55
+ */
 @Component
 public class KafkaConnector extends AbstractConnector implements ConnectorService<KafkaConnectorInstance, KafkaConfig> {
 
@@ -55,6 +66,11 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     @Override
     public ConnectorInstance connect(KafkaConfig config) {
         return new KafkaConnectorInstance(config);
+    }
+
+    @Override
+    public ConfigValidator getConfigValidator() {
+        return null;
     }
 
     @Override

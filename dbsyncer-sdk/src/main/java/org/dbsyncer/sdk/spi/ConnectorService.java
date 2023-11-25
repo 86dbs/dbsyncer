@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.spi;
 
 import org.dbsyncer.common.model.Result;
@@ -6,6 +9,7 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
@@ -21,8 +25,8 @@ import java.util.Map;
  *
  * @param <I> ConnectorInstance
  * @param <C> ConnectorConfig
- * @Version 1.0.0
  * @Author AE86
+ * @Version 1.0.0
  * @Date 2023-11-19 23:24
  */
 public interface ConnectorService<I extends ConnectorInstance, C extends ConnectorConfig> {
@@ -60,6 +64,13 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @return
      */
     ConnectorInstance connect(C connectorConfig);
+
+    /**
+     * 连接器配置校验器
+     *
+     * @return
+     */
+    ConfigValidator getConfigValidator();
 
     /**
      * 断开连接

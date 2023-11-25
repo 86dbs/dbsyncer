@@ -1,6 +1,9 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.storage.query;
 
-import org.dbsyncer.connector.enums.FilterEnum;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.storage.enums.BinlogSortEnum;
 import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
 import org.dbsyncer.storage.enums.StorageEnum;
@@ -11,9 +14,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2019/11/16 22:56
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2020-01-08 15:17
  */
 public class Query {
 

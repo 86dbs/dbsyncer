@@ -1,19 +1,47 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.dbsyncer.sdk.spi.ConnectorService;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
+import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
+
+import java.beans.Introspector;
+import java.util.ServiceLoader;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2019/9/19 23:17
+ * 连接器配置
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2019-09-19 23:17
  */
-@Configuration
-public class ConnectorConfiguration {
+@Service
+public class ConnectorConfiguration implements BeanDefinitionRegistryPostProcessor {
 
-    @Bean
-    public ConnectorFactory connectorFactory() {
-        return new ConnectorFactory();
+    @Override
+    public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry beanDefinitionRegistry) throws BeansException {
+        ServiceLoader<ConnectorService> services = ServiceLoader.load(ConnectorService.class, Thread.currentThread().getContextClassLoader());
+        for (ConnectorService s : services) {
+            BeanDefinition beanDefinition = BeanDefinitionBuilder.genericBeanDefinition(s.getClass()).getBeanDefinition();
+            String beanClassName = beanDefinition.getBeanClassName();
+            Assert.state(beanClassName != null, "No bean class name set");
+            String shortClassName = ClassUtils.getShortName(beanClassName);
+            String decapitalize = Introspector.decapitalize(shortClassName);
+            beanDefinitionRegistry.registerBeanDefinition(decapitalize, beanDefinition);
+        }
     }
 
+    @Override
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory configurableListableBeanFactory) throws BeansException {
+
+    }
 }

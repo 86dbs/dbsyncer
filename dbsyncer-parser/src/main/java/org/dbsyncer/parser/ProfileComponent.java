@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.parser;
 
-import org.dbsyncer.connector.enums.FilterEnum;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.ConfigModel;

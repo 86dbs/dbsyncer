@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.DataSyncService;
@@ -25,7 +28,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.enums.FilterEnum;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.scheduled.ScheduledTaskJob;
 import org.dbsyncer.sdk.scheduled.ScheduledTaskService;
 import org.dbsyncer.parser.LogService;
@@ -62,9 +65,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2020/04/27 10:20
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2020-04-27 10:20
  */
 @Service
 public class MonitorServiceImpl extends BaseServiceImpl implements MonitorService, ScheduledTaskJob {

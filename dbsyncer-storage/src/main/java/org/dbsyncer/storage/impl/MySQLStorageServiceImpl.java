@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.storage.impl;
 
 import org.apache.commons.io.IOUtils;
@@ -10,7 +13,7 @@ import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
-import org.dbsyncer.connector.enums.FilterEnum;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.util.DatabaseUtil;
@@ -50,9 +53,9 @@ import java.util.stream.Stream;
 /**
  * 将数据存储在mysql
  *
- * @author AE86
- * @version 1.0.0
- * @date 2019/9/10 23:22
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2020-01-08 15:17
  */
 @Component
 @ConditionalOnProperty(value = "dbsyncer.storage.support.mysql.enabled", havingValue = "true")
