@@ -1,7 +1,7 @@
 package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.sdk.scheduled.ScheduledTaskService;
+import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;

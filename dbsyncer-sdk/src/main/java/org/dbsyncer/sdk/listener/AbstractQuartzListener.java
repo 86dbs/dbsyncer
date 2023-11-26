@@ -10,7 +10,7 @@ import org.dbsyncer.sdk.listener.event.ScanChangedEvent;
 import org.dbsyncer.sdk.model.Point;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
-import org.dbsyncer.sdk.scheduled.ScheduledTaskJob;
+import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
