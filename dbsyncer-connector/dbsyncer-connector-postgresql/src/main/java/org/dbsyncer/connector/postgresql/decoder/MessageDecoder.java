@@ -1,4 +1,7 @@
-package org.dbsyncer.connector.postgresql;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.postgresql.decoder;
 
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
@@ -10,9 +13,9 @@ import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 import java.nio.ByteBuffer;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/4/17 22:59
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-04-10 22:36
  */
 public interface MessageDecoder {
 

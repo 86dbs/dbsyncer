@@ -1,6 +1,9 @@
-package org.dbsyncer.connector.postgresql;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.postgresql.schema;
 
-import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.sdk.connector.AbstractValueMapper;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.postgis.Geometry;
@@ -26,9 +29,9 @@ import org.postgresql.geometric.PGpoint;
  * <li>varbit</li>
  * </ol>
  *
- * @author AE86
- * @version 1.0.0
- * @date 2022/12/22 22:59
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-12-22 22:59
  */
 public final class PostgreSQLOtherValueMapper extends AbstractValueMapper<byte[]> {
 
@@ -45,6 +48,6 @@ public final class PostgreSQLOtherValueMapper extends AbstractValueMapper<byte[]
             BinaryWriter bw = new BinaryWriter();
             return bw.writeBinary(geo);
         }
-        throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
+        throw new PostgreSQLException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }

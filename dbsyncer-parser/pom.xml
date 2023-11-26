@@ -30,6 +30,12 @@
             <artifactId>jsqlparser</artifactId>
         </dependency>
 
+        <!-- antlr4-runtime -->
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

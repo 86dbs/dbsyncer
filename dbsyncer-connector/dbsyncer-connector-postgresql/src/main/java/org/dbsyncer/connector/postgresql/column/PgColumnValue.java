@@ -1,9 +1,12 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.postgresql.column;
 
 import org.dbsyncer.common.column.AbstractColumnValue;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.postgresql.PGStatement;
 import org.postgresql.geometric.PGbox;
 import org.postgresql.geometric.PGcircle;
@@ -126,7 +129,7 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
             return new PGbox(asString());
         } catch (final SQLException e) {
             logger.error("Failed to parse point {}, {}", asString(), e);
-            throw new ConnectorException(e);
+            throw new PostgreSQLException(e);
         }
     }
 
@@ -135,7 +138,7 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
             return new PGcircle(asString());
         } catch (final SQLException e) {
             logger.error("Failed to parse circle {}, {}", asString(), e);
-            throw new ConnectorException(e);
+            throw new PostgreSQLException(e);
         }
     }
 
@@ -144,7 +147,7 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
             return new PGInterval(asString());
         } catch (final SQLException e) {
             logger.error("Failed to parse point {}, {}", asString(), e);
-            throw new ConnectorException(e);
+            throw new PostgreSQLException(e);
         }
     }
 
@@ -153,7 +156,7 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
             return new PGline(asString());
         } catch (final SQLException e) {
             logger.error("Failed to parse point {}, {}", asString(), e);
-            throw new ConnectorException(e);
+            throw new PostgreSQLException(e);
         }
     }
 
@@ -162,7 +165,7 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
             return new PGlseg(asString());
         } catch (final SQLException e) {
             logger.error("Failed to parse point {}, {}", asString(), e);
-            throw new ConnectorException(e);
+            throw new PostgreSQLException(e);
         }
     }
 
@@ -176,7 +179,7 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
             return new PGmoney(asString());
         } catch (final SQLException e) {
             logger.error("Failed to parse money {}, {}", asString(), e);
-            throw new ConnectorException(e);
+            throw new PostgreSQLException(e);
         }
     }
 
@@ -185,7 +188,7 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
             return new PGpath(asString());
         } catch (final SQLException e) {
             logger.error("Failed to parse point {}, {}", asString(), e);
-            throw new ConnectorException(e);
+            throw new PostgreSQLException(e);
         }
     }
 
@@ -194,7 +197,7 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
             return new PGpoint(asString());
         } catch (final SQLException e) {
             logger.error("Failed to parse point {}, {}", asString(), e);
-            throw new ConnectorException(e);
+            throw new PostgreSQLException(e);
         }
     }
 
@@ -203,7 +206,7 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
             return new PGpolygon(asString());
         } catch (final SQLException e) {
             logger.error("Failed to parse point {}, {}", asString(), e);
-            throw new ConnectorException(e);
+            throw new PostgreSQLException(e);
         }
     }
 

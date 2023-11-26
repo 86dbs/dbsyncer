@@ -1,0 +1,2 @@
+org.dbsyncer.connector.postgresql.PostgreSQLConnector
+org.dbsyncer.connector.postgresql.DQLPostgreSQLConnector

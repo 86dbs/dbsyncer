@@ -1,8 +1,12 @@
-package org.dbsyncer.connector.postgresql;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.postgresql.cdc;
 
 import org.dbsyncer.common.util.BooleanUtil;
+import org.dbsyncer.connector.postgresql.decoder.MessageDecoder;
+import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
-import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
@@ -32,9 +36,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/4/10 22:36
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-04-10 22:36
  */
 public class PostgreSQLListener extends AbstractDatabaseListener {
 
@@ -75,7 +79,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
 
             final String walLevel = instance.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_WAL_LEVEL, String.class));
             if (!DEFAULT_WAL_LEVEL.equals(walLevel)) {
-                throw new ConnectorException(String.format("Postgres server wal_level property must be \"%s\" but is: %s", DEFAULT_WAL_LEVEL, walLevel));
+                throw new PostgreSQLException(String.format("Postgres server wal_level property must be \"%s\" but is: %s", DEFAULT_WAL_LEVEL, walLevel));
             }
 
             final boolean hasAuth = instance.execute(databaseTemplate -> {
@@ -88,7 +92,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
                 return login && (replication || superuser || admin || repAdmin);
             });
             if (!hasAuth) {
-                throw new ConnectorException(String.format("Postgres roles LOGIN and REPLICATION are not assigned to user: %s", config.getUsername()));
+                throw new PostgreSQLException(String.format("Postgres roles LOGIN and REPLICATION are not assigned to user: %s", config.getUsername()));
             }
 
             database = instance.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_DATABASE, String.class));
@@ -109,7 +113,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
             logger.error("启动失败:{}", e.getMessage());
             DatabaseUtil.close(stream);
             DatabaseUtil.close(connection);
-            throw new ConnectorException(e);
+            throw new PostgreSQLException(e);
         } finally {
             connectLock.unlock();
         }
@@ -186,7 +190,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
         if (!snapshot.containsKey(LSN_POSITION)) {
             LogSequenceNumber lsn = instance.execute(databaseTemplate -> LogSequenceNumber.valueOf(databaseTemplate.queryForObject(GET_RESTART_LSN, new Object[]{database, slotName, plugin}, String.class)));
             if (null == lsn || lsn.asLong() == 0) {
-                throw new ConnectorException("No maximum LSN recorded in the database");
+                throw new PostgreSQLException("No maximum LSN recorded in the database");
             }
             snapshot.put(LSN_POSITION, lsn.asString());
             super.forceFlushEvent();
@@ -289,7 +293,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
                     stream.setAppliedLSN(lsn);
                     stream.setFlushedLSN(lsn);
                     stream.forceUpdateStatus();
-                } catch (IllegalStateException | ConnectorException e) {
+                } catch (IllegalStateException | PostgreSQLException e) {
                     logger.error(e.getMessage());
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);

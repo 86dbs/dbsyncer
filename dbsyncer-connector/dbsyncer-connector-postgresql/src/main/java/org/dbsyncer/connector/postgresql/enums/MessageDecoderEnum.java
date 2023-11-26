@@ -1,15 +1,18 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.postgresql.enums;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.postgresql.MessageDecoder;
-import org.dbsyncer.connector.postgresql.decoder.PgOutputMessageDecoder;
-import org.dbsyncer.connector.postgresql.decoder.TestDecodingMessageDecoder;
+import org.dbsyncer.connector.postgresql.decoder.MessageDecoder;
+import org.dbsyncer.connector.postgresql.PostgreSQLException;
+import org.dbsyncer.connector.postgresql.decoder.impl.PgOutputMessageDecoder;
+import org.dbsyncer.connector.postgresql.decoder.impl.TestDecodingMessageDecoder;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/4/17 23:05
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-04-10 22:36
  */
 public enum MessageDecoderEnum {
 
@@ -31,7 +34,7 @@ public enum MessageDecoderEnum {
         this.clazz = clazz;
     }
 
-    public static MessageDecoder getMessageDecoder(String type) throws ConnectorException, IllegalAccessException, InstantiationException {
+    public static MessageDecoder getMessageDecoder(String type) throws PostgreSQLException, IllegalAccessException, InstantiationException {
         for (MessageDecoderEnum e : MessageDecoderEnum.values()) {
             if (StringUtil.equals(type, e.getType())) {
                 return (MessageDecoder) e.getClazz().newInstance();

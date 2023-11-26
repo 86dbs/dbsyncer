@@ -1,8 +1,11 @@
-package org.dbsyncer.connector.postgresql.decoder;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.postgresql.decoder.impl;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.postgresql.AbstractMessageDecoder;
+import org.dbsyncer.connector.postgresql.PostgreSQLException;
+import org.dbsyncer.connector.postgresql.decoder.AbstractMessageDecoder;
 import org.dbsyncer.connector.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.connector.postgresql.enums.MessageTypeEnum;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
@@ -23,9 +26,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/4/17 23:00
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-04-10 22:36
  */
 public class PgOutputMessageDecoder extends AbstractMessageDecoder {
 
@@ -112,7 +115,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
                 return true;
             });
         } catch (Exception e) {
-            throw new ConnectorException(e.getCause());
+            throw new PostgreSQLException(e.getCause());
         }
     }
 
@@ -158,7 +161,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
             // The table schema has been changed, we should be get a new table schema from db.
             MetaInfo metaInfo = connectorService.getMetaInfo(connectorInstance, tableId.tableName);
             if (CollectionUtils.isEmpty(metaInfo.getColumn())) {
-                throw new ConnectorException(String.format("The table column for '%s' is empty.", tableId.tableName));
+                throw new PostgreSQLException(String.format("The table column for '%s' is empty.", tableId.tableName));
             }
             tableId.fields = metaInfo.getColumn();
             return;

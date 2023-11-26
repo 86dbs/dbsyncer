@@ -1,7 +1,10 @@
-package org.dbsyncer.connector.postgresql.decoder;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.postgresql.decoder.impl;
 
 import org.dbsyncer.common.column.Lexer;
-import org.dbsyncer.connector.postgresql.AbstractMessageDecoder;
+import org.dbsyncer.connector.postgresql.decoder.AbstractMessageDecoder;
 import org.dbsyncer.connector.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.connector.postgresql.enums.MessageTypeEnum;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -15,9 +18,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/4/17 23:00
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-04-10 22:36
  */
 public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
 

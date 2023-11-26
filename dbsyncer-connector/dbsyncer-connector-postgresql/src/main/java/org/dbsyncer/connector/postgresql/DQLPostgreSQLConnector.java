@@ -1,20 +1,30 @@
-package org.dbsyncer.connector.sql;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.postgresql;
 
-import org.dbsyncer.connector.postgresql.DqlPostgreSQLListener;
-import org.dbsyncer.sdk.connector.ConfigValidator;
-import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
+import org.dbsyncer.connector.postgresql.cdc.DqlPostgreSQLListener;
+import org.dbsyncer.connector.postgresql.validator.DqlPostgreSQLConfigValidator;
 import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
-import org.springframework.stereotype.Component;
 
-@Component
+/**
+ * DQLSqlServer连接器实现
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-05-22 22:56
+ */
 public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
 
     private final String TYPE = "DqlPostgreSQL";
+    private final DqlPostgreSQLConfigValidator configValidator = new DqlPostgreSQLConfigValidator();
 
     @Override
     public String getConnectorType() {
@@ -23,7 +33,7 @@ public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
 
     @Override
     public ConfigValidator getConfigValidator() {
-        return null;
+        return configValidator;
     }
 
     @Override

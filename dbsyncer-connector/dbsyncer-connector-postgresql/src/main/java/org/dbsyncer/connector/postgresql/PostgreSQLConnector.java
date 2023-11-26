@@ -1,33 +1,46 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.postgresql;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.connector.ConfigValidator;
-import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
+import org.dbsyncer.connector.postgresql.cdc.PostgreSQLListener;
+import org.dbsyncer.connector.postgresql.schema.PostgreSQLBitValueMapper;
+import org.dbsyncer.connector.postgresql.schema.PostgreSQLOtherValueMapper;
+import org.dbsyncer.connector.postgresql.validator.PostgreSQLConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.sql.Types;
 import java.util.List;
 
-@Component
+/**
+ * SqlServer连接器实现
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-05-22 22:56
+ */
 public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final String TYPE = "PostgreSQL";
+    private final PostgreSQLConfigValidator configValidator = new PostgreSQLConfigValidator();
 
     @Override
     public String getConnectorType() {
@@ -36,7 +49,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     @Override
     public ConfigValidator getConfigValidator() {
-        return null;
+        return configValidator;
     }
 
     @Override

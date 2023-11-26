@@ -5,12 +5,11 @@ package org.dbsyncer.biz.checker.impl.connector;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
-import org.dbsyncer.sdk.connector.ConfigValidator;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
@@ -39,9 +38,6 @@ public class ConnectorChecker extends AbstractChecker {
     @Resource
     private ConnectorFactory connectorFactory;
 
-    @Resource
-    private Map<String, ConfigValidator> map;
-
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
         printParams(params);
@@ -55,11 +51,10 @@ public class ConnectorChecker extends AbstractChecker {
         ConnectorConfig config = getConfig(connectorType);
         connector.setConfig(config);
 
-        // 配置连接器配置
-        String type = StringUtil.toLowerCaseFirstOne(connectorType).concat("ConfigChecker");
-        ConfigValidator checker = map.get(type);
-        Assert.notNull(checker, "Checker can not be null.");
-        checker.modify(config, params);
+        // 连接器配置校验
+        ConfigValidator configValidator = connectorFactory.getConnectorService(connectorType).getConfigValidator();
+        Assert.notNull(configValidator, "ConfigValidator can not be null.");
+        configValidator.modify(config, params);
 
         // 获取表
         ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
@@ -84,11 +79,10 @@ public class ConnectorChecker extends AbstractChecker {
         // 修改基本配置
         this.modifyConfigModel(connector, params);
 
-        // 配置连接器配置
-        String type = StringUtil.toLowerCaseFirstOne(config.getConnectorType()).concat("ConfigChecker");
-        ConfigValidator checker = map.get(type);
-        Assert.notNull(checker, "Checker can not be null.");
-        checker.modify(config, params);
+        // 连接器配置校验
+        ConfigValidator configValidator = connectorFactory.getConnectorService(config.getConnectorType()).getConfigValidator();
+        Assert.notNull(configValidator, "ConfigValidator can not be null.");
+        configValidator.modify(config, params);
 
         // 获取表
         ConnectorInstance connectorInstance = connectorFactory.connect(config);
