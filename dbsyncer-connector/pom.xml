@@ -13,6 +13,7 @@
     <modules>
         <module>dbsyncer-connector-elasticsearch</module>
         <module>dbsyncer-connector-file</module>
+        <module>dbsyncer-connector-kafka</module>
     </modules>
 
     <dependencies>
@@ -30,10 +31,17 @@
             <version>${project.parent.version}</version>
         </dependency> -->
 
-        <!-- dbsyncer-connector-file -->
+        <!-- dbsyncer-connector-file
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-file</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency> -->
+
+        <!-- dbsyncer-connector-kafka -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-kafka</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
@@ -86,12 +94,6 @@
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-high-level-client</artifactId>
-        </dependency>
-
-        <!-- kafka -->
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-clients</artifactId>
         </dependency>
 
         <dependency>

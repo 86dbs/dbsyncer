@@ -1,7 +1,10 @@
-package org.dbsyncer.connector.enums;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.kafka.enums;
 
+import org.apache.kafka.common.KafkaException;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorException;
 
 import java.sql.Date;
 import java.sql.Time;
@@ -13,8 +16,7 @@ import java.sql.Types;
  *
  * @author AE86
  * @version 1.0.0
- * @date 2021/12/08 21:13
- * @date 2021/12/17 0:02
+ * @date 2021/11/23 23:13
  */
 public enum KafkaFieldTypeEnum {
 
@@ -47,13 +49,13 @@ public enum KafkaFieldTypeEnum {
         this.type = type;
     }
 
-    public static Class getType(String code) throws ConnectorException {
+    public static Class getType(String code) throws KafkaException {
         for (KafkaFieldTypeEnum e : KafkaFieldTypeEnum.values()) {
             if (StringUtil.equals(e.getCode(), code)) {
                 return e.getClazz();
             }
         }
-        throw new ConnectorException(String.format("Unsupported code: %s", code));
+        throw new KafkaException(String.format("Unsupported code: %s", code));
     }
 
     public String getCode() {

@@ -1,9 +1,19 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.kafka;
 
-import org.dbsyncer.connector.config.KafkaConfig;
-import org.dbsyncer.connector.util.KafkaUtil;
+import org.dbsyncer.connector.kafka.config.KafkaConfig;
+import org.dbsyncer.connector.kafka.util.KafkaUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 
+/**
+ * Kafka连接器实例
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2021-11-22 23:55
+ */
 public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConfig, KafkaClient> {
     private KafkaConfig config;
     private KafkaClient client;

@@ -1,11 +1,11 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.biz.checker.impl.connector;
+package org.dbsyncer.connector.kafka.validator;
 
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.common.util.NumberUtil;
-import org.dbsyncer.connector.config.KafkaConfig;
+import org.dbsyncer.connector.kafka.config.KafkaConfig;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 

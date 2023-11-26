@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.kafka.serialization;
 
 import org.apache.kafka.common.errors.SerializationException;
@@ -8,9 +11,9 @@ import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2021/12/16 23:09
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2021-12-16 23:09
  */
 public class MapToJsonSerializer implements Serializer<Map> {
     private String encoding = "UTF8";
