@@ -1,4 +1,7 @@
-package org.dbsyncer.connector.mysql;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.mysql.binlog;
 
 import com.github.shyiko.mysql.binlog.GtidSet;
 import com.github.shyiko.mysql.binlog.MariadbGtidSet;
@@ -8,7 +11,7 @@ import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 import com.github.shyiko.mysql.binlog.network.*;
 import com.github.shyiko.mysql.binlog.network.protocol.*;
 import com.github.shyiko.mysql.binlog.network.protocol.command.*;
-import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.connector.mysql.deserializer.DeleteDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.UpdateDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.WriteDeserializer;
@@ -653,7 +656,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                         String error = String.format("keepalive: Trying to restore lost connection to %s", clientId);
                         logger.info(error);
                         try {
-                            lifecycleListeners.forEach(listener -> listener.onCommunicationFailure(this, new ConnectorException(error)));
+                            lifecycleListeners.forEach(listener -> listener.onCommunicationFailure(this, new MySQLException(error)));
                         } catch (Exception e) {
                             logger.warn("keepalive error", e);
                         }

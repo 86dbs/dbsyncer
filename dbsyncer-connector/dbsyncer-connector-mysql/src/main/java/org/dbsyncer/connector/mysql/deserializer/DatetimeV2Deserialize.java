@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.mysql.deserializer;
 
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;

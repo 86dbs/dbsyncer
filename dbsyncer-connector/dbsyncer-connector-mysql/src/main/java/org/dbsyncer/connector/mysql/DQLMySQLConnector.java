@@ -1,26 +1,42 @@
-package org.dbsyncer.connector.sql;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.mysql;
 
-import org.dbsyncer.connector.mysql.DqlMySQLListener;
-import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
+import org.dbsyncer.connector.mysql.cdc.DqlMySQLListener;
+import org.dbsyncer.connector.mysql.validator.DqlMySQLConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
-import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-@Component
+/**
+ * DQLMySQL连接器实现
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2021-11-22 23:55
+ */
 public final class DQLMySQLConnector extends AbstractDQLConnector {
 
     private final String TYPE = "DqlMySQL";
+    private final DqlMySQLConfigValidator configValidator = new DqlMySQLConfigValidator();
 
     @Override
     public String getConnectorType() {
         return TYPE;
+    }
+
+    @Override
+    public ConfigValidator getConfigValidator() {
+        return configValidator;
     }
 
     @Override

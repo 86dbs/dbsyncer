@@ -1,11 +1,14 @@
-package org.dbsyncer.connector.mysql;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.mysql.cdc;
 
 import org.dbsyncer.sdk.listener.ChangedEvent;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/5/28 22:02
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-05-28 22:02
  */
 public class DqlMySQLListener extends MySQLListener {
 

@@ -1,6 +1,12 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.mysql;
 
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.mysql.cdc.MySQLListener;
+import org.dbsyncer.connector.mysql.validator.MySQLConfigValidator;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
@@ -11,20 +17,31 @@ import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
+/**
+ * MySQL连接器实现
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2021-11-22 23:55
+ */
 public final class MySQLConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final String TYPE = "MySQL";
+    private final MySQLConfigValidator configValidator = new MySQLConfigValidator();
 
     @Override
     public String getConnectorType() {
         return TYPE;
+    }
+
+    @Override
+    public ConfigValidator getConfigValidator() {
+        return configValidator;
     }
 
     @Override

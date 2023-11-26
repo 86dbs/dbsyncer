@@ -1,12 +1,11 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.biz.checker.impl.connector;
+package org.dbsyncer.sdk.connector;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.model.SqlTable;
 import org.springframework.util.Assert;
 

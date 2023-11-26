@@ -1,10 +1,10 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.biz.checker.impl.connector;
+package org.dbsyncer.connector.mysql.validator;
 
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.springframework.stereotype.Component;
+import org.dbsyncer.sdk.connector.AbstractDataBaseConfigValidator;
 
 import java.util.Map;
 
@@ -13,8 +13,7 @@ import java.util.Map;
  * @Version 1.0.0
  * @Date 2020-01-07 15:17
  */
-@Component
-public class DqlMySQLConfigChecker extends AbstractDataBaseConfigValidator {
+public class DqlMySQLConfigValidator extends AbstractDataBaseConfigValidator {
 
     @Override
     public void modify(DatabaseConfig connectorConfig, Map<String, String> params) {

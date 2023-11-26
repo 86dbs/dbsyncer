@@ -5,6 +5,7 @@ package org.dbsyncer.biz.checker.impl.connector;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.connector.AbstractDataBaseConfigValidator;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -15,7 +16,7 @@ import java.util.Map;
  * @Date 2022-04-05 22:14
  */
 @Component
-public class PostgreSQLConfigChecker extends AbstractDataBaseConfigValidator {
+public class PostgreSQLConfigValidator extends AbstractDataBaseConfigValidator {
     @Override
     public void modify(DatabaseConfig connectorConfig, Map<String, String> params) {
         super.modify(connectorConfig, params);

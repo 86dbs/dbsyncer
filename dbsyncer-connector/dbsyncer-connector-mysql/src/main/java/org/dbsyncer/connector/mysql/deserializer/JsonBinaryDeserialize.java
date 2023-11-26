@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.mysql.deserializer;
 
 import com.github.shyiko.mysql.binlog.event.deserialization.json.JsonBinary;
@@ -6,9 +9,9 @@ import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 import java.io.IOException;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/8/30 0:22
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-08-30 00:22
  */
 public final class JsonBinaryDeserialize {
 

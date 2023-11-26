@@ -1,7 +1,10 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 import com.github.shyiko.mysql.binlog.event.*;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.connector.mysql.BinaryLogClient;
-import org.dbsyncer.connector.mysql.BinaryLogRemoteClient;
+import org.dbsyncer.connector.mysql.binlog.BinaryLogClient;
+import org.dbsyncer.connector.mysql.binlog.BinaryLogRemoteClient;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,9 +15,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * @version 1.0.0
  * @Author AE86
- * @Date 2020-11-13 22:25
+ * @Version 1.0.0
+ * @Date 2021-11-22 23:55
  */
 public class BinaryLogRemoteClientTest {
 
