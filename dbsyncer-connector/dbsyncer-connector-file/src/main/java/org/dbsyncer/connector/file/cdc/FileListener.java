@@ -1,11 +1,17 @@
-package org.dbsyncer.connector.file;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.file.cdc;
 
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.config.FileConfig;
+import org.dbsyncer.connector.file.FileConnectorInstance;
+import org.dbsyncer.connector.file.FileException;
+import org.dbsyncer.connector.file.model.FileSchema;
+import org.dbsyncer.connector.file.config.FileConfig;
+import org.dbsyncer.connector.file.model.FileResolver;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractListener;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
@@ -36,9 +42,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/5/6 21:42
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-05-05 23:19
  */
 public class FileListener extends AbstractListener {
 
@@ -86,7 +92,7 @@ public class FileListener extends AbstractListener {
         } catch (Exception e) {
             logger.error("启动失败:{}", e.getMessage());
             closePipelineAndWatch();
-            throw new ConnectorException(e);
+            throw new FileException(e);
         } finally {
             connectLock.unlock();
         }

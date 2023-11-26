@@ -1,14 +1,13 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.biz.checker.impl.connector;
+package org.dbsyncer.connector.file.validator;
 
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.FileConfig;
-import org.dbsyncer.connector.file.FileSchema;
-import org.springframework.stereotype.Component;
+import org.dbsyncer.connector.file.model.FileSchema;
+import org.dbsyncer.connector.file.config.FileConfig;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.springframework.util.Assert;
 
 import java.io.File;
@@ -22,7 +21,6 @@ import java.util.Map;
  * @Version 1.0.0
  * @Date 2022-05-06 00:04
  */
-@Component
 public class FileConfigValidator implements ConfigValidator<FileConfig> {
 
     @Override

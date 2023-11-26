@@ -1,8 +1,11 @@
-package org.dbsyncer.connector.file;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.file.model;
 
 import org.dbsyncer.common.column.Lexer;
 import org.dbsyncer.connector.file.column.ColumnValue;
-import org.dbsyncer.connector.file.column.FileColumnValue;
+import org.dbsyncer.connector.file.column.impl.FileColumnValue;
 import org.dbsyncer.sdk.model.Field;
 
 import java.util.ArrayList;
@@ -11,9 +14,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/5/6 15:46
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-05-06 00:04
  */
 public class FileResolver {
 

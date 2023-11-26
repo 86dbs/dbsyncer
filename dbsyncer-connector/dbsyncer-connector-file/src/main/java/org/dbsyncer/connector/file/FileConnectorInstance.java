@@ -1,7 +1,11 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.file;
 
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.connector.config.FileConfig;
+import org.dbsyncer.connector.file.config.FileConfig;
+import org.dbsyncer.connector.file.model.FileSchema;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
 import org.springframework.util.Assert;

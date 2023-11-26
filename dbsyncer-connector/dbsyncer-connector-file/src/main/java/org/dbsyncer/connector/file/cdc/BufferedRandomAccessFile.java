@@ -1,4 +1,7 @@
-package org.dbsyncer.connector.file;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.file.cdc;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -7,9 +10,9 @@ import java.io.RandomAccessFile;
 import java.util.Arrays;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/5/7 22:27
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-05-07 22:27
  */
 public class BufferedRandomAccessFile extends RandomAccessFile {
     static final int LogBuffSz_ = 16; // 64K buffer

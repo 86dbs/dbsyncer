@@ -12,6 +12,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>dbsyncer-connector-elasticsearch</module>
+        <module>dbsyncer-connector-file</module>
     </modules>
 
     <dependencies>
@@ -22,10 +23,17 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-        <!-- dbsyncer-connector-elasticsearch -->
+        <!-- dbsyncer-connector-elasticsearch
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-elasticsearch</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency> -->
+
+        <!-- dbsyncer-connector-file -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-file</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

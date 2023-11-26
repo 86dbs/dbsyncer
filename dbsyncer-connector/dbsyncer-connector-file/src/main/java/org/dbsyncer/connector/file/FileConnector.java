@@ -8,8 +8,11 @@ import org.apache.commons.io.LineIterator;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.config.FileConfig;
+import org.dbsyncer.connector.file.cdc.FileListener;
+import org.dbsyncer.connector.file.model.FileResolver;
+import org.dbsyncer.connector.file.config.FileConfig;
+import org.dbsyncer.connector.file.model.FileSchema;
+import org.dbsyncer.connector.file.validator.FileConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
@@ -24,7 +27,6 @@ import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import java.io.File;
@@ -48,7 +50,6 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2022-05-05 23:19
  */
-@Component
 public final class FileConnector extends AbstractConnector implements ConnectorService<FileConnectorInstance, FileConfig> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -57,6 +58,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     private final String FILE_NAME = "fileName";
     private final String FILE_PATH = "filePath";
     private final FileResolver fileResolver = new FileResolver();
+    private final FileConfigValidator configValidator = new FileConfigValidator();
 
     @Override
     public String getConnectorType() {
@@ -85,7 +87,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
 
     @Override
     public ConfigValidator getConfigValidator() {
-        return null;
+        return configValidator;
     }
 
     @Override
@@ -146,7 +148,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
                 count.addAndGet(1);
             }
         } catch (IOException e) {
-            throw new ConnectorException(e.getCause());
+            throw new FileException(e.getCause());
         } finally {
             IOUtils.closeQuietly(reader);
         }
@@ -181,7 +183,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
                 }
             }
         } catch (IOException e) {
-            throw new ConnectorException(e.getCause());
+            throw new FileException(e.getCause());
         } finally {
             IOUtils.closeQuietly(reader);
         }
@@ -193,7 +195,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         List<Map> data = config.getData();
         if (CollectionUtils.isEmpty(data)) {
             logger.error("writer data can not be empty.");
-            throw new ConnectorException("writer data can not be empty.");
+            throw new FileException("writer data can not be empty.");
         }
 
         final List<Field> fields = config.getFields();
