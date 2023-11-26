@@ -1,4 +1,7 @@
-package org.dbsyncer.connector.oracle;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.oracle.cdc;
 
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.model.Field;
@@ -6,9 +9,9 @@ import org.dbsyncer.sdk.model.Field;
 import java.util.List;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/5/29 22:44
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-05-29 22:44
  */
 public class DqlOracleListener extends OracleListener {
 

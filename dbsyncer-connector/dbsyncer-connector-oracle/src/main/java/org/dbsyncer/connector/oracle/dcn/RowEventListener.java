@@ -1,5 +1,5 @@
 /**
- * DBSyncer Copyright 2019-2024 All Rights Reserved.
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
 package org.dbsyncer.connector.oracle.dcn;
 
@@ -8,9 +8,9 @@ import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 /**
  * 行变更监听器
  *
- * @version 1.0.0
  * @Author AE86
- * @Date 2020-06-15 20:00
+ * @Version 1.0.0
+ * @Date 2022-06-08 21:53
  */
 public interface RowEventListener {
 

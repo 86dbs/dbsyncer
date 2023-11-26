@@ -1,16 +1,19 @@
-package org.dbsyncer.connector.oracle;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.oracle.cdc;
 
-import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
-import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.connector.oracle.OracleException;
 import org.dbsyncer.connector.oracle.dcn.DBChangeNotification;
 import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @version 1.0.0
  * @Author AE86
- * @Date 2020-05-12 21:14
+ * @Version 1.0.0
+ * @Date 2022-05-12 21:14
  */
 public class OracleListener extends AbstractDatabaseListener {
 
@@ -31,7 +34,7 @@ public class OracleListener extends AbstractDatabaseListener {
             client.start();
         } catch (Exception e) {
             logger.error("启动失败:{}", e.getMessage());
-            throw new ConnectorException(e);
+            throw new OracleException(e);
         }
     }
 

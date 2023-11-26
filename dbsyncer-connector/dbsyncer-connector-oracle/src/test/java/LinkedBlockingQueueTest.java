@@ -1,6 +1,9 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 import oracle.jdbc.dcn.TableChangeDescription;
 import org.dbsyncer.common.util.RandomUtil;
-import org.dbsyncer.connector.oracle.DCNEvent;
+import org.dbsyncer.connector.oracle.model.DCNEvent;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +12,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-06-08 21:53
+ */
 public class LinkedBlockingQueueTest {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());

@@ -1,8 +1,11 @@
-package org.dbsyncer.connector.oracle;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.oracle.schema;
 
 import com.microsoft.sqlserver.jdbc.Geometry;
 import oracle.jdbc.OracleConnection;
-import org.dbsyncer.connector.ConnectorException;
+import org.dbsyncer.connector.oracle.OracleException;
 import org.dbsyncer.connector.oracle.geometry.JGeometry;
 import org.dbsyncer.sdk.connector.AbstractValueMapper;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -18,9 +21,9 @@ import java.sql.Struct;
  * <li>VARCHAR2</li>
  * </ol>
  *
- * @author AE86
- * @version 1.0.0
- * @date 2022/12/22 22:59
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-12-22 22:59
  */
 public final class OracleOtherValueMapper extends AbstractValueMapper<Struct> {
 
@@ -50,6 +53,6 @@ public final class OracleOtherValueMapper extends AbstractValueMapper<Struct> {
                 }
             }
         }
-        throw new ConnectorException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
+        throw new OracleException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }

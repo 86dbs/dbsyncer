@@ -15,6 +15,7 @@
         <module>dbsyncer-connector-file</module>
         <module>dbsyncer-connector-kafka</module>
         <module>dbsyncer-connector-mysql</module>
+        <module>dbsyncer-connector-oracle</module>
     </modules>
 
     <dependencies>
@@ -46,10 +47,17 @@
             <version>${project.parent.version}</version>
         </dependency> -->
 
-        <!-- dbsyncer-connector-mysql -->
+        <!-- dbsyncer-connector-mysql
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-mysql</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency> -->
+
+        <!-- dbsyncer-connector-oracle -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-oracle</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
@@ -57,12 +65,6 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
-        </dependency>
-
-        <!-- oracle-driver -->
-        <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>ojdbc6</artifactId>
         </dependency>
 
         <!-- sqlserver-driver -->
@@ -96,11 +98,6 @@
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-high-level-client</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.github.jsqlparser</groupId>
-            <artifactId>jsqlparser</artifactId>
         </dependency>
 
         <dependency>

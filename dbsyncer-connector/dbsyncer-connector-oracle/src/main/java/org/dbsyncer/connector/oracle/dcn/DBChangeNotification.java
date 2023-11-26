@@ -1,5 +1,5 @@
 /**
- * DBSyncer Copyright 2019-2024 All Rights Reserved.
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
 package org.dbsyncer.connector.oracle.dcn;
 
@@ -12,8 +12,8 @@ import oracle.jdbc.dcn.RowChangeDescription;
 import oracle.jdbc.dcn.TableChangeDescription;
 import oracle.jdbc.driver.OracleConnection;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.oracle.DCNEvent;
+import org.dbsyncer.connector.oracle.OracleException;
+import org.dbsyncer.connector.oracle.model.DCNEvent;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.slf4j.Logger;
@@ -39,9 +39,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * <p>
  * <p>grant change notification to AE86
  *
- * @version 1.0.0
  * @Author AE86
- * @Date 2020-06-08 21:53
+ * @Version 1.0.0
+ * @Date 2022-06-08 21:53
  */
 public class DBChangeNotification {
 
@@ -248,7 +248,7 @@ public class DBChangeNotification {
         } catch (InvocationTargetException e) {
             logger.error(e.getMessage());
         }
-        throw new ConnectorException(String.format("Can't invoke '%s'.", declaredMethod));
+        throw new OracleException(String.format("Can't invoke '%s'.", declaredMethod));
     }
 
     /**

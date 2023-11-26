@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.oracle.geometry;
 
 public class J3D_Geometry extends JGeometry {

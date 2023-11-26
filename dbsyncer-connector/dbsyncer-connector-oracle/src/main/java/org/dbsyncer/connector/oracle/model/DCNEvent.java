@@ -1,7 +1,7 @@
 /**
- * DBSyncer Copyright 2019-2024 All Rights Reserved.
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.connector.oracle;
+package org.dbsyncer.connector.oracle.model;
 
 public final class DCNEvent {
 

@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 import oracle.jdbc.OracleStatement;
 import oracle.jdbc.driver.OracleConnection;
 import org.dbsyncer.connector.oracle.dcn.DBChangeNotification;
@@ -12,9 +15,9 @@ import java.util.List;
 import java.util.concurrent.*;
 
 /**
- * @version 1.0.0
  * @Author AE86
- * @Date 2021-05-10 22:25
+ * @Version 1.0.0
+ * @Date 2022-06-08 21:53
  */
 public class DBChangeNotificationTest {
 

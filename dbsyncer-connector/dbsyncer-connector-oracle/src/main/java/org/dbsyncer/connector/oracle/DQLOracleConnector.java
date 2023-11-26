@@ -1,23 +1,39 @@
-package org.dbsyncer.connector.sql;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.oracle;
 
-import org.dbsyncer.connector.oracle.DqlOracleListener;
-import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
+import org.dbsyncer.connector.oracle.cdc.DqlOracleListener;
+import org.dbsyncer.connector.oracle.validator.DqlOracleConfigValidator;
 import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
-import org.springframework.stereotype.Component;
 
-@Component
+/**
+ * DQLOracle连接器实现
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-05-12 21:14
+ */
 public final class DQLOracleConnector extends AbstractDQLConnector {
 
     private final String TYPE = "DqlOracle";
+    private final DqlOracleConfigValidator configValidator = new DqlOracleConfigValidator();
 
     @Override
     public String getConnectorType() {
         return TYPE;
+    }
+
+    @Override
+    public ConfigValidator getConfigValidator() {
+        return configValidator;
     }
 
     @Override
