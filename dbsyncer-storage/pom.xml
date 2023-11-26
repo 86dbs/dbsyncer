@@ -14,7 +14,7 @@
         <!-- Connector 连接器 -->
         <dependency>
             <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-connector</artifactId>
+            <artifactId>dbsyncer-connector-base</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

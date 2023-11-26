@@ -2,7 +2,6 @@ package org.dbsyncer.biz.enums;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorException;
 
 /**
  * 系统指标
@@ -58,7 +57,7 @@ public enum MetricEnum {
         this.metricName = metricName;
     }
 
-    public static MetricEnum getMetric(String code) throws ConnectorException {
+    public static MetricEnum getMetric(String code) throws BizException {
         for (MetricEnum e : MetricEnum.values()) {
             if (StringUtil.equals(code, e.getCode())) {
                 return e;

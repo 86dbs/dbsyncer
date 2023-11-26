@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>dbsyncer-connector</artifactId>
+        <groupId>org.ghi</groupId>
+        <version>2.0.0</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>dbsyncer-connector-base</artifactId>
+
+    <dependencies>
+        <!-- sdk -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-sdk</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- dbsyncer-connector-elasticsearch -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-elasticsearch</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- dbsyncer-connector-file -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-file</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- dbsyncer-connector-kafka -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-kafka</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- dbsyncer-connector-mysql -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-mysql</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- dbsyncer-connector-oracle -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-oracle</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- dbsyncer-connector-sqlserver -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-sqlserver</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- dbsyncer-connector-postgresql -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-postgresql</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+    </dependencies>
+</project>
