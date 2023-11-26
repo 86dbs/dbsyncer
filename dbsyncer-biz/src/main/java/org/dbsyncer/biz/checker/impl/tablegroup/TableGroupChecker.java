@@ -15,7 +15,6 @@ import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -53,9 +52,6 @@ public class TableGroupChecker extends AbstractChecker {
 
     @Resource
     private ProfileComponent profileComponent;
-
-    @Resource
-    private Map<String, ConfigValidator> map;
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {

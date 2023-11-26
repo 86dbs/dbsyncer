@@ -24,6 +24,7 @@
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-elasticsearch</artifactId>
             <version>${project.parent.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- dbsyncer-connector-file -->
@@ -31,6 +32,7 @@
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-file</artifactId>
             <version>${project.parent.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- dbsyncer-connector-kafka -->
@@ -38,6 +40,7 @@
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-kafka</artifactId>
             <version>${project.parent.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- dbsyncer-connector-mysql -->
@@ -45,6 +48,7 @@
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-mysql</artifactId>
             <version>${project.parent.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- dbsyncer-connector-oracle -->
@@ -52,6 +56,7 @@
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-oracle</artifactId>
             <version>${project.parent.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- dbsyncer-connector-sqlserver -->
@@ -59,6 +64,7 @@
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-sqlserver</artifactId>
             <version>${project.parent.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- dbsyncer-connector-postgresql -->
@@ -66,6 +72,7 @@
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-postgresql</artifactId>
             <version>${project.parent.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
