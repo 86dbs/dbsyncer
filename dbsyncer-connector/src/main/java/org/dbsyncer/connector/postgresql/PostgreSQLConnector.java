@@ -1,6 +1,7 @@
 package org.dbsyncer.connector.postgresql;
 
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
@@ -31,6 +32,11 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     @Override
     public String getConnectorType() {
         return TYPE;
+    }
+
+    @Override
+    public ConfigValidator getConfigValidator() {
+        return null;
     }
 
     @Override

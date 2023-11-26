@@ -1,7 +1,10 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.sqlserver.Lsn;
-import org.dbsyncer.connector.sqlserver.SqlServerChangeTable;
+import org.dbsyncer.connector.sqlserver.model.SqlServerChangeTable;
+import org.dbsyncer.connector.sqlserver.cdc.Lsn;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -14,9 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 
 /**
- * @version 1.0.0
  * @Author AE86
- * @Date 2021-06-14 01:55
+ * @Version 1.0.0
+ * @Date 2022-05-22 22:56
  * @Link https://www.red-gate.com/simple-talk/sql/learn-sql-server/introduction-to-change-data-capture-cdc-in-sql-server-2008/
  */
 public class ChangeDataCaptureTest {

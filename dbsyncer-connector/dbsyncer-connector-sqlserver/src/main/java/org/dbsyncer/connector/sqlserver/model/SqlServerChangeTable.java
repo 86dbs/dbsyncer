@@ -1,4 +1,7 @@
-package org.dbsyncer.connector.sqlserver;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.sqlserver.model;
 
 import org.dbsyncer.common.util.JsonUtil;
 

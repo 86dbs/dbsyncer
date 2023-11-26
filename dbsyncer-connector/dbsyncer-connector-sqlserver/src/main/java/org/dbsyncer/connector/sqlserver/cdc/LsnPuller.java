@@ -1,4 +1,7 @@
-package org.dbsyncer.connector.sqlserver;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.sqlserver.cdc;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,10 +11,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author Xinpeng.Fu
- * @version V1.0
- * @description
- * @date 2022/8/30 10:04
+ * @Author Xinpeng.Fu
+ * @Version 1.0.0
+ * @Date 2022-05-22 22:56
  */
 public class LsnPuller {
     private final Logger logger = LoggerFactory.getLogger(getClass());

@@ -1,4 +1,7 @@
-package org.dbsyncer.connector.enums;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.sqlserver.enums;
 
 public enum TableOperationEnum {
 

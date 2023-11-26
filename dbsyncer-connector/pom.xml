@@ -16,6 +16,7 @@
         <module>dbsyncer-connector-kafka</module>
         <module>dbsyncer-connector-mysql</module>
         <module>dbsyncer-connector-oracle</module>
+        <module>dbsyncer-connector-sqlserver</module>
     </modules>
 
     <dependencies>
@@ -54,10 +55,17 @@
             <version>${project.parent.version}</version>
         </dependency> -->
 
-        <!-- dbsyncer-connector-oracle -->
+        <!-- dbsyncer-connector-oracle
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-oracle</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency> -->
+
+        <!-- dbsyncer-connector-sqlserver -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-sqlserver</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
@@ -65,12 +73,6 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
-        </dependency>
-
-        <!-- sqlserver-driver -->
-        <dependency>
-            <groupId>com.microsoft.sqlserver</groupId>
-            <artifactId>mssql-jdbc</artifactId>
         </dependency>
 
         <dependency>

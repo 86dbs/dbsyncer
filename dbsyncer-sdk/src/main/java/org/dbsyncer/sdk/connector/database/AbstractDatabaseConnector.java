@@ -14,7 +14,6 @@ import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -86,11 +85,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     @Override
     public ConnectorInstance connect(DatabaseConfig config) {
         return new DatabaseConnectorInstance(config);
-    }
-
-    @Override
-    public ConfigValidator getConfigValidator() {
-        return null;
     }
 
     @Override

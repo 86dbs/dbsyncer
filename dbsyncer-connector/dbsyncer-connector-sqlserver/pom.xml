@@ -3,31 +3,33 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>dbsyncer</artifactId>
+        <artifactId>dbsyncer-connector</artifactId>
         <groupId>org.ghi</groupId>
         <version>2.0.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>dbsyncer-parser</artifactId>
+
+    <artifactId>dbsyncer-connector-sqlserver</artifactId>
 
     <dependencies>
-        <!-- Plugin 插件服务 -->
+        <!-- sdk -->
         <dependency>
             <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-plugin</artifactId>
+            <artifactId>dbsyncer-sdk</artifactId>
             <version>${project.parent.version}</version>
+            <scope>provided</scope>
         </dependency>
 
-        <!-- Storage 存储服务 -->
+        <!-- sqlserver-driver -->
         <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-storage</artifactId>
-            <version>${project.parent.version}</version>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.github.jsqlparser</groupId>
-            <artifactId>jsqlparser</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-log4j2</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>

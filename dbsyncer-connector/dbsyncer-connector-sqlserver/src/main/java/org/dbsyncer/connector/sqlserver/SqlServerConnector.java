@@ -1,38 +1,54 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.sqlserver;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
+import org.dbsyncer.connector.sqlserver.cdc.SqlServerListener;
+import org.dbsyncer.connector.sqlserver.validator.SqlServerConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Component
+/**
+ * SqlServer连接器实现
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-05-22 22:56
+ */
 public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     private final String QUERY_VIEW = "select name from sysobjects where xtype in('v')";
-
     private final String QUERY_TABLE = "select name from sys.tables where schema_id = schema_id('%s') and is_ms_shipped = 0";
 
     private final String TYPE = "SqlServer";
+    private final SqlServerConfigValidator configValidator = new SqlServerConfigValidator();
 
     @Override
     public String getConnectorType() {
         return TYPE;
+    }
+
+    @Override
+    public ConfigValidator getConfigValidator() {
+        return configValidator;
     }
 
     @Override

@@ -1,16 +1,21 @@
-package org.dbsyncer.connector.sqlserver;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.sqlserver.cdc;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
-import org.dbsyncer.connector.ConnectorException;
-import org.dbsyncer.connector.enums.TableOperationEnum;
-import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
-import org.dbsyncer.sdk.model.ChangedOffset;
-import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.sqlserver.model.SqlServerChangeTable;
+import org.dbsyncer.connector.sqlserver.SqlServerException;
+import org.dbsyncer.connector.sqlserver.enums.TableOperationEnum;
+import org.dbsyncer.connector.sqlserver.model.CDCEvent;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
+import org.dbsyncer.sdk.listener.event.RowChangedEvent;
+import org.dbsyncer.sdk.model.ChangedOffset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -33,9 +38,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * @version 1.0.0
  * @Author AE86
- * @Date 2021-06-18 01:20
+ * @Version 1.0.0
+ * @Date 2022-05-22 22:56
  */
 public class SqlServerListener extends AbstractDatabaseListener {
 
@@ -100,7 +105,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
         } catch (Exception e) {
             close();
             logger.error("启动失败:{}", e.getMessage());
-            throw new ConnectorException(e);
+            throw new SqlServerException(e);
         } finally {
             connectLock.unlock();
         }
@@ -154,7 +159,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
                 return;
             }
             // Shouldn't happen if the agent is running, but it is better to guard against such situation
-            throw new ConnectorException("No maximum LSN recorded in the database");
+            throw new SqlServerException("No maximum LSN recorded in the database");
         }
         lastLsn = Lsn.valueOf(snapshot.get(LSN_POSITION));
     }
