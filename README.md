@@ -30,14 +30,15 @@
 | SQL | ✔ |  | 支持以上关系型数据库 |
 | 后期计划 | Redis | | |
 
+## 📚使用手册
+### [Wiki](https://gitee.com/ghi/dbsyncer/wikis "https://gitee.com/ghi/dbsyncer/wikis")
+
 ## ✨预览
 ### 驱动管理
 ![连接器和驱动](https://images.gitee.com/uploads/images/2021/0903/003755_01016fc1_376718.png "驱动管理.png")
 
 ### 监控
 ![监控](https://foruda.gitee.com/images/1694424923138969858/111e55e0_376718.png "监控")
-
-
 
 ## 📦安装配置
 #### 步骤
@@ -68,12 +69,8 @@ $ ./build.sh
 * 同步数据乱码。案例：[mysql8表导入sqlserver2008R2后，sqlserver表nvarchar字段内容为乱码](https://gitee.com/ghi/dbsyncer/issues/I4JXY0) 
 * [如何开启远程debug模式？](https://gitee.com/ghi/dbsyncer/issues/I63F6R)  
 
-## 💕了解更多
-* QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" /></a>
-* [使用文档](https://gitee.com/ghi/dbsyncer/wikis "https://gitee.com/ghi/dbsyncer/wikis")
-* [博客地址](https://my.oschina.net/dbsyncer "https://my.oschina.net/dbsyncer")（小提示：现在需要先登录，才能查看完整的教程信息，包含截图等😂）
-
 ## 🤝贡献支持
+* QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" /></a>
 * 如有比较着急的需求或建议（想支持某版本的中间件，最好能描述清楚你的原始需求，作者会帮你提供一些建议方案），欢迎大家[【新建issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!
 * DBSyncer研发团队目标：**取之社区，用于社区**。为了能让项目得到可持续发展，我们期望获得更多的支持者! 
 1.  **内推项目** 如您觉得项目不错，可推荐到公司，建立长期稳定的商业合作，提供更专业的技术服务。（入群联系群主）
