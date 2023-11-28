@@ -6,6 +6,7 @@ package org.dbsyncer.sdk.enums;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
+import org.dbsyncer.sdk.filter.CompareFilter;
 
 /**
  * 运算符表达式类型
@@ -111,12 +112,6 @@ public enum FilterEnum {
 
     public CompareFilter getCompareFilter() {
         return compareFilter;
-    }
-
-    private interface CompareFilter {
-
-        boolean compare(String value, String filterValue);
-
     }
 
 }
