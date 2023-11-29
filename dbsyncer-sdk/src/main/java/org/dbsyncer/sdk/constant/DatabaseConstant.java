@@ -35,4 +35,10 @@ public class DatabaseConstant {
      * PostgreSQL分页语句
      */
     public static final String POSTGRESQL_PAGE_SQL = " limit ? OFFSET ?";
+
+    //*********************************** SQLite **************************************//
+    /**
+     * SQLite分页语句
+     */
+    public static final String SQLITE_PAGE_SQL = " limit ? OFFSET ?";
 }

@@ -1,0 +1,2 @@
+org.dbsyncer.connector.sqlite.SQLiteConnector
+org.dbsyncer.connector.sqlite.DqlSQLiteConnector
