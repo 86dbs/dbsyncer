@@ -1,5 +1,6 @@
 package org.dbsyncer.connector.database.ds;
 
+import com.mysql.cj.jdbc.exceptions.CommunicationsException;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.util.DatabaseUtil;
@@ -12,9 +13,24 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 public class SimpleDataSource implements DataSource, AutoCloseable {
+
+
+    /**
+     * 默认最大连接
+     */
+    private final int MAX_IDLE=300;
+
+    /**
+     * 活跃连接数
+     */
+    private AtomicInteger activeConnect=new AtomicInteger(0);
+
+    protected ReentrantLock activeConnectionLock = new ReentrantLock();
 
     private final BlockingQueue<SimpleConnection> pool = new LinkedBlockingQueue<>(300);
     /**
@@ -39,21 +55,36 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
     @Override
     public Connection getConnection() throws SQLException {
-        SimpleConnection poll = pool.poll();
-        if (null == poll) {
-            return createConnection();
-        }
+        activeConnectionLock.lock();
+        try{
+            //如果当前连接数大于或等于最大连接数
+            if (activeConnect.get()>=MAX_IDLE) {
+                //等待3秒
+                Thread.sleep(3000L);
+                if (activeConnect.get()>MAX_IDLE) {
+                    throw new ConnectorException("当前dbs数据库连接数超过300！");
+                }
+            }
+            SimpleConnection poll = pool.poll();
+            if (null == poll) {
+                return createConnection();
+            }
+            // 连接无效
+            if (!poll.isValid(VALID_TIMEOUT_SECONDS)) {
+                return createConnection();
+            }
 
-        // 连接无效
-        if (!poll.isValid(VALID_TIMEOUT_SECONDS)) {
-            return createConnection();
+            // 连接过期
+            if (isExpired(poll)) {
+                return createConnection();
+            }
+            return poll;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            activeConnectionLock.unlock();
         }
-
-        // 连接过期
-        if (isExpired(poll)) {
-            return createConnection();
-        }
-        return poll;
+        return null;
     }
 
     @Override
@@ -103,6 +134,9 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
     public void close(Connection connection) {
         if (connection != null && connection instanceof SimpleConnection) {
+
+            activeConnect.decrementAndGet();
+
             SimpleConnection simpleConnection = (SimpleConnection) connection;
             // 连接过期
             if (isExpired(simpleConnection)) {
@@ -132,6 +166,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
      * @throws SQLException
      */
     private SimpleConnection createConnection() throws SQLException {
+        activeConnect.incrementAndGet();
         return new SimpleConnection(DatabaseUtil.getConnection(driverClassName, url, username, password), StringUtil.equals(driverClassName, "oracle.jdbc.OracleDriver"));
     }
 
