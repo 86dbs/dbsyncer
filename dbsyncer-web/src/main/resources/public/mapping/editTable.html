@@ -56,7 +56,12 @@
 
     <div class="form-group">
         <div class="row">
-            <div class="col-md-10"></div>
+            <div class="col-md-2">&nbsp;
+                <button id="refreshTableBtn" type="button" class="btn btn-default" th:title="刷新数据表" th:tableGroupId="${mapping?.id}">
+                    <span class="fa fa-refresh"></span>刷新数据表
+                </button>
+            </div>
+            <div class="col-md-8"></div>
             <div class="col-md-2 text-right">
                 <button id="tableGroupDelBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-default" disabled="disabled">
                     <span class="fa fa-remove"></span>删除
