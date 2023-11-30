@@ -3,7 +3,6 @@ package org.dbsyncer.connector.database.ds;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.util.DatabaseUtil;
-import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
@@ -13,13 +12,12 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 public class SimpleDataSource implements DataSource, AutoCloseable {
-
-    private final org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * 默认最大连接
@@ -27,13 +25,18 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     private final int MAX_IDLE = 300;
 
     /**
+     * 连接上限后最大等待时间（秒）
+     */
+    private final int MAX_WAIT_SECONDS = 3;
+
+    /**
      * 活跃连接数
      */
-    private AtomicInteger activeConnect = new AtomicInteger(0);
+    private AtomicInteger activeNum = new AtomicInteger(0);
 
-    protected ReentrantLock activeConnectionLock = new ReentrantLock();
+    private final ReentrantLock lock = new ReentrantLock();
 
-    private final BlockingQueue<SimpleConnection> pool = new LinkedBlockingQueue<>(300);
+    private final BlockingQueue<SimpleConnection> pool = new LinkedBlockingQueue<>(MAX_IDLE);
     /**
      * 有效期（毫秒），默认60s
      */
@@ -56,14 +59,14 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
     @Override
     public Connection getConnection() throws SQLException {
-        activeConnectionLock.lock();
         try {
+            lock.lock();
             //如果当前连接数大于或等于最大连接数
-            if (activeConnect.get() >= MAX_IDLE) {
+            if (activeNum.get() >= MAX_IDLE) {
                 //等待3秒
-                Thread.sleep(3000L);
-                if (activeConnect.get() > MAX_IDLE) {
-                    throw new ConnectorException("当前dbs数据库连接数超过300！");
+                TimeUnit.SECONDS.sleep(MAX_WAIT_SECONDS);
+                if (activeNum.get() >= MAX_IDLE) {
+                    throw new ConnectorException(String.format("数据库连接数超过上限%d，url=%s", MAX_IDLE, url));
                 }
             }
             SimpleConnection poll = pool.poll();
@@ -81,11 +84,10 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
             }
             return poll;
         } catch (InterruptedException e) {
-            logger.error("获取连接失败，连接数了超过最大阀值！");
+            throw new ConnectorException(e);
         } finally {
-            activeConnectionLock.unlock();
+            lock.unlock();
         }
-        return null;
     }
 
     @Override
@@ -136,7 +138,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     public void close(Connection connection) {
         if (connection != null && connection instanceof SimpleConnection) {
 
-            activeConnect.decrementAndGet();
+            activeNum.decrementAndGet();
 
             SimpleConnection simpleConnection = (SimpleConnection) connection;
             // 连接过期
@@ -170,9 +172,9 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
         SimpleConnection simpleConnection = null;
         try {
             simpleConnection = new SimpleConnection(DatabaseUtil.getConnection(driverClassName, url, username, password), StringUtil.equals(driverClassName, "oracle.jdbc.OracleDriver"));
-            activeConnect.incrementAndGet();
+            activeNum.incrementAndGet();
         } catch (SQLException e) {
-            throw e;
+            throw new ConnectorException(e);
         }
         return simpleConnection;
     }
