@@ -3,6 +3,7 @@ package org.dbsyncer.web.controller.index;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
+import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -128,6 +129,20 @@ public class MappingController extends BaseController {
     public RestResult getAll() {
         try {
             return RestResult.restSuccess(mappingService.getMappingAll());
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/refreshTables")
+    @ResponseBody
+    public RestResult refreshTables(@RequestParam(value = "id") String id) {
+        try {
+            MappingVo mapping = mappingService.getMapping(id);
+            mappingService.refreshTables(mapping.getSourceConnector());
+            mappingService.refreshTables(mapping.getTargetConnector());
+            return RestResult.restSuccess(id);
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

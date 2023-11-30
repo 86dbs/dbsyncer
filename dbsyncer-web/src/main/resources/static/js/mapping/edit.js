@@ -201,6 +201,22 @@ function mappingModifyName(){
     });
 }
 
+// 绑定刷新表字段事件
+function bindRefreshTablesClick() {
+    let $refreshBtn = $("#refreshTableBtn");
+    $refreshBtn.bind('click', function(){
+        let id = $(this).attr("tableGroupId");
+        doPoster("/mapping/refreshTables", {'id': id}, function (data) {
+            if (data.success == true) {
+                bootGrowl("刷新数据表成功!", "success");
+                doLoader('/mapping/page/edit?id=' + id);
+            } else {
+                bootGrowl(data.resultValue, "danger");
+            }
+        });
+    });
+}
+
 $(function () {
     // 绑定同步方式切换事件
     bindMappingModelChange();
@@ -215,6 +231,8 @@ $(function () {
     initMultipleInputTags();
     // 绑定删除表关系点击事件
     bindMappingTableGroupDelClick();
+    //绑定刷新数据表按钮点击事件
+    bindRefreshTablesClick();
 
     // 初始化select插件
     initSelectIndex($(".select-control-table"), -1);

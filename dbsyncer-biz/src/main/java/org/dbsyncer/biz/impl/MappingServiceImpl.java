@@ -9,6 +9,7 @@ import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
+import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -270,6 +271,15 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             meta.getSuccess().set(0);
             manager.editConfigModel(meta);
         }
+    }
+
+    @Override
+    public void refreshTables(Connector connector) {
+        // 刷新数据表
+        ConnectorMapper connectorMapper = manager.connect(connector.getConfig());
+        List<Table> table = manager.getTable(connectorMapper);
+        connector.setTable(table);
+        manager.editConfigModel(connector);
     }
 
 }
