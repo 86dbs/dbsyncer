@@ -1,9 +1,9 @@
 package org.dbsyncer.connector.database.ds;
 
-import com.mysql.cj.jdbc.exceptions.CommunicationsException;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorException;
 import org.dbsyncer.connector.util.DatabaseUtil;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
@@ -19,16 +19,17 @@ import java.util.logging.Logger;
 
 public class SimpleDataSource implements DataSource, AutoCloseable {
 
+    private final org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * 默认最大连接
      */
-    private final int MAX_IDLE=300;
+    private final int MAX_IDLE = 300;
 
     /**
      * 活跃连接数
      */
-    private AtomicInteger activeConnect=new AtomicInteger(0);
+    private AtomicInteger activeConnect = new AtomicInteger(0);
 
     protected ReentrantLock activeConnectionLock = new ReentrantLock();
 
@@ -56,12 +57,12 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     @Override
     public Connection getConnection() throws SQLException {
         activeConnectionLock.lock();
-        try{
+        try {
             //如果当前连接数大于或等于最大连接数
-            if (activeConnect.get()>=MAX_IDLE) {
+            if (activeConnect.get() >= MAX_IDLE) {
                 //等待3秒
                 Thread.sleep(3000L);
-                if (activeConnect.get()>MAX_IDLE) {
+                if (activeConnect.get() > MAX_IDLE) {
                     throw new ConnectorException("当前dbs数据库连接数超过300！");
                 }
             }
@@ -80,7 +81,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
             }
             return poll;
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.error("获取连接失败，连接数了超过最大阀值！");
         } finally {
             activeConnectionLock.unlock();
         }
@@ -166,8 +167,14 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
      * @throws SQLException
      */
     private SimpleConnection createConnection() throws SQLException {
-        activeConnect.incrementAndGet();
-        return new SimpleConnection(DatabaseUtil.getConnection(driverClassName, url, username, password), StringUtil.equals(driverClassName, "oracle.jdbc.OracleDriver"));
+        SimpleConnection simpleConnection = null;
+        try {
+            simpleConnection = new SimpleConnection(DatabaseUtil.getConnection(driverClassName, url, username, password), StringUtil.equals(driverClassName, "oracle.jdbc.OracleDriver"));
+            activeConnect.incrementAndGet();
+        } catch (SQLException e) {
+            throw e;
+        }
+        return simpleConnection;
     }
 
 }
