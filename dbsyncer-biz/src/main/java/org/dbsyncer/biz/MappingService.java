@@ -1,6 +1,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.MappingVo;
+import org.dbsyncer.parser.model.Connector;
 
 import java.util.List;
 import java.util.Map;
@@ -68,5 +69,12 @@ public interface MappingService {
      * @param id
      */
     String stop(String id);
+
+    /**
+     * 刷新表
+     *
+     * @param connector
+     */
+    void refreshTables(Connector connector);
 
 }
