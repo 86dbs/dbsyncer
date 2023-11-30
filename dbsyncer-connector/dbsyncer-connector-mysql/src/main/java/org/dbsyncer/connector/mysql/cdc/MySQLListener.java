@@ -10,6 +10,7 @@ import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
 import com.github.shyiko.mysql.binlog.event.EventType;
 import com.github.shyiko.mysql.binlog.event.QueryEventData;
 import com.github.shyiko.mysql.binlog.event.RotateEventData;
+import com.github.shyiko.mysql.binlog.event.RowsQueryEventData;
 import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
 import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
@@ -18,11 +19,12 @@ import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.connector.mysql.binlog.BinaryLogClient;
 import org.dbsyncer.connector.mysql.binlog.BinaryLogRemoteClient;
-import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
@@ -118,12 +120,11 @@ public class MySQLListener extends AbstractDatabaseListener {
         final String password = config.getPassword();
         boolean containsPos = snapshot.containsKey(BINLOG_POSITION);
         client = new BinaryLogRemoteClient(host.getIp(), host.getPort(), username, password);
-        client.setEnableDDL(true);
         client.setBinlogFilename(snapshot.get(BINLOG_FILENAME));
         client.setBinlogPosition(containsPos ? Long.parseLong(snapshot.get(BINLOG_POSITION)) : 0);
         client.setTableMapEventByTableId(tables);
-        client.registerEventListener(new MysqlEventListener());
-        client.registerLifecycleListener(new MysqlLifecycleListener());
+        client.registerEventListener(new InnerEventListener());
+        client.registerLifecycleListener(new InnerLifecycleListener());
 
         client.connect();
 
@@ -227,7 +228,7 @@ public class MySQLListener extends AbstractDatabaseListener {
         }
     }
 
-    final class MysqlLifecycleListener implements BinaryLogRemoteClient.LifecycleListener {
+    final class InnerLifecycleListener implements BinaryLogRemoteClient.LifecycleListener {
 
         @Override
         public void onConnect(BinaryLogRemoteClient client) {
@@ -272,7 +273,12 @@ public class MySQLListener extends AbstractDatabaseListener {
 
     }
 
-    final class MysqlEventListener implements BinaryLogRemoteClient.EventListener {
+    final class InnerEventListener implements BinaryLogRemoteClient.EventListener {
+
+        /**
+         * 只处理非dbs写入事件（单线程消费，不存在并发竞争）
+         */
+        private boolean notUniqueCodeEvent = true;
 
         @Override
         public void onEvent(Event event) {
@@ -283,7 +289,13 @@ public class MySQLListener extends AbstractDatabaseListener {
                 return;
             }
 
-            if (EventType.isUpdate(header.getEventType())) {
+            if (header.getEventType() == EventType.ROWS_QUERY) {
+                RowsQueryEventData data = event.getData();
+                notUniqueCodeEvent = isNotUniqueCodeEvent(data.getQuery());
+                return;
+            }
+
+            if (notUniqueCodeEvent && EventType.isUpdate(header.getEventType())) {
                 refresh(header);
                 UpdateRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
@@ -294,7 +306,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 }
                 return;
             }
-            if (EventType.isWrite(header.getEventType())) {
+            if (notUniqueCodeEvent && EventType.isWrite(header.getEventType())) {
                 refresh(header);
                 WriteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
@@ -305,7 +317,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 }
                 return;
             }
-            if (EventType.isDelete(header.getEventType())) {
+            if (notUniqueCodeEvent && EventType.isDelete(header.getEventType())) {
                 refresh(header);
                 DeleteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
@@ -317,7 +329,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 return;
             }
 
-            if (client.isEnableDDL() && EventType.QUERY == header.getEventType()) {
+            if (EventType.QUERY == header.getEventType()) {
                 refresh(header);
                 parseDDL(event.getData());
                 return;
@@ -331,7 +343,7 @@ public class MySQLListener extends AbstractDatabaseListener {
         }
 
         private void parseDDL(QueryEventData data) {
-            if (StringUtil.startsWith(data.getSql(), ConnectorConstant.OPERTION_ALTER)) {
+            if (isNotUniqueCodeEvent(data.getSql()) && StringUtil.startsWith(data.getSql(), ConnectorConstant.OPERTION_ALTER)) {
                 try {
                     // ALTER TABLE `test`.`my_user` MODIFY COLUMN `name` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL AFTER `id`
                     Alter alter = (Alter) CCJSqlParserUtil.parse(data.getSql());
@@ -357,6 +369,10 @@ public class MySQLListener extends AbstractDatabaseListener {
 
         private boolean isFilterTable(String dbName, String tableName) {
             return StringUtil.equalsIgnoreCase(database, dbName) && filterTable.contains(tableName);
+        }
+
+        private boolean isNotUniqueCodeEvent(String sql){
+            return !StringUtil.startsWith(sql, DatabaseConstant.DBS_UNIQUE_CODE);
         }
 
     }

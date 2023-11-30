@@ -17,6 +17,7 @@ import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
@@ -666,7 +667,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         try {
             Assert.hasText(config.getSql(), "执行SQL语句不能为空.");
             connectorInstance.execute(databaseTemplate -> {
-                databaseTemplate.execute(config.getSql());
+                // 执行ddl时, 带上dbs唯一标识码，防止双向同步导致死循环
+                databaseTemplate.execute(DatabaseConstant.DBS_UNIQUE_CODE.concat(config.getSql()));
                 return true;
             });
         } catch (Exception e) {

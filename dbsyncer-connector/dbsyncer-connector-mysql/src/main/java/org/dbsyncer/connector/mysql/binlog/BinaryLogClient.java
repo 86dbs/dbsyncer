@@ -96,21 +96,6 @@ public interface BinaryLogClient {
     void setTableMapEventByTableId(Map<Long, TableMapEventData> tableMapEventByTableId);
 
     /**
-     * 是否支持ddl
-     *
-     * @return
-     */
-    boolean isEnableDDL();
-
-    /**
-     * <p>true: ROTATE > FORMAT_DESCRIPTION > TABLE_MAP > WRITE_ROWS > UPDATE_ROWS > DELETE_ROWS > XID
-     * <p>false: Support all events
-     *
-     * @param enableDDL
-     */
-    void setEnableDDL(boolean enableDDL);
-
-    /**
      * binlog-parser-127.0.0.1_3306_1
      *
      * @return workerThreadName

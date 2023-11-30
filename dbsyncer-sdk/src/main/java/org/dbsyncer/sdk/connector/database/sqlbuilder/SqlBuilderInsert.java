@@ -37,7 +37,8 @@ public class SqlBuilderInsert extends AbstractSqlBuilder {
             }
         }
         // INSERT INTO "USER"("USERNAME","AGE") VALUES (?,?)
-        StringBuilder sql = new StringBuilder("INSERT INTO ");
+        StringBuilder sql = new StringBuilder(database.generateUniqueCode());
+        sql.append("INSERT INTO ");
         sql.append(config.getSchema());
         sql.append(quotation);
         sql.append(database.buildTableName(config.getTableName()));

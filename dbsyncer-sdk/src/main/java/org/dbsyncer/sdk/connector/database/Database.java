@@ -11,6 +11,15 @@ import java.util.List;
 public interface Database {
 
     /**
+     * 获取dbs唯一标识码
+     *
+     * @return
+     */
+    default String generateUniqueCode() {
+        return StringUtil.EMPTY;
+    }
+
+    /**
      * 查询语句表名和字段带上引号（默认不加）
      *
      * @return
