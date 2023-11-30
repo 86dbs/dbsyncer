@@ -19,5 +19,6 @@
         <module>dbsyncer-connector-oracle</module>
         <module>dbsyncer-connector-sqlserver</module>
         <module>dbsyncer-connector-postgresql</module>
+        <module>dbsyncer-connector-sqlite</module>
     </modules>
 </project>
