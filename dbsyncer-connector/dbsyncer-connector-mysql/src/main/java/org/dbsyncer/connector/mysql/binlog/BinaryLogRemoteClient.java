@@ -77,8 +77,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private EventDeserializer eventDeserializer;
     private Map<Long, TableMapEventData> tableMapEventByTableId;
     private boolean blocking = true;
-    private boolean enableDDL = false;
-    private long serverId = 65535;
+    private long serverId = 65535L;
     private volatile String binlogFilename;
     private volatile long binlogPosition = 4;
     private volatile long connectionId;
@@ -585,16 +584,12 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         eventDataDeserializers.put(EventType.EXT_UPDATE_ROWS, (new UpdateDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
         eventDataDeserializers.put(EventType.EXT_DELETE_ROWS, (new DeleteDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
         eventDataDeserializers.put(EventType.XID, new XidEventDataDeserializer());
-
-        if (enableDDL) {
-            eventDataDeserializers.put(EventType.INTVAR, new IntVarEventDataDeserializer());
-            eventDataDeserializers.put(EventType.QUERY, new QueryEventDataDeserializer());
-            eventDataDeserializers.put(EventType.ROWS_QUERY, new RowsQueryEventDataDeserializer());
-            eventDataDeserializers.put(EventType.GTID, new GtidEventDataDeserializer());
-            eventDataDeserializers.put(EventType.PREVIOUS_GTIDS, new PreviousGtidSetDeserializer());
-            eventDataDeserializers.put(EventType.XA_PREPARE, new XAPrepareEventDataDeserializer());
-        }
-
+        eventDataDeserializers.put(EventType.INTVAR, new IntVarEventDataDeserializer());
+        eventDataDeserializers.put(EventType.QUERY, new QueryEventDataDeserializer());
+        eventDataDeserializers.put(EventType.ROWS_QUERY, new RowsQueryEventDataDeserializer());
+        eventDataDeserializers.put(EventType.GTID, new GtidEventDataDeserializer());
+        eventDataDeserializers.put(EventType.PREVIOUS_GTIDS, new PreviousGtidSetDeserializer());
+        eventDataDeserializers.put(EventType.XA_PREPARE, new XAPrepareEventDataDeserializer());
     }
 
     private void notifyEventListeners(Event event) {
@@ -711,14 +706,6 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     @Override
     public void setTableMapEventByTableId(Map<Long, TableMapEventData> tableMapEventByTableId) {
         this.tableMapEventByTableId = tableMapEventByTableId;
-    }
-
-    public boolean isEnableDDL() {
-        return enableDDL;
-    }
-
-    public void setEnableDDL(boolean enableDDL) {
-        this.enableDDL = enableDDL;
     }
 
     @Override

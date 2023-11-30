@@ -57,6 +57,11 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String generateUniqueCode() {
+        return DatabaseConstant.DBS_UNIQUE_CODE;
+    }
+
+    @Override
     public String buildSqlWithQuotation() {
         return "`";
     }

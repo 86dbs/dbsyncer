@@ -67,4 +67,9 @@ public final class DQLMySQLConnector extends AbstractDQLConnector {
         }
         return null;
     }
+
+    @Override
+    public String generateUniqueCode() {
+        return DatabaseConstant.DBS_UNIQUE_CODE;
+    }
 }

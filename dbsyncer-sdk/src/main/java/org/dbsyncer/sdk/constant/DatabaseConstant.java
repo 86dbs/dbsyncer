@@ -2,6 +2,11 @@ package org.dbsyncer.sdk.constant;
 
 public class DatabaseConstant {
 
+    /**
+     * dbs唯一标识码
+     */
+    public static final String DBS_UNIQUE_CODE = "/*dbs*/";
+
     //*********************************** Mysql **************************************//
     /**
      * Mysql分页语句

@@ -21,7 +21,8 @@ public class SqlBuilderDelete extends AbstractSqlBuilder {
         String tableName = config.getTableName();
         List<String> primaryKeys = database.buildPrimaryKeys(config.getPrimaryKeys());
         // DELETE FROM "USER" WHERE "ID"=? AND "UID" = ?
-        StringBuilder sql = new StringBuilder().append("DELETE FROM ").append(config.getSchema());
+        StringBuilder sql = new StringBuilder(database.generateUniqueCode());
+        sql.append("DELETE FROM ").append(config.getSchema());
         sql.append(quotation);
         sql.append(database.buildTableName(tableName));
         sql.append(quotation);
