@@ -212,6 +212,24 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         return "驱动停止成功";
     }
 
+    @Override
+    public String refreshMappingTables(String id) {
+        Mapping mapping = profileComponent.getMapping(id);
+        Assert.notNull(mapping, "The mapping id is invalid.");
+        updateConnectorTables(mapping.getSourceConnectorId());
+        updateConnectorTables(mapping.getTargetConnectorId());
+        return "刷新驱动表成功";
+    }
+
+    private void updateConnectorTables(String connectorId) {
+        Connector connector = profileComponent.getConnector(connectorId);
+        Assert.notNull(connector, "The connector id is invalid.");
+        // 刷新数据表
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+        connector.setTable(connectorFactory.getTable(connectorInstance));
+        profileComponent.editConfigModel(connector);
+    }
+
     private MappingVo convertMapping2Vo(Mapping mapping) {
         String model = mapping.getModel();
         Assert.notNull(mapping, "Mapping can not be null.");
@@ -287,15 +305,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             meta.getSuccess().set(0);
             profileComponent.editConfigModel(meta);
         }
-    }
-
-    @Override
-    public void refreshTables(Connector connector) {
-        // 刷新数据表
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
-        List<Table> table = connectorFactory.getTable(connectorInstance);
-        connector.setTable(table);
-        profileComponent.editConfigModel(connector);
     }
 
 }

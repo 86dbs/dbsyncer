@@ -71,10 +71,10 @@ public interface MappingService {
     String stop(String id);
 
     /**
-     * 刷新表
+     * 刷新驱动数据源和目标源表
      *
-     * @param connector
+     * @param id
      */
-    void refreshTables(Connector connector);
+    String refreshMappingTables(String id);
 
 }

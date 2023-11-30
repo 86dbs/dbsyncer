@@ -201,14 +201,14 @@ function mappingModifyName(){
     });
 }
 
-// 绑定刷新表字段事件
+// 绑定刷新表事件
 function bindRefreshTablesClick() {
     let $refreshBtn = $("#refreshTableBtn");
     $refreshBtn.bind('click', function(){
         let id = $(this).attr("tableGroupId");
         doPoster("/mapping/refreshTables", {'id': id}, function (data) {
             if (data.success == true) {
-                bootGrowl("刷新数据表成功!", "success");
+                bootGrowl("刷新表成功!", "success");
                 doLoader('/mapping/page/edit?id=' + id);
             } else {
                 bootGrowl(data.resultValue, "danger");
