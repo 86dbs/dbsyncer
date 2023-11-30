@@ -140,13 +140,11 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
     public void close(Connection connection) {
         if (connection != null && connection instanceof SimpleConnection) {
-
-            activeNum.decrementAndGet();
-
             SimpleConnection simpleConnection = (SimpleConnection) connection;
             // 连接过期
             if (isExpired(simpleConnection)) {
                 simpleConnection.close();
+                activeNum.decrementAndGet();
                 return;
             }
 
