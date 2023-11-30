@@ -33,6 +33,11 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     private final int MAX_WAIT_SECONDS = 3;
 
     /**
+     * 从缓存队列获取连接次数
+     */
+    private final int MAX_PULL_TIME = 20;
+
+    /**
      * 活跃连接数
      */
     private AtomicInteger activeNum = new AtomicInteger(0);
@@ -72,20 +77,23 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
                     throw new SdkException(String.format("数据库连接数超过上限%d，url=%s", MAX_IDLE, url));
                 }
             }
-            SimpleConnection poll = pool.poll();
-            if (null == poll) {
-                return createConnection();
-            }
-            // 连接无效
-            if (!poll.isValid(VALID_TIMEOUT_SECONDS)) {
-                return createConnection();
+            int time = MAX_PULL_TIME;
+            while (time-- > 0){
+                SimpleConnection poll = pool.poll();
+                if (null == poll) {
+                    return createConnection();
+                }
+                // 连接无效或过期, 直接关闭连接
+                if (!poll.isValid(VALID_TIMEOUT_SECONDS) || isExpired(poll)) {
+                    closeQuietly(poll);
+                    continue;
+                }
+                // 返回缓存连接
+                return poll;
             }
 
-            // 连接过期
-            if (isExpired(poll)) {
-                return createConnection();
-            }
-            return poll;
+            // 兜底方案，保证一定能获取连接
+            return createConnection();
         } catch (InterruptedException e) {
             throw new SdkException(e);
         } finally {
@@ -143,13 +151,19 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
             SimpleConnection simpleConnection = (SimpleConnection) connection;
             // 连接过期
             if (isExpired(simpleConnection)) {
-                simpleConnection.close();
-                activeNum.decrementAndGet();
+                closeQuietly(simpleConnection);
                 return;
             }
 
             // 回收连接
             pool.offer(simpleConnection);
+        }
+    }
+
+    private void closeQuietly(SimpleConnection connection) {
+        if (connection != null) {
+            connection.close();
+            activeNum.decrementAndGet();
         }
     }
 
