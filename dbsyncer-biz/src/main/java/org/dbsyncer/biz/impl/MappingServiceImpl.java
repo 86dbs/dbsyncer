@@ -9,11 +9,10 @@ import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
-import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
-import org.dbsyncer.common.spi.ConnectorMapper;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
@@ -22,6 +21,7 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.storage.constant.ConfigConstant;
@@ -67,6 +67,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private ManagerFactory managerFactory;
+
+    @Resource
+    private ConnectorFactory connectorFactory;
 
     @Override
     public String add(Map<String, String> params) {
@@ -289,10 +292,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Override
     public void refreshTables(Connector connector) {
         // 刷新数据表
-        ConnectorMapper connectorMapper = manager.connect(connector.getConfig());
-        List<Table> table = manager.getTable(connectorMapper);
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+        List<Table> table = connectorFactory.getTable(connectorInstance);
         connector.setTable(table);
-        manager.editConfigModel(connector);
+        profileComponent.editConfigModel(connector);
     }
 
 }
