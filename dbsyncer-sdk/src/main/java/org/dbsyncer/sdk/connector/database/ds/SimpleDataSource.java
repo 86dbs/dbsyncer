@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.connector.database.ds;
 
 import org.dbsyncer.common.util.StringUtil;
@@ -66,7 +69,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
                 //等待3秒
                 TimeUnit.SECONDS.sleep(MAX_WAIT_SECONDS);
                 if (activeNum.get() >= MAX_IDLE) {
-                    throw new ConnectorException(String.format("数据库连接数超过上限%d，url=%s", MAX_IDLE, url));
+                    throw new SdkException(String.format("数据库连接数超过上限%d，url=%s", MAX_IDLE, url));
                 }
             }
             SimpleConnection poll = pool.poll();
@@ -84,7 +87,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
             }
             return poll;
         } catch (InterruptedException e) {
-            throw new ConnectorException(e);
+            throw new SdkException(e);
         } finally {
             lock.unlock();
         }
@@ -174,7 +177,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
             simpleConnection = new SimpleConnection(DatabaseUtil.getConnection(driverClassName, url, username, password), StringUtil.equals(driverClassName, "oracle.jdbc.OracleDriver"));
             activeNum.incrementAndGet();
         } catch (SQLException e) {
-            throw new ConnectorException(e);
+            throw new SdkException(e);
         }
         return simpleConnection;
     }
