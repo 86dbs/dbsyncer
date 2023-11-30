@@ -17,8 +17,8 @@
         <module>dbsyncer-connector-kafka</module>
         <module>dbsyncer-connector-mysql</module>
         <module>dbsyncer-connector-oracle</module>
-        <module>dbsyncer-connector-sqlserver</module>
         <module>dbsyncer-connector-postgresql</module>
         <module>dbsyncer-connector-sqlite</module>
+        <module>dbsyncer-connector-sqlserver</module>
     </modules>
 </project>
