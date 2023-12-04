@@ -3,12 +3,15 @@
  */
 package org.dbsyncer.connector.oracle.cdc;
 
+import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.connector.oracle.OracleException;
 import org.dbsyncer.connector.oracle.dcn.DBChangeNotification;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Author AE86
@@ -30,7 +33,20 @@ public class OracleListener extends AbstractDatabaseListener {
             String url = config.getUrl();
             client = new DBChangeNotification(username, password, url);
             client.setFilterTable(filterTable);
-            client.addRowEventListener((e) -> sendChangedEvent(e));
+            client.addRowEventListener((event) -> {
+                while (client.isConnected()){
+                    try {
+                        sendChangedEvent(event);
+                        break;
+                    } catch (QueueOverflowException ex) {
+                        try {
+                            TimeUnit.MILLISECONDS.sleep(1);
+                        } catch (InterruptedException exe) {
+                            logger.error(exe.getMessage(), exe);
+                        }
+                    }
+                }
+            });
             client.start();
         } catch (Exception e) {
             logger.error("启动失败:{}", e.getMessage());

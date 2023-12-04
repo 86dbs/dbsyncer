@@ -18,6 +18,7 @@ import com.github.shyiko.mysql.binlog.network.ServerException;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.alter.Alter;
+import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.connector.mysql.binlog.BinaryLogClient;
@@ -34,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,26 +60,22 @@ public class MySQLListener extends AbstractDatabaseListener {
 
     private final String BINLOG_FILENAME = "fileName";
     private final String BINLOG_POSITION = "position";
-    private final int RETRY_TIMES = 10;
     private final int MASTER = 0;
     private Map<Long, TableMapEventData> tables = new HashMap<>();
     private BinaryLogClient client;
     private List<Host> cluster;
     private String database;
     private final Lock connectLock = new ReentrantLock();
-    private volatile boolean connected;
-    private volatile boolean recovery;
 
     @Override
     public void start() {
         try {
             connectLock.lock();
-            if (connected) {
+            if (client != null && client.isConnected()) {
                 logger.error("MySQLExtractor is already started");
                 return;
             }
             run();
-            connected = true;
         } catch (Exception e) {
             logger.error("启动失败:{}", e.getMessage());
             throw new MySQLException(e);
@@ -90,8 +88,7 @@ public class MySQLListener extends AbstractDatabaseListener {
     public void close() {
         try {
             connectLock.lock();
-            connected = false;
-            if (null != client) {
+            if (client != null && client.isConnected()) {
                 client.disconnect();
             }
         } catch (Exception e) {
@@ -154,43 +151,6 @@ public class MySQLListener extends AbstractDatabaseListener {
         return cluster;
     }
 
-    private void reStart() {
-        try {
-            connectLock.lock();
-            if (recovery) {
-                return;
-            }
-            recovery = true;
-        } finally {
-            connectLock.unlock();
-        }
-
-        for (int i = 1; i <= RETRY_TIMES; i++) {
-            try {
-                if (null != client) {
-                    client.disconnect();
-                }
-                run();
-
-                errorEvent(new MySQLException(String.format("重启成功, %s", client.getWorkerThreadName())));
-                logger.error("第{}次重启成功, ThreadName:{} ", i, client.getWorkerThreadName());
-                recovery = false;
-                break;
-            } catch (Exception e) {
-                logger.error("第{}次重启异常, ThreadName:{}, {}", i, client.getWorkerThreadName(), e.getMessage());
-                // 无法连接，关闭任务
-                if (i == RETRY_TIMES) {
-                    errorEvent(new MySQLException(String.format("重启异常, %s, %s", client.getWorkerThreadName(), e.getMessage())));
-                }
-            }
-            try {
-                TimeUnit.SECONDS.sleep(i * 2);
-            } catch (InterruptedException e) {
-                logger.error(e.getMessage());
-            }
-        }
-    }
-
     private void refresh(EventHeader header) {
         EventHeaderV4 eventHeaderV4 = (EventHeaderV4) header;
         refresh(null, eventHeaderV4.getNextPosition());
@@ -208,6 +168,32 @@ public class MySQLListener extends AbstractDatabaseListener {
     private void refreshSnapshot(String binlogFilename, long nextPosition) {
         snapshot.put(BINLOG_FILENAME, binlogFilename);
         snapshot.put(BINLOG_POSITION, String.valueOf(nextPosition));
+    }
+
+    private void trySendEvent(RowChangedEvent event){
+        try {
+            // 如果消费事件失败，重试
+            long now = Instant.now().toEpochMilli();
+            boolean isReTry = false;
+            while (client.isConnected()){
+                try {
+                    sendChangedEvent(event);
+                    break;
+                } catch (QueueOverflowException e) {
+                    isReTry = true;
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(1);
+                    } catch (InterruptedException ex) {
+                        logger.error(ex.getMessage(), ex);
+                    }
+                }
+            }
+            if (isReTry) {
+                logger.info("重试耗时：{}ms", Instant.now().toEpochMilli() - now);
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     final class Host {
@@ -237,11 +223,11 @@ public class MySQLListener extends AbstractDatabaseListener {
         }
 
         @Override
-        public void onCommunicationFailure(BinaryLogRemoteClient client, Exception e) {
-            if (!connected) {
+        public void onException(BinaryLogRemoteClient client, Exception e) {
+            if (!client.isConnected()) {
                 return;
             }
-            logger.error(e.getMessage());
+            errorEvent(new MySQLException(e.getMessage()));
             /**
              * e:
              * case1> Due to the automatic expiration and deletion mechanism of MySQL binlog files, the binlog file cannot be found.
@@ -259,12 +245,6 @@ public class MySQLListener extends AbstractDatabaseListener {
                     return;
                 }
             }
-
-            reStart();
-        }
-
-        @Override
-        public void onEventDeserializationFailure(BinaryLogRemoteClient client, Exception ex) {
         }
 
         @Override
@@ -301,7 +281,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
-                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, after, client.getBinlogFilename(), client.getBinlogPosition()));
+                        trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, after, client.getBinlogFilename(), client.getBinlogPosition()));
                     });
                 }
                 return;
@@ -312,7 +292,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m).collect(Collectors.toList());
-                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, after, client.getBinlogFilename(), client.getBinlogPosition()));
+                        trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, after, client.getBinlogFilename(), client.getBinlogPosition()));
                     });
                 }
                 return;
@@ -323,7 +303,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 if (isFilterTable(data.getTableId())) {
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m).collect(Collectors.toList());
-                        sendChangedEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, client.getBinlogFilename(), client.getBinlogPosition()));
+                        trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, client.getBinlogFilename(), client.getBinlogPosition()));
                     });
                 }
                 return;

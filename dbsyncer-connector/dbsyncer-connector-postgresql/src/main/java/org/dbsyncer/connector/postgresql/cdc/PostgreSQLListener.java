@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.postgresql.cdc;
 
+import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.BooleanUtil;
 import org.dbsyncer.connector.postgresql.decoder.MessageDecoder;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
@@ -286,7 +287,18 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
                     RowChangedEvent event = messageDecoder.processMessage(msg);
                     if (event != null) {
                         event.setPosition(lsn.asString());
-                        sendChangedEvent(event);
+                        while (connected){
+                            try {
+                                sendChangedEvent(event);
+                                break;
+                            } catch (QueueOverflowException ex) {
+                                try {
+                                    TimeUnit.MILLISECONDS.sleep(1);
+                                } catch (InterruptedException exe) {
+                                    logger.error(exe.getMessage(), exe);
+                                }
+                            }
+                        }
                     }
 
                     // feedback

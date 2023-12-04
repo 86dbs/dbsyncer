@@ -139,42 +139,39 @@ public class DataSyncServiceImpl implements DataSyncService {
     }
 
     @Override
-    public String sync(Map<String, String> params) {
+    public String sync(Map<String, String> params) throws InvalidProtocolBufferException {
         String metaId = params.get("metaId");
         String messageId = params.get("messageId");
         Assert.hasText(metaId, "The metaId is null.");
         Assert.hasText(messageId, "The messageId is null.");
 
-        try {
-            Map row = getData(metaId, messageId);
-            Map binlogData = getBinlogData(row, false);
-            if (CollectionUtils.isEmpty(binlogData)) {
-                return messageId;
-            }
-            String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
-            String event = (String) row.get(ConfigConstant.DATA_EVENT);
-            // 有修改同步值
-            String retryDataParams = params.get("retryDataParams");
-            if (StringUtil.isNotBlank(retryDataParams)) {
-                JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
-            }
-            TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
-            String sourceTableName = tableGroup.getSourceTable().getName();
-            RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, Collections.EMPTY_LIST);
-            // 转换为源字段
-            final Picker picker = new Picker(tableGroup.getFieldMapping());
-            changedEvent.setChangedRow(picker.pickSourceData(binlogData));
-            bufferActuatorRouter.execute(metaId, tableGroupId, changedEvent);
-            storageService.remove(StorageEnum.DATA, metaId, messageId);
-            // 更新失败数
-            Meta meta = profileComponent.getMeta(metaId);
-            Assert.notNull(meta, "Meta can not be null.");
-            meta.getFail().decrementAndGet();
-            meta.setUpdateTime(Instant.now().toEpochMilli());
-            profileComponent.editConfigModel(meta);
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage());
+        Map row = getData(metaId, messageId);
+        Map binlogData = getBinlogData(row, false);
+        if (CollectionUtils.isEmpty(binlogData)) {
+            return messageId;
         }
+        String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
+        String event = (String) row.get(ConfigConstant.DATA_EVENT);
+        // 有修改同步值
+        String retryDataParams = params.get("retryDataParams");
+        if (StringUtil.isNotBlank(retryDataParams)) {
+            JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
+        }
+        TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
+        String sourceTableName = tableGroup.getSourceTable().getName();
+        RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, Collections.EMPTY_LIST);
+        // 转换为源字段
+        final Picker picker = new Picker(tableGroup.getFieldMapping());
+        changedEvent.setChangedRow(picker.pickSourceData(binlogData));
+        // 执行同步是否成功
+        bufferActuatorRouter.execute(metaId, tableGroupId, changedEvent);
+        storageService.remove(StorageEnum.DATA, metaId, messageId);
+        // 更新失败数
+        Meta meta = profileComponent.getMeta(metaId);
+        Assert.notNull(meta, "Meta can not be null.");
+        meta.getFail().decrementAndGet();
+        meta.setUpdateTime(Instant.now().toEpochMilli());
+        profileComponent.editConfigModel(meta);
         return messageId;
     }
 

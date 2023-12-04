@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.flush.impl;
 
+import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.config.GeneralBufferConfig;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -38,6 +39,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 
 /**
@@ -157,6 +159,11 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         // 8、执行批量处理后的
         pluginFactory.postProcessAfter(group.getPlugin(), context);
+    }
+
+    @Override
+    protected void offerFailed(BlockingQueue<WriterRequest> queue, WriterRequest request) {
+        throw new QueueOverflowException("缓存队列已满");
     }
 
     @Override

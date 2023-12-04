@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.sqlserver.cdc;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
+import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.sqlserver.model.SqlServerChangeTable;
 import org.dbsyncer.connector.sqlserver.SqlServerException;
@@ -271,23 +272,38 @@ public class SqlServerListener extends AbstractDatabaseListener {
         });
     }
 
+    private void trySendEvent(RowChangedEvent event){
+        while (connected){
+            try {
+                sendChangedEvent(event);
+                break;
+            } catch (QueueOverflowException ex) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep(1);
+                } catch (InterruptedException exe) {
+                    logger.error(exe.getMessage(), exe);
+                }
+            }
+        }
+    }
+
     private void parseEvent(List<CDCEvent> list, Lsn stopLsn) {
         int size = list.size();
         for (int i = 0; i < size; i++) {
             boolean isEnd = i == size - 1;
             CDCEvent event = list.get(i);
             if (TableOperationEnum.isUpdateAfter(event.getCode())) {
-                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, event.getRow(), null, (isEnd ? stopLsn : null)));
+                trySendEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, event.getRow(), null, (isEnd ? stopLsn : null)));
                 continue;
             }
 
             if (TableOperationEnum.isInsert(event.getCode())) {
-                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, event.getRow(), null, (isEnd ? stopLsn : null)));
+                trySendEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, event.getRow(), null, (isEnd ? stopLsn : null)));
                 continue;
             }
 
             if (TableOperationEnum.isDelete(event.getCode())) {
-                sendChangedEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), null, (isEnd ? stopLsn : null)));
+                trySendEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), null, (isEnd ? stopLsn : null)));
             }
         }
     }

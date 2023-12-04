@@ -11,7 +11,6 @@ import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 import com.github.shyiko.mysql.binlog.network.*;
 import com.github.shyiko.mysql.binlog.network.protocol.*;
 import com.github.shyiko.mysql.binlog.network.protocol.command.*;
-import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.connector.mysql.deserializer.DeleteDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.UpdateDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.WriteDeserializer;
@@ -26,7 +25,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
 import java.util.*;
@@ -83,6 +81,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private volatile long connectionId;
     private volatile PacketChannel channel;
     private volatile boolean connected;
+    private volatile boolean connectedError;
     private Thread worker;
     private Thread keepAlive;
     private String workerThreadName;
@@ -282,30 +281,17 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 if (marker == 0xFE && !blocking) {
                     break;
                 }
-                Event event;
-                try {
-                    event = eventDeserializer.nextEvent(packetLength == MAX_PACKET_LENGTH ?
-                            new ByteArrayInputStream(readPacketSplitInChunks(inputStream, packetLength - 1)) :
-                            inputStream);
-                    if (event == null) {
-                        throw new EOFException();
-                    }
-                } catch (Exception e) {
-                    Throwable cause = e instanceof EventDataDeserializationException ? e.getCause() : e;
-                    if (cause instanceof EOFException || cause instanceof SocketException) {
-                        throw e;
-                    }
-                    lifecycleListeners.forEach(listener -> listener.onEventDeserializationFailure(this, e));
-                    continue;
-                }
-                if (connected) {
+                Event event = eventDeserializer.nextEvent(packetLength == MAX_PACKET_LENGTH ? new ByteArrayInputStream(readPacketSplitInChunks(inputStream, packetLength - 1)) : inputStream);
+                if (event != null) {
                     updateGtidSet(event);
                     notifyEventListeners(event);
                     updateClientBinlogFilenameAndPosition(event);
+                    continue;
                 }
+                throw new EOFException("event data deserialization exception");
             }
         } catch (Exception e) {
-            lifecycleListeners.forEach(listener -> listener.onCommunicationFailure(this, e));
+            notifyException(e);
         }
     }
 
@@ -631,38 +617,41 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     }
 
     private void spawnKeepAliveThread() {
-        long keepAliveInterval = TimeUnit.SECONDS.toMillis(30);
         String clientId = createClientId();
         this.keepAlive = new Thread(() -> {
             while (connected) {
                 try {
-                    Thread.sleep(keepAliveInterval);
-                } catch (InterruptedException e) {
-                    // expected in case of disconnect
-                }
-                boolean connectionLost = false;
-                try {
+                    TimeUnit.SECONDS.sleep(30);
                     channel.write(new PingCommand());
-                } catch (IOException e) {
-                    connectionLost = true;
-                }
-                if (connectionLost) {
-                    if (connected) {
-                        String error = String.format("keepalive: Trying to restore lost connection to %s", clientId);
-                        logger.info(error);
-                        try {
-                            lifecycleListeners.forEach(listener -> listener.onCommunicationFailure(this, new MySQLException(error)));
-                        } catch (Exception e) {
-                            logger.warn("keepalive error", e);
-                        }
-                    }
+                } catch (Exception e) {
+                    notifyException(e);
                     break;
+                }
+            }
+            while (connectedError) {
+                try {
+                    logger.info("Trying to restore lost connection to {}}", createClientId());
+                    TimeUnit.MILLISECONDS.sleep(500);
+                    disconnect();
+                    connect();
+                    connectedError = false;
+                    break;
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
                 }
             }
         });
         this.keepAlive.setDaemon(false);
         this.keepAlive.setName(new StringBuilder("binlog-keepalive-").append(clientId).toString());
         this.keepAlive.start();
+    }
+
+    private void notifyException(Exception e) {
+        if (connected) {
+            logger.error(e.getMessage(), e);
+            lifecycleListeners.forEach(listener -> listener.onException(this, e));
+            connectedError = true;
+        }
     }
 
     @Override
@@ -810,13 +799,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         /**
          * It's guarantied to be called before {@link #onDisconnect(BinaryLogRemoteClient)}) in case of communication failure.
          */
-        void onCommunicationFailure(BinaryLogRemoteClient client, Exception ex);
-
-        /**
-         * Called in case of failed event deserialization. Note this type of error does NOT cause client to disconnect. If you wish to stop
-         * receiving events you'll need to fire client.disconnect() manually.
-         */
-        void onEventDeserializationFailure(BinaryLogRemoteClient client, Exception ex);
+        void onException(BinaryLogRemoteClient client, Exception ex);
 
         /**
          * Called upon disconnect (regardless of the reason).

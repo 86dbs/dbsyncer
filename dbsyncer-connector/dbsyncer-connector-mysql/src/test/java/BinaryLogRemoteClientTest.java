@@ -81,13 +81,8 @@ public class BinaryLogRemoteClientTest {
             }
 
             @Override
-            public void onCommunicationFailure(BinaryLogRemoteClient client, Exception ex) {
+            public void onException(BinaryLogRemoteClient client, Exception ex) {
                 logger.error("连接异常", ex);
-            }
-
-            @Override
-            public void onEventDeserializationFailure(BinaryLogRemoteClient client, Exception ex) {
-                logger.error("解析异常", ex);
             }
 
             @Override

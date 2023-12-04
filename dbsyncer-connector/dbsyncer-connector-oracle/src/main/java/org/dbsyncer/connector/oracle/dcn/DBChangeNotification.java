@@ -130,6 +130,10 @@ public class DBChangeNotification {
         return conn;
     }
 
+    public boolean isConnected() {
+        return connected;
+    }
+
     public void setFilterTable(Set<String> filterTable) {
         this.filterTable = filterTable;
     }
