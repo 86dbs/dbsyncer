@@ -28,13 +28,20 @@
                         </ul>
                     </li>
                     <li>
-                        <simple>新建一个类，比如MyPlugin，实现接口ConvertService方法</simple>
+                        <simple>新建一个类，比如MyPlugin，实现接口PluginService方法</simple>
 <pre>package org.test;
 
-import org.dbsyncer.common.spi.ConvertContext;
-import org.dbsyncer.common.spi.ConvertService;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
+import org.dbsyncer.sdk.plugin.PluginContext;
+import org.dbsyncer.sdk.spi.PluginService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class MyPlugin implements ConvertService {
+public class MyPlugin implements PluginService {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * 全量同步/增量同步
@@ -42,29 +49,26 @@ public class MyPlugin implements ConvertService {
      * @param convertContext
      */
     @Override
-    public void convert(ConvertContext convertContext) {
+    public void convert(PluginContext pluginContext) {
         // TODO 消费或处理数据
         System.out.println("插件消费数据中...");
 
         // 是否终止同步到目标库开关，默认false
-        convertContext.setTerminated(false);
-
-        // 获取Spring上下文，当然也可获取dbs注册的bean对象
-        convertContext.getContext();
+        pluginContext.setTerminated(false);
 
         // 数据源表和目标源表
-        convertContext.getSourceTableName();
-        convertContext.getTargetTableName();
+        pluginContext.getSourceTableName();
+        pluginContext.getTargetTableName();
 
         // 捕获的事件（INSERT/UPDATE/DELETE）
-        convertContext.getEvent();
+        pluginContext.getEvent();
 
         // 数据源和目标源表全量或增量数据
-        convertContext.getSourceList();
-        convertContext.getTargetList();
+        pluginContext.getSourceList();
+        pluginContext.getTargetList();
 
         // 获取目标库连接器实例（如果需要用到连接器，必须引入dbsyncer-connector-[[${version}]].jar）
-        convertContext.getTargetConnectorMapper();
+        pluginContext.getTargetConnectorInstance();
     }
 
     /**
@@ -73,7 +77,7 @@ public class MyPlugin implements ConvertService {
      * @param context
      */
     @Override
-    public void postProcessAfter(ConvertContext context) {
+    public void postProcessAfter(PluginContext context) {
         // 完成同步后调用该方法
        logger.info("插件正在处理同步成功的数据，目标源表:{}，事件:{}，条数:{}", context.getTargetTableName(), context.getEvent(), context.getTargetList().size());
 
