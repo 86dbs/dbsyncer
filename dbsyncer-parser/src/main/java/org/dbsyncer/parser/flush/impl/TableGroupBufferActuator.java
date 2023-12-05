@@ -56,9 +56,10 @@ public final class TableGroupBufferActuator extends GeneralBufferActuator implem
         super.buildQueueConfig();
         taskKey = UUIDUtil.getUUID();
         int coreSize = tableGroupBufferConfig.getThreadCoreSize();
+        int maxSize = tableGroupBufferConfig.getMaxThreadSize();
         int queueCapacity = tableGroupBufferConfig.getThreadQueueCapacity();
         String threadNamePrefix = new StringBuilder("TableGroupExecutor-").append(tableGroupId).append(StringUtil.SYMBOL).toString();
-        threadPoolTaskExecutor = ThreadPoolUtil.newThreadPoolTaskExecutor(coreSize, coreSize, queueCapacity, 30, threadNamePrefix);
+        threadPoolTaskExecutor = ThreadPoolUtil.newThreadPoolTaskExecutor(coreSize, maxSize, queueCapacity, 30, threadNamePrefix);
         running = true;
         scheduledTaskService.start(taskKey, tableGroupBufferConfig.getBufferPeriodMillisecond(), this);
     }

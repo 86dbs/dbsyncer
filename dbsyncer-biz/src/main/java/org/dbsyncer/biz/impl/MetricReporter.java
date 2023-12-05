@@ -234,7 +234,7 @@ public class MetricReporter implements ScheduledTaskJob {
         msg.append("堆积").append(StringUtil.COLON).append(info.getQueueUp());
         msg.append(StringUtil.FORWARD_SLASH).append(bufferActuator.getQueueCapacity()).append(StringUtil.SPACE);
         msg.append(ThreadPoolMetricEnum.CORE_SIZE.getMetricName()).append(StringUtil.COLON).append(pool.getActiveCount());
-        msg.append(StringUtil.FORWARD_SLASH).append(pool.getCorePoolSize()).append(StringUtil.SPACE);
+        msg.append(StringUtil.FORWARD_SLASH).append(pool.getMaximumPoolSize()).append(StringUtil.SPACE);
         msg.append(ThreadPoolMetricEnum.COMPLETED.getMetricName()).append(StringUtil.COLON).append(pool.getCompletedTaskCount());
         info.setResponse(new MetricResponse(code, group, metricName, Arrays.asList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), msg.toString()))));
         return info;

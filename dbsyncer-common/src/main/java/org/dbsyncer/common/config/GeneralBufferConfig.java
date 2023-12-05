@@ -22,13 +22,18 @@ public class GeneralBufferConfig extends BufferActuatorConfig {
     private int threadCoreSize = Runtime.getRuntime().availableProcessors() * 2;
 
     /**
+     * 最大工作线程数
+     */
+    private int maxThreadSize = 16;
+
+    /**
      * 工作线任务队列
      */
     private int threadQueueCapacity = 1000;
 
     @Bean(name = "generalExecutor", destroyMethod = "shutdown")
     public ThreadPoolTaskExecutor generalExecutor() {
-        return ThreadPoolUtil.newThreadPoolTaskExecutor(threadCoreSize, threadCoreSize, threadQueueCapacity, 30, "GeneralExecutor-");
+        return ThreadPoolUtil.newThreadPoolTaskExecutor(threadCoreSize, maxThreadSize, threadQueueCapacity, 30, "GeneralExecutor-");
     }
 
     public int getThreadCoreSize() {
@@ -37,6 +42,14 @@ public class GeneralBufferConfig extends BufferActuatorConfig {
 
     public void setThreadCoreSize(int threadCoreSize) {
         this.threadCoreSize = threadCoreSize;
+    }
+
+    public int getMaxThreadSize() {
+        return maxThreadSize;
+    }
+
+    public void setMaxThreadSize(int maxThreadSize) {
+        this.maxThreadSize = maxThreadSize;
     }
 
     public int getThreadQueueCapacity() {
