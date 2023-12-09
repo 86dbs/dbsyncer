@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.listener;
 
+import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.model.ChangedOffset;
 
 import java.util.Map;
@@ -17,6 +18,13 @@ import java.util.Map;
 public interface ChangedEvent {
 
     /**
+     * 获取变更事件类型
+     *
+     * @return
+     */
+    ChangedEventTypeEnum getType();
+
+    /**
      * 获取变更表名称
      *
      * @return
@@ -29,6 +37,13 @@ public interface ChangedEvent {
      * @return
      */
     String getEvent();
+
+    /**
+     * 获取变更SQL
+     *
+     * @return
+     */
+    String getSql();
 
     /**
      * 获取变更行数据

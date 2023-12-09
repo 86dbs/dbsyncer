@@ -6,8 +6,6 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.sdk.config.DDLConfig;
-import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.ddl.DDLParser;
@@ -21,13 +19,20 @@ import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.parser.model.WriterResponse;
+import org.dbsyncer.parser.sql.SqlParser;
+import org.dbsyncer.parser.sql.impl.DeleteSql;
+import org.dbsyncer.parser.sql.impl.InsertSql;
+import org.dbsyncer.parser.sql.impl.UpdateSql;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
-import org.dbsyncer.sdk.connector.ConnectorInstance;
-import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.plugin.impl.IncrementPluginContext;
+import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,6 +108,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         if (!response.isMerged()) {
             response.setTableGroupId(request.getTableGroupId());
             response.setEvent(request.getEvent());
+            response.setTypeEnum(request.getTypeEnum());
             response.setSql(request.getSql());
             response.setMerged(true);
         }
@@ -112,7 +118,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     protected boolean skipPartition(WriterRequest nextRequest, WriterResponse response) {
         // 并发场景，同一条数据可能连续触发Insert > Delete > Insert，批处理任务中出现不同事件时，跳过分区处理
         // 跳过表结构修改事件（保证表结构修改原子性）
-        return !StringUtil.equals(nextRequest.getEvent(), response.getEvent()) || isDDLEvent(response.getEvent());
+        return !StringUtil.equals(nextRequest.getEvent(), response.getEvent()) || ChangedEventTypeEnum.isDDL(response.getTypeEnum());
     }
 
     @Override
@@ -123,8 +129,12 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         final TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
 
         // 1、ddl解析
-        if (isDDLEvent(response.getEvent())) {
+        if (ChangedEventTypeEnum.isDDL(response.getTypeEnum())) {
             parseDDl(response, mapping, group);
+            return;
+        }
+        if (ChangedEventTypeEnum.isSQL(response.getTypeEnum())) {
+            parseSql(response, mapping, group);
             return;
         }
 
@@ -169,10 +179,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Override
     public Executor getExecutor() {
         return generalExecutor;
-    }
-
-    private boolean isDDLEvent(String event) {
-        return StringUtil.equals(event, ConnectorConstant.OPERTION_ALTER);
     }
 
     /**
@@ -225,6 +231,53 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             return;
         }
         logger.warn("暂只支持MYSQL解析DDL");
+    }
+
+    /**
+     * 解析sql并替换到目标sql
+     *
+     * @param response
+     * @param mapping
+     * @param group
+     */
+    private void parseSql(WriterResponse response, Mapping mapping, TableGroup group) {
+        String sql = response.getSql();
+        final String sourceTableName = group.getSourceTable().getName();
+        final String targetTableName = group.getTargetTable().getName();
+        final String event = response.getEvent();
+        // 根据不同的语句进行sql替换拼接
+        switch (event) {
+            case ConnectorConstant.OPERTION_INSERT:
+                SqlParser insertSql = new InsertSql(sql, sourceTableName, targetTableName, group.getFieldMapping());
+                sql = insertSql.parse();
+                break;
+            case ConnectorConstant.OPERTION_UPDATE:
+                SqlParser updateSql = new UpdateSql(sql, sourceTableName, targetTableName, group.getFieldMapping());
+                sql = updateSql.parse();
+                break;
+            case ConnectorConstant.OPERTION_DELETE:
+                SqlParser deleteSql = new DeleteSql(sql, sourceTableName, targetTableName, group.getFieldMapping());
+                sql = deleteSql.parse();
+                break;
+            default:
+                break;
+        }
+        logger.info("execute sql:{}", sql);
+
+        ConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
+        final ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
+        // TODO life 这里需要重新设计实现方案，不支持异构同步场景
+        DDLConfig ddlConfig = new DDLConfig();
+        ddlConfig.setSql(sql);
+        Result result = connectorFactory.writerDDL(tConnectorInstance, ddlConfig);
+
+        // 6.发布刷新增量点事件
+        applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
+
+        // 7、持久化同步结果
+        result.setTableGroupId(group.getId());
+        result.setTargetTableGroupName(targetTableName);
+        flushStrategy.flushIncrementData(mapping.getMetaId(), result, event);
     }
 
     /**

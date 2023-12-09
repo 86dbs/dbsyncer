@@ -1,5 +1,7 @@
 package org.dbsyncer.sdk.listener.event;
 
+import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
+
 /**
  * DDL变更事件
  *
@@ -14,25 +16,21 @@ public final class DDLChangedEvent extends CommonChangedEvent {
       */
     private String database;
 
-    /**
-     * 变更SQL
-     */
-    private String sql;
-
     public DDLChangedEvent(String database, String sourceTableName, String event, String sql, String nextFileName, Object position) {
         setSourceTableName(sourceTableName);
         setEvent(event);
         setNextFileName(nextFileName);
         setPosition(position);
+        setSql(sql);
         this.database = database;
-        this.sql = sql;
     }
 
     public String getDatabase() {
         return database;
     }
 
-    public String getSql() {
-        return sql;
+    @Override
+    public ChangedEventTypeEnum getType() {
+        return ChangedEventTypeEnum.DDL;
     }
 }

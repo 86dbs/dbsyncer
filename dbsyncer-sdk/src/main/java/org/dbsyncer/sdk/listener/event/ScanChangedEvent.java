@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.listener.event;
 
+import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
+
 import java.util.Map;
 
 /**
@@ -24,5 +26,10 @@ public final class ScanChangedEvent extends CommonChangedEvent {
 
     public int getTableGroupIndex() {
         return tableGroupIndex;
+    }
+
+    @Override
+    public ChangedEventTypeEnum getType() {
+        return ChangedEventTypeEnum.SCAN;
     }
 }

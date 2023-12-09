@@ -15,7 +15,7 @@ import java.util.Map;
  * @Author AE86
  * @Date 2023-08-20 20:00
  */
-public class CommonChangedEvent implements ChangedEvent {
+public abstract class CommonChangedEvent implements ChangedEvent {
 
     /**
      * 变更表名称
@@ -25,6 +25,10 @@ public class CommonChangedEvent implements ChangedEvent {
      * 变更事件
      */
     private String event;
+    /**
+     * 变更sql
+     */
+    private String sql;
     /**
      * 变更行数据
      */
@@ -50,6 +54,15 @@ public class CommonChangedEvent implements ChangedEvent {
 
     public void setEvent(String event) {
         this.event = event;
+    }
+
+    @Override
+    public String getSql() {
+        return sql;
+    }
+
+    public void setSql(String sql) {
+        this.sql = sql;
     }
 
     @Override

@@ -11,6 +11,7 @@ import org.dbsyncer.parser.consumer.AbstractConsumer;
 import org.dbsyncer.parser.model.FieldPicker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
+import org.dbsyncer.sdk.listener.event.SqlChangedEvent;
 import org.dbsyncer.sdk.model.Table;
 
 import java.util.ArrayList;
@@ -56,6 +57,11 @@ public final class LogConsumer extends AbstractConsumer<RowChangedEvent> {
     @Override
     public void onDDLChanged(DDLChangedEvent event) {
         ddlChanged = true;
+        process(event, picker -> execute(picker.getTableGroup().getId(), event));
+    }
+
+    @Override
+    public void onSqlChanged(SqlChangedEvent event) {
         process(event, picker -> execute(picker.getTableGroup().getId(), event));
     }
 

@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.parser.consumer;
 
+import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.Watcher;
@@ -13,6 +14,7 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.listener.event.SqlChangedEvent;
 
 import java.util.List;
 import java.util.Map;
@@ -48,14 +50,24 @@ public abstract class AbstractConsumer<E extends ChangedEvent> implements Watche
     public void onDDLChanged(DDLChangedEvent event) {
     }
 
+    public void onSqlChanged(SqlChangedEvent event) {
+    }
+
     @Override
     public void changeEvent(ChangedEvent event) {
         event.getChangedOffset().setMetaId(metaId);
-        if (event instanceof DDLChangedEvent) {
-            onDDLChanged((DDLChangedEvent) event);
-            return;
+        switch (event.getType()){
+            case ROW:
+            case SCAN:
+                onChange((E) event);
+                break;
+            case SQL:
+                onSqlChanged((SqlChangedEvent) event);
+                break;
+            case DDL:
+                onDDLChanged((DDLChangedEvent) event);
+                break;
         }
-        onChange((E) event);
     }
 
     @Override

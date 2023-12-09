@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.listener.event;
 
+import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
+
 import java.util.List;
 
 /**
@@ -12,7 +14,7 @@ import java.util.List;
  * @Author AE86
  * @Date 2020-06-15 20:00
  */
-public final class RowChangedEvent extends CommonChangedEvent {
+public class RowChangedEvent extends CommonChangedEvent {
     private List<Object> dataList;
 
     public RowChangedEvent(String sourceTableName, String event, List<Object> data) {
@@ -31,4 +33,8 @@ public final class RowChangedEvent extends CommonChangedEvent {
         return dataList;
     }
 
+    @Override
+    public ChangedEventTypeEnum getType() {
+        return ChangedEventTypeEnum.ROW;
+    }
 }
