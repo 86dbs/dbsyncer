@@ -19,6 +19,7 @@ import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.SqlChangedEvent;
+import org.dbsyncer.sdk.model.ChangedOffset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,12 +50,6 @@ public class OracleListener extends AbstractDatabaseListener {
             logMiner = new LogMiner(username, password, url, schema, driverClassName);
             logMiner.setStartScn(containsPos ? Long.parseLong(snapshot.get(REDO_POSITION)) : 0);
             logMiner.registerEventListener((event) -> {
-                if (snapshot.containsKey(REDO_POSITION)){
-                    snapshot.replace(REDO_POSITION,String.valueOf(event.getScn()));
-                }else{
-                    snapshot.putIfAbsent(REDO_POSITION,String.valueOf(event.getScn()));
-                }
-
                 try {
                     Statement statement = CCJSqlParserUtil.parse(event.getRedoSql());
                     if (statement instanceof Update) {
@@ -86,6 +81,10 @@ public class OracleListener extends AbstractDatabaseListener {
             });
             logMiner.start();
 
+            if (!containsPos) {
+                snapshot.put(REDO_POSITION, String.valueOf(logMiner.getStartScn()));
+                super.forceFlushEvent();
+            }
         } catch (Exception e) {
             logger.error("启动失败:{}", e.getMessage());
             throw new OracleException(e);
@@ -101,6 +100,11 @@ public class OracleListener extends AbstractDatabaseListener {
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void refreshEvent(ChangedOffset offset) {
+        snapshot.put(REDO_POSITION, String.valueOf(offset.getPosition()));
     }
 
     private String replaceTableName(Table table) {

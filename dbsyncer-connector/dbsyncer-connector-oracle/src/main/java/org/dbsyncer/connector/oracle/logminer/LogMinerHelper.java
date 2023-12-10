@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.connector.oracle.logminer;
 
-import org.apache.commons.lang3.StringUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,24 +46,6 @@ public class LogMinerHelper {
                 String sql = String.format("BEGIN SYS.DBMS_LOGMNR.REMOVE_LOGFILE(LOGFILENAME => '%s');END;", fileName);
                 executeCallableStatement(conn, sql);
                 LOGGER.debug("File {} was removed from mining", fileName);
-            }
-        }
-    }
-
-    public static void resetSessionToCdbIfNecessary(Connection connection) {
-        Statement statement = null;
-        try {
-            statement = connection.createStatement();
-            statement.execute("alter session set container=cdb$root");
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (statement != null) {
-                try {
-                    statement.close();
-                } catch (SQLException e) {
-                    LOGGER.error("Couldn't close statement", e);
-                }
             }
         }
     }
@@ -142,7 +123,7 @@ public class LogMinerHelper {
     }
 
     public static void buildDataDictionary(Connection connection, String miningStrategy) throws SQLException {
-        if (StringUtils.isBlank(miningStrategy)) {
+        if (StringUtil.isBlank(miningStrategy)) {
             // default
             String sql = "BEGIN DBMS_LOGMNR_D.BUILD (options => DBMS_LOGMNR_D.STORE_IN_REDO_LOGS); END;";
             executeCallableStatement(connection, sql);
@@ -152,7 +133,7 @@ public class LogMinerHelper {
     public static void startLogMiner(Connection connection, BigInteger startScn, BigInteger endScn, String miningStrategy) throws SQLException {
         LOGGER.debug("startLogMiner... startScn {}, endScn {}", startScn, endScn);
         // default
-        if (StringUtils.isBlank(miningStrategy)) {
+        if (StringUtil.isBlank(miningStrategy)) {
             miningStrategy = "DBMS_LOGMNR.DICT_FROM_REDO_LOGS + DBMS_LOGMNR.DDL_DICT_TRACKING ";
         }
 
@@ -203,7 +184,7 @@ public class LogMinerHelper {
         query.append("(OPERATION_CODE IN (1,2,3) ");
         query.append(" AND SEG_OWNER NOT IN ('APPQOSSYS','AUDSYS','CTXSYS','DVSYS','DBSFWUSER','DBSNMP','GSMADMIN_INTERNAL','LBACSYS','MDSYS','OJVMSYS','OLAPSYS','ORDDATA','ORDSYS','OUTLN','SYS','SYSTEM','WMSYS','XDB') ");
 
-        if (StringUtils.isNotBlank(schema)) {
+        if (StringUtil.isNotBlank(schema)) {
             query.append(String.format(" AND (REGEXP_LIKE(SEG_OWNER,'^%s$','i')) ", schema));
 //            query.append(" AND ");
 //            query.append("USERNAME = '");
@@ -229,12 +210,6 @@ public class LogMinerHelper {
 
         executeCallableStatement(connection, sql);
         executeCallableStatement(connection, "ALTER SESSION SET TIME_ZONE = '00:00'");
-    }
-
-    public void executeWithoutCommitting(Connection connection, String sql) throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            statement.execute(sql);
-        }
     }
 
 }

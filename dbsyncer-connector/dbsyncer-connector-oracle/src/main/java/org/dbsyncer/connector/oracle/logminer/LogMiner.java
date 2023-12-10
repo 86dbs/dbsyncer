@@ -84,7 +84,6 @@ public class LogMiner {
 
         logger.info("scn start '{}'", startScn);
         logger.info("start LogMiner...");
-//        LogMinerHelper.resetSessionToCdbIfNecessary(connection);
         LogMinerHelper.setSessionParameter(connection);
 
         // 1.记录当前redoLog，用于下文判断redoLog 是否切换
@@ -307,6 +306,10 @@ public class LogMiner {
 
     public void registerEventListener(EventListener listener){
         this.listener = listener;
+    }
+
+    public long getStartScn() {
+        return startScn;
     }
 
     public void setStartScn(long startScn) {
