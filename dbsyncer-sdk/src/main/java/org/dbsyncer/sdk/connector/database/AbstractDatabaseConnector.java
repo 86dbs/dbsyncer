@@ -671,6 +671,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 databaseTemplate.execute(DatabaseConstant.DBS_UNIQUE_CODE.concat(config.getSql()));
                 return true;
             });
+            Map<String,String> successMap = new HashMap<>();
+            successMap.put("sql",config.getSql());
+            result.addSuccessData(Collections.singletonList(successMap));
         } catch (Exception e) {
             result.getError().append(String.format("执行ddl: %s, 异常：%s", config.getSql(), e.getMessage()));
         }

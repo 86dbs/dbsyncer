@@ -49,6 +49,12 @@ public class OracleListener extends AbstractDatabaseListener {
             logMiner = new LogMiner(username, password, url, schema, driverClassName);
             logMiner.setStartScn(containsPos ? Long.parseLong(snapshot.get(REDO_POSITION)) : 0);
             logMiner.registerEventListener((event) -> {
+                if (snapshot.containsKey(REDO_POSITION)){
+                    snapshot.replace(REDO_POSITION,String.valueOf(event.getScn()));
+                }else{
+                    snapshot.putIfAbsent(REDO_POSITION,String.valueOf(event.getScn()));
+                }
+
                 try {
                     Statement statement = CCJSqlParserUtil.parse(event.getRedoSql());
                     if (statement instanceof Update) {
