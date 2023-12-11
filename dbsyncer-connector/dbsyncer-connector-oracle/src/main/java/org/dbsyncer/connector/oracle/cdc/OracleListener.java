@@ -76,15 +76,10 @@ public class OracleListener extends AbstractDatabaseListener {
                         return;
                     }
                 } catch (JSQLParserException e) {
-                    logger.error("parse redoSql=" + event.getRedoSql(), e);
+                    logger.error("不支持sql:" + event.getRedoSql());
                 }
             });
             logMiner.start();
-
-            if (!containsPos) {
-                snapshot.put(REDO_POSITION, String.valueOf(logMiner.getStartScn()));
-                super.forceFlushEvent();
-            }
         } catch (Exception e) {
             logger.error("启动失败:{}", e.getMessage());
             throw new OracleException(e);
