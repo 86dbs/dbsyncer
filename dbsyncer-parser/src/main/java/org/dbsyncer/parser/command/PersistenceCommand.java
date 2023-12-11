@@ -4,7 +4,7 @@
 package org.dbsyncer.parser.command;
 
 import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.storage.StorageService;
+import org.dbsyncer.sdk.spi.StorageService;
 
 import java.util.Map;
 

@@ -1,4 +1,7 @@
-package org.dbsyncer.storage.strategy;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.sdk.storage;
 
 /**
  * 创建数据存放的集合ID
@@ -12,9 +15,9 @@ package org.dbsyncer.storage.strategy;
  * --------/driver...
  * </pre>
  *
- * @author AE86
- * @version 1.0.0
- * @date 2019/11/15 22:31
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2019-11-15 22:31
  */
 public interface Strategy {
 

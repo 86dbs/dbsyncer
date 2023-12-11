@@ -1,4 +1,7 @@
-package org.dbsyncer.storage;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.sdk.spi;
 
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.sdk.enums.StorageEnum;
@@ -8,9 +11,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2019/10/1 15:18
+ * 存储服务（支持记录配置/日志/同步数据）
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2019-11-16 23:22
  */
 public interface StorageService {
 

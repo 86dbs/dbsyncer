@@ -1,7 +1,7 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.parser.enums.MetaEnum;
-import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

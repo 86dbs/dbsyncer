@@ -6,7 +6,7 @@ package org.dbsyncer.parser.enums;
 import org.dbsyncer.parser.command.CommandExecutor;
 import org.dbsyncer.parser.command.Persistence;
 import org.dbsyncer.parser.command.Preload;
-import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 
 /**
  * 枚举命令模式: 持久化和预加载

@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.storage.constant;
+package org.dbsyncer.sdk.constant;
 
 /**
  * @Author AE86

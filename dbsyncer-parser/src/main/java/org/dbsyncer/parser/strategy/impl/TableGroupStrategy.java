@@ -5,7 +5,7 @@ package org.dbsyncer.parser.strategy.impl;
 
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.strategy.GroupStrategy;
-import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 
 /**
  * @author AE86

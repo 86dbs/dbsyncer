@@ -1,9 +1,12 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.storage;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2019/11/10 21:38
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2019-11-10 21:38
  */
 public class StorageException extends RuntimeException {
 

@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.enums;
 
 import org.dbsyncer.common.util.StringUtil;
@@ -6,8 +9,8 @@ import org.dbsyncer.sdk.SdkException;
 /**
  * 驱动同步方式枚举
  *
- * @Version 1.0.0
  * @Author AE86
+ * @Version 1.0.0
  * @Date 2023-11-16 00:51
  */
 public enum ModelEnum {

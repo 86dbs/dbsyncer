@@ -1,30 +1,29 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.storage.impl;
+package org.dbsyncer.connector.mysql.storage;
 
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.common.util.UnderlineToCamelUtils;
+import org.dbsyncer.connector.mysql.MySQLConnector;
+import org.dbsyncer.sdk.NullExecutorException;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
-import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.filter.AbstractFilter;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.storage.AbstractStorageService;
 import org.dbsyncer.sdk.util.DatabaseUtil;
-import org.dbsyncer.storage.AbstractStorageService;
-import org.dbsyncer.storage.NullExecutorException;
-import org.dbsyncer.storage.constant.ConfigConstant;
-import org.dbsyncer.storage.util.UnderlineToCamelUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,12 +33,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.sql.SQLSyntaxErrorException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,9 +55,9 @@ import java.util.stream.Stream;
  * @Date 2020-01-08 15:17
  */
 @Component
-@ConditionalOnProperty(value = "dbsyncer.storage.support.mysql.enabled", havingValue = "true")
-@ConfigurationProperties(prefix = "dbsyncer.storage.support.mysql")
-public class MySQLStorageServiceImpl extends AbstractStorageService {
+@ConditionalOnProperty(value = "dbsyncer.storage.type", havingValue = "MySQL")
+@ConfigurationProperties(prefix = "dbsyncer.storage.mysql")
+public class MySQLStorageServiceProvider extends AbstractStorageService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -68,31 +65,18 @@ public class MySQLStorageServiceImpl extends AbstractStorageService {
     private final String SHOW_TABLE = "show tables where Tables_in_%s = '%s'";
     private final String DROP_TABLE = "DROP TABLE %s";
     private final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
-
-    @Resource
-    private ConnectorFactory connectorFactory;
-
     private Map<String, Executor> tables = new ConcurrentHashMap<>();
-
-    private Database connector;
-
+    private MySQLConnector connector = new MySQLConnector();
     private DatabaseConnectorInstance connectorInstance;
-
     private DatabaseConfig config;
-
     private String database;
 
     @PostConstruct
     private void init() throws InterruptedException {
         logger.info("url:{}", config.getUrl());
-        config.setConnectorType("MySQL");
-        connectorInstance = (DatabaseConnectorInstance) connectorFactory.connect(config);
-        connector = (Database) connectorFactory.getConnectorService(config.getConnectorType());
+        config.setConnectorType(connector.getConnectorType());
         database = DatabaseUtil.getDatabaseName(config.getUrl());
-
-        // 升级脚本
-        initUpgradeSql();
-
+        connectorInstance = (DatabaseConnectorInstance) connector.connect(config);
         // 初始化表
         initTable();
     }
@@ -296,6 +280,7 @@ public class MySQLStorageServiceImpl extends AbstractStorageService {
     private void buildQuerySqlWithFilters(List<AbstractFilter> filters, List<Object> args, StringBuilder sql, List<AbstractFilter> highLightKeys) {
         // 过滤值
         int size = filters.size();
+
         String quotation = connector.buildSqlWithQuotation();
         for (int i = 0; i < size; i++) {
             AbstractFilter p = filters.get(i);
@@ -350,21 +335,6 @@ public class MySQLStorageServiceImpl extends AbstractStorageService {
             if (size > 0) {
                 sql.append(")");
             }
-        }
-    }
-
-    private void initUpgradeSql() {
-        try {
-            executeSql("drop table if exists `dbsyncer_binlog`;");
-        } catch (Exception e) {
-            if (e.getCause() instanceof SQLSyntaxErrorException) {
-                SQLSyntaxErrorException ex = (SQLSyntaxErrorException) e.getCause();
-                if (ex.getSQLState().equals("42S21")) {
-                    // ignore
-                    return;
-                }
-            }
-            logger.error(e.getMessage());
         }
     }
 

@@ -1,20 +1,22 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.storage;
+package org.dbsyncer.sdk.storage;
 
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.sdk.NullExecutorException;
+import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.enums.StorageStrategyEnum;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
-import org.dbsyncer.storage.strategy.Strategy;
+import org.dbsyncer.sdk.spi.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 
-import javax.annotation.Resource;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,9 +34,6 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Resource
-    private Map<String, Strategy> map;
-
     private final Lock lock = new ReentrantLock();
 
     protected abstract Paging select(String sharding, Query query);
@@ -51,9 +50,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     protected String getSharding(StorageEnum type, String collectionId) {
         Assert.notNull(type, "StorageEnum type can not be null.");
-        Strategy strategy = map.get(type.getType().concat("Strategy"));
-        Assert.notNull(strategy, "Strategy does not exist.");
-        return strategy.createSharding(getSeparator(), collectionId);
+        return StorageStrategyEnum.getStrategy(type).createSharding(getSeparator(), collectionId);
     }
 
     protected String getSeparator() {
@@ -85,7 +82,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     public void delete(Query query) {
         BooleanFilter q = query.getBooleanFilter();
         if (CollectionUtils.isEmpty(q.getClauses()) && CollectionUtils.isEmpty(q.getFilters())) {
-            throw new StorageException("必须包含删除条件");
+            throw new SdkException("必须包含删除条件");
         }
 
         boolean locked = false;

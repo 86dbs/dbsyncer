@@ -4,6 +4,7 @@
 package org.dbsyncer.connector;
 
 import org.dbsyncer.sdk.spi.ConnectorService;
+import org.dbsyncer.sdk.spi.StorageService;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -29,6 +30,23 @@ public class ConnectorConfiguration implements BeanDefinitionRegistryPostProcess
 
     @Override
     public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry beanDefinitionRegistry) throws BeansException {
+        loadConnectorServices(beanDefinitionRegistry);
+//        loadStorageServices(beanDefinitionRegistry);
+    }
+
+    private void loadStorageServices(BeanDefinitionRegistry beanDefinitionRegistry) {
+        ServiceLoader<StorageService> services = ServiceLoader.load(StorageService.class, Thread.currentThread().getContextClassLoader());
+        for (StorageService s : services) {
+            BeanDefinition beanDefinition = BeanDefinitionBuilder.genericBeanDefinition(s.getClass()).getBeanDefinition();
+            String beanClassName = beanDefinition.getBeanClassName();
+            Assert.state(beanClassName != null, "No bean class name set");
+            String shortClassName = ClassUtils.getShortName(beanClassName);
+            String decapitalize = Introspector.decapitalize(shortClassName);
+            beanDefinitionRegistry.registerBeanDefinition(decapitalize, beanDefinition);
+        }
+    }
+
+    private void loadConnectorServices(BeanDefinitionRegistry beanDefinitionRegistry) {
         ServiceLoader<ConnectorService> services = ServiceLoader.load(ConnectorService.class, Thread.currentThread().getContextClassLoader());
         for (ConnectorService s : services) {
             BeanDefinition beanDefinition = BeanDefinitionBuilder.genericBeanDefinition(s.getClass()).getBeanDefinition();
