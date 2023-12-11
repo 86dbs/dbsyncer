@@ -1,6 +1,6 @@
 package org.dbsyncer.storage.strategy.impl;
 
-import org.dbsyncer.storage.enums.StorageEnum;
+import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.storage.strategy.Strategy;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;

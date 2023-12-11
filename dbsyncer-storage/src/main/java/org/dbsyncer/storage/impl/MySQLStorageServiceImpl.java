@@ -10,20 +10,20 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
-import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
+import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.storage.AbstractFilter;
+import org.dbsyncer.sdk.storage.BooleanFilter;
+import org.dbsyncer.sdk.storage.Query;
 import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.NullExecutorException;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.dbsyncer.storage.enums.StorageEnum;
-import org.dbsyncer.storage.query.AbstractFilter;
-import org.dbsyncer.storage.query.BooleanFilter;
-import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.util.UnderlineToCamelUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,7 +149,7 @@ public class MySQLStorageServiceImpl extends AbstractStorageService {
             return executor;
         });
         // 非系统表
-        if(!systemTable.get()){
+        if (!systemTable.get()) {
             tables.remove(sharding);
         }
     }

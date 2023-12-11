@@ -3,9 +3,9 @@
  */
 package org.dbsyncer.parser.impl;
 
-import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.command.PersistenceCommand;
 import org.dbsyncer.parser.enums.CommandEnum;
@@ -15,8 +15,8 @@ import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.model.QueryConfig;
 import org.dbsyncer.parser.strategy.GroupStrategy;
 import org.dbsyncer.parser.util.ConfigModelUtil;
+import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.storage.StorageService;
-import org.dbsyncer.storage.enums.StorageEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;

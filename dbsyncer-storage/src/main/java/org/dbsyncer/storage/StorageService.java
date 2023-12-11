@@ -1,8 +1,8 @@
 package org.dbsyncer.storage;
 
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.storage.enums.StorageEnum;
-import org.dbsyncer.storage.query.Query;
+import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.storage.Query;
 
 import java.util.List;
 import java.util.Map;
@@ -58,14 +58,6 @@ public interface StorageService {
      * 批量添加
      *
      * @param type
-     * @param list
-     */
-    void addBatch(StorageEnum type, List<Map> list);
-
-    /**
-     * 批量添加
-     *
-     * @param type
      * @param metaId
      * @param list
      */
@@ -87,14 +79,6 @@ public interface StorageService {
      * @param params
      */
     void edit(StorageEnum type, String metaId, Map params);
-
-    /**
-     * 批量修改
-     *
-     * @param type
-     * @param list
-     */
-    void editBatch(StorageEnum type, List<Map> list);
 
     /**
      * 批量修改
@@ -126,16 +110,8 @@ public interface StorageService {
      * 批量删除
      *
      * @param type
-     * @param ids
-     */
-    void removeBatch(StorageEnum type, List<String> ids);
-
-    /**
-     * 批量删除
-     *
-     * @param type
      * @param metaId
-     * @param list
+     * @param ids
      */
     void removeBatch(StorageEnum type, String metaId, List<String> ids);
 }

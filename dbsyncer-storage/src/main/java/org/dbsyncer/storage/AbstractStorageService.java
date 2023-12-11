@@ -1,10 +1,13 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.storage;
 
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.storage.enums.StorageEnum;
-import org.dbsyncer.storage.query.BooleanFilter;
-import org.dbsyncer.storage.query.Query;
+import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.storage.BooleanFilter;
+import org.dbsyncer.sdk.storage.Query;
 import org.dbsyncer.storage.strategy.Strategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +24,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2019/11/16 1:28
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2019-11-16 23:22
  */
 public abstract class AbstractStorageService implements StorageService, DisposableBean {
 
@@ -125,11 +128,6 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public void addBatch(StorageEnum type, List<Map> list) {
-        addBatch(type, null, list);
-    }
-
-    @Override
     public void addBatch(StorageEnum type, String metaId, List<Map> list) {
         if (!CollectionUtils.isEmpty(list)) {
             batchInsert(type, getSharding(type, metaId), list);
@@ -147,11 +145,6 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public void editBatch(StorageEnum type, List<Map> list) {
-        editBatch(type, null, list);
-    }
-
-    @Override
     public void editBatch(StorageEnum type, String metaId, List<Map> list) {
         if (!CollectionUtils.isEmpty(list)) {
             batchUpdate(type, getSharding(type, metaId), list);
@@ -166,11 +159,6 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     @Override
     public void remove(StorageEnum type, String metaId, String id) {
         removeBatch(type, metaId, newArrayList(id));
-    }
-
-    @Override
-    public void removeBatch(StorageEnum type, List<String> ids) {
-        removeBatch(type, null, ids);
     }
 
     @Override

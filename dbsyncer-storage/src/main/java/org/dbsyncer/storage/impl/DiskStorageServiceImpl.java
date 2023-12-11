@@ -21,12 +21,12 @@ import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.dbsyncer.storage.enums.StorageEnum;
+import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.storage.lucene.Option;
 import org.dbsyncer.storage.lucene.Shard;
-import org.dbsyncer.storage.query.AbstractFilter;
-import org.dbsyncer.storage.query.BooleanFilter;
-import org.dbsyncer.storage.query.Query;
+import org.dbsyncer.sdk.storage.AbstractFilter;
+import org.dbsyncer.sdk.storage.BooleanFilter;
+import org.dbsyncer.sdk.storage.Query;
 import org.dbsyncer.storage.util.DocumentUtil;
 
 import javax.annotation.PostConstruct;
@@ -77,7 +77,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
                     new SortField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SortField.Type.LONG, desc));
             Option option = new Option();
             option.setQueryTotal(query.isQueryTotal());
-            option.setIndexFieldResolverMap(query.getIndexFieldResolverMap());
+            option.setFieldResolverMap(query.getFieldResolverMap());
             // 设置参数
             BooleanFilter baseQuery = query.getBooleanFilter();
             List<AbstractFilter> filters = baseQuery.getFilters();
@@ -166,13 +166,13 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         filters.forEach(p -> {
             FilterEnum filterEnum = FilterEnum.getFilterEnum(p.getFilter());
             BooleanClause.Occur occur = getOccur(p.getOperation());
-            switch (filterEnum) {
+             switch (filterEnum) {
                 case EQUAL:
                 case LIKE:
-                    builder.add(p.newEqual(), occur);
+                    builder.add(DiskQueryHelper.newEqual(p), occur);
                     break;
                 case LT:
-                    builder.add(p.newLessThan(), occur);
+                    builder.add(DiskQueryHelper.newLessThan(p), occur);
                     break;
             }
 

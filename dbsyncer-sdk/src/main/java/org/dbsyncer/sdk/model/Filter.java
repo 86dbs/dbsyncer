@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.model;
 
 import org.dbsyncer.sdk.enums.FilterEnum;

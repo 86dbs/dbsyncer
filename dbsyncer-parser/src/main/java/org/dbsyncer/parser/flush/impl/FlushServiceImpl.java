@@ -1,15 +1,15 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.config.StorageConfig;
-import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.FlushService;
 import org.dbsyncer.parser.model.StorageRequest;
+import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-import org.dbsyncer.storage.enums.StorageEnum;
+import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.dbsyncer.storage.util.BinlogMessageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

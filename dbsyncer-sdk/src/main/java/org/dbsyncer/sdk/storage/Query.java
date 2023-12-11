@@ -1,14 +1,13 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.storage.query;
+package org.dbsyncer.sdk.storage;
 
+import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.FilterEnum;
-import org.dbsyncer.storage.enums.BinlogSortEnum;
-import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
-import org.dbsyncer.storage.enums.StorageEnum;
-import org.dbsyncer.storage.query.filter.IntFilter;
-import org.dbsyncer.storage.query.filter.StringFilter;
+import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.storage.filter.IntFilter;
+import org.dbsyncer.sdk.storage.filter.StringFilter;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,12 +40,12 @@ public class Query {
     /**
      * 修改时间和创建默认降序返回
      */
-    private BinlogSortEnum sort = BinlogSortEnum.DESC;
+    private SortEnum sort = SortEnum.DESC;
 
     /**
      * 返回值转换器，限Disk使用
      */
-    private Map<String, IndexFieldResolverEnum> indexFieldResolverMap = new ConcurrentHashMap<>();
+    private Map<String, FieldResolver> fieldResolverMap = new ConcurrentHashMap<>();
 
     public Query() {
     }
@@ -116,20 +115,20 @@ public class Query {
         this.pageSize = pageSize;
     }
 
-    public BinlogSortEnum getSort() {
+    public SortEnum getSort() {
         return sort;
     }
 
-    public void setSort(BinlogSortEnum sort) {
+    public void setSort(SortEnum sort) {
         this.sort = sort;
     }
 
-    public Map<String, IndexFieldResolverEnum> getIndexFieldResolverMap() {
-        return indexFieldResolverMap;
+    public Map<String, FieldResolver> getFieldResolverMap() {
+        return fieldResolverMap;
     }
 
-    public void setIndexFieldResolverMap(Map<String, IndexFieldResolverEnum> indexFieldResolverMap) {
-        this.indexFieldResolverMap = indexFieldResolverMap;
+    public void setFieldResolverMap(Map<String, FieldResolver> fieldResolverMap) {
+        this.fieldResolverMap = fieldResolverMap;
     }
 
 }

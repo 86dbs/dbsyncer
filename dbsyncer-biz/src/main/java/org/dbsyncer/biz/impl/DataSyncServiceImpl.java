@@ -1,6 +1,7 @@
 package org.dbsyncer.biz.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.vo.BinlogColumnVo;
 import org.dbsyncer.biz.vo.MessageVo;
@@ -10,19 +11,19 @@ import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.storage.FieldResolver;
+import org.dbsyncer.sdk.storage.Query;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
-import org.dbsyncer.storage.enums.StorageEnum;
-import org.dbsyncer.storage.query.Query;
 import org.dbsyncer.storage.util.BinlogMessageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,9 +178,9 @@ public class DataSyncServiceImpl implements DataSyncService {
 
     private Map getData(String metaId, String messageId) {
         Query query = new Query(1, 1);
-        Map<String, IndexFieldResolverEnum> fieldResolvers = new LinkedHashMap<>();
-        fieldResolvers.put(ConfigConstant.BINLOG_DATA, IndexFieldResolverEnum.BINARY);
-        query.setIndexFieldResolverMap(fieldResolvers);
+        Map<String, FieldResolver> fieldResolvers = new LinkedHashMap<>();
+        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
+        query.setFieldResolverMap(fieldResolvers);
         query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);
         query.setMetaId(metaId);
         query.setType(StorageEnum.DATA);

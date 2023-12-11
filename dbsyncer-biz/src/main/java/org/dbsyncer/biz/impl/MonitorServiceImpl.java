@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.SystemConfigService;
@@ -24,28 +25,28 @@ import org.dbsyncer.biz.vo.LogVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.biz.vo.MetricResponseVo;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.scheduled.ScheduledTaskJob;
+import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.enums.FilterEnum;
-import org.dbsyncer.common.scheduled.ScheduledTaskJob;
-import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.storage.BooleanFilter;
+import org.dbsyncer.sdk.storage.FieldResolver;
+import org.dbsyncer.sdk.storage.Query;
+import org.dbsyncer.sdk.storage.filter.LongFilter;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
-import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-import org.dbsyncer.storage.enums.StorageEnum;
-import org.dbsyncer.storage.query.BooleanFilter;
-import org.dbsyncer.storage.query.Query;
-import org.dbsyncer.storage.query.filter.LongFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -264,9 +265,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             return new Paging(pageNum, pageSize);
         }
         Query query = new Query(pageNum, pageSize);
-        Map<String, IndexFieldResolverEnum> fieldResolvers = new LinkedHashMap<>();
-        fieldResolvers.put(ConfigConstant.BINLOG_DATA, IndexFieldResolverEnum.BINARY);
-        query.setIndexFieldResolverMap(fieldResolvers);
+        Map<String, FieldResolver> fieldResolvers = new LinkedHashMap<>();
+        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
+        query.setFieldResolverMap(fieldResolvers);
 
         // 查询异常信息
         if (StringUtil.isNotBlank(error)) {

@@ -3,8 +3,8 @@
  */
 package org.dbsyncer.parser.command;
 
+import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.storage.StorageService;
-import org.dbsyncer.storage.enums.StorageEnum;
 
 import java.util.Map;
 
