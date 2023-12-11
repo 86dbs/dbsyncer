@@ -11,24 +11,30 @@ package org.dbsyncer.storage.enums;
  * @Date 2021-03-10 20:31
  */
 public enum StorageDataStatusEnum {
-
     /**
      * 失败
      */
-    FAIL(0),
+    FAIL(0, "失败"),
     /**
      * 成功
      */
-    SUCCESS(1);
+    SUCCESS(1, "成功");
 
     private Integer value;
 
-    StorageDataStatusEnum(Integer value) {
+    private String message;
+
+    StorageDataStatusEnum(Integer value, String message) {
         this.value = value;
+        this.message = message;
     }
 
     public Integer getValue() {
         return value;
+    }
+
+    public String getMessage() {
+        return message;
     }
 
 }
