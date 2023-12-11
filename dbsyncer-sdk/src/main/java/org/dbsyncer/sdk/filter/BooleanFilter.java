@@ -1,4 +1,4 @@
-package org.dbsyncer.sdk.storage;
+package org.dbsyncer.sdk.filter;
 
 import org.dbsyncer.sdk.enums.OperationEnum;
 

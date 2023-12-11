@@ -1,11 +1,11 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.sdk.storage.filter;
+package org.dbsyncer.sdk.filter.impl;
 
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.FilterTypeEnum;
-import org.dbsyncer.sdk.storage.AbstractFilter;
+import org.dbsyncer.sdk.filter.AbstractFilter;
 
 public class StringFilter extends AbstractFilter {
 

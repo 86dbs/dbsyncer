@@ -21,7 +21,7 @@ import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.storage.Query;
+import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.slf4j.Logger;

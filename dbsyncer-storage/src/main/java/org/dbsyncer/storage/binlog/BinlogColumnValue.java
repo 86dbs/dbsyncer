@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.storage.binlog;
 
 import com.google.protobuf.ByteString;
@@ -11,9 +14,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2022/6/30 22:39
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2022-06-30 22:39
  */
 public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
 

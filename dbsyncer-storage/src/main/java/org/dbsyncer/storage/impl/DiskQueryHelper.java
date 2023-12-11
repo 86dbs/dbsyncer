@@ -9,7 +9,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.dbsyncer.common.util.NumberUtil;
-import org.dbsyncer.sdk.storage.AbstractFilter;
+import org.dbsyncer.sdk.filter.AbstractFilter;
 import org.dbsyncer.storage.StorageException;
 
 /**

@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.sdk.storage;
+package org.dbsyncer.sdk.filter;
 
 import org.dbsyncer.sdk.enums.FilterTypeEnum;
 import org.dbsyncer.sdk.model.Filter;

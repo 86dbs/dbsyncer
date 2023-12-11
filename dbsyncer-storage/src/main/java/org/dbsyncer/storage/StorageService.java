@@ -2,7 +2,7 @@ package org.dbsyncer.storage;
 
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.storage.Query;
+import org.dbsyncer.sdk.filter.Query;
 
 import java.util.List;
 import java.util.Map;

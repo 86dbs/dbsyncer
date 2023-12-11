@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.enums.BufferActuatorMetricEnum;
@@ -22,7 +25,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.storage.Query;
+import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.storage.StorageService;
 import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
@@ -44,9 +47,9 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2020/04/23 11:30
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2020-04-23 11:30
  */
 @Component
 public class MetricReporter implements ScheduledTaskJob {

@@ -6,7 +6,7 @@ package org.dbsyncer.storage.lucene;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Highlighter;
-import org.dbsyncer.sdk.storage.FieldResolver;
+import org.dbsyncer.sdk.filter.FieldResolver;
 
 import java.util.Map;
 import java.util.Set;

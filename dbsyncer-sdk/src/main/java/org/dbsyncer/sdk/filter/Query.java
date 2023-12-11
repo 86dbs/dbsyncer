@@ -1,13 +1,13 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.sdk.storage;
+package org.dbsyncer.sdk.filter;
 
 import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.storage.filter.IntFilter;
-import org.dbsyncer.sdk.storage.filter.StringFilter;
+import org.dbsyncer.sdk.filter.impl.IntFilter;
+import org.dbsyncer.sdk.filter.impl.StringFilter;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

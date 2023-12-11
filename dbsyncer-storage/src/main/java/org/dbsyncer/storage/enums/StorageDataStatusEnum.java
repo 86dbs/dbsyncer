@@ -1,42 +1,34 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.storage.enums;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2021/3/10 20:31
+ * 同步数据状态枚举
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2021-03-10 20:31
  */
 public enum StorageDataStatusEnum {
 
     /**
      * 失败
      */
-    FAIL(0, "0", "失败"),
+    FAIL(0),
     /**
      * 成功
      */
-    SUCCESS(1, "1", "成功");
+    SUCCESS(1);
 
     private Integer value;
 
-    private String code;
-
-    private String message;
-
-    StorageDataStatusEnum(Integer value, String code, String message) {
+    StorageDataStatusEnum(Integer value) {
         this.value = value;
-        this.code = code;
-        this.message = message;
     }
 
     public Integer getValue() {
         return value;
     }
 
-    public String getCode() {
-        return code;
-    }
-
-    public String getMessage() {
-        return message;
-    }
 }

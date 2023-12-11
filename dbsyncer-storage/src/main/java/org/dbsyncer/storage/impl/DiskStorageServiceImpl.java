@@ -24,9 +24,9 @@ import org.dbsyncer.storage.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.storage.lucene.Option;
 import org.dbsyncer.storage.lucene.Shard;
-import org.dbsyncer.sdk.storage.AbstractFilter;
-import org.dbsyncer.sdk.storage.BooleanFilter;
-import org.dbsyncer.sdk.storage.Query;
+import org.dbsyncer.sdk.filter.AbstractFilter;
+import org.dbsyncer.sdk.filter.BooleanFilter;
+import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.storage.util.DocumentUtil;
 
 import javax.annotation.PostConstruct;
