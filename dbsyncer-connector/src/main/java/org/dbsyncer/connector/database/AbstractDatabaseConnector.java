@@ -57,6 +57,19 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     private final String SYS_EXPRESSION = "^[$].*[$]$";
 
+    private static final Set<String> SYS_QUARTZ_FILTER = new HashSet<>();
+
+    static {
+        SYS_QUARTZ_FILTER.add("$timestamp_begin$");
+        SYS_QUARTZ_FILTER.add("$timestamp_end$");
+        SYS_QUARTZ_FILTER.add("$date_begin$");
+        SYS_QUARTZ_FILTER.add("$date_end$");
+        SYS_QUARTZ_FILTER.add("$date_yes_begin$");
+        SYS_QUARTZ_FILTER.add("$date_yes_end$");
+        SYS_QUARTZ_FILTER.add("$timestamp_yes_begin$");
+        SYS_QUARTZ_FILTER.add("$timestamp_yes_end$");
+    }
+
     @Override
     public ConnectorMapper connect(DatabaseConfig config) {
         try {
@@ -501,10 +514,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String buildFilterValue(String value) {
         if (StringUtil.isNotBlank(value)) {
-            // 系统函数表达式 $select max(update_time)$
-            Matcher matcher = Pattern.compile(SYS_EXPRESSION).matcher(value);
-            if (matcher.find()) {
-                return StringUtil.substring(value, 1, value.length() - 1);
+            if (!SYS_QUARTZ_FILTER.contains(value)) {
+                // 系统函数表达式 $select max(update_time)$
+                Matcher matcher = Pattern.compile(SYS_EXPRESSION).matcher(value);
+                if (matcher.find()) {
+                    return StringUtil.substring(value, 1, value.length() - 1);
+                }
             }
         }
         return new StringBuilder(StringUtil.SINGLE_QUOTATION).append(value).append(StringUtil.SINGLE_QUOTATION).toString();
