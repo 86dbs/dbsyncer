@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.connector.database.ds;
 
 import org.dbsyncer.common.util.StringUtil;
@@ -12,7 +15,6 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
@@ -23,11 +25,6 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
      * 默认最大连接
      */
     private final int MAX_IDLE = 300;
-
-    /**
-     * 连接上限后最大等待时间（秒）
-     */
-    private final int MAX_WAIT_SECONDS = 3;
 
     /**
      * 从缓存队列获取连接次数
@@ -68,11 +65,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
             lock.lock();
             //如果当前连接数大于或等于最大连接数
             if (activeNum.get() >= MAX_IDLE) {
-                //等待3秒
-                TimeUnit.SECONDS.sleep(MAX_WAIT_SECONDS);
-                if (activeNum.get() >= MAX_IDLE) {
-                    throw new ConnectorException(String.format("数据库连接数超过上限%d，url=%s", MAX_IDLE, url));
-                }
+                throw new ConnectorException(String.format("数据库连接数超过上限%d，url=%s", MAX_IDLE, url));
             }
             int time = MAX_PULL_TIME;
             while (time-- > 0){
@@ -91,8 +84,6 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
             // 兜底方案，保证一定能获取连接
             return createConnection();
-        } catch (InterruptedException e) {
-            throw new ConnectorException(e);
         } finally {
             lock.unlock();
         }
