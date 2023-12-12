@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.common.util;
 
 import org.apache.commons.lang3.StringUtils;
@@ -7,6 +10,8 @@ public abstract class StringUtil {
     public static final String EMPTY = "";
 
     public static final String SYMBOL = "-";
+
+    public static final String UNDERLINE = "_";
 
     public static final String COLON = ":";
 

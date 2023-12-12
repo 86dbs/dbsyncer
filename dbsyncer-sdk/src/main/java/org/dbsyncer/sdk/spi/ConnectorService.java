@@ -173,4 +173,14 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @return
      */
     Listener getListener(String listenerType);
+
+    /**
+     * 获取存储服务
+     *
+     * @return
+     */
+    default StorageService getStorageService() {
+        return null;
+    }
+
 }

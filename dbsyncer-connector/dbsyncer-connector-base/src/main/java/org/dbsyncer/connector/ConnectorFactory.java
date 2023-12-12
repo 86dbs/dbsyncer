@@ -16,17 +16,19 @@ import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.context.ApplicationContext;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -38,7 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Date 2019-09-18 23:30
  */
 @Component
-public class ConnectorFactory implements DisposableBean {
+public class ConnectorFactory implements BeanDefinitionRegistryPostProcessor, DisposableBean {
 
     private final Map<String, ConnectorInstance> pool = new ConcurrentHashMap<>();
 
@@ -46,18 +48,18 @@ public class ConnectorFactory implements DisposableBean {
 
     private final Set<String> connectorTypes = new HashSet<>();
 
-    @Resource
-    private ApplicationContext applicationContext;
-
-    @PostConstruct
-    private void init() {
-        Map<String, ConnectorService> beans = applicationContext.getBeansOfType(ConnectorService.class);
-        if (!CollectionUtils.isEmpty(beans)) {
-            beans.values().forEach(s -> {
-                service.putIfAbsent(s.getConnectorType(), s);
-                connectorTypes.add(s.getConnectorType());
-            });
+    @Override
+    public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry beanDefinitionRegistry) throws BeansException {
+        ServiceLoader<ConnectorService> services = ServiceLoader.load(ConnectorService.class, Thread.currentThread().getContextClassLoader());
+        for (ConnectorService s : services) {
+            service.putIfAbsent(s.getConnectorType(), s);
+            connectorTypes.add(s.getConnectorType());
         }
+    }
+
+    @Override
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory configurableListableBeanFactory) throws BeansException {
+
     }
 
     @Override

@@ -9,6 +9,7 @@ import org.dbsyncer.sdk.filter.Query;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * 存储服务（支持记录配置/日志/同步数据）
@@ -18,6 +19,11 @@ import java.util.Map;
  * @Date 2019-11-16 23:22
  */
 public interface StorageService {
+
+    /**
+     * 初始化
+     */
+    void init(Properties properties);
 
     /**
      * 查询所有数据

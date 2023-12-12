@@ -26,13 +26,9 @@ import org.dbsyncer.sdk.storage.AbstractStorageService;
 import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import javax.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,6 +37,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,10 +51,7 @@ import java.util.stream.Stream;
  * @Version 1.0.0
  * @Date 2020-01-08 15:17
  */
-@Component
-@ConditionalOnProperty(value = "dbsyncer.storage.type", havingValue = "MySQL")
-@ConfigurationProperties(prefix = "dbsyncer.storage.mysql")
-public class MySQLStorageServiceProvider extends AbstractStorageService {
+public class MySQLStorageService extends AbstractStorageService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -65,25 +59,29 @@ public class MySQLStorageServiceProvider extends AbstractStorageService {
     private final String SHOW_TABLE = "show tables where Tables_in_%s = '%s'";
     private final String DROP_TABLE = "DROP TABLE %s";
     private final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
+    private final MySQLConnector connector = new MySQLConnector();
     private Map<String, Executor> tables = new ConcurrentHashMap<>();
-    private MySQLConnector connector = new MySQLConnector();
     private DatabaseConnectorInstance connectorInstance;
-    private DatabaseConfig config;
     private String database;
 
-    @PostConstruct
-    private void init() throws InterruptedException {
+    @Override
+    public void init(Properties properties) {
+        DatabaseConfig config = new DatabaseConfig();
+        config.setConnectorType(properties.getProperty("dbsyncer.storage.type"));
+        config.setUrl(properties.getProperty("dbsyncer.storage.mysql.url", "jdbc:mysql://127.0.0.1:3306/dbsyncer?rewriteBatchedStatements=true&seUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true"));
+        config.setUsername(properties.getProperty("dbsyncer.storage.mysql.username", "admin"));
+        config.setPassword(properties.getProperty("dbsyncer.storage.mysql.password", "admin"));
+        config.setDriverClassName(properties.getProperty("dbsyncer.storage.mysql.driver-class-name"));
         logger.info("url:{}", config.getUrl());
-        config.setConnectorType(connector.getConnectorType());
         database = DatabaseUtil.getDatabaseName(config.getUrl());
-        connectorInstance = (DatabaseConnectorInstance) connector.connect(config);
+        connectorInstance = new DatabaseConnectorInstance(config);
         // 初始化表
         initTable();
     }
 
     @Override
     protected String getSeparator() {
-        return "_";
+        return StringUtil.UNDERLINE;
     }
 
     @Override
@@ -338,7 +336,7 @@ public class MySQLStorageServiceProvider extends AbstractStorageService {
         }
     }
 
-    private void initTable() throws InterruptedException {
+    private void initTable() {
         // 配置
         FieldBuilder builder = new FieldBuilder();
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
@@ -363,7 +361,11 @@ public class MySQLStorageServiceProvider extends AbstractStorageService {
         });
 
         // wait few seconds for execute sql
-        TimeUnit.SECONDS.sleep(1);
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     private Executor createTableIfNotExist(String table, Executor executor) {
@@ -392,9 +394,7 @@ public class MySQLStorageServiceProvider extends AbstractStorageService {
     }
 
     private String readSql(String type, boolean systemTable, String table) {
-        String template = PREFIX_TABLE.concat(type);
-        String filePath = "/".concat(template).concat(".sql");
-
+        String filePath = getSqlFilePath(type);
         StringBuilder res = new StringBuilder();
         InputStream in = null;
         InputStreamReader isr = null;
@@ -417,9 +417,20 @@ public class MySQLStorageServiceProvider extends AbstractStorageService {
 
         // 动态替换表名
         if (!systemTable) {
+            String template = PREFIX_TABLE.concat(type);
             return StringUtil.replace(res.toString(), template, table);
         }
         return res.toString();
+    }
+
+    /**
+     * 获取sql脚本路径
+     *
+     * @param type
+     * @return /dbsyncer_mysql_config.sql
+     */
+    private String getSqlFilePath(String type) {
+        return new StringBuilder(StringUtil.FORWARD_SLASH).append(PREFIX_TABLE).append(connector.getConnectorType().toLowerCase()).append(StringUtil.UNDERLINE).append(type).append(".sql").toString();
     }
 
     private void executeSql(String ddl) {
@@ -441,10 +452,6 @@ public class MySQLStorageServiceProvider extends AbstractStorageService {
                     })
             );
         }
-    }
-
-    public void setConfig(DatabaseConfig config) {
-        this.config = config;
     }
 
     final class FieldBuilder {

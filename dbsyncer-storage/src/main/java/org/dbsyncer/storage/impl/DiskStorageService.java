@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.storage.impl;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -16,26 +15,26 @@ import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
-import org.dbsyncer.sdk.storage.AbstractStorageService;
-import org.dbsyncer.storage.StorageException;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.storage.lucene.Option;
-import org.dbsyncer.storage.lucene.Shard;
 import org.dbsyncer.sdk.filter.AbstractFilter;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.storage.AbstractStorageService;
+import org.dbsyncer.storage.StorageException;
+import org.dbsyncer.storage.lucene.Option;
+import org.dbsyncer.storage.lucene.Shard;
 import org.dbsyncer.storage.util.DocumentUtil;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -46,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Version 1.0.0
  * @Date 2023-09-10 23:22
  */
-public class DiskStorageServiceImpl extends AbstractStorageService {
+public class DiskStorageService extends AbstractStorageService {
 
     private Map<String, Shard> shards = new ConcurrentHashMap();
 
@@ -56,10 +55,8 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
     private static final String PATH = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar).append("data")
             .append(File.separatorChar).toString();
 
-    @PostConstruct
-    private void init() {
-        // 废弃binlog
-        FileUtils.deleteQuietly(new File(PATH + "binlog"));
+    @Override
+    public void init(Properties properties) {
         // 创建配置和日志索引shard
         getShard(getSharding(StorageEnum.CONFIG, null));
         getShard(getSharding(StorageEnum.LOG, null));
@@ -166,7 +163,7 @@ public class DiskStorageServiceImpl extends AbstractStorageService {
         filters.forEach(p -> {
             FilterEnum filterEnum = FilterEnum.getFilterEnum(p.getFilter());
             BooleanClause.Occur occur = getOccur(p.getOperation());
-             switch (filterEnum) {
+            switch (filterEnum) {
                 case EQUAL:
                 case LIKE:
                     builder.add(DiskQueryHelper.newEqual(p), occur);

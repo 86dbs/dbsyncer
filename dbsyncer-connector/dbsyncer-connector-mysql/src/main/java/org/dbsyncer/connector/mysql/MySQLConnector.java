@@ -5,6 +5,7 @@ package org.dbsyncer.connector.mysql;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.cdc.MySQLListener;
+import org.dbsyncer.connector.mysql.storage.MySQLStorageService;
 import org.dbsyncer.connector.mysql.validator.MySQLConfigValidator;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
@@ -14,6 +15,7 @@ import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.spi.StorageService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +56,11 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
             return new MySQLListener();
         }
         return null;
+    }
+
+    @Override
+    public StorageService getStorageService() {
+        return new MySQLStorageService();
     }
 
     @Override
