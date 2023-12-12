@@ -19,6 +19,7 @@ import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.OperationEnum;
+import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Field;
@@ -522,10 +523,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String buildFilterValue(String value) {
         if (StringUtil.isNotBlank(value)) {
-            // 系统函数表达式 $select max(update_time)$
-            Matcher matcher = Pattern.compile(SYS_EXPRESSION).matcher(value);
-            if (matcher.find()) {
-                return StringUtil.substring(value, 1, value.length() - 1);
+            // 排除定时表达式
+            if (QuartzFilterEnum.getQuartzFilterEnum(value) == null) {
+                // 系统函数表达式 $select max(update_time)$
+                Matcher matcher = Pattern.compile(SYS_EXPRESSION).matcher(value);
+                if (matcher.find()) {
+                    return StringUtil.substring(value, 1, value.length() - 1);
+                }
             }
         }
         return new StringBuilder(StringUtil.SINGLE_QUOTATION).append(value).append(StringUtil.SINGLE_QUOTATION).toString();
