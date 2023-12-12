@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.QueueOverflowException;

@@ -49,6 +49,9 @@ public class SystemConfigChecker extends AbstractChecker {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "Config check params is null.");
         params.put("enableCDN", StringUtil.isNotBlank(params.get("enableCDN")) ? "true" : "false");
+        params.put("enableStorageWriteFull", StringUtil.isNotBlank(params.get("enableStorageWriteFull")) ? "true" : "false");
+        params.put("enableStorageWriteSuccess", StringUtil.isNotBlank(params.get("enableStorageWriteSuccess")) ? "true" : "false");
+        params.put("enableStorageWriteFail", StringUtil.isNotBlank(params.get("enableStorageWriteFail")) ? "true" : "false");
 
         SystemConfig systemConfig = profileComponent.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");

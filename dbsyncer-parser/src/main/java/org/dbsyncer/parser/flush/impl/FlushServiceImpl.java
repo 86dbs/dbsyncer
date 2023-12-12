@@ -1,13 +1,17 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.parser.flush.impl;
 
-import org.dbsyncer.common.config.StorageConfig;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.FlushService;
 import org.dbsyncer.parser.model.StorageRequest;
+import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.spi.StorageService;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.dbsyncer.storage.util.BinlogMessageUtil;
@@ -46,10 +50,10 @@ public class FlushServiceImpl implements FlushService {
     private BufferActuator storageBufferActuator;
 
     @Resource
-    private StorageConfig storageConfig;
+    private Executor storageExecutor;
 
     @Resource
-    private Executor storageExecutor;
+    private ProfileComponent profileComponent;
 
     @Override
     public void asyncWrite(String type, String error) {
@@ -57,7 +61,7 @@ public class FlushServiceImpl implements FlushService {
             Map<String, Object> params = new HashMap();
             params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
-            params.put(ConfigConstant.CONFIG_MODEL_JSON, substring(error));
+            params.put(ConfigConstant.CONFIG_MODEL_JSON, StringUtil.substring(error, 0, getSystemConfig().getMaxStorageErrorLength()));
             params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, Instant.now().toEpochMilli());
             storageService.add(StorageEnum.LOG, params);
         });
@@ -73,7 +77,7 @@ public class FlushServiceImpl implements FlushService {
             row.put(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
             row.put(ConfigConstant.DATA_TARGET_TABLE_NAME, targetTableGroupName);
             row.put(ConfigConstant.DATA_EVENT, event);
-            row.put(ConfigConstant.DATA_ERROR, substring(error));
+            row.put(ConfigConstant.DATA_ERROR, error);
             row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
             try {
                 byte[] bytes = BinlogMessageUtil.toBinlogMap(r).toByteArray();
@@ -81,19 +85,16 @@ public class FlushServiceImpl implements FlushService {
             } catch (Exception e) {
                 logger.warn("可能存在Blob或inputStream大文件类型, 无法序列化:{}", r);
             }
-
             storageBufferActuator.offer(new StorageRequest(metaId, row));
         });
     }
 
     /**
-     * 限制记录异常信息长度
+     * TODO 加缓存过期
      *
-     * @param error
      * @return
      */
-    private String substring(String error) {
-        return StringUtil.substring(error, 0, storageConfig.getMaxErrorLength());
+    private SystemConfig getSystemConfig() {
+        return profileComponent.getSystemConfig();
     }
-
 }

@@ -10,7 +10,7 @@ function submit(data) {
 }
 
 $(function () {
-    $('#enableCDNSwitch').bootstrapSwitch({
+    $('.systemConfigSwitch').bootstrapSwitch({
         onText: "Yes",
         offText: "No",
         onColor: "success",

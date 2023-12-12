@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.common.config;
 
 import org.dbsyncer.common.util.ThreadPoolUtil;
@@ -32,21 +35,6 @@ public class StorageConfig extends BufferActuatorConfig {
      */
     private int threadQueueCapacity = 500;
 
-    /**
-     * 是否记录同步成功数据
-     */
-    private boolean writeSuccess;
-
-    /**
-     * 是否记录同步失败数据
-     */
-    private boolean writeFail;
-
-    /**
-     * 最大记录异常信息长度
-     */
-    private int maxErrorLength;
-
     @Bean(name = "storageExecutor", destroyMethod = "shutdown")
     public ThreadPoolTaskExecutor storageExecutor() {
         return ThreadPoolUtil.newThreadPoolTaskExecutor(threadCoreSize, maxThreadSize, threadQueueCapacity, 30, "StorageExecutor-");
@@ -76,27 +64,4 @@ public class StorageConfig extends BufferActuatorConfig {
         this.threadQueueCapacity = threadQueueCapacity;
     }
 
-    public boolean isWriteSuccess() {
-        return writeSuccess;
-    }
-
-    public void setWriteSuccess(boolean writeSuccess) {
-        this.writeSuccess = writeSuccess;
-    }
-
-    public boolean isWriteFail() {
-        return writeFail;
-    }
-
-    public void setWriteFail(boolean writeFail) {
-        this.writeFail = writeFail;
-    }
-
-    public int getMaxErrorLength() {
-        return maxErrorLength;
-    }
-
-    public void setMaxErrorLength(int maxErrorLength) {
-        this.maxErrorLength = maxErrorLength;
-    }
 }

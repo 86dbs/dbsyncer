@@ -34,9 +34,33 @@
                     </div>
                 </div>
                 <div class="form-group">
+                    <label class="col-sm-4 control-label">记录同步成功数据</label>
+                    <div class="col-sm-8">
+                        <input class="systemConfigSwitch" name="enableStorageWriteSuccess" th:checked="${config?.enableStorageWriteSuccess}" type="checkbox" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label">记录同步失败数据</label>
+                    <div class="col-sm-8">
+                        <input class="systemConfigSwitch" name="enableStorageWriteFail" th:checked="${config?.enableStorageWriteFail}" type="checkbox" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label">记录同步失败日志长度 <strong class="driverVerifcateRequired">*</strong></label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" min="1024" max="8192" dbsyncer-valid="require" name="maxStorageErrorLength" th:value="${config?.maxStorageErrorLength}"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label">记录全量数据 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="不推荐在生产环境下开启，可在源库数据量较少时使用，一般用于测试"></i></label>
+                    <div class="col-sm-8">
+                        <input class="systemConfigSwitch" name="enableStorageWriteFull" th:checked="${config?.enableStorageWriteFull}" type="checkbox" />
+                    </div>
+                </div>
+                <div class="form-group">
                     <label class="col-sm-4 control-label">CDN静态资源</label>
                     <div class="col-sm-8">
-                        <input id="enableCDNSwitch" name="enableCDN" th:checked="${config?.enableCDN}" type="checkbox" />
+                        <input class="systemConfigSwitch" name="enableCDN" th:checked="${config?.enableCDN}" type="checkbox" />
                     </div>
                 </div>
                 <div class="form-group">
