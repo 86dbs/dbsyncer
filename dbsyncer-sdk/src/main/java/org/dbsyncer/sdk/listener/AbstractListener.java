@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.common.util.CollectionUtils;
@@ -24,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * @Author AE86
  * @Date 2020-05-25 22:35
  */
-public abstract class AbstractListener implements Listener {
+public abstract class AbstractListener<C extends ConnectorInstance> implements Listener {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final int FLUSH_DELAYED_SECONDS = 20;
@@ -54,7 +57,7 @@ public abstract class AbstractListener implements Listener {
                     break;
                 case ConnectorConstant.OPERTION_INSERT:
                     // 是否支持监听新增事件
-                    processEvent(!listenerConfig.isBanInsert(), event);
+                     processEvent(!listenerConfig.isBanInsert(), event);
                     break;
                 case ConnectorConstant.OPERTION_DELETE:
                     // 是否支持监听删除事件
@@ -125,6 +128,10 @@ public abstract class AbstractListener implements Listener {
 
     public void setConnectorService(ConnectorService connectorService) {
         this.connectorService = connectorService;
+    }
+
+    public C getConnectorInstance() {
+        return (C) connectorInstance;
     }
 
     public void setScheduledTaskService(ScheduledTaskService scheduledTaskService) {

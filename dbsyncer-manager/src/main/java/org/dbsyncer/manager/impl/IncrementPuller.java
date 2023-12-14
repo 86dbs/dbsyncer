@@ -184,6 +184,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
             abstractListener.setMetaId(meta.getId());
         }
 
+        listener.init();
         return listener;
     }
 

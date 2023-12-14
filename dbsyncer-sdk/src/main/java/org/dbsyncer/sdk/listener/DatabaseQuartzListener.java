@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.common.util.CollectionUtils;
@@ -79,7 +82,7 @@ public final class DatabaseQuartzListener extends AbstractQuartzListener {
                 }
 
                 // 读取历史增量点
-                Object val = f.getObject(snapshot.get(key));
+                Object val = f.getObject((String) snapshot.get(key));
                 point.addArg(val);
                 point.setBeginKey(key);
                 point.setBeginValue(f.toString(f.getObject()));

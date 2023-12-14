@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.common.model.Result;
@@ -105,7 +108,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         // 检查增量点
         Point point = checkLastPoint(command, index);
         int pageIndex = 1;
-        Object[] cursors = PrimaryKeyUtil.getLastCursors(snapshot.get(index + CURSOR));
+        Object[] cursors = PrimaryKeyUtil.getLastCursors((String) snapshot.get(index + CURSOR));
 
         while (running) {
             ReaderConfig readerConfig = new ReaderConfig(table, point.getCommand(), point.getArgs(), supportedCursor, cursors, pageIndex++, READ_NUM);

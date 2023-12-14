@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.common.util.CollectionUtils;
@@ -23,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version 1.0.0
  * @date 2022/5/29 21:46
  */
-public abstract class AbstractDatabaseListener extends AbstractListener {
+public abstract class AbstractDatabaseListener extends AbstractListener<DatabaseConnectorInstance> {
 
     /**
      * 自定义SQL，支持1对多

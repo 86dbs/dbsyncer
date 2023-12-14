@@ -67,7 +67,7 @@ public final class ESQuartzListener extends AbstractQuartzListener {
                     }
 
                     // 读取历史增量点
-                    f.setValue(snapshot.get(key));
+                    f.setValue((String) snapshot.get(key));
                     point.setBeginKey(key);
                     point.setBeginValue(quartzFilter.toString(quartzFilter.getObject()));
                     continue;

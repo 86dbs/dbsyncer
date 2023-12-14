@@ -13,6 +13,12 @@ import org.dbsyncer.sdk.model.ChangedOffset;
  * @Date 2023-11-21 22:48
  */
 public interface Listener {
+
+    /**
+     * 初始化
+     */
+    default void init(){};
+
     /**
      * 启动定时/日志抽取任务
      */

@@ -107,7 +107,7 @@ public class FileListener extends AbstractListener {
             final RandomAccessFile raf = new BufferedRandomAccessFile(file, "r");
             final String filePosKey = getFilePosKey(fileName);
             if (snapshot.containsKey(filePosKey)) {
-                raf.seek(NumberUtil.toLong(snapshot.get(filePosKey), 0L));
+                raf.seek(NumberUtil.toLong((String) snapshot.get(filePosKey), 0L));
             } else {
                 raf.seek(raf.length());
                 snapshot.put(filePosKey, String.valueOf(raf.getFilePointer()));
