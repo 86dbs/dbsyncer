@@ -3,17 +3,16 @@
  */
 package org.dbsyncer.parser.consumer;
 
-import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
-import org.dbsyncer.sdk.listener.ChangedEvent;
-import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
-import org.dbsyncer.sdk.listener.Watcher;
-import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.listener.ChangedEvent;
+import org.dbsyncer.sdk.listener.Watcher;
+import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.SqlChangedEvent;
 
 import java.util.List;
