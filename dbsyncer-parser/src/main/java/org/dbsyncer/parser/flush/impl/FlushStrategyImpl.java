@@ -92,11 +92,6 @@ public final class FlushStrategyImpl implements FlushStrategy {
         }
     }
 
-    /**
-     * TODO 加缓存过期
-     *
-     * @return
-     */
     private SystemConfig getSystemConfig() {
         return profileComponent.getSystemConfig();
     }

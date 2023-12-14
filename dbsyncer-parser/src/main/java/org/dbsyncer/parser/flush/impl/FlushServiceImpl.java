@@ -36,7 +36,7 @@ import java.util.concurrent.Executor;
  * @date 2020/05/19 18:38
  */
 @Component
-public class FlushServiceImpl implements FlushService {
+public final class FlushServiceImpl implements FlushService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -89,11 +89,6 @@ public class FlushServiceImpl implements FlushService {
         });
     }
 
-    /**
-     * TODO 加缓存过期
-     *
-     * @return
-     */
     private SystemConfig getSystemConfig() {
         return profileComponent.getSystemConfig();
     }

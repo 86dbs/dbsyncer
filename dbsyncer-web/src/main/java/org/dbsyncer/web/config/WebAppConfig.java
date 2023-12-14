@@ -62,7 +62,6 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     @Resource
     private UserConfigService userConfigService;
 
-
     /**
      * 登录失败
      *
