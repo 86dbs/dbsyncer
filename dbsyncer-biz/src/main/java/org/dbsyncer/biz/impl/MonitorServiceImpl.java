@@ -44,7 +44,7 @@ import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.FieldResolver;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
-import org.dbsyncer.sdk.spi.StorageService;
+import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.slf4j.Logger;

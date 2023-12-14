@@ -104,7 +104,7 @@ public class MySQLListener extends AbstractDatabaseListener {
     }
 
     private void run() throws Exception {
-        final DatabaseConfig config = (DatabaseConfig) connectorConfig;
+        final DatabaseConfig config = getConnectorInstance().getConfig();
         if (StringUtil.isBlank(config.getUrl())) {
             throw new MySQLException("url is invalid");
         }

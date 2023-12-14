@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.sdk.spi;
+package org.dbsyncer.sdk.storage;
 
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.sdk.enums.StorageEnum;

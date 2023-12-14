@@ -21,7 +21,7 @@ import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.filter.FieldResolver;
 import org.dbsyncer.sdk.filter.Query;
-import org.dbsyncer.sdk.spi.StorageService;
+import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.storage.util.BinlogMessageUtil;

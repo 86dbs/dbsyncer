@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.config.TableGroupBufferConfig;
@@ -15,9 +18,9 @@ import java.util.concurrent.Executor;
 /**
  * 表执行器（根据表消费数据，多线程批量写，按序执行）
  *
- * @author AE86
- * @version 1.0.0
- * @date 2022/3/27 16:50
+ * @Version 1.0.0
+ * @Author AE86
+ * @Date 2023-03-27 16:50
  */
 @Component
 public final class TableGroupBufferActuator extends GeneralBufferActuator implements Cloneable {

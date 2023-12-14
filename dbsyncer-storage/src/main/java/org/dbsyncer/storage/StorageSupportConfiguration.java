@@ -5,7 +5,7 @@ package org.dbsyncer.storage;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.sdk.spi.StorageService;
+import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.DiskStorageService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.origin.OriginTrackedValue;

@@ -1,10 +1,11 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.parser.command;
+package org.dbsyncer.parser.command.impl;
 
+import org.dbsyncer.parser.command.Command;
 import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.spi.StorageService;
+import org.dbsyncer.sdk.storage.StorageService;
 
 import java.util.Map;
 
@@ -15,7 +16,7 @@ import java.util.Map;
  * @Author AE86
  * @Date 2023-11-12 01:32
  */
-public class PersistenceCommand implements Command {
+public final class PersistenceCommand implements Command {
 
     private StorageService storageService;
 

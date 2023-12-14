@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.util.CollectionUtils;
@@ -46,9 +49,9 @@ import java.util.stream.Collectors;
 /**
  * 增量同步
  *
- * @author AE86
- * @version 1.0.0
- * @date 2020/04/26 15:28
+ * @Version 1.0.0
+ * @Author AE86
+ * @Date 2020-04-26 15:28
  */
 @Component
 public final class IncrementPuller extends AbstractPuller implements ApplicationListener<RefreshOffsetEvent>, ScheduledTaskJob {

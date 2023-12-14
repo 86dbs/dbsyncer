@@ -1,9 +1,10 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.parser.command;
+package org.dbsyncer.parser.command.impl;
 
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.command.Command;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -19,7 +20,7 @@ import org.dbsyncer.parser.model.UserConfig;
  * @Author AE86
  * @Date 2023-11-12 01:32
  */
-public class PreloadCommand implements Command {
+public final class PreloadCommand implements Command {
 
     private ProfileComponent profileComponent;
 

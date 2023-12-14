@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.parser.flush.impl;
+package org.dbsyncer.parser.strategy.impl;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -10,10 +10,15 @@ import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.flush.FlushService;
+import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.storage.enums.StorageDataStatusEnum;
+import org.dbsyncer.storage.impl.SnowflakeIdWorker;
+import org.dbsyncer.storage.util.BinlogMessageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -21,11 +26,14 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2021/11/18 22:22
+ * @Version 1.0.0
+ * @Author AE86
+ * @Date 2021-11-18 22:22
  */
 @Component
 public final class FlushStrategyImpl implements FlushStrategy {
@@ -33,7 +41,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private FlushService flushService;
+    private SnowflakeIdWorker snowflakeIdWorker;
 
     @Resource
     private CacheService cacheService;
@@ -43,6 +51,9 @@ public final class FlushStrategyImpl implements FlushStrategy {
 
     @Resource
     private LogService logService;
+
+    @Resource
+    private BufferActuator storageBufferActuator;
 
     @Override
     public void flushFullData(String metaId, Result result, String event) {
@@ -67,7 +78,28 @@ public final class FlushStrategyImpl implements FlushStrategy {
         flush(metaId, result, event);
     }
 
-    protected void refreshTotal(String metaId, Result writer) {
+    private void asyncWrite(String metaId, String tableGroupId, String targetTableGroupName, String event, boolean success, List<Map> data, String error) {
+        long now = Instant.now().toEpochMilli();
+        data.forEach(r -> {
+            Map<String, Object> row = new HashMap();
+            row.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
+            row.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
+            row.put(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
+            row.put(ConfigConstant.DATA_TARGET_TABLE_NAME, targetTableGroupName);
+            row.put(ConfigConstant.DATA_EVENT, event);
+            row.put(ConfigConstant.DATA_ERROR, error);
+            row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
+            try {
+                byte[] bytes = BinlogMessageUtil.toBinlogMap(r).toByteArray();
+                row.put(ConfigConstant.BINLOG_DATA, bytes);
+            } catch (Exception e) {
+                logger.warn("可能存在Blob或inputStream大文件类型, 无法序列化:{}", r);
+            }
+            storageBufferActuator.offer(new StorageRequest(metaId, row));
+        });
+    }
+
+    private void refreshTotal(String metaId, Result writer) {
         Assert.hasText(metaId, "Meta id can not be empty.");
         Meta meta = cacheService.get(metaId, Meta.class);
         if (meta != null) {
@@ -83,12 +115,12 @@ public final class FlushStrategyImpl implements FlushStrategy {
         // 是否写失败数据
         if (getSystemConfig().isEnableStorageWriteFail() && !CollectionUtils.isEmpty(result.getFailData())) {
             final String error = StringUtil.substring(result.getError().toString(), 0, getSystemConfig().getMaxStorageErrorLength());
-            flushService.asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, false, result.getFailData(), error);
+            asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, false, result.getFailData(), error);
         }
 
         // 是否写成功数据
         if (getSystemConfig().isEnableStorageWriteSuccess() && !CollectionUtils.isEmpty(result.getSuccessData())) {
-            flushService.asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, true, result.getSuccessData(), "");
+            asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, true, result.getSuccessData(), "");
         }
     }
 
