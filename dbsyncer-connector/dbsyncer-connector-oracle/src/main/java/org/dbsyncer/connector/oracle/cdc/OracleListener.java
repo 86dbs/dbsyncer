@@ -78,7 +78,7 @@ public class OracleListener extends AbstractDatabaseListener {
     }
 
     /**
-     * 解析时间
+     * 解析事件
      *
      * @param event
      * @throws Exception
