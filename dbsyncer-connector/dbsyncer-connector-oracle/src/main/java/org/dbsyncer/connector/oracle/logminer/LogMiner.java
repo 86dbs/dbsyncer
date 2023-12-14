@@ -132,7 +132,7 @@ public class LogMiner {
 
                 try {
                     // 避免频繁的执行导致 PGA 内存超出 PGA_AGGREGATE_LIMIT
-                    TimeUnit.SECONDS.sleep(2);
+                    TimeUnit.SECONDS.sleep(5);
                 } catch (InterruptedException e) {
                     logger.error(e.getMessage(), e);
                 }
