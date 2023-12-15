@@ -321,4 +321,8 @@ public class LogMiner {
         void onEvent(RedoEvent redoEvent);
     }
 
+    public boolean isConnected(){
+        return connected;
+    }
+
 }

@@ -10,10 +10,10 @@ import java.util.Map;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
 import net.sf.jsqlparser.schema.Column;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
 
 /**
@@ -48,13 +48,13 @@ public abstract class AbstractParser implements Parser {
     }
 
     public String parserValue(Expression expression){
-        String value = "";
         if (expression instanceof Function){
-            value = parserFunction((Function) expression);
-        }else{
-            value = expression.toString();
+            return parserFunction((Function) expression);
         }
-        return value;
+        if (expression instanceof NullValue){
+            return null;
+        }
+        return expression.toString();
     }
 
     //解析sql的function，只取到关键的字符串
