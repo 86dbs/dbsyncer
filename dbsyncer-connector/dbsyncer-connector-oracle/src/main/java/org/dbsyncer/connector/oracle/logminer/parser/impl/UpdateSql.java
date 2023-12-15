@@ -4,6 +4,8 @@
 package org.dbsyncer.connector.oracle.logminer.parser.impl;
 
 import net.sf.jsqlparser.statement.update.Update;
+import net.sf.jsqlparser.statement.update.UpdateSet;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.logminer.parser.AbstractParser;
 
 import java.util.List;
@@ -24,7 +26,18 @@ public class UpdateSql extends AbstractParser {
     @Override
     public List<Object> parseColumns() {
         findColumn(update.getWhere());
-        return getColumnsFromDB();
+        passerSet(update.getUpdateSets());
+        return columnMapToData();
+    }
+
+    private void passerSet(List<UpdateSet> updateSets){
+        //解析替换
+        for (UpdateSet updateSet:updateSets) {
+            String columnName = StringUtil.replace(updateSet.getColumn(0).getColumnName(),
+                    StringUtil.DOUBLE_QUOTATION,StringUtil.EMPTY);
+            String value = parserValue(updateSet.getValue(0));
+            columnMap.put(columnName,value);
+        }
     }
 
 }
