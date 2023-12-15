@@ -132,7 +132,6 @@ public class OracleListener extends AbstractDatabaseListener {
     private AbstractParser setTable(AbstractParser parser, Table table) {
         parser.setTableName(table == null ? StringUtil.EMPTY : StringUtil.replace(table.getName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY));
         parser.setFields(tableFiledMap.get(parser.getTableName()));
-        parser.setInstance(getConnectorInstance());
         return parser;
     }
 

@@ -25,7 +25,7 @@ public class OracleTypeParser {
             case Types.TIMESTAMP:
                 return DateFormatUtil.stringToTimestamp(StringUtil.replace(value,StringUtil.SINGLE_QUOTATION,StringUtil.EMPTY));
             default:
-                return value;
+                return StringUtil.replace(value,StringUtil.SINGLE_QUOTATION,StringUtil.EMPTY);
         }
     }
 

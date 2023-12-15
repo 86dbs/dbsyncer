@@ -26,7 +26,6 @@ public abstract class AbstractParser implements Parser {
     protected Map<String, String> columnMap = new HashMap<>();
     protected String tableName;
     protected List<Field> fields;
-    protected DatabaseConnectorInstance instance;
 
     public void findColumn(Expression expression) {
         if (expression instanceof IsNullExpression){
@@ -89,7 +88,4 @@ public abstract class AbstractParser implements Parser {
         this.fields = fields;
     }
 
-    public void setInstance(DatabaseConnectorInstance instance) {
-        this.instance = instance;
-    }
 }
