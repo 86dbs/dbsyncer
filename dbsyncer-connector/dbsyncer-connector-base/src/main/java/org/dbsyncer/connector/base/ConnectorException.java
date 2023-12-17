@@ -1,4 +1,4 @@
-package org.dbsyncer.connector;
+package org.dbsyncer.connector.base;
 
 /**
  * @author AE86

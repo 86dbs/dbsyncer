@@ -3,7 +3,7 @@ package org.dbsyncer.parser.impl;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;

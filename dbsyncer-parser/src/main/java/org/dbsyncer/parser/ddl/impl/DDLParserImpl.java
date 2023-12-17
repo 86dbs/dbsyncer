@@ -7,7 +7,7 @@ import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
 import net.sf.jsqlparser.statement.alter.AlterOperation;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.parser.ddl.AlterStrategy;

@@ -4,7 +4,7 @@
 package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.ConnectorFactory;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.parser.LogService;
