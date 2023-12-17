@@ -129,6 +129,8 @@ public class LogMiner {
                     }catch (SQLException e){
                         if (e.getMessage().contains("ORA-00310")){
                             logger.error("ORA-00310 try continue");
+                            restartLogMiner();
+                            currentRedoLogSequences = LogMinerHelper.getCurrentRedoLogSequences(connection);
                             continue;
                         }
                         throw e;
