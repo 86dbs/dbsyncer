@@ -124,7 +124,14 @@ public class LogMiner {
                 try (ResultSet rs = minerViewStatement.executeQuery()) {
                     logger.trace("Query V$LOGMNR_CONTENTS spend time {} ms", stopWatch.getTime(TimeUnit.MILLISECONDS));
                     stopWatch.reset();
-                    logMinerViewProcessor(rs);
+                    try{
+                        logMinerViewProcessor(rs);
+                    }catch (SQLException e){
+                        if (e.getMessage().contains("ORA-00310")){
+                            continue;
+                        }
+                        throw e;
+                    }
                 }
 
                 // 7.确定新的SCN
@@ -264,12 +271,10 @@ public class LogMiner {
                             // 当前SCN 事务已经提交 并且 小于事务缓冲区中所有的开始SCN，所以可以更新offsetScn
                             startScn = scn.longValue();
                         }
-
                         if (counter == 0) {
                             updateCommittedScn(commitScn.longValue());
                         }
-
-                        event.setScn(committedScn);
+                        event.setScn(startScn < committedScn ? committedScn:startScn);
                         listener.onEvent(event);
                     };
                     transactionalBuffer.registerCommitCallback(txId, scn, commitCallback);
