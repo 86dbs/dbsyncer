@@ -3,19 +3,18 @@
  */
 package org.dbsyncer.connector.oracle.logminer.parser;
 
-import net.sf.jsqlparser.expression.BinaryExpression;
-import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.schema.Column;
-import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
-import org.dbsyncer.sdk.model.Field;
-
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import net.sf.jsqlparser.expression.BinaryExpression;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.NullValue;
+import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
+import net.sf.jsqlparser.schema.Column;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.model.Field;
 
 /**
  * @Author AE86
@@ -27,51 +26,53 @@ public abstract class AbstractParser implements Parser {
     protected Map<String, String> columnMap = new HashMap<>();
     protected String tableName;
     protected List<Field> fields;
-    protected DatabaseConnectorInstance instance;
 
     public void findColumn(Expression expression) {
+        if (expression instanceof IsNullExpression){
+            IsNullExpression isNullExpression = (IsNullExpression) expression;
+            Column column = (Column) isNullExpression.getLeftExpression();
+            columnMap.put(StringUtil.replace(column.getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY),
+                    null);
+            return;
+        }
+
         BinaryExpression binaryExpression = (BinaryExpression) expression;
         if (binaryExpression.getLeftExpression() instanceof Column) {
             Column column = (Column) binaryExpression.getLeftExpression();
-            String value = binaryExpression.getRightExpression().toString();
-            columnMap.put(StringUtil.replace(column.getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY), value);
+            columnMap.put(StringUtil.replace(column.getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY),
+                    parserValue(binaryExpression.getRightExpression()));
             return;
         }
         findColumn(binaryExpression.getLeftExpression());
         findColumn(binaryExpression.getRightExpression());
     }
 
-    // 从主键解析出来的map装载成sql并运行sql找出对应的数据
-    public List<Object> getColumnsFromDB() {
-        List<Map<String, Object>> rows = instance.execute(databaseTemplate -> databaseTemplate.queryForList(getRowByPk()));
-        List<Object> list = new LinkedList<>();
-        if (!CollectionUtils.isEmpty(rows)) {
-            rows.forEach(map -> {
-                for (String key : map.keySet()) {
-                    list.add(map.get(key));
-                }
-            });
-            return list;
+    public String parserValue(Expression expression){
+        if (expression instanceof Function){
+            return parserFunction((Function) expression);
         }
-        return Collections.EMPTY_LIST;
+        if (expression instanceof NullValue){
+            return null;
+        }
+        return expression.toString();
     }
 
-    private String getRowByPk() {
-        StringBuilder sql = new StringBuilder("SELECT * FROM ").append(getTableName()).append(" WHERE ");
-        int pkCount = 0;
-        for (Field field : fields) {
-            if (field.isPk()) {
-                String value = columnMap.get(field.getName());
-                if (StringUtil.isNotBlank(value)) {
-                    if (pkCount > 0) {
-                        sql.append(" AND ");
-                    }
-                    sql.append(field.getName()).append("=").append(value);
-                    pkCount++;
-                }
-            }
+    //解析sql的function，只取到关键的字符串
+    public String parserFunction(Function function){
+        if (function.getMultipartName().get(0).equals("TO_DATE")){
+            return StringUtil.replace(function.getParameters().get(0).toString(),StringUtil.SINGLE_QUOTATION,StringUtil.EMPTY);
         }
-        return sql.toString();
+        return "";
+    }
+
+
+    public List<Object> columnMapToData(){
+        List<Object> data = new LinkedList<>();
+        for (Field field: fields) {
+            Object value = OracleTypeParser.convertToJavaType(field,columnMap.get(field.getName()));
+            data.add(value);
+        }
+        return data;
     }
 
     @Override
@@ -87,7 +88,4 @@ public abstract class AbstractParser implements Parser {
         this.fields = fields;
     }
 
-    public void setInstance(DatabaseConnectorInstance instance) {
-        this.instance = instance;
-    }
 }
