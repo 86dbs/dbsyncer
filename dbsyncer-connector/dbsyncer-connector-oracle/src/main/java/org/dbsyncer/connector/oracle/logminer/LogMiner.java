@@ -128,6 +128,7 @@ public class LogMiner {
                         logMinerViewProcessor(rs);
                     }catch (SQLException e){
                         if (e.getMessage().contains("ORA-00310")){
+                            logger.error("ORA-00310 try continue");
                             continue;
                         }
                         throw e;
