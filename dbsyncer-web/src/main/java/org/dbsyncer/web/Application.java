@@ -1,9 +1,11 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.web;
 
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.core.io.ClassPathResource;
@@ -19,7 +21,18 @@ import java.util.Properties;
 @EnableAsync
 @EnableScheduling
 @EnableCaching
-@SpringBootApplication(scanBasePackages = "org.dbsyncer", exclude = DataSourceAutoConfiguration.class)
+@SpringBootApplication(scanBasePackages = {
+        "org.dbsyncer.biz",
+        "org.dbsyncer.cluster",
+        "org.dbsyncer.common",
+        "org.dbsyncer.manager",
+        "org.dbsyncer.connector.base",
+        "org.dbsyncer.parser",
+        "org.dbsyncer.plugin",
+        "org.dbsyncer.sdk",
+        "org.dbsyncer.storage",
+        "org.dbsyncer.web"
+})
 public class Application {
 
     public static void main(String[] args) throws IOException {
