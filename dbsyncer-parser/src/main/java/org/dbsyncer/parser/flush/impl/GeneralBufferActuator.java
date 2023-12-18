@@ -197,7 +197,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             ConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
             String sConnType = sConnConfig.getConnectorType();
             String tConnType = tConnConfig.getConnectorType();
-            // 0.生成目标表执行SQL(暂支持MySQL) fixme AE86 暂内测MySQL作为试运行版本
+            // 0.生成目标表执行SQL(暂支持同源)
             if (StringUtil.equals(sConnType, tConnType)) {
                 // 1.转换为目标SQL，执行到目标库
                 String targetTableName = tableGroup.getTargetTable().getName();

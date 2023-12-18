@@ -36,11 +36,13 @@ public class DropStrategy implements AlterStrategy {
      * @param originalFieldMappings
      */
     private void dropColumn(AlterExpression expression, DDLConfig ddlConfig, List<FieldMapping> originalFieldMappings) {
-        String columnName = StringUtil.replace(expression.getColumnName(), "`", "");
+        String columnName = StringUtil.replace(expression.getColumnName(), StringUtil.BACK_QUOTE, StringUtil.EMPTY);
+        columnName = StringUtil.replace(columnName,StringUtil.DOUBLE_QUOTATION,StringUtil.EMPTY);
         Field field = new Field(columnName, null, 0);
         //需要把列替换成目标的列名
+        String finalColumnName = columnName;
         originalFieldMappings.stream()
-                .filter(x -> StringUtil.equals(x.getSource().getName(), columnName)).findFirst()
+                .filter(x -> StringUtil.equals(x.getSource().getName(), finalColumnName)).findFirst()
                 .ifPresent(fieldMapping -> expression.setColumnName(fieldMapping.getTarget().getName()));
         //加入还是原名
         ddlConfig.getRemoveFields().add(field);

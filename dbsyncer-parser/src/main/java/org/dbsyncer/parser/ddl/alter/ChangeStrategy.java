@@ -19,9 +19,12 @@ public class ChangeStrategy implements AlterStrategy {
 
     @Override
     public void parse(AlterExpression expression, DDLConfig ddlConfig, List<FieldMapping> originalFieldMappings) {
-        String oldColumnName = StringUtil.replace(expression.getColumnOldName(), "`", "");
+        String oldColumnName = StringUtil.replace(expression.getColumnOldName(), StringUtil.BACK_QUOTE, StringUtil.EMPTY);
+        oldColumnName = StringUtil.replace(oldColumnName, StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY);
         ddlConfig.setSourceColumnName(oldColumnName);
-        FieldMapping fieldMapping = originalFieldMappings.stream().filter(x -> StringUtil.equals(x.getSource().getName(), oldColumnName)).findFirst().orElse(null);
+        String finalOldColumnName = oldColumnName;
+        FieldMapping fieldMapping = originalFieldMappings.stream().filter(x -> StringUtil.equals(x.getSource().getName(),
+                finalOldColumnName)).findFirst().orElse(null);
         if (fieldMapping != null) {
             expression.setColumnOldName(fieldMapping.getTarget().getName());
             for (AlterExpression.ColumnDataType columnDataType : expression.getColDataTypeList()) {

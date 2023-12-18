@@ -22,7 +22,8 @@ public class ModifyStrategy implements AlterStrategy {
     public void parse(AlterExpression expression, DDLConfig ddlConfig, List<FieldMapping> originalFieldMappings) {
         //先查找到当前的表和目标的表对应的字段
         for (AlterExpression.ColumnDataType columnDataType : expression.getColDataTypeList()) {
-            String columnName = StringUtil.replace(columnDataType.getColumnName(), "`", "");
+            String columnName = StringUtil.replace(columnDataType.getColumnName(), StringUtil.BACK_QUOTE, StringUtil.EMPTY);
+            columnName =StringUtil.replace(columnName,StringUtil.DOUBLE_QUOTATION,StringUtil.EMPTY);
             for (FieldMapping fieldMapping : originalFieldMappings) {
                 if (StringUtil.equals(fieldMapping.getSource().getName(), columnName)) {
                     //TODO life 找到目标的表名，先是alter进行属性替换，然后config记录新的

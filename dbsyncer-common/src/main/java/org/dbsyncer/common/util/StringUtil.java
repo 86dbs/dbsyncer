@@ -23,6 +23,8 @@ public abstract class StringUtil {
 
     public static final String FORWARD_SLASH = "/";
 
+    public static final String BACK_QUOTE = "`";
+
     public static boolean equals(CharSequence cs1, CharSequence cs2) {
         return StringUtils.equals(cs1, cs2);
     }
