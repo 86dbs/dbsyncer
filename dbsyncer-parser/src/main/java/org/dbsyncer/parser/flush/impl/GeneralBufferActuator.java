@@ -198,7 +198,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             String sConnType = sConnConfig.getConnectorType();
             String tConnType = tConnConfig.getConnectorType();
             // 0.生成目标表执行SQL(暂支持MySQL) fixme AE86 暂内测MySQL作为试运行版本
-            if (StringUtil.equals(sConnType, tConnType) && StringUtil.equals("MySQL", tConnType)) {
+            if (StringUtil.equals(sConnType, tConnType)) {
                 // 1.转换为目标SQL，执行到目标库
                 String targetTableName = tableGroup.getTargetTable().getName();
                 List<FieldMapping> originalFieldMappings = tableGroup.getFieldMapping();
@@ -233,7 +233,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             logger.error(e.getMessage(), e);
             return;
         }
-        logger.warn("暂只支持MYSQL解析DDL");
+        logger.warn("暂只支持数据库同源并且是关系性解析DDL");
     }
 
     /**

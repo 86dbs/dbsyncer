@@ -61,6 +61,7 @@ public class AddStrategy implements AlterStrategy {
             columnDataType.setColumnSpecs(columnSpecs);
             String columName = columnDataType.getColumnName();
             columName = StringUtil.replace(columName, "`", "");
+            columName = StringUtil.replace(columName, StringUtil.DOUBLE_QUOTATION, "");
             Field field = new Field(columName, columnDataType.getColDataType().getDataType(),
                     0);//感觉不需要都行，只需要名称，后续可以自己刷新
             ddlConfig.getAddFields().add(field);

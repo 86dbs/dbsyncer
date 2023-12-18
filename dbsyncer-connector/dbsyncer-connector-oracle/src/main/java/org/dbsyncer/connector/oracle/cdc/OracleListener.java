@@ -9,6 +9,7 @@ import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.update.Update;
@@ -24,6 +25,7 @@ import org.dbsyncer.connector.oracle.logminer.parser.impl.UpdateSql;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
+import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.Field;
@@ -140,6 +142,12 @@ public class OracleListener extends AbstractDatabaseListener {
         }
 
         // TODO ddl
+        if (statement instanceof Alter){
+            Alter alter = (Alter) statement;
+            String tableName = StringUtil.replace(alter.getTable().getName(), StringUtil.DOUBLE_QUOTATION, "");
+            logger.info("sql:{}", event.getRedoSql());
+            changeEvent(new DDLChangedEvent(null, tableName, ConnectorConstant.OPERTION_ALTER, event.getRedoSql(), null, event.getScn()));
+        }
     }
 
     @Override
