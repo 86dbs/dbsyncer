@@ -7,6 +7,7 @@ import net.sf.jsqlparser.statement.update.Update;
 import net.sf.jsqlparser.statement.update.UpdateSet;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.logminer.parser.AbstractParser;
+import org.dbsyncer.sdk.model.Field;
 
 import java.util.List;
 
@@ -19,8 +20,9 @@ public class UpdateSql extends AbstractParser {
 
     private Update update;
 
-    public UpdateSql(Update update) {
+    public UpdateSql(Update update, List<Field> fields) {
         this.update = update;
+        setFields(fields);
     }
 
     @Override
@@ -30,13 +32,10 @@ public class UpdateSql extends AbstractParser {
         return columnMapToData();
     }
 
-    private void passerSet(List<UpdateSet> updateSets){
-        //解析替换
-        for (UpdateSet updateSet:updateSets) {
-            String columnName = StringUtil.replace(updateSet.getColumn(0).getColumnName(),
-                    StringUtil.DOUBLE_QUOTATION,StringUtil.EMPTY);
-            String value = parserValue(updateSet.getValue(0));
-            columnMap.put(columnName,value);
+    private void passerSet(List<UpdateSet> updateSets) {
+        for (UpdateSet updateSet : updateSets) {
+            String columnName = StringUtil.replace(updateSet.getColumn(0).getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY);
+            columnMap.put(columnName, parserValue(updateSet.getValue(0)));
         }
     }
 

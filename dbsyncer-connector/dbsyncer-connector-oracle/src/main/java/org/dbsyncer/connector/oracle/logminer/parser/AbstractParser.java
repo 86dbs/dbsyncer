@@ -3,18 +3,26 @@
  */
 package org.dbsyncer.connector.oracle.logminer.parser;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.NullValue;
+import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
 import net.sf.jsqlparser.schema.Column;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.Field;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @Author AE86
@@ -23,65 +31,87 @@ import org.dbsyncer.sdk.model.Field;
  */
 public abstract class AbstractParser implements Parser {
 
-    protected Map<String, String> columnMap = new HashMap<>();
-    protected String tableName;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    protected Map<String, Object> columnMap = new HashMap<>();
     protected List<Field> fields;
 
     public void findColumn(Expression expression) {
-        if (expression instanceof IsNullExpression){
+        if (expression instanceof IsNullExpression) {
             IsNullExpression isNullExpression = (IsNullExpression) expression;
             Column column = (Column) isNullExpression.getLeftExpression();
-            columnMap.put(StringUtil.replace(column.getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY),
-                    null);
+            columnMap.put(StringUtil.replace(column.getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY), null);
             return;
         }
 
         BinaryExpression binaryExpression = (BinaryExpression) expression;
         if (binaryExpression.getLeftExpression() instanceof Column) {
             Column column = (Column) binaryExpression.getLeftExpression();
-            columnMap.put(StringUtil.replace(column.getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY),
-                    parserValue(binaryExpression.getRightExpression()));
+            columnMap.put(StringUtil.replace(column.getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY), parserValue(binaryExpression.getRightExpression()));
             return;
         }
         findColumn(binaryExpression.getLeftExpression());
         findColumn(binaryExpression.getRightExpression());
     }
 
-    public String parserValue(Expression expression){
-        if (expression instanceof Function){
-            return parserFunction((Function) expression);
-        }
-        if (expression instanceof NullValue){
+    public Object parserValue(Expression expression) {
+        if (expression instanceof NullValue) {
             return null;
         }
-        return expression.toString();
-    }
-
-    //解析sql的function，只取到关键的字符串
-    public String parserFunction(Function function){
-        if (function.getMultipartName().get(0).equals("TO_DATE")){
-            return StringUtil.replace(function.getParameters().get(0).toString(),StringUtil.SINGLE_QUOTATION,StringUtil.EMPTY);
+        // 解析sql的function，只取到关键的字符串
+        if (expression instanceof Function) {
+            return parseFunction((Function) expression);
         }
-        return "";
+        if (expression instanceof StringValue) {
+            StringValue val = (StringValue) expression;
+            return val.getValue();
+        }
+        return null;
     }
 
-
-    public List<Object> columnMapToData(){
+    public List<Object> columnMapToData() {
         List<Object> data = new LinkedList<>();
-        for (Field field: fields) {
-            Object value = OracleTypeParser.convertToJavaType(field,columnMap.get(field.getName()));
-            data.add(value);
+        for (Field field : fields) {
+            data.add(columnMap.get(field.getName()));
         }
         return data;
     }
 
-    @Override
-    public String getTableName() {
-        return tableName;
+    private Object parseFunction(Function function) {
+        List<String> multipartName = function.getMultipartName();
+        ExpressionList parameters = function.getParameters();
+        if (CollectionUtils.isEmpty(multipartName) || CollectionUtils.isEmpty(parameters)) {
+            return null;
+        }
+
+        String nameType = Objects.toString(multipartName.get(0));
+        Object value = parameters.get(0);
+        if (nameType == null || value == null) {
+            return null;
+        }
+
+        if (value instanceof StringValue) {
+            StringValue val = (StringValue) value;
+            value = val.getValue();
+        }
+        try {
+            switch (nameType) {
+                case "TO_DATE":
+                    return toDate(value);
+                case "TO_TIMESTAMP":
+                    return toTimestamp(value);
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+        return value;
     }
 
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
+    private Object toDate(Object value) {
+        return DateFormatUtil.stringToTimestamp(Objects.toString(value));
+    }
+
+    private Object toTimestamp(Object value) {
+        return DateFormatUtil.stringToTimestamp(StringUtil.replace(Objects.toString(value), StringUtil.POINT, StringUtil.EMPTY));
     }
 
     public void setFields(List<Field> fields) {

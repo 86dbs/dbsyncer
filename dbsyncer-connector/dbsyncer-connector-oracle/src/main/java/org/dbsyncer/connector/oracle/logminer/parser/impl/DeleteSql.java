@@ -4,12 +4,9 @@
 package org.dbsyncer.connector.oracle.logminer.parser.impl;
 
 import net.sf.jsqlparser.statement.delete.Delete;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.logminer.parser.AbstractParser;
 import org.dbsyncer.sdk.model.Field;
 
-import java.math.BigInteger;
-import java.sql.Types;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -22,8 +19,9 @@ public class DeleteSql extends AbstractParser {
 
     private Delete delete;
 
-    public DeleteSql(Delete delete) {
+    public DeleteSql(Delete delete, List<Field> fields) {
         this.delete = delete;
+        setFields(fields);
     }
 
     @Override
@@ -32,13 +30,7 @@ public class DeleteSql extends AbstractParser {
         List<Object> data = new LinkedList<>();
         for (Field field : fields) {
             if (field.isPk()) {
-                Object value = columnMap.get(field.getName());
-                switch (field.getType()) {
-                    case Types.DECIMAL:
-                        value = new BigInteger(StringUtil.replace(value.toString(), StringUtil.SINGLE_QUOTATION, StringUtil.EMPTY));
-                        break;
-                }
-                data.add(value);
+                data.add(columnMap.get(field.getName()));
             } else {
                 data.add(null);
             }

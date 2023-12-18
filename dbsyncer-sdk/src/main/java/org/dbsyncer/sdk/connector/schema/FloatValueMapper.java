@@ -23,6 +23,10 @@ public class FloatValueMapper extends AbstractValueMapper<Float> {
             Double dbl = (Double) val;
             return dbl.floatValue();
         }
+        if (val instanceof String) {
+            String strVal = (String) val;
+            return Float.parseFloat(strVal);
+        }
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }

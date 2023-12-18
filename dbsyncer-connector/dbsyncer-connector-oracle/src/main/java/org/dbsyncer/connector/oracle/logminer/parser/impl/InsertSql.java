@@ -10,6 +10,7 @@ import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.insert.Insert;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.logminer.parser.AbstractParser;
+import org.dbsyncer.sdk.model.Field;
 
 /**
  * @Author AE86
@@ -20,8 +21,9 @@ public class InsertSql extends AbstractParser {
 
     private Insert insert;
 
-    public InsertSql(Insert insert) {
+    public InsertSql(Insert insert, List<Field> fields) {
         this.insert = insert;
+        setFields(fields);
     }
 
     @Override

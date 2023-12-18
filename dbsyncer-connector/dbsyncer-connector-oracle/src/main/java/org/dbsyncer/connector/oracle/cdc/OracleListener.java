@@ -3,8 +3,6 @@
  */
 package org.dbsyncer.connector.oracle.cdc;
 
-import java.time.Instant;
-import java.util.concurrent.TimeUnit;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Table;
@@ -16,7 +14,6 @@ import net.sf.jsqlparser.statement.update.Update;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.OracleException;
-import org.dbsyncer.connector.oracle.logminer.parser.AbstractParser;
 import org.dbsyncer.connector.oracle.logminer.LogMiner;
 import org.dbsyncer.connector.oracle.logminer.RedoEvent;
 import org.dbsyncer.connector.oracle.logminer.parser.impl.DeleteSql;
@@ -33,9 +30,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Author AE86
@@ -83,12 +82,12 @@ public class OracleListener extends AbstractDatabaseListener {
         }
     }
 
-    private void trySendEvent(RowChangedEvent event){
+    private void trySendEvent(RowChangedEvent event) {
         try {
             // 如果消费事件失败，重试
             long now = Instant.now().toEpochMilli();
             boolean isReTry = false;
-            while (logMiner.isConnected()){
+            while (logMiner.isConnected()) {
                 try {
                     sendChangedEvent(event);
                     break;
@@ -116,37 +115,43 @@ public class OracleListener extends AbstractDatabaseListener {
      * @throws Exception
      */
     private void parseEvent(RedoEvent event) throws Exception {
-        // TODO life 注意拦截子查询, 或修改主键值情况
         Statement statement = CCJSqlParserUtil.parse(event.getRedoSql());
         if (statement instanceof Update) {
             Update update = (Update) statement;
-            UpdateSql parser = new UpdateSql(update);
-            setTable(parser, update.getTable());
-            trySendEvent(new RowChangedEvent(parser.getTableName(), ConnectorConstant.OPERTION_UPDATE, parser.parseColumns(), null, event.getScn()));
+            String tableName = getTableName(update.getTable());
+            if (tableFiledMap.containsKey(tableName)) {
+                UpdateSql parser = new UpdateSql(update, tableFiledMap.get(tableName));
+                trySendEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_UPDATE, parser.parseColumns(), null, event.getScn()));
+            }
             return;
         }
 
         if (statement instanceof Insert) {
             Insert insert = (Insert) statement;
-            InsertSql parser = new InsertSql(insert);
-            setTable(parser, insert.getTable());
-            trySendEvent(new RowChangedEvent(parser.getTableName(), ConnectorConstant.OPERTION_INSERT, parser.parseColumns(), null, event.getScn()));
+            String tableName = getTableName(insert.getTable());
+            if (tableFiledMap.containsKey(tableName)) {
+                InsertSql parser = new InsertSql(insert, tableFiledMap.get(tableName));
+                trySendEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, parser.parseColumns(), null, event.getScn()));
+            }
             return;
         }
 
         if (statement instanceof Delete) {
             Delete delete = (Delete) statement;
-            DeleteSql parser = new DeleteSql(delete);
-            setTable(parser, delete.getTable());
-            trySendEvent(new RowChangedEvent(parser.getTableName(), ConnectorConstant.OPERTION_DELETE, parser.parseColumns(), null, event.getScn()));
+            String tableName = getTableName(delete.getTable());
+            if (tableFiledMap.containsKey(tableName)) {
+                DeleteSql parser = new DeleteSql(delete, tableFiledMap.get(tableName));
+                trySendEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_DELETE, parser.parseColumns(), null, event.getScn()));
+            }
         }
 
-        // TODO ddl
-        if (statement instanceof Alter){
+        if (statement instanceof Alter) {
             Alter alter = (Alter) statement;
-            String tableName = StringUtil.replace(alter.getTable().getName(), StringUtil.DOUBLE_QUOTATION, "");
-            logger.info("sql:{}", event.getRedoSql());
-            changeEvent(new DDLChangedEvent(null, tableName, ConnectorConstant.OPERTION_ALTER, event.getRedoSql(), null, event.getScn()));
+            String tableName = getTableName(alter.getTable());
+            if (tableFiledMap.containsKey(tableName)) {
+                logger.info("sql:{}", event.getRedoSql());
+                changeEvent(new DDLChangedEvent(null, tableName, ConnectorConstant.OPERTION_ALTER, event.getRedoSql(), null, event.getScn()));
+            }
         }
     }
 
@@ -166,10 +171,8 @@ public class OracleListener extends AbstractDatabaseListener {
         snapshot.put(REDO_POSITION, String.valueOf(offset.getPosition()));
     }
 
-    private AbstractParser setTable(AbstractParser parser, Table table) {
-        parser.setTableName(table == null ? StringUtil.EMPTY : StringUtil.replace(table.getName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY));
-        parser.setFields(tableFiledMap.get(parser.getTableName()));
-        return parser;
+    private String getTableName(Table table) {
+        return table == null ? StringUtil.EMPTY : StringUtil.replace(table.getName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY);
     }
 
 }
