@@ -22,6 +22,7 @@ import org.dbsyncer.connector.oracle.logminer.parser.impl.UpdateSql;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
+import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
@@ -82,7 +83,7 @@ public class OracleListener extends AbstractDatabaseListener {
         }
     }
 
-    private void trySendEvent(RowChangedEvent event) {
+    private void trySendEvent(ChangedEvent event) {
         try {
             // 如果消费事件失败，重试
             long now = Instant.now().toEpochMilli();
@@ -150,7 +151,7 @@ public class OracleListener extends AbstractDatabaseListener {
             String tableName = getTableName(alter.getTable());
             if (tableFiledMap.containsKey(tableName)) {
                 logger.info("sql:{}", event.getRedoSql());
-                changeEvent(new DDLChangedEvent(null, tableName, ConnectorConstant.OPERTION_ALTER, event.getRedoSql(), null, event.getScn()));
+                trySendEvent(new DDLChangedEvent(null, tableName, ConnectorConstant.OPERTION_ALTER, event.getRedoSql(), null, event.getScn()));
             }
         }
     }
