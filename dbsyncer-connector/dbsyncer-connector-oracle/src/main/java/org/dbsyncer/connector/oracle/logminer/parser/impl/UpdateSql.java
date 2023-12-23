@@ -35,7 +35,7 @@ public class UpdateSql extends AbstractParser {
     private void passerSet(List<UpdateSet> updateSets) {
         for (UpdateSet updateSet : updateSets) {
             String columnName = StringUtil.replace(updateSet.getColumn(0).getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY);
-            columnMap.put(columnName, parserValue(updateSet.getValue(0)));
+            columnMap.put(columnName, updateSet.getValue(0));
         }
     }
 

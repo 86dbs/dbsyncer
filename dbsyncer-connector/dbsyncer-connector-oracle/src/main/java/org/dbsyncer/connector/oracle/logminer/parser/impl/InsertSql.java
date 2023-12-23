@@ -32,7 +32,7 @@ public class InsertSql extends AbstractParser {
         ExpressionList<Expression> values = (ExpressionList<Expression>) insert.getSelect().getValues().getExpressions();
         for (int i = 0; i < columns.size(); i++) {
             columnMap.put(StringUtil.replace(columns.get(i).getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY),
-                    parserValue(values.get(i)));
+                    values.get(i));
         }
         return columnMapToData();
     }
