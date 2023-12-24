@@ -24,7 +24,6 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
 import java.sql.Types;
 import java.util.List;
 
@@ -41,6 +40,11 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     private final String TYPE = "PostgreSQL";
     private final PostgreSQLConfigValidator configValidator = new PostgreSQLConfigValidator();
+
+    public PostgreSQLConnector() {
+        VALUE_MAPPERS.put(Types.BIT, new PostgreSQLBitValueMapper());
+        VALUE_MAPPERS.put(Types.OTHER, new PostgreSQLOtherValueMapper());
+    }
 
     @Override
     public String getConnectorType() {
@@ -62,12 +66,6 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
             return new PostgreSQLListener();
         }
         return null;
-    }
-
-    @PostConstruct
-    private void init() {
-        VALUE_MAPPERS.put(Types.BIT, new PostgreSQLBitValueMapper());
-        VALUE_MAPPERS.put(Types.OTHER, new PostgreSQLOtherValueMapper());
     }
 
     @Override

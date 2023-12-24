@@ -23,7 +23,6 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
 import java.sql.Types;
 import java.util.List;
 
@@ -41,8 +40,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     private final String TYPE = "Oracle";
     private final OracleConfigValidator configValidator = new OracleConfigValidator();
 
-    @PostConstruct
-    private void init() {
+    public OracleConnector() {
         VALUE_MAPPERS.put(Types.OTHER, new OracleOtherValueMapper());
     }
 
