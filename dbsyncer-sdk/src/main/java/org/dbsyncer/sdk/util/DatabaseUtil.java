@@ -38,9 +38,8 @@ public abstract class DatabaseUtil {
 
     public static String getDatabaseName(String url) {
         Matcher matcher = compile("(//)(?!(\\?)).+?(\\?)").matcher(url);
-        while (matcher.find()) {
+        if (matcher.find()) {
             url = matcher.group(0);
-            break;
         }
         int s = url.lastIndexOf("/");
         int e = url.lastIndexOf("?");
