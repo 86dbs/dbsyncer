@@ -1,23 +1,26 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.biz.checker.impl.tablegroup;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
-import org.dbsyncer.biz.checker.ConnectorConfigChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.connector.model.MetaInfo;
-import org.dbsyncer.connector.model.Table;
-import org.dbsyncer.connector.util.PrimaryKeyUtil;
-import org.dbsyncer.manager.Manager;
-import org.dbsyncer.parser.enums.ModelEnum;
+import org.dbsyncer.parser.ParserComponent;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
-import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -35,9 +38,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2020/1/8 15:17
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2020-01-08 15:17
  */
 @Component
 public class TableGroupChecker extends AbstractChecker {
@@ -45,10 +48,10 @@ public class TableGroupChecker extends AbstractChecker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private Manager manager;
+    private ParserComponent parserComponent;
 
     @Resource
-    private Map<String, ConnectorConfigChecker> map;
+    private ProfileComponent profileComponent;
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
@@ -61,7 +64,7 @@ public class TableGroupChecker extends AbstractChecker {
         Assert.hasText(mappingId, "tableGroup mappingId is empty.");
         Assert.hasText(sourceTable, "tableGroup sourceTable is empty.");
         Assert.hasText(targetTable, "tableGroup targetTable is empty.");
-        Mapping mapping = manager.getMapping(mappingId);
+        Mapping mapping = profileComponent.getMapping(mappingId);
         Assert.notNull(mapping, "mapping can not be null.");
 
         // 检查是否存在重复映射关系
@@ -92,9 +95,9 @@ public class TableGroupChecker extends AbstractChecker {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "TableGroupChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        TableGroup tableGroup = manager.getTableGroup(id);
+        TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        Mapping mapping = manager.getMapping(tableGroup.getMappingId());
+        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
         Assert.notNull(mapping, "mapping can not be null.");
         String fieldMappingJson = params.get("fieldMapping");
         Assert.hasText(fieldMappingJson, "TableGroupChecker check params fieldMapping is empty");
@@ -120,7 +123,7 @@ public class TableGroupChecker extends AbstractChecker {
      * @param tableGroup
      */
     public void refreshTableFields(TableGroup tableGroup) {
-        Mapping mapping = manager.getMapping(tableGroup.getMappingId());
+        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
         Assert.notNull(mapping, "mapping can not be null.");
 
         Table sourceTable = tableGroup.getSourceTable();
@@ -135,27 +138,16 @@ public class TableGroupChecker extends AbstractChecker {
         // 合并高级配置
         TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
 
-        // 处理策略
-        dealIncrementStrategy(mapping, group);
-
-        Map<String, String> command = manager.getCommand(mapping, group);
+        Map<String, String> command = parserComponent.getCommand(mapping, group);
         tableGroup.setCommand(command);
 
         // 获取数据源总数
-        long count = ModelEnum.isFull(mapping.getModel()) && !CollectionUtils.isEmpty(command) ? manager.getCount(mapping.getSourceConnectorId(), command) : 0;
+        long count = ModelEnum.isFull(mapping.getModel()) && !CollectionUtils.isEmpty(command) ? parserComponent.getCount(mapping.getSourceConnectorId(), command) : 0;
         tableGroup.getSourceTable().setCount(count);
     }
 
-    public void dealIncrementStrategy(Mapping mapping, TableGroup tableGroup) {
-        String connectorType = manager.getConnector(mapping.getSourceConnectorId()).getConfig().getConnectorType();
-        String type = StringUtil.toLowerCaseFirstOne(connectorType).concat("ConfigChecker");
-        ConnectorConfigChecker checker = map.get(type);
-        Assert.notNull(checker, "Checker can not be null.");
-        checker.dealIncrementStrategy(mapping, tableGroup);
-    }
-
     private Table getTable(String connectorId, String tableName, String primaryKeyStr) {
-        MetaInfo metaInfo = manager.getMetaInfo(connectorId, tableName);
+        MetaInfo metaInfo = parserComponent.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接器表信息:" + tableName);
         // 自定义主键
         if (StringUtil.isNotBlank(primaryKeyStr) && !CollectionUtils.isEmpty(metaInfo.getColumn())) {
@@ -173,7 +165,7 @@ public class TableGroupChecker extends AbstractChecker {
     }
 
     private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {
-        List<TableGroup> list = manager.getTableGroupAll(mappingId);
+        List<TableGroup> list = profileComponent.getTableGroupAll(mappingId);
         if (!CollectionUtils.isEmpty(list)) {
             for (TableGroup g : list) {
                 // 数据源表和目标表都存在

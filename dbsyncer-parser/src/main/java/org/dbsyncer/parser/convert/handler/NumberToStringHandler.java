@@ -2,8 +2,6 @@ package org.dbsyncer.parser.convert.handler;
 
 import org.dbsyncer.parser.convert.AbstractHandler;
 
-import java.sql.Timestamp;
-
 /**
  * Number转String
  *

@@ -4,7 +4,7 @@ import org.dbsyncer.parser.model.Task;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ApplicationContextEvent;
 
-public class FullRefreshEvent extends ApplicationContextEvent {
+public final class FullRefreshEvent extends ApplicationContextEvent {
 
     private Task task;
 

@@ -1,15 +1,18 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.biz.vo;
 
-import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.connector.enums.OperationEnum;
-import org.dbsyncer.listener.enums.QuartzFilterEnum;
+import org.dbsyncer.sdk.enums.FilterEnum;
+import org.dbsyncer.sdk.enums.QuartzFilterEnum;
+import org.dbsyncer.sdk.enums.OperationEnum;
 
 import java.util.List;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2020/01/19 17:20
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2020-01-19 17:20
  */
 public class ConditionVo {
 

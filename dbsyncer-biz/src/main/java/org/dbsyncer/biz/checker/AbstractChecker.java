@@ -1,18 +1,17 @@
 package org.dbsyncer.biz.checker;
 
 import org.dbsyncer.biz.enums.SafeInfoEnum;
-import org.dbsyncer.common.snowflake.SnowflakeIdWorker;
+import org.dbsyncer.sdk.model.Filter;
+import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.model.Filter;
-import org.dbsyncer.manager.Manager;
 import org.dbsyncer.parser.model.AbstractConfigModel;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Convert;
 import org.dbsyncer.plugin.PluginFactory;
-import org.dbsyncer.plugin.config.Plugin;
-import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.plugin.model.Plugin;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -34,9 +33,6 @@ public abstract class AbstractChecker implements Checker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final String SYMBOL = "***";
-
-    @Resource
-    private Manager manager;
 
     @Resource
     private PluginFactory pluginFactory;
@@ -95,7 +91,7 @@ public abstract class AbstractChecker implements Checker {
         String pluginId = params.get("pluginId");
         Plugin plugin = null;
         if (StringUtil.isNotBlank(pluginId)) {
-            List<Plugin> plugins = manager.getPluginAll();
+            List<Plugin> plugins = pluginFactory.getPluginAll();
             if (!CollectionUtils.isEmpty(plugins)) {
                 for (Plugin p : plugins) {
                     if (StringUtil.equals(pluginFactory.createPluginId(p.getClassName(), p.getVersion()), pluginId)) {

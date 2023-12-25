@@ -6,19 +6,23 @@ import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.manager.Manager;
-import org.dbsyncer.parser.logger.LogType;
+import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.LogService;
+import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -39,10 +43,16 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     private Map<String, Boolean> health = new LinkedHashMap<>();
 
-    @Autowired
-    private Manager manager;
+    @Resource
+    private ProfileComponent profileComponent;
 
-    @Autowired
+    @Resource
+    private ConnectorFactory connectorFactory;
+
+    @Resource
+    private LogService logService;
+
+    @Resource
     private Checker connectorChecker;
 
     @Override
@@ -50,7 +60,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         ConfigModel model = connectorChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.INSERT, model);
 
-        return manager.addConfigModel(model);
+        return profileComponent.addConfigModel(model);
     }
 
     @Override
@@ -62,7 +72,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         params.put(ConfigConstant.CONFIG_MODEL_NAME, connector.getName() + "(复制)");
         ConfigModel model = connectorChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.COPY, model);
-        manager.addConfigModel(model);
+        profileComponent.addConfigModel(model);
 
         return String.format("复制成功[%s]", model.getName());
     }
@@ -72,12 +82,12 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         ConfigModel model = connectorChecker.checkEditConfigModel(params);
         log(LogType.ConnectorLog.UPDATE, model);
 
-        return manager.editConfigModel(model);
+        return profileComponent.editConfigModel(model);
     }
 
     @Override
     public String remove(String id) {
-        List<Mapping> mappingAll = manager.getMappingAll();
+        List<Mapping> mappingAll = profileComponent.getMappingAll();
         if (!CollectionUtils.isEmpty(mappingAll)) {
             mappingAll.forEach(mapping -> {
                 if (StringUtil.equals(mapping.getSourceConnectorId(), id) || StringUtil.equals(mapping.getTargetConnectorId(), id)) {
@@ -88,21 +98,23 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
             });
         }
 
-        Connector connector = manager.getConnector(id);
-        log(LogType.ConnectorLog.DELETE, connector);
-
-        manager.removeConfigModel(id);
+        Connector connector = profileComponent.getConnector(id);
+        if (connector != null) {
+            connectorFactory.disconnect(connector.getConfig());
+            log(LogType.ConnectorLog.DELETE, connector);
+            profileComponent.removeConfigModel(id);
+        }
         return "删除连接器成功!";
     }
 
     @Override
     public Connector getConnector(String id) {
-        return StringUtil.isNotBlank(id) ? manager.getConnector(id) : null;
+        return StringUtil.isNotBlank(id) ? profileComponent.getConnector(id) : null;
     }
 
     @Override
     public List<Connector> getConnectorAll() {
-        List<Connector> list = manager.getConnectorAll()
+        List<Connector> list = profileComponent.getConnectorAll()
                 .stream()
                 .sorted(Comparator.comparing(Connector::getUpdateTime).reversed())
                 .collect(Collectors.toList());
@@ -111,14 +123,14 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public List<String> getConnectorTypeAll() {
-        List<String> list = new ArrayList<>();
-        manager.getConnectorEnumAll().forEach(c -> list.add(c.getType()));
-        return list;
+        ArrayList<String> connectorTypes = new ArrayList<>(connectorFactory.getConnectorTypeAll());
+        Collections.sort(connectorTypes, Comparator.comparing(String::toString));
+        return connectorTypes;
     }
 
     @Override
     public void refreshHealth() {
-        List<Connector> list = manager.getConnectorAll();
+        List<Connector> list = profileComponent.getConnectorAll();
         if (CollectionUtils.isEmpty(list)) {
             if (!CollectionUtils.isEmpty(health)) {
                 health.clear();
@@ -129,7 +141,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         // 更新连接器状态
         Set<String> exist = new HashSet<>();
         list.forEach(c -> {
-            health.put(c.getId(), manager.isAliveConnectorConfig(c.getConfig()));
+            health.put(c.getId(), isAlive(c.getConfig()));
             exist.add(c.getId());
         });
 
@@ -150,4 +162,15 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     public boolean isAlive(String id) {
         return health.containsKey(id) && health.get(id);
     }
+
+    private boolean isAlive(ConnectorConfig config) {
+        try {
+            return connectorFactory.isAlive(config);
+        } catch (Exception e) {
+            LogType.ConnectorLog logType = LogType.ConnectorLog.FAILED;
+            logService.log(logType, "%s%s", logType.getName(), e.getMessage());
+            return false;
+        }
+    }
+
 }

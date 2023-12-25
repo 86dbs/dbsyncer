@@ -8,17 +8,21 @@ import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.ProjectGroupVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.manager.Manager;
-import org.dbsyncer.parser.logger.LogType;
+import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.ProjectGroup;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import javax.annotation.Resource;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -31,16 +35,16 @@ import java.util.stream.Collectors;
 @Service
 public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectGroupService {
 
-    @Autowired
+    @Resource
     private ConnectorService connectorService;
 
-    @Autowired
+    @Resource
     private MappingService mappingService;
 
-    @Autowired
-    private Manager manager;
+    @Resource
+    private ProfileComponent profileComponent;
 
-    @Autowired
+    @Resource
     private Checker projectGroupChecker;
 
     @Override
@@ -48,7 +52,7 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
         ConfigModel model = projectGroupChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.INSERT, model);
 
-        return manager.addConfigModel(model);
+        return profileComponent.addConfigModel(model);
     }
 
     @Override
@@ -56,15 +60,15 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
         ConfigModel model = projectGroupChecker.checkEditConfigModel(params);
         log(LogType.ConnectorLog.UPDATE, model);
 
-        return manager.editConfigModel(model);
+        return profileComponent.editConfigModel(model);
     }
 
     @Override
     public String remove(String id) {
-        ProjectGroup projectGroup = manager.getProjectGroup(id);
+        ProjectGroup projectGroup = profileComponent.getProjectGroup(id);
         log(LogType.ConnectorLog.DELETE, projectGroup);
         Assert.notNull(projectGroup, "该分组已被删除");
-        manager.removeConfigModel(id);
+        profileComponent.removeConfigModel(id);
         return "删除分组成功!";
     }
 
@@ -80,7 +84,7 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
             return vo;
         }
 
-        ProjectGroup projectGroup = manager.getProjectGroup(id);
+        ProjectGroup projectGroup = profileComponent.getProjectGroup(id);
         Assert.notNull(projectGroup, "该分组已被删除");
         BeanUtils.copyProperties(projectGroup, vo);
         vo.setConnectors(Collections.EMPTY_LIST);
@@ -115,7 +119,7 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
 
     @Override
     public List<ProjectGroup> getProjectGroupAll() {
-        return manager.getProjectGroupAll();
+        return profileComponent.getProjectGroupAll();
     }
 
 }

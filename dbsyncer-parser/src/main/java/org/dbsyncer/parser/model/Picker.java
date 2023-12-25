@@ -2,7 +2,7 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.model.Field;
+import org.dbsyncer.sdk.model.Field;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -3,9 +3,9 @@ package org.dbsyncer.biz.checker.impl.system;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.BeanUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.manager.Manager;
-import org.dbsyncer.parser.logger.LogService;
-import org.dbsyncer.parser.logger.LogType;
+import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.LogService;
+import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ public class SystemConfigChecker extends AbstractChecker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private Manager manager;
+    private ProfileComponent profileComponent;
 
     @Resource
     private LogService logService;
@@ -40,7 +40,7 @@ public class SystemConfigChecker extends AbstractChecker {
         // 修改基本配置
         this.modifyConfigModel(systemConfig, params);
 
-        manager.addConfigModel(systemConfig);
+        profileComponent.addConfigModel(systemConfig);
         return systemConfig;
     }
 
@@ -49,8 +49,11 @@ public class SystemConfigChecker extends AbstractChecker {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "Config check params is null.");
         params.put("enableCDN", StringUtil.isNotBlank(params.get("enableCDN")) ? "true" : "false");
+        params.put("enableStorageWriteFull", StringUtil.isNotBlank(params.get("enableStorageWriteFull")) ? "true" : "false");
+        params.put("enableStorageWriteSuccess", StringUtil.isNotBlank(params.get("enableStorageWriteSuccess")) ? "true" : "false");
+        params.put("enableStorageWriteFail", StringUtil.isNotBlank(params.get("enableStorageWriteFail")) ? "true" : "false");
 
-        SystemConfig systemConfig = manager.getSystemConfig();
+        SystemConfig systemConfig = profileComponent.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");
         BeanUtil.mapToBean(params, systemConfig);
         logService.log(LogType.SystemLog.INFO, "修改系统配置");

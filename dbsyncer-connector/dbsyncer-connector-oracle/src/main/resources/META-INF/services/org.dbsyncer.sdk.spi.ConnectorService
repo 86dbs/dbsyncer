@@ -1,0 +1,2 @@
+org.dbsyncer.connector.oracle.OracleConnector
+org.dbsyncer.connector.oracle.DQLOracleConnector

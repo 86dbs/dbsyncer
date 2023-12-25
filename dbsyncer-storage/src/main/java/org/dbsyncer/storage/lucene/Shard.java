@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.storage.lucene;
 
 import org.apache.commons.io.FileUtils;
@@ -37,9 +40,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2019/11/12 20:29
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2019-11-12 20:29
  */
 public class Shard {
 
@@ -206,7 +209,7 @@ public class Shard {
                 }
 
                 // 解析value类型
-                r.put(f.name(), option.getIndexFieldResolver(f.name()).getValue(f));
+                r.put(f.name(), option.getFieldResolver(f.name()).getValue(f));
             }
             list.add(r);
         }

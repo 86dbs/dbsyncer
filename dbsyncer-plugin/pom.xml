@@ -5,16 +5,16 @@
     <parent>
         <artifactId>dbsyncer</artifactId>
         <groupId>org.ghi</groupId>
-        <version>1.2.7_1201</version>
+        <version>2.0.0_1226-Beta</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>dbsyncer-plugin</artifactId>
 
     <dependencies>
-        <!-- Connector 连接器 -->
+        <!-- sdk -->
         <dependency>
             <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-connector</artifactId>
+            <artifactId>dbsyncer-sdk</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

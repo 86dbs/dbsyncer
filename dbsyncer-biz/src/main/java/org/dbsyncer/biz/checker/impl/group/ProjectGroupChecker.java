@@ -3,11 +3,10 @@ package org.dbsyncer.biz.checker.impl.group;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.manager.Manager;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.ProjectGroup;
-import org.dbsyncer.storage.constant.ConfigConstant;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -25,7 +24,7 @@ import java.util.Map;
 public class ProjectGroupChecker extends AbstractChecker {
 
     @Resource
-    private Manager manager;
+    private ProfileComponent profileComponent;
 
     /**
      * 新增配置
@@ -56,7 +55,7 @@ public class ProjectGroupChecker extends AbstractChecker {
     @Override
     public ConfigModel checkEditConfigModel(Map<String, String> params) {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        ProjectGroup projectGroup = manager.getProjectGroup(id);
+        ProjectGroup projectGroup = profileComponent.getProjectGroup(id);
         Assert.notNull(projectGroup, "Can not find project group.");
 
         modifyProjectGroup(projectGroup, params);

@@ -10,11 +10,12 @@ import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.biz.vo.SystemConfigVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.monitor.enums.DiskMetricEnum;
-import org.dbsyncer.monitor.enums.MetricEnum;
-import org.dbsyncer.monitor.enums.StatisticEnum;
-import org.dbsyncer.monitor.model.MetricResponse;
-import org.dbsyncer.monitor.model.Sample;
+import org.dbsyncer.biz.enums.DiskMetricEnum;
+import org.dbsyncer.biz.enums.MetricEnum;
+import org.dbsyncer.biz.enums.StatisticEnum;
+import org.dbsyncer.biz.model.MetricResponse;
+import org.dbsyncer.biz.model.Sample;
+import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +62,9 @@ public class MonitorController extends BaseController {
     private SystemConfigService systemConfigService;
 
     @Resource
+    private PreloadTemplate preloadTemplate;
+
+    @Resource
     private MetricsEndpoint metricsEndpoint;
 
     @Resource
@@ -98,12 +102,16 @@ public class MonitorController extends BaseController {
 
     @Scheduled(fixedRate = 10000)
     public void refreshConnectorHealth() {
-        connectorService.refreshHealth();
+        if (preloadTemplate.isPreloadCompleted()) {
+            connectorService.refreshHealth();
+        }
     }
 
     @Scheduled(fixedRate = 30000)
     public void deleteExpiredDataAndLog() {
-        monitorService.deleteExpiredDataAndLog();
+        if (preloadTemplate.isPreloadCompleted()) {
+            monitorService.deleteExpiredDataAndLog();
+        }
     }
 
     @GetMapping("/queryData")

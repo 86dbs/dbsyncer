@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.config.TableGroupBufferConfig;
@@ -10,13 +13,14 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.concurrent.Executor;
 
 /**
  * 表执行器（根据表消费数据，多线程批量写，按序执行）
  *
- * @author AE86
- * @version 1.0.0
- * @date 2022/3/27 16:50
+ * @Version 1.0.0
+ * @Author AE86
+ * @Date 2023-03-27 16:50
  */
 @Component
 public final class TableGroupBufferActuator extends GeneralBufferActuator implements Cloneable {
@@ -45,16 +49,20 @@ public final class TableGroupBufferActuator extends GeneralBufferActuator implem
         return running;
     }
 
+    @Override
+    public Executor getExecutor() {
+        return threadPoolTaskExecutor;
+    }
+
     public void buildConfig() {
         super.setConfig(tableGroupBufferConfig);
-        super.buildLock();
         super.buildQueueConfig();
         taskKey = UUIDUtil.getUUID();
         int coreSize = tableGroupBufferConfig.getThreadCoreSize();
+        int maxSize = tableGroupBufferConfig.getMaxThreadSize();
         int queueCapacity = tableGroupBufferConfig.getThreadQueueCapacity();
         String threadNamePrefix = new StringBuilder("TableGroupExecutor-").append(tableGroupId).append(StringUtil.SYMBOL).toString();
-        threadPoolTaskExecutor = ThreadPoolUtil.newThreadPoolTaskExecutor(coreSize, coreSize, queueCapacity, 30, threadNamePrefix);
-        setGeneralExecutor(threadPoolTaskExecutor);
+        threadPoolTaskExecutor = ThreadPoolUtil.newThreadPoolTaskExecutor(coreSize, maxSize, queueCapacity, 30, threadNamePrefix);
         running = true;
         scheduledTaskService.start(taskKey, tableGroupBufferConfig.getBufferPeriodMillisecond(), this);
     }

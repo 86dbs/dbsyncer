@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.common.event.ChangedOffset;
+import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
+import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferResponse;
 
@@ -14,6 +15,8 @@ import java.util.Map;
  * @date 2022/3/27 18:11
  */
 public class WriterResponse extends AbstractWriter implements BufferResponse {
+
+    private ChangedEventTypeEnum typeEnum;
 
     private List<Map> dataList = new LinkedList<>();
 
@@ -31,6 +34,14 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
     @Override
     public String getSuffixName() {
         return StringUtil.SYMBOL.concat(getEvent());
+    }
+
+    public ChangedEventTypeEnum getTypeEnum() {
+        return typeEnum;
+    }
+
+    public void setTypeEnum(ChangedEventTypeEnum typeEnum) {
+        this.typeEnum = typeEnum;
     }
 
     public List<Map> getDataList() {

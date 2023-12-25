@@ -1,9 +1,9 @@
 package org.dbsyncer.parser.flush;
 
-import org.dbsyncer.cache.CacheService;
 import org.dbsyncer.common.config.BufferActuatorConfig;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Meta;
 import org.slf4j.Logger;
@@ -12,17 +12,13 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.lang.reflect.ParameterizedType;
-import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -40,9 +36,6 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private Class<Response> responseClazz;
     private Lock taskLock;
-    private Lock queueLock;
-    private Condition isFull;
-    private final Duration offerInterval = Duration.of(500, ChronoUnit.MILLIS);
     private BufferActuatorConfig config;
     private BlockingQueue<Request> queue;
 
@@ -50,7 +43,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     private ScheduledTaskService scheduledTaskService;
 
     @Resource
-    private CacheService cacheService;
+    private ProfileComponent profileComponent;
 
     public AbstractBufferActuator() {
         int level = 5;
@@ -71,7 +64,6 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      */
     protected void buildConfig() {
         Assert.notNull(config, "请先配置缓存执行器，setConfig(BufferActuatorConfig config)");
-        buildLock();
         buildQueueConfig();
         scheduledTaskService.start(config.getBufferPeriodMillisecond(), this);
     }
@@ -80,17 +72,9 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      * 初始化缓存队列配置
      */
     protected void buildQueueConfig() {
+        taskLock = new ReentrantLock();
         this.queue = new LinkedBlockingQueue(config.getBufferQueueCapacity());
         logger.info("{} initialized with queue capacity: {}", this.getClass().getSimpleName(), config.getBufferQueueCapacity());
-    }
-
-    /**
-     * 初始化锁
-     */
-    protected void buildLock(){
-        taskLock = new ReentrantLock();
-        queueLock = new ReentrantLock(true);
-        isFull = queueLock.newCondition();
     }
 
     /**
@@ -116,7 +100,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      * @return
      */
     protected boolean isRunning(BufferRequest request) {
-        Meta meta = cacheService.get(request.getMetaId(), Meta.class);
+        Meta meta = profileComponent.getMeta(request.getMetaId());
         return meta != null && MetaEnum.isRunning(meta.getState());
     }
 
@@ -138,23 +122,20 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      */
     protected abstract void pull(Response response);
 
+    /**
+     * 提交任务失败
+     *
+     * @param queue
+     * @param request
+     */
+    protected abstract void offerFailed(BlockingQueue<Request> queue, Request request);
+
     @Override
     public void offer(BufferRequest request) {
-        if (!queue.offer((Request) request)) {
-            try {
-                // 公平锁，有序执行，容量上限，阻塞重试
-                queueLock.lock();
-                while (isRunning(request) && !queue.offer((Request) request)) {
-                    try {
-                        isFull.await(offerInterval.toMillis(), TimeUnit.MILLISECONDS);
-                    } catch (InterruptedException e) {
-                        break;
-                    }
-                }
-            } finally {
-                queueLock.unlock();
-            }
+        if (queue.offer((Request) request)) {
+            return;
         }
+        offerFailed(queue, (Request) request);
     }
 
     @Override

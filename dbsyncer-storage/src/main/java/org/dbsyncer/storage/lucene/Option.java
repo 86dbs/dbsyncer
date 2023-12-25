@@ -1,17 +1,20 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.storage.lucene;
 
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Highlighter;
-import org.dbsyncer.storage.enums.IndexFieldResolverEnum;
-import org.dbsyncer.storage.lucene.IndexFieldResolver;
+import org.dbsyncer.sdk.filter.FieldResolver;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * @version 1.0.0
  * @Author AE86
+ * @Version 1.0.0
  * @Date 2020-06-01 22:57
  */
 public class Option {
@@ -32,7 +35,7 @@ public class Option {
     /**
      * 返回值转换器
      */
-    private Map<String, IndexFieldResolverEnum> indexFieldResolverMap = new ConcurrentHashMap<>();
+    private Map<String, FieldResolver> fieldResolverMap = new ConcurrentHashMap<>();
 
     /**
      * 指定返回的值类型
@@ -40,12 +43,11 @@ public class Option {
      * @param name
      * @return
      */
-    public IndexFieldResolver getIndexFieldResolver(String name) {
-        IndexFieldResolverEnum indexFieldResolverEnum = indexFieldResolverMap.get(name);
-        if (null != indexFieldResolverEnum) {
-            return indexFieldResolverEnum.getIndexFieldResolver();
+    public FieldResolver<IndexableField> getFieldResolver(String name) {
+        if (fieldResolverMap.containsKey(name)) {
+            return fieldResolverMap.get(name);
         }
-        return IndexFieldResolverEnum.STRING.getIndexFieldResolver();
+        return (f) -> f.stringValue();
     }
 
     public Query getQuery() {
@@ -88,11 +90,11 @@ public class Option {
         this.queryTotal = queryTotal;
     }
 
-    public Map<String, IndexFieldResolverEnum> getIndexFieldResolverMap() {
-        return indexFieldResolverMap;
+    public Map<String, FieldResolver> getFieldResolverMap() {
+        return fieldResolverMap;
     }
 
-    public void setIndexFieldResolverMap(Map<String, IndexFieldResolverEnum> indexFieldResolverMap) {
-        this.indexFieldResolverMap = indexFieldResolverMap;
+    public void setFieldResolverMap(Map<String, FieldResolver> fieldResolverMap) {
+        this.fieldResolverMap = fieldResolverMap;
     }
 }

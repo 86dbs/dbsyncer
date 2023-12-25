@@ -1,24 +1,29 @@
 package org.dbsyncer.biz.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.vo.BinlogColumnVo;
 import org.dbsyncer.biz.vo.MessageVo;
-import org.dbsyncer.common.event.RowChangedEvent;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.manager.Manager;
-import org.dbsyncer.monitor.Monitor;
-import org.dbsyncer.parser.Parser;
+import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.listener.event.RowChangedEvent;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.filter.FieldResolver;
+import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
-import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.storage.util.BinlogMessageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -48,13 +54,13 @@ public class DataSyncServiceImpl implements DataSyncService {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private Monitor monitor;
+    private BufferActuatorRouter bufferActuatorRouter;
 
     @Resource
-    private Manager manager;
+    private ProfileComponent profileComponent;
 
     @Resource
-    private Parser parser;
+    private StorageService storageService;
 
     @Override
     public MessageVo getMessageVo(String metaId, String messageId) {
@@ -63,10 +69,10 @@ public class DataSyncServiceImpl implements DataSyncService {
 
         MessageVo messageVo = new MessageVo();
         try {
-            Map row = monitor.getData(metaId, messageId);
+            Map row = getData(metaId, messageId);
             Map binlogData = getBinlogData(row, true);
             String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
-            TableGroup tableGroup = monitor.getTableGroup(tableGroupId);
+            TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
             messageVo.setSourceTableName(tableGroup.getSourceTable().getName());
             messageVo.setTargetTableName(tableGroup.getTargetTable().getName());
             messageVo.setId(messageId);
@@ -87,7 +93,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     public Map getBinlogData(Map row, boolean prettyBytes) throws InvalidProtocolBufferException {
         String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
         // 1、获取配置信息
-        final TableGroup tableGroup = manager.getTableGroup(tableGroupId);
+        final TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
         if (tableGroup == null) {
             return Collections.EMPTY_MAP;
         }
@@ -134,43 +140,56 @@ public class DataSyncServiceImpl implements DataSyncService {
     }
 
     @Override
-    public String sync(Map<String, String> params) {
+    public String sync(Map<String, String> params) throws InvalidProtocolBufferException {
         String metaId = params.get("metaId");
         String messageId = params.get("messageId");
         Assert.hasText(metaId, "The metaId is null.");
         Assert.hasText(messageId, "The messageId is null.");
 
-        try {
-            Map row = monitor.getData(metaId, messageId);
-            Map binlogData = getBinlogData(row, false);
-            if (CollectionUtils.isEmpty(binlogData)) {
-                return messageId;
-            }
-            String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
-            String event = (String) row.get(ConfigConstant.DATA_EVENT);
-            // 有修改同步值
-            String retryDataParams = params.get("retryDataParams");
-            if (StringUtil.isNotBlank(retryDataParams)) {
-                JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
-            }
-            TableGroup tableGroup = manager.getTableGroup(tableGroupId);
-            String sourceTableName = tableGroup.getSourceTable().getName();
-            RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, Collections.EMPTY_LIST);
-            // 转换为源字段
-            final Picker picker = new Picker(tableGroup.getFieldMapping());
-            changedEvent.setChangedRow(picker.pickSourceData(binlogData));
-            parser.execute(tableGroupId, changedEvent);
-            monitor.removeData(metaId, messageId);
-            // 更新失败数
-            Meta meta = manager.getMeta(metaId);
-            Assert.notNull(meta, "Meta can not be null.");
-            meta.getFail().decrementAndGet();
-            meta.setUpdateTime(Instant.now().toEpochMilli());
-            manager.editConfigModel(meta);
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage());
+        Map row = getData(metaId, messageId);
+        Map binlogData = getBinlogData(row, false);
+        if (CollectionUtils.isEmpty(binlogData)) {
+            return messageId;
         }
+        String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
+        String event = (String) row.get(ConfigConstant.DATA_EVENT);
+        // 有修改同步值
+        String retryDataParams = params.get("retryDataParams");
+        if (StringUtil.isNotBlank(retryDataParams)) {
+            JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
+        }
+        TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
+        String sourceTableName = tableGroup.getSourceTable().getName();
+        RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, Collections.EMPTY_LIST);
+        // 转换为源字段
+        final Picker picker = new Picker(tableGroup.getFieldMapping());
+        changedEvent.setChangedRow(picker.pickSourceData(binlogData));
+        // 执行同步是否成功
+        bufferActuatorRouter.execute(metaId, tableGroupId, changedEvent);
+        storageService.remove(StorageEnum.DATA, metaId, messageId);
+        // 更新失败数
+        Meta meta = profileComponent.getMeta(metaId);
+        Assert.notNull(meta, "Meta can not be null.");
+        meta.getFail().decrementAndGet();
+        meta.setUpdateTime(Instant.now().toEpochMilli());
+        profileComponent.editConfigModel(meta);
         return messageId;
+    }
+
+    private Map getData(String metaId, String messageId) {
+        Query query = new Query(1, 1);
+        Map<String, FieldResolver> fieldResolvers = new LinkedHashMap<>();
+        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
+        query.setFieldResolverMap(fieldResolvers);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);
+        query.setMetaId(metaId);
+        query.setType(StorageEnum.DATA);
+        Paging paging = storageService.query(query);
+        if (!CollectionUtils.isEmpty(paging.getData())) {
+            List<Map> data = (List<Map>) paging.getData();
+            return data.get(0);
+        }
+        return Collections.EMPTY_MAP;
     }
 
     private Object convertValue(Object oldValue, String newValue) {

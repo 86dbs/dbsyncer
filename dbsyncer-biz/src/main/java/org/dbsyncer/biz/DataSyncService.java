@@ -32,6 +32,6 @@ public interface DataSyncService {
      * @param params
      * @return
      */
-    String sync(Map<String, String> params);
+    String sync(Map<String, String> params) throws InvalidProtocolBufferException;
 
 }

@@ -5,23 +5,16 @@
     <parent>
         <artifactId>dbsyncer</artifactId>
         <groupId>org.ghi</groupId>
-        <version>1.2.7_1201</version>
+        <version>2.0.0_1226-Beta</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>dbsyncer-storage</artifactId>
 
     <dependencies>
-        <!-- Cluster 集群服务 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-cluster</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
         <!-- Connector 连接器 -->
         <dependency>
             <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-connector</artifactId>
+            <artifactId>dbsyncer-connector-base</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
@@ -31,9 +24,35 @@
             <artifactId>protobuf-java</artifactId>
         </dependency>
 
+        <!-- smartcn中文分词器 -->
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-analyzers-smartcn</artifactId>
+        </dependency>
+
+        <!-- elasticsearch -->
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-log4j2</artifactId>
+        </dependency>
+
+        <!-- oracle-driver -->
+        <dependency>
+            <groupId>com.oracle</groupId>
+            <artifactId>ojdbc6</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- postgresql -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>

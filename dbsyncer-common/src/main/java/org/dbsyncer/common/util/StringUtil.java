@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.common.util;
 
 import org.apache.commons.lang3.StringUtils;
@@ -8,13 +11,21 @@ public abstract class StringUtil {
 
     public static final String SYMBOL = "-";
 
+    public static final String UNDERLINE = "_";
+
     public static final String COLON = ":";
 
     public static final String SPACE = " ";
 
     public static final String SINGLE_QUOTATION = "'";
 
+    public static final String DOUBLE_QUOTATION = "\"";
+
     public static final String FORWARD_SLASH = "/";
+
+    public static final String BACK_QUOTE = "`";
+
+    public static final String POINT = ".";
 
     public static boolean equals(CharSequence cs1, CharSequence cs2) {
         return StringUtils.equals(cs1, cs2);

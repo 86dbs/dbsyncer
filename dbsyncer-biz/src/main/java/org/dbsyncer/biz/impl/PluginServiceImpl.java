@@ -5,18 +5,19 @@ import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.biz.vo.PluginVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.manager.Manager;
-import org.dbsyncer.parser.logger.LogService;
-import org.dbsyncer.parser.logger.LogType;
+import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.LogService;
+import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.plugin.config.Plugin;
-import org.dbsyncer.plugin.enums.FileSuffixEnum;
+import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.plugin.model.Plugin;
+import org.dbsyncer.common.enums.FileSuffixEnum;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,15 +32,18 @@ import java.util.stream.Collectors;
 @Component
 public class PluginServiceImpl implements PluginService {
 
-    @Autowired
-    private Manager manager;
+    @Resource
+    private PluginFactory pluginFactory;
 
-    @Autowired
+    @Resource
+    private ProfileComponent profileComponent;
+
+    @Resource
     private LogService logService;
 
     @Override
     public List<PluginVo> getPluginAll() {
-        List<Plugin> pluginAll = manager.getPluginAll();
+        List<Plugin> pluginAll = pluginFactory.getPluginAll();
         List<PluginVo> vos = new ArrayList<>();
         if (!CollectionUtils.isEmpty(pluginAll)) {
             Map<String, List<String>> pluginClassNameMap = getPluginClassNameMap();
@@ -55,17 +59,17 @@ public class PluginServiceImpl implements PluginService {
 
     @Override
     public String getPluginPath() {
-        return manager.getPluginPath();
+        return pluginFactory.getPluginPath();
     }
 
     @Override
     public String getLibraryPath() {
-        return manager.getLibraryPath();
+        return pluginFactory.getLibraryPath();
     }
 
     @Override
     public void loadPlugins() {
-        manager.loadPlugins();
+        pluginFactory.loadPlugins();
         logService.log(LogType.PluginLog.UPDATE);
     }
 
@@ -84,7 +88,7 @@ public class PluginServiceImpl implements PluginService {
 
     private Map<String, List<String>> getPluginClassNameMap() {
         Map<String, List<String>> map = new HashMap<>();
-        List<Mapping> mappingAll = manager.getMappingAll();
+        List<Mapping> mappingAll = profileComponent.getMappingAll();
         if (CollectionUtils.isEmpty(mappingAll)) {
             return map;
         }
@@ -97,7 +101,7 @@ public class PluginServiceImpl implements PluginService {
                 continue;
             }
 
-            List<TableGroup> tableGroupAll = manager.getTableGroupAll(m.getId());
+            List<TableGroup> tableGroupAll = profileComponent.getTableGroupAll(m.getId());
             if (CollectionUtils.isEmpty(tableGroupAll)) {
                 continue;
             }

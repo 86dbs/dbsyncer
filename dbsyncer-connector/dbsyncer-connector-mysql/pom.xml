@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>dbsyncer-connector</artifactId>
+        <groupId>org.ghi</groupId>
+        <version>2.0.0_1226-Beta</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>dbsyncer-connector-mysql</artifactId>
+
+    <dependencies>
+        <!-- sdk -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-sdk</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- mysql-driver -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+
+        <!-- binlog -->
+        <dependency>
+            <groupId>com.zendesk</groupId>
+            <artifactId>mysql-binlog-connector-java</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.jsqlparser</groupId>
+            <artifactId>jsqlparser</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-log4j2</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+    </dependencies>
+</project>

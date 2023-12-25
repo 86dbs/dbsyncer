@@ -1,32 +1,37 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.ConditionService;
 import org.dbsyncer.biz.vo.ConditionVo;
-import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.connector.enums.OperationEnum;
-import org.dbsyncer.listener.enums.QuartzFilterEnum;
-import org.dbsyncer.manager.Manager;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.dbsyncer.sdk.enums.FilterEnum;
+import org.dbsyncer.sdk.enums.QuartzFilterEnum;
+import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.sdk.enums.OperationEnum;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2020/1/19 16:02
+ * 支持的条件和运算符类型
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2020-01-19 16:02
  */
 @Component
 public class ConditionServiceImpl implements ConditionService {
 
-    @Autowired
-    private Manager manager;
+    @Resource
+    private ProfileComponent profileComponent;
 
     @Override
     public ConditionVo getCondition() {
-        List<OperationEnum> operationEnumAll = manager.getOperationEnumAll();
-        List<QuartzFilterEnum> quartzFilterEnumAll = manager.getQuartzFilterEnumAll();
-        List<FilterEnum> filterEnumAll = manager.getFilterEnumAll();
+        List<OperationEnum> operationEnumAll = profileComponent.getOperationEnumAll();
+        List<QuartzFilterEnum> quartzFilterEnumAll = profileComponent.getQuartzFilterEnumAll();
+        List<FilterEnum> filterEnumAll = profileComponent.getFilterEnumAll();
         return new ConditionVo(operationEnumAll, quartzFilterEnumAll, filterEnumAll);
     }
 }

@@ -1,8 +1,15 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.biz.impl;
 
+import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.SystemConfigService;
+import org.dbsyncer.biz.enums.BufferActuatorMetricEnum;
+import org.dbsyncer.biz.enums.DiskMetricEnum;
+import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.metric.MetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.CpuMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.DiskMetricDetailFormatter;
@@ -10,12 +17,13 @@ import org.dbsyncer.biz.metric.impl.DoubleRoundMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.GCMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.MemoryMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.ValueMetricDetailFormatter;
+import org.dbsyncer.biz.model.AppReportMetric;
+import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.vo.AppReportMetricVo;
 import org.dbsyncer.biz.vo.DataVo;
 import org.dbsyncer.biz.vo.LogVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.biz.vo.MetricResponseVo;
-import org.dbsyncer.common.event.PreloadCompletedEvent;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -23,28 +31,25 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.enums.FilterEnum;
-import org.dbsyncer.monitor.Monitor;
-import org.dbsyncer.monitor.enums.BufferActuatorMetricEnum;
-import org.dbsyncer.monitor.enums.DiskMetricEnum;
-import org.dbsyncer.monitor.enums.MetricEnum;
-import org.dbsyncer.monitor.model.AppReportMetric;
-import org.dbsyncer.monitor.model.MetricResponse;
+import org.dbsyncer.parser.LogService;
+import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
-import org.dbsyncer.parser.enums.ModelEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.storage.StorageService;
-import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.FilterEnum;
+import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.filter.BooleanFilter;
+import org.dbsyncer.sdk.filter.FieldResolver;
+import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.filter.impl.LongFilter;
+import org.dbsyncer.sdk.storage.StorageService;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-import org.dbsyncer.storage.enums.StorageEnum;
-import org.dbsyncer.storage.query.BooleanFilter;
-import org.dbsyncer.storage.query.Query;
-import org.dbsyncer.storage.query.filter.LongFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
-import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -53,6 +58,7 @@ import javax.annotation.Resource;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -60,17 +66,20 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * @author AE86
- * @version 1.0.0
- * @date 2020/04/27 10:20
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2020-04-27 10:20
  */
 @Service
-public class MonitorServiceImpl extends BaseServiceImpl implements MonitorService, ScheduledTaskJob, ApplicationListener<PreloadCompletedEvent> {
+public class MonitorServiceImpl extends BaseServiceImpl implements MonitorService, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private Monitor monitor;
+    private MetricReporter metricReporter;
+
+    @Resource
+    private ProfileComponent profileComponent;
 
     @Resource
     private DataSyncService dataSyncService;
@@ -82,9 +91,10 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private StorageService storageService;
 
     @Resource
-    private SystemConfigService systemConfigService;
+    private LogService logService;
 
-    private boolean preloadCompleted;
+    @Resource
+    private SystemConfigService systemConfigService;
 
     private Map<String, MetricDetailFormatter> metricDetailFormatterMap = new LinkedHashMap<>();
 
@@ -110,7 +120,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public List<MetaVo> getMetaAll() {
-        List<MetaVo> list = monitor.getMetaAll()
+        List<MetaVo> list = profileComponent.getMetaAll()
                 .stream()
                 .map(m -> convertMeta2Vo(m))
                 .sorted(Comparator.comparing(MetaVo::getUpdateTime).reversed())
@@ -120,7 +130,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public MetaVo getMetaVo(String metaId) {
-        Meta meta = monitor.getMeta(metaId);
+        Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "The meta is null.");
 
         return convertMeta2Vo(meta);
@@ -140,7 +150,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         String error = params.get(ConfigConstant.DATA_ERROR);
         String success = params.get(ConfigConstant.DATA_SUCCESS);
 
-        Paging paging = monitor.queryData(getDefaultMetaId(id), pageNum, pageSize, error, success);
+        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, success);
         List<Map> data = (List<Map>) paging.getData();
         List<DataVo> list = new ArrayList<>();
         for (Map row : data) {
@@ -160,7 +170,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     @Override
     public String clearData(String id) {
         Assert.hasText(id, "驱动不存在.");
-        monitor.clearData(id);
+        Meta meta = profileComponent.getMeta(id);
+        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
+        LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
+        logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
+        storageService.clear(StorageEnum.DATA, id);
         return "清空同步数据成功";
     }
 
@@ -169,7 +184,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String json = params.get(ConfigConstant.CONFIG_MODEL_JSON);
-        Paging paging = monitor.queryLog(pageNum, pageSize, json);
+        Query query = new Query(pageNum, pageSize);
+        if (StringUtil.isNotBlank(json)) {
+            query.addFilter(ConfigConstant.CONFIG_MODEL_JSON, json, true);
+        }
+        query.setType(StorageEnum.LOG);
+        Paging paging = storageService.query(query);
         List<Map> data = (List<Map>) paging.getData();
         paging.setData(data.stream()
                 .map(m -> convert2Vo(m, LogVo.class))
@@ -179,31 +199,29 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public String clearLog() {
-        monitor.clearLog();
+        storageService.clear(StorageEnum.LOG, null);
         return "清空日志成功";
     }
 
     @Override
     public void deleteExpiredDataAndLog() {
-        if (preloadCompleted) {
-            deleteExpiredData();
-            deleteExpiredLog();
-        }
+        deleteExpiredData();
+        deleteExpiredLog();
     }
 
     @Override
     public List<StorageDataStatusEnum> getStorageDataStatusEnumAll() {
-        return monitor.getStorageDataStatusEnumAll();
+        return profileComponent.getStorageDataStatusEnumAll();
     }
 
     @Override
     public List<MetricEnum> getMetricEnumAll() {
-        return monitor.getMetricEnumAll();
+        return Arrays.asList(MetricEnum.values());
     }
 
     @Override
     public AppReportMetricVo queryAppReportMetric(List<MetricResponse> metrics) {
-        AppReportMetric appReportMetric = monitor.getAppReportMetric();
+        AppReportMetric appReportMetric = metricReporter.getAppReportMetric();
         AppReportMetricVo vo = new AppReportMetricVo();
         BeanUtils.copyProperties(appReportMetric, vo);
         vo.setMetrics(getMetrics(metrics));
@@ -213,7 +231,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     @Override
     public void run() {
         // 预警：驱动出现失败记录，发送通知消息
-        List<Meta> metaAll = monitor.getMetaAll();
+        List<Meta> metaAll = profileComponent.getMetaAll();
         if (CollectionUtils.isEmpty(metaAll)) {
             return;
         }
@@ -222,7 +240,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         metaAll.forEach(meta -> {
             // 有失败记录
             if (MetaEnum.isRunning(meta.getState()) && meta.getFail().get() > 0) {
-                Mapping mapping = monitor.getMapping(meta.getMappingId());
+                Mapping mapping = profileComponent.getMapping(meta.getMappingId());
                 if (null != mapping) {
                     ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
                     content.append("<p>");
@@ -239,6 +257,27 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         if (StringUtil.isNotBlank(msg)) {
             sendNotifyMessage("同步失败", msg);
         }
+    }
+
+    private Paging queryData(String metaId, int pageNum, int pageSize, String error, String success) {
+        // 没有驱动
+        if (StringUtil.isBlank(metaId)) {
+            return new Paging(pageNum, pageSize);
+        }
+        Query query = new Query(pageNum, pageSize);
+        Map<String, FieldResolver> fieldResolvers = new LinkedHashMap<>();
+        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
+        query.setFieldResolverMap(fieldResolvers);
+
+        // 查询异常信息
+        if (StringUtil.isNotBlank(error)) {
+            query.addFilter(ConfigConstant.DATA_ERROR, error, true);
+        }
+        // 查询是否成功, 默认查询失败
+        query.addFilter(ConfigConstant.DATA_SUCCESS, StringUtil.isNotBlank(success) ? NumberUtil.toInt(success) : StorageDataStatusEnum.FAIL.getValue());
+        query.setMetaId(metaId);
+        query.setType(StorageEnum.DATA);
+        return storageService.query(query);
     }
 
     private void deleteExpiredData() {
@@ -268,7 +307,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private MetaVo convertMeta2Vo(Meta meta) {
-        Mapping mapping = monitor.getMapping(meta.getMappingId());
+        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
         Assert.notNull(mapping, "驱动不存在.");
         ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
         MetaVo metaVo = new MetaVo(modelEnum.getName(), mapping.getName());
@@ -293,7 +332,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     private List<MetricResponseVo> getMetrics(List<MetricResponse> metrics) {
         // 系统指标
-        List<MetricResponse> metricList = monitor.getMetricInfo();
+        List<MetricResponse> metricList = metricReporter.getMetricInfo();
         // 线程池状态
         metrics.addAll(metricList);
 
@@ -309,8 +348,4 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }).collect(Collectors.toList());
     }
 
-    @Override
-    public void onApplicationEvent(PreloadCompletedEvent event) {
-        preloadCompleted = true;
-    }
 }

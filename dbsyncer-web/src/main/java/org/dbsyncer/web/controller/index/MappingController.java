@@ -3,16 +3,20 @@ package org.dbsyncer.web.controller.index;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
-import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
@@ -22,13 +26,13 @@ public class MappingController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private ConnectorService connectorService;
 
-    @Autowired
+    @Resource
     private MappingService mappingService;
 
-    @Autowired
+    @Resource
     private TableGroupService tableGroupService;
 
     @GetMapping("/pageAdd")
@@ -139,10 +143,7 @@ public class MappingController extends BaseController {
     @ResponseBody
     public RestResult refreshTables(@RequestParam(value = "id") String id) {
         try {
-            MappingVo mapping = mappingService.getMapping(id);
-            mappingService.refreshTables(mapping.getSourceConnector());
-            mappingService.refreshTables(mapping.getTargetConnector());
-            return RestResult.restSuccess(id);
+            return RestResult.restSuccess(mappingService.refreshMappingTables(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

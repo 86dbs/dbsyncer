@@ -3,8 +3,8 @@ package org.dbsyncer.biz;
 import org.dbsyncer.biz.vo.AppReportMetricVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.monitor.enums.MetricEnum;
-import org.dbsyncer.monitor.model.MetricResponse;
+import org.dbsyncer.biz.enums.MetricEnum;
+import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
 import java.util.List;

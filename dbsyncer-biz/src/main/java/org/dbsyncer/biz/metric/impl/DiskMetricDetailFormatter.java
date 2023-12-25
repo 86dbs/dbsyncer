@@ -2,7 +2,7 @@ package org.dbsyncer.biz.metric.impl;
 
 import org.dbsyncer.biz.metric.AbstractMetricDetailFormatter;
 import org.dbsyncer.biz.vo.MetricResponseVo;
-import org.dbsyncer.monitor.model.Sample;
+import org.dbsyncer.biz.model.Sample;
 
 import java.math.BigDecimal;
 

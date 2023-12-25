@@ -1,0 +1,2 @@
+org.dbsyncer.connector.mysql.MySQLConnector
+org.dbsyncer.connector.mysql.DQLMySQLConnector

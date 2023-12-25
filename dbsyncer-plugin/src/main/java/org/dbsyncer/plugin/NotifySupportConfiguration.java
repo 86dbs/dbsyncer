@@ -1,7 +1,6 @@
 package org.dbsyncer.plugin;
 
-import org.dbsyncer.common.spi.NotifyService;
-import org.dbsyncer.plugin.notify.DefaultNotifyService;
+import org.dbsyncer.plugin.impl.DefaultNotifyServiceProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,7 +16,7 @@ public class NotifySupportConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public NotifyService notifyService() {
-        return new DefaultNotifyService();
+        return new DefaultNotifyServiceProvider();
     }
 
 }

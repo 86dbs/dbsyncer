@@ -6,11 +6,11 @@ import net.sf.jsqlparser.statement.alter.AlterExpression;
 import net.sf.jsqlparser.statement.create.table.Index;
 import net.sf.jsqlparser.statement.create.table.Index.ColumnParams;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.config.DDLConfig;
-import org.dbsyncer.connector.enums.DDLOperationEnum;
-import org.dbsyncer.connector.model.Field;
 import org.dbsyncer.parser.ddl.AlterStrategy;
 import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.enums.DDLOperationEnum;
+import org.dbsyncer.sdk.model.Field;
 
 /**
  * 解析add的属性 exampleSql: ALTER TABLE cost ADD duan INT after(before) `tmp`;
@@ -40,7 +40,8 @@ public class AddStrategy implements AlterStrategy {
             boolean findColumn = false;
             List<String> columnSpecs = new LinkedList<>();
             for (String spe : columnDataType.getColumnSpecs()) {//对一before，after进行处理
-                spe = StringUtil.replace(spe, "`", "");
+                spe = StringUtil.replace(spe, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
+                spe = StringUtil.replace(spe, StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY);
                 if (findColumn) {
                     //对before（after）字段进行映射
                     String finalSpe = spe;
@@ -60,7 +61,8 @@ public class AddStrategy implements AlterStrategy {
             }
             columnDataType.setColumnSpecs(columnSpecs);
             String columName = columnDataType.getColumnName();
-            columName = StringUtil.replace(columName, "`", "");
+            columName = StringUtil.replace(columName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
+            columName = StringUtil.replace(columName, StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY);
             Field field = new Field(columName, columnDataType.getColDataType().getDataType(),
                     0);//感觉不需要都行，只需要名称，后续可以自己刷新
             ddlConfig.getAddFields().add(field);

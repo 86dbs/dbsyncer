@@ -3,9 +3,9 @@ package org.dbsyncer.web.controller;
 import org.dbsyncer.biz.ConditionService;
 import org.dbsyncer.biz.ConvertService;
 import org.dbsyncer.biz.PluginService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,13 +17,13 @@ import java.util.Map;
  */
 public abstract class BaseController {
 
-    @Autowired
+    @Resource
     private ConditionService filterService;
 
-    @Autowired
+    @Resource
     private ConvertService convertService;
 
-    @Autowired
+    @Resource
     private PluginService pluginService;
 
     /**

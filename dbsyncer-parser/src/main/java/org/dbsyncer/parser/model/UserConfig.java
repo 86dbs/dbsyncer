@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 
 import java.util.ArrayList;
 import java.util.Iterator;

@@ -8,7 +8,6 @@ import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,8 +16,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 
 @Controller
 @RequestMapping("/plugin")
@@ -26,10 +31,10 @@ public class PluginController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private PluginService pluginService;
 
-    @Autowired
+    @Resource
     private AppConfig appConfig;
 
     @RequestMapping("")

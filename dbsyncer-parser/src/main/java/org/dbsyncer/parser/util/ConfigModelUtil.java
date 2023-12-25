@@ -2,7 +2,7 @@ package org.dbsyncer.parser.util;
 
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 
 import java.util.HashMap;
 import java.util.Map;

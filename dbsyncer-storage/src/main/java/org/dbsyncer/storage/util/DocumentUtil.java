@@ -2,7 +2,7 @@ package org.dbsyncer.storage.util;
 
 import org.apache.lucene.document.*;
 import org.apache.lucene.util.BytesRef;
-import org.dbsyncer.storage.constant.ConfigConstant;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.springframework.util.Assert;
 
 import java.util.Map;

@@ -55,14 +55,6 @@ public enum ConvertEnum {
      */
     BYTES_TO_STRING("BYTES_TO_STRING", "Byte[]转String", 0, new BytesToStringHandler()),
     /**
-     * Clob转String
-     */
-    CLOB_TO_STRING("CLOB_TO_STRING", "Clob转String", 0, new ClobToStringHandler()),
-    /**
-     * Blob转String
-     */
-    BLOB_TO_STRING("BLOB_TO_STRING", "Blob转String", 0, new BlobToStringHandler()),
-    /**
      * 替换
      */
     REPLACE("REPLACE", "替换", 2, new ReplaceHandler()),

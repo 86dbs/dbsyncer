@@ -7,13 +7,9 @@ import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
 import net.sf.jsqlparser.statement.alter.AlterOperation;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.Connector;
-import org.dbsyncer.connector.ConnectorFactory;
-import org.dbsyncer.connector.config.DDLConfig;
-import org.dbsyncer.connector.database.Database;
-import org.dbsyncer.connector.enums.DDLOperationEnum;
-import org.dbsyncer.connector.model.Field;
-import org.dbsyncer.connector.model.MetaInfo;
+import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.parser.ddl.AlterStrategy;
 import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.ddl.alter.AddStrategy;
@@ -21,6 +17,10 @@ import org.dbsyncer.parser.ddl.alter.ChangeStrategy;
 import org.dbsyncer.parser.ddl.alter.DropStrategy;
 import org.dbsyncer.parser.ddl.alter.ModifyStrategy;
 import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.sdk.enums.DDLOperationEnum;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -63,14 +63,14 @@ public class DDLParserImpl implements DDLParser {
 
     @Override
     public DDLConfig parseDDlConfig(String sql, String targetConnectorType, String targetTableName, List<FieldMapping> originalFieldMappings) {
-        Connector connector = connectorFactory.getConnector(targetConnectorType);
+        ConnectorService connectorService = connectorFactory.getConnectorService(targetConnectorType);
         // 替换为目标库执行SQL
         DDLConfig ddlConfig = new DDLConfig();
         try {
             Statement statement = CCJSqlParserUtil.parse(sql);
             if (statement instanceof Alter) {
                 Alter alter = (Alter) statement;
-                Database database = (Database) connector;
+                Database database = (Database) connectorService;
                 String quotation = database.buildSqlWithQuotation();
                 // 替换成目标表名
                 alter.getTable().setName(new StringBuilder(quotation).append(targetTableName).append(quotation).toString());
