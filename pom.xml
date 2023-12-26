@@ -38,7 +38,7 @@
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <commons-io.version>2.5</commons-io.version>
         <lucene-analyzers-smartcn.version>8.8.0</lucene-analyzers-smartcn.version>
-        <ojdbc6.version>11.2.0.4.0-atlassian-hosted</ojdbc6.version>
+        <ojdbc8.version>23.3.0.23.09</ojdbc8.version>
         <!--<mysql.version>5.1.40</mysql.version>-->
         <mysql.version>8.0.21</mysql.version>
         <mysql-binlog.version>0.27.0</mysql-binlog.version>
@@ -143,9 +143,9 @@
 
             <!-- oracle-driver -->
             <dependency>
-                <groupId>com.oracle</groupId>
-                <artifactId>ojdbc6</artifactId>
-                <version>${ojdbc6.version}</version>
+                <groupId>com.oracle.database.jdbc</groupId>
+                <artifactId>ojdbc8</artifactId>
+                <version>${ojdbc8.version}</version>
             </dependency>
 
             <!-- sqlserver-driver -->
