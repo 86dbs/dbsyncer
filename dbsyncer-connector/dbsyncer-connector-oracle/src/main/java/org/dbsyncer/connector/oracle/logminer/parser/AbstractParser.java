@@ -32,14 +32,16 @@ public abstract class AbstractParser implements Parser {
         if (expression instanceof IsNullExpression) {
             IsNullExpression isNullExpression = (IsNullExpression) expression;
             Column column = (Column) isNullExpression.getLeftExpression();
-            columnMap.put(StringUtil.replace(column.getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY), null);
+            columnMap.put(StringUtil.replace(column.getColumnName(), StringUtil.DOUBLE_QUOTATION,
+                    StringUtil.EMPTY), expression);
             return;
         }
 
         BinaryExpression binaryExpression = (BinaryExpression) expression;
         if (binaryExpression.getLeftExpression() instanceof Column) {
             Column column = (Column) binaryExpression.getLeftExpression();
-            columnMap.put(StringUtil.replace(column.getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY), binaryExpression.getRightExpression());
+            columnMap.put(StringUtil.replace(column.getColumnName(), StringUtil.DOUBLE_QUOTATION,
+                    StringUtil.EMPTY), binaryExpression.getRightExpression());
             return;
         }
         findColumn(binaryExpression.getLeftExpression());
@@ -50,8 +52,9 @@ public abstract class AbstractParser implements Parser {
         List<Object> data = new LinkedList<>();
         //需要进行数据库类型
         for (Field field : fields) {
-           OracleColumnValue oracleColumnValue = new OracleColumnValue(columnMap.get(field.getName()));
-            switch (field.getType()){
+            OracleColumnValue oracleColumnValue = new OracleColumnValue(
+                    columnMap.get(field.getName()));
+            switch (field.getType()) {
                 case Types.BIGINT:
                     data.add(oracleColumnValue.asBigInteger());
                     break;
