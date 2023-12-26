@@ -58,7 +58,6 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -86,8 +85,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
 
     private final ESConfigValidator configValidator = new ESConfigValidator();
 
-    @PostConstruct
-    private void init() {
+    public ElasticsearchConnector() {
         VALUE_MAPPERS.put(Types.DATE, new ESDateValueMapper());
         VALUE_MAPPERS.put(Types.OTHER, new ESOtherValueMapper());
 

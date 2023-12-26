@@ -134,9 +134,8 @@ public class MySQLListener extends AbstractDatabaseListener {
 
     private List<Host> readNodes(String url) {
         Matcher matcher = compile("(//)(?!(/)).+?(/)").matcher(url);
-        while (matcher.find()) {
+        if (matcher.find()) {
             url = matcher.group(0);
-            break;
         }
         url = StringUtil.replace(url, "/", "");
 

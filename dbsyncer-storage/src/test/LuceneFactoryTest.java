@@ -261,8 +261,7 @@ public class LuceneFactoryTest {
         System.out.println("新增后：");
         maps = query(new MatchAllDocsQuery());
         maps.forEach(m -> {
-            m.get("content");
-            System.out.println(m);
+            logger.info(String.valueOf(m.get("content")));
         });
         check();
 
