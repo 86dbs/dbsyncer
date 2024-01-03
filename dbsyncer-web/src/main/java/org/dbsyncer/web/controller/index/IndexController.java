@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.web.controller.index;
 
 import org.dbsyncer.biz.ProjectGroupService;
@@ -5,6 +8,8 @@ import org.dbsyncer.biz.vo.ProjectGroupVo;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.biz.vo.VersionVo;
 import org.dbsyncer.common.config.AppConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +22,8 @@ import javax.annotation.Resource;
 @RequestMapping("/index")
 public class IndexController {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     @Resource
     private ProjectGroupService projectGroupService;
 
@@ -25,12 +32,16 @@ public class IndexController {
 
     @GetMapping("")
     public String index(ModelMap model, String projectGroupId) {
-        ProjectGroupVo projectGroup = projectGroupService.getProjectGroup(projectGroupId);
-        model.put("connectorSize", projectGroup.getConnectorSize());
-        model.put("connectors", projectGroup.getConnectors());
-        model.put("mappings", projectGroup.getMappings());
-        model.put("projectGroupId", projectGroupId);
-        model.put("projectGroups", projectGroupService.getProjectGroupAll());
+        try {
+            ProjectGroupVo projectGroup = projectGroupService.getProjectGroup(projectGroupId);
+            model.put("connectorSize", projectGroup.getConnectorSize());
+            model.put("connectors", projectGroup.getConnectors());
+            model.put("mappings", projectGroup.getMappings());
+            model.put("projectGroupId", projectGroupId);
+            model.put("projectGroups", projectGroupService.getProjectGroupAll());
+        } catch (Exception e) {
+            logger.warn(e.getMessage(), e);
+        }
         return "index/index.html";
     }
 

@@ -1,8 +1,9 @@
 #!/bin/bash
 SCRIPT_DIR=$(cd $(dirname $0);pwd)
-APP_DIR=$(cd $SCRIPT_DIR/..;pwd)
+DBS_HOME=$(cd $SCRIPT_DIR/..;pwd)
+echo DBS_HOME=$DBS_HOME
 # application.properties
-CONFIG_PATH=$APP_DIR'/conf/application.properties'
+CONFIG_PATH=$DBS_HOME'/conf/application.properties'
 if [ ! -f ${CONFIG_PATH} ]; then
   echo "The conf/application.properties does't exist, please check it first!";
   exit 1
@@ -25,7 +26,7 @@ SERVER_OPTS='-Xms1024m -Xmx1024m -Xss1m -XX:MetaspaceSize=128m -XX:MaxMetaspaceS
 # set debug model
 #SERVER_OPTS="$SERVER_OPTS -Djava.compiler=NONE -Xnoagent -Xdebug -Xrunjdwp:transport=dt_socket,address=15005,server=y,suspend=n"
 # set jmxremote args
-JMXREMOTE_CONFIG_PATH="$APP_DIR/conf"
+JMXREMOTE_CONFIG_PATH="$DBS_HOME/conf"
 JMXREMOTE_HOSTNAME="-Djava.rmi.server.hostname=$HOST"
 JMXREMOTE_PORT="-Dcom.sun.management.jmxremote.port=15099"
 JMXREMOTE_SSL="-Dcom.sun.management.jmxremote.ssl=false"
@@ -36,12 +37,14 @@ JMXREMOTE_PASSWORD="-Dcom.sun.management.jmxremote.password.file=$JMXREMOTE_CONF
 #SERVER_OPTS="$SERVER_OPTS $JMXREMOTE_HOSTNAME $JMXREMOTE_PORT $JMXREMOTE_SSL $JMXREMOTE_AUTH $JMXREMOTE_ACCESS $JMXREMOTE_PASSWORD"
 # set IPv4
 #SERVER_OPTS="$SERVER_OPTS -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses"
-echo $SERVER_OPTS
+ENCRYPT_FILE=$DBS_HOME'/bin/dbsyncer_decrypt.so'
+if [ -f ${ENCRYPT_FILE} ]; then
+  SERVER_OPTS="$SERVER_OPTS -agentpath:$ENCRYPT_FILE"
+fi
+SERVER_OPTS="$SERVER_OPTS -Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib -Dspring.config.location=$CONFIG_PATH"
+
 # execute command
-java $SERVER_OPTS \
--Dfile.encoding=utf8 \
--Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$APP_DIR/lib \
--Dspring.config.location=$CONFIG_PATH \
-$APP > /dev/null & echo $! > $APP_DIR/tmp.pid
+echo $SERVER_OPTS
+java $SERVER_OPTS -Dfile.encoding=utf8 $APP > /dev/null & echo $! > $DBS_HOME/tmp.pid
 echo 'Start successfully!';
 exit 1
