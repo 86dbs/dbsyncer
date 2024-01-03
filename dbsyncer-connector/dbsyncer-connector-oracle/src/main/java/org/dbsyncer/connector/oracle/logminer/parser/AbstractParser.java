@@ -7,6 +7,7 @@ import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
 import net.sf.jsqlparser.schema.Column;
+import oracle.jdbc.OracleTypes;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.slf4j.Logger;
@@ -68,7 +69,7 @@ public abstract class AbstractParser implements Parser {
                     data.add(oracleColumnValue.asTimestamp());
                     break;
                 //timezone
-                case -101:
+                case OracleTypes.TIMESTAMPTZ:
                     data.add(oracleColumnValue.asTimestamp());
                     break;
                 default:
