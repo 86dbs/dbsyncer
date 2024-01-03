@@ -1,5 +1,18 @@
 package org.dbsyncer.connector.oracle.logminer.parser;
 
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.NullValue;
+import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
+import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
+import org.dbsyncer.common.column.AbstractColumnValue;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.DateFormatUtil;
+import org.dbsyncer.common.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Date;
@@ -7,17 +20,6 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Objects;
-import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.Function;
-import net.sf.jsqlparser.expression.NullValue;
-import net.sf.jsqlparser.expression.StringValue;
-import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
-import org.dbsyncer.common.column.AbstractColumnValue;
-import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.common.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
@@ -87,6 +89,12 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public Timestamp asTimestamp() {
+        if (getValue() instanceof IsNullExpression){
+            return null;
+        }
+        if (getValue() instanceof NullValue){
+            return null;
+        }
         Function function = (Function) getValue();
         List<String> multipartName = function.getMultipartName();
         ExpressionList parameters = function.getParameters();

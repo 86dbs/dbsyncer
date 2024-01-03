@@ -3,11 +3,6 @@
  */
 package org.dbsyncer.connector.oracle.logminer.parser;
 
-import java.sql.Types;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
@@ -16,6 +11,12 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.sql.Types;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @Author AE86
@@ -55,6 +56,7 @@ public abstract class AbstractParser implements Parser {
             OracleColumnValue oracleColumnValue = new OracleColumnValue(
                     columnMap.get(field.getName()));
             switch (field.getType()) {
+                case Types.NUMERIC:
                 case Types.BIGINT:
                     data.add(oracleColumnValue.asBigInteger());
                     break;
@@ -63,7 +65,11 @@ public abstract class AbstractParser implements Parser {
                     break;
                 case Types.TIME:
                 case Types.TIMESTAMP:
-                    data.add(oracleColumnValue.asTime());
+                    data.add(oracleColumnValue.asTimestamp());
+                    break;
+                //timezone
+                case -101:
+                    data.add(oracleColumnValue.asTimestamp());
                     break;
                 default:
                     data.add(oracleColumnValue.asString());
