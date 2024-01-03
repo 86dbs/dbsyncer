@@ -30,7 +30,7 @@ if exist %ENCRYPT_FILE% (
 set SERVER_OPTS=%SERVER_OPTS% -agentpath:%ENCRYPT_FILE%
 )
 
-set SERVER_OPTS=%SERVER_OPTS% -Djava.ext.dirs=%JAVA_HOME%\jre\lib\ext;%DBS_HOME%lib
+set SERVER_OPTS=%SERVER_OPTS% -Djava.ext.dirs="%JAVA_HOME%\jre\lib\ext;%DBS_HOME%lib"
 set SERVER_OPTS=%SERVER_OPTS% -Dspring.config.location=%DBS_HOME%conf\application.properties
 echo %SERVER_OPTS%
 java %SERVER_OPTS% -Dfile.encoding=GBK org.dbsyncer.web.Application
