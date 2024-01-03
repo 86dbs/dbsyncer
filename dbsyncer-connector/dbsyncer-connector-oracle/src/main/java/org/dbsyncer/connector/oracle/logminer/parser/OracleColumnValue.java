@@ -79,6 +79,9 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public BigDecimal asBigDecimal() {
+        if (asString() == null){
+            return null;
+        }
         return new BigDecimal(asString());
     }
 
@@ -119,6 +122,7 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
                     return toDate(value);
                 case "TO_TIMESTAMP":
                     return toTimestamp(value);
+
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -133,7 +137,11 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public BigInteger asBigInteger() {
-        return new BigInteger(asString());
+        Object ob = asString();
+        if (ob == null){
+            return null;
+        }
+        return new BigInteger(ob.toString());
     }
 
     private Timestamp toDate(Object value) {
@@ -143,4 +151,5 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
     private Timestamp toTimestamp(Object value) {
         return DateFormatUtil.stringToTimestamp(StringUtil.replace(Objects.toString(value), StringUtil.POINT, StringUtil.EMPTY));
     }
+
 }
