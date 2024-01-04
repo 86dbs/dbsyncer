@@ -137,6 +137,12 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public BigInteger asBigInteger() {
+        if (getValue() instanceof IsNullExpression){
+            return null;
+        }
+        if (getValue() instanceof NullValue){
+            return null;
+        }
         Object ob = asString();
         if (ob == null){
             return null;
