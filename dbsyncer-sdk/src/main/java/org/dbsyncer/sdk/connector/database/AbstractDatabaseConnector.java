@@ -126,7 +126,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 String columnName = columnMetadata.getString(4);
                 int columnType = columnMetadata.getInt(5);
                 String typeName = columnMetadata.getString(6);
-                fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName)));
+                int columnSize = columnMetadata.getInt(7);
+                int ratio = columnMetadata.getInt(9);
+                fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName),columnSize,ratio));
             }
             return fields;
         });
