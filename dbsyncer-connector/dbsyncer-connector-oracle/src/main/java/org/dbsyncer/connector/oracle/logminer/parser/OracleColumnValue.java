@@ -54,6 +54,9 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public Integer asInteger() {
+        if (asString() == null){
+            return null;
+        }
        return Integer.valueOf(asString());
     }
 

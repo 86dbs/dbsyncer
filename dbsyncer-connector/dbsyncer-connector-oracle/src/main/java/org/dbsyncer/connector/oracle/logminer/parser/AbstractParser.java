@@ -58,8 +58,7 @@ public abstract class AbstractParser implements Parser {
                     columnMap.get(field.getName()));
             switch (field.getType()) {
                 case Types.NUMERIC:
-                case Types.BIGINT:
-                    data.add(oracleColumnValue.asBigInteger());
+                    data.add(convertNumber(oracleColumnValue,field));
                     break;
                 case Types.DECIMAL:
                     data.add(oracleColumnValue.asBigDecimal());
@@ -77,6 +76,24 @@ public abstract class AbstractParser implements Parser {
             }
         }
         return data;
+    }
+
+    private Object convertNumber(OracleColumnValue oracleColumnValue,Field field) {
+        if (field.getRatio() <=0){
+            int result =field.getColumnSize() - field.getRatio();
+            if ( result <10){
+                return oracleColumnValue.asInteger();
+            }
+            if (result <19){
+                return oracleColumnValue.asBigInteger();
+            }
+            if (result <39){
+                return oracleColumnValue.asBigDecimal();
+            }
+            return oracleColumnValue.asString();
+        }else{
+            return oracleColumnValue.asBigDecimal();
+        }
     }
 
 

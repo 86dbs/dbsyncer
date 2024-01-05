@@ -135,6 +135,22 @@ public class Field {
         return this;
     }
 
+    public int getColumnSize() {
+        return columnSize;
+    }
+
+    public void setColumnSize(int columnSize) {
+        this.columnSize = columnSize;
+    }
+
+    public int getRatio() {
+        return ratio;
+    }
+
+    public void setRatio(int ratio) {
+        this.ratio = ratio;
+    }
+
     @Override
     public String toString() {
         return JsonUtil.objToJson(this);
