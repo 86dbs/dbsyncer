@@ -24,7 +24,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     /**
      * 默认最大连接
      */
-    private final int MAX_IDLE = 300;
+    private final int MAX_IDLE = 128;
 
     /**
      * 从缓存队列获取连接次数

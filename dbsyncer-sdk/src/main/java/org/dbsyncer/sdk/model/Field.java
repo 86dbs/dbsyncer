@@ -41,6 +41,16 @@ public class Field {
      */
     private boolean unmodifiabled;
 
+    /**
+     * 字段大小
+     */
+    private int columnSize;
+
+    /**
+     * 字段比例
+     */
+    private int ratio;
+
     public Field() {
     }
 
@@ -55,6 +65,15 @@ public class Field {
         this.typeName = typeName;
         this.type = type;
         this.pk = pk;
+    }
+
+    public Field(String name, String typeName, int type, boolean pk,int columnSize,int ratio) {
+        this.name = name;
+        this.typeName = typeName;
+        this.type = type;
+        this.pk = pk;
+        this.columnSize = columnSize;
+        this.ratio = ratio;
     }
 
     public Field(String name, String typeName, int type, boolean pk, String labelName, boolean unmodifiabled) {
@@ -114,6 +133,22 @@ public class Field {
     public Field setUnmodifiabled(boolean unmodifiabled) {
         this.unmodifiabled = unmodifiabled;
         return this;
+    }
+
+    public int getColumnSize() {
+        return columnSize;
+    }
+
+    public void setColumnSize(int columnSize) {
+        this.columnSize = columnSize;
+    }
+
+    public int getRatio() {
+        return ratio;
+    }
+
+    public void setRatio(int ratio) {
+        this.ratio = ratio;
     }
 
     @Override

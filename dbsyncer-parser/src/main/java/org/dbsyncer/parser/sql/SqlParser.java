@@ -10,5 +10,5 @@ package org.dbsyncer.parser.sql;
  */
 public interface SqlParser {
 
-    public String parse();
+    String parse();
 }
