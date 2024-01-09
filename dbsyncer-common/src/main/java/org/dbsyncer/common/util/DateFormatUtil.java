@@ -89,14 +89,6 @@ public abstract class DateFormatUtil {
             .optionalEnd()
             .toFormatter();
 
-    private static DateTimeFormatter TS_TZ_FORMATOracle = new DateTimeFormatterBuilder()
-            .append(NON_ISO_LOCAL_DATE)
-            .appendLiteral(' ')
-            .append(DateTimeFormatter.ISO_LOCAL_TIME)
-            .appendLiteral(' ')
-            .appendOffset("+HH:mm", "")
-            .toFormatter();
-
     public static String getCurrentTime() {
         return LocalDateTime.now().format(TIME_FORMATTER);
     }
@@ -173,11 +165,7 @@ public abstract class DateFormatUtil {
         try {
             parsedTimestamp = TS_TZ_FORMAT.parse(s);
         } catch (DateTimeParseException e) {
-            try {
-                parsedTimestamp = TS_TZ_WITH_SECONDS_FORMAT.parse(s);
-            }catch (DateTimeParseException e1){
-                parsedTimestamp = TS_TZ_FORMATOracle.parse(s);
-            }
+            parsedTimestamp = TS_TZ_WITH_SECONDS_FORMAT.parse(s);
         }
         return OffsetDateTime.from(parsedTimestamp).withOffsetSameInstant(ZoneOffset.UTC);
     }
@@ -219,17 +207,6 @@ public abstract class DateFormatUtil {
             return String.format("%02d", Integer.parseInt(s));
         }
         return s;
-    }
-
-    public static void main(String[] args) {
-        DateTimeFormatter TS_TZ_FORMAT1 = new DateTimeFormatterBuilder()
-                .append(NON_ISO_LOCAL_DATE)
-                .appendLiteral(' ')
-                .append(DateTimeFormatter.ISO_LOCAL_TIME)
-                .appendLiteral(' ')
-                .appendOffset("+HH:mm", "")
-                .toFormatter();
-        System.out.println(TS_TZ_FORMAT1.parse("2023-02-14 10:11:12.123 +08:00"));
     }
 
 }

@@ -10,8 +10,6 @@ import net.sf.jsqlparser.schema.Column;
 import oracle.jdbc.OracleTypes;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.Field;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
 import java.util.HashMap;
@@ -26,7 +24,6 @@ import java.util.Map;
  */
 public abstract class AbstractParser implements Parser {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     protected Map<String, Expression> columnMap = new HashMap<>();
     protected List<Field> fields;
 
@@ -54,11 +51,15 @@ public abstract class AbstractParser implements Parser {
         List<Object> data = new LinkedList<>();
         //需要进行数据库类型
         for (Field field : fields) {
-            OracleColumnValue oracleColumnValue = new OracleColumnValue(
-                    columnMap.get(field.getName()));
+            OracleColumnValue oracleColumnValue = new OracleColumnValue(columnMap.get(field.getName()));
+            // 无效空值
+            if (oracleColumnValue.isNull()){
+                data.add(null);
+                continue;
+            }
             switch (field.getType()) {
                 case Types.NUMERIC:
-                    data.add(convertNumber(oracleColumnValue,field));
+                    data.add(convertNumber(oracleColumnValue, field));
                     break;
                 case Types.DECIMAL:
                     data.add(oracleColumnValue.asBigDecimal());
@@ -78,24 +79,22 @@ public abstract class AbstractParser implements Parser {
         return data;
     }
 
-    private Object convertNumber(OracleColumnValue oracleColumnValue,Field field) {
-        if (field.getRatio() <=0){
-            int result =field.getColumnSize() - field.getRatio();
-            if ( result <10){
+    private Object convertNumber(OracleColumnValue oracleColumnValue, Field field) {
+        if (field.getRatio() <= 0) {
+            int result = field.getColumnSize() - field.getRatio();
+            if (result < 10) {
                 return oracleColumnValue.asInteger();
             }
-            if (result <19){
+            if (result < 19) {
                 return oracleColumnValue.asBigInteger();
             }
-            if (result <39){
+            if (result < 39) {
                 return oracleColumnValue.asBigDecimal();
             }
             return oracleColumnValue.asString();
-        }else{
-            return oracleColumnValue.asBigDecimal();
         }
+        return oracleColumnValue.asBigDecimal();
     }
-
 
     public void setFields(List<Field> fields) {
         this.fields = fields;

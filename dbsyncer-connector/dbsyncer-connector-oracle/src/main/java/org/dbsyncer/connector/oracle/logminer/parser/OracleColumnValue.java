@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.connector.oracle.logminer.parser;
 
 import net.sf.jsqlparser.expression.Expression;
@@ -22,22 +25,38 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Oracle 字段值解析
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2024-01-09 23:02
+ */
 public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
 
     public OracleColumnValue(Expression value) {
         setValue(value);
     }
 
+    @Override
+    public boolean isNull() {
+        if (getValue() instanceof IsNullExpression) {
+            return true;
+        }
+        if (getValue() instanceof NullValue) {
+            return true;
+        }
+        if (getValue() instanceof IsNullExpression) {
+            return true;
+        }
+        return super.isNull();
+    }
 
     @Override
     public String asString() {
-        if (isNull()){
-            return null;
-        }
-        return getValue().toString();
+        return Objects.toString(getValue());
     }
 
     @Override
@@ -52,10 +71,7 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public Integer asInteger() {
-        if (asString() == null){
-            return null;
-        }
-       return Integer.valueOf(asString());
+        return Integer.valueOf(asString());
     }
 
     @Override
@@ -80,9 +96,6 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public BigDecimal asBigDecimal() {
-        if (asString() == null){
-            return null;
-        }
         return new BigDecimal(asString());
     }
 
@@ -93,71 +106,16 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public Timestamp asTimestamp() {
-        if (isNull()){
-            return null;
-        }
-        Function function = (Function) getValue();
-        List<String> multipartName = function.getMultipartName();
-        ExpressionList parameters = function.getParameters();
-        if (CollectionUtils.isEmpty(multipartName) || CollectionUtils.isEmpty(parameters)) {
-            return null;
-        }
-
-        String nameType = Objects.toString(multipartName.get(0));
-        Object value = parameters.get(0);
-        if (nameType == null || value == null) {
-            return null;
-        }
-
-        if (value instanceof StringValue) {
-            StringValue val = (StringValue) value;
-            value = val.getValue();
-        }
-
-        try {
-            switch (nameType) {
+        return handleColumnValue((type, value) -> {
+            switch (type) {
                 case "TO_DATE":
                     return toDate(value);
                 case "TO_TIMESTAMP":
                     return toTimestamp(value);
+                default:
+                    return null;
             }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
-        return null;
-    }
-
-    public OffsetDateTime asOffsetDateTime(){
-        if (isNull()){
-            return null;
-        }
-        Function function = (Function) getValue();
-        List<String> multipartName = function.getMultipartName();
-        ExpressionList parameters = function.getParameters();
-        if (CollectionUtils.isEmpty(multipartName) || CollectionUtils.isEmpty(parameters)) {
-            return null;
-        }
-
-        String nameType = Objects.toString(multipartName.get(0));
-        Object value = parameters.get(0);
-        if (nameType == null || value == null) {
-            return null;
-        }
-
-        if (value instanceof StringValue) {
-            StringValue val = (StringValue) value;
-            value = val.getValue();
-        }
-
-        try {
-            switch (nameType) {
-                case "TO_TIMESTAMP_TZ":
-                    return toOffsetDateTime(value);
-            }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
-        return null;
+        });
     }
 
     @Override
@@ -167,24 +125,45 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public BigInteger asBigInteger() {
-        if (isNull()){
-            return null;
-        }
         return new BigInteger(asString());
     }
 
-    @Override
-    public boolean isNull() {
-        if (getValue() instanceof IsNullExpression){
-            return true;
+    public OffsetDateTime asOffsetDateTime() {
+        return handleColumnValue((type, value) -> {
+            switch (type) {
+                case "TO_TIMESTAMP_TZ":
+                    return toOffsetDateTime(value);
+                default:
+                    return null;
+            }
+        });
+    }
+
+    private <R> R handleColumnValue(ColumnValueFunction<R> function) {
+        Function fun = (Function) getValue();
+        List<String> multipartName = fun.getMultipartName();
+        ExpressionList parameters = fun.getParameters();
+        if (CollectionUtils.isEmpty(multipartName) || CollectionUtils.isEmpty(parameters)) {
+            return null;
         }
-        if (getValue() instanceof NullValue){
-            return true;
+
+        String nameType = Objects.toString(multipartName.get(0));
+        Object value = parameters.get(0);
+        if (nameType == null || value == null) {
+            return null;
         }
-        if (getValue() instanceof IsNullExpression){
-            return true;
+
+        if (value instanceof StringValue) {
+            StringValue val = (StringValue) value;
+            value = val.getValue();
         }
-        return false;
+
+        try {
+            return function.apply(nameType, value);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+        return null;
     }
 
     private Timestamp toDate(Object value) {
@@ -195,10 +174,13 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
         return DateFormatUtil.stringToTimestamp(StringUtil.replace(Objects.toString(value), StringUtil.POINT, StringUtil.EMPTY));
     }
 
-    private OffsetDateTime toOffsetDateTime(Object value){
+    private OffsetDateTime toOffsetDateTime(Object value) {
         return DateFormatUtil.timestampWithTimeZoneToOffsetDateTime(Objects.toString(value));
     }
 
+    interface ColumnValueFunction<R> {
 
+        R apply(String type, Object value);
 
+    }
 }
