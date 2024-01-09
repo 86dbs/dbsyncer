@@ -18,6 +18,7 @@ import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -38,6 +39,9 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
         }
         if (getValue() instanceof StringValue){
             return StringUtil.replace(((StringValue) getValue()).getValue(),StringUtil.DOUBLE_QUOTATION,StringUtil.EMPTY);
+        }
+        if (getValue() instanceof IsNullExpression){
+            return null;
         }
         return getValue().toString();
     }
@@ -101,6 +105,9 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
         if (getValue() instanceof NullValue){
             return null;
         }
+        if (getValue() instanceof IsNullExpression){
+            return null;
+        }
         Function function = (Function) getValue();
         List<String> multipartName = function.getMultipartName();
         ExpressionList parameters = function.getParameters();
@@ -125,7 +132,45 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
                     return toDate(value);
                 case "TO_TIMESTAMP":
                     return toTimestamp(value);
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+        return null;
+    }
 
+    public OffsetDateTime asOffsetDateTime(){
+        if (getValue() instanceof IsNullExpression){
+            return null;
+        }
+        if (getValue() instanceof NullValue){
+            return null;
+        }
+        if (getValue() instanceof IsNullExpression){
+            return null;
+        }
+        Function function = (Function) getValue();
+        List<String> multipartName = function.getMultipartName();
+        ExpressionList parameters = function.getParameters();
+        if (CollectionUtils.isEmpty(multipartName) || CollectionUtils.isEmpty(parameters)) {
+            return null;
+        }
+
+        String nameType = Objects.toString(multipartName.get(0));
+        Object value = parameters.get(0);
+        if (nameType == null || value == null) {
+            return null;
+        }
+
+        if (value instanceof StringValue) {
+            StringValue val = (StringValue) value;
+            value = val.getValue();
+        }
+
+        try {
+            switch (nameType) {
+                case "TO_TIMESTAMP_TZ":
+                    return toOffsetDateTime(value);
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -146,6 +191,9 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
         if (getValue() instanceof NullValue){
             return null;
         }
+        if (getValue() instanceof IsNullExpression){
+            return null;
+        }
         Object ob = asString();
         if (ob == null){
             return null;
@@ -159,6 +207,10 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     private Timestamp toTimestamp(Object value) {
         return DateFormatUtil.stringToTimestamp(StringUtil.replace(Objects.toString(value), StringUtil.POINT, StringUtil.EMPTY));
+    }
+
+    private OffsetDateTime toOffsetDateTime(Object value){
+        return DateFormatUtil.timestampWithTimeZoneToOffsetDateTime(Objects.toString(value));
     }
 
 }

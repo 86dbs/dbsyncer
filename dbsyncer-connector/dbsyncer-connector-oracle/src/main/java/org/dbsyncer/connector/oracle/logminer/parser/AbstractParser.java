@@ -69,7 +69,7 @@ public abstract class AbstractParser implements Parser {
                     break;
                 //timezone
                 case OracleTypes.TIMESTAMPTZ:
-                    data.add(oracleColumnValue.asTimestamp());
+                    data.add(oracleColumnValue.asOffsetDateTime());
                     break;
                 default:
                     data.add(oracleColumnValue.asString());
