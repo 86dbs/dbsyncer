@@ -1,22 +1,24 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
-import org.dbsyncer.common.util.BooleanUtil;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.config.ListenerConfig;
-import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -178,15 +180,11 @@ public class MappingChecker extends AbstractChecker {
      */
     private void updateListenerConfig(ListenerConfig listener, Map<String, String> params) {
         Assert.notNull(listener, "ListenerConfig can not be null.");
-        String banUpdate = StringUtil.isNotBlank(params.get("banUpdate")) ? "true" : "false";
-        String banInsert = StringUtil.isNotBlank(params.get("banInsert")) ? "true" : "false";
-        String banDelete = StringUtil.isNotBlank(params.get("banDelete")) ? "true" : "false";
-        String banDDL = StringUtil.isNotBlank(params.get("banDDL")) ? "true" : "false";
 
-        listener.setBanUpdate(BooleanUtil.toBoolean(banUpdate));
-        listener.setBanInsert(BooleanUtil.toBoolean(banInsert));
-        listener.setBanDelete(BooleanUtil.toBoolean(banDelete));
-        listener.setBanDDL(BooleanUtil.toBoolean(banDDL));
+        listener.setBanUpdate(StringUtil.isNotBlank(params.get("banUpdate")));
+        listener.setBanInsert(StringUtil.isNotBlank(params.get("banInsert")));
+        listener.setBanDelete(StringUtil.isNotBlank(params.get("banDelete")));
+        listener.setBanDDL(StringUtil.isNotBlank(params.get("banDDL")));
     }
 
     /**
