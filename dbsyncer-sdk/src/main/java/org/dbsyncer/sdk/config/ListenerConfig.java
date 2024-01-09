@@ -55,6 +55,11 @@ public class ListenerConfig {
      */
     private boolean banDelete;
 
+    /**
+     * 禁用ddl事件
+     */
+    private boolean banDDL;
+
     public ListenerConfig() {
     }
 
@@ -132,5 +137,13 @@ public class ListenerConfig {
 
     public void setBanDelete(boolean banDelete) {
         this.banDelete = banDelete;
+    }
+
+    public boolean isBanDDL() {
+        return banDDL;
+    }
+
+    public void setBanDDL(boolean banDDL) {
+        this.banDDL = banDDL;
     }
 }

@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.connector.oracle.logminer.parser;
 
 import net.sf.jsqlparser.expression.Expression;
@@ -18,28 +21,42 @@ import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Oracle 字段值解析
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2024-01-09 23:02
+ */
 public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
 
     public OracleColumnValue(Expression value) {
         setValue(value);
     }
 
+    @Override
+    public boolean isNull() {
+        if (getValue() instanceof IsNullExpression) {
+            return true;
+        }
+        if (getValue() instanceof NullValue) {
+            return true;
+        }
+        if (getValue() instanceof IsNullExpression) {
+            return true;
+        }
+        return super.isNull();
+    }
 
     @Override
     public String asString() {
-        if (getValue() instanceof NullValue){
-            return null;
-        }
-        if (getValue() instanceof StringValue){
-            return StringUtil.replace(((StringValue) getValue()).getValue(),StringUtil.DOUBLE_QUOTATION,StringUtil.EMPTY);
-        }
-        return getValue().toString();
+        return Objects.toString(getValue());
     }
 
     @Override
@@ -54,10 +71,7 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public Integer asInteger() {
-        if (asString() == null){
-            return null;
-        }
-       return Integer.valueOf(asString());
+        return Integer.valueOf(asString());
     }
 
     @Override
@@ -82,9 +96,6 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public BigDecimal asBigDecimal() {
-        if (asString() == null){
-            return null;
-        }
         return new BigDecimal(asString());
     }
 
@@ -95,15 +106,43 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public Timestamp asTimestamp() {
-        if (getValue() instanceof IsNullExpression){
-            return null;
-        }
-        if (getValue() instanceof NullValue){
-            return null;
-        }
-        Function function = (Function) getValue();
-        List<String> multipartName = function.getMultipartName();
-        ExpressionList parameters = function.getParameters();
+        return handleColumnValue((type, value) -> {
+            switch (type) {
+                case "TO_DATE":
+                    return toDate(value);
+                case "TO_TIMESTAMP":
+                    return toTimestamp(value);
+                default:
+                    return null;
+            }
+        });
+    }
+
+    @Override
+    public Time asTime() {
+        return null;
+    }
+
+    @Override
+    public BigInteger asBigInteger() {
+        return new BigInteger(asString());
+    }
+
+    public OffsetDateTime asOffsetDateTime() {
+        return handleColumnValue((type, value) -> {
+            switch (type) {
+                case "TO_TIMESTAMP_TZ":
+                    return toOffsetDateTime(value);
+                default:
+                    return null;
+            }
+        });
+    }
+
+    private <R> R handleColumnValue(ColumnValueFunction<R> function) {
+        Function fun = (Function) getValue();
+        List<String> multipartName = fun.getMultipartName();
+        ExpressionList parameters = fun.getParameters();
         if (CollectionUtils.isEmpty(multipartName) || CollectionUtils.isEmpty(parameters)) {
             return null;
         }
@@ -120,37 +159,11 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
         }
 
         try {
-            switch (nameType) {
-                case "TO_DATE":
-                    return toDate(value);
-                case "TO_TIMESTAMP":
-                    return toTimestamp(value);
-
-            }
+            return function.apply(nameType, value);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
         return null;
-    }
-
-    @Override
-    public Time asTime() {
-        return null;
-    }
-
-    @Override
-    public BigInteger asBigInteger() {
-        if (getValue() instanceof IsNullExpression){
-            return null;
-        }
-        if (getValue() instanceof NullValue){
-            return null;
-        }
-        Object ob = asString();
-        if (ob == null){
-            return null;
-        }
-        return new BigInteger(ob.toString());
     }
 
     private Timestamp toDate(Object value) {
@@ -161,4 +174,13 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
         return DateFormatUtil.stringToTimestamp(StringUtil.replace(Objects.toString(value), StringUtil.POINT, StringUtil.EMPTY));
     }
 
+    private OffsetDateTime toOffsetDateTime(Object value) {
+        return DateFormatUtil.timestampWithTimeZoneToOffsetDateTime(Objects.toString(value));
+    }
+
+    interface ColumnValueFunction<R> {
+
+        R apply(String type, Object value);
+
+    }
 }

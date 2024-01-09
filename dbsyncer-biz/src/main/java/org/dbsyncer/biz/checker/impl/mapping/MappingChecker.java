@@ -181,10 +181,12 @@ public class MappingChecker extends AbstractChecker {
         String banUpdate = StringUtil.isNotBlank(params.get("banUpdate")) ? "true" : "false";
         String banInsert = StringUtil.isNotBlank(params.get("banInsert")) ? "true" : "false";
         String banDelete = StringUtil.isNotBlank(params.get("banDelete")) ? "true" : "false";
+        String banDDL = StringUtil.isNotBlank(params.get("banDDL")) ? "true" : "false";
 
         listener.setBanUpdate(BooleanUtil.toBoolean(banUpdate));
         listener.setBanInsert(BooleanUtil.toBoolean(banInsert));
         listener.setBanDelete(BooleanUtil.toBoolean(banDelete));
+        listener.setBanDDL(BooleanUtil.toBoolean(banDDL));
     }
 
     /**
