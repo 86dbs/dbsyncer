@@ -49,22 +49,28 @@
     <!-- 增量事件配置 -->
     <div class="form-group">
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="col-sm-3 control-label text-right">新增*</label>
                 <div class="col-sm-9">
                     <input name="banInsert" class="banEventSwitch" th:checked="${mapping?.listener?.banInsert}" type="checkbox">
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="col-sm-3 control-label text-right">修改*</label>
                 <div class="col-sm-9">
                     <input name="banUpdate" class="banEventSwitch" th:checked="${mapping?.listener?.banUpdate}" type="checkbox">
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="col-sm-3 control-label text-right">删除*</label>
                 <div class="col-sm-9">
                     <input name="banDelete" class="banEventSwitch" th:checked="${mapping?.listener?.banDelete}" type="checkbox">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="col-sm-3 control-label text-right">ddl*</label>
+                <div class="col-sm-9">
+                    <input name="banDdl" class="banEventSwitch" th:checked="${mapping?.listener?.banDdl}" type="checkbox">
                 </div>
             </div>
         </div>

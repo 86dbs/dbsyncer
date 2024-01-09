@@ -65,7 +65,7 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
                     break;
                 case ConnectorConstant.OPERTION_ALTER:
                     // 表结构变更事件
-                    watcher.changeEvent(event);
+                    processEvent(!listenerConfig.isBanDdl(),event);
                     break;
                 default:
                     break;
