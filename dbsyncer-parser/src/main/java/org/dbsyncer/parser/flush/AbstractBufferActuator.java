@@ -135,7 +135,9 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         if (queue.offer((Request) request)) {
             return;
         }
-        offerFailed(queue, (Request) request);
+        if (isRunning(request)) {
+            offerFailed(queue, (Request) request);
+        }
     }
 
     @Override
