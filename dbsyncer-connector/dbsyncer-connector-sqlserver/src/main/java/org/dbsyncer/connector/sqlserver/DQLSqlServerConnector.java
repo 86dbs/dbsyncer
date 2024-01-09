@@ -36,7 +36,7 @@ public final class DQLSqlServerConnector extends AbstractDQLConnector {
 
     @Override
     public ConfigValidator getConfigValidator() {
-        return null;
+        return configValidator;
     }
 
     @Override
