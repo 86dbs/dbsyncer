@@ -34,13 +34,7 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public String asString() {
-        if (getValue() instanceof NullValue){
-            return null;
-        }
-        if (getValue() instanceof StringValue){
-            return StringUtil.replace(((StringValue) getValue()).getValue(),StringUtil.DOUBLE_QUOTATION,StringUtil.EMPTY);
-        }
-        if (getValue() instanceof IsNullExpression){
+        if (isNull()){
             return null;
         }
         return getValue().toString();
@@ -99,13 +93,7 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public Timestamp asTimestamp() {
-        if (getValue() instanceof IsNullExpression){
-            return null;
-        }
-        if (getValue() instanceof NullValue){
-            return null;
-        }
-        if (getValue() instanceof IsNullExpression){
+        if (isNull()){
             return null;
         }
         Function function = (Function) getValue();
@@ -140,13 +128,7 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
     }
 
     public OffsetDateTime asOffsetDateTime(){
-        if (getValue() instanceof IsNullExpression){
-            return null;
-        }
-        if (getValue() instanceof NullValue){
-            return null;
-        }
-        if (getValue() instanceof IsNullExpression){
+        if (isNull()){
             return null;
         }
         Function function = (Function) getValue();
@@ -185,20 +167,24 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public BigInteger asBigInteger() {
-        if (getValue() instanceof IsNullExpression){
+        if (isNull()){
             return null;
+        }
+        return new BigInteger(asString());
+    }
+
+    @Override
+    public boolean isNull() {
+        if (getValue() instanceof IsNullExpression){
+            return true;
         }
         if (getValue() instanceof NullValue){
-            return null;
+            return true;
         }
         if (getValue() instanceof IsNullExpression){
-            return null;
+            return true;
         }
-        Object ob = asString();
-        if (ob == null){
-            return null;
-        }
-        return new BigInteger(ob.toString());
+        return false;
     }
 
     private Timestamp toDate(Object value) {
@@ -212,5 +198,7 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
     private OffsetDateTime toOffsetDateTime(Object value){
         return DateFormatUtil.timestampWithTimeZoneToOffsetDateTime(Objects.toString(value));
     }
+
+
 
 }
