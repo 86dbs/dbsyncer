@@ -28,15 +28,18 @@ public abstract class DateFormatUtil {
     /**
      * yyyy-MM-dd HH:mm:ss
      */
-    public static final DateTimeFormatter CHINESE_STANDARD_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    public static final DateTimeFormatter CHINESE_STANDARD_TIME_FORMATTER = DateTimeFormatter.ofPattern(
+            "yyyy-MM-dd HH:mm:ss");
     /**
      * yyyy-MM-dd'T'HH:mm:ss.SSSz
      */
-    public static final DateFormat GMT_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSz");
+    public static final DateFormat GMT_FORMATTER = new SimpleDateFormat(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSz");
     /**
      * yyyy-MM-dd
      */
-    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(
+            "yyyy-MM-dd");
     /**
      * HH:mm:ss
      */
@@ -89,6 +92,14 @@ public abstract class DateFormatUtil {
             .optionalEnd()
             .toFormatter();
 
+    private static final DateTimeFormatter TS_TZ_FORMAT_ORACLE = new DateTimeFormatterBuilder()
+            .append(NON_ISO_LOCAL_DATE)
+            .appendLiteral(' ')
+            .append(DateTimeFormatter.ISO_LOCAL_TIME)
+            .appendLiteral(' ')
+            .appendOffset("+HH:mm", "")
+            .toFormatter();
+
     public static String getCurrentTime() {
         return LocalDateTime.now().format(TIME_FORMATTER);
     }
@@ -98,7 +109,8 @@ public abstract class DateFormatUtil {
     }
 
     public static String dateToString(java.util.Date date) {
-        return date.toInstant().atZone(zoneId).toLocalDateTime().format(CHINESE_STANDARD_TIME_FORMATTER);
+        return date.toInstant().atZone(zoneId).toLocalDateTime()
+                .format(CHINESE_STANDARD_TIME_FORMATTER);
     }
 
     public static Date stringToDate(String s) {
@@ -117,18 +129,21 @@ public abstract class DateFormatUtil {
         try {
             // 2020-7-12 00:00:00
             if (s.length() < 19) {
-                return Timestamp.valueOf(LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(format(s))));
+                return Timestamp.valueOf(
+                        LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(format(s))));
             }
 
             // 2020-07-12 00:00:00
             if (s.length() == 19) {
-                return Timestamp.valueOf(LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(s)));
+                return Timestamp.valueOf(
+                        LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(s)));
             }
 
             // 2020-07-12 00:00:00.0
             if (s.length() == 21) {
                 s = s.substring(0, s.lastIndexOf("."));
-                return Timestamp.valueOf(LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(s)));
+                return Timestamp.valueOf(
+                        LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(s)));
             }
 
             // 2022-07-21T05:35:34.000+0800
@@ -148,12 +163,15 @@ public abstract class DateFormatUtil {
         }
     }
 
-    public static Timestamp stringToTimestamp(String s, DateFormat formatter) throws ParseException {
+    public static Timestamp stringToTimestamp(String s, DateFormat formatter)
+            throws ParseException {
         return new Timestamp(formatter.parse(s).getTime());
     }
 
     public static Timestamp timeWithoutTimeZoneToTimestamp(String s) {
-        return Timestamp.valueOf(LocalDateTime.from(DateFormatUtil.TS_FORMAT.parse(s)).atZone(ZoneOffset.UTC).toLocalDateTime());
+        return Timestamp.valueOf(
+                LocalDateTime.from(DateFormatUtil.TS_FORMAT.parse(s)).atZone(ZoneOffset.UTC)
+                        .toLocalDateTime());
     }
 
     public static OffsetTime timeWithTimeZone(String s) {
@@ -167,6 +185,12 @@ public abstract class DateFormatUtil {
         } catch (DateTimeParseException e) {
             parsedTimestamp = TS_TZ_WITH_SECONDS_FORMAT.parse(s);
         }
+        return OffsetDateTime.from(parsedTimestamp).withOffsetSameInstant(ZoneOffset.UTC);
+    }
+
+    public static OffsetDateTime timestampWithTimeZoneToOffsetDateTimeOracle(String s) {
+        TemporalAccessor parsedTimestamp;
+        parsedTimestamp = TS_TZ_FORMAT_ORACLE.parse(s);
         return OffsetDateTime.from(parsedTimestamp).withOffsetSameInstant(ZoneOffset.UTC);
     }
 
