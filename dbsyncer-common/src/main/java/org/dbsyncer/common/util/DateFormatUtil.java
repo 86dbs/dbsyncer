@@ -189,9 +189,7 @@ public abstract class DateFormatUtil {
     }
 
     public static OffsetDateTime timestampWithTimeZoneToOffsetDateTimeOracle(String s) {
-        TemporalAccessor parsedTimestamp;
-        parsedTimestamp = TS_TZ_FORMAT_ORACLE.parse(s);
-        return OffsetDateTime.from(parsedTimestamp).withOffsetSameInstant(ZoneOffset.UTC);
+        return OffsetDateTime.from(TS_TZ_FORMAT_ORACLE.parse(s)).withOffsetSameInstant(ZoneOffset.UTC);
     }
 
     private static String format(String s) {
