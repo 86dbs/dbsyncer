@@ -56,6 +56,9 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public String asString() {
+        if (getValue() instanceof StringValue){
+            return ((StringValue) getValue()).getValue();
+        }
         return Objects.toString(getValue());
     }
 
@@ -175,7 +178,7 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
     }
 
     private OffsetDateTime toOffsetDateTime(Object value) {
-        return DateFormatUtil.timestampWithTimeZoneToOffsetDateTime(Objects.toString(value));
+        return DateFormatUtil.timestampWithTimeZoneToOffsetDateTimeOracle(Objects.toString(value));
     }
 
     interface ColumnValueFunction<R> {
