@@ -319,7 +319,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     protected void appendOrderByPk(PageSql config, StringBuilder sql) {
         sql.append(" ORDER BY ");
         final String quotation = buildSqlWithQuotation();
-        PrimaryKeyUtil.buildSql(sql, config.getPrimaryKeys(), quotation, ",", "", true);
+        if (config.getPrimaryKeys().size() == 1){
+            PrimaryKeyUtil.buildSql(sql, config.getPrimaryKeys(), quotation, ",", "", true);
+        }
     }
 
     /**
