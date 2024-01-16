@@ -64,6 +64,9 @@ $ ./build.sh
 
 <img src="https://foruda.gitee.com/images/1660034515191434708/屏幕截图.png" width="200" height="200" />
 
+## docker容器
+docker pull crazylife/dbsyncer-web:2.0.1
+
 ## 🐞常见问题
 * MySQL无法连接。默认使用的驱动版本为8.0.21，如果为mysql5.x需要手动替换驱动 [mysql-connector-java-5.1.40.jar](https://gitee.com/ghi/dbsyncer/attach_files) 
 * SQLServer无法连接。案例：[驱动程序无法通过使用安全套接字层(SSL)加密与 SQL Server 建立安全连接。错误:“The server selected protocol version TLS10 is not accepted by client preferences [TLS12]”](https://gitee.com/ghi/dbsyncer/issues/I4PL46?from=project-issue) 
