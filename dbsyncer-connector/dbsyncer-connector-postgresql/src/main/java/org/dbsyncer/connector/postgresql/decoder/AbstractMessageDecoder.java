@@ -51,7 +51,7 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
 
     @Override
     public String getSlotName() {
-        return String.format("dbs_slot_%s_%s_%s", config.getSchema().toLowerCase(), config.getUsername(), metaId);
+        return String.format("dbs_slot_%s_%s_%s", config.getSchema(), config.getUsername(), metaId).toLowerCase();
     }
 
     @Override
