@@ -95,7 +95,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     }
 
     private String getPubName() {
-        return String.format("dbs_pub_%s_%s", config.getSchema().toLowerCase(), config.getUsername());
+        return String.format("dbs_pub_%s_%s", config.getSchema(), config.getUsername()).toLowerCase();
     }
 
     private void initPublication() {
