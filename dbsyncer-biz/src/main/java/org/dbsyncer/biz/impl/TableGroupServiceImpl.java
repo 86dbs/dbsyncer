@@ -9,17 +9,17 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.Field;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
 
 /**
@@ -159,7 +159,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         if (CollectionUtils.isEmpty(column) || CollectionUtils.isEmpty(target)) {
             return target;
         }
-        List<Field> list = new ArrayList<>();
+        List<Field> list = new CopyOnWriteArrayList<>();
         Set<String> keys = new HashSet<>();
         column.forEach(f -> keys.add(f.getName()));
         target.forEach(f -> {

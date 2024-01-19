@@ -24,11 +24,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 操作配置模板
@@ -64,7 +64,7 @@ public final class OperationTemplate {
         if (null != group) {
             List<String> index = group.getIndex();
             if (!CollectionUtils.isEmpty(index)) {
-                List<T> list = new ArrayList<>();
+                List<T> list = new CopyOnWriteArrayList<>();
                 Class<? extends ConfigModel> clazz = model.getClass();
                 index.forEach(e -> {
                     Object v = cacheService.get(e);

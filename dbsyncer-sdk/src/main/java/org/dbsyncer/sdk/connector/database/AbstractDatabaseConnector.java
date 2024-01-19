@@ -50,6 +50,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -113,7 +114,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorInstance, String tableNamePattern) {
-        List<Field> fields = new ArrayList<>();
+        List<Field> fields = new CopyOnWriteArrayList<>();
         final String schema = getSchema(connectorInstance.getConfig());
         connectorInstance.execute(databaseTemplate -> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
@@ -316,15 +317,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * 满足游标查询条件，追加主键排序
+     * 满足游标查询条件，追加主键排序（单个主键才做排序）
      *
      * @param config
      * @param sql
      */
     protected void appendOrderByPk(PageSql config, StringBuilder sql) {
-        sql.append(" ORDER BY ");
-        final String quotation = buildSqlWithQuotation();
-        if (config.getPrimaryKeys().size() == 1){
+        if (!CollectionUtils.isEmpty(config.getPrimaryKeys()) && config.getPrimaryKeys().size() == 1) {
+            sql.append(" ORDER BY ");
+            final String quotation = buildSqlWithQuotation();
             PrimaryKeyUtil.buildSql(sql, config.getPrimaryKeys(), quotation, ",", "", true);
         }
     }
@@ -348,7 +349,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (1 > columnCount) {
             throw new SdkException("查询表字段不能为空.");
         }
-        List<Field> fields = new ArrayList<>(columnCount);
+        List<Field> fields = new CopyOnWriteArrayList<>();
         Map<String, List<String>> tables = new HashMap<>();
         try {
             Connection connection = databaseTemplate.getSimpleConnection();
@@ -469,7 +470,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     private List<Table> getTable(DatabaseConnectorInstance connectorInstance, String catalog, String schema, String tableNamePattern) {
         return connectorInstance.execute(databaseTemplate -> {
-            List<Table> tables = new ArrayList<>();
+            List<Table> tables = new CopyOnWriteArrayList<>();
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             String databaseCatalog = null == catalog ? conn.getCatalog() : catalog;
