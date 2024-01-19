@@ -32,6 +32,7 @@ import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
@@ -148,10 +149,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         // 2、返回结果集
-        return connectorInstance.execute(databaseTemplate -> {
-            Long count = databaseTemplate.queryForObject(queryCountSql, Long.class);
-            return count == null ? 0 : count;
-        });
+        try {
+            return connectorInstance.execute(databaseTemplate -> {
+                Long count = databaseTemplate.queryForObject(queryCountSql, Long.class);
+                return count == null ? 0 : count;
+            });
+        } catch (EmptyResultDataAccessException e) {
+            return 0;
+        }
     }
 
     @Override
