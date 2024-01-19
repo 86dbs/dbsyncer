@@ -988,9 +988,9 @@ public class DatabaseTemplate implements JdbcOperations {
                     if (connection.isOracleDriver()) {
                         // oracle.jdbc.driver.OraclePreparedStatementWrapper.preparedStatement(T4CPreparedStatement<OraclePreparedStatement<OracleStatement.rowsProcessed)
                         Object preparedStatement = invoke(ps, 0, "preparedStatement");
-                        Integer rowsProcessed = (Integer) invoke(preparedStatement, 2, "rowsProcessed");
+                        Long rowsProcessed = (Long) invoke(preparedStatement, 2, "rowsProcessed");
                         // 不符合预期值（实际处理的行数少于提交的行数）
-                        if (batchSize != rowsProcessed.intValue()) {
+                        if (batchSize != rowsProcessed.longValue()) {
                             Arrays.fill(executeBatch, 0);
                             return executeBatch;
                         }
