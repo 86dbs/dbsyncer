@@ -64,7 +64,7 @@ $ ./build.sh
 
 <img src="https://foruda.gitee.com/images/1660034515191434708/屏幕截图.png" width="200" height="200" />
 
-## docker容器
+## docker支持
 docker pull crazylife/dbsyncer-web:2.0.1
 
 ## 🐞常见问题

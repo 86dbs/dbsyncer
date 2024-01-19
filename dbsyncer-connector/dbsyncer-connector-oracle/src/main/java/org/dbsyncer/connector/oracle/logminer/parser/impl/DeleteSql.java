@@ -7,7 +7,6 @@ import net.sf.jsqlparser.statement.delete.Delete;
 import org.dbsyncer.connector.oracle.logminer.parser.AbstractParser;
 import org.dbsyncer.sdk.model.Field;
 
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -27,15 +26,7 @@ public class DeleteSql extends AbstractParser {
     @Override
     public List<Object> parseColumns() {
         findColumn(delete.getWhere());
-        List<Object> data = new LinkedList<>();
-        for (Field field : fields) {
-            if (field.isPk()) {
-                data.add(columnMap.get(field.getName()));
-            } else {
-                data.add(null);
-            }
-        }
-        return data;
+        return columnMapToData();
     }
 
 }
