@@ -1,21 +1,26 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.plugin.model.Plugin;
 import org.dbsyncer.sdk.model.Filter;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public abstract class AbstractConfigModel extends ConfigModel {
 
     // 全局参数
-    private Map<String, String> params;
+    private Map<String, String> params = new HashMap<>();
 
     // 过滤条件
-    private List<Filter> filter;
+    private List<Filter> filter = new ArrayList<>();;
 
     // 转换配置
-    private List<Convert> convert;
+    private List<Convert> convert = new ArrayList<>();;
 
     // 插件配置
     private Plugin plugin;

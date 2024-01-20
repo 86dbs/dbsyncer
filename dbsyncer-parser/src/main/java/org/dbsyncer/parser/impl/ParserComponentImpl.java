@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.model.Result;
@@ -108,8 +111,7 @@ public class ParserComponentImpl implements ParserComponent {
         final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable, sConnConfig, tableGroup.getFilter());
         final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), tTable, tConnConfig, null);
         // 获取连接器同步参数
-        Map<String, String> command = connectorFactory.getCommand(sourceConfig, targetConfig);
-        return command;
+        return connectorFactory.getCommand(sourceConfig, targetConfig);
     }
 
     @Override

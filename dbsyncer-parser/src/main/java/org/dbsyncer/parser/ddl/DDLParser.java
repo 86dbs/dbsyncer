@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.parser.ddl;
 
 import org.dbsyncer.parser.model.FieldMapping;

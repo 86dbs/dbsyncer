@@ -50,7 +50,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -114,7 +113,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorInstance, String tableNamePattern) {
-        List<Field> fields = new CopyOnWriteArrayList<>();
+        List<Field> fields = new ArrayList<>();
         final String schema = getSchema(connectorInstance.getConfig());
         connectorInstance.execute(databaseTemplate -> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
@@ -349,7 +348,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (1 > columnCount) {
             throw new SdkException("查询表字段不能为空.");
         }
-        List<Field> fields = new CopyOnWriteArrayList<>();
+        List<Field> fields = new ArrayList<>(columnCount);
         Map<String, List<String>> tables = new HashMap<>();
         try {
             Connection connection = databaseTemplate.getSimpleConnection();
@@ -470,7 +469,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     private List<Table> getTable(DatabaseConnectorInstance connectorInstance, String catalog, String schema, String tableNamePattern) {
         return connectorInstance.execute(databaseTemplate -> {
-            List<Table> tables = new CopyOnWriteArrayList<>();
+            List<Table> tables = new ArrayList<>();
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             String databaseCatalog = null == catalog ? conn.getCatalog() : catalog;

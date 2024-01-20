@@ -1,8 +1,13 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,10 +36,10 @@ public class TableGroup extends AbstractConfigModel {
     private Table targetTable;
 
     // 字段映射关系
-    private List<FieldMapping> fieldMapping;
+    private List<FieldMapping> fieldMapping = new ArrayList<>();
 
     // 执行命令，例SQL等
-    private Map<String, String> command;
+    private Map<String, String> command = new HashMap<>();
 
     public int getIndex() {
         return index;

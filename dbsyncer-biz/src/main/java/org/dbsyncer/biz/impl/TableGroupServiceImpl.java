@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.TableGroupService;
@@ -15,11 +18,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
 
 /**
@@ -159,7 +162,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         if (CollectionUtils.isEmpty(column) || CollectionUtils.isEmpty(target)) {
             return target;
         }
-        List<Field> list = new CopyOnWriteArrayList<>();
+        List<Field> list = new ArrayList<>();
         Set<String> keys = new HashSet<>();
         column.forEach(f -> keys.add(f.getName()));
         target.forEach(f -> {
