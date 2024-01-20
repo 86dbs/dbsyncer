@@ -7,11 +7,11 @@ body{margin:0;height:100%;font-size:.28em;line-height:1;background:#23A6D5;
 /* Safari 5.1 - 6.0 */-webkit-animation-name:bg-gradient;-webkit-animation-duration:5s;-webkit-animation-iteration-count:infinite;-webkit-animation-direction:alternate;
 /* Opera 11.1 - 12.0 */-o-animation-name:bg-gradient;-o-animation-duration:5s;-o-animation-iteration-count:infinite;-o-animation-direction:alternate;
 }
-@keyframes bg-gradient{0%{background:#23A6D5;}100%{background: #a8eb12;}}
-@-ms-keyframes bg-gradient{0%{background:#23A6D5;}100%{background:#a8eb12;}}
-@-moz-keyframes bg-gradient{0%{background:#23A6D5;}100%{background:#a8eb12;}}
-@-webkit-keyframes bg-gradient{0%{background:#23A6D5;}100%{background:#a8eb12;}}
-@-o-keyframes bg-gradient{0%{background:#23A6D5;}100%{background:#a8eb12;}}
+@keyframes bg-gradient{0%{background: #2898c1;} 100%{background: #9DCEDE;}}
+@-ms-keyframes bg-gradient{0%{background:#23A6D5;}100%{background:#9DCEDE;}}
+@-moz-keyframes bg-gradient{0%{background:#23A6D5;}100%{background:#9DCEDE;}}
+@-webkit-keyframes bg-gradient{0%{background:#23A6D5;}100%{background:#9DCEDE;}}
+@-o-keyframes bg-gradient{0%{background:#23A6D5;}100%{background:#9DCEDE;}}
 
 input{color:inherit;font:inherit;margin:0}
 input[type=button]{-webkit-appearance:button;cursor:pointer}
