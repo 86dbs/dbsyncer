@@ -38,16 +38,18 @@ public abstract class AbstractDataBaseConfigValidator implements ConfigValidator
     }
 
     protected void modifyDql(DatabaseConfig connectorConfig, Map<String, String> params) {
-        String sqlTableParams = params.get("sqlTableParams");
-        Assert.hasText(sqlTableParams, "sqlTableParams is empty.");
-        List<SqlTable> sqlTables = JsonUtil.jsonToArray(sqlTableParams, SqlTable.class);
-        Assert.isTrue(!CollectionUtils.isEmpty(sqlTables), "sqlTables is empty.");
-        sqlTables.forEach(sqlTable -> {
+        Object sqlTableParams = params.get("sqlTables");
+        Assert.notNull(sqlTableParams, "sqlTables is null.");
+        String sqlTables = (sqlTableParams instanceof String) ? (String) sqlTableParams : JsonUtil.objToJson(sqlTableParams);
+        Assert.hasText(sqlTables, "sqlTables is empty.");
+        List<SqlTable> sqlTableArray = JsonUtil.jsonToArray(sqlTables, SqlTable.class);
+        Assert.isTrue(!CollectionUtils.isEmpty(sqlTableArray), "sqlTableArray is empty.");
+        sqlTableArray.forEach(sqlTable -> {
             Assert.hasText(sqlTable.getSqlName(), "SqlName is empty.");
             Assert.hasText(sqlTable.getSql(), "Sql is empty.");
             Assert.hasText(sqlTable.getTable(), "Table is empty.");
         });
-        connectorConfig.setSqlTables(sqlTables);
+        connectorConfig.setSqlTables(sqlTableArray);
     }
 
     protected void modifySchema(DatabaseConfig connectorConfig, Map<String, String> params) {

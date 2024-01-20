@@ -19,7 +19,7 @@
             <button id="editSqlTableBtn" type="button" class="btn btn-default hidden"> <span class="fa fa-pencil"></span>修改</button>
             <button id="addSqlTableBtn" type="button" class="btn btn-primary"> <span class="fa fa-plus"></span>添加(<span id="sqlTableCount">[[${connector?.config?.sqlTables?.size()} ?: 0]]</span>)</button>
         </div>
-        <input type="hidden" id="sqlTableParams" name="sqlTableParams"/>
+        <input type="hidden" id="sqlTables" name="sqlTables"/>
     </div>
 
     <div class="form-group">
@@ -40,7 +40,7 @@
 
 <script type="text/javascript" th:inline="javascript">
     $(function () {
-        let sqlTables = [[${connector?.config?.sqlTables}]];
+        let sqlTableList = [[${connector?.config?.sqlTables}]];
         // SQL配置模板
         let $template = {
             selector: initSelectIndex($("#sqlTableSelect"), 1),
@@ -48,8 +48,8 @@
             editSqlTableBtn: $("#editSqlTableBtn"),
             delSqlTableBtn: $("#delSqlTableBtn"),
             sqlTableCount: $("#sqlTableCount"),
-            sqlTableParams: $("#sqlTableParams"),
-            sqlTableArray: sqlTables == null ? [] : sqlTables,
+            sqlTables: $("#sqlTables"),
+            sqlTableArray: sqlTableList == null ? [] : sqlTableList,
             sqlNameInput: $("#sqlName"),
             tableInput: $("#table"),
             sqlInput: $("#sql"),
@@ -99,7 +99,7 @@
             },
             // 暂存配置
             stash: function () {
-                this.sqlTableParams.val(JSON.stringify(this.sqlTableArray));
+                this.sqlTables.val(JSON.stringify(this.sqlTableArray));
             },
             // 清空表单
             clear: function () {
