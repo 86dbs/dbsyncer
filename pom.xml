@@ -147,6 +147,11 @@
                 <artifactId>ojdbc8</artifactId>
                 <version>${ojdbc8.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.oracle.database.nls</groupId>
+                <artifactId>orai18n</artifactId>
+                <version>${ojdbc8.version}</version>
+            </dependency>
 
             <!-- sqlserver-driver -->
             <dependency>
