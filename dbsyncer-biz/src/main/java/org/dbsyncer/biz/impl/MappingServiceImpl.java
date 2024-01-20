@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
@@ -22,9 +25,8 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
-import org.dbsyncer.sdk.enums.ModelEnum;
-import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -32,7 +34,6 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -239,10 +240,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         BeanUtils.copyProperties(s, sConn);
         ConnectorVo tConn = new ConnectorVo(connectorService.isAlive(t.getId()));
         BeanUtils.copyProperties(t, tConn);
-
-        // 按升序展示表
-        Collections.sort(sConn.getTable(), Comparator.comparing(Table::getName));
-        Collections.sort(tConn.getTable(), Comparator.comparing(Table::getName));
 
         // 元信息
         Meta meta = profileComponent.getMeta(mapping.getMetaId());

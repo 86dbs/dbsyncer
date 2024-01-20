@@ -316,15 +316,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * 满足游标查询条件，追加主键排序
+     * 满足游标查询条件，追加主键排序（单个主键才做排序）
      *
      * @param config
      * @param sql
      */
     protected void appendOrderByPk(PageSql config, StringBuilder sql) {
-        sql.append(" ORDER BY ");
-        final String quotation = buildSqlWithQuotation();
-        if (config.getPrimaryKeys().size() == 1){
+        if (!CollectionUtils.isEmpty(config.getPrimaryKeys()) && config.getPrimaryKeys().size() == 1) {
+            sql.append(" ORDER BY ");
+            final String quotation = buildSqlWithQuotation();
             PrimaryKeyUtil.buildSql(sql, config.getPrimaryKeys(), quotation, ",", "", true);
         }
     }

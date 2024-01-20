@@ -72,11 +72,9 @@ public class TableGroupChecker extends AbstractChecker {
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
-        tableGroup.setFieldMapping(new ArrayList<>());
         tableGroup.setMappingId(mappingId);
         tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable, sourceTablePK));
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable, targetTablePK));
-        tableGroup.setParams(new HashMap<>());
 
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
