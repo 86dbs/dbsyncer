@@ -21,6 +21,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -123,7 +125,10 @@ public class ConnectorFactory implements DisposableBean {
      */
     public List<Table> getTable(ConnectorInstance connectorInstance) {
         Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
-        return getConnectorService(connectorInstance.getConfig()).getTable(connectorInstance);
+        List tableList = getConnectorService(connectorInstance.getConfig()).getTable(connectorInstance);
+        // 按升序展示表
+        Collections.sort(tableList, Comparator.comparing(Table::getName));
+        return tableList;
     }
 
     /**
