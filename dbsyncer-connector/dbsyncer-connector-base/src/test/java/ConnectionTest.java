@@ -17,12 +17,23 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 
 import java.nio.charset.Charset;
-import java.sql.*;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Author AE86
@@ -224,19 +235,22 @@ public class ConnectionTest {
 
         long begin = Instant.now().toEpochMilli();
         final int threadSize = 10;
+        final int num = 100;
+        final int batch = 100;
         final ExecutorService pool = Executors.newFixedThreadPool(threadSize);
         final CountDownLatch latch = new CountDownLatch(threadSize);
-        final int num = 100;
         final String insert = "INSERT INTO `vote_records_test` (`id`, `user_id`, `vote_num`, `group_id`, `status`, `create_time`) VALUES (?, ?, ?, ?, ?, ?)";
-        final String update = "UPDATE `test`.`vote_records` SET `user_id` = ?, `create_time` = now() WHERE `id` = ?";
-        final String delete = "delete from `test`.`vote_records` WHERE `id` = ?";
+        final String update = "UPDATE `test`.`vote_records_test` SET `user_id` = ?, `create_time` = now() WHERE `id` = ?";
+        final String delete = "DELETE from `test`.`vote_records_test` WHERE `id` = ?";
 
-        System.out.println("-----------------模拟总数：" + (threadSize * threadSize * num));
+        logger.info("-----------------模拟总数：{}", threadSize * threadSize * num);
         for (int i = 0; i < threadSize; i++) {
             final int offset = i == 0 ? 0 : i * threadSize;
             pool.submit(() -> {
                 try {
-                    mockData(connectorInstance, num, threadSize, offset, insert, update, delete);
+                    logger.info("{}-开始任务", Thread.currentThread().getName());
+                    mockData(connectorInstance, num, batch, offset, insert, update, delete);
+                    logger.info("{}-结束任务", Thread.currentThread().getName());
                 } catch (Exception e) {
                     logger.error(e.getMessage());
                 } finally {
@@ -255,35 +269,37 @@ public class ConnectionTest {
     }
 
     private void mockData(DatabaseConnectorInstance connectorInstance, int num, int batch, int offset, String insert, String update, String delete) {
-        List<Object[]> insertData = new ArrayList<>();
-        List<Object[]> updateData = new ArrayList<>();
-        List<Object[]> deleteData = new ArrayList<>();
-        for (int j = 1; j <= batch; j++) {
-            // insert
-            Object[] insertArgs = new Object[6];
-            insertArgs[0] = j + offset;
-            insertArgs[1] = randomUserId(20);
-            insertArgs[2] = RandomUtil.nextInt(1, 9999);
-            insertArgs[3] = RandomUtil.nextInt(0, 3);
-            insertArgs[4] = RandomUtil.nextInt(1, 3);
-            insertArgs[5] = Timestamp.valueOf(LocalDateTime.now());
-            insertData.add(insertArgs);
+        for (int i = 0; i < num; i++) {
+            List<Object[]> insertData = new ArrayList<>();
+            List<Object[]> updateData = new ArrayList<>();
+            List<Object[]> deleteData = new ArrayList<>();
+            for (int j = 1; j <= batch; j++) {
+                // insert
+                Object[] insertArgs = new Object[6];
+                insertArgs[0] = j + offset;
+                insertArgs[1] = randomUserId(20);
+                insertArgs[2] = RandomUtil.nextInt(1, 9999);
+                insertArgs[3] = RandomUtil.nextInt(0, 3);
+                insertArgs[4] = RandomUtil.nextInt(1, 3);
+                insertArgs[5] = Timestamp.valueOf(LocalDateTime.now());
+                insertData.add(insertArgs);
 
-            // update
-            Object[] updateArgs = new Object[2];
-            updateArgs[0] = randomUserId(20);
-            updateArgs[1] = j + offset;
-            updateData.add(updateArgs);
+                // update
+                Object[] updateArgs = new Object[2];
+                updateArgs[0] = randomUserId(20);
+                updateArgs[1] = j + offset;
+                updateData.add(updateArgs);
 
-            // delete
-            Object[] deleteArgs = new Object[1];
-            deleteArgs[0] = j + offset;
-            deleteData.add(deleteArgs);
+                // delete
+                Object[] deleteArgs = new Object[1];
+                deleteArgs[0] = j + offset;
+                deleteData.add(deleteArgs);
+            }
+            connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(insert, insertData));
+            connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(update, updateData));
+            connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(delete, deleteData));
+            logger.info("{}-已处理, 数据行[{}, {}], 批次:{}", Thread.currentThread().getName(), offset, offset + batch, i + 1);
         }
-        connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(insert, insertData));
-        connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(update, updateData));
-        connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(delete, deleteData));
-        System.out.println(Thread.currentThread().getName() + "-----------------正在已处理：" + offset + " - " + (offset + batch));
     }
 
     private final static String STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
