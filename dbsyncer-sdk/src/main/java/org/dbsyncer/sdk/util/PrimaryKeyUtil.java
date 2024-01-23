@@ -37,23 +37,13 @@ public abstract class PrimaryKeyUtil {
         }
 
         // 获取表同步的主键字段
-        List<String> primaryKeys = findPrimaryKeys(table.getColumn());
+        List<String> primaryKeys = findPrimaryKeyFields(table.getColumn()).stream().map(f -> f.getName()).collect(Collectors.toList());
 
         // 如果存在表字段映射关系，没有配置主键则抛出异常提示
         if (!CollectionUtils.isEmpty(table.getColumn()) && CollectionUtils.isEmpty(primaryKeys)) {
             throw new SdkException(String.format("目标表 %s 缺少主键.", table.getName()));
         }
         return primaryKeys;
-    }
-
-    /**
-     * 返回主键名称
-     *
-     * @param fields
-     * @return
-     */
-    public static List<String> findPrimaryKeys(List<Field> fields) {
-        return findPrimaryKeyFields(fields).stream().map(f -> f.getName()).collect(Collectors.toList());
     }
 
     /**

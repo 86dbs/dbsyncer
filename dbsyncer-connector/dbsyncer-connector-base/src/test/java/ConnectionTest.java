@@ -235,15 +235,16 @@ public class ConnectionTest {
 
         long begin = Instant.now().toEpochMilli();
         final int threadSize = 10;
-        final int num = 100;
-        final int batch = 100;
+        final int num = 10;
+        final int batch = 2;
         final ExecutorService pool = Executors.newFixedThreadPool(threadSize);
         final CountDownLatch latch = new CountDownLatch(threadSize);
         final String insert = "INSERT INTO `vote_records_test` (`id`, `user_id`, `vote_num`, `group_id`, `status`, `create_time`) VALUES (?, ?, ?, ?, ?, ?)";
         final String update = "UPDATE `test`.`vote_records_test` SET `user_id` = ?, `create_time` = now() WHERE `id` = ?";
         final String delete = "DELETE from `test`.`vote_records_test` WHERE `id` = ?";
 
-        logger.info("-----------------模拟总数：{}", threadSize * threadSize * num);
+        // 模拟单表增删改事件，每个事件间隔2条数据
+        logger.info("-----------------模拟总数：{}", threadSize * batch * num * 3);
         for (int i = 0; i < threadSize; i++) {
             final int offset = i == 0 ? 0 : i * threadSize;
             pool.submit(() -> {
