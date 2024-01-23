@@ -23,7 +23,7 @@ import java.util.concurrent.Executor;
  * @Date 2023-03-27 16:50
  */
 @Component
-public final class TableGroupBufferActuator extends GeneralBufferActuator implements Cloneable {
+public class TableGroupBufferActuator extends GeneralBufferActuator implements Cloneable {
 
     @Resource
     private TableGroupBufferConfig tableGroupBufferConfig;
