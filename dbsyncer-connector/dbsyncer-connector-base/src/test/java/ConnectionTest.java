@@ -234,8 +234,8 @@ public class ConnectionTest {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
 
         long begin = Instant.now().toEpochMilli();
-        final int threadSize = 10;
-        final int num = 1000;
+        final int threadSize = 1000;
+        final int num = 100;
         final ExecutorService pool = Executors.newFixedThreadPool(threadSize);
         final CountDownLatch latch = new CountDownLatch(threadSize);
         final String insert = "INSERT INTO `vote_records_test` (`id`, `user_id`, `vote_num`, `group_id`, `status`, `create_time`) VALUES (?, ?, ?, ?, ?, ?)";
