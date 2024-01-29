@@ -42,11 +42,6 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        return getDqlSourceCommand(commandConfig, false);
-    }
-
-    @Override
     public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorInstance, String sqlName) {
         DatabaseConfig cfg = connectorInstance.getConfig();
         List<SqlTable> sqlTables = cfg.getSqlTables();
@@ -63,14 +58,8 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         return null;
     }
 
-    /**
-     * 获取DQL源配置
-     *
-     * @param commandConfig
-     * @param groupByPK
-     * @return
-     */
-    protected Map<String, String> getDqlSourceCommand(CommandConfig commandConfig, boolean groupByPK) {
+    @Override
+    public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
         // 获取过滤SQL
         String queryFilterSql = getQueryFilterSql(commandConfig);
         Table table = commandConfig.getTable();
@@ -92,16 +81,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
 
         // 获取查询总数SQL
         StringBuilder queryCount = new StringBuilder();
-        queryCount.append("SELECT COUNT(1) FROM (").append(querySql);
-
-        // Mysql
-        if (groupByPK) {
-            queryCount.append(" GROUP BY ");
-            // id,id2
-            String quotation = buildSqlWithQuotation();
-            PrimaryKeyUtil.buildSql(queryCount, primaryKeys, quotation, ",", "", true);
-        }
-        queryCount.append(") DBSYNCER_T");
+        queryCount.append("SELECT COUNT(1) FROM (").append(querySql).append(") DBS_T");
         map.put(SqlBuilderEnum.QUERY_COUNT.getName(), queryCount.toString());
         return map;
     }
