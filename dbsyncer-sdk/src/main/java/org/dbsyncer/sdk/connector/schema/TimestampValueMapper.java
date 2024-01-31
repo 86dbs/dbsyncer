@@ -1,5 +1,6 @@
 package org.dbsyncer.sdk.connector.schema;
 
+import microsoft.sql.DateTimeOffset;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.AbstractValueMapper;
@@ -60,6 +61,11 @@ public class TimestampValueMapper extends AbstractValueMapper<Timestamp> {
         if (val instanceof OffsetDateTime) {
             OffsetDateTime date = (OffsetDateTime) val;
             return Timestamp.from(date.toInstant());
+        }
+
+        if (val instanceof microsoft.sql.DateTimeOffset) {
+            LocalDateTime dateTime = ((DateTimeOffset) val).getOffsetDateTime().toLocalDateTime();
+            return Timestamp.valueOf(dateTime);
         }
 
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
