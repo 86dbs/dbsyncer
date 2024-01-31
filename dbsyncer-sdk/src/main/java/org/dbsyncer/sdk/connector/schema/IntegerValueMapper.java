@@ -35,6 +35,11 @@ public class IntegerValueMapper extends AbstractValueMapper<Integer> {
             return new Integer(b ? 1 : 0);
         }
 
+        if (val instanceof Short) {
+            Short s = (Short) val;
+            return s.intValue();
+        }
+
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }
