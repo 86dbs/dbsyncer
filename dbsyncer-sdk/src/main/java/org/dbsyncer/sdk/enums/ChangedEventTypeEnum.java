@@ -13,10 +13,6 @@ public enum ChangedEventTypeEnum {
      */
     DDL,
     /**
-     * 表列变更，比如oracle, 会获取变动列的sql
-     */
-    SQL,
-    /**
      * 定时变更
      */
     SCAN,
@@ -29,7 +25,4 @@ public enum ChangedEventTypeEnum {
         return event != null && DDL == event;
     }
 
-    public static boolean isSQL(ChangedEventTypeEnum event) {
-        return event != null && SQL == event;
-    }
 }

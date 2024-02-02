@@ -510,9 +510,6 @@ public class DatabaseTemplate implements JdbcOperations {
     @Override
     public int[] batchUpdate(final String... sql) throws DataAccessException {
         Assert.notEmpty(sql, "SQL array must not be empty");
-        if (logger.isDebugEnabled()) {
-            logger.debug("Executing SQL batch update of " + sql.length + " statements");
-        }
 
         /**
          * Callback to execute the batch update.
@@ -584,10 +581,6 @@ public class DatabaseTemplate implements JdbcOperations {
 
         Assert.notNull(psc, "PreparedStatementCreator must not be null");
         Assert.notNull(action, "Callback object must not be null");
-        if (logger.isDebugEnabled()) {
-            String sql = getSql(psc);
-            logger.debug("Executing prepared SQL statement" + (sql != null ? " [" + sql + "]" : ""));
-        }
 
         PreparedStatement ps = null;
         try {

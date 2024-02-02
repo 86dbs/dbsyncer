@@ -5,7 +5,6 @@ package org.dbsyncer.connector.mysql;
 
 import org.dbsyncer.connector.mysql.cdc.DqlMySQLListener;
 import org.dbsyncer.connector.mysql.validator.DqlMySQLConfigValidator;
-import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
@@ -14,8 +13,6 @@ import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
-
-import java.util.Map;
 
 /**
  * DQLMySQL连接器实现
@@ -49,11 +46,6 @@ public final class DQLMySQLConnector extends AbstractDQLConnector {
         int pageSize = config.getPageSize();
         int pageIndex = config.getPageIndex();
         return new Object[]{(pageIndex - 1) * pageSize, pageSize};
-    }
-
-    @Override
-    public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        return super.getDqlSourceCommand(commandConfig, true);
     }
 
     @Override

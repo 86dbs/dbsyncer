@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.model;
 
 public class SqlTable {
@@ -7,15 +10,6 @@ public class SqlTable {
     private String sql;
 
     private String table;
-
-    public SqlTable() {
-    }
-
-    public SqlTable(String sqlName, String sql, String table) {
-        this.sqlName = sqlName;
-        this.sql = sql;
-        this.table = table;
-    }
 
     public String getSqlName() {
         return sqlName;

@@ -1,5 +1,6 @@
 package org.dbsyncer.sdk.connector.schema;
 
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.AbstractValueMapper;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -33,6 +34,15 @@ public class IntegerValueMapper extends AbstractValueMapper<Integer> {
         if (val instanceof Boolean) {
             Boolean b = (Boolean) val;
             return new Integer(b ? 1 : 0);
+        }
+
+        if (val instanceof Short) {
+            Short s = (Short) val;
+            return s.intValue();
+        }
+
+        if (val instanceof String) {
+            return NumberUtil.toInt((String) val);
         }
 
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));

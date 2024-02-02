@@ -249,13 +249,9 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     private String buildQueryCountSql(Query query, Executor executor, List<Object> args) {
-        StringBuilder queryCount = new StringBuilder();
-        queryCount.append("SELECT COUNT(1) FROM (");
-        StringBuilder sql = new StringBuilder("SELECT 1 AS `_ROW` FROM `").append(executor.getTable()).append("`");
+        StringBuilder sql = new StringBuilder("SELECT COUNT(1) FROM `").append(executor.getTable()).append("`");
         buildQuerySqlWithParams(query, args, sql, null);
-        queryCount.append(sql);
-        queryCount.append(" GROUP BY `ID`) DBSYNCER_T");
-        return queryCount.toString();
+        return sql.toString();
     }
 
     private void buildQuerySqlWithParams(Query query, List<Object> args, StringBuilder sql, List<AbstractFilter> highLightKeys) {

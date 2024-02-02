@@ -146,12 +146,13 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
 
     @Override
     public String getConnectorInstanceCacheKey(ESConfig config) {
-        return String.format("%s-%s-%s-%s", config.getConnectorType(), config.getUrl(), config.getIndex(), config.getUsername());
+        return String.format("%s-%s-%s", config.getConnectorType(), config.getUrl(), config.getUsername());
     }
 
     @Override
     public List<Table> getTable(ESConnectorInstance connectorInstance) {
         try {
+            // TODO 获取所有索引和type
             ESConfig config = connectorInstance.getConfig();
             GetIndexRequest request = new GetIndexRequest(config.getIndex());
             GetIndexResponse indexResponse = connectorInstance.getConnection().indices().get(request, RequestOptions.DEFAULT);

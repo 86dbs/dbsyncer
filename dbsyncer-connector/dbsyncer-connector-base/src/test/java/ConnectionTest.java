@@ -17,12 +17,23 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 
 import java.nio.charset.Charset;
-import java.sql.*;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Author AE86
@@ -117,7 +128,7 @@ public class ConnectionTest {
         long begin = Instant.now().toEpochMilli();
         final int threadSize = 10;
         final ExecutorService pool = Executors.newFixedThreadPool(threadSize);
-        final String sql = "INSERT INTO `vote_records_copy` (`id`, `user_id`, `vote_num`, `group_id`, `status`, `create_time`) VALUES (?, ?, ?, ?, ?, ?)";
+        final String sql = "INSERT INTO `vote_records` (`id`, `user_id`, `vote_num`, `group_id`, `status`, `create_time`) VALUES (?, ?, ?, ?, ?, ?)";
 
         // 模拟1000w条数据
         List<Object[]> dataList = new ArrayList<>();
@@ -139,7 +150,7 @@ public class ConnectionTest {
             }
         }
 
-        if(!CollectionUtils.isEmpty(dataList)){
+        if (!CollectionUtils.isEmpty(dataList)) {
             System.out.println("-----------------正在处理剩余数据");
             batchUpdate(connectorInstance, pool, sql, dataList, 1000);
         }
@@ -216,6 +227,119 @@ public class ConnectionTest {
 
         pool.shutdown();
         logger.info("总共耗时：{}秒", (Instant.now().toEpochMilli() - begin) / 1000);
+    }
+
+    @Test
+    public void testBatchIUD() {
+        final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
+
+        long begin = Instant.now().toEpochMilli();
+        final int threadSize = 1000;
+        final int num = 100;
+        final ExecutorService pool = Executors.newFixedThreadPool(threadSize);
+        final CountDownLatch latch = new CountDownLatch(threadSize);
+        final String insert = "INSERT INTO `vote_records_test` (`id`, `user_id`, `vote_num`, `group_id`, `status`, `create_time`) VALUES (?, ?, ?, ?, ?, ?)";
+        final String update = "UPDATE `test`.`vote_records_test` SET `user_id` = ?, `create_time` = now() WHERE `id` = ?";
+        final String delete = "DELETE from `test`.`vote_records_test` WHERE `id` = ?";
+
+        // 模拟单表增删改事件，每个事件间隔2条数据
+        for (int i = 0; i < threadSize; i++) {
+            final int offset = i;
+            pool.submit(() -> {
+                try {
+                    logger.info("{}-开始任务", Thread.currentThread().getName());
+                    // 增删改事件密集型
+                    mockData(connectorInstance, num, offset, insert, update, delete);
+                    // 增改事件密集型
+//                    mockData2(connectorInstance, num, offset, insert, update);
+                    logger.info("{}-结束任务", Thread.currentThread().getName());
+                } catch (Exception e) {
+                    logger.error(e.getMessage());
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage());
+        }
+        pool.shutdown();
+//        logger.info("总数：{}, 耗时：{}秒", (threadSize * num * 3), (Instant.now().toEpochMilli() - begin) / 1000);
+        logger.info("总数：{}, 耗时：{}秒", (threadSize * num), (Instant.now().toEpochMilli() - begin) / 1000);
+    }
+
+    private void mockData(DatabaseConnectorInstance connectorInstance, int num, int offset, String insert, String update, String delete) {
+        int start = offset * num;
+        logger.info("{}-offset:{}, start:{}", Thread.currentThread().getName(), offset, start);
+        List<Object[]> insertData = new ArrayList<>();
+        List<Object[]> updateData = new ArrayList<>();
+        List<Object[]> deleteData = new ArrayList<>();
+        for (int i = 0; i < num; i++) {
+            // insert
+            Object[] insertArgs = new Object[6];
+            insertArgs[0] = i + start;
+            insertArgs[1] = randomUserId(20);
+            insertArgs[2] = RandomUtil.nextInt(1, 9999);
+            insertArgs[3] = RandomUtil.nextInt(0, 3);
+            insertArgs[4] = RandomUtil.nextInt(1, 3);
+            insertArgs[5] = Timestamp.valueOf(LocalDateTime.now());
+            insertData.add(insertArgs);
+
+            // update
+            Object[] updateArgs = new Object[2];
+            updateArgs[0] = randomUserId(20);
+            updateArgs[1] = i + start;
+            updateData.add(updateArgs);
+
+            // delete
+            Object[] deleteArgs = new Object[1];
+            deleteArgs[0] = i + start;
+            deleteData.add(deleteArgs);
+
+            connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(insert, insertData));
+            connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(update, updateData));
+            connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(delete, deleteData));
+            insertData.clear();
+            updateData.clear();
+            deleteData.clear();
+            logger.info("{}, 数据行[{}, {}], 已处理:{}", Thread.currentThread().getName(), start, start + num, i + start);
+        }
+    }
+
+    private void mockData2(DatabaseConnectorInstance connectorInstance, int num, int offset, String insert, String update) {
+        List<Object[]> insertData = new ArrayList<>();
+        List<Object[]> updateData = new ArrayList<>();
+        final int batch = 100;
+        int start = offset * num;
+        logger.info("{}-offset:{}, start:{}", Thread.currentThread().getName(), offset, start);
+        for (int i = 1; i <= num; i++) {
+            // insert
+            Object[] insertArgs = new Object[6];
+            insertArgs[0] = i + start;
+            insertArgs[1] = randomUserId(20);
+            insertArgs[2] = RandomUtil.nextInt(1, 9999);
+            insertArgs[3] = RandomUtil.nextInt(0, 3);
+            insertArgs[4] = RandomUtil.nextInt(1, 3);
+            insertArgs[5] = Timestamp.valueOf(LocalDateTime.now());
+            insertData.add(insertArgs);
+
+            // update
+            Object[] updateArgs = new Object[2];
+            updateArgs[0] = randomUserId(20);
+            updateArgs[1] = i + start;
+            updateData.add(updateArgs);
+
+            if (i % batch == 0) {
+                connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(insert, insertData));
+                connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(update, updateData));
+                logger.info("{}, 数据行[{}, {}], 已处理:{}", Thread.currentThread().getName(), start, start + num, i + start);
+                insertData.clear();
+                updateData.clear();
+            }
+        }
     }
 
     private final static String STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

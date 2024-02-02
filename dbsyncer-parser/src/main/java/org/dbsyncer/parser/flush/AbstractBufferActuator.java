@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.common.config.BufferActuatorConfig;
@@ -123,6 +126,23 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     protected abstract void pull(Response response);
 
     /**
+     * 批量处理分区数据
+     *
+     * @param map
+     */
+    protected void process(Map<String, Response> map){
+        map.forEach((key, response) -> {
+            long now = Instant.now().toEpochMilli();
+            try {
+                pull(response);
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
+            logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
+        });
+    }
+
+    /**
      * 提交任务失败
      *
      * @param queue
@@ -190,15 +210,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
             }
         }
 
-        map.forEach((key, response) -> {
-            long now = Instant.now().toEpochMilli();
-            try {
-                pull(response);
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-            }
-            logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
-        });
+        process(map);
         map.clear();
         map = null;
         batchCounter = null;
