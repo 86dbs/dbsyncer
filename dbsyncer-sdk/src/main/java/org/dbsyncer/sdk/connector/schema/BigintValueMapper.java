@@ -30,6 +30,9 @@ public class BigintValueMapper extends AbstractValueMapper<Long> {
         if (val instanceof String) {
             return new Long((String) val);
         }
+        if (val instanceof Short){
+            return ((Short) val).longValue();
+        }
 
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
