@@ -74,6 +74,7 @@ docker pull crazylife/dbsyncer-web:2.0.1
 * [如何开启远程debug模式？](https://gitee.com/ghi/dbsyncer/issues/I63F6R)  
 
 ## 🤝贡献支持
+* 有需要专业技术指导请加 [会员粉丝服务群](https://gitee.com/ghi/dbsyncer/wikis/%E4%BC%9A%E5%91%98%E7%B2%89%E4%B8%9D%E6%9C%8D%E5%8A%A1%E7%BE%A4?sort_id=9604090)
 * QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" /></a>
 * 如有比较着急的需求或建议（想支持某版本的中间件，最好能描述清楚你的原始需求，作者会帮你提供一些建议方案），欢迎大家[【新建issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!
 * DBSyncer研发团队目标：**取之社区，用于社区**。为了能让项目得到可持续发展，我们期望获得更多的支持者! 
