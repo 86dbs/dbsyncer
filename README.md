@@ -74,11 +74,15 @@ docker pull crazylife/dbsyncer-web:2.0.1
 * [如何开启远程debug模式？](https://gitee.com/ghi/dbsyncer/issues/I63F6R)  
 
 ## 🤝贡献支持
-* 有需要专业技术指导请加 [会员粉丝服务群](https://gitee.com/ghi/dbsyncer/wikis/%E4%BC%9A%E5%91%98%E7%B2%89%E4%B8%9D%E6%9C%8D%E5%8A%A1%E7%BE%A4?sort_id=9604090)
-* QQ群: 875519623或点击右侧按钮<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="数据同步dbsyncer" title="数据同步dbsyncer" /></a>
-* 如有比较着急的需求或建议（想支持某版本的中间件，最好能描述清楚你的原始需求，作者会帮你提供一些建议方案），欢迎大家[【新建issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!
-* DBSyncer研发团队目标：**取之社区，用于社区**。为了能让项目得到可持续发展，我们期望获得更多的支持者! 
+*  **DBS团队目标**：开源共享，稳定盈利，推进项目可持续。（开源不易，非常感谢一直支持我们的用户朋友们！！）
+* 需要专业技术指导，请扫码加[**会员粉丝服务群**](https://gitee.com/ghi/dbsyncer/wikis/%E4%BC%9A%E5%91%98%E7%B2%89%E4%B8%9D%E6%9C%8D%E5%8A%A1%E7%BE%A4?sort_id=9604090)★★★★★（福利有限，加满即止）
+
+<img src="https://foruda.gitee.com/images/1710433533728877903/c79fd442_376718.png" title="DBSyncer款项用于研发推广" height="400" />
+
+* QQ群讨论: **875519623** 
+* 欢迎大家提需求和建议[【新建issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!（详细描述你的原始需求，我们会帮你提供一些方案，节约大家的成本）
 1.  **内推项目** 如您觉得项目不错，可推荐到公司，建立长期稳定的商业合作，提供更专业的技术服务。（入群联系群主）
-2.  **参与开发** 项目成员来自于不同公司，汇聚了不同专业的大佬，相信一定能找到您比较感兴趣的方向，欢迎加入团队！（入群联系群主）
-3.  **扫赞赏码**[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C) 款项主要用于项目研发和推广，会定期通过线上活动，与大家一起讨论问题，随机回馈粉丝们一些礼物。
-<img src="https://images.gitee.com/uploads/images/2021/1110/001937_717dfb9d_376718.png" title="DBSyncer款项用于研发推广" width="400" height="400" />
+2.  **参与开发** 项目成员有不同专业的大佬，相信一定能找到您比较感兴趣的方向，欢迎加入团队！（入群联系群主）
+3.  **扫赞赏码**[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C) 
+
+<img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" height="400" />
