@@ -28,12 +28,15 @@ public class WriterBatchConfig {
      */
     private List<Map> data;
 
-    public WriterBatchConfig(String tableName, String event, Map<String, String> command, List<Field> fields, List<Map> data) {
+    private boolean enableOnlyUpdate;
+
+    public WriterBatchConfig(String tableName, String event, Map<String, String> command, List<Field> fields, List<Map> data,boolean enableOnlyUpdate) {
         this.tableName = tableName;
         this.event = event;
         this.command = command;
         this.fields = fields;
         this.data = data;
+        this.enableOnlyUpdate=enableOnlyUpdate;
     }
 
     public String getTableName() {
@@ -56,4 +59,7 @@ public class WriterBatchConfig {
         return data;
     }
 
+    public boolean isEnableOnlyUpdate() {
+        return enableOnlyUpdate;
+    }
 }

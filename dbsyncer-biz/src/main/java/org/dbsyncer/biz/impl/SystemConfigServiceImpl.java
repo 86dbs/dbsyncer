@@ -103,6 +103,11 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         return getSystemConfig().isEnableCDN();
     }
 
+    @Override
+    public boolean isEnableOnlyUpdate(){
+        return getSystemConfig().isEnableOnlyUpdate();
+    }
+
     private SystemConfig getSystemConfig() {
         SystemConfig config = profileComponent.getSystemConfig();
         if (null != config) {
