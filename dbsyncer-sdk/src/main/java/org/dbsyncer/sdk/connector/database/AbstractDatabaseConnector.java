@@ -193,7 +193,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             logger.error("writer data can not be empty.");
             throw new SdkException("writer data can not be empty.");
         }
-        logger.info("enableOnlyUpdate is {}", config.isEnableOnlyUpdate());
         List<Field> fields = new ArrayList<>(config.getFields());
         List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeyFields(config);
         // Update / Delete
@@ -212,11 +211,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             // 2、设置参数
             execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
         } catch (Exception e) {
-            data.forEach(row -> {
-                if(!config.isEnableOnlyUpdate()){
-                    forceUpdate(result, connectorInstance, config, pkFields, row);
-                }
-            });
+            if(!config.isEnableOnlyUpdate()){
+              data.forEach(row -> forceUpdate(result, connectorInstance, config, pkFields, row));
+            }
         }
 
         if (null != execute) {

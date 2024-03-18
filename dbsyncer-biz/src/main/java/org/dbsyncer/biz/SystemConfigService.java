@@ -57,11 +57,4 @@ public interface SystemConfigService {
      * @return
      */
     boolean isEnableCDN();
-
-    /**
-     * 是否启用仅更新
-     *
-     * @return
-     */
-    boolean isEnableOnlyUpdate();
 }
