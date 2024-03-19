@@ -22,16 +22,13 @@ public final class ESConfigValidator implements ConfigValidator<ESConfig> {
     public void modify(ESConfig connectorConfig, Map<String, String> params) {
         String username = params.get("username");
         String password = params.get("password");
-        String index = params.get("index");
         String url = params.get("url");
         Assert.hasText(username, "Username is empty.");
         Assert.hasText(password, "Password is empty.");
-        Assert.hasText(index, "Index is empty.");
         Assert.hasText(url, "Url is empty.");
 
         connectorConfig.setUsername(username);
         connectorConfig.setPassword(password);
-        connectorConfig.setIndex(index);
         connectorConfig.setUrl(url);
     }
 }
