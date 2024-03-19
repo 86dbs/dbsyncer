@@ -1,6 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
+
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -37,6 +38,11 @@ public class SystemConfig extends ConfigModel {
      * 是否启用CDN加速访问静态资源(false-关闭; true-开启）
      */
     private boolean enableCDN;
+
+    /**
+     * 是否启用仅更新
+     */
+    private boolean enableOnlyUpdate = false;
 
     /**
      * 是否记录全量数据（false-关闭; true-开启）
@@ -88,6 +94,14 @@ public class SystemConfig extends ConfigModel {
 
     public void setEnableCDN(boolean enableCDN) {
         this.enableCDN = enableCDN;
+    }
+
+    public boolean isEnableOnlyUpdate() {
+        return enableOnlyUpdate;
+    }
+
+    public void setEnableOnlyUpdate(boolean enableOnlyUpdate) {
+        this.enableOnlyUpdate = enableOnlyUpdate;
     }
 
     public boolean isEnableStorageWriteFull() {

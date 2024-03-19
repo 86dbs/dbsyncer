@@ -211,7 +211,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             // 2、设置参数
             execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
         } catch (Exception e) {
-            data.forEach(row -> forceUpdate(result, connectorInstance, config, pkFields, row));
+            if(!config.isEnableOnlyUpdate()){
+              data.forEach(row -> forceUpdate(result, connectorInstance, config, pkFields, row));
+            }
         }
 
         if (null != execute) {
@@ -221,7 +223,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     result.getSuccessData().add(data.get(i));
                     continue;
                 }
-                forceUpdate(result, connectorInstance, config, pkFields, data.get(i));
+                if(!config.isEnableOnlyUpdate()){
+                    forceUpdate(result, connectorInstance, config, pkFields, data.get(i));
+                }
             }
         }
         return result;
