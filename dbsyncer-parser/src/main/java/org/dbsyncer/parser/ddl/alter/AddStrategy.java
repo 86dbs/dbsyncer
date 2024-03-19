@@ -1,7 +1,5 @@
 package org.dbsyncer.parser.ddl.alter;
 
-import java.util.LinkedList;
-import java.util.List;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
 import net.sf.jsqlparser.statement.create.table.Index;
 import net.sf.jsqlparser.statement.create.table.Index.ColumnParams;
@@ -11,6 +9,9 @@ import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.Field;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * 解析add的属性 exampleSql: ALTER TABLE cost ADD duan INT after(before) `tmp`;

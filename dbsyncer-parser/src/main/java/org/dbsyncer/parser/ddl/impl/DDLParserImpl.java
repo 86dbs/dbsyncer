@@ -83,6 +83,7 @@ public class DDLParserImpl implements DDLParser {
                         STRATEGIES.get(expression.getOperation()).parse(expression, ddlConfig, originalFieldMappings);
                     }
                 }
+                ddlConfig.setSql(alter.toString());
             }
         } catch (JSQLParserException e) {
             logger.error(e.getMessage(), e);
