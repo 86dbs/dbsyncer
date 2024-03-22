@@ -36,6 +36,11 @@ public class Table {
     // 总数
     private long count;
 
+    /**
+     * 索引类型（ES）
+     */
+    private String indexType;
+
     public Table() {
     }
 
@@ -44,14 +49,15 @@ public class Table {
     }
 
     public Table(String name, String type) {
-        this(name, type, null, null);
+        this(name, type, null, null, null);
     }
 
-    public Table(String name, String type, List<Field> column, String sql) {
+    public Table(String name, String type, List<Field> column, String sql, String indexType) {
         this.name = name;
         this.type = type;
         this.column = column;
         this.sql = sql;
+        this.indexType = indexType;
     }
 
     public String getName() {
@@ -74,8 +80,9 @@ public class Table {
         return column;
     }
 
-    public void setColumn(List<Field> column) {
+    public Table setColumn(List<Field> column) {
         this.column = column;
+        return this;
     }
 
     public String getSql() {
@@ -92,5 +99,18 @@ public class Table {
 
     public void setCount(long count) {
         this.count = count;
+    }
+
+    public String getIndexType() {
+        return indexType;
+    }
+
+    public void setIndexType(String indexType) {
+        this.indexType = indexType;
+    }
+
+    @Override
+    public Table clone() {
+        return new Table(name, type, column, sql, indexType);
     }
 }
