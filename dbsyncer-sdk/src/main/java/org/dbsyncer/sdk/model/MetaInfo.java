@@ -28,6 +28,11 @@ public class MetaInfo {
      */
     private String sql;
 
+    /**
+     * 索引类型（ES）
+     */
+    private String indexType;
+
     public String getTableType() {
         return tableType;
     }
@@ -52,6 +57,15 @@ public class MetaInfo {
 
     public MetaInfo setSql(String sql) {
         this.sql = sql;
+        return this;
+    }
+
+    public String getIndexType() {
+        return indexType;
+    }
+
+    public MetaInfo setIndexType(String indexType) {
+        this.indexType = indexType;
         return this;
     }
 

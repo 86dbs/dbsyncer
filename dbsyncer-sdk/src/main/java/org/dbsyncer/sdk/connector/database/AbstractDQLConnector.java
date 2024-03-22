@@ -35,7 +35,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         List<Table> tables = new ArrayList<>();
         if (!CollectionUtils.isEmpty(sqlTables)) {
             sqlTables.forEach(s ->
-                tables.add(new Table(s.getSqlName(), TableTypeEnum.TABLE.getCode(), Collections.EMPTY_LIST, s.getSql()))
+                tables.add(new Table(s.getSqlName(), TableTypeEnum.TABLE.getCode(), Collections.EMPTY_LIST, s.getSql(), null))
             );
         }
         return tables;
