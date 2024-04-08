@@ -3,9 +3,11 @@
  */
 package org.dbsyncer.connector.postgresql.schema;
 
+import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.sdk.connector.AbstractValueMapper;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.CustomType;
 import org.postgis.Geometry;
 import org.postgis.PGgeometry;
 import org.postgis.binary.BinaryParser;
@@ -33,7 +35,7 @@ import org.postgresql.geometric.PGpoint;
  * @Version 1.0.0
  * @Date 2022-12-22 22:59
  */
-public final class PostgreSQLOtherValueMapper extends AbstractValueMapper<byte[]> {
+public final class PostgreSQLOtherValueMapper extends AbstractValueMapper<CustomType> {
 
     @Override
     protected boolean skipConvert(Object val) {
@@ -41,12 +43,16 @@ public final class PostgreSQLOtherValueMapper extends AbstractValueMapper<byte[]
     }
 
     @Override
-    protected byte[] convert(ConnectorInstance connectorInstance, Object val) {
+    protected CustomType convert(ConnectorInstance connectorInstance, Object val) {
         if (val instanceof String) {
+            String s = (String) val;
+            if (UUIDUtil.isUUID(s)) {
+                return new CustomType(UUIDUtil.fromString(s));
+            }
             BinaryParser parser = new BinaryParser();
             Geometry geo = parser.parse((String) val);
             BinaryWriter bw = new BinaryWriter();
-            return bw.writeBinary(geo);
+            return new CustomType(bw.writeBinary(geo));
         }
         throw new PostgreSQLException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }

@@ -13,9 +13,11 @@ import java.lang.reflect.ParameterizedType;
 public abstract class AbstractValueMapper<T> implements ValueMapper {
 
     private final Class<T> parameterClazz;
+    private final Boolean enableCustomType;
 
     public AbstractValueMapper() {
         parameterClazz = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+        enableCustomType = CustomType.class.equals(parameterClazz);
     }
 
     /**
@@ -51,6 +53,12 @@ public abstract class AbstractValueMapper<T> implements ValueMapper {
             // 是否需要跳过转换
             if (skipConvert(val)) {
                 return val;
+            }
+
+            // 是否使用自定义类型
+            if (enableCustomType) {
+                CustomType customType = (CustomType) convert(connectorInstance, val);
+                return customType.getValue();
             }
 
             // 当数据类型不同时，返回转换值
