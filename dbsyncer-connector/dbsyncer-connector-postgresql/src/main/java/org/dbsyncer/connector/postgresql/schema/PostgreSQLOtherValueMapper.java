@@ -13,6 +13,7 @@ import org.postgis.PGgeometry;
 import org.postgis.binary.BinaryParser;
 import org.postgis.binary.BinaryWriter;
 import org.postgresql.geometric.PGpoint;
+import org.postgresql.util.PGobject;
 
 /**
  * JDBC索引{@link java.sql.Types 1111}, JDBC类型java.lang.Object，支持的数据库类型：
@@ -39,7 +40,7 @@ public final class PostgreSQLOtherValueMapper extends AbstractValueMapper<Custom
 
     @Override
     protected boolean skipConvert(Object val) {
-        return val instanceof PGpoint || val instanceof PGgeometry || val instanceof Geometry || val instanceof java.util.UUID;
+        return val instanceof PGobject || val instanceof PGpoint || val instanceof PGgeometry || val instanceof Geometry || val instanceof java.util.UUID;
     }
 
     @Override
