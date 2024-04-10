@@ -101,12 +101,13 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             final List<Field> column = metaInfo.getColumn();
             Assert.notEmpty(column, String.format("The column of table name '%s' is empty.", sqlName));
 
-            sql = sql.toUpperCase().replace("\t", " ");
+            sql = sql.replace("\t", " ");
             sql = sql.replace("\r", " ");
             sql = sql.replace("\n", " ");
 
             StringBuilder querySql = new StringBuilder(sql);
-            boolean notContainsWhere = !StringUtil.contains(sql, " WHERE ");
+            String temp = sql.toUpperCase();
+            boolean notContainsWhere = !StringUtil.contains(temp, " WHERE ");
             querySql.append(notContainsWhere ? " WHERE " : " AND ");
             PrimaryKeyUtil.buildSql(querySql, primaryKeys, quotation, " AND ", " = ? ", notContainsWhere);
             DqlMapper dqlMapper = new DqlMapper(instance, sqlName, querySql.toString(), column, getPrimaryKeyIndexArray(column, primaryKeys));
