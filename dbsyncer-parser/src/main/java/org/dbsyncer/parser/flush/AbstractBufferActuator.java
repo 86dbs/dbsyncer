@@ -123,7 +123,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      *
      * @param response
      */
-    protected abstract void pull(Response response);
+    public abstract void pull(Response response);
 
     /**
      * 批量处理分区数据
