@@ -25,7 +25,7 @@ set JMXREMOTE_PASSWORD=-Dcom.sun.management.jmxremote.password.file=%DBS_HOME%co
 rem jmxremote model
 rem set SERVER_OPTS=%SERVER_OPTS% %JMXREMOTE_HOSTNAME% %JMXREMOTE_PORT% %JMXREMOTE_SSL% %JMXREMOTE_AUTH% %JMXREMOTE_ACCESS% %JMXREMOTE_PASSWORD%
 
-set ENCRYPT_FILE=%DBS_HOME%bin\dbsyncer_decrypt.dll
+set ENCRYPT_FILE=%DBS_HOME%bin\libDBSyncer.dll
 if exist %ENCRYPT_FILE% (
 set SERVER_OPTS=%SERVER_OPTS% -agentpath:%ENCRYPT_FILE%
 )
