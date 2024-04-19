@@ -120,9 +120,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     }
 
     @Override
-    protected void pull(WriterResponse response) {
+    public void pull(WriterResponse response) {
         // 0、获取配置信息
-        final TableGroup tableGroup = profileComponent.getTableGroup(response.getTableGroupId());
+        final TableGroup tableGroup = getTableGroup(response.getTableGroupId());
         final Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
         final TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
 
@@ -174,6 +174,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Override
     public Executor getExecutor() {
         return generalExecutor;
+    }
+
+    public TableGroup getTableGroup(String tableGroupId) {
+        return profileComponent.getTableGroup(tableGroupId);
     }
 
     /**

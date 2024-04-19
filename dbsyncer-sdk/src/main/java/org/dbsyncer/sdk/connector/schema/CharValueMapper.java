@@ -13,6 +13,11 @@ public class CharValueMapper extends AbstractValueMapper<String> {
 
     @Override
     protected String convert(ConnectorInstance connectorInstance, Object val) {
+        if (null != val) {
+            if (val instanceof Integer) {
+                return String.valueOf(val);
+            }
+        }
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }
