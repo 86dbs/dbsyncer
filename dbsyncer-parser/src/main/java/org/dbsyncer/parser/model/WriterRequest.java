@@ -1,7 +1,6 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.parser.flush.BufferRequest;
-import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 
@@ -14,30 +13,22 @@ import java.util.Map;
  */
 public class WriterRequest extends AbstractWriter implements BufferRequest {
 
-    private ChangedEventTypeEnum typeEnum;
-
     private Map row;
 
     private ChangedOffset changedOffset;
 
-    private String sql;
-
     public WriterRequest(String tableGroupId, ChangedEvent event) {
+        setTypeEnum(event.getType());
         setTableGroupId(tableGroupId);
         setEvent(event.getEvent());
-        this.typeEnum = event.getType();
+        setSql(event.getSql());
         this.row = event.getChangedRow();
         this.changedOffset = event.getChangedOffset();
-        this.sql = event.getSql();
     }
 
     @Override
     public String getMetaId() {
         return changedOffset.getMetaId();
-    }
-
-    public ChangedEventTypeEnum getTypeEnum() {
-        return typeEnum;
     }
 
     public Map getRow() {
@@ -48,7 +39,4 @@ public class WriterRequest extends AbstractWriter implements BufferRequest {
         return changedOffset;
     }
 
-    public String getSql() {
-        return sql;
-    }
 }

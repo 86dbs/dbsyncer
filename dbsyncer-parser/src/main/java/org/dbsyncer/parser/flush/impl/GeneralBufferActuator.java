@@ -98,10 +98,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Override
     protected void partition(WriterRequest request, WriterResponse response) {
         if (!CollectionUtils.isEmpty(request.getRow())) {
-            response.getDataList().add(request.getRow());
+            response.addRow(request.getRow());
         }
         if (request.getChangedOffset() != null) {
-            response.getOffsetList().add(request.getChangedOffset());
+            response.addChangedOffset(request.getChangedOffset());
         }
         if (!response.isMerged()) {
             response.setTableGroupId(request.getTableGroupId());

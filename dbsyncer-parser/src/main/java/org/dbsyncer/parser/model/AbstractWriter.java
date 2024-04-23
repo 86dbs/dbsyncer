@@ -1,5 +1,7 @@
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
+
 /**
  * @author AE86
  * @version 1.0.0
@@ -7,9 +9,21 @@ package org.dbsyncer.parser.model;
  */
 public abstract class AbstractWriter {
 
+    private ChangedEventTypeEnum typeEnum;
+
     private String tableGroupId;
 
     private String event;
+
+    private String sql;
+
+    public ChangedEventTypeEnum getTypeEnum() {
+        return typeEnum;
+    }
+
+    public void setTypeEnum(ChangedEventTypeEnum typeEnum) {
+        this.typeEnum = typeEnum;
+    }
 
     public String getTableGroupId() {
         return tableGroupId;
@@ -26,4 +40,13 @@ public abstract class AbstractWriter {
     public void setEvent(String event) {
         this.event = event;
     }
+
+    public String getSql() {
+        return sql;
+    }
+
+    public void setSql(String sql) {
+        this.sql = sql;
+    }
+
 }
