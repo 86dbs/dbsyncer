@@ -53,6 +53,10 @@ public class Mapping extends AbstractConfigModel {
 
     // 线程数
     private int threadNum = 10;
+    /**
+     * 是否启用仅更新
+     */
+    private boolean enableOnlyUpdate = false;
 
     public String getSourceConnectorId() {
         return sourceConnectorId;
@@ -136,5 +140,13 @@ public class Mapping extends AbstractConfigModel {
 
     public void setThreadNum(int threadNum) {
         this.threadNum = threadNum;
+    }
+
+    public boolean isEnableOnlyUpdate() {
+        return enableOnlyUpdate;
+    }
+
+    public void setEnableOnlyUpdate(boolean enableOnlyUpdate) {
+        this.enableOnlyUpdate = enableOnlyUpdate;
     }
 }

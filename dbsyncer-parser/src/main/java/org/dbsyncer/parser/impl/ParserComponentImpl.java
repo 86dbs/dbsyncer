@@ -176,7 +176,7 @@ public class ParserComponentImpl implements ParserComponent {
             pluginFactory.convert(group.getPlugin(), context);
 
             // 5、写入目标源
-            boolean enableOnlyUpdate = profileComponent.getSystemConfig().isEnableOnlyUpdate();
+            boolean enableOnlyUpdate = mapping.isEnableOnlyUpdate()?true:profileComponent.getSystemConfig().isEnableOnlyUpdate();
             BatchWriter batchWriter = new BatchWriter(tConnectorInstance, command, tTableName, event, picker.getTargetFields(), target, batchSize,enableOnlyUpdate);
             Result result = writeBatch(context, batchWriter, executor);
 
