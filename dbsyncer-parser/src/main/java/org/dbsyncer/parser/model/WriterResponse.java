@@ -20,7 +20,7 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
 
     private List<ChangedOffset> offsetList = new LinkedList<>();
 
-    private boolean isMerged;
+    private transient Boolean isMerged;
 
     @Override
     public int getTaskSize() {
