@@ -98,7 +98,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Override
     protected void partition(WriterRequest request, WriterResponse response) {
         if (!CollectionUtils.isEmpty(request.getRow())) {
-            response.addRow(request.getRow());
+            response.addData(request.getRow());
         }
         if (request.getChangedOffset() != null) {
             response.addChangedOffset(request.getChangedOffset());
