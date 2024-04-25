@@ -4,7 +4,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferResponse;
 import org.dbsyncer.sdk.model.ChangedOffset;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -32,15 +31,11 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
         return StringUtil.SYMBOL.concat(getEvent());
     }
 
-    public void addData(Collection dataList){
-        dataList.addAll(dataList);
-    }
-
-    public void addData(Map data){
+    public void addData(Map data) {
         dataList.add(data);
     }
 
-    public void addChangedOffset(ChangedOffset changedOffset){
+    public void addChangedOffset(ChangedOffset changedOffset) {
         offsetList.add(changedOffset);
     }
 
