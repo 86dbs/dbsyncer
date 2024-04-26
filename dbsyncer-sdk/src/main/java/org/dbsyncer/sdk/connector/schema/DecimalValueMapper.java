@@ -5,7 +5,6 @@ import org.dbsyncer.sdk.connector.AbstractValueMapper;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 /**
  * @author AE86
@@ -16,25 +15,8 @@ public class DecimalValueMapper extends AbstractValueMapper<BigDecimal> {
 
     @Override
     protected BigDecimal convert(ConnectorInstance connectorInstance, Object val) {
-        if (val instanceof Integer) {
-            Integer integer = (Integer) val;
-            return new BigDecimal(integer);
-        }
-        if (val instanceof Long) {
-            Long l = (Long) val;
-            return new BigDecimal(l);
-        }
-        if (val instanceof BigInteger) {
-            BigInteger bigInteger = (BigInteger) val;
-            return new BigDecimal(bigInteger);
-        }
-        if (val instanceof Short) {
-            Short s = (Short) val;
-            return new BigDecimal(s);
-        }
-        if (val instanceof Float) {
-            Float f = (Float) val;
-            return new BigDecimal(Float.toString(f));
+        if (val instanceof Number) {
+            return new BigDecimal(val.toString());
         }
         if (val instanceof Boolean) {
             Boolean b = (Boolean) val;
