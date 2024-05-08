@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -86,23 +85,17 @@ public class OracleListener extends AbstractDatabaseListener {
     private void trySendEvent(ChangedEvent event) {
         try {
             // 如果消费事件失败，重试
-            long now = Instant.now().toEpochMilli();
-            boolean isReTry = false;
             while (logMiner.isConnected()) {
                 try {
                     sendChangedEvent(event);
                     break;
                 } catch (QueueOverflowException e) {
-                    isReTry = true;
                     try {
                         TimeUnit.MILLISECONDS.sleep(1);
                     } catch (InterruptedException ex) {
                         logger.error(ex.getMessage(), ex);
                     }
                 }
-            }
-            if (isReTry) {
-                logger.info("重试耗时：{}ms", Instant.now().toEpochMilli() - now);
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
