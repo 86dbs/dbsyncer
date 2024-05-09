@@ -1,9 +1,9 @@
-package org.dbsyncer.common.util;
-
-import org.dbsyncer.common.CommonException;
 /**
  * DBSyncer Copyright 2020-2024 All Rights Reserved.
  */
+package org.dbsyncer.common.util;
+
+import org.dbsyncer.common.CommonException;
 import org.dbsyncer.common.column.Lexer;
 
 import java.sql.Date;
