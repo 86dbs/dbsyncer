@@ -98,17 +98,13 @@ public class MappingChecker extends AbstractChecker {
         mapping.setReadNum(NumberUtil.toInt(params.get("readNum"), mapping.getReadNum()));
         mapping.setBatchNum(NumberUtil.toInt(params.get("batchNum"), mapping.getBatchNum()));
         mapping.setThreadNum(NumberUtil.toInt(params.get("threadNum"), mapping.getThreadNum()));
-        if(StringUtils.equals(mapping.getModel(),ModelEnum.FULL.getCode())){
-            mapping.setEnableOnlyUpdate(!StringUtil.isNotBlank(params.get("enableOnlyUpdate4Full")));
-        }
+        String forceUpdate = StringUtils.equals(mapping.getModel(), ModelEnum.FULL.getCode()) ? "forceUpdate4Full" : "forceUpdate";
+        mapping.setForceUpdate(StringUtil.isBlank(params.get(forceUpdate)));
 
         // 增量配置(日志/定时)
         String incrementStrategy = params.get("incrementStrategy");
         Assert.hasText(incrementStrategy, "MappingChecker check params incrementStrategy is empty");
         String type = StringUtil.toLowerCaseFirstOne(incrementStrategy).concat("ConfigChecker");
-        if(StringUtils.equals(mapping.getModel(),ModelEnum.INCREMENT.getCode())){
-            mapping.setEnableOnlyUpdate(!StringUtil.isNotBlank(params.get("enableOnlyUpdate")));
-        }
         MappingConfigChecker checker = map.get(type);
         Assert.notNull(checker, "Checker can not be null.");
         checker.modify(mapping, params);

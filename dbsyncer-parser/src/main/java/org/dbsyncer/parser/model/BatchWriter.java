@@ -15,10 +15,10 @@ public final class BatchWriter {
     private List<Field> fields;
     private List<Map> dataList;
     private int batchSize;
-    private boolean enableOnlyUpdate;
+    private boolean forceUpdate;
 
     public BatchWriter(ConnectorInstance connectorInstance, Map<String, String> command, String tableName, String event,
-                       List<Field> fields, List<Map> dataList, int batchSize,boolean enableOnlyUpdate) {
+                       List<Field> fields, List<Map> dataList, int batchSize, boolean forceUpdate) {
         this.connectorInstance = connectorInstance;
         this.command = command;
         this.tableName = tableName;
@@ -26,7 +26,7 @@ public final class BatchWriter {
         this.fields = fields;
         this.dataList = dataList;
         this.batchSize = batchSize;
-        this.enableOnlyUpdate=enableOnlyUpdate;
+        this.forceUpdate = forceUpdate;
     }
 
     public ConnectorInstance getConnectorInstance() {
@@ -57,7 +57,7 @@ public final class BatchWriter {
         return batchSize;
     }
 
-    public boolean isEnableOnlyUpdate() {
-        return enableOnlyUpdate;
+    public boolean isForceUpdate() {
+        return forceUpdate;
     }
 }

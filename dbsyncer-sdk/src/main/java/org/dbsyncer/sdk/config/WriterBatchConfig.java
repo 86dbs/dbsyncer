@@ -27,16 +27,18 @@ public class WriterBatchConfig {
      * 集合数据
      */
     private List<Map> data;
+    /**
+     * 覆盖写入
+     */
+    private boolean forceUpdate;
 
-    private boolean enableOnlyUpdate;
-
-    public WriterBatchConfig(String tableName, String event, Map<String, String> command, List<Field> fields, List<Map> data,boolean enableOnlyUpdate) {
+    public WriterBatchConfig(String tableName, String event, Map<String, String> command, List<Field> fields, List<Map> data, boolean forceUpdate) {
         this.tableName = tableName;
         this.event = event;
         this.command = command;
         this.fields = fields;
         this.data = data;
-        this.enableOnlyUpdate=enableOnlyUpdate;
+        this.forceUpdate = forceUpdate;
     }
 
     public String getTableName() {
@@ -59,7 +61,7 @@ public class WriterBatchConfig {
         return data;
     }
 
-    public boolean isEnableOnlyUpdate() {
-        return enableOnlyUpdate;
+    public boolean isForceUpdate() {
+        return forceUpdate;
     }
 }
