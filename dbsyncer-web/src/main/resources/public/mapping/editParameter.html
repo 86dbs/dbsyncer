@@ -2,32 +2,27 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div th:fragment="content" th:if="${'Oracle' eq mapping?.sourceConnector?.config?.connectorType}">
-    <p class="text-muted">参数配置</p>
+<div th:fragment="content">
+    <p class="text-muted">策略配置</p>
 
-    <div id="paramsList" class="form-group">
+    <div class="form-group">
         <div class="row">
             <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right"><span title="区分Oracle增量同步数据字段，会将该字段设置为目标源唯一主键">ROWID</span></label>
+                <label class="col-sm-3 control-label text-right">覆盖 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="[支持]-目标表不存在该条数据时， 会执行insert， 存在，会执行update; [禁用]-不生效"></i></label>
                 <div class="col-sm-9">
-                    <select id="oracleRowId" name="ORACLE_ROW_ID" class="form-control select-control-default">
-                        <option value="" selected="selected">无</option>
-                        <!-- Mapping params -->
-                        <option th:if="${tableGroup} == null" th:each="c,s:${mapping?.targetColumn}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" th:selected="${c?.name eq mapping?.params?.get('ORACLE_ROW_ID')}"/>
-
-                        <!-- TableGroup params -->
-                        <option th:each="c,s:${tableGroup?.targetTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" th:selected="${c?.name eq tableGroup?.params?.get('ORACLE_ROW_ID')}"/>
-                    </select>
+                    <input name="forceUpdate" class="banEventSwitch" th:checked="!${mapping?.forceUpdate}" type="checkbox">
                 </div>
             </div>
-            <div class="col-md-8"></div>
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label">扩展参数</label>
+                <div class="col-sm-9">
+                    <textarea id="extInfo" name="extInfo" class="form-control dbsyncer_textarea_resize_none" maxlength="512" rows="5">{"key": "test"}</textarea>
+                </div>
+            </div>
+            <div class="col-md-4"></div>
         </div>
     </div>
 
-    <!-- 隐藏表单值 -->
-    <div class="form-group hidden">
-        <input id="params" name="params" class="form-control" type="text"/>
-    </div>
 </div>
 
 </html>

@@ -98,8 +98,7 @@ public class MappingChecker extends AbstractChecker {
         mapping.setReadNum(NumberUtil.toInt(params.get("readNum"), mapping.getReadNum()));
         mapping.setBatchNum(NumberUtil.toInt(params.get("batchNum"), mapping.getBatchNum()));
         mapping.setThreadNum(NumberUtil.toInt(params.get("threadNum"), mapping.getThreadNum()));
-        String forceUpdate = StringUtils.equals(mapping.getModel(), ModelEnum.FULL.getCode()) ? "forceUpdate4Full" : "forceUpdate";
-        mapping.setForceUpdate(StringUtil.isBlank(params.get(forceUpdate)));
+        mapping.setForceUpdate(StringUtil.isBlank(params.get("forceUpdate")));
 
         // 增量配置(日志/定时)
         String incrementStrategy = params.get("incrementStrategy");
