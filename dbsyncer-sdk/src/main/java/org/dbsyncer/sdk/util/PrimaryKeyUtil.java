@@ -41,7 +41,7 @@ public abstract class PrimaryKeyUtil {
 
         // 如果存在表字段映射关系，没有配置主键则抛出异常提示
         if (!CollectionUtils.isEmpty(table.getColumn()) && CollectionUtils.isEmpty(primaryKeys)) {
-            throw new SdkException(String.format("目标表 %s 缺少主键.", table.getName()));
+            throw new SdkException(String.format("表 %s 缺少主键.", table.getName()));
         }
         return primaryKeys;
     }

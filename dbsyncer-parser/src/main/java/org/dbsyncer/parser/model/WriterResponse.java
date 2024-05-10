@@ -1,9 +1,8 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
-import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferResponse;
+import org.dbsyncer.sdk.model.ChangedOffset;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -16,15 +15,11 @@ import java.util.Map;
  */
 public class WriterResponse extends AbstractWriter implements BufferResponse {
 
-    private ChangedEventTypeEnum typeEnum;
-
     private List<Map> dataList = new LinkedList<>();
 
     private List<ChangedOffset> offsetList = new LinkedList<>();
 
-    private String sql;
-
-    private boolean isMerged;
+    private transient boolean isMerged;
 
     @Override
     public int getTaskSize() {
@@ -36,12 +31,12 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
         return StringUtil.SYMBOL.concat(getEvent());
     }
 
-    public ChangedEventTypeEnum getTypeEnum() {
-        return typeEnum;
+    public void addData(Map data) {
+        dataList.add(data);
     }
 
-    public void setTypeEnum(ChangedEventTypeEnum typeEnum) {
-        this.typeEnum = typeEnum;
+    public void addChangedOffset(ChangedOffset changedOffset) {
+        offsetList.add(changedOffset);
     }
 
     public List<Map> getDataList() {
@@ -50,14 +45,6 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
 
     public List<ChangedOffset> getOffsetList() {
         return offsetList;
-    }
-
-    public String getSql() {
-        return sql;
-    }
-
-    public void setSql(String sql) {
-        this.sql = sql;
     }
 
     public boolean isMerged() {

@@ -53,19 +53,19 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
             switch (event.getEvent()) {
                 case ConnectorConstant.OPERTION_UPDATE:
                     // 是否支持监听修改事件
-                    processEvent(!listenerConfig.isBanUpdate(), event);
+                    processEvent(listenerConfig.isEnableUpdate(), event);
                     break;
                 case ConnectorConstant.OPERTION_INSERT:
                     // 是否支持监听新增事件
-                     processEvent(!listenerConfig.isBanInsert(), event);
+                     processEvent(listenerConfig.isEnableInsert(), event);
                     break;
                 case ConnectorConstant.OPERTION_DELETE:
                     // 是否支持监听删除事件
-                    processEvent(!listenerConfig.isBanDelete(), event);
+                    processEvent(listenerConfig.isEnableDelete(), event);
                     break;
                 case ConnectorConstant.OPERTION_ALTER:
                     // 表结构变更事件
-                    processEvent(!listenerConfig.isBanDDL(),event);
+                    processEvent(listenerConfig.isEnableDDL(),event);
                     break;
                 default:
                     break;

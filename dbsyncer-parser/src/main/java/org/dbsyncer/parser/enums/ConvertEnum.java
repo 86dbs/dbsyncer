@@ -47,6 +47,10 @@ public enum ConvertEnum {
      */
     STRING_TO_TIMESTAMP("STRING_TO_TIMESTAMP", "String转Timestamp", 0, new StringToTimestampHandler()),
     /**
+     * String转日期自定义格式
+     */
+    STRING_TO_FORMAT_DATE("STRING_TO_FORMAT_DATE", "String转Date自定义格式", 1, new StringToFormatDateHandler()),
+    /**
      * Number转String
      */
     NUMBER_TO_STRING("NUMBER_TO_STRING", "Number转String", 0, new NumberToStringHandler()),

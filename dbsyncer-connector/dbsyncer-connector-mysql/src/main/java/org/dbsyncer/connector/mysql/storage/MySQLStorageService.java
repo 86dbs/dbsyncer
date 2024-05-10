@@ -197,7 +197,7 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     private Executor getExecutor(StorageEnum type, String sharding) {
-        return tables.computeIfAbsent(sharding, (table) -> {
+        return tables.computeIfAbsent(sharding, table -> {
             Executor executor = tables.get(type.getType());
             if (executor == null) {
                 throw new NullExecutorException("未知的存储类型");

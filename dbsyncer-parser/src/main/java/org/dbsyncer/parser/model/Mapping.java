@@ -54,6 +54,9 @@ public class Mapping extends AbstractConfigModel {
     // 线程数
     private int threadNum = 10;
 
+    // 覆盖写入
+    private boolean forceUpdate = true;
+
     public String getSourceConnectorId() {
         return sourceConnectorId;
     }
@@ -136,5 +139,13 @@ public class Mapping extends AbstractConfigModel {
 
     public void setThreadNum(int threadNum) {
         this.threadNum = threadNum;
+    }
+
+    public boolean isForceUpdate() {
+        return forceUpdate;
+    }
+
+    public void setForceUpdate(boolean forceUpdate) {
+        this.forceUpdate = forceUpdate;
     }
 }

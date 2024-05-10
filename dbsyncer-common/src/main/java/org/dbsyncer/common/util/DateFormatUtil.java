@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.common.util;
 
 import org.dbsyncer.common.CommonException;
@@ -5,9 +8,7 @@ import org.dbsyncer.common.column.Lexer;
 
 import java.sql.Date;
 import java.sql.Timestamp;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -31,10 +32,15 @@ public abstract class DateFormatUtil {
     public static final DateTimeFormatter CHINESE_STANDARD_TIME_FORMATTER = DateTimeFormatter.ofPattern(
             "yyyy-MM-dd HH:mm:ss");
     /**
-     * yyyy-MM-dd'T'HH:mm:ss.SSSz
+     * yyyy-MM-dd'T'HH:mm:ss.SSSZ
      */
-    public static final DateFormat GMT_FORMATTER = new SimpleDateFormat(
-            "yyyy-MM-dd'T'HH:mm:ss.SSSz");
+    public static final DateTimeFormatter TS_TZ_WITH_MILLISECOND_FORMATTER = DateTimeFormatter.ofPattern(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    /**
+     * yyyy-MM-dd'T'HH:mm:ssZ
+     */
+    public static final DateTimeFormatter TS_TZ_FORMATTER = DateTimeFormatter.ofPattern(
+            "yyyy-MM-dd'T'HH:mm:ssZ");
     /**
      * yyyy-MM-dd
      */
@@ -117,6 +123,10 @@ public abstract class DateFormatUtil {
         return Date.valueOf(LocalDate.parse(s, DATE_FORMATTER));
     }
 
+    public static Date stringToDate(String s, DateTimeFormatter formatter) {
+        return Date.valueOf(LocalDate.parse(s, formatter));
+    }
+
     public static String timestampToString(Timestamp timestamp) {
         return timestamp.toLocalDateTime().format(CHINESE_STANDARD_TIME_FORMATTER);
     }
@@ -146,15 +156,20 @@ public abstract class DateFormatUtil {
                         LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(s)));
             }
 
+            // 2022-07-21T05:00:59+0800
+            if (s.length() == 24) {
+                return stringToTimestamp(s, TS_TZ_FORMATTER);
+            }
+
             // 2022-07-21T05:35:34.000+0800
             if (s.length() == 28) {
-                return stringToTimestamp(s, GMT_FORMATTER);
+                return stringToTimestamp(s, TS_TZ_WITH_MILLISECOND_FORMATTER);
             }
 
             // 2022-07-21T05:35:34.000+08:00
             if (s.length() == 29) {
                 s = s.replaceAll(":[^:]*$", "00");
-                return stringToTimestamp(s, GMT_FORMATTER);
+                return stringToTimestamp(s, TS_TZ_WITH_MILLISECOND_FORMATTER);
             }
 
             throw new CommonException(String.format("Can not parse val[%s] to Timestamp", s));
@@ -163,9 +178,9 @@ public abstract class DateFormatUtil {
         }
     }
 
-    public static Timestamp stringToTimestamp(String s, DateFormat formatter)
+    public static Timestamp stringToTimestamp(String s, DateTimeFormatter formatter)
             throws ParseException {
-        return new Timestamp(formatter.parse(s).getTime());
+        return Timestamp.valueOf(LocalDateTime.from(formatter.parse(s)).atZone(zoneId).toLocalDateTime());
     }
 
     public static Timestamp timeWithoutTimeZoneToTimestamp(String s) {

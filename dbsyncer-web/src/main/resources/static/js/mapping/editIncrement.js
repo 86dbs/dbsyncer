@@ -51,12 +51,12 @@ function bindMappingMetaSnapshotModifyClick(){
 
 // 绑定监听配置事件开关切换事件
 function bindMappingListenerConfigSwitchClick(){
-    $('.banEventSwitch').bootstrapSwitch({
-        onText: "禁用",
-        offText: "支持",
-        onColor: "warning",
+    $('.dbsyncer_switch').bootstrapSwitch({
+        onText: "Yes",
+        offText: "No",
+        onColor: "success",
         offColor: "info",
-        size: "small"
+        size: "normal"
     });
 }
 

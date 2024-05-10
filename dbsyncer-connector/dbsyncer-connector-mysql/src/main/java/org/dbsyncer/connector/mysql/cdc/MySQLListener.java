@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -173,23 +172,17 @@ public class MySQLListener extends AbstractDatabaseListener {
     private void trySendEvent(ChangedEvent event){
         try {
             // 如果消费事件失败，重试
-            long now = Instant.now().toEpochMilli();
-            boolean isReTry = false;
             while (client.isConnected()){
                 try {
                     sendChangedEvent(event);
                     break;
                 } catch (QueueOverflowException e) {
-                    isReTry = true;
                     try {
                         TimeUnit.MILLISECONDS.sleep(1);
                     } catch (InterruptedException ex) {
                         logger.error(ex.getMessage(), ex);
                     }
                 }
-            }
-            if (isReTry) {
-                logger.info("重试耗时：{}ms", Instant.now().toEpochMilli() - now);
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);

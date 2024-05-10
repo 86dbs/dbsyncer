@@ -43,22 +43,22 @@ public class ListenerConfig {
     /**
      * 禁用修改事件
      */
-    private boolean banUpdate;
+    private boolean enableUpdate = true;
 
     /**
      * 禁用插入事件
      */
-    private boolean banInsert;
+    private boolean enableInsert = true;
 
     /**
      * 禁用删除事件
      */
-    private boolean banDelete;
+    private boolean enableDelete = true;
 
     /**
      * 禁用ddl事件
      */
-    private boolean banDDL;
+    private boolean enableDDL = true;
 
     public ListenerConfig() {
     }
@@ -115,35 +115,35 @@ public class ListenerConfig {
         this.cron = cron;
     }
 
-    public boolean isBanUpdate() {
-        return banUpdate;
+    public boolean isEnableUpdate() {
+        return enableUpdate;
     }
 
-    public void setBanUpdate(boolean banUpdate) {
-        this.banUpdate = banUpdate;
+    public void setEnableUpdate(boolean enableUpdate) {
+        this.enableUpdate = enableUpdate;
     }
 
-    public boolean isBanInsert() {
-        return banInsert;
+    public boolean isEnableInsert() {
+        return enableInsert;
     }
 
-    public void setBanInsert(boolean banInsert) {
-        this.banInsert = banInsert;
+    public void setEnableInsert(boolean enableInsert) {
+        this.enableInsert = enableInsert;
     }
 
-    public boolean isBanDelete() {
-        return banDelete;
+    public boolean isEnableDelete() {
+        return enableDelete;
     }
 
-    public void setBanDelete(boolean banDelete) {
-        this.banDelete = banDelete;
+    public void setEnableDelete(boolean enableDelete) {
+        this.enableDelete = enableDelete;
     }
 
-    public boolean isBanDDL() {
-        return banDDL;
+    public boolean isEnableDDL() {
+        return enableDDL;
     }
 
-    public void setBanDDL(boolean banDDL) {
-        this.banDDL = banDDL;
+    public void setEnableDDL(boolean enableDDL) {
+        this.enableDDL = enableDDL;
     }
 }

@@ -98,10 +98,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Override
     protected void partition(WriterRequest request, WriterResponse response) {
         if (!CollectionUtils.isEmpty(request.getRow())) {
-            response.getDataList().add(request.getRow());
+            response.addData(request.getRow());
         }
         if (request.getChangedOffset() != null) {
-            response.getOffsetList().add(request.getChangedOffset());
+            response.addChangedOffset(request.getChangedOffset());
         }
         if (!response.isMerged()) {
             response.setTableGroupId(request.getTableGroupId());
@@ -148,10 +148,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         final ConnectorInstance tConnectorInstance = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
         final IncrementPluginContext context = new IncrementPluginContext(sConnectorInstance, tConnectorInstance, sourceTableName, targetTableName, event, sourceDataList, targetDataList);
         pluginFactory.convert(group.getPlugin(), context);
-        boolean enableOnlyUpdate = profileComponent.getSystemConfig().isEnableOnlyUpdate();
 
         // 5、批量执行同步
-        BatchWriter batchWriter = new BatchWriter(tConnectorInstance, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, generalBufferConfig.getBufferWriterCount(),enableOnlyUpdate);
+        BatchWriter batchWriter = new BatchWriter(tConnectorInstance, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, generalBufferConfig.getBufferWriterCount(), mapping.isForceUpdate());
         Result result = parserComponent.writeBatch(context, batchWriter, getExecutor());
 
         // 6.发布刷新增量点事件

@@ -176,8 +176,7 @@ public class ParserComponentImpl implements ParserComponent {
             pluginFactory.convert(group.getPlugin(), context);
 
             // 5、写入目标源
-            boolean enableOnlyUpdate = profileComponent.getSystemConfig().isEnableOnlyUpdate();
-            BatchWriter batchWriter = new BatchWriter(tConnectorInstance, command, tTableName, event, picker.getTargetFields(), target, batchSize,enableOnlyUpdate);
+            BatchWriter batchWriter = new BatchWriter(tConnectorInstance, command, tTableName, event, picker.getTargetFields(), target, batchSize, mapping.isForceUpdate());
             Result result = writeBatch(context, batchWriter, executor);
 
             // 6、更新结果
@@ -217,7 +216,7 @@ public class ParserComponentImpl implements ParserComponent {
         int total = dataList.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(batchWriter.getConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, dataList, batchWriter.isEnableOnlyUpdate()));
+            return connectorFactory.writer(batchWriter.getConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, dataList, batchWriter.isForceUpdate()));
         }
 
         // 批量任务, 拆分
@@ -239,7 +238,7 @@ public class ParserComponentImpl implements ParserComponent {
 
             executor.execute(() -> {
                 try {
-                    Result w = connectorFactory.writer(batchWriter.getConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, data,batchWriter.isEnableOnlyUpdate()));
+                    Result w = connectorFactory.writer(batchWriter.getConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, data, batchWriter.isForceUpdate()));
                     result.addSuccessData(w.getSuccessData());
                     result.addFailData(w.getFailData());
                     result.getError().append(w.getError());
