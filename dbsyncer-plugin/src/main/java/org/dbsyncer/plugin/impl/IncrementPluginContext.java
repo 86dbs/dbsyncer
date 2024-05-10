@@ -14,8 +14,8 @@ import java.util.Map;
  */
 public final class IncrementPluginContext extends AbstractPluginContext {
 
-    public IncrementPluginContext(ConnectorInstance sourceConnectorInstance, ConnectorInstance targetConnectorInstance, String sourceTableName, String targetTableName, String event, List<Map> sourceList, List<Map> targetList) {
-        super.init(sourceConnectorInstance, targetConnectorInstance, sourceTableName, targetTableName, event, sourceList, targetList);
+    public IncrementPluginContext(ConnectorInstance sourceConnectorInstance, ConnectorInstance targetConnectorInstance, String sourceTableName, String targetTableName, String event, List<Map> sourceList, List<Map> targetList, String pluginExtInfo) {
+        super.init(sourceConnectorInstance, targetConnectorInstance, sourceTableName, targetTableName, event, sourceList, targetList, pluginExtInfo);
     }
 
     @Override

@@ -113,6 +113,8 @@ public class MappingChecker extends AbstractChecker {
 
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(mapping, params);
+        // 插件参数
+        mapping.setPluginExtInfo(params.get("pluginExtInfo"));
 
         // 更新meta
         String metaSnapshot = params.get("metaSnapshot");

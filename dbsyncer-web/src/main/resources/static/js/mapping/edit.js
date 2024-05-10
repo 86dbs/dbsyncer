@@ -113,8 +113,8 @@ function bindMappingTableGroupListClick() {
 
 // 绑定下拉选择事件自动匹配相似表事件
 function bindTableSelect(){
-    var $sourceSelect = $("#sourceTable");
-    var $targetSelect = $("#targetTable");
+    const $sourceSelect = $("#sourceTable");
+    const $targetSelect = $("#targetTable");
     $sourceSelect.on('changed.bs.select',function(e){
         $targetSelect.selectpicker('val', $(this).selectpicker('val'));
     });
@@ -217,6 +217,22 @@ function bindRefreshTablesClick() {
     });
 }
 
+// 绑定插件下拉选择事件
+function bindPluginSelect() {
+    const $pluginExtInfo = $("#pluginExtInfo");
+    const $pluginId = $("#pluginId");
+    $pluginId.on('changed.bs.select',function(e){
+        if(isBlank($(this).selectpicker('val'))){
+            $pluginExtInfo.addClass("hidden");
+        }else{
+            $pluginExtInfo.removeClass("hidden");
+        }
+    });
+    if(!isBlank($pluginId.selectpicker('val'))){
+        $pluginExtInfo.removeClass("hidden");
+    }
+}
+
 $(function () {
     // 绑定同步方式切换事件
     bindMappingModelChange();
@@ -233,6 +249,8 @@ $(function () {
     bindMappingTableGroupDelClick();
     //绑定刷新数据表按钮点击事件
     bindRefreshTablesClick();
+    // 绑定插件下拉选择事件
+    bindPluginSelect();
 
     // 初始化select插件
     initSelectIndex($(".select-control-table"), -1);

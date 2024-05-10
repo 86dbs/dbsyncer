@@ -8,12 +8,18 @@
     <div class="form-group">
         <div class="row">
             <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">名称</label>
+                <label class="col-sm-3 control-label text-right">插件名称</label>
                 <div class="col-sm-9">
-                    <select id="pluginClassName" name="pluginId" class="form-control select-control-default">
+                    <select id="pluginId" name="pluginId" class="form-control select-control-default">
                         <option value="" selected="selected">无</option>
                         <option th:value="${p?.className +'_'+ p?.version}" th:text="${p?.name +'_'+ p?.version}" th:each="p,state : ${plugin}" th:selected="${tableGroup eq null and p.className eq mapping?.plugin?.className or p.className eq tableGroup?.plugin?.className}">
                     </select>
+                </div>
+            </div>
+            <div id="pluginExtInfo" class="col-md-4 hidden">
+                <label class="col-sm-3 control-label">插件参数 <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="用于插件内部使用，推荐填写JSON格式"></i></label>
+                <div class="col-sm-9">
+                    <textarea name="pluginExtInfo" class="form-control dbsyncer_textarea_resize_none" maxlength="512" rows="2" th:text="${mapping?.pluginExtInfo}"></textarea>
                 </div>
             </div>
             <div class="col-md-8"></div>
