@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <div class="form-group">
+        <label class="col-sm-2 control-label">最大连接数 <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-4">
+            <input class="form-control" name="maxActive" type="number" dbsyncer-valid="require" min="1" max="512" th:value="${connector?.config?.maxActive}?:128"/>
+        </div>
+        <label class="col-sm-2 control-label">有效期(毫秒) <strong class="driverVerifcateRequired">*</strong></label>
+        <div class="col-sm-4">
+            <input class="form-control" name="keepAlive" type="number" dbsyncer-valid="require" min="10000" max="120000" th:value="${connector?.config?.keepAlive}?:60000"/>
+        </div>
+    </div>
+</div>
+</html>

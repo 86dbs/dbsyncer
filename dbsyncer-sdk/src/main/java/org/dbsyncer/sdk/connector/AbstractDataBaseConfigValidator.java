@@ -5,6 +5,7 @@ package org.dbsyncer.sdk.connector;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.model.SqlTable;
 import org.springframework.util.Assert;
@@ -27,14 +28,20 @@ public abstract class AbstractDataBaseConfigValidator implements ConfigValidator
         String password = params.get("password");
         String url = params.get("url");
         String driverClassName = params.get("driverClassName");
+        int maxActive = NumberUtil.toInt(params.get("maxActive"), connectorConfig.getMaxActive());
+        long keepAlive = NumberUtil.toLong(params.get("keepAlive"), connectorConfig.getKeepAlive());
         Assert.hasText(username, "Username is empty.");
         Assert.hasText(password, "Password is empty.");
         Assert.hasText(url, "Url is empty.");
+        Assert.isTrue(maxActive >= 1 && maxActive <= 512, "最大连接数只允许输入1-512.");
+        Assert.isTrue(keepAlive >= 10000 && keepAlive <= 120000, "有效期只允许输入10000-120000.");
 
         connectorConfig.setUsername(username);
         connectorConfig.setPassword(password);
         connectorConfig.setUrl(url);
         connectorConfig.setDriverClassName(driverClassName);
+        connectorConfig.setMaxActive(maxActive);
+        connectorConfig.setKeepAlive(keepAlive);
     }
 
     protected void modifyDql(DatabaseConfig connectorConfig, Map<String, String> params) {

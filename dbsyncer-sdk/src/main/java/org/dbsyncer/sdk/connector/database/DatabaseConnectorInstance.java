@@ -21,7 +21,7 @@ public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConf
 
     public DatabaseConnectorInstance(DatabaseConfig config) {
         this.config = config;
-        this.dataSource = new SimpleDataSource(config.getDriverClassName(), config.getUrl(), config.getUsername(), config.getPassword());
+        this.dataSource = new SimpleDataSource(config.getDriverClassName(), config.getUrl(), config.getUsername(), config.getPassword(), config.getMaxActive(), config.getKeepAlive());
     }
 
     public <T> T execute(HandleCallback callback) {

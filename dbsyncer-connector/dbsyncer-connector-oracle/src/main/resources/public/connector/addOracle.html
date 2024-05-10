@@ -22,6 +22,7 @@
                       th:text="${connector?.config?.url} ?: 'jdbc:oracle:thin:@127.0.0.1:1521:ORCL'"></textarea>
         </div>
     </div>
+    <div th:replace="connector/addDataBaseProperties :: content"></div>
     <div class="form-group">
         <label class="col-sm-2 control-label">架构名 </label>
         <div class="col-sm-4">

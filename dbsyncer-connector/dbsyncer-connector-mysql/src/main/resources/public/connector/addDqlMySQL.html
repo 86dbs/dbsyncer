@@ -22,6 +22,7 @@
                       th:text="${connector?.config?.url}?:'jdbc:mysql://127.0.0.1:3306/test?rewriteBatchedStatements=true&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;serverTimezone=Asia/Shanghai&amp;useSSL=false&amp;verifyServerCertificate=false&amp;autoReconnect=true&amp;failOverReadOnly=false'"></textarea>
         </div>
     </div>
+    <div th:replace="connector/addDataBaseProperties :: content"></div>
 
     <!-- SQL配置 -->
     <div th:replace="connector/addSQL :: content"></div>
