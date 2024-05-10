@@ -53,7 +53,8 @@ public class TableGroupBufferActuator extends GeneralBufferActuator implements C
         return threadPoolTaskExecutor;
     }
 
-    public void buildConfig() {
+    @Override
+    protected void buildConfig() {
         super.setConfig(tableGroupBufferConfig);
         super.buildQueueConfig();
         taskKey = UUIDUtil.getUUID();

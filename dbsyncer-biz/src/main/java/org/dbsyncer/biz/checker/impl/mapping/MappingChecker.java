@@ -98,7 +98,7 @@ public class MappingChecker extends AbstractChecker {
         mapping.setReadNum(NumberUtil.toInt(params.get("readNum"), mapping.getReadNum()));
         mapping.setBatchNum(NumberUtil.toInt(params.get("batchNum"), mapping.getBatchNum()));
         mapping.setThreadNum(NumberUtil.toInt(params.get("threadNum"), mapping.getThreadNum()));
-        mapping.setForceUpdate(StringUtil.isBlank(params.get("forceUpdate")));
+        mapping.setForceUpdate(StringUtil.isNotBlank(params.get("forceUpdate")));
 
         // 增量配置(日志/定时)
         String incrementStrategy = params.get("incrementStrategy");
@@ -183,10 +183,10 @@ public class MappingChecker extends AbstractChecker {
     private void updateListenerConfig(ListenerConfig listener, Map<String, String> params) {
         Assert.notNull(listener, "ListenerConfig can not be null.");
 
-        listener.setBanUpdate(StringUtil.isNotBlank(params.get("banUpdate")));
-        listener.setBanInsert(StringUtil.isNotBlank(params.get("banInsert")));
-        listener.setBanDelete(StringUtil.isNotBlank(params.get("banDelete")));
-        listener.setBanDDL(StringUtil.isNotBlank(params.get("banDDL")));
+        listener.setEnableUpdate(StringUtil.isNotBlank(params.get("enableUpdate")));
+        listener.setEnableInsert(StringUtil.isNotBlank(params.get("enableInsert")));
+        listener.setEnableDelete(StringUtil.isNotBlank(params.get("enableDelete")));
+        listener.setEnableDDL(StringUtil.isNotBlank(params.get("enableDDL")));
     }
 
     /**
