@@ -72,4 +72,11 @@ public interface PluginContext {
      */
     List<Map> getTargetList();
 
+    /**
+     * 获取插件参数
+     *
+     * @return
+     */
+    String getPluginExtInfo();
+
 }

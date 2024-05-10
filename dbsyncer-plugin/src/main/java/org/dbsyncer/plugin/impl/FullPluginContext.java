@@ -11,8 +11,8 @@ import org.dbsyncer.plugin.AbstractPluginContext;
  */
 public final class FullPluginContext extends AbstractPluginContext {
 
-    public FullPluginContext(ConnectorInstance sourceConnectorInstance, ConnectorInstance targetConnectorInstance, String sourceTableName, String targetTableName, String event) {
-        super.init(sourceConnectorInstance, targetConnectorInstance, sourceTableName, targetTableName, event, null, null);
+    public FullPluginContext(ConnectorInstance sourceConnectorInstance, ConnectorInstance targetConnectorInstance, String sourceTableName, String targetTableName, String event, String pluginExtInfo) {
+        super.init(sourceConnectorInstance, targetConnectorInstance, sourceTableName, targetTableName, event, null, null, pluginExtInfo);
     }
 
     @Override

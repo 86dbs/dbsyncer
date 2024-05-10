@@ -22,39 +22,44 @@ public abstract class AbstractPluginContext implements PluginContext {
     /**
      * 数据源连接实例
      */
-    protected ConnectorInstance sourceConnectorInstance;
+    private ConnectorInstance sourceConnectorInstance;
 
     /**
      * 目标源连接实例
      */
-    protected ConnectorInstance targetConnectorInstance;
+    private ConnectorInstance targetConnectorInstance;
 
     /**
      * 数据源表
      */
-    protected String sourceTableName;
+    private String sourceTableName;
 
     /**
      * 目标源表
      */
-    protected String targetTableName;
+    private String targetTableName;
 
     /**
      * 同步事件（INSERT/UPDATE/DELETE）
      */
-    protected String event;
+    private String event;
 
     /**
      * 数据源数据集合
      */
-    protected List<Map> sourceList;
+    private List<Map> sourceList;
 
     /**
      * 目标源源数据集合
      */
-    protected List<Map> targetList;
+    private List<Map> targetList;
 
-    public void init(ConnectorInstance sourceConnectorInstance, ConnectorInstance targetConnectorInstance, String sourceTableName, String targetTableName, String event, List<Map> sourceList, List<Map> targetList) {
+    /**
+     * 插件参数
+     */
+    private String pluginExtInfo;
+
+    public void init(ConnectorInstance sourceConnectorInstance, ConnectorInstance targetConnectorInstance, String sourceTableName, String targetTableName, String event, List<Map> sourceList, List<Map> targetList, String pluginExtInfo) {
         this.sourceConnectorInstance = sourceConnectorInstance;
         this.targetConnectorInstance = targetConnectorInstance;
         this.sourceTableName = sourceTableName;
@@ -62,6 +67,7 @@ public abstract class AbstractPluginContext implements PluginContext {
         this.event = event;
         this.sourceList = sourceList;
         this.targetList = targetList;
+        this.pluginExtInfo = pluginExtInfo;
     }
 
     @Override
@@ -115,5 +121,10 @@ public abstract class AbstractPluginContext implements PluginContext {
 
     public void setTargetList(List<Map> targetList) {
         this.targetList = targetList;
+    }
+
+    @Override
+    public String getPluginExtInfo() {
+        return pluginExtInfo;
     }
 }
