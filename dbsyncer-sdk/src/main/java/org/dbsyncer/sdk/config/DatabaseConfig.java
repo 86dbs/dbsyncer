@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.config;
 
 import org.dbsyncer.sdk.model.ConnectorConfig;
@@ -39,6 +42,16 @@ public class DatabaseConfig extends ConnectorConfig {
      * 构架名
      */
     private String schema;
+
+    /**
+     * 最大连接数
+     */
+    private int maxActive = 128;
+
+    /**
+     * 连接有效期(ms)
+     */
+    private long keepAlive = 60000;
 
     /**
      * sql
@@ -96,6 +109,22 @@ public class DatabaseConfig extends ConnectorConfig {
 
     public void setSchema(String schema) {
         this.schema = schema;
+    }
+
+    public int getMaxActive() {
+        return maxActive;
+    }
+
+    public void setMaxActive(int maxActive) {
+        this.maxActive = maxActive;
+    }
+
+    public long getKeepAlive() {
+        return keepAlive;
+    }
+
+    public void setKeepAlive(long keepAlive) {
+        this.keepAlive = keepAlive;
     }
 
     public List<SqlTable> getSqlTables() {

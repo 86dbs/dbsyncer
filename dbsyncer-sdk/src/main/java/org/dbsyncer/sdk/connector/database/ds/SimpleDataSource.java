@@ -21,42 +21,37 @@ import java.util.logging.Logger;
 
 public class SimpleDataSource implements DataSource, AutoCloseable {
 
-    /**
-     * 默认最大连接
-     */
-    private final int MAX_IDLE = 128;
-
-    /**
-     * 从缓存队列获取连接次数
-     */
+    //从缓存队列获取连接次数
     private final int MAX_PULL_TIME = 20;
-
-    /**
-     * 活跃连接数
-     */
-    private AtomicInteger activeNum = new AtomicInteger(0);
-
-    private final ReentrantLock lock = new ReentrantLock();
-
-    private final BlockingQueue<SimpleConnection> pool = new LinkedBlockingQueue<>(MAX_IDLE);
-    /**
-     * 有效期（毫秒），默认60s
-     */
-    private final long KEEP_ALIVE = 60000;
-    /**
-     * 有效检测时间（秒），默认10s
-     */
+    // 有效检测时间（秒），默认10s
     private final int VALID_TIMEOUT_SECONDS = 10;
+    // 获取连接锁
+    private final ReentrantLock lock = new ReentrantLock();
     private String driverClassName;
     private String url;
     private String username;
     private String password;
+    // 连接池队列
+    private BlockingQueue<SimpleConnection> pool;
+    // 活跃连接数
+    private AtomicInteger activeNum;
+    // 最大连接数
+    private int maxActive;
+    // 连接有效期(ms)
+    private long keepAlive;
+    // 是否是Oracle连接
+    private boolean oracleDriver;
 
-    public SimpleDataSource(String driverClassName, String url, String username, String password) {
+    public SimpleDataSource(String driverClassName, String url, String username, String password, int maxActive, long keepAlive) {
         this.driverClassName = driverClassName;
         this.url = url;
         this.username = username;
         this.password = password;
+        this.maxActive = maxActive;
+        this.keepAlive = keepAlive;
+        oracleDriver = StringUtil.equals(driverClassName, "oracle.jdbc.OracleDriver");
+        activeNum = new AtomicInteger(0);
+        pool = new LinkedBlockingQueue<>(maxActive);
     }
 
     @Override
@@ -64,8 +59,8 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
         try {
             lock.lock();
             //如果当前连接数大于或等于最大连接数
-            if (activeNum.get() >= MAX_IDLE) {
-                throw new SdkException(String.format("数据库连接数超过上限%d，url=%s", MAX_IDLE, url));
+            if (activeNum.get() >= maxActive) {
+                throw new SdkException(String.format("数据库连接数超过上限%d，url=%s", maxActive, url));
             }
             int time = MAX_PULL_TIME;
             while (time-- > 0){
@@ -162,7 +157,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
      * @return
      */
     private boolean isExpired(SimpleConnection connection) {
-        return connection.getActiveTime() + KEEP_ALIVE < Instant.now().toEpochMilli();
+        return connection.getActiveTime() + keepAlive < Instant.now().toEpochMilli();
     }
 
     /**
@@ -171,10 +166,10 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
      * @return
      * @throws SQLException
      */
-    private SimpleConnection createConnection() throws SQLException {
+    private SimpleConnection createConnection() {
         SimpleConnection simpleConnection = null;
         try {
-            simpleConnection = new SimpleConnection(DatabaseUtil.getConnection(driverClassName, url, username, password), StringUtil.equals(driverClassName, "oracle.jdbc.OracleDriver"));
+            simpleConnection = new SimpleConnection(DatabaseUtil.getConnection(driverClassName, url, username, password), oracleDriver);
             activeNum.incrementAndGet();
         } catch (SQLException e) {
             throw new SdkException(e);

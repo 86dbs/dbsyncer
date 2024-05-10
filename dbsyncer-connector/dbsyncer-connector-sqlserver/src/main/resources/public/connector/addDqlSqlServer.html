@@ -20,6 +20,7 @@
             <textarea name="url" class="form-control dbsyncer_textarea_resize_none" maxlength="8192" dbsyncer-valid="require" rows="5" th:text="${connector?.config?.url} ?: 'jdbc:sqlserver://127.0.0.1:1433;DatabaseName=test'"></textarea>
         </div>
     </div>
+    <div th:replace="connector/addDataBaseProperties :: content"></div>
     <div class="form-group">
         <label class="col-sm-2 control-label">架构名 <strong class="driverVerifcateRequired">*</strong></label>
         <div class="col-sm-4">
