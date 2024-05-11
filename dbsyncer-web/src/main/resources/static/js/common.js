@@ -90,6 +90,72 @@ function initMultipleInputTags() {
     });
 }
 
+// ******************* 水印 ***************************
+window.onresize = function() {
+    watermark();
+}
+
+function watermark() {
+    $(".mask_div").remove();
+
+    //水印样式默认设置
+    const settings={
+        watermark_txt:"DBSyncer",
+        watermark_x:50,//水印起始位置x轴坐标
+        watermark_y:50,//水印起始位置Y轴坐标
+        watermark_rows:2000,//水印行数
+        watermark_cols:2000,//水印列数
+        watermark_x_space:70,//水印x轴间隔
+        watermark_y_space:30,//水印y轴间隔
+        watermark_color:'#aaaaaa',//水印字体颜色
+        watermark_alpha:0.25,//水印透明度
+        watermark_fontsize:'15px',//水印字体大小
+        watermark_font:'微软雅黑',//水印字体
+        watermark_width:210,//水印宽度
+        watermark_height:80,//水印长度
+        watermark_angle:15//水印倾斜度数
+    };
+
+    const water = document.body;
+    //获取页面最大宽度
+    const page_width = Math.max(water.scrollWidth,water.clientWidth);
+    //获取页面最大高度
+    const page_height = Math.max(water.scrollHeight,water.clientHeight);
+    //水印数量自适应元素区域尺寸
+    settings.watermark_cols=Math.ceil(page_width/(settings.watermark_x_space+settings.watermark_width));
+    settings.watermark_rows=Math.ceil(page_height/(settings.watermark_y_space+settings.watermark_height));
+    let x;
+    let y;
+    for (let i = 0; i < settings.watermark_rows; i++) {
+        y = settings.watermark_y + (settings.watermark_y_space + settings.watermark_height) * i;
+        for (let j = 0; j < settings.watermark_cols; j++) {
+            x = settings.watermark_x + (settings.watermark_width + settings.watermark_x_space) * j;
+            let mask_div = document.createElement('div');
+            mask_div.className = 'mask_div';
+            mask_div.innerHTML=(settings.watermark_txt);
+            mask_div.style.webkitTransform = "rotate(-" + settings.watermark_angle + "deg)";
+            mask_div.style.MozTransform = "rotate(-" + settings.watermark_angle + "deg)";
+            mask_div.style.msTransform = "rotate(-" + settings.watermark_angle + "deg)";
+            mask_div.style.OTransform = "rotate(-" + settings.watermark_angle + "deg)";
+            mask_div.style.transform = "rotate(-" + settings.watermark_angle + "deg)";
+            mask_div.style.position = "absolute";
+            mask_div.style.left = x + 'px';
+            mask_div.style.top = y + 'px';
+            mask_div.style.overflow = "hidden";
+            mask_div.style.pointerEvents='none';
+            mask_div.style.opacity = settings.watermark_alpha;
+            mask_div.style.fontSize = settings.watermark_fontsize;
+            mask_div.style.fontFamily = settings.watermark_font;
+            mask_div.style.color = settings.watermark_color;
+            mask_div.style.textAlign = "center";
+            mask_div.style.width = settings.watermark_width + 'px';
+            mask_div.style.height = settings.watermark_height + 'px';
+            mask_div.style.display = "block";
+            water.appendChild(mask_div);
+        }
+    }
+}
+
 // ******************* 扩展JS表单方法 ***************************
 $.fn.serializeJson = function () {
     var o = {};
@@ -115,6 +181,7 @@ function doLoader(url){
         if (status != 'success') {
             bootGrowl(response);
         }
+        watermark();
         $.loadingT(false);
     });
 }
