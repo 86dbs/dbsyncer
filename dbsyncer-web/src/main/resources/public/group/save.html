@@ -36,7 +36,7 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
             <div class="panel-body">
               <!-- 名称 -->
               <div class="form-group">
-                <label class="col-sm-2 control-label">名称 <strong class="driverVerifcateRequired">*</strong></label>
+                <label class="col-sm-2 control-label">名称<strong class="text-primary">*</strong></label>
                 <div class="col-sm-10">
                   <input type="hidden" name="id" id="id" th:value="${projectGroup?.id}">
                   <input class="form-control" name="name" type="text" maxlength="50" dbsyncer-valid="require" placeholder="名称" th:value="${projectGroup?.name}"/>
