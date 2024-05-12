@@ -106,7 +106,7 @@ public abstract class AbstractChecker implements Checker {
         }
         model.setPlugin(plugin);
         // 插件参数
-        model.setPluginExtInfo(params.get("pluginExtInfo"));
+        model.setPluginExtInfo(plugin != null ? params.get("pluginExtInfo") : null);
     }
 
     /**
