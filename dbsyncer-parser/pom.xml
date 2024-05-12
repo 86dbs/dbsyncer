@@ -30,12 +30,6 @@
             <artifactId>jsqlparser</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>com.scxhtb</groupId>
-            <artifactId>dbsyncer-parser-plus</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <!-- antlr4-runtime -->
         <dependency>
             <groupId>org.antlr</groupId>
