@@ -1,4 +1,5 @@
 .idea
+conf
 data
 plugins
 *.iml
