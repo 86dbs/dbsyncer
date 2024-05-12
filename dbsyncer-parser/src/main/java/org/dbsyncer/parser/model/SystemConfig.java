@@ -35,16 +35,6 @@ public class SystemConfig extends ConfigModel {
     private int refreshIntervalSeconds = 5;
 
     /**
-     * 是否启用CDN加速访问静态资源(false-关闭; true-开启）
-     */
-    private boolean enableCDN;
-
-    /**
-     * 是否记录全量数据（false-关闭; true-开启）
-     */
-    private boolean enableStorageWriteFull;
-
-    /**
      * 是否记录同步成功数据（false-关闭; true-开启）
      */
     private boolean enableStorageWriteSuccess;
@@ -58,6 +48,26 @@ public class SystemConfig extends ConfigModel {
      * 记录同步失败日志最大长度
      */
     private int maxStorageErrorLength = 2048;
+
+    /**
+     * 是否记录全量数据（false-关闭; true-开启）
+     */
+    private boolean enableStorageWriteFull;
+
+    /**
+     * 是否启用CDN加速访问静态资源(false-关闭; true-开启）
+     */
+    private boolean enableCDN;
+
+    /**
+     * 是否启用水印
+     */
+    private boolean enableWatermark;
+
+    /**
+     * 水印内容
+     */
+    private String watermark;
 
     public int getExpireDataDays() {
         return expireDataDays;
@@ -83,22 +93,6 @@ public class SystemConfig extends ConfigModel {
         this.refreshIntervalSeconds = refreshIntervalSeconds;
     }
 
-    public boolean isEnableCDN() {
-        return enableCDN;
-    }
-
-    public void setEnableCDN(boolean enableCDN) {
-        this.enableCDN = enableCDN;
-    }
-
-    public boolean isEnableStorageWriteFull() {
-        return enableStorageWriteFull;
-    }
-
-    public void setEnableStorageWriteFull(boolean enableStorageWriteFull) {
-        this.enableStorageWriteFull = enableStorageWriteFull;
-    }
-
     public boolean isEnableStorageWriteSuccess() {
         return enableStorageWriteSuccess;
     }
@@ -121,5 +115,37 @@ public class SystemConfig extends ConfigModel {
 
     public void setMaxStorageErrorLength(int maxStorageErrorLength) {
         this.maxStorageErrorLength = maxStorageErrorLength;
+    }
+
+    public boolean isEnableStorageWriteFull() {
+        return enableStorageWriteFull;
+    }
+
+    public void setEnableStorageWriteFull(boolean enableStorageWriteFull) {
+        this.enableStorageWriteFull = enableStorageWriteFull;
+    }
+
+    public boolean isEnableCDN() {
+        return enableCDN;
+    }
+
+    public void setEnableCDN(boolean enableCDN) {
+        this.enableCDN = enableCDN;
+    }
+
+    public boolean isEnableWatermark() {
+        return enableWatermark;
+    }
+
+    public void setEnableWatermark(boolean enableWatermark) {
+        this.enableWatermark = enableWatermark;
+    }
+
+    public String getWatermark() {
+        return watermark;
+    }
+
+    public void setWatermark(String watermark) {
+        this.watermark = watermark;
     }
 }

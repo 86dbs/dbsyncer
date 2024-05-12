@@ -4,17 +4,17 @@
 
 <div th:fragment="content">
     <div class="form-group">
-        <label class="col-sm-2 control-label">帐号 <strong class="driverVerifcateRequired">*</strong></label>
+        <label class="col-sm-2 control-label">帐号<strong class="text-primary">*</strong></label>
         <div class="col-sm-4">
             <input class="form-control" name="username" type="text" maxlength="32" dbsyncer-valid="require" placeholder="elastic" th:value="${connector?.config?.username}"/>
         </div>
-        <label class="col-sm-2 control-label">密码 <strong class="driverVerifcateRequired">*</strong></label>
+        <label class="col-sm-2 control-label">密码<strong class="text-primary">*</strong></label>
         <div class="col-sm-4 ">
             <input class="form-control" name="password" type="password" maxlength="32" dbsyncer-valid="require" th:value="${connector?.config?.password}"/>
         </div>
     </div>
     <div class="form-group">
-        <label class="col-sm-2 control-label">URL <i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：http://192.168.1.100:9200,http://192.168.1.200:9200"></i> <strong class="driverVerifcateRequired">*</strong></label>
+        <label class="col-sm-2 control-label">URL<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：http://192.168.1.100:9200,http://192.168.1.200:9200"></i><strong class="text-primary">*</strong></label>
         <div class="col-sm-4">
             <input class="form-control" name="url" type="text" maxlength="1024" dbsyncer-valid="require" th:value="${connector?.config?.url}?:'http://127.0.0.1:9200'"/>
         </div>

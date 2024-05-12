@@ -9,19 +9,36 @@ function submit(data) {
     });
 }
 
-$(function () {
-    $('.systemConfigSwitch').bootstrapSwitch({
+// 绑定水印开关切换事件
+function bindWatermarkSwitch() {
+    const $watermark = $("#watermark");
+    let $switch = $("#enableWatermark").bootstrapSwitch({
         onText: "Yes",
         offText: "No",
         onColor: "success",
         offColor: "info",
-        size: "normal"
+        size: "normal",
+        onSwitchChange: function (event, state) {
+            if (state) {
+                $watermark.removeClass("hidden");
+            } else {
+                $watermark.addClass("hidden");
+            }
+        }
     });
+    if ($switch.bootstrapSwitch('state')) {
+        $watermark.removeClass("hidden");
+    }
+}
+
+$(function () {
+    initSwitch();
+    bindWatermarkSwitch();
     //保存
     $("#updateSystemSubBtn").click(function () {
-        var $form = $("#configEditForm");
+        const $form = $("#configEditForm");
         if ($form.formValidate() == true) {
-            var data = $form.serializeJson();
+            const data = $form.serializeJson();
             submit(data);
         }
     });

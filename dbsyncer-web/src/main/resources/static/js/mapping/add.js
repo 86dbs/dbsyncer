@@ -9,17 +9,6 @@ function submit(data) {
     });
 }
 
-// 绑定匹配相似表复选框事件
-function bindAutoMatchTableCheckBoxClick(){
-    $('#autoMatchTableSwitch').bootstrapSwitch({
-        onText: "Yes",
-        offText: "No",
-        onColor: "success",
-        offColor: "info",
-        size: "normal"
-    });
-}
-
 $(function () {
     // 兼容IE PlaceHolder
     $('input[type="text"],input[type="password"],textarea').PlaceHolder();
@@ -28,7 +17,7 @@ $(function () {
     initSelectIndex($(".select-control"), 1);
 
     // 绑定匹配相似表复选框事件
-    bindAutoMatchTableCheckBoxClick();
+    initSwitch();
 
     //保存
     $("#mappingSubmitBtn").click(function () {

@@ -37,6 +37,7 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
@@ -45,7 +46,6 @@ import org.dbsyncer.sdk.filter.FieldResolver;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
 import org.dbsyncer.sdk.storage.StorageService;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -285,7 +285,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         if (!CollectionUtils.isEmpty(metaAll)) {
             Query query = new Query();
             query.setType(StorageEnum.DATA);
-            int expireDataDays = systemConfigService.getSystemConfigVo().getExpireDataDays();
+            int expireDataDays = systemConfigService.getSystemConfig().getExpireDataDays();
             long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireDataDays)).getTime();
             LongFilter expiredFilter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime);
             query.setBooleanFilter(new BooleanFilter().add(expiredFilter));
@@ -299,7 +299,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private void deleteExpiredLog() {
         Query query = new Query();
         query.setType(StorageEnum.LOG);
-        int expireLogDays = systemConfigService.getSystemConfigVo().getExpireLogDays();
+        int expireLogDays = systemConfigService.getSystemConfig().getExpireLogDays();
         long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireLogDays)).getTime();
         LongFilter expiredFilter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime);
         query.setBooleanFilter(new BooleanFilter().add(expiredFilter));

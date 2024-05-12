@@ -25,6 +25,9 @@ public abstract class AbstractConfigModel extends ConfigModel {
     // 插件配置
     private Plugin plugin;
 
+    // 插件参数
+    private String pluginExtInfo;
+
     public Map<String, String> getParams() {
         return params;
     }
@@ -56,6 +59,14 @@ public abstract class AbstractConfigModel extends ConfigModel {
 
     public void setPlugin(Plugin plugin) {
         this.plugin = plugin;
+    }
+
+    public String getPluginExtInfo() {
+        return pluginExtInfo;
+    }
+
+    public void setPluginExtInfo(String pluginExtInfo) {
+        this.pluginExtInfo = pluginExtInfo;
     }
 
 }

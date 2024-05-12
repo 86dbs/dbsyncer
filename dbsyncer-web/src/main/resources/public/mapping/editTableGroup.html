@@ -165,7 +165,7 @@
                                 <u data-toggle="collapse" class="dbsyncer_pointer" href="#tableGroupSuperConfig" title="该配置只对当前映射关系生效, 上一级的高级配置将失效">高级配置</u>
                             </h4>
                         </div>
-                        <div id="tableGroupSuperConfig" class="panel-body panel-collapse collapse">
+                        <div id="tableGroupSuperConfig" class="panel-body panel-collapse collapse in">
                             <!-- 参数配置 -->
                             <div th:replace="mapping/editParameter :: content"></div>
 
@@ -187,6 +187,6 @@
 </div>
 
 <script th:src="@{/js/mapping/editTableGroup.js}"></script>
-<script th:src="@{/js/mapping/editParam.js}"></script>
+<script th:src="@{/js/mapping/editPlugin.js}"></script>
 <script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
 </html>

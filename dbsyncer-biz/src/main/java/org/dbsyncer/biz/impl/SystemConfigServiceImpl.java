@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.biz.impl;
 
 import org.apache.commons.io.FileUtils;
@@ -5,7 +8,9 @@ import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.SystemConfigVo;
+import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
@@ -49,6 +54,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     @Resource
     private UserConfigService userConfigService;
 
+    @Resource
+    private AppConfig appConfig;
+
     @Override
     public String edit(Map<String, String> params) {
         ConfigModel model = systemConfigChecker.checkEditConfigModel(params);
@@ -58,7 +66,26 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     public SystemConfigVo getSystemConfigVo() {
-        return convertConfig2Vo(getSystemConfig());
+        SystemConfigVo systemConfigVo = new SystemConfigVo();
+        BeanUtils.copyProperties(getSystemConfig(), systemConfigVo);
+        systemConfigVo.setWatermark(getWatermark(systemConfigVo));
+        return systemConfigVo;
+    }
+
+    @Override
+    public SystemConfig getSystemConfig() {
+        SystemConfig config = profileComponent.getSystemConfig();
+        if (null != config) {
+            return config;
+        }
+
+        synchronized (this) {
+            config = profileComponent.getSystemConfig();
+            if (null == config) {
+                config = (SystemConfig) systemConfigChecker.checkAddConfigModel(new HashMap<>());
+            }
+            return config;
+        }
     }
 
     @Override
@@ -99,29 +126,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     @Override
-    public boolean isEnableCDN() {
-        return getSystemConfig().isEnableCDN();
+    public String getWatermark(SystemConfig systemConfig) {
+        return StringUtil.isNotBlank(systemConfig.getWatermark()) ? systemConfig.getWatermark() : appConfig.getName() + "<br />" + appConfig.getCompany();
     }
-
-    private SystemConfig getSystemConfig() {
-        SystemConfig config = profileComponent.getSystemConfig();
-        if (null != config) {
-            return config;
-        }
-
-        synchronized (this) {
-            config = profileComponent.getSystemConfig();
-            if (null == config) {
-                config = (SystemConfig) systemConfigChecker.checkAddConfigModel(new HashMap<>());
-            }
-            return config;
-        }
-    }
-
-    private SystemConfigVo convertConfig2Vo(SystemConfig systemConfig) {
-        SystemConfigVo systemConfigVo = new SystemConfigVo();
-        BeanUtils.copyProperties(systemConfig, systemConfigVo);
-        return systemConfigVo;
-    }
-
 }

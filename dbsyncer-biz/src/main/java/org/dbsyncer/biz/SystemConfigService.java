@@ -1,7 +1,11 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.SystemConfigVo;
 import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.SystemConfig;
 
 import java.io.File;
 import java.util.List;
@@ -31,6 +35,13 @@ public interface SystemConfigService {
     SystemConfigVo getSystemConfigVo();
 
     /**
+     * 获取系统配置
+     *
+     * @return
+     */
+    SystemConfig getSystemConfig();
+
+    /**
      * 获取所有配置（system、user、connector、mapping、tableGroup、meta、projectGroup）
      *
      * @return
@@ -52,9 +63,10 @@ public interface SystemConfigService {
     void refreshConfig(File file);
 
     /**
-     * 是否启用CDN加速访问静态资源
+     * 获取水印信息
      *
+     * @param systemConfig
      * @return
      */
-    boolean isEnableCDN();
+    String getWatermark(SystemConfig systemConfig);
 }

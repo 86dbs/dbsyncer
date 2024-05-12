@@ -49,17 +49,6 @@ function bindMappingMetaSnapshotModifyClick(){
     })
 }
 
-// 绑定监听配置事件开关切换事件
-function bindMappingListenerConfigSwitchClick(){
-    $('.dbsyncer_switch').bootstrapSwitch({
-        onText: "Yes",
-        offText: "No",
-        onColor: "success",
-        offColor: "info",
-        size: "normal"
-    });
-}
-
 // 生成增量点配置参数
 function createMetaSnapshotParams(){
     var snapshot = {};
@@ -74,8 +63,8 @@ function createMetaSnapshotParams(){
 $(function() {
     // 绑定增量策略切换事件
     bindMappingIncrementStrategyConfigChange();
-    // 绑定监听配置事件开关切换事件
-    bindMappingListenerConfigSwitchClick();
+    // 绑定开关切换事件
+    initSwitch();
     // 绑定增量点配置修改事件
     bindMappingMetaSnapshotModifyClick();
 });

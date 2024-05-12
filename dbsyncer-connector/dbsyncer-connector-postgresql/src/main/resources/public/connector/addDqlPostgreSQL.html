@@ -4,19 +4,19 @@
 
 <div th:fragment="content">
     <div class="form-group">
-        <label class="col-sm-2 control-label">帐号 <strong class="driverVerifcateRequired">*</strong></label>
+        <label class="col-sm-2 control-label">帐号<strong class="text-primary">*</strong></label>
         <div class="col-sm-4">
             <input class="form-control" dbsyncer-valid="require" maxlength="32" name="username" placeholder="admin"
                    th:value="${connector?.config?.username}" type="text"/>
         </div>
-        <label class="col-sm-2 control-label">密码 <strong class="driverVerifcateRequired">*</strong></label>
+        <label class="col-sm-2 control-label">密码<strong class="text-primary">*</strong></label>
         <div class="col-sm-4 ">
             <input class="form-control" dbsyncer-valid="require" maxlength="32" name="password"
                    th:value="${connector?.config?.password}" type="password"/>
         </div>
     </div>
     <div class="form-group">
-        <label class="col-sm-2 control-label">URL <strong class="driverVerifcateRequired">*</strong></label>
+        <label class="col-sm-2 control-label">URL<strong class="text-primary">*</strong></label>
         <div class="col-sm-10">
             <textarea class="form-control dbsyncer_textarea_resize_none" dbsyncer-valid="require" maxlength="1024" name="url" rows="5"
                       th:text="${connector?.config?.url} ?: 'jdbc:postgresql://127.0.0.1:5432/postgres'"></textarea>
@@ -24,7 +24,7 @@
     </div>
     <div th:replace="connector/addDataBaseProperties :: content"></div>
     <div class="form-group">
-        <label class="col-sm-2 control-label">架构名 <strong class="driverVerifcateRequired">*</strong></label>
+        <label class="col-sm-2 control-label">架构名<strong class="text-primary">*</strong></label>
         <div class="col-sm-4">
             <input class="form-control" dbsyncer-valid="require" maxlength="32" name="schema" placeholder="public"
                    th:value="${connector?.config?.schema} ?: 'public'" type="text"/>
@@ -32,10 +32,10 @@
         <div class="col-sm-6"></div>
     </div>
     <div class="form-group">
-        <label class="col-sm-2 control-label">删除Slot <i aria-hidden="true" class="fa fa-question-circle fa_gray"
+        <label class="col-sm-2 control-label">删除Slot<i aria-hidden="true" class="fa fa-question-circle fa_gray"
                                                         title="增量同步，停止驱动自动删除Slot"></i></label>
         <div class="col-sm-4">
-            <input id="dropSlotOnCloseSwitch" name="dropSlotOnClose"
+            <input class="dbsyncer_switch" name="dropSlotOnClose"
                    th:checked="${#maps.isEmpty(connector?.config?.properties) or connector?.config?.properties?.dropSlotOnClose eq 'true'}"
                    type="checkbox">
         </div>
@@ -67,13 +67,7 @@
 
     <script type="text/javascript">
         $(function () {
-            $('#dropSlotOnCloseSwitch').bootstrapSwitch({
-                onText: "Yes",
-                offText: "No",
-                onColor: "success",
-                offColor: "info",
-                size: "normal"
-            });
+            initSwitch();
             // 初始化select插件
             initSelectIndex($(".select-control"), 1);
         })

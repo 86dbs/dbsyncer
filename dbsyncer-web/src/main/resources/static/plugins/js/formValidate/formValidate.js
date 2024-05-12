@@ -23,7 +23,7 @@ $.fn.formValidate = function(opt) {
 }
 
 var formValidateMethod = function($this){
-	let errorClassName = "dbsyncerVerifcateError";
+	let errorClassName = "dbsyncer_valid_error";
 	if ($this.val() == "") {
 		$this.addClass(errorClassName).attr("data-original-title", "必填").tooltip({trigger : 'manual'}).tooltip('show');
 		return false;

@@ -147,7 +147,7 @@ public class ParserComponentImpl implements ParserComponent {
         final ConnectorInstance sConnectorInstance = connectorFactory.connect(sConfig);
         final ConnectorInstance tConnectorInstance = connectorFactory.connect(tConfig);
         final String event = ConnectorConstant.OPERTION_INSERT;
-        final FullPluginContext context = new FullPluginContext(sConnectorInstance, tConnectorInstance, sTableName, tTableName, event, mapping.getPluginExtInfo());
+        final FullPluginContext context = new FullPluginContext(sConnectorInstance, tConnectorInstance, sTableName, tTableName, event, group.getPluginExtInfo());
 
         for (; ; ) {
             if (!task.isRunning()) {
