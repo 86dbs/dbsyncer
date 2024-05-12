@@ -10,28 +10,47 @@
             </div>
         </div>
 
-        <div class="form-group">
-            <label class="col-sm-2 control-label">授权Key</label>
-            <div class="col-sm-4">
-                <input type="text" class="form-control" readonly="readonly" th:value="${key}"/>
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">1.授权KEY（复制后，请先联系DBS运营帮你生成License文件）</h3>
+            </div>
+            <div class="panel-body">
+                <div class="input-group">
+                    <input id="licenseKey" type="text" class="form-control text-primary" readonly="readonly" th:value="${key}">
+                    <span class="input-group-btn"><button id="copyBtn" class="btn btn-default" type="button" th:title="复制授权KEY">复制</button></span>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-success">
+            <div class="panel-heading">
+                <h3 class="panel-title">2.上传License文件</h3>
+            </div>
+            <div class="panel-body">
+                <div class="file-loading">
+                    <input id="fileLicense" type="file" name="files" multiple="multiple"/>
+                </div>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-12">
-                <form id="uploadForm" class="form-horizontal" role="form">
-                    <div class="form-group">
-                        <div class="file-loading">
-                            <input id="fileLicense" type="file" name="files" multiple="multiple" />
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
     </form>
 </div>
 
 <script type="text/javascript">
+    function copyText(text) {
+        const oInput = document.createElement('input');
+        oInput.value = text;
+        document.body.appendChild(oInput);
+        oInput.select();
+        document.execCommand("Copy");
+        oInput.className = 'oInput';
+        oInput.style.display = 'none';
+    }
+    $("#copyBtn").click(function () {
+        copyText($('#licenseKey').val());
+        document.execCommand("Copy");
+        bootGrowl("复制授权KEY成功！", "success");
+    })
+
     $("#fileLicense").fileinput({
         theme: 'fas',
         language: 'zh',
