@@ -10,8 +10,7 @@
 .driver_hidden_word {white-space: nowrap; overflow: hidden; text-overflow: ellipsis}
 .fa_gray {color: gray}
 .fa_blueviolet {color: blueviolet}
-.dbsyncer_btn-info { background-color: #E7EDF8;}
-.dbsyncer_btn-info.active, .dbsyncer_btn-info.focus, .dbsyncer_btn-info:active, .dbsyncer_btn-info:focus, .dbsyncer_btn-info:hover, .open>.dropdown-toggle.dbsyncer_btn-info {background-color: #D4DDED;}
+.dbsyncer_btn-info {background-color:#F9F9FD; -moz-box-shadow:1px 1px 2px lightblue; -webkit-box-shadow:1px 1px 2px lightblue; box-shadow:1px 1px 2px lightblue;}
 .dbsyncer_textarea_resize_none {resize: none; }
 /* 弹出提示框样式修改 */
 .tooltip.top .tooltip-inner{background-color: #f50505 !important;}

@@ -8,7 +8,7 @@
     <div class="form-group">
         <div class="row">
             <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">插件名称</label>
+                <label class="col-sm-3 control-label text-right">插件</label>
                 <div class="col-sm-9">
                     <select id="pluginId" name="pluginId" class="form-control select-control-default">
                         <option value="" selected="selected">无</option>
@@ -17,9 +17,9 @@
                 </div>
             </div>
             <div id="pluginExtInfo" class="col-md-4 hidden">
-                <label class="col-sm-3 control-label">插件参数<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="用于插件内部使用，推荐填写JSON格式"></i></label>
+                <label class="col-sm-3 control-label">参数<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="用于插件内部使用，推荐填写JSON格式"></i></label>
                 <div class="col-sm-9">
-                    <textarea name="pluginExtInfo" class="form-control dbsyncer_textarea_resize_none" maxlength="512" rows="2" th:text="${mapping?.pluginExtInfo}"></textarea>
+                    <input name="pluginExtInfo" class="form-control dbsyncer_textarea_resize_none" maxlength="512" rows="2" th:value="${tableGroup eq null ? mapping?.pluginExtInfo : tableGroup?.pluginExtInfo}" />
                 </div>
             </div>
             <div class="col-md-8"></div>

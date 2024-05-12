@@ -57,9 +57,6 @@ public class Mapping extends AbstractConfigModel {
     // 覆盖写入
     private boolean forceUpdate = true;
 
-    // 插件参数
-    private String pluginExtInfo;
-
     public String getSourceConnectorId() {
         return sourceConnectorId;
     }
@@ -150,13 +147,5 @@ public class Mapping extends AbstractConfigModel {
 
     public void setForceUpdate(boolean forceUpdate) {
         this.forceUpdate = forceUpdate;
-    }
-
-    public String getPluginExtInfo() {
-        return pluginExtInfo;
-    }
-
-    public void setPluginExtInfo(String pluginExtInfo) {
-        this.pluginExtInfo = pluginExtInfo;
     }
 }

@@ -21,13 +21,13 @@ public class DefaultController implements ErrorPageRegistrar {
 
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
-        model.put("enableCDN", systemConfigService.isEnableCDN());
+        model.put("enableCDN", systemConfigService.getSystemConfig().isEnableCDN());
         return "index.html";
     }
 
     @RequestMapping({"/login", "/login.html"})
     public String index(ModelMap model) {
-        model.put("enableCDN", systemConfigService.isEnableCDN());
+        model.put("enableCDN", systemConfigService.getSystemConfig().isEnableCDN());
         return "login.html";
     }
 

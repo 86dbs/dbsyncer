@@ -146,7 +146,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         // 4、插件转换
         final ConnectorInstance sConnectorInstance = connectorFactory.connect(getConnectorConfig(mapping.getSourceConnectorId()));
         final ConnectorInstance tConnectorInstance = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
-        final IncrementPluginContext context = new IncrementPluginContext(sConnectorInstance, tConnectorInstance, sourceTableName, targetTableName, event, sourceDataList, targetDataList, mapping.getPluginExtInfo());
+        final IncrementPluginContext context = new IncrementPluginContext(sConnectorInstance, tConnectorInstance, sourceTableName, targetTableName, event, sourceDataList, targetDataList, group.getPluginExtInfo());
         pluginFactory.convert(group.getPlugin(), context);
 
         // 5、批量执行同步

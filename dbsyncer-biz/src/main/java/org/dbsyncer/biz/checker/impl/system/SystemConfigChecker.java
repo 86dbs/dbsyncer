@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.biz.checker.impl.system;
 
 import org.dbsyncer.biz.checker.AbstractChecker;
@@ -48,10 +51,16 @@ public class SystemConfigChecker extends AbstractChecker {
     public ConfigModel checkEditConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "Config check params is null.");
-        params.put("enableCDN", StringUtil.isNotBlank(params.get("enableCDN")) ? "true" : "false");
-        params.put("enableStorageWriteFull", StringUtil.isNotBlank(params.get("enableStorageWriteFull")) ? "true" : "false");
         params.put("enableStorageWriteSuccess", StringUtil.isNotBlank(params.get("enableStorageWriteSuccess")) ? "true" : "false");
         params.put("enableStorageWriteFail", StringUtil.isNotBlank(params.get("enableStorageWriteFail")) ? "true" : "false");
+        params.put("enableStorageWriteFull", StringUtil.isNotBlank(params.get("enableStorageWriteFull")) ? "true" : "false");
+        params.put("enableCDN", StringUtil.isNotBlank(params.get("enableCDN")) ? "true" : "false");
+        params.put("enableWatermark", StringUtil.isNotBlank(params.get("enableWatermark")) ? "true" : "false");
+        String watermark = params.get("watermark");
+        if (StringUtil.isNotBlank(watermark)) {
+            Assert.isTrue(watermark.length() <= 64, "允许水印内容最多输入64个字.");
+        }
+        params.put("watermark", watermark);
 
         SystemConfig systemConfig = profileComponent.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");

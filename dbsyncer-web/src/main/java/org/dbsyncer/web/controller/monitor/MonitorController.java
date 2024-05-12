@@ -4,17 +4,16 @@ import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.SystemConfigService;
-import org.dbsyncer.biz.vo.AppReportMetricVo;
-import org.dbsyncer.biz.vo.HistoryStackVo;
-import org.dbsyncer.biz.vo.RestResult;
-import org.dbsyncer.biz.vo.SystemConfigVo;
-import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.biz.enums.DiskMetricEnum;
 import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.enums.StatisticEnum;
 import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.model.Sample;
+import org.dbsyncer.biz.vo.AppReportMetricVo;
+import org.dbsyncer.biz.vo.HistoryStackVo;
+import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -196,8 +195,7 @@ public class MonitorController extends BaseController {
     @GetMapping("/getRefreshIntervalSeconds")
     public RestResult getRefreshInterval() {
         try {
-            SystemConfigVo config = systemConfigService.getSystemConfigVo();
-            return RestResult.restSuccess(config.getRefreshIntervalSeconds());
+            return RestResult.restSuccess(systemConfigService.getSystemConfig().getRefreshIntervalSeconds());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());

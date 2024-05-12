@@ -15,6 +15,10 @@ public class VersionVo {
      * 版权详细
      */
     private String appCopyRight;
+    /**
+     * 水印
+     */
+    private String watermark;
 
     public VersionVo(String appName, String appCopyRight) {
         this.appName = appName;
@@ -27,5 +31,13 @@ public class VersionVo {
 
     public String getAppCopyRight() {
         return appCopyRight;
+    }
+
+    public String getWatermark() {
+        return watermark;
+    }
+
+    public void setWatermark(String watermark) {
+        this.watermark = watermark;
     }
 }

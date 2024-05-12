@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.common.config;
 
 import org.dbsyncer.common.util.StringUtil;
@@ -20,6 +23,8 @@ public class AppConfig {
     private String version;
 
     private String copyright;
+
+    private String company = "四川星河同步科技有限公司";
 
     public String getName() {
         return name;
@@ -53,4 +58,11 @@ public class AppConfig {
         this.copyright = copyright;
     }
 
+    public String getCompany() {
+        return company;
+    }
+
+    public void setCompany(String company) {
+        this.company = company;
+    }
 }

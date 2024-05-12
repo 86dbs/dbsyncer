@@ -7,7 +7,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -60,13 +59,10 @@ public class LogServiceImpl implements LogService {
             Map<String, Object> params = new HashMap();
             params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
-            params.put(ConfigConstant.CONFIG_MODEL_JSON, StringUtil.substring(error, 0, getSystemConfig().getMaxStorageErrorLength()));
+            params.put(ConfigConstant.CONFIG_MODEL_JSON, StringUtil.substring(error, 0, profileComponent.getSystemConfig().getMaxStorageErrorLength()));
             params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, Instant.now().toEpochMilli());
             storageService.add(StorageEnum.LOG, params);
         });
     }
 
-    private SystemConfig getSystemConfig() {
-        return profileComponent.getSystemConfig();
-    }
 }

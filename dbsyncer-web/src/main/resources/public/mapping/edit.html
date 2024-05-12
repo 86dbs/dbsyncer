@@ -106,7 +106,7 @@
                                 <u data-toggle="collapse" class="dbsyncer_pointer" href="#mappingSuperConfig" title="该配置使所有映射关系都生效">高级配置</u>
                             </h4>
                         </div>
-                        <div id="mappingSuperConfig" class="panel-body panel-collapse collapse">
+                        <div id="mappingSuperConfig" class="panel-body panel-collapse collapse in">
                             <!-- 全量配置 -->
                             <div th:id="mappingFullConfig" class="hidden" th:fragment="content">
                                 <div th:replace="mapping/editFull :: content"></div>
@@ -141,4 +141,5 @@
 <script th:src="@{/js/mapping/edit.js}"></script>
 <script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
 <script th:src="@{/js/mapping/editIncrement.js}"></script>
+<script th:src="@{/js/mapping/editPlugin.js}"></script>
 </html>

@@ -9,6 +9,8 @@ $(function () {
         if (data.success == true) {
             // 获取底部版权信息
             $("#appCopyRight").html(data.resultValue.appCopyRight);
+            settings.watermark_txt = data.resultValue.watermark;
+            watermark();
         }
     });
 

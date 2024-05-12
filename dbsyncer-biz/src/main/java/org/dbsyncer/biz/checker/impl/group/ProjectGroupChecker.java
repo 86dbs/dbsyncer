@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.biz.checker.impl.group;
 
 import org.dbsyncer.biz.checker.AbstractChecker;

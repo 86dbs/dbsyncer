@@ -90,31 +90,52 @@ function initMultipleInputTags() {
     });
 }
 
+// 初始化开关
+function initSwitch() {
+    $('.dbsyncer_switch').bootstrapSwitch({
+        onText: "Yes",
+        offText: "No",
+        onColor: "success",
+        offColor: "info",
+        size: "normal"
+    });
+}
+
 // ******************* 水印 ***************************
 window.onresize = function() {
     watermark();
 }
-
+window.onscroll = function() {
+    watermark();
+}
+//水印样式默认设置
+const settings={
+    watermark_txt:"",
+    watermark_x:50,//水印起始位置x轴坐标
+    watermark_y:55,//水印起始位置Y轴坐标
+    watermark_rows:2000,//水印行数
+    watermark_cols:2000,//水印列数
+    watermark_x_space:70,//水印x轴间隔
+    watermark_y_space:30,//水印y轴间隔
+    watermark_color:'#aaaaaa',//水印字体颜色
+    watermark_alpha:0.2,//水印透明度
+    watermark_fontsize:'15px',//水印字体大小
+    watermark_font:'微软雅黑',//水印字体
+    watermark_width:210,//水印宽度
+    watermark_height:80,//水印长度
+    watermark_angle:15//水印倾斜度数
+};
+let timestampWatermark;
 function watermark() {
-    $(".mask_div").remove();
-
-    //水印样式默认设置
-    const settings={
-        watermark_txt:"DBSyncer",
-        watermark_x:50,//水印起始位置x轴坐标
-        watermark_y:50,//水印起始位置Y轴坐标
-        watermark_rows:2000,//水印行数
-        watermark_cols:2000,//水印列数
-        watermark_x_space:70,//水印x轴间隔
-        watermark_y_space:30,//水印y轴间隔
-        watermark_color:'#aaaaaa',//水印字体颜色
-        watermark_alpha:0.25,//水印透明度
-        watermark_fontsize:'15px',//水印字体大小
-        watermark_font:'微软雅黑',//水印字体
-        watermark_width:210,//水印宽度
-        watermark_height:80,//水印长度
-        watermark_angle:15//水印倾斜度数
-    };
+    const now = Date.now();
+    if (timestampWatermark != null && now - timestampWatermark < 200) {
+        return;
+    }
+    if(isBlank(settings.watermark_txt)){
+        return;
+    }
+    timestampWatermark = now;
+    $(".dbsyncer_mask").remove();
 
     const water = document.body;
     //获取页面最大宽度
@@ -131,7 +152,7 @@ function watermark() {
         for (let j = 0; j < settings.watermark_cols; j++) {
             x = settings.watermark_x + (settings.watermark_width + settings.watermark_x_space) * j;
             let mask_div = document.createElement('div');
-            mask_div.className = 'mask_div';
+            mask_div.className = 'dbsyncer_mask';
             mask_div.innerHTML=(settings.watermark_txt);
             mask_div.style.webkitTransform = "rotate(-" + settings.watermark_angle + "deg)";
             mask_div.style.MozTransform = "rotate(-" + settings.watermark_angle + "deg)";

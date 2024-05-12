@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.biz.checker;
 
 import org.dbsyncer.biz.enums.SafeInfoEnum;
@@ -102,6 +105,8 @@ public abstract class AbstractChecker implements Checker {
             }
         }
         model.setPlugin(plugin);
+        // 插件参数
+        model.setPluginExtInfo(params.get("pluginExtInfo"));
     }
 
     /**

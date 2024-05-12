@@ -35,7 +35,7 @@
     <div class="form-group">
         <label class="col-sm-2 control-label">删除Slot<i aria-hidden="true" class="fa fa-question-circle fa_gray" title="增量同步，停止驱动自动删除Slot"></i></label>
         <div class="col-sm-4">
-            <input id="dropSlotOnCloseSwitch" name="dropSlotOnClose"
+            <input class="dbsyncer_switch" name="dropSlotOnClose"
                    th:checked="${#maps.isEmpty(connector?.config?.properties) or connector?.config?.properties?.dropSlotOnClose eq 'true'}"
                    type="checkbox">
         </div>
@@ -56,13 +56,7 @@
 
     <script type="text/javascript">
         $(function () {
-            $('#dropSlotOnCloseSwitch').bootstrapSwitch({
-                onText: "Yes",
-                offText: "No",
-                onColor: "success",
-                offColor: "info",
-                size: "normal"
-            });
+            initSwitch();
             // 初始化select插件
             initSelectIndex($(".select-control"), 1);
         })

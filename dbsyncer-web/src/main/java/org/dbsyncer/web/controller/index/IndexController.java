@@ -3,11 +3,10 @@
  */
 package org.dbsyncer.web.controller.index;
 
+import org.dbsyncer.biz.AppConfigService;
 import org.dbsyncer.biz.ProjectGroupService;
 import org.dbsyncer.biz.vo.ProjectGroupVo;
 import org.dbsyncer.biz.vo.RestResult;
-import org.dbsyncer.biz.vo.VersionVo;
-import org.dbsyncer.common.config.AppConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -28,7 +27,7 @@ public class IndexController {
     private ProjectGroupService projectGroupService;
 
     @Resource
-    private AppConfig appConfig;
+    private AppConfigService appConfigService;
 
     @GetMapping("")
     public String index(ModelMap model, String projectGroupId) {
@@ -48,6 +47,6 @@ public class IndexController {
     @GetMapping("/version.json")
     @ResponseBody
     public RestResult version() {
-        return RestResult.restSuccess(new VersionVo(appConfig.getName(), appConfig.getCopyright()));
+        return RestResult.restSuccess(appConfigService.getVersionInfo());
     }
 }

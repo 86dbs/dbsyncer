@@ -58,7 +58,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
     @Override
     public void flushFullData(String metaId, Result result, String event) {
         // 不记录全量数据, 只记录增量同步数据, 将异常记录到系统日志中
-        if (!getSystemConfig().isEnableStorageWriteFull()) {
+        if (!profileComponent.getSystemConfig().isEnableStorageWriteFull()) {
             // 不记录全量数据，只统计成功失败总数
             refreshTotal(metaId, result);
 
@@ -112,20 +112,17 @@ public final class FlushStrategyImpl implements FlushStrategy {
     private void flush(String metaId, Result result, String event) {
         refreshTotal(metaId, result);
 
+        SystemConfig systemConfig = profileComponent.getSystemConfig();
         // 是否写失败数据
-        if (getSystemConfig().isEnableStorageWriteFail() && !CollectionUtils.isEmpty(result.getFailData())) {
-            final String error = StringUtil.substring(result.getError().toString(), 0, getSystemConfig().getMaxStorageErrorLength());
+        if (systemConfig.isEnableStorageWriteFail() && !CollectionUtils.isEmpty(result.getFailData())) {
+            final String error = StringUtil.substring(result.getError().toString(), 0, systemConfig.getMaxStorageErrorLength());
             asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, false, result.getFailData(), error);
         }
 
         // 是否写成功数据
-        if (getSystemConfig().isEnableStorageWriteSuccess() && !CollectionUtils.isEmpty(result.getSuccessData())) {
+        if (systemConfig.isEnableStorageWriteSuccess() && !CollectionUtils.isEmpty(result.getSuccessData())) {
             asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, true, result.getSuccessData(), "");
         }
-    }
-
-    private SystemConfig getSystemConfig() {
-        return profileComponent.getSystemConfig();
     }
 
 }
