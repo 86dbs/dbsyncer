@@ -36,20 +36,21 @@
 </div>
 
 <script type="text/javascript">
-    function copyText(text) {
-        const oInput = document.createElement('input');
-        oInput.value = text;
-        document.body.appendChild(oInput);
-        oInput.select();
-        document.execCommand("Copy");
-        oInput.className = 'oInput';
-        oInput.style.display = 'none';
-    }
-    $("#copyBtn").click(function () {
-        copyText($('#licenseKey').val());
-        document.execCommand("Copy");
-        bootGrowl("复制授权KEY成功！", "success");
-    })
+    document.getElementById("copyBtn").addEventListener('click', async event => {
+        if (!navigator.clipboard) {
+            // Clipboard API not available
+            bootGrowl("非常抱歉，当前浏览器不支持复制授权KEY，请手动复制", "danger");
+            return;
+        }
+        try {
+            //Get the copied text
+            const text = document.getElementById("licenseKey").value;
+            await navigator.clipboard.writeText(text);
+            bootGrowl("复制授权KEY成功！", "success");
+        } catch (err) {
+            console.error('Failed to copy!', err);
+        }
+    });
 
     $("#fileLicense").fileinput({
         theme: 'fas',
