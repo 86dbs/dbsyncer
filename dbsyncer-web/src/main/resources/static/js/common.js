@@ -70,7 +70,6 @@ function initSelectIndex($select, $selectedIndex){
 }
 function initSelect($select){
     return $select.selectpicker({
-        "style":'dbsyncer_btn-info',
         "title":"请选择",
         "actionsBox":true,
         "liveSearch":true,
