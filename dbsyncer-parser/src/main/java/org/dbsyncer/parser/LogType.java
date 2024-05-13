@@ -276,7 +276,9 @@ public interface LogType {
     enum UserLog implements LogType {
         INSERT("80", "新增"),
         UPDATE("81", "修改"),
-        DELETE("82", "删除");
+        DELETE("82", "删除"),
+        UPLOAD_LICENSE_FILE("83", "上传授权许可文件"),
+        UPLOAD_LICENSE_FILE_ERROR("84", "上传授权许可文件失败");
 
         private String type;
         private String message;

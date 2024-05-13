@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="container">
+    <form th:if="${#strings.isEmpty(key)}" class="form-horizontal" role="form">
+        <div class="row text-center">
+            <div class="page-header">
+                <h3>功能暂未开放</h3>
+            </div>
+        </div>
+    </form>
+
+    <form th:if="${not #strings.isEmpty(key)}" class="form-horizontal" role="form">
+        <div class="row text-center">
+            <div class="page-header">
+                <h3>授权许可</h3>
+            </div>
+        </div>
+
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">1.复制授权KEY（请发送给 <a href="javascript:;" id="myService" class="text-success"><span class='fa fa-wechat'></span>售前客服</a> 帮您生成License文件）</h3>
+            </div>
+            <div class="panel-body">
+                <div class="input-group">
+                    <input id="licenseKey" type="text" class="form-control text-primary" readonly="readonly" th:value="${key}">
+                    <span class="input-group-btn"><button id="copyBtn" class="btn btn-default" type="button" th:title="复制授权KEY"><i class="fa fa-copy"></i>&nbsp;复制</button></span>
+                </div>
+                <div id="qrcode" class="hidden"></div>
+            </div>
+        </div>
+        <div class="panel panel-success">
+            <div class="panel-heading">
+                <h3 class="panel-title">2.上传License文件</h3>
+            </div>
+            <div class="panel-body">
+                <div class="file-loading">
+                    <input id="fileLicense" type="file" name="files" multiple="multiple"/>
+                </div>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+<script th:src="@{/js/license/license.js}"></script>
+</html>
