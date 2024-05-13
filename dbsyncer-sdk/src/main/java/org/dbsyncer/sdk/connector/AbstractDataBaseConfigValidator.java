@@ -12,6 +12,7 @@ import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 关系型数据库连接配置校验器
@@ -28,8 +29,8 @@ public abstract class AbstractDataBaseConfigValidator implements ConfigValidator
         String password = params.get("password");
         String url = params.get("url");
         String driverClassName = params.get("driverClassName");
-        int maxActive = NumberUtil.toInt(params.get("maxActive"), connectorConfig.getMaxActive());
-        long keepAlive = NumberUtil.toLong(params.get("keepAlive"), connectorConfig.getKeepAlive());
+        int maxActive = NumberUtil.toInt(Objects.toString(params.get("maxActive")), connectorConfig.getMaxActive());
+        long keepAlive = NumberUtil.toLong(Objects.toString(params.get("keepAlive")), connectorConfig.getKeepAlive());
         Assert.hasText(username, "Username is empty.");
         Assert.hasText(password, "Password is empty.");
         Assert.hasText(url, "Url is empty.");
