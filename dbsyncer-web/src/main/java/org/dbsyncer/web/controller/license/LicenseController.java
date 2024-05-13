@@ -4,10 +4,10 @@
 package org.dbsyncer.web.controller.license;
 
 import org.apache.commons.io.FileUtils;
-import org.dbsyncer.biz.LicenseService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.sdk.spi.LicenseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -34,7 +34,8 @@ public class LicenseController {
 
     @RequestMapping("")
     public String index(ModelMap model) {
-        model.put("key", "aaaaaaaaaaaaaaaaa");
+        model.put("key", licenseService.getKey());
+        model.put("status", licenseService.getStatus());
         return "license/license";
     }
 

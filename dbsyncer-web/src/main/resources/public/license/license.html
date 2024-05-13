@@ -12,13 +12,14 @@
 
         <div class="panel panel-info">
             <div class="panel-heading">
-                <h3 class="panel-title">1.授权KEY（复制后，请先联系DBS运营帮你生成License文件）</h3>
+                <h3 class="panel-title">1.授权KEY（请复制给 <a href="javascript:;" id="myService" class="text-success"><span class='fa fa-wechat'></span>售前客服</a> 帮您生成License文件）</h3>
             </div>
             <div class="panel-body">
                 <div class="input-group">
                     <input id="licenseKey" type="text" class="form-control text-primary" readonly="readonly" th:value="${key}">
                     <span class="input-group-btn"><button id="copyBtn" class="btn btn-default" type="button" th:title="复制授权KEY"><i class="fa fa-copy"></i>&nbsp;复制</button></span>
                 </div>
+                <div id="qrcode" class="hidden"></div>
             </div>
         </div>
         <div class="panel panel-success">
@@ -35,38 +36,5 @@
     </form>
 </div>
 
-<script type="text/javascript">
-    document.getElementById("copyBtn").addEventListener('click', async event => {
-        if (!navigator.clipboard) {
-            // Clipboard API not available
-            bootGrowl("非常抱歉，当前浏览器不支持复制授权KEY，请手动复制", "danger");
-            return;
-        }
-        try {
-            //Get the copied text
-            const text = document.getElementById("licenseKey").value;
-            await navigator.clipboard.writeText(text);
-            bootGrowl("复制授权KEY成功！", "success");
-        } catch (err) {
-            console.error('Failed to copy!', err);
-        }
-    });
-
-    $("#fileLicense").fileinput({
-        theme: 'fas',
-        language: 'zh',
-        uploadUrl: $basePath + '/license/upload',
-        enctype: 'multipart/form-data',
-        removeFromPreviewOnError: true, //当选择的文件不符合规则时，例如不是指定后缀文件、大小超出配置等，选择的文件不会出现在预览框中，只会显示错误信息
-        minFileCount: 1, //每次多次上载允许的最小文件数。如果设置为0，则表示文件数是可选的
-        maxFileCount: 1, //表示允许同时上传的最大文件个数 如果设置为0，则表示允许的文件数不受限制
-        showUpload: true,//不展示上传按钮
-        validateInitialCount: true,//是否在验证minFileCount和包含初始预览文件计数（服务器上载文件）maxFileCount
-    }).on("fileuploaded", function (event, data, previewId, index) {
-        if (!data.response.success) {
-            bootGrowl(data.response.resultValue, "danger");
-        }
-        doLoader("/license");
-    });
-</script>
+<script th:src="@{/js/license/license.js}"></script>
 </html>
