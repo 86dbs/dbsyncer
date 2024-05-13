@@ -37,6 +37,10 @@ $(function () {
         try {
             //Get the copied text
             const text = document.getElementById("licenseKey").value;
+            if (isBlank(text)) {
+                bootGrowl("功能暂未开放.", "danger");
+                return;
+            }
             await navigator.clipboard.writeText(text);
             bootGrowl("复制授权KEY成功！", "success");
         } catch (err) {

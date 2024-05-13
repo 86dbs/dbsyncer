@@ -3,7 +3,15 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div class="container">
-    <form class="form-horizontal" role="form">
+    <form th:if="${#strings.isEmpty(key)}" class="form-horizontal" role="form">
+        <div class="row text-center">
+            <div class="page-header">
+                <h3>功能暂未开放</h3>
+            </div>
+        </div>
+    </form>
+
+    <form th:if="${not #strings.isEmpty(key)}" class="form-horizontal" role="form">
         <div class="row text-center">
             <div class="page-header">
                 <h3>授权许可</h3>
@@ -12,7 +20,7 @@
 
         <div class="panel panel-info">
             <div class="panel-heading">
-                <h3 class="panel-title">1.授权KEY（请复制给 <a href="javascript:;" id="myService" class="text-success"><span class='fa fa-wechat'></span>售前客服</a> 帮您生成License文件）</h3>
+                <h3 class="panel-title">1.复制授权KEY（请发送给 <a href="javascript:;" id="myService" class="text-success"><span class='fa fa-wechat'></span>售前客服</a> 帮您生成License文件）</h3>
             </div>
             <div class="panel-body">
                 <div class="input-group">
