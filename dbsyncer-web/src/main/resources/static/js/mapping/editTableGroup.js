@@ -32,12 +32,21 @@ function initFieldMappingParams(){
     $("#fieldMapping").val(JSON.stringify(row));
 }
 
+// 绑定表格拖拽事件
+function bindFieldMappingDrop() {
+    $("#fieldMappingList").tableDnD({
+        onDrop: function(table, row) {
+            initFieldMappingParams();
+        }
+    });
+}
+
 // 获取选择的CheckBox[value]
-function getCheckedBoxSize($checkbox){
+function getCheckedBoxElements($checkbox){
     let checked = [];
     $checkbox.each(function(){
         if($(this).prop('checked')){
-            checked.push($(this).attr("id"));
+            checked.push($(this).parent().parent().parent());
         }
     });
     return checked;
@@ -71,7 +80,7 @@ function bindFieldMappingCheckBoxClick(){
     }).on('ifUnchecked', function (event) {
         $checkbox.iCheck('uncheck');
     }).on('ifChanged', function (event) {
-        $delBtn.prop('disabled', getCheckedBoxSize($('.fieldMappingDeleteCheckbox')).length < 1);
+        $delBtn.prop('disabled', getCheckedBoxElements($checkbox).length < 1);
     });
 
     // 初始化icheck插件
@@ -82,7 +91,7 @@ function bindFieldMappingCheckBoxClick(){
         // 阻止tr触发click事件
         event.stopPropagation();
         event.cancelBubble=true;
-        $delBtn.prop('disabled', getCheckedBoxSize($checkbox).length < 1);
+        $delBtn.prop('disabled', getCheckedBoxElements($checkbox).length < 1);
     });
 }
 // 绑定字段映射表格点击事件
@@ -138,10 +147,11 @@ function bindFieldMappingAddClick($sourceSelect, $targetSelect){
         if(repeated){ return; }
 
         let index = $tr.size();
-        let trHtml = "<tr title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td></td><td><input id='fieldIndex_"+ (index + 1) +"' type='checkbox' class='fieldMappingDeleteCheckbox' /></td></tr>";
+        let trHtml = "<tr id='fieldMapping_"+ (index + 1) +"' title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td></td><td><input type='checkbox' class='fieldMappingDeleteCheckbox' /></td></tr>";
         $fieldMappingList.append(trHtml);
 
         initFieldMappingParams();
+        bindFieldMappingDrop();
         bindFieldMappingListClick();
         bindFieldMappingCheckBoxClick();
         bindFieldMappingDelClick();
@@ -152,11 +162,11 @@ function bindFieldMappingDelClick(){
     let $fieldMappingDelBtn = $("#fieldMappingDelBtn");
     $fieldMappingDelBtn.unbind("click");
     $fieldMappingDelBtn.click(function () {
-        let ids = getCheckedBoxSize($('.fieldMappingDeleteCheckbox'));
-        if (ids.length > 0) {
-            let len = ids.length;
-            for(i = 0; i < len; i++){
-                $("#" + ids[i]).parent().parent().parent().remove();
+        let elements = getCheckedBoxElements($('.fieldMappingDeleteCheckbox'));
+        if (elements.length > 0) {
+            let len = elements.length;
+            for(let i = 0; i < len; i++){
+                elements[i].remove();
             }
             $fieldMappingDelBtn.prop('disabled', true);
             initFieldMappingParams();
@@ -171,6 +181,8 @@ function backMappingPage($this){
 $(function() {
     // 绑定表字段关系点击事件
     initFieldMappingParams();
+    // 绑定表格拖拽事件
+    bindFieldMappingDrop();
     // 绑定下拉选择事件自动匹配相似字段事件
     bindTableFieldSelect();
     // 绑定刷新表字段事件
@@ -184,8 +196,7 @@ $(function() {
     $("#tableGroupSubmitBtn").click(function () {
         let $form = $("#tableGroupModifyForm");
         if ($form.formValidate() == true) {
-            let data = $form.serializeJson();
-            submit(data);
+            submit($form.serializeJson());
         }
     });
 
