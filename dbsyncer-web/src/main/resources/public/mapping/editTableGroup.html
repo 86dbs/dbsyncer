@@ -135,11 +135,11 @@
                                     </tr>
                                     </thead>
                                     <tbody id="fieldMappingList">
-                                        <tr title='双击设置/取消主键' th:each="f,s:${tableGroup?.fieldMapping}">
+                                        <tr th:id="'fieldMapping_'+${s.index + 1}" title='双击设置/取消主键' th:each="f,s:${tableGroup?.fieldMapping}">
                                             <td>[[${f?.source?.name}]]</td>
                                             <td>[[${f?.target?.name}]]</td>
                                             <td><i th:if="${f?.target?.pk}" title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i></td>
-                                            <td><input th:id="'fieldIndex_'+${s.index + 1}" type="checkbox" class="fieldMappingDeleteCheckbox" /></td>
+                                            <td><input type="checkbox" class="fieldMappingDeleteCheckbox" /></td>
                                         </tr>
                                     </tbody>
                                 </table>

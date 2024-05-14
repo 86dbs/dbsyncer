@@ -99,7 +99,6 @@ function bindMappingTableGroupListClick() {
 
     // 绑定表格拖拽事件
     $tableGroupList.tableDnD({
-        onDragClass: "reorder_rows_onDragClass",
         onDrop: function(table, row) {
             var newData = [];
             var $trList = $(table).find("tr");
