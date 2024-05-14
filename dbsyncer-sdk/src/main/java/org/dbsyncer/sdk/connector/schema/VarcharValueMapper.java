@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.connector.schema;
 
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -24,12 +27,9 @@ public class VarcharValueMapper extends AbstractValueMapper<String> {
             return new String((byte[]) val);
         }
 
-        if (val instanceof Integer) {
-            return Integer.toString((Integer) val);
-        }
-
-        if (val instanceof Long) {
-            return Long.toString((Long) val);
+        if (val instanceof Number) {
+            Number number = (Number) val;
+            return number.toString();
         }
 
         if (val instanceof LocalDateTime) {
