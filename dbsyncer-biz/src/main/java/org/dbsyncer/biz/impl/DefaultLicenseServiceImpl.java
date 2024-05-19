@@ -31,4 +31,9 @@ public final class DefaultLicenseServiceImpl implements LicenseService {
     public ProductInfo getProductInfo() {
         return null;
     }
+
+    @Override
+    public void updateLicense() {
+
+    }
 }

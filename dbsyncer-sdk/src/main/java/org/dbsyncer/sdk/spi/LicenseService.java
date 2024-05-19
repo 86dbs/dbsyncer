@@ -30,4 +30,9 @@ public interface LicenseService {
      * @return
      */
     ProductInfo getProductInfo();
+
+    /**
+     * 更新授权
+     */
+    void updateLicense();
 }
