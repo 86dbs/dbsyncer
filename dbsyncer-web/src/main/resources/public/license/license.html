@@ -14,7 +14,7 @@
     <form th:if="${not #strings.isEmpty(key)}" class="form-horizontal" role="form">
         <div class="row text-center">
             <div class="page-header">
-                <h3>授权许可<img draggable="false" title="授权成功" th:src="@{'/img/check-circle.png'}"></h3>
+                <h3>授权许可<img th:if="${productInfo?.products?.size() gt 0}" draggable="false" title="授权成功" th:src="@{'/img/check-circle.png'}"></h3>
             </div>
         </div>
         <div class="form-group">
