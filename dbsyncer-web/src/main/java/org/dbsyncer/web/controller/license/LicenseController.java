@@ -35,7 +35,7 @@ public class LicenseController {
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("key", licenseService.getKey());
-        model.put("status", licenseService.getStatus());
+        model.put("productInfo", licenseService.getProductInfo());
         return "license/license";
     }
 

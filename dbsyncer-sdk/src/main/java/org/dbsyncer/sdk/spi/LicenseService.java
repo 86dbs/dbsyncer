@@ -3,6 +3,9 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.model.ProductInfo;
+
 import java.io.File;
 
 /**
@@ -25,12 +28,16 @@ public interface LicenseService {
      *
      * @return
      */
-    String getKey();
+    default String getKey() {
+        return StringUtil.EMPTY;
+    }
 
     /**
-     * 获取授权状态
+     * 获取授权信息
      *
      * @return
      */
-    int getStatus();
+    default ProductInfo getProductInfo() {
+        return null;
+    }
 }
