@@ -3,7 +3,11 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.model.ProductInfo;
 import org.dbsyncer.sdk.spi.LicenseService;
+
+import java.io.File;
 
 /**
  * @Author AE86
@@ -12,4 +16,19 @@ import org.dbsyncer.sdk.spi.LicenseService;
  */
 public final class DefaultLicenseServiceImpl implements LicenseService {
 
+    @Override
+    public String getLicensePath() {
+        return new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar).append("conf")
+                .append(File.separatorChar).toString();
+    }
+
+    @Override
+    public String getKey() {
+        return StringUtil.EMPTY;
+    }
+
+    @Override
+    public ProductInfo getProductInfo() {
+        return null;
+    }
 }
