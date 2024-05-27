@@ -15,12 +15,12 @@ import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -80,7 +80,7 @@ public class TableGroupChecker extends AbstractChecker {
         this.modifyConfigModel(tableGroup, params);
 
         // 匹配相似字段映射关系
-        matchSimilarFieldMapping(tableGroup);
+        matchFieldMapping(tableGroup);
 
         // 合并配置
         mergeConfig(mapping, tableGroup);
@@ -177,7 +177,7 @@ public class TableGroupChecker extends AbstractChecker {
         }
     }
 
-    private void matchSimilarFieldMapping(TableGroup tableGroup) {
+    private void matchFieldMapping(TableGroup tableGroup) {
         List<Field> sCol = tableGroup.getSourceTable().getColumn();
         List<Field> tCol = tableGroup.getTargetTable().getColumn();
         if (CollectionUtils.isEmpty(sCol) || CollectionUtils.isEmpty(tCol)) {
