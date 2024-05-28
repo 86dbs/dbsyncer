@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.impl.LicenseServiceImpl;
+import org.dbsyncer.biz.impl.DefaultLicenseServiceImpl;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -26,6 +26,6 @@ public class BizConfiguration {
         for (LicenseService s : services) {
             return s;
         }
-        return new LicenseServiceImpl();
+        return new DefaultLicenseServiceImpl();
     }
 }

@@ -35,7 +35,7 @@ public class LicenseController {
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("key", licenseService.getKey());
-        model.put("status", licenseService.getStatus());
+        model.put("productInfo", licenseService.getProductInfo());
         return "license/license";
     }
 
@@ -48,6 +48,7 @@ public class LicenseController {
                 File dest = new File(licenseService.getLicensePath() + filename);
                 FileUtils.deleteQuietly(dest);
                 FileUtils.copyInputStreamToFile(files[0].getInputStream(), dest);
+                licenseService.updateLicense();
                 logger.info("{}:{}", LogType.UserLog.UPLOAD_LICENSE_FILE.getMessage(), filename);
                 logService.log(LogType.UserLog.UPLOAD_LICENSE_FILE);
             }

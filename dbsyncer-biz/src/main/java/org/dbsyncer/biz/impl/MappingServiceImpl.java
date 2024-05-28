@@ -27,6 +27,8 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -277,20 +279,30 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             return;
         }
 
-        // 存在交集
-        List<String> sTables = s.getTable().stream().map(table -> table.getName()).collect(Collectors.toList());
-        List<String> tTables = t.getTable().stream().map(table -> table.getName()).collect(Collectors.toList());
-        sTables.retainAll(tTables);
-        if (!CollectionUtils.isEmpty(sTables)) {
-            Map<String, String> params = new HashMap<>();
-            params.put("mappingId", mapping.getId());
-            sTables.forEach(table -> {
-                params.put("sourceTable", table);
-                params.put("targetTable", table);
-                tableGroupService.add(params);
-            });
-            mappingChecker.updateMeta(mapping);
+        // 匹配相似表
+        for (Table sourceTable : s.getTable()) {
+            if (StringUtil.isBlank(sourceTable.getName())) {
+                continue;
+            }
+            for (Table targetTable : t.getTable()) {
+                if (StringUtil.isBlank(targetTable.getName())) {
+                    continue;
+                }
+                // 目标源表不支持视图
+                if (TableTypeEnum.isView(targetTable.getType())) {
+                    continue;
+                }
+                if (StringUtil.equalsIgnoreCase(sourceTable.getName(), targetTable.getName())) {
+                    Map<String, String> params = new HashMap<>();
+                    params.put("mappingId", mapping.getId());
+                    params.put("sourceTable", sourceTable.getName());
+                    params.put("targetTable", targetTable.getName());
+                    tableGroupService.add(params);
+                    break;
+                }
+            }
         }
+        mappingChecker.updateMeta(mapping);
     }
 
     private void clearMetaIfFinished(String metaId) {
