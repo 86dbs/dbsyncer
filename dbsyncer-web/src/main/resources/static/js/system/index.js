@@ -9,10 +9,9 @@ function submit(data) {
     });
 }
 
-// 绑定水印开关切换事件
-function bindWatermarkSwitch() {
-    const $watermark = $("#watermark");
-    let $switch = $("#enableWatermark").bootstrapSwitch({
+// 绑定开关切换事件
+function bindToggleSwitch($switch, $toggle) {
+    let $s = $switch.bootstrapSwitch({
         onText: "Yes",
         offText: "No",
         onColor: "success",
@@ -20,20 +19,21 @@ function bindWatermarkSwitch() {
         size: "normal",
         onSwitchChange: function (event, state) {
             if (state) {
-                $watermark.removeClass("hidden");
+                $toggle.removeClass("hidden");
             } else {
-                $watermark.addClass("hidden");
+                $toggle.addClass("hidden");
             }
         }
     });
-    if ($switch.bootstrapSwitch('state')) {
-        $watermark.removeClass("hidden");
+    if ($s.bootstrapSwitch('state')) {
+        $toggle.removeClass("hidden");
     }
 }
 
 $(function () {
     initSwitch();
-    bindWatermarkSwitch();
+    bindToggleSwitch($("#enableStorageWriteFail"), $("#maxStorageErrorLength"));
+    bindToggleSwitch($("#enableWatermark"), $("#watermark"));
     //保存
     $("#updateSystemSubBtn").click(function () {
         const $form = $("#configEditForm");

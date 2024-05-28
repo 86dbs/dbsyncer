@@ -33,33 +33,35 @@
                 </div>
             </div>
             <div class="form-group">
-                <label class="col-sm-2 control-label">记录同步成功数据</label>
+                <label class="col-sm-2 control-label">CDN静态资源</label>
                 <div class="col-sm-4">
-                    <input class="dbsyncer_switch" name="enableStorageWriteSuccess" th:checked="${config?.enableStorageWriteSuccess}" type="checkbox" />
+                    <input class="dbsyncer_switch" name="enableCDN" th:checked="${config?.enableCDN}" type="checkbox" />
                 </div>
-                <label class="col-sm-2 control-label">记录同步失败数据</label>
-                <div class="col-sm-4">
-                    <input class="dbsyncer_switch" name="enableStorageWriteFail" th:checked="${config?.enableStorageWriteFail}" type="checkbox" />
-                </div>
-            </div>
-            <div class="form-group">
                 <label class="col-sm-2 control-label">刷新监控频率(秒)<strong class="text-primary">*</strong></label>
                 <div class="col-sm-4">
                     <input type="number" class="form-control" min="1" max="60" dbsyncer-valid="require" name="refreshIntervalSeconds" th:value="${config?.refreshIntervalSeconds}"/>
                 </div>
-                <label class="col-sm-2 control-label">记录同步失败日志长度<strong class="text-primary">*</strong></label>
-                <div class="col-sm-4">
-                    <input type="number" class="form-control" min="1024" max="8192" dbsyncer-valid="require" name="maxStorageErrorLength" th:value="${config?.maxStorageErrorLength}"/>
-                </div>
             </div>
             <div class="form-group">
+                <label class="col-sm-2 control-label">记录同步成功数据</label>
+                <div class="col-sm-4">
+                    <input class="dbsyncer_switch" name="enableStorageWriteSuccess" th:checked="${config?.enableStorageWriteSuccess}" type="checkbox" />
+                </div>
                 <label class="col-sm-2 control-label">记录全量数据<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="不推荐在生产环境下开启，可在源库数据量较少时使用，一般用于测试"></i></label>
                 <div class="col-sm-4">
                     <input class="dbsyncer_switch" name="enableStorageWriteFull" th:checked="${config?.enableStorageWriteFull}" type="checkbox" />
                 </div>
-                <label class="col-sm-2 control-label">CDN静态资源</label>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">记录同步失败数据</label>
                 <div class="col-sm-4">
-                    <input class="dbsyncer_switch" name="enableCDN" th:checked="${config?.enableCDN}" type="checkbox" />
+                    <input id="enableStorageWriteFail" name="enableStorageWriteFail" th:checked="${config?.enableStorageWriteFail}" type="checkbox" />
+                </div>
+                <div id="maxStorageErrorLength" class="hidden">
+                    <label class="col-sm-2 control-label">记录同步失败日志长度<strong class="text-primary">*</strong></label>
+                    <div class="col-sm-4">
+                        <input type="number" class="form-control" min="1024" max="8192" dbsyncer-valid="require" name="maxStorageErrorLength" th:value="${config?.maxStorageErrorLength}"/>
+                    </div>
                 </div>
             </div>
             <div class="form-group">
