@@ -17,7 +17,7 @@ import java.util.ServiceLoader;
  * @Date 2024-05-14 01:30
  */
 @Configuration
-public class BizConfiguration {
+public class BizSupportConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
