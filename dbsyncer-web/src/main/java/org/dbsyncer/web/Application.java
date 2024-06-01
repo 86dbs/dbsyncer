@@ -21,18 +21,7 @@ import java.util.Properties;
 @EnableAsync
 @EnableScheduling
 @EnableCaching
-@SpringBootApplication(scanBasePackages = {
-        "org.dbsyncer.biz",
-        "org.dbsyncer.cluster",
-        "org.dbsyncer.common",
-        "org.dbsyncer.manager",
-        "org.dbsyncer.connector.base",
-        "org.dbsyncer.parser",
-        "org.dbsyncer.plugin",
-        "org.dbsyncer.sdk",
-        "org.dbsyncer.storage",
-        "org.dbsyncer.web"
-})
+@SpringBootApplication(scanBasePackages = "org.dbsyncer")
 public class Application {
 
     public static void main(String[] args) throws IOException {
