@@ -16,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public final class TimeRegistry {
 
+    public static final String GENERAL_BUFFER_ACTUATOR_TPS = "general.buffer.actuator.tps";
+
     private Map<String, TimeMetric> metricMap = new ConcurrentHashMap<>();
 
     public TimeMetric meter(String name) {

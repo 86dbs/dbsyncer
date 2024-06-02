@@ -174,7 +174,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Override
     protected void meter(TimeRegistry timeRegistry, long count) {
         // 统计执行器同步效率TPS
-        timeRegistry.meter("general.buffer.actuator.tps").add(count);
+        timeRegistry.meter(TimeRegistry.GENERAL_BUFFER_ACTUATOR_TPS).add(count);
     }
 
     @Override
