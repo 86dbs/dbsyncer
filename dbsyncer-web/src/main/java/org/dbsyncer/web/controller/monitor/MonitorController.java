@@ -45,7 +45,7 @@ public class MonitorController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final static int COUNT = 24;
+    private final static int COUNT = 36;
     private HistoryStackVo cpu = new HistoryStackVo();
     private HistoryStackVo memory = new HistoryStackVo();
     private HistoryStackVo tps = new HistoryStackVo();
@@ -98,11 +98,15 @@ public class MonitorController extends BaseController {
         return "monitor/retry.html";
     }
 
+    @Scheduled(fixedRate = 2000)
+    public void recordTPS() {
+        addHistoryStack(tps, timeRegistry.meter(TimeRegistry.GENERAL_BUFFER_ACTUATOR_TPS).getSecondsRate());
+    }
+
     @Scheduled(fixedRate = 5000)
     public void recordHistoryStackMetric() {
         recordHistoryStackMetric(MetricEnum.CPU_USAGE, cpu, cpuHistoryStackValueFormatterImpl);
         recordHistoryStackMetric(MetricEnum.MEMORY_USED, memory, memoryHistoryStackValueFormatterImpl);
-        addHistoryStack(tps, timeRegistry.meter(TimeRegistry.GENERAL_BUFFER_ACTUATOR_TPS).getSecondsRate());
     }
 
     @Scheduled(fixedRate = 10000)
