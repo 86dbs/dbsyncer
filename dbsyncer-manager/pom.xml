@@ -11,13 +11,6 @@
     <artifactId>dbsyncer-manager</artifactId>
 
     <dependencies>
-        <!-- Cluster 集群服务 -->
-        <dependency>
-            <groupId>org.ghi</groupId>
-            <artifactId>dbsyncer-cluster</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
         <!-- Parser 解析器 -->
         <dependency>
             <groupId>org.ghi</groupId>

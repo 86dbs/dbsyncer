@@ -1,6 +1,9 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.parser.convert.handler;
 
-import org.dbsyncer.common.util.AESEncyptUtil;
+import org.dbsyncer.common.util.AESUtil;
 import org.dbsyncer.parser.convert.AbstractHandler;
 
 /**
@@ -14,7 +17,7 @@ public class AesDecryptHandler extends AbstractHandler {
 
     @Override
     public Object convert(String args, Object value) throws Exception {
-        return AESEncyptUtil.decrypt(String.valueOf(value), args);
+        return AESUtil.decrypt(String.valueOf(value), args);
     }
 
 }

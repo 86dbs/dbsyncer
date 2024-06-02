@@ -13,7 +13,6 @@
 
     <modules>
         <module>dbsyncer-biz</module>
-        <module>dbsyncer-cluster</module>
         <module>dbsyncer-common</module>
         <module>dbsyncer-connector</module>
         <module>dbsyncer-manager</module>

@@ -12,5 +12,5 @@ import org.dbsyncer.sdk.spi.DeploymentService;
  * @Author AE86
  * @Date 2023-11-19 23:29
  */
-public class StandaloneProvider implements DeploymentService {
+public final class StandaloneProvider implements DeploymentService {
 }
