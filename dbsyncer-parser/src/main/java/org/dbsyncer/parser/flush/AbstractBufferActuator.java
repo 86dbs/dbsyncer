@@ -4,6 +4,7 @@
 package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.common.config.BufferActuatorConfig;
+import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.parser.ProfileComponent;
@@ -47,6 +48,9 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private TimeRegistry timeRegistry;
 
     public AbstractBufferActuator() {
         int level = 5;
@@ -130,7 +134,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      *
      * @param map
      */
-    protected void process(Map<String, Response> map){
+    protected void process(Map<String, Response> map) {
         map.forEach((key, response) -> {
             long now = Instant.now().toEpochMilli();
             try {
@@ -149,6 +153,16 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      * @param request
      */
     protected abstract void offerFailed(BlockingQueue<Request> queue, Request request);
+
+    /**
+     * 统计消费 TPS
+     *
+     * @param timeRegistry
+     * @param count
+     */
+    protected void meter(TimeRegistry timeRegistry, long count) {
+
+    }
 
     @Override
     public void offer(BufferRequest request) {
@@ -212,6 +226,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
         process(map);
         map.clear();
+        meter(timeRegistry, batchCounter.get());
         map = null;
         batchCounter = null;
     }
