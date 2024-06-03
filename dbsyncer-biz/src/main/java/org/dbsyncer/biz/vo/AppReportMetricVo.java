@@ -12,6 +12,8 @@ public class AppReportMetricVo extends AppReportMetric {
 
     private HistoryStackVo memory;
 
+    private HistoryStackVo tps;
+
     public List<MetricResponseVo> getMetrics() {
         return metrics;
     }
@@ -34,5 +36,13 @@ public class AppReportMetricVo extends AppReportMetric {
 
     public void setMemory(HistoryStackVo memory) {
         this.memory = memory;
+    }
+
+    public HistoryStackVo getTps() {
+        return tps;
+    }
+
+    public void setTps(HistoryStackVo tps) {
+        this.tps = tps;
     }
 }

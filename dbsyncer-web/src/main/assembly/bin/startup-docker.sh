@@ -45,4 +45,4 @@ SERVER_OPTS="$SERVER_OPTS -Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib -
 
 # execute command
 echo $SERVER_OPTS
-java $SERVER_OPTS -Dfile.encoding=utf8 $APP
+java $SERVER_OPTS -Dfile.encoding=UTF-8 $APP

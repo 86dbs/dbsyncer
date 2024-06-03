@@ -12,6 +12,7 @@ import org.dbsyncer.biz.model.Sample;
 import org.dbsyncer.biz.vo.AppReportMetricVo;
 import org.dbsyncer.biz.vo.HistoryStackVo;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
@@ -44,9 +45,10 @@ public class MonitorController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final static int COUNT = 24;
+    private final static int COUNT = 60;
     private HistoryStackVo cpu = new HistoryStackVo();
     private HistoryStackVo memory = new HistoryStackVo();
+    private HistoryStackVo tps = new HistoryStackVo();
 
     @Resource
     private MonitorService monitorService;
@@ -75,6 +77,9 @@ public class MonitorController extends BaseController {
     @Resource
     private HistoryStackValueFormatter memoryHistoryStackValueFormatterImpl;
 
+    @Resource
+    private TimeRegistry timeRegistry;
+
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
         Map<String, String> params = getParams(request);
@@ -91,6 +96,11 @@ public class MonitorController extends BaseController {
         model.put("meta", monitorService.getMetaVo(metaId));
         model.put("message", dataSyncService.getMessageVo(metaId, messageId));
         return "monitor/retry.html";
+    }
+
+    @Scheduled(fixedRate = 2000)
+    public void recordTPS() {
+        addHistoryStack(tps, timeRegistry.meter(TimeRegistry.GENERAL_BUFFER_ACTUATOR_TPS).getSecondsRate());
     }
 
     @Scheduled(fixedRate = 5000)
@@ -184,6 +194,7 @@ public class MonitorController extends BaseController {
             AppReportMetricVo reportMetric = monitorService.queryAppReportMetric(list);
             reportMetric.setCpu(cpu);
             reportMetric.setMemory(memory);
+            reportMetric.setTps(tps);
             return RestResult.restSuccess(reportMetric);
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
@@ -243,9 +254,13 @@ public class MonitorController extends BaseController {
         MetricResponse metricResponse = getMetricResponse(metricEnum.getCode());
         List<Sample> measurements = metricResponse.getMeasurements();
         if (!CollectionUtils.isEmpty(measurements)) {
-            addHistoryStack(stackVo.getValue(), formatter.formatValue(measurements.get(0).getValue()));
-            addHistoryStack(stackVo.getName(), DateFormatUtil.getCurrentTime());
+            addHistoryStack(stackVo, formatter.formatValue(measurements.get(0).getValue()));
         }
+    }
+
+    private void addHistoryStack(HistoryStackVo stackVo, Object value) {
+        addHistoryStack(stackVo.getValue(), value);
+        addHistoryStack(stackVo.getName(), DateFormatUtil.getCurrentTime());
     }
 
     private void addHistoryStack(List<Object> stack, Object value) {

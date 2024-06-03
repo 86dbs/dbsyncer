@@ -5,6 +5,7 @@ package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.config.GeneralBufferConfig;
+import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -168,6 +169,12 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Override
     protected void offerFailed(BlockingQueue<WriterRequest> queue, WriterRequest request) {
         throw new QueueOverflowException("缓存队列已满");
+    }
+
+    @Override
+    protected void meter(TimeRegistry timeRegistry, long count) {
+        // 统计执行器同步效率TPS
+        timeRegistry.meter(TimeRegistry.GENERAL_BUFFER_ACTUATOR_TPS).add(count);
     }
 
     @Override

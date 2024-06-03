@@ -1,7 +1,7 @@
 package org.dbsyncer.biz.vo;
 
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class HistoryStackVo {
 
@@ -10,8 +10,8 @@ public class HistoryStackVo {
     private List<Object> value;
 
     public HistoryStackVo() {
-        this.name = new LinkedList<>();
-        this.value = new LinkedList<>();
+        this.name = new CopyOnWriteArrayList<>();
+        this.value = new CopyOnWriteArrayList<>();
     }
 
     public List<Object> getName() {

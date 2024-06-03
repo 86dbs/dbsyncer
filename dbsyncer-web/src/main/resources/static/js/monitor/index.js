@@ -259,6 +259,50 @@ function showLog($logList, arr, append) {
     return html;
 }
 
+// 执行器TPS历史
+function showTPSChart(tps) {
+    let option = {
+        title: {
+            show: true,
+            text: '执行器(TPS)',
+            x: 'center',
+            y: 'bottom'
+        },
+        tooltip: {
+            trigger: 'item',
+            formatter: "{b} : {c}/秒完成数"
+        },
+        xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: tps.name
+        },
+        yAxis: {
+            type: 'value'
+        },
+        series: [{
+            data: tps.value,
+            type: 'line',
+            itemStyle: {
+                color: 'rgb(255, 70, 131)'
+            },
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    {
+                        offset: 0,
+                        color: 'rgb(255, 158, 68)'
+                    },
+                    {
+                        offset: 1,
+                        color: 'rgb(255, 70, 131)'
+                    }
+                ])
+            },
+        }]
+    };
+    echarts.init(document.getElementById('tpsChart')).setOption(option);
+}
+
 // 堆积数据
 function showQueueChart(queueUp, queueCapacity) {
     let option = {
@@ -307,40 +351,6 @@ function showQueueChart(queueUp, queueCapacity) {
 
 // 事件分类
 function showEventChart(success, fail, ins, upd, del) {
-    let option = {
-        title: {
-            text: '事件分类',
-            left: 'center'
-        },
-        tooltip: {
-            trigger: 'item'
-        },
-        legend: {
-            orient: 'vertical',
-            left: 'left',
-        },
-        series: [
-            {
-                name: '事件',
-                type: 'pie',
-                radius: '50%',
-                data: [
-                    {value: upd, name: '更新'},
-                    {value: ins, name: '插入'},
-                    {value: del, name: '删除'}
-                ],
-                emphasis: {
-                    itemStyle: {
-                        shadowBlur: 10,
-                        shadowOffsetX: 0,
-                        shadowColor: 'rgba(0, 0, 0, 0.5)'
-                    }
-                }
-            }
-        ]
-    };
-    echarts.init(document.getElementById('eventChart')).setOption(option);
-
     $("#totalSpan").html(success + fail);
     $("#successSpan").html(success);
     $("#failSpan").html(fail);
@@ -472,6 +482,7 @@ function showChartTable() {
         if (data.success == true) {
             let report = data.resultValue;
             showEventChart(report.success, report.fail, report.insert, report.update, report.delete);
+            showTPSChart(report.tps);
             showQueueChart(report.queueUp, report.queueCapacity);
             showStorageChart(report.storageQueueUp, report.storageQueueCapacity);
             showCpuChart(report.cpu);
