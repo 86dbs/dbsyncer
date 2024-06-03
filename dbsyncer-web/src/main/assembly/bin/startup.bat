@@ -9,7 +9,7 @@ for %%F in ("%~dp0\..\") do set "DBS_HOME=%%~dpF"
 echo DBS_HOME=%DBS_HOME%
 cd ../
 
-set SERVER_OPTS=-Xms1024m -Xmx1024m -Xss1m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m
+set SERVER_OPTS=-Xms2048m -Xmx2048m -Xss256k -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m
 rem debug model
 rem set SERVER_OPTS=%SERVER_OPTS% -Djava.compiler=NONE -Xnoagent -Xdebug -Xrunjdwp:transport=dt_socket,address=15005,server=y,suspend=n
 rem set IPv4
@@ -33,4 +33,4 @@ set SERVER_OPTS=%SERVER_OPTS% -agentpath:%ENCRYPT_FILE%
 set SERVER_OPTS=%SERVER_OPTS% -Djava.ext.dirs="%JAVA_HOME%\jre\lib\ext;%DBS_HOME%lib"
 set SERVER_OPTS=%SERVER_OPTS% -Dspring.config.location=%DBS_HOME%conf\application.properties
 echo %SERVER_OPTS%
-java %SERVER_OPTS% -Dfile.encoding=GBK org.dbsyncer.web.Application
+java %SERVER_OPTS% -Dfile.encoding=UTF-8 org.dbsyncer.web.Application

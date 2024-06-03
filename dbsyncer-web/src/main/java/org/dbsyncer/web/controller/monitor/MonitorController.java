@@ -45,7 +45,7 @@ public class MonitorController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final static int COUNT = 36;
+    private final static int COUNT = 60;
     private HistoryStackVo cpu = new HistoryStackVo();
     private HistoryStackVo memory = new HistoryStackVo();
     private HistoryStackVo tps = new HistoryStackVo();
