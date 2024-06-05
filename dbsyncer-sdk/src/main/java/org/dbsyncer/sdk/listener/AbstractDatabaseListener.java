@@ -64,7 +64,11 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
                 switch (event.getEvent()) {
                     case ConnectorConstant.OPERTION_UPDATE:
                     case ConnectorConstant.OPERTION_INSERT:
-                        queryDqlData(dqlMapper, changedEvent.getDataList());
+                        try {
+                            queryDqlData(dqlMapper, changedEvent.getDataList());
+                        } catch (Exception e) {
+                            return;
+                        }
                         break;
                     default:
                         break;
@@ -108,7 +112,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             StringBuilder querySql = new StringBuilder(sql);
             String temp = sql.toUpperCase();
             boolean notContainsWhere = !StringUtil.contains(temp, " WHERE ");
-            querySql.append(notContainsWhere ? " WHERE " : " AND ");
+            querySql.append(notContainsWhere ? " WHERE " : StringUtil.EMPTY);
             PrimaryKeyUtil.buildSql(querySql, primaryKeys, quotation, " AND ", " = ? ", notContainsWhere);
             DqlMapper dqlMapper = new DqlMapper(instance, sqlName, querySql.toString(), column, getPrimaryKeyIndexArray(column, primaryKeys));
             if (!dqlMap.containsKey(tableName)) {
