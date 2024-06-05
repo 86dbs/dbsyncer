@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.listener;
 
+import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -121,21 +123,21 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
 
             for (Map<String, Object> row : data) {
                 if (forceUpdate) {
-                    changeEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
+                    trySendEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
                     continue;
                 }
 
                 Object eventValue = StringUtil.toString(row.get(eventFieldName));
                 if (update.contains(eventValue)) {
-                    changeEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
+                    trySendEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
                     continue;
                 }
                 if (insert.contains(eventValue)) {
-                    changeEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_INSERT, row));
+                    trySendEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_INSERT, row));
                     continue;
                 }
                 if (delete.contains(eventValue)) {
-                    changeEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_DELETE, row));
+                    trySendEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_DELETE, row));
                 }
             }
             // 更新记录点
@@ -156,6 +158,22 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
             snapshot.put(index + CURSOR, StringUtil.join(cursors, ","));
         }
 
+    }
+
+    private void trySendEvent(ChangedEvent event){
+        // 如果消费事件失败，重试
+        while (running){
+            try {
+                changeEvent(event);
+                break;
+            } catch (QueueOverflowException e) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep(1);
+                } catch (InterruptedException ex) {
+                    logger.error(ex.getMessage(), ex);
+                }
+            }
+        }
     }
 
     public void setCommands(List<TableGroupQuartzCommand> commands) {
