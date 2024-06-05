@@ -4,6 +4,7 @@
 package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
@@ -13,7 +14,6 @@ import org.dbsyncer.sdk.listener.event.ScanChangedEvent;
 import org.dbsyncer.sdk.model.Point;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
-import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,7 +125,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
                     continue;
                 }
 
-                Object eventValue = row.get(eventFieldName);
+                Object eventValue = StringUtil.toString(row.get(eventFieldName));
                 if (update.contains(eventValue)) {
                     changeEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
                     continue;
