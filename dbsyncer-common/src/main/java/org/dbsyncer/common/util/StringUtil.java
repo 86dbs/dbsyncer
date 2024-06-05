@@ -92,7 +92,7 @@ public abstract class StringUtil {
     }
 
     public static String toString(Object obj) {
-        return obj == null ? "" : String.valueOf(obj);
+        return obj == null ? EMPTY : String.valueOf(obj);
     }
 
     /**
