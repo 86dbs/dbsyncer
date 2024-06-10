@@ -11,10 +11,14 @@ import org.dbsyncer.biz.model.MappingReportMetric;
 import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.model.MetricResponseInfo;
 import org.dbsyncer.biz.model.Sample;
+import org.dbsyncer.biz.vo.HistoryStackVo;
+import org.dbsyncer.common.metric.Bucket;
+import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.BufferActuator;
@@ -23,11 +27,11 @@ import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.storage.StorageService;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +40,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,6 +50,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @Author AE86
@@ -73,6 +79,9 @@ public class MetricReporter implements ScheduledTaskJob {
 
     @Resource
     private StorageService storageService;
+
+    @Resource
+    private TimeRegistry timeRegistry;
 
     private volatile boolean running;
 
@@ -133,6 +142,8 @@ public class MetricReporter implements ScheduledTaskJob {
         // 持久化任务
         report.setStorageQueueUp(storageBufferActuator.getQueue().size());
         report.setStorageQueueCapacity(storageBufferActuator.getQueueCapacity());
+        // 执行器TPS
+        report.setTps(getOneMinBufferActuatorRate());
         return report;
     }
 
@@ -160,6 +171,21 @@ public class MetricReporter implements ScheduledTaskJob {
         } finally {
             running = false;
         }
+    }
+
+    /**
+     * 获取执行器TPS
+     *
+     * @return
+     */
+    private HistoryStackVo getOneMinBufferActuatorRate() {
+        Bucket[] buckets = timeRegistry.meter(TimeRegistry.GENERAL_BUFFER_ACTUATOR_TPS).getBucketAll();
+        HistoryStackVo vo = new HistoryStackVo();
+        Stream.of(buckets).sorted(Comparator.comparing(Bucket::getTime)).forEach(b -> {
+            vo.addName(DateFormatUtil.timestampToString(new Timestamp(b.getTime()), DateFormatUtil.TIME_FORMATTER));
+            vo.addValue(b.get());
+        });
+        return vo;
     }
 
     /**

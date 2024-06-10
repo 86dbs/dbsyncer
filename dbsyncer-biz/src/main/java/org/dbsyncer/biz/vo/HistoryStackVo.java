@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.biz.vo;
 
 import java.util.List;
@@ -28,5 +31,13 @@ public class HistoryStackVo {
 
     public void setValue(List<Object> value) {
         this.value = value;
+    }
+
+    public void addValue(Object value) {
+        this.value.add(value);
+    }
+
+    public void addName(String name) {
+        this.name.add(name);
     }
 }
