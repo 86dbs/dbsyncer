@@ -1,6 +1,11 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.biz.model;
 
-public class AppReportMetric extends MappingReportMetric{
+import org.dbsyncer.biz.vo.HistoryStackVo;
+
+public class AppReportMetric extends MappingReportMetric {
 
     /**
      * 待处理数
@@ -21,6 +26,11 @@ public class AppReportMetric extends MappingReportMetric{
      * 持久化队列长度
      */
     private long storageQueueCapacity;
+
+    /**
+     * 统计执行器TPS
+     */
+    private HistoryStackVo tps;
 
     public long getQueueUp() {
         return queueUp;
@@ -52,5 +62,13 @@ public class AppReportMetric extends MappingReportMetric{
 
     public void setStorageQueueCapacity(long storageQueueCapacity) {
         this.storageQueueCapacity = storageQueueCapacity;
+    }
+
+    public HistoryStackVo getTps() {
+        return tps;
+    }
+
+    public void setTps(HistoryStackVo tps) {
+        this.tps = tps;
     }
 }

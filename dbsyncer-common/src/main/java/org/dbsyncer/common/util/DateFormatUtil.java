@@ -128,7 +128,11 @@ public abstract class DateFormatUtil {
     }
 
     public static String timestampToString(Timestamp timestamp) {
-        return timestamp.toLocalDateTime().format(CHINESE_STANDARD_TIME_FORMATTER);
+        return timestampToString(timestamp, CHINESE_STANDARD_TIME_FORMATTER);
+    }
+
+    public static String timestampToString(Timestamp timestamp, DateTimeFormatter formatter) {
+        return timestamp.toLocalDateTime().format(formatter);
     }
 
     public static LocalTime stringToLocalTime(String s) {

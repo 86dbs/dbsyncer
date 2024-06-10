@@ -14,6 +14,12 @@ public final class Bucket {
 
     private LongAdder longAdder = new LongAdder();
 
+    private long time;
+
+    public Bucket(long time) {
+        this.time = time;
+    }
+
     public void add(long count) {
         longAdder.add(count);
     }
@@ -22,7 +28,12 @@ public final class Bucket {
         return longAdder.sum();
     }
 
-    public void reset() {
+    public void reset(long time) {
+        this.time = time;
         this.longAdder.reset();
+    }
+
+    public long getTime() {
+        return time;
     }
 }

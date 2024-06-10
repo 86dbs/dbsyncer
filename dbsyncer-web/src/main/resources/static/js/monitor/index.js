@@ -261,10 +261,11 @@ function showLog($logList, arr, append) {
 
 // 执行器TPS历史
 function showTPSChart(tps) {
+    const title = tps.average > 0 ? '执行器TPS, 平均:'+ tps.average + '/秒' : '执行器TPS';
     let option = {
         title: {
             show: true,
-            text: '执行器(TPS)',
+            text: title,
             x: 'center',
             y: 'bottom'
         },

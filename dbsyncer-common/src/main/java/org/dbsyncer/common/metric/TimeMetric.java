@@ -34,7 +34,7 @@ public class TimeMetric {
     /**
      * 目标槽位的位置
      */
-    private volatile Integer targetBucketPosition;
+    private volatile int position;
 
     /**
      * 接近目标槽位最新时间
@@ -61,59 +61,49 @@ public class TimeMetric {
      */
     public TimeMetric(int bucketSize, int slice) {
         this.bucketSize = bucketSize;
+        this.position = bucketSize > 3 ? bucketSize - 3 : bucketSize - 1;
         this.slice = slice;
-        this.latestPassedTime = System.currentTimeMillis() - (2 * slice);
+        long now = System.currentTimeMillis();
+        this.latestPassedTime = now - (2 * slice);
         this.timeSliceUsed = 3 * slice;
-        this.targetBucketPosition = getTargetBucketPosition(System.currentTimeMillis());
         this.enterNextBucketLock = new ReentrantLock();
         this.buckets = new Bucket[bucketSize];
         for (int i = 0; i < bucketSize; i++) {
-            this.buckets[i] = new Bucket();
+            this.buckets[i] = new Bucket(now);
         }
     }
 
     public void add(long count) {
         long passTime = System.currentTimeMillis();
-        Bucket currentBucket = buckets[targetBucketPosition];
         if (passTime - latestPassedTime < slice) {
-            currentBucket.add(count);
+            buckets[position].add(count);
             return;
         }
 
         if (enterNextBucketLock.isLocked() && passTime - latestPassedTime < timeSliceUsed) {
-            currentBucket.add(count);
+            buckets[position].add(count);
             return;
         }
 
         try {
             enterNextBucketLock.lock();
             if (passTime - latestPassedTime < slice) {
-                currentBucket.add(count);
+                buckets[position].add(count);
                 return;
             }
 
-            int nextTargetBucketPosition = getTargetBucketPosition(passTime);
-            Bucket nextBucket = buckets[nextTargetBucketPosition];
-            if (nextBucket.equals(currentBucket)) {
-                if (passTime - latestPassedTime >= slice) {
-                    latestPassedTime = passTime;
-                }
-            } else {
-                nextBucket.reset();
-                targetBucketPosition = nextTargetBucketPosition;
-                latestPassedTime = passTime;
-            }
+            position = position + 1 >= bucketSize ? 0 : position + 1;
+            Bucket nextBucket = buckets[position];
+            nextBucket.reset(passTime);
             nextBucket.add(count);
+            latestPassedTime = passTime;
         } finally {
             enterNextBucketLock.unlock();
         }
     }
 
-    public long getSecondsRate() {
-        return System.currentTimeMillis() - latestPassedTime < slice ? buckets[targetBucketPosition].get() : 0L;
+    public Bucket[] getBucketAll() {
+        return buckets;
     }
 
-    private Integer getTargetBucketPosition(long now) {
-        return (int) (now / slice) % bucketSize;
-    }
 }
