@@ -41,11 +41,15 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -181,10 +185,21 @@ public class MetricReporter implements ScheduledTaskJob {
     private HistoryStackVo getOneMinBufferActuatorRate() {
         Bucket[] buckets = timeRegistry.meter(TimeRegistry.GENERAL_BUFFER_ACTUATOR_TPS).getBucketAll();
         HistoryStackVo vo = new HistoryStackVo();
-        Stream.of(buckets).sorted(Comparator.comparing(Bucket::getTime)).forEach(b -> {
-            vo.addName(DateFormatUtil.timestampToString(new Timestamp(b.getTime()), DateFormatUtil.TIME_FORMATTER));
-            vo.addValue(b.get());
-        });
+        Instant now = Instant.now();
+        long oneMin = now.minus(1, ChronoUnit.MINUTES).toEpochMilli();
+        // 只显示1分钟内
+        Map<String, Long> map = new HashMap<>();
+        Stream.of(buckets).filter(b -> b.getTime() >= oneMin)
+                .sorted(Comparator.comparing(Bucket::getTime))
+                .forEach(b -> map.put(DateFormatUtil.timestampToString(new Timestamp(b.getTime()), DateFormatUtil.TIME_FORMATTER), b.get())
+                );
+        for (int i = 0; i < buckets.length; i++) {
+            long milli = now.minus(buckets.length - i, ChronoUnit.SECONDS).toEpochMilli();
+            String key = DateFormatUtil.timestampToString(new Timestamp(milli), DateFormatUtil.TIME_FORMATTER);
+            vo.addName(key);
+            vo.addValue(map.containsKey(key) ? map.get(key) : 0L);
+        }
+        vo.setAverage(Math.floor(map.values().stream().mapToInt(v -> v.intValue()).average().orElse(0)));
         return vo;
     }
 

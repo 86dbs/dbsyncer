@@ -12,6 +12,8 @@ public class HistoryStackVo {
 
     private List<Object> value;
 
+    private double average;
+
     public HistoryStackVo() {
         this.name = new CopyOnWriteArrayList<>();
         this.value = new CopyOnWriteArrayList<>();
@@ -39,5 +41,13 @@ public class HistoryStackVo {
 
     public void addName(String name) {
         this.name.add(name);
+    }
+
+    public double getAverage() {
+        return average;
+    }
+
+    public void setAverage(double average) {
+        this.average = average;
     }
 }
