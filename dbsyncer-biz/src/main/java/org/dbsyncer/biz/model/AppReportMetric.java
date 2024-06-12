@@ -4,6 +4,9 @@
 package org.dbsyncer.biz.model;
 
 import org.dbsyncer.biz.vo.HistoryStackVo;
+import org.dbsyncer.biz.vo.MetricResponseVo;
+
+import java.util.List;
 
 public class AppReportMetric extends MappingReportMetric {
 
@@ -31,6 +34,12 @@ public class AppReportMetric extends MappingReportMetric {
      * 统计执行器TPS
      */
     private HistoryStackVo tps;
+
+    private HistoryStackVo cpu;
+
+    private HistoryStackVo memory;
+
+    private List<MetricResponseVo> metrics;
 
     public long getQueueUp() {
         return queueUp;
@@ -70,5 +79,29 @@ public class AppReportMetric extends MappingReportMetric {
 
     public void setTps(HistoryStackVo tps) {
         this.tps = tps;
+    }
+
+    public HistoryStackVo getCpu() {
+        return cpu;
+    }
+
+    public void setCpu(HistoryStackVo cpu) {
+        this.cpu = cpu;
+    }
+
+    public HistoryStackVo getMemory() {
+        return memory;
+    }
+
+    public void setMemory(HistoryStackVo memory) {
+        this.memory = memory;
+    }
+
+    public List<MetricResponseVo> getMetrics() {
+        return metrics;
+    }
+
+    public void setMetrics(List<MetricResponseVo> metrics) {
+        this.metrics = metrics;
     }
 }

@@ -10,9 +10,9 @@ import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.enums.DiskMetricEnum;
 import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.enums.StatisticEnum;
+import org.dbsyncer.biz.model.AppReportMetric;
 import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.model.Sample;
-import org.dbsyncer.biz.vo.AppReportMetricVo;
 import org.dbsyncer.biz.vo.HistoryStackVo;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -184,7 +184,7 @@ public class MonitorController extends BaseController {
                 metricEnumList.forEach(m -> list.add(getMetricResponse(m.getCode())));
             }
             list.addAll(getDiskHealth());
-            AppReportMetricVo reportMetric = monitorService.queryAppReportMetric(list);
+            AppReportMetric reportMetric = monitorService.queryAppReportMetric(list);
             reportMetric.setCpu(cpu);
             reportMetric.setMemory(memory);
             return RestResult.restSuccess(reportMetric);

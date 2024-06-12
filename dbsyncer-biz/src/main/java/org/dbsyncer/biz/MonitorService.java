@@ -3,11 +3,11 @@
  */
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.vo.AppReportMetricVo;
+import org.dbsyncer.biz.enums.MetricEnum;
+import org.dbsyncer.biz.model.AppReportMetric;
+import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.biz.enums.MetricEnum;
-import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
 import java.util.List;
@@ -37,6 +37,7 @@ public interface MonitorService {
 
     /**
      * 获取驱动默认元信息id
+     *
      * @param params
      * @return
      */
@@ -45,8 +46,8 @@ public interface MonitorService {
     /**
      * 查询驱动同步数据
      *
-     * @return
      * @param params
+     * @return
      */
     Paging queryData(Map<String, String> params);
 
@@ -97,6 +98,6 @@ public interface MonitorService {
      *
      * @return
      */
-    AppReportMetricVo queryAppReportMetric(List<MetricResponse> metrics);
+    AppReportMetric queryAppReportMetric(List<MetricResponse> metrics);
 
 }

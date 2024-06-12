@@ -19,7 +19,6 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -58,18 +57,16 @@ public final class OperationTemplate {
     }
 
     public <T> List<T> queryAll(QueryConfig<T> query) {
-        ConfigModel model = query.getConfigModel();
-        String groupId = getGroupId(model, query.getGroupStrategyEnum());
+        String groupId = getGroupId(query.getConfigModel(), query.getGroupStrategyEnum());
         Group group = cacheService.get(groupId, Group.class);
         if (null != group) {
             List<String> index = group.getIndex();
             if (!CollectionUtils.isEmpty(index)) {
                 List<T> list = new ArrayList<>();
-                Class<? extends ConfigModel> clazz = model.getClass();
                 index.forEach(e -> {
                     Object v = cacheService.get(e);
                     if (null != v) {
-                        list.add((T) beanCopy(clazz, v));
+                        list.add((T) v);
                     }
                 });
                 return list;
@@ -89,8 +86,7 @@ public final class OperationTemplate {
         if (StringUtil.isBlank(id)) {
             return null;
         }
-        Object o = cacheService.get(id, clazz);
-        return beanCopy(clazz, o);
+        return (T) cacheService.get(id, clazz);
     }
 
     public String execute(OperationConfig config) {
@@ -150,21 +146,6 @@ public final class OperationTemplate {
         String groupId = groupStrategy.getGroupId(model);
         Assert.hasText(groupId, "GroupId can not be empty.");
         return groupId;
-    }
-
-    private <T> T beanCopy(Class<T> clazz, Object o) {
-        if (null == o || null == clazz) {
-            return null;
-        }
-        try {
-            T t = clazz.newInstance();
-            BeanUtils.copyProperties(o, t);
-            return t;
-        } catch (InstantiationException e) {
-            throw new ParserException(e);
-        } catch (IllegalAccessException e) {
-            throw new ParserException(e);
-        }
     }
 
     public class Group {

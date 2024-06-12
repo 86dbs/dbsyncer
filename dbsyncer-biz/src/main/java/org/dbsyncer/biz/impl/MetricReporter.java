@@ -93,6 +93,8 @@ public class MetricReporter implements ScheduledTaskJob {
 
     private final MappingReportMetric mappingReportMetric = new MappingReportMetric();
 
+    private AppReportMetric report = new AppReportMetric();
+
     private final int SHOW_BUFFER_ACTUATOR_SIZE = 6;
 
     @PostConstruct
@@ -134,7 +136,6 @@ public class MetricReporter implements ScheduledTaskJob {
 
     public AppReportMetric getAppReportMetric() {
         queryTime = LocalDateTime.now();
-        AppReportMetric report = new AppReportMetric();
         report.setSuccess(mappingReportMetric.getSuccess());
         report.setFail(mappingReportMetric.getFail());
         report.setInsert(mappingReportMetric.getInsert());
