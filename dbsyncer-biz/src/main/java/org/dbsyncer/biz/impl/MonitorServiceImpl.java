@@ -19,7 +19,6 @@ import org.dbsyncer.biz.metric.impl.MemoryMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.ValueMetricDetailFormatter;
 import org.dbsyncer.biz.model.AppReportMetric;
 import org.dbsyncer.biz.model.MetricResponse;
-import org.dbsyncer.biz.vo.AppReportMetricVo;
 import org.dbsyncer.biz.vo.DataVo;
 import org.dbsyncer.biz.vo.LogVo;
 import org.dbsyncer.biz.vo.MetaVo;
@@ -220,12 +219,10 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
-    public AppReportMetricVo queryAppReportMetric(List<MetricResponse> metrics) {
-        AppReportMetric appReportMetric = metricReporter.getAppReportMetric();
-        AppReportMetricVo vo = new AppReportMetricVo();
-        BeanUtils.copyProperties(appReportMetric, vo);
-        vo.setMetrics(getMetrics(metrics));
-        return vo;
+    public AppReportMetric queryAppReportMetric(List<MetricResponse> metrics) {
+        AppReportMetric app = metricReporter.getAppReportMetric();
+        app.setMetrics(getMetrics(metrics));
+        return app;
     }
 
     @Override
@@ -311,7 +308,6 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         Assert.notNull(mapping, "驱动不存在.");
         ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
         MetaVo metaVo = new MetaVo(modelEnum.getName(), mapping.getName());
-        metaVo.setMappingName(mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
         return metaVo;
     }
@@ -339,7 +335,10 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         // 转换显示
         return metrics.stream().map(metric -> {
             MetricResponseVo vo = new MetricResponseVo();
-            BeanUtils.copyProperties(metric, vo);
+            vo.setCode(metric.getCode());
+            vo.setGroup(metric.getGroup());
+            vo.setMetricName(metric.getMetricName());
+            vo.setMeasurements(metric.getMeasurements());
             MetricDetailFormatter detailFormatter = metricDetailFormatterMap.get(vo.getCode());
             if (null != detailFormatter) {
                 detailFormatter.format(vo);
