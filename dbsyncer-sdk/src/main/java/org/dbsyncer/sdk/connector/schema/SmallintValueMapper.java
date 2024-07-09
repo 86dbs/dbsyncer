@@ -4,6 +4,8 @@ import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.AbstractValueMapper;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 
+import java.math.BigDecimal;
+
 /**
  * @author AE86
  * @version 1.0.0
@@ -21,7 +23,10 @@ public class SmallintValueMapper extends AbstractValueMapper<Integer> {
             Boolean b = (Boolean) val;
             return new Integer(b ? 1 : 0);
         }
-
+        if (val instanceof BigDecimal) {
+            BigDecimal bd = (BigDecimal) val;
+            return bd.intValue();
+        }
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }
