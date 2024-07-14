@@ -22,7 +22,7 @@ fi
 #JAVA_HOME=/opt/jdk1.8.0_121
 PATH=$JAVA_HOME/bin
 # #CLASSPATH=.;$JAVA_HOME/lib;$JAVA_HOME/lib/dt.jar;$JAVA_HOME/lib/tools.jar
-SERVER_OPTS='-Xms1024m -Xmx1024m -Xss1m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m'
+SERVER_OPTS='-Xms2048m -Xmx2048m -Xss256k -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m'
 # set debug model
 #SERVER_OPTS="$SERVER_OPTS -Djava.compiler=NONE -Xnoagent -Xdebug -Xrunjdwp:transport=dt_socket,address=15005,server=y,suspend=n"
 # set jmxremote args

@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 import java.util.ServiceLoader;
 
@@ -25,6 +26,7 @@ public class ParserSupportConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    @DependsOn(value = "licenseService")
     public TableGroupBufferActuator tableGroupBufferActuator() {
         ServiceLoader<TableGroupBufferActuatorService> services = ServiceLoader.load(TableGroupBufferActuatorService.class, Thread.currentThread().getContextClassLoader());
         for (TableGroupBufferActuatorService s : services) {

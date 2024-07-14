@@ -42,7 +42,7 @@ public final class BufferActuatorRouter implements DisposableBean {
     /**
      * 驱动缓存执行路由列表
      */
-    private Map<String, Map<String, TableGroupBufferActuator>> router = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, TableGroupBufferActuator>> router = new ConcurrentHashMap<>();
 
     public void execute(String metaId, String tableGroupId, ChangedEvent event) {
         if (router.containsKey(metaId) && router.get(metaId).containsKey(tableGroupId)) {
