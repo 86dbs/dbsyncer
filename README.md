@@ -42,12 +42,28 @@
 ![监控](https://foruda.gitee.com/images/1694424923138969858/111e55e0_376718.png "监控")
 
 ## 📦安装配置
-#### 步骤
+#### 方式一 下载安装包
 1. 安装[JDK 1.8](https://www.oracle.com/java/technologies/jdk8-downloads.html)（省略详细）
 2. 下载安装包[DBSyncer-1.0.0-RC.zip](https://gitee.com/ghi/dbsyncer/releases)（也可手动编译）
 3. 解压安装包，Window执行bin/startup.bat，Linux执行bin/startup.sh
 4. 打开浏览器访问：http://127.0.0.1:18686
 5. 账号和密码：admin/admin
+
+#### 方式二 🐳 docker
+
+* 阿里云镜像（推荐）
+```shell
+docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
+
+或
+
+docker pull registry.cn-hangzhou.aliyuncs.com/lifewang/dbsyncer:latest
+```
+* docker镜像
+```shell
+docker pull crazylife/dbsyncer-web:latest
+```
+* [dockerhub镜像](https://hub.docker.com/repository/docker/crazylife/dbsyncer-web/general)
 
 ## ⚙️手动编译
 > 先确保环境已安装JDK和Maven
@@ -63,12 +79,6 @@ $ ./build.sh
 |  MySQL全量同步 | 202s  |  1000w |  MacBook Pro 2.4 GHz 四核Intel Core i5 16 GB 2133 MHz LPDDR3 |
 
 <img src="https://foruda.gitee.com/images/1660034515191434708/屏幕截图.png" width="200" height="200" />
-
-## docker支持
-* docker pull crazylife/dbsyncer-web:latest
-* dockerhub镜像：https://hub.docker.com/repository/docker/crazylife/dbsyncer-web/general
-* 阿里云镜像：docker pull registry.cn-hangzhou.aliyuncs.com/lifewang/dbsyncer:latest
-* 阿里云与dockerhub镜像同步
 
 ## 🐞常见问题
 * MySQL无法连接。默认使用的驱动版本为8.0.21，如果为mysql5.x需要手动替换驱动 [mysql-connector-java-5.1.40.jar](https://gitee.com/ghi/dbsyncer/attach_files) 
