@@ -66,7 +66,9 @@ $ ./build.sh
 
 ## docker支持
 * docker pull crazylife/dbsyncer-web:latest
-* 更多详情信息请到：https://hub.docker.com/repository/docker/crazylife/dbsyncer-web/general
+* dockerhub镜像：https://hub.docker.com/repository/docker/crazylife/dbsyncer-web/general
+* 阿里云镜像：docker pull registry.cn-hangzhou.aliyuncs.com/lifewang/dbsyncer:latest
+* 阿里云与dockerhub镜像同步
 
 ## 🐞常见问题
 * MySQL无法连接。默认使用的驱动版本为8.0.21，如果为mysql5.x需要手动替换驱动 [mysql-connector-java-5.1.40.jar](https://gitee.com/ghi/dbsyncer/attach_files) 
