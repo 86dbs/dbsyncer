@@ -91,7 +91,7 @@ public class MappingChecker extends AbstractChecker {
 
         // 同步方式(仅支持全量或增量同步方式)
         String model = params.get("model");
-        mapping.setModel(null != ModelEnum.getModelEnum(model) ? model : ModelEnum.FULL.getCode());
+        mapping.setModel(ModelEnum.getModelEnum(model).getCode());
 
         // 全量配置
         mapping.setReadNum(NumberUtil.toInt(params.get("readNum"), mapping.getReadNum()));
