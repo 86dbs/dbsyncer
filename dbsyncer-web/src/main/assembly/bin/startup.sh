@@ -45,6 +45,6 @@ SERVER_OPTS="$SERVER_OPTS -Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib -
 
 # execute command
 echo $SERVER_OPTS
-java $SERVER_OPTS -Dfile.encoding=UTF-8 $APP > /dev/null & echo $! > $DBS_HOME/tmp.pid
+java $SERVER_OPTS -Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME $APP > /dev/null & echo $! > $DBS_HOME/tmp.pid
 echo 'Start successfully!';
 exit 1
