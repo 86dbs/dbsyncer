@@ -46,8 +46,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
         synchronized (LOCK) {
             // table1, table2
-            String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), "|");
-            String[] targetTableArray = StringUtil.split(params.get("targetTable"), "|");
+            String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), StringUtil.VERTICAL_LINE);
+            String[] targetTableArray = StringUtil.split(params.get("targetTable"), StringUtil.VERTICAL_LINE);
             int tableSize = sourceTableArray.length;
             Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
 

@@ -69,8 +69,8 @@ public class ProjectGroupChecker extends AbstractChecker {
     }
 
     private void modifyProjectGroup(ProjectGroup projectGroup, Map<String, String> params) {
-        String[] connectorIds = StringUtil.split(params.get("connectorIds"), "|");
-        String[] mappingIds = StringUtil.split(params.get("mappingIds"), "|");
+        String[] connectorIds = StringUtil.split(params.get("connectorIds"), StringUtil.VERTICAL_LINE);
+        String[] mappingIds = StringUtil.split(params.get("mappingIds"), StringUtil.VERTICAL_LINE);
         boolean exist = (connectorIds != null && connectorIds.length > 0) | (mappingIds != null && mappingIds.length > 0);
         Assert.isTrue(exist, "请选择连接或驱动.");
 
