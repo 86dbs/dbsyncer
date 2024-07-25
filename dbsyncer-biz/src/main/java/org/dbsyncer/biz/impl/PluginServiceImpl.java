@@ -53,7 +53,7 @@ public class PluginServiceImpl implements PluginService {
             vos.addAll(pluginAll.stream().map(plugin -> {
                 PluginVo vo = new PluginVo();
                 BeanUtils.copyProperties(plugin, vo);
-                vo.setMappingName(StringUtil.join(pluginClassNameMap.get(plugin.getClassName()), "|"));
+                vo.setMappingName(StringUtil.join(pluginClassNameMap.get(plugin.getClassName()), StringUtil.VERTICAL_LINE));
                 return vo;
             }).collect(Collectors.toList()));
         }

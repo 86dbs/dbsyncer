@@ -27,6 +27,10 @@ public abstract class StringUtil {
 
     public static final String POINT = ".";
 
+    public static final String VERTICAL_LINE = "|";
+
+    public static final String COMMA = ",";
+
     public static boolean equals(CharSequence cs1, CharSequence cs2) {
         return StringUtils.equals(cs1, cs2);
     }
