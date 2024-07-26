@@ -37,9 +37,10 @@ JMXREMOTE_PASSWORD="-Dcom.sun.management.jmxremote.password.file=$JMXREMOTE_CONF
 #SERVER_OPTS="$SERVER_OPTS $JMXREMOTE_HOSTNAME $JMXREMOTE_PORT $JMXREMOTE_SSL $JMXREMOTE_AUTH $JMXREMOTE_ACCESS $JMXREMOTE_PASSWORD"
 # set IPv4
 #SERVER_OPTS="$SERVER_OPTS -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses"
-ENCRYPT_FILE=$DBS_HOME'/bin/libDBSyncer.so'
-if [ -f ${ENCRYPT_FILE} ]; then
-  SERVER_OPTS="$SERVER_OPTS -agentpath:$ENCRYPT_FILE"
+ENCRYPT_FILE='DBSyncer'
+if [ -e "lib$ENCRYPT_FILE.so ]; then
+  SERVER_OPTS="$SERVER_OPTS -agentlib:$ENCRYPT_FILE"
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$DBS_HOME/bin
 fi
 SERVER_OPTS="$SERVER_OPTS -Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib -Dspring.config.location=$CONFIG_PATH"
 
