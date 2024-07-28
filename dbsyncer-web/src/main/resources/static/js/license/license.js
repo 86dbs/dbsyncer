@@ -1,6 +1,6 @@
 $(function () {
     new QRCode("qrcode", {
-        text: "https://work.weixin.qq.com/kfid/kfc90afb19bce739470",
+        text: "https://work.weixin.qq.com/u/vc7f073c9f993bc776?v=4.1.20.26620",
         width: 200,
         height: 200
     });
