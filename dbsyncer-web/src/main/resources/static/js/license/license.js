@@ -31,7 +31,7 @@ $(function () {
     document.getElementById("copyBtn").addEventListener('click', async event => {
         if (!navigator.clipboard) {
             // Clipboard API not available
-            bootGrowl("非常抱歉，当前浏览器不支持复制授权KEY，请手动复制", "danger");
+            bootGrowl("非常抱歉，当前浏览器不支持复制机器码，请手动复制", "danger");
             return;
         }
         try {
@@ -42,7 +42,7 @@ $(function () {
                 return;
             }
             await navigator.clipboard.writeText(text);
-            bootGrowl("复制授权KEY成功！", "success");
+            bootGrowl("复制机器码成功！", "success");
         } catch (err) {
             console.error('Failed to copy!', err);
         }
