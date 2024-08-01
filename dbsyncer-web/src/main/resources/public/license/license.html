@@ -14,16 +14,16 @@
     <form th:if="${not #strings.isEmpty(key)}" class="form-horizontal" role="form">
         <div class="row text-center">
             <div class="page-header">
-                <h3>授权许可<img th:if="${productInfo?.products?.size() gt 0}" draggable="false" title="授权成功" width="28px" height="28px" th:src="@{'/img/check-circle.png'}"></h3>
+                <h3>授权许可<img th:if="${productInfo?.products?.size() gt 0}" draggable="false" title="授权成功" width="28px" height="28px" th:src="@{'/img/check.png'}"></h3>
             </div>
         </div>
-        <address>
-            <strong>[[${productInfo?.company}]]</strong><br>
-            申请人：[[${productInfo?.owner}]]<br>
-            授权时间：[[${#dates.format(productInfo?.createTime, 'yyyy-MM-dd HH:mm:ss')}]]<br>
-            <abbr>备注:</abbr>[[${productInfo?.remark}]]
-        </address>
-        <div class="form-group">
+        <div class="form-group" th:if="${productInfo?.products?.size() gt 0}">
+            <address>
+                <strong>[[${productInfo?.company}]]</strong><br>
+                申请人：[[${productInfo?.owner}]]<br>
+                授权时间：[[${#dates.format(productInfo?.createTime, 'yyyy-MM-dd HH:mm:ss')}]]<br>
+                <abbr>备注:</abbr>[[${productInfo?.remark}]]
+            </address>
             <table class="table table-hover">
                 <thead>
                 <tr>
@@ -38,9 +38,9 @@
                     <!-- 有效期 -->
                     <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 1296000000 > ${#dates.createNow()?.time}">[[${p?.name}]]&nbsp;<img draggable="false" width="20px" height="20px" th:src="@{'/img/check.png'}"></td>
                     <!-- 即将过期 -->
-                    <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 1296000000 <= ${#dates.createNow()?.time}">[[${p?.name}]]&nbsp;<img draggable="false" width="20px" height="20px" title="即将过期, 请联系售前客服续期" th:src="@{'/img/remind.png'}"></td>
+                    <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 1296000000 <= ${#dates.createNow()?.time}">[[${p?.name}]]&nbsp;<img draggable="false" width="20px" height="20px" title="即将过期, 请联系星河同步官方续期" th:src="@{'/img/remind.png'}"></td>
                     <!-- 已过期 -->
-                    <td th:if="${#dates.createNow()?.time} > ${p?.effectiveTime}">[[${p?.name}]]&nbsp;<img draggable="false" width="20px" height="20px" title="已过期, 请联系售前客服续期" th:src="@{'/img/warning.png'}"></td>
+                    <td th:if="${#dates.createNow()?.time} > ${p?.effectiveTime}">[[${p?.name}]]&nbsp;<img draggable="false" width="20px" height="20px" title="已过期, 请联系星河同步官方续期" th:src="@{'/img/warning.png'}"></td>
                     <td th:text="${#dates.format(p?.effectiveTime, 'yyyy-MM-dd HH:mm:ss')}"/>
                 </tr>
                 </tbody>
