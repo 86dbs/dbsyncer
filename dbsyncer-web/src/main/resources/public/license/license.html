@@ -17,6 +17,12 @@
                 <h3>授权许可<img th:if="${productInfo?.products?.size() gt 0}" draggable="false" title="授权成功" width="28px" height="28px" th:src="@{'/img/check-circle.png'}"></h3>
             </div>
         </div>
+        <address>
+            <strong>[[${productInfo?.company}]]</strong><br>
+            申请人：[[${productInfo?.owner}]]<br>
+            授权时间：[[${#dates.format(productInfo?.createTime, 'yyyy-MM-dd HH:mm:ss')}]]<br>
+            <abbr>备注:</abbr>[[${productInfo?.remark}]]
+        </address>
         <div class="form-group">
             <table class="table table-hover">
                 <thead>
