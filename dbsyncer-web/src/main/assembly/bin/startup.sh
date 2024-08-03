@@ -50,10 +50,12 @@ fi
 if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
   SERVER_OPTS="$SERVER_OPTS -agentpath:$DBS_HOME/bin/$ENCRYPT_FILE"
 fi
-SERVER_OPTS="$SERVER_OPTS -Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib -Dspring.config.location=$CONFIG_PATH"
+SERVER_OPTS="$SERVER_OPTS -Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib \
+-Dspring.config.location=$CONFIG_PATH"\
+-Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME
 
 # execute command
 echo $SERVER_OPTS
-java $SERVER_OPTS -Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME $APP > /dev/null & echo $! > $DBS_HOME/tmp.pid
-echo 'Start successfully!';
+java $SERVER_OPTS  $APP > /dev/null & echo $! > $DBS_HOME/tmp.pid
+echo 'Start successfully!'
 exit 1
