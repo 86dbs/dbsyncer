@@ -51,8 +51,8 @@ if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
   SERVER_OPTS="$SERVER_OPTS -agentpath:$DBS_HOME/bin/$ENCRYPT_FILE"
 fi
 SERVER_OPTS="$SERVER_OPTS -Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib \
--Dspring.config.location=$CONFIG_PATH" \
--Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME
+-Dspring.config.location=$CONFIG_PATH \
+-Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME"
 
 # execute command
 echo $SERVER_OPTS
