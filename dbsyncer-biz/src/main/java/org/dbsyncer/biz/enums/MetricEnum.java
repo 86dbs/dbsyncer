@@ -37,10 +37,10 @@ public enum MetricEnum {
      */
     MEMORY_MAX("jvm.memory.max", "内存", "总共"),
 
-    /**
-     * GC
-     */
-    GC_PAUSE("jvm.gc.pause", "GC", "已用"),
+//    /**
+//     * GC
+//     */
+//    GC_PAUSE("jvm.gc.pause", "GC", "已用"),
 
     /**
      * CPU已用

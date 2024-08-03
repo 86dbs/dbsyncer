@@ -123,7 +123,7 @@ public class MonitorController extends BaseController {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(monitorService.queryData(params));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -135,7 +135,7 @@ public class MonitorController extends BaseController {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(monitorService.queryLog(params));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -147,7 +147,7 @@ public class MonitorController extends BaseController {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(dataSyncService.sync(params));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -158,7 +158,7 @@ public class MonitorController extends BaseController {
         try {
             return RestResult.restSuccess(monitorService.clearData(id));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -169,7 +169,7 @@ public class MonitorController extends BaseController {
         try {
             return RestResult.restSuccess(monitorService.clearLog());
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -189,7 +189,7 @@ public class MonitorController extends BaseController {
             reportMetric.setMemory(memory);
             return RestResult.restSuccess(reportMetric);
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -200,7 +200,7 @@ public class MonitorController extends BaseController {
         try {
             return RestResult.restSuccess(systemConfigService.getSystemConfig().getRefreshIntervalSeconds());
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -229,6 +229,9 @@ public class MonitorController extends BaseController {
 
     private MetricResponse getMetricResponse(String code) {
         MetricsEndpoint.MetricResponse metric = metricsEndpoint.metric(code, null);
+        if (metric == null) {
+            throw new IllegalArgumentException("不支持指标=" + code);
+        }
         MetricResponse metricResponse = new MetricResponse();
         MetricEnum metricEnum = MetricEnum.getMetric(metric.getName());
         metricResponse.setCode(metricEnum.getCode());
