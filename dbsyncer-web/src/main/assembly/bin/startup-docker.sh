@@ -22,7 +22,7 @@ fi
 #JAVA_HOME=/opt/jdk1.8.0_121
 PATH=$JAVA_HOME/bin
 # #CLASSPATH=.;$JAVA_HOME/lib;$JAVA_HOME/lib/dt.jar;$JAVA_HOME/lib/tools.jar
-SERVER_OPTS='-Xms1024m -Xmx1024m -Xss1m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m'
+SERVER_OPTS='-Xms2048m -Xmx2048m -Xss256k -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m'
 # set debug model
 #SERVER_OPTS="$SERVER_OPTS -Djava.compiler=NONE -Xnoagent -Xdebug -Xrunjdwp:transport=dt_socket,address=15005,server=y,suspend=n"
 # set jmxremote args
@@ -37,12 +37,25 @@ JMXREMOTE_PASSWORD="-Dcom.sun.management.jmxremote.password.file=$JMXREMOTE_CONF
 #SERVER_OPTS="$SERVER_OPTS $JMXREMOTE_HOSTNAME $JMXREMOTE_PORT $JMXREMOTE_SSL $JMXREMOTE_AUTH $JMXREMOTE_ACCESS $JMXREMOTE_PASSWORD"
 # set IPv4
 #SERVER_OPTS="$SERVER_OPTS -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses"
-ENCRYPT_FILE=$DBS_HOME'/bin/dbsyncer_decrypt.so'
-if [ -f ${ENCRYPT_FILE} ]; then
-  SERVER_OPTS="$SERVER_OPTS -agentpath:$ENCRYPT_FILE"
+
+ENCRYPT_FILE='libDBSyncer.so'
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+   ENCRYPT_FILE='libDBSyncer.so'
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+   ENCRYPT_FILE='libDBSyncer.dylib'
+else
+    echo "Unsupported OS."
 fi
-SERVER_OPTS="$SERVER_OPTS -Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib -Dspring.config.location=$CONFIG_PATH"
+
+if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
+  SERVER_OPTS="$SERVER_OPTS -agentpath:$DBS_HOME/bin/$ENCRYPT_FILE"
+fi
+SERVER_OPTS="$SERVER_OPTS -Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib \
+-Dspring.config.location=$CONFIG_PATH" \
+-Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME
 
 # execute command
 echo $SERVER_OPTS
-java $SERVER_OPTS -Dfile.encoding=UTF-8 $APP
+java $SERVER_OPTS  $APP > /dev/null & echo $! > $DBS_HOME/tmp.pid
+echo 'Start successfully!'
+exit 1
