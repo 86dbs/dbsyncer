@@ -36,9 +36,9 @@
                 <tr th:id="${p?.name}" th:each="p,state : ${productInfo?.products}">
                     <td>[[${state.index+1}]]</td>
                     <!-- 有效期 -->
-                    <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 1296000000 > ${#dates.createNow()?.time}">[[${p?.name}]]&nbsp;<img draggable="false" width="20px" height="20px" th:src="@{'/img/check.png'}"></td>
+                    <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 864000000 > ${#dates.createNow()?.time}">[[${p?.name}]]&nbsp;<img draggable="false" width="20px" height="20px" th:src="@{'/img/check.png'}"></td>
                     <!-- 即将过期 -->
-                    <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 1296000000 <= ${#dates.createNow()?.time}">[[${p?.name}]]&nbsp;<img draggable="false" width="20px" height="20px" title="即将过期, 请联系星河同步官方续期" th:src="@{'/img/remind.png'}"></td>
+                    <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 864000000 <= ${#dates.createNow()?.time}">[[${p?.name}]]&nbsp;<img draggable="false" width="20px" height="20px" title="即将过期, 请联系星河同步官方续期" th:src="@{'/img/remind.png'}"></td>
                     <!-- 已过期 -->
                     <td th:if="${#dates.createNow()?.time} > ${p?.effectiveTime}">[[${p?.name}]]&nbsp;<img draggable="false" width="20px" height="20px" title="已过期, 请联系星河同步官方续期" th:src="@{'/img/warning.png'}"></td>
                     <td th:text="${#dates.format(p?.effectiveTime, 'yyyy-MM-dd HH:mm:ss')}"/>
