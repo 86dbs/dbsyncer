@@ -31,20 +31,23 @@ $(function () {
     document.getElementById("copyBtn").addEventListener('click', async event => {
         //Get the copied text
         const text = document.getElementById("licenseKey").value;
-        fallbackCopyTextToClipboard(text);
+        fallbackCopyTextToClipboard(text)
     });
+
 
     // 旧浏览器的回退方案
     function fallbackCopyTextToClipboard(text) {
         var textArea = document.createElement("textarea");
         textArea.value = text;
+        textArea.style.height='0px';
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
         try {
             var successful = document.execCommand('copy');
-            var msg = successful ? '成功' : '失败';
-            console.log('复制' + msg);
+            if (successful) {
+                bootGrowl("复制机器码成功11！", "success");
+            }
         } catch (err) {
             console.error('复制失败', err);
         }
