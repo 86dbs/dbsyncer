@@ -95,7 +95,7 @@ public class MetricReporter implements ScheduledTaskJob {
 
     private AppReportMetric report = new AppReportMetric();
 
-    private final int SHOW_BUFFER_ACTUATOR_SIZE = 6;
+    private final int SHOW_BUFFER_ACTUATOR_SIZE = 7;
 
     @PostConstruct
     private void init() {
