@@ -22,7 +22,7 @@ fi
 #JAVA_HOME=/opt/jdk1.8.0_121
 PATH=$JAVA_HOME/bin
 # #CLASSPATH=.;$JAVA_HOME/lib;$JAVA_HOME/lib/dt.jar;$JAVA_HOME/lib/tools.jar
-SERVER_OPTS='-Xms2048m -Xmx2048m -Xss256k -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m'
+SERVER_OPTS='-Xms3800m -Xmx3800m -Xmn1500m -Xss512k -XX:MetaspaceSize=192m'
 # set debug model
 #SERVER_OPTS="$SERVER_OPTS -Djava.compiler=NONE -Xnoagent -Xdebug -Xrunjdwp:transport=dt_socket,address=15005,server=y,suspend=n"
 # set jmxremote args
@@ -53,7 +53,11 @@ fi
 SERVER_OPTS="$SERVER_OPTS \
 -Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib \
 -Dspring.config.location=$CONFIG_PATH \
--Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME"
+-Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME \
+-XX:+UseStringCache -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:ParallelGCThreads=4 \
+-XX:+CMSClassUnloadingEnabled -XX:+DisableExplicitGC -XX:+UseCMSInitiatingOccupancyOnly \
+-XX:CMSInitiatingOccupancyFraction=68 -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps \
+-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$DBS_HOME/logs -XX:ErrorFile=$DBS_HOME/logs/hs_err_pid_%p.log"
 
 # execute command
 echo $SERVER_OPTS

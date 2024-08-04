@@ -44,7 +44,7 @@ public class LicenseController {
     public RestResult upload(MultipartFile[] files) {
         try {
             if (files != null && files[0] != null) {
-                String filename = files[0].getOriginalFilename();
+                String filename = "license";
                 File dest = new File(licenseService.getLicensePath() + filename);
                 FileUtils.deleteQuietly(dest);
                 FileUtils.copyInputStreamToFile(files[0].getInputStream(), dest);
