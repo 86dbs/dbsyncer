@@ -29,24 +29,30 @@ $(function () {
     }
 
     document.getElementById("copyBtn").addEventListener('click', async event => {
-        if (!navigator.clipboard) {
-            // Clipboard API not available
-            bootGrowl("非常抱歉，当前浏览器不支持复制机器码，请手动复制", "danger");
-            return;
-        }
-        try {
-            //Get the copied text
-            const text = document.getElementById("licenseKey").value;
-            if (isBlank(text)) {
-                bootGrowl("功能暂未开放.", "danger");
-                return;
-            }
-            await navigator.clipboard.writeText(text);
-            bootGrowl("复制机器码成功！", "success");
-        } catch (err) {
-            console.error('Failed to copy!', err);
-        }
+        //Get the copied text
+        const text = document.getElementById("licenseKey").value;
+        fallbackCopyTextToClipboard(text)
     });
+
+
+    // 旧浏览器的回退方案
+    function fallbackCopyTextToClipboard(text) {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.height='0px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            var successful = document.execCommand('copy');
+            if (successful) {
+                bootGrowl("复制机器码成功！", "success");
+            }
+        } catch (err) {
+            console.error('复制失败', err);
+        }
+        document.body.removeChild(textArea);
+    }
 
     $("#fileLicense").fileinput({
         theme: 'fas',
