@@ -46,7 +46,7 @@ $(function () {
         try {
             var successful = document.execCommand('copy');
             if (successful) {
-                bootGrowl("复制机器码成功11！", "success");
+                bootGrowl("复制机器码成功！", "success");
             }
         } catch (err) {
             console.error('复制失败', err);
