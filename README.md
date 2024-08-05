@@ -74,11 +74,22 @@ $ chmod u+x build.sh
 $ ./build.sh
 ```
 ## 🏆性能测试
-|  类型 | 耗时 | 数据量 |  机器配置 |
-|---|---|---|---|
-|  MySQL全量同步 | 202s  |  1000w |  MacBook Pro 2.4 GHz 四核Intel Core i5 16 GB 2133 MHz LPDDR3 |
+#### 全量同步
 
-<img src="https://foruda.gitee.com/images/1660034515191434708/屏幕截图.png" width="200" height="200" />
+| 系统 | 机器配置 |  数据量 |  耗时 |
+|---|---|---|---|
+| Mac | Apple M3 Pro 12核心 内存18GB | 1亿条 | 31分50秒 |
+| Linux | Intel(R) Xeon(R) CPU E5-2696 v3B 8核心 内存48GB | 1亿条 | 37分52秒 |
+| Windows | AMD Ryzen 7 5800x 8核心 12GB | 1亿条 | 57分43秒 |
+
+#### 增量同步
+| 系统 | 机器配置 |  分配内存 |  TPS | 峰值 |
+|---|---|---|---|---|
+| Mac | Apple M3 Pro 12核心 内存18GB | 4GB | 8112/秒 | 11000/秒 |
+| Linux | Intel(R) Xeon(R) CPU E5-2696 v3B 8核心 内存48GB | 4GB | 8000/秒 | 10000/秒 |
+| Windows | AMD Ryzen 7 5800x 8核心 12GB | 4GB | 7553/秒 | 9000/秒 |
+
+[更多测试报告](https://gitee.com/ghi/dbsyncer/wikis/%E5%BF%AB%E9%80%9F%E4%BA%86%E8%A7%A3/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95)
 
 ## 🐞常见问题
 * MySQL无法连接。默认使用的驱动版本为8.0.21，如果为mysql5.x需要手动替换驱动 [mysql-connector-java-5.1.40.jar](https://gitee.com/ghi/dbsyncer/attach_files) 
