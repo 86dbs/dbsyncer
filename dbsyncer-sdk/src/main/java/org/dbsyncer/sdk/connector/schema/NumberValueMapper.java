@@ -18,6 +18,9 @@ public class NumberValueMapper extends AbstractValueMapper<BigDecimal> {
         if (val instanceof Number) {
             return new BigDecimal(val.toString());
         }
+        if (val instanceof String) {
+            return new BigDecimal((String) val);
+        }
 
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
