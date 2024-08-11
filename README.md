@@ -113,5 +113,5 @@ $ ./build.sh
 4) 开源不易，感谢粉丝朋友们的支持！[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C) 
 
 <p>
-<img src="https://foruda.gitee.com/images/1710433533728877903/c79fd442_376718.png" title="DBSyncer款项用于研发推广" width="200px" height="300px" />
-<img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" width="200px" height="300px" /><p>
+<img src="https://foruda.gitee.com/images/1710433533728877903/c79fd442_376718.png" title="DBSyncer款项用于研发推广" width="350px" height="350px" />
+<img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" width="350px" height="350px" /><p>
