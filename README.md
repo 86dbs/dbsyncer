@@ -112,5 +112,6 @@ $ ./build.sh
 3) 需要专业技术指导，欢迎加 [**会员粉丝服务群**](https://gitee.com/ghi/dbsyncer/wikis/%E4%BC%9A%E5%91%98%E7%B2%89%E4%B8%9D%E6%9C%8D%E5%8A%A1%E7%BE%A4?sort_id=9604090)。
 4) 开源不易，感谢粉丝朋友们的支持！[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C) 
 
-<img src="https://foruda.gitee.com/images/1710433533728877903/c79fd442_376718.png" title="DBSyncer款项用于研发推广" height="400" />
-<img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" height="400" />
+<p>
+<img src="https://foruda.gitee.com/images/1710433533728877903/c79fd442_376718.png" title="DBSyncer款项用于研发推广" width="200px" height="300px" />
+<img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" width="200px" height="300px" /><p>
