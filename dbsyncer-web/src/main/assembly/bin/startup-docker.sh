@@ -53,7 +53,7 @@ fi
 SERVER_OPTS="$SERVER_OPTS \
 -Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib \
 -Dspring.config.location=$CONFIG_PATH \
--Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME \
+-Dsun.stdout.encoding=UTF-8 -Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME \
 -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:ParallelGCThreads=4 \
 -XX:+CMSClassUnloadingEnabled -XX:+DisableExplicitGC -XX:+UseCMSInitiatingOccupancyOnly \
 -XX:CMSInitiatingOccupancyFraction=68 -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps \
