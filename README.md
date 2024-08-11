@@ -31,8 +31,7 @@
 | Sqlite     | ✔ |   |                       |
 | 后期计划       | Redis | |                       |
 
-## 📚使用手册
-### [Wiki](https://gitee.com/ghi/dbsyncer/wikis "https://gitee.com/ghi/dbsyncer/wikis")
+## 📚[使用手册Wiki](https://gitee.com/ghi/dbsyncer/wikis "https://gitee.com/ghi/dbsyncer/wikis")
 
 ## ✨预览
 ### 驱动管理
@@ -42,13 +41,19 @@
 ![监控](https://foruda.gitee.com/images/1694424923138969858/111e55e0_376718.png "监控")
 
 ## 📦安装配置
+
+#### 版本介绍
+- dbsyncer-2.x.x-bin.zip （开源版）
+- dbsyncer-enterprise-2.x.x-bin.zip（专业版）
+
 #### 方式一 下载安装包
 1. 安装[JDK 1.8](https://www.oracle.com/java/technologies/jdk8-downloads.html)（省略详细）
-2. 下载安装包[DBSyncer-1.0.0-RC.zip](https://gitee.com/ghi/dbsyncer/releases)（也可手动编译）
+2. 下载安装包[dbsyncer-x.x.x-bin.zip](https://gitee.com/ghi/dbsyncer/releases)（也可手动编译）
 3. 解压安装包，Window执行bin/startup.bat，Linux执行bin/startup.sh
 4. 打开浏览器访问：http://127.0.0.1:18686
 5. 账号和密码：admin/admin
 
+[更多环境部署](https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E7%8E%AF%E5%A2%83%E9%83%A8%E7%BD%B2)
 #### 方式二 🐳 docker
 
 * 阿里云镜像（推荐）
@@ -74,11 +79,22 @@ $ chmod u+x build.sh
 $ ./build.sh
 ```
 ## 🏆性能测试
-|  类型 | 耗时 | 数据量 |  机器配置 |
-|---|---|---|---|
-|  MySQL全量同步 | 202s  |  1000w |  MacBook Pro 2.4 GHz 四核Intel Core i5 16 GB 2133 MHz LPDDR3 |
+#### 全量同步
 
-<img src="https://foruda.gitee.com/images/1660034515191434708/屏幕截图.png" width="200" height="200" />
+| 系统 | 机器配置 |  数据量 |  耗时 |
+|---|---|---|---|
+| Mac | Apple M3 Pro 12核心 内存18GB | 1亿条 | 31分50秒 |
+| Linux | Intel(R) Xeon(R) CPU E5-2696 v3B 8核心 内存48GB | 1亿条 | 37分52秒 |
+| Windows | AMD Ryzen 7 5800x 8核心 12GB | 1亿条 | 57分43秒 |
+
+#### 增量同步
+| 系统 | 机器配置 |  分配内存 |  TPS | 峰值 |
+|---|---|---|---|---|
+| Mac | Apple M3 Pro 12核心 内存18GB | 4GB | 8112/秒 | 11000/秒 |
+| Linux | Intel(R) Xeon(R) CPU E5-2696 v3B 8核心 内存48GB | 4GB | 8000/秒 | 10000/秒 |
+| Windows | AMD Ryzen 7 5800x 8核心 12GB | 4GB | 7553/秒 | 9000/秒 |
+
+[更多测试报告](https://gitee.com/ghi/dbsyncer/wikis/%E5%BF%AB%E9%80%9F%E4%BA%86%E8%A7%A3/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95)
 
 ## 🐞常见问题
 * MySQL无法连接。默认使用的驱动版本为8.0.21，如果为mysql5.x需要手动替换驱动 [mysql-connector-java-5.1.40.jar](https://gitee.com/ghi/dbsyncer/attach_files) 
@@ -87,15 +103,15 @@ $ ./build.sh
 * [如何开启远程debug模式？](https://gitee.com/ghi/dbsyncer/issues/I63F6R)  
 
 ## 🤝贡献支持
-*  **DBS团队目标**：开源共享，稳定盈利，推进项目可持续。（开源不易，非常感谢一直支持我们的用户朋友们！！）
-* 需要专业技术指导，请扫码加[**会员粉丝服务群**](https://gitee.com/ghi/dbsyncer/wikis/%E4%BC%9A%E5%91%98%E7%B2%89%E4%B8%9D%E6%9C%8D%E5%8A%A1%E7%BE%A4?sort_id=9604090)★★★★★（福利有限，加满即止）
-
-<img src="https://foruda.gitee.com/images/1710433533728877903/c79fd442_376718.png" title="DBSyncer款项用于研发推广" height="400" />
-
-* QQ群讨论: **[875519623](//shang.qq.com/wpa/qunwpa?idkey=fce8d51b264130bac5890674e7db99f82f7f8af3f790d49fcf21eaafc8775f2a)**
+* ### DBS团队目标：**坚持开源，让每一个用户都能轻松完成数据同步！** 
+* QQ群讨论: **875519623** 
 * 欢迎大家提需求和建议[【新建issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!（详细描述你的原始需求，我们会帮你提供一些方案，节约大家的成本）
-1.  **内推项目** 如您觉得项目不错，可推荐到公司，建立长期稳定的商业合作，提供更专业的技术服务。（入群联系群主）
-2.  **参与开发** 项目成员有不同专业的大佬，相信一定能找到您比较感兴趣的方向，欢迎加入团队！（入群联系群主）
-3.  **扫赞赏码**[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C) 
+1) **内推项目** 如您觉得项目不错，可推荐到公司，建立长期稳定的商业合作，提供更专业的技术服务。（入群联系群主）
+2) **参与开发** 项目成员有不同专业的大佬，相信一定能找到您比较感兴趣的方向，欢迎加入团队！（入群联系群主）
+3) 需要专业技术指导，欢迎加 [**会员粉丝服务群**](https://gitee.com/ghi/dbsyncer/wikis/%E4%BC%9A%E5%91%98%E7%B2%89%E4%B8%9D%E6%9C%8D%E5%8A%A1%E7%BE%A4?sort_id=9604090)。
+4) 开源不易，感谢粉丝朋友们的支持！[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C) 
 
-<img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" height="400" />
+<p>
+<img src="https://foruda.gitee.com/images/1710433533728877903/c79fd442_376718.png" title="DBSyncer款项用于研发推广" width="350px" height="350px" />
+<img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" width="350px" height="350px" />
+<p>
