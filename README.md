@@ -103,7 +103,7 @@ $ ./build.sh
 * [如何开启远程debug模式？](https://gitee.com/ghi/dbsyncer/issues/I63F6R)  
 
 ## 🤝贡献支持
-* ### DBS团队目标：**坚持开源，让每一个用户都能轻松完成数据同步！** 
+* DBS团队目标：**坚持开源，让每一个用户都能轻松完成数据同步！** 
 * QQ群讨论: **875519623** 
 * 欢迎大家提需求和建议[【新建issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!（详细描述你的原始需求，我们会帮你提供一些方案，节约大家的成本）
 1) **内推项目** 如您觉得项目不错，可推荐到公司，建立长期稳定的商业合作，提供更专业的技术服务。（入群联系群主）
@@ -112,6 +112,6 @@ $ ./build.sh
 4) 开源不易，感谢粉丝朋友们的支持！[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C) 
 
 <p>
-<img src="https://foruda.gitee.com/images/1710433533728877903/c79fd442_376718.png" title="DBSyncer款项用于研发推广" width="350px" height="350px" />
-<img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" width="350px" height="350px" />
+<img src="https://foruda.gitee.com/images/1710433533728877903/c79fd442_376718.png" title="DBSyncer款项用于研发推广" width="290px" height="350px" />
+<img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" width="290px" height="350px" />
 <p>
