@@ -58,8 +58,8 @@
 
 * 阿里云镜像（推荐）
 ```shell
-docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
-
+docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest （开源版）
+docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer-enterprise:latest （专业版）
 或
 
 docker pull registry.cn-hangzhou.aliyuncs.com/lifewang/dbsyncer:latest
