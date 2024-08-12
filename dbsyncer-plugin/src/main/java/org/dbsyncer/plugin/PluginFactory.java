@@ -118,7 +118,6 @@ public class PluginFactory implements DisposableBean {
         if (null != plugin) {
             String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
             service.computeIfPresent(pluginId, (k, c) -> {
-                c.convert(context);
                 switch (processEnum) {
                     case BEFORE:
                         c.postProcessBefore(context);
