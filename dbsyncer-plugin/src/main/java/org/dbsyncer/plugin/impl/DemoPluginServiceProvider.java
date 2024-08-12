@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.plugin.impl;
 
 import org.dbsyncer.common.config.AppConfig;
@@ -16,6 +19,11 @@ public final class DemoPluginServiceProvider implements PluginService {
 
     @Resource
     private AppConfig appConfig;
+
+    @Override
+    public void postProcessBefore(PluginContext context) {
+        logger.info("插件正在处理全量同步，目标源表:{}", context.getTargetTableName());
+    }
 
     @Override
     public void convert(PluginContext context) {

@@ -1,7 +1,11 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.plugin;
 
 import org.apache.commons.io.FileUtils;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.model.Plugin;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.spi.PluginService;
@@ -105,32 +109,26 @@ public class PluginFactory implements DisposableBean {
     }
 
     /**
-     * 全量同步/增量同步
+     * 全量同步/增量同步处理
      *
      * @param plugin
      * @param context
      */
-    public void convert(Plugin plugin, PluginContext context) {
+    public void process(Plugin plugin, PluginContext context, ProcessEnum processEnum) {
         if (null != plugin) {
             String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
             service.computeIfPresent(pluginId, (k, c) -> {
-                c.convert(context);
-                return c;
-            });
-        }
-    }
-
-    /**
-     * 全量同步/增量同步完成后执行处理
-     *
-     * @param plugin
-     * @param context
-     */
-    public void postProcessAfter(Plugin plugin, PluginContext context) {
-        if (null != plugin) {
-            String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
-            service.computeIfPresent(pluginId, (k, c) -> {
-                c.postProcessAfter(context);
+                switch (processEnum) {
+                    case BEFORE:
+                        c.postProcessBefore(context);
+                        break;
+                    case CONVERT:
+                        c.convert(context);
+                        break;
+                    case AFTER:
+                        c.postProcessAfter(context);
+                        break;
+                }
                 return c;
             });
         }
@@ -189,4 +187,5 @@ public class PluginFactory implements DisposableBean {
         });
         service.clear();
     }
+
 }

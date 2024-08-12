@@ -27,6 +27,7 @@ import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.IncrementPluginContext;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -148,7 +149,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         final ConnectorInstance sConnectorInstance = connectorFactory.connect(getConnectorConfig(mapping.getSourceConnectorId()));
         final ConnectorInstance tConnectorInstance = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
         final IncrementPluginContext context = new IncrementPluginContext(sConnectorInstance, tConnectorInstance, sourceTableName, targetTableName, event, sourceDataList, targetDataList, group.getPluginExtInfo());
-        pluginFactory.convert(group.getPlugin(), context);
+        pluginFactory.process(group.getPlugin(), context, ProcessEnum.CONVERT);
 
         // 5、批量执行同步
         BatchWriter batchWriter = new BatchWriter(tConnectorInstance, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, generalBufferConfig.getBufferWriterCount(), mapping.isForceUpdate());
@@ -163,7 +164,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, event);
 
         // 8、执行批量处理后的
-        pluginFactory.postProcessAfter(group.getPlugin(), context);
+        pluginFactory.process(group.getPlugin(), context, ProcessEnum.AFTER);
     }
 
     @Override
