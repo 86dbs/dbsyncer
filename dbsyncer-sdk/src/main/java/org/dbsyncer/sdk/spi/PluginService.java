@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.spi;
 
 import org.dbsyncer.sdk.plugin.PluginContext;
@@ -20,6 +23,14 @@ public interface PluginService {
     }
 
     /**
+     * 全量同步前置处理
+     *
+     * @param pluginContext 上下文
+     */
+    default void postProcessBefore(PluginContext pluginContext) {
+    }
+
+    /**
      * 全量同步/增量同步
      *
      * @param pluginContext 上下文
@@ -27,7 +38,7 @@ public interface PluginService {
     void convert(PluginContext pluginContext);
 
     /**
-     * 全量同步/增量同步完成后执行处理
+     * 全量同步/增量同步后置处理
      *
      * @param pluginContext 上下文
      */

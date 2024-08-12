@@ -7,14 +7,6 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.ReaderConfig;
-import org.dbsyncer.sdk.config.WriterBatchConfig;
-import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.model.MetaInfo;
-import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.event.FullRefreshEvent;
@@ -29,10 +21,19 @@ import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
-import org.dbsyncer.sdk.connector.ConnectorInstance;
-import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.FullPluginContext;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.ReaderConfig;
+import org.dbsyncer.sdk.config.WriterBatchConfig;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -148,6 +149,8 @@ public class ParserComponentImpl implements ParserComponent {
         final ConnectorInstance tConnectorInstance = connectorFactory.connect(tConfig);
         final String event = ConnectorConstant.OPERTION_INSERT;
         final FullPluginContext context = new FullPluginContext(sConnectorInstance, tConnectorInstance, sTableName, tTableName, event, group.getPluginExtInfo());
+        // 0、插件前置处理
+        pluginFactory.process(group.getPlugin(), context, ProcessEnum.BEFORE);
 
         for (; ; ) {
             if (!task.isRunning()) {
@@ -173,7 +176,7 @@ public class ParserComponentImpl implements ParserComponent {
             // 4、插件转换
             context.setSourceList(source);
             context.setTargetList(target);
-            pluginFactory.convert(group.getPlugin(), context);
+            pluginFactory.process(group.getPlugin(), context, ProcessEnum.CONVERT);
 
             // 5、写入目标源
             BatchWriter batchWriter = new BatchWriter(tConnectorInstance, command, tTableName, event, picker.getTargetFields(), target, batchSize, mapping.isForceUpdate());
@@ -187,7 +190,7 @@ public class ParserComponentImpl implements ParserComponent {
             flush(task, result);
 
             // 7、同步完成后通知插件做后置处理
-            pluginFactory.postProcessAfter(group.getPlugin(), context);
+            pluginFactory.process(group.getPlugin(), context, ProcessEnum.AFTER);
 
             // 8、判断尾页
             if (source.size() < pageSize) {
