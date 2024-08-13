@@ -18,37 +18,35 @@
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://gitee.com/ghi/dbsyncer/blob/master/LICENSE)
 
 ## 🌈应用场景
-| 连接器        | 数据源 | 目标源 | 支持版本(包含以下)            |
+| 连接器        | 数据源 | 目标源 | 支持版本(包含以下) |
 |------------|---|---|-----------------------|
-| MySQL      | ✔ |  ✔ | 5.7.19以上              |
+| MySQL      | ✔ |  ✔ | 5.7.19以上 |
 | Oracle     | ✔ |  ✔ | 11g-19c |
-| SqlServer  | ✔ |  ✔ | 2008以上                |
-| PostgreSQL | ✔ |  ✔ | 9.5.25以上              |
-| ES         | ✔ |  ✔ | 6.0以上                 |
-| Kafka      | 开发中 |  ✔ | 2.10-0.9.0.0以上        |
-| File       | ✔ |  ✔ | *.txt, *.unl          |
-| SQL        | ✔ |  | 支持以上关系型数据库            |
-| Sqlite     | ✔ |   |                       |
-| 后期计划       | Redis | |                       |
+| SqlServer  | ✔ |  ✔ | 2008以上 |
+| PostgreSQL | ✔ |  ✔ | 9.5.25以上 |
+| ES         | ✔ |  ✔ | 6.x-7.x |
+| Kafka      | 开发中 |  ✔ | 2.10-0.9.0.0以上 |
+| File       | ✔ |  ✔ | *.txt, *.unl |
+| SQL        | ✔ |  | 支持以上关系型数据库 |
+| Sqlite     | ✔ |   | |
+| 后期计划       | Redis | | |
 
 ## 📚[使用手册Wiki](https://gitee.com/ghi/dbsyncer/wikis "https://gitee.com/ghi/dbsyncer/wikis")
 
 ## ✨预览
-### 驱动管理
 ![连接器和驱动](https://images.gitee.com/uploads/images/2021/0903/003755_01016fc1_376718.png "驱动管理.png")
 
-### 监控
 ![监控](https://foruda.gitee.com/images/1694424923138969858/111e55e0_376718.png "监控")
 
 ## 📦安装配置
 
 #### 版本介绍
-- dbsyncer-2.x.x-bin.zip （开源版）
-- dbsyncer-enterprise-2.x.x-bin.zip（专业版）
+- dbsyncer-x.x.x.zip（开源版）
+- dbsyncer-enterprise-x.x.x.zip（[专业版](https://mp.weixin.qq.com/s/9DP1jcL0n2f1dX76gfNz3A)）
 
 #### 方式一 下载安装包
 1. 安装[JDK 1.8](https://www.oracle.com/java/technologies/jdk8-downloads.html)（省略详细）
-2. 下载安装包[dbsyncer-x.x.x-bin.zip](https://gitee.com/ghi/dbsyncer/releases)（也可手动编译）
+2. 下载安装包[dbsyncer-x.x.x.zip](https://gitee.com/ghi/dbsyncer/releases)（也可手动编译）
 3. 解压安装包，Window执行bin/startup.bat，Linux执行bin/startup.sh
 4. 打开浏览器访问：http://127.0.0.1:18686
 5. 账号和密码：admin/admin
@@ -58,10 +56,8 @@
 
 * 阿里云镜像（推荐）
 ```shell
-docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest （开源版）
-docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer-enterprise:latest （专业版）
-或
-
+docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
+docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer-enterprise:latest
 docker pull registry.cn-hangzhou.aliyuncs.com/lifewang/dbsyncer:latest
 ```
 * docker镜像
@@ -93,6 +89,8 @@ $ ./build.sh
 | Mac | Apple M3 Pro 12核心 内存18GB | 4GB | 8112/秒 | 11000/秒 |
 | Linux | Intel(R) Xeon(R) CPU E5-2696 v3B 8核心 内存48GB | 4GB | 8000/秒 | 10000/秒 |
 | Windows | AMD Ryzen 7 5800x 8核心 12GB | 4GB | 7553/秒 | 9000/秒 |
+
+<img src="https://foruda.gitee.com/images/1722860668272963387/7110f00f_376718.png" />
 
 [更多测试报告](https://gitee.com/ghi/dbsyncer/wikis/%E5%BF%AB%E9%80%9F%E4%BA%86%E8%A7%A3/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95)
 
