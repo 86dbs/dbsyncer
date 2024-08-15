@@ -4,6 +4,7 @@ import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +49,9 @@ public class TableGroupController extends BaseController {
         try {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(tableGroupService.add(params));
+        } catch (SdkException e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage(), 400);
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -82,28 +86,6 @@ public class TableGroupController extends BaseController {
     public RestResult remove(@RequestParam(value = "mappingId") String mappingId, @RequestParam(value = "ids") String ids) {
         try {
             return RestResult.restSuccess(tableGroupService.remove(mappingId, ids));
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
-    @GetMapping("/get")
-    @ResponseBody
-    public RestResult get(@RequestParam(value = "id") String id) {
-        try {
-            return RestResult.restSuccess(tableGroupService.getTableGroup(id));
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
-    @GetMapping("/getAll")
-    @ResponseBody
-    public RestResult getAll(@RequestParam(value = "mappingId") String mappingId) {
-        try {
-            return RestResult.restSuccess(tableGroupService.getTableGroupAll(mappingId));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e.getClass());
             return RestResult.restFail(e.getMessage());

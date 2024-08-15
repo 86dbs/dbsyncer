@@ -90,26 +90,4 @@ public class ConnectorController extends BaseController {
         }
     }
 
-    @GetMapping("/get")
-    @ResponseBody
-    public RestResult get(HttpServletRequest request, @RequestParam(value = "id") String id) {
-        try {
-            return RestResult.restSuccess(connectorService.getConnector(id));
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
-    @GetMapping("/getAll")
-    @ResponseBody
-    public RestResult getAll(HttpServletRequest request) {
-        try {
-            return RestResult.restSuccess(connectorService.getConnectorAll());
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
 }

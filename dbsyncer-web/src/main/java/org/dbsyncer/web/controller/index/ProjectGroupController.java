@@ -113,15 +113,4 @@ public class ProjectGroupController extends BaseController {
         }
     }
 
-    @GetMapping("/getAll")
-    @ResponseBody
-    public RestResult getAll() {
-        try {
-            return RestResult.restSuccess(projectGroupService.getProjectGroupAll());
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
 }

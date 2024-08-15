@@ -38,8 +38,10 @@ import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -167,6 +169,27 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public MappingVo getMapping(String id) {
         Mapping mapping = profileComponent.getMapping(id);
         return convertMapping2Vo(mapping);
+    }
+
+    @Override
+    public MappingVo getMappingWithoutMatchedTables(String id) {
+        Mapping mapping = profileComponent.getMapping(id);
+        MappingVo vo = convertMapping2Vo(mapping);
+        List<TableGroup> tableGroupAll = tableGroupService.getTableGroupAll(id);
+        // 过滤已映射的表
+        if(!CollectionUtils.isEmpty(tableGroupAll)){
+            final Set<String> sTables = new HashSet<>();
+            final Set<String> tTables = new HashSet<>();
+            tableGroupAll.forEach(tableGroup -> {
+                sTables.add(tableGroup.getSourceTable().getName());
+                tTables.add(tableGroup.getTargetTable().getName());
+            });
+            vo.getSourceConnector().setTable(vo.getSourceConnector().getTable().stream().filter(t -> !sTables.contains(t.getName())).collect(Collectors.toList()));
+            vo.getTargetConnector().setTable(vo.getTargetConnector().getTable().stream().filter(t -> !tTables.contains(t.getName())).collect(Collectors.toList()));
+            sTables.clear();
+            tTables.clear();
+        }
+        return vo;
     }
 
     @Override
