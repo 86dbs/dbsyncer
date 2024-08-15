@@ -122,35 +122,37 @@ function bindTableSelect(){
 
 // 绑定新增表关系点击事件
 function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
-    var $addBtn = $("#tableGroupAddBtn");
+    let $addBtn = $("#tableGroupAddBtn");
     $addBtn.unbind("click");
     $addBtn.bind('click', function () {
-        var m = {};
+        let m = {};
         m.mappingId = $(this).attr("mappingId");
         m.sourceTable = $sourceSelect.selectpicker('val');
         m.targetTable = $targetSelect.selectpicker('val');
-        if(undefined == m.sourceTable){
+        if (undefined == m.sourceTable) {
             bootGrowl("请选择数据源表", "danger");
             return;
         }
-        if(undefined == m.targetTable){
+        if (undefined == m.targetTable) {
             bootGrowl("请选择目标源表", "danger");
             return;
         }
 
-        // 如果存在多个选择，只筛选相似表
-        var sLen = m.sourceTable.length;
-        var tLen = m.targetTable.length;
-        if (1 < sLen || 1 < tLen) {
-            var mark = [];
-            for (j = 0; j < sLen; j++) {
-                if (-1 != m.targetTable.indexOf(m.sourceTable[j])) {
-                    mark.push(m.sourceTable[j]);
-                }
-            }
-            m.sourceTable = mark;
-            m.targetTable = mark;
+        let sLen = m.sourceTable.length;
+        let tLen = m.targetTable.length;
+        if (sLen < 1) {
+            bootGrowl("请选择数据源表", "danger");
+            return;
         }
+        if (tLen < 1) {
+            bootGrowl("请选择目标源表", "danger");
+            return;
+        }
+        if (sLen != tLen) {
+            bootGrowl("表映射关系数量不一致，请检查源表和目标表关系", "danger");
+            return;
+        }
+
         m.sourceTable = m.sourceTable.join('|');
         m.targetTable = m.targetTable.join('|');
         m.sourceTablePK = $("#sourceTablePK").val();
@@ -162,6 +164,9 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
                 refresh(m.mappingId);
             } else {
                 bootGrowl(data.resultValue, "danger");
+                if (data.status == 400) {
+                    refresh(m.mappingId);
+                }
             }
         });
     });

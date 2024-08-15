@@ -43,7 +43,7 @@ public class MappingController extends BaseController {
 
     @GetMapping("/page/{page}")
     public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id) {
-        model.put("mapping", mappingService.getMapping(id));
+        model.put("mapping", mappingService.getMappingWithoutMatchedTables(id));
         model.put("tableGroups", tableGroupService.getTableGroupAll(id));
         initConfig(model);
         return "mapping/" + page;
@@ -111,28 +111,6 @@ public class MappingController extends BaseController {
     public RestResult stop(@RequestParam(value = "id") String id) {
         try {
             return RestResult.restSuccess(mappingService.stop(id));
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
-    @GetMapping("/get")
-    @ResponseBody
-    public RestResult get(@RequestParam(value = "id") String id) {
-        try {
-            return RestResult.restSuccess(mappingService.getMapping(id));
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
-    @GetMapping("/getAll")
-    @ResponseBody
-    public RestResult getAll() {
-        try {
-            return RestResult.restSuccess(mappingService.getMappingAll());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

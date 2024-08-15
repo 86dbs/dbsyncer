@@ -53,6 +53,14 @@ public interface MappingService {
     MappingVo getMapping(String id);
 
     /**
+     * 获取驱动(过滤已匹配的表)
+     *
+     * @param id
+     * @return
+     */
+    MappingVo getMappingWithoutMatchedTables(String id);
+
+    /**
      * 获取所有驱动
      *
      * @return
