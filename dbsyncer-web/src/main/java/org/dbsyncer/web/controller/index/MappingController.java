@@ -42,8 +42,8 @@ public class MappingController extends BaseController {
     }
 
     @GetMapping("/page/{page}")
-    public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id) {
-        model.put("mapping", mappingService.getMappingWithoutMatchedTables(id));
+    public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id, Integer exclude) {
+        model.put("mapping", mappingService.getMapping(id, exclude));
         model.put("tableGroups", tableGroupService.getTableGroupAll(id));
         initConfig(model);
         return "mapping/" + page;

@@ -17,10 +17,10 @@ public abstract class AbstractConfigModel extends ConfigModel {
     private Map<String, String> params = new HashMap<>();
 
     // 过滤条件
-    private List<Filter> filter = new ArrayList<>();;
+    private List<Filter> filter = new ArrayList<>();
 
     // 转换配置
-    private List<Convert> convert = new ArrayList<>();;
+    private List<Convert> convert = new ArrayList<>();
 
     // 插件配置
     private Plugin plugin;

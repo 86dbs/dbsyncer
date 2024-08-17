@@ -120,6 +120,20 @@ function bindTableSelect(){
     bindMappingTableGroupAddClick($sourceSelect, $targetSelect);
 }
 
+// 绑定下拉过滤按钮点击事件
+function bindMultipleSelectFilterBtnClick() {
+    $(".actions-btn").parent().append('<button type="button" class="actions-btn bs-show-all btn btn-default" title="显示所有表，包含已添加的表">取消过滤</button><button type="button" class="actions-btn bs-exclude-all btn btn-default" title="不显示已添加的表">过滤</button>');
+    $(".actions-btn").css('width', '25%');
+    $(".bs-show-all").bind("click", function () {
+        doLoader('/mapping/page/edit?id=' + $("#mappingId").val() + '&exclude=1');
+        bootGrowl("取消过滤成功!", "success");
+    });
+    $(".bs-exclude-all").bind("click", function () {
+        refresh($("#mappingId").val());
+        bootGrowl("过滤成功!", "success");
+    });
+}
+
 // 绑定新增表关系点击事件
 function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
     let $addBtn = $("#tableGroupAddBtn");
@@ -213,7 +227,7 @@ function bindRefreshTablesClick() {
         doPoster("/mapping/refreshTables", {'id': id}, function (data) {
             if (data.success == true) {
                 bootGrowl("刷新表成功!", "success");
-                doLoader('/mapping/page/edit?id=' + id);
+                refresh(id);
             } else {
                 bootGrowl(data.resultValue, "danger");
             }
@@ -240,12 +254,14 @@ $(function () {
 
     // 初始化select插件
     initSelectIndex($(".select-control-table"), -1);
+    // 绑定下拉过滤按钮点击事件
+    bindMultipleSelectFilterBtnClick();
 
     // 保存
     $("#mappingSubmitBtn").click(function () {
-        var $form = $("#mappingModifyForm");
+        let $form = $("#mappingModifyForm");
         if ($form.formValidate() == true) {
-            var data = $form.serializeJson();
+            let data = $form.serializeJson();
             submit(data);
         }
     });
