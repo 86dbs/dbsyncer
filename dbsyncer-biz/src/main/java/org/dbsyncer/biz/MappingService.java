@@ -53,12 +53,13 @@ public interface MappingService {
     MappingVo getMapping(String id);
 
     /**
-     * 获取驱动(过滤已匹配的表)
+     * 获取驱动
      *
      * @param id
+     * @param exclude 0-过滤已添加的表；1-显示所有表，包含已添加的表
      * @return
      */
-    MappingVo getMappingWithoutMatchedTables(String id);
+    MappingVo getMapping(String id, Integer exclude);
 
     /**
      * 获取所有驱动

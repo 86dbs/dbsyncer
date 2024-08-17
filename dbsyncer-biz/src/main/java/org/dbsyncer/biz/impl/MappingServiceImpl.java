@@ -172,12 +172,17 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public MappingVo getMappingWithoutMatchedTables(String id) {
+    public MappingVo getMapping(String id, Integer exclude) {
         Mapping mapping = profileComponent.getMapping(id);
+        // 显示所有表
+        if (exclude != null && exclude == 1) {
+            return convertMapping2Vo(mapping);
+        }
+
+        // 过滤已映射的表
         MappingVo vo = convertMapping2Vo(mapping);
         List<TableGroup> tableGroupAll = tableGroupService.getTableGroupAll(id);
-        // 过滤已映射的表
-        if(!CollectionUtils.isEmpty(tableGroupAll)){
+        if (!CollectionUtils.isEmpty(tableGroupAll)) {
             final Set<String> sTables = new HashSet<>();
             final Set<String> tTables = new HashSet<>();
             tableGroupAll.forEach(tableGroup -> {
