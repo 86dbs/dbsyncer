@@ -16,6 +16,11 @@ import java.util.List;
 public class ProductInfo {
 
     /**
+     * 机器码
+     */
+    private String licenseKey;
+
+    /**
      * 公司名称
      */
     private String company;
@@ -44,6 +49,14 @@ public class ProductInfo {
      * 授权产品列表明细
      */
     private List<Product> products = new ArrayList<>();
+
+    public String getLicenseKey() {
+        return licenseKey;
+    }
+
+    public void setLicenseKey(String licenseKey) {
+        this.licenseKey = licenseKey;
+    }
 
     public String getCompany() {
         return company;
