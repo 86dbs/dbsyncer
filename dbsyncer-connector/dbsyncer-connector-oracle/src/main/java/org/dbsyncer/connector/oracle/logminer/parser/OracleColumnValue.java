@@ -9,6 +9,7 @@ import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
+import org.apache.commons.lang3.StringUtils;
 import org.dbsyncer.common.column.AbstractColumnValue;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -18,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -56,10 +58,25 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public String asString() {
-        if (getValue() instanceof StringValue){
+        if (getValue() instanceof StringValue) {
             return ((StringValue) getValue()).getValue();
         }
-        return Objects.toString(getValue());
+
+        String val = Objects.toString(getValue());
+        if (val.startsWith("UNISTR('")) {
+            try {
+                String valueSub = val.substring(8, val.length() - 2);
+                if (StringUtils.isNotBlank(valueSub)) {
+                    return decodeUnicode(valueSub);
+                } else {
+                    return "";
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("parse value [" + val + " ] failed ", e);
+            }
+        }
+
+        return val;
     }
 
     @Override
@@ -186,4 +203,26 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
         R apply(String type, Object value);
 
     }
+
+
+    private String decodeUnicode(String dataStr) {
+        int start = dataStr.indexOf("\\");
+        int end = 0;
+        final StringBuffer buffer = new StringBuffer(dataStr.substring(0, start));
+        while (start > -1) {
+            end = dataStr.indexOf("\\", start + 1);
+            String charStr = "";
+            if (end == -1) {
+                charStr = dataStr.substring(start + 1, dataStr.length());
+            } else {
+                charStr = dataStr.substring(start + 1, end);
+            }
+            char letter = (char) Integer.parseInt(charStr, 16); // 16进制parse整形字符串。
+            buffer.append(new Character(letter).toString());
+            start = end;
+        }
+        return new String(buffer.toString().getBytes(), StandardCharsets.UTF_8);
+    }
+
+
 }
