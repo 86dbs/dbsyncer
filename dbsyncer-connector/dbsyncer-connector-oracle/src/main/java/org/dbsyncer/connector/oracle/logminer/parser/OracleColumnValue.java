@@ -206,22 +206,24 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
 
     private String decodeUnicode(String dataStr) {
-        int start = dataStr.indexOf("\\");
-        int end = 0;
-        final StringBuffer buffer = new StringBuffer(dataStr.substring(0, start));
-        while (start > -1) {
-            end = dataStr.indexOf("\\", start + 1);
-            String charStr = "";
-            if (end == -1) {
-                charStr = dataStr.substring(start + 1, dataStr.length());
+        StringBuilder result = new StringBuilder();
+        int i = 0;
+        while (i < dataStr.length()) {
+            if (dataStr.charAt(i) == '\\') {
+                // 读取接下来四个字符作为十六进制数
+                String unicodeDigits = dataStr.substring(i + 1, i + 5);
+                // 将十六进制数转换为整数（Unicode码点）
+                int unicodeValue = Integer.parseInt(unicodeDigits, 16);
+                // 转换为字符并追加到结果
+                result.append((char) unicodeValue);
+                i += 5;  // 跳过已经处理的部分（1个 \ 和 4个十六进制数字）
             } else {
-                charStr = dataStr.substring(start + 1, end);
+                // 如果不是 \ 开头的部分，直接追加原始字符
+                result.append(dataStr.charAt(i));
+                i++;
             }
-            char letter = (char) Integer.parseInt(charStr, 16); // 16进制parse整形字符串。
-            buffer.append(new Character(letter).toString());
-            start = end;
         }
-        return new String(buffer.toString().getBytes(), StandardCharsets.UTF_8);
+        return result.toString();
     }
 
 
