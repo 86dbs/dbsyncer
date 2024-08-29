@@ -9,7 +9,6 @@ import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
-import org.apache.commons.lang3.StringUtils;
 import org.dbsyncer.common.column.AbstractColumnValue;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -19,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -50,9 +48,6 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
         if (getValue() instanceof NullValue) {
             return true;
         }
-        if (getValue() instanceof IsNullExpression) {
-            return true;
-        }
         return super.isNull();
     }
 
@@ -66,10 +61,10 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
         if (val.startsWith("UNISTR('")) {
             try {
                 String valueSub = val.substring(8, val.length() - 2);
-                if (StringUtils.isNotBlank(valueSub)) {
+                if (StringUtil.isNotBlank(valueSub)) {
                     return decodeUnicode(valueSub);
                 } else {
-                    return "";
+                    return StringUtil.EMPTY;
                 }
             } catch (Exception e) {
                 throw new RuntimeException("parse value [" + val + " ] failed ", e);
@@ -203,7 +198,6 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
         R apply(String type, Object value);
 
     }
-
 
     private String decodeUnicode(String dataStr) {
         StringBuilder result = new StringBuilder();
