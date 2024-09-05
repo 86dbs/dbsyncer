@@ -42,7 +42,7 @@
 
 #### 版本介绍
 - dbsyncer-x.x.x.zip（开源版）
-- dbsyncer-enterprise-x.x.x.zip（[专业版](https://mp.weixin.qq.com/s/Ks69-BNYPpZarjGQooARLw)）
+- dbsyncer-enterprise-x.x.x.zip（[专业版](https://gitee.com/ghi/dbsyncer/wikis/DBSyncer%E4%B8%93%E4%B8%9A%E7%89%88)）
 
 #### 方式一 下载安装包
 1. 安装[JDK 1.8](https://www.oracle.com/java/technologies/jdk8-downloads.html)（省略详细）
