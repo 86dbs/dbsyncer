@@ -48,18 +48,30 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
         if (getValue() instanceof NullValue) {
             return true;
         }
-        if (getValue() instanceof IsNullExpression) {
-            return true;
-        }
         return super.isNull();
     }
 
     @Override
     public String asString() {
-        if (getValue() instanceof StringValue){
+        if (getValue() instanceof StringValue) {
             return ((StringValue) getValue()).getValue();
         }
-        return Objects.toString(getValue());
+
+        String val = Objects.toString(getValue());
+        if (val.startsWith("UNISTR('")) {
+            try {
+                String valueSub = val.substring(8, val.length() - 2);
+                if (StringUtil.isNotBlank(valueSub)) {
+                    return decodeUnicode(valueSub);
+                } else {
+                    return StringUtil.EMPTY;
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("parse value [" + val + " ] failed ", e);
+            }
+        }
+
+        return val;
     }
 
     @Override
@@ -186,4 +198,27 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
         R apply(String type, Object value);
 
     }
+
+    private String decodeUnicode(String dataStr) {
+        StringBuilder result = new StringBuilder();
+        int i = 0;
+        while (i < dataStr.length()) {
+            if (dataStr.charAt(i) == '\\') {
+                // 读取接下来四个字符作为十六进制数
+                String unicodeDigits = dataStr.substring(i + 1, i + 5);
+                // 将十六进制数转换为整数（Unicode码点）
+                int unicodeValue = Integer.parseInt(unicodeDigits, 16);
+                // 转换为字符并追加到结果
+                result.append((char) unicodeValue);
+                i += 5;  // 跳过已经处理的部分（1个 \ 和 4个十六进制数字）
+            } else {
+                // 如果不是 \ 开头的部分，直接追加原始字符
+                result.append(dataStr.charAt(i));
+                i++;
+            }
+        }
+        return result.toString();
+    }
+
+
 }
