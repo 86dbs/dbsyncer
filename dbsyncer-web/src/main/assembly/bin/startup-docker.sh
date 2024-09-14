@@ -61,6 +61,4 @@ SERVER_OPTS="$SERVER_OPTS \
 
 # execute command
 echo $SERVER_OPTS
-java $SERVER_OPTS $APP > /dev/null & echo $! > $DBS_HOME/tmp.pid
-echo 'Start successfully!'
-exit 1
+java $SERVER_OPTS -Dfile.encoding=UTF-8 $APP
