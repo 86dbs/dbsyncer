@@ -56,6 +56,7 @@ public class UserConfigServiceImpl implements UserConfigService {
         String password = params.get("password");
         Assert.hasText(password, "The password is null.");
         String mail = params.get("mail");
+        String phone = params.get("phone");
 
         // 验证当前登录用户合法身份（必须是管理员操作）
         UserConfig userConfig = getUserConfig();
@@ -64,7 +65,7 @@ public class UserConfigServiceImpl implements UserConfigService {
         // 新用户合法性（用户不能重复）
         Assert.isNull(userConfig.getUserInfo(username), "用户已存在，请换个账号");
         // 注册新用户
-        userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password), UserRoleEnum.USER.getCode(), mail));
+        userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password), UserRoleEnum.USER.getCode(), mail, phone));
 
         logService.log(LogType.UserLog.INSERT, String.format("[%s]添加[%s]账号成功", currentUser.getUsername(), username));
         return profileComponent.editConfigModel(userConfig);
@@ -78,6 +79,7 @@ public class UserConfigServiceImpl implements UserConfigService {
         Assert.hasText(nickname, "The nickname is null.");
         String newPwd = params.get("newPwd");
         String mail = params.get("mail");
+        String phone = params.get("phone");
 
         // 验证当前登录用户合法身份（管理员或本人操作）
         UserConfig userConfig = getUserConfig();
@@ -93,6 +95,7 @@ public class UserConfigServiceImpl implements UserConfigService {
         // 用户昵称
         updateUser.setNickname(nickname);
         updateUser.setMail(mail);
+        updateUser.setPhone(phone);
         // 修改密码
         if (StringUtil.isNotBlank(newPwd)) {
             // 修改自己的密码需要验证
@@ -181,7 +184,7 @@ public class UserConfigServiceImpl implements UserConfigService {
             if (null == config) {
                 config = (UserConfig) userConfigChecker.checkAddConfigModel(new HashMap<>());
                 UserRoleEnum admin = UserRoleEnum.ADMIN;
-                config.getUserInfoList().add(new UserInfo(DEFAULT_USERNAME, DEFAULT_USERNAME, DEFAULT_PASSWORD, admin.getCode(), ""));
+                config.getUserInfoList().add(new UserInfo(DEFAULT_USERNAME, DEFAULT_USERNAME, DEFAULT_PASSWORD, admin.getCode(), StringUtil.EMPTY, StringUtil.EMPTY));
                 profileComponent.addConfigModel(config);
             }
             return config;

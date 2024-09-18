@@ -127,6 +127,6 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     public String getWatermark(SystemConfig systemConfig) {
-        return StringUtil.isNotBlank(systemConfig.getWatermark()) ? systemConfig.getWatermark() : appConfig.getName() + "<br />" + appConfig.getCompany();
+        return StringUtil.isNotBlank(systemConfig.getWatermark()) ? systemConfig.getWatermark() : appConfig.getName() + "-${username}<br />" + appConfig.getCompany();
     }
 }

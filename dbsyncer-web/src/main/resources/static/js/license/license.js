@@ -4,47 +4,90 @@ $(function () {
         width: 200,
         height: 200
     });
-    let imgSelector = qrcode.querySelector("img");
-    imgSelector.onload = () => {
-        let content = "<img src='" + imgSelector.src + "' />";
-        $("#myService").popover({
-            title: "<span class='fa fa-wechat'></span> 微信扫码",
-            trigger: 'hover',
-            placement: 'bottom',
-            html: 'true',
-            content: content
-        }).on('shown.bs.popover', function (event) {
-            const that = this;
-            $(this).parent().find('div.popover').on('mouseenter', function () {
-                $(that).attr('in', true);
-            }).on('mouseleave', function () {
-                $(that).removeAttr('in');
-                $(that).popover('hide');
+    let $myService = $("#myService");
+    $myService.hover(function () {
+        if(!$myService.attr('init') == true){
+            $myService.attr("init", true);
+            $myService.unbind('mouseenter').unbind('mouseleave');
+            $myService.popover({
+                title: "<span class='fa fa-wechat'></span> 微信扫码",
+                trigger: 'hover',
+                placement: 'bottom',
+                html: 'true',
+                content: "<img src='" + $("#qrcode").find("img:first").attr('src') + "' />"
+            }).on('shown.bs.popover', function (event) {
+                const that = this;
+                $(this).parent().find('div.popover').on('mouseenter', function () {
+                    $(that).attr('in', true);
+                }).on('mouseleave', function () {
+                    $(that).removeAttr('in');
+                    $(that).popover('hide');
+                });
+            }).on('hide.bs.popover', function (event) {
+                if ($(this).attr('in')) {
+                    event.preventDefault();
+                }
             });
-        }).on('hide.bs.popover', function (event) {
-            if ($(this).attr('in')) {
-                event.preventDefault();
-            }
-        });
-    }
+            $myService.popover('show');
+        }
+    })
 
-    document.getElementById("copyBtn").addEventListener('click', async event => {
-        //Get the copied text
-        const text = document.getElementById("licenseKey").value;
-        fallbackCopyTextToClipboard(text)
+    // 删除激活码
+    $("#removeBtn").bind('click', function(){
+        // 如果当前为恢复状态
+        BootstrapDialog.show({
+            title: "警告",
+            type: BootstrapDialog.TYPE_DANGER,
+            message: "删除激活码后，产品功能将不可用，确认是否删除？",
+            size: BootstrapDialog.SIZE_NORMAL,
+            buttons: [{
+                label: "确定",
+                action: function (dialog) {
+                    doPoster("/license/remove", {}, function (data) {
+                        if (data.success == true) {
+                            bootGrowl("删除激活码成功！", "success");
+                            doLoader("/license");
+                        } else {
+                            bootGrowl(data.resultValue, "danger");
+                        }
+                    });
+                    dialog.close();
+                }
+            }, {
+                label: "取消",
+                action: function (dialog) {
+                    dialog.close();
+                }
+            }]
+        });
     });
 
+    // 在线激活
+    $("#activateBtn").bind('click', function(){
+        const $form = $("#licenseForm");
+        if ($form.formValidate() == true) {
+            const data = $form.serializeJson();
+            doPoster("/license/activate", data, function (data) {
+                if (data.success == true) {
+                    bootGrowl("在线激活成功！", "success");
+                    doLoader("/license");
+                } else {
+                    bootGrowl(data.resultValue, "danger");
+                }
+            });
+        }
+    });
 
-    // 旧浏览器的回退方案
-    function fallbackCopyTextToClipboard(text) {
-        var textArea = document.createElement("textarea");
-        textArea.value = text;
+    $("#copyBtn").bind('click', function(){
+        //Get the copied text
+        let textArea = document.createElement("textarea");
+        textArea.value = document.getElementById("licenseKey").value;
         textArea.style.height='0px';
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
         try {
-            var successful = document.execCommand('copy');
+            let successful = document.execCommand('copy');
             if (successful) {
                 bootGrowl("复制机器码成功！", "success");
             }
@@ -52,7 +95,7 @@ $(function () {
             console.error('复制失败', err);
         }
         document.body.removeChild(textArea);
-    }
+    });
 
     $("#fileLicense").fileinput({
         theme: 'fas',
