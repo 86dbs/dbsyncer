@@ -62,9 +62,12 @@ public class LicenseController extends BaseController {
     @Resource
     private UserConfigService userConfigService;
 
+    public static final Integer SUCCESS_TAG = 200;
+    public static final String STATUS_TAG = "status";
     public static final String DATA_TAG = "data";
     public static final String MSG_TAG = "msg";
-    public static final String SERVER_ADDRESS = "http://127.0.0.1:8888/api/license/create";
+
+    public static final String SERVER_ADDRESS = "http://117.72.11.38:8989/api/license/create";
 
     @RequestMapping("")
     public String index(ModelMap model) {
@@ -171,7 +174,10 @@ public class LicenseController extends BaseController {
             if (response.getStatusLine().getStatusCode() == 200) {
                 Map<String, String> result = JsonUtil.jsonToObj(EntityUtils.toString(response.getEntity()), Map.class);
                 if (result.containsKey(DATA_TAG)) {
-                    return result.get(DATA_TAG);
+                    String status = String.valueOf(result.get(STATUS_TAG));
+                    if (Integer.parseInt(status) == SUCCESS_TAG) {
+                        return result.get(DATA_TAG);
+                    }
                 }
                 throw new IllegalArgumentException(result.get(MSG_TAG));
             }
