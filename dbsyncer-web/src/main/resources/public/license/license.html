@@ -24,7 +24,6 @@
             <address>
                 <strong>[[${productInfo?.company}]]</strong><br>
                 申请人：[[${productInfo?.owner}]]<br>
-                手机号：[[${productInfo?.phone}]]<br>
                 授权时间：[[${#dates.format(productInfo?.createTime, 'yyyy-MM-dd HH:mm:ss')}]]<br>
                 <abbr>备注：</abbr>[[${productInfo?.remark}]]
             </address>
@@ -83,13 +82,9 @@
             </div>
             <div class="form-group">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <label>备注</label>
                         <input class="form-control" type="text" maxlength="64" name="remark"/>
-                    </div>
-                    <div class="col-md-6">
-                        <label>授权服务</label>
-                        <input class="form-control" type="text" maxlength="256" name="url" th:value="${url}"/>
                     </div>
                 </div>
             </div>

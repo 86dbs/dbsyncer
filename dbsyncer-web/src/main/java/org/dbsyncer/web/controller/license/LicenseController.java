@@ -62,11 +62,10 @@ public class LicenseController extends BaseController {
     @Resource
     private UserConfigService userConfigService;
 
-    public static final Integer SUCCESS_TAG = 200;
-    public static final String STATUS_TAG = "status";
-    public static final String DATA_TAG = "data";
-    public static final String MSG_TAG = "msg";
-
+    public static final Integer SUCCESS = 200;
+    public static final String STATUS = "status";
+    public static final String DATA = "data";
+    public static final String MSG = "msg";
     public static final String SERVER_ADDRESS = "http://117.72.11.38:8989/api/license/create";
 
     @RequestMapping("")
@@ -75,7 +74,6 @@ public class LicenseController extends BaseController {
         model.put("company", appConfig.getCompany());
         model.put("userInfo", getUserInfo());
         model.put("productInfo", licenseService.getProductInfo());
-        model.put("url", SERVER_ADDRESS);
         return "license/license";
     }
 
@@ -149,7 +147,6 @@ public class LicenseController extends BaseController {
         String phone = params.get("phone");
         String mail = params.get("mail");
         String remark = params.get("remark");
-        String url = params.get("url");
         map.put("licenseKey", licenseService.getKey());
         map.put("company", StringUtil.isNotBlank(company) ? company : appConfig.getCompany());
         UserInfo userInfo = getUserInfo();
@@ -158,7 +155,7 @@ public class LicenseController extends BaseController {
         map.put("phone", StringUtil.isNotBlank(phone) ? phone : userInfo.getPhone());
         map.put("mail", StringUtil.isNotBlank(mail) ? mail : userInfo.getMail());
         map.put("remark", StringUtil.isNotBlank(remark) ? remark : StringUtil.EMPTY);
-        return invoke(StringUtil.isNotBlank(url) ? url : SERVER_ADDRESS, map);
+        return invoke(SERVER_ADDRESS, map);
     }
 
     public String invoke(String url, Map params) throws IOException {
@@ -171,15 +168,15 @@ public class LicenseController extends BaseController {
         CloseableHttpClient httpClient = HttpClients.createDefault();
         try {
             CloseableHttpResponse response = httpClient.execute(httpPost);
-            if (response.getStatusLine().getStatusCode() == 200) {
+            if (response.getStatusLine().getStatusCode() == SUCCESS) {
                 Map<String, String> result = JsonUtil.jsonToObj(EntityUtils.toString(response.getEntity()), Map.class);
-                if (result.containsKey(DATA_TAG)) {
-                    String status = String.valueOf(result.get(STATUS_TAG));
-                    if (Integer.parseInt(status) == SUCCESS_TAG) {
-                        return result.get(DATA_TAG);
+                if (result.containsKey(DATA)) {
+                    String status = String.valueOf(result.get(STATUS));
+                    if (Integer.parseInt(status) == SUCCESS) {
+                        return result.get(DATA);
                     }
                 }
-                throw new IllegalArgumentException(result.get(MSG_TAG));
+                throw new IllegalArgumentException(result.get(MSG));
             }
         } catch (HttpHostConnectException e) {
             throw new IllegalArgumentException("网络连接异常，无法激活");
