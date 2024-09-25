@@ -17,6 +17,7 @@ import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 import com.github.shyiko.mysql.binlog.network.ServerException;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.StringUtil;
@@ -316,18 +317,32 @@ public class MySQLListener extends AbstractDatabaseListener {
         }
 
         private void parseDDL(QueryEventData data) {
-            if (isNotUniqueCodeEvent(data.getSql()) && StringUtil.startsWith(data.getSql(), ConnectorConstant.OPERTION_ALTER)) {
-                try {
-                    // ALTER TABLE `test`.`my_user` MODIFY COLUMN `name` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL AFTER `id`
-                    Alter alter = (Alter) CCJSqlParserUtil.parse(data.getSql());
-                    String tableName = StringUtil.replace(alter.getTable().getName(), "`", "");
-                    if (isFilterTable(data.getDatabase(), tableName)) {
-                        logger.info("sql:{}", data.getSql());
-                        trySendEvent(new DDLChangedEvent(data.getDatabase(), tableName, ConnectorConstant.OPERTION_ALTER, data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
-                    }
-                } catch (JSQLParserException e) {
-                    logger.error("不支持ddl sql，支持标准的sql格式，请查看文档https://gitee.com/ghi/dbsyncer/wikis/%E5%BF%AB%E9%80%9F%E4%BA%86%E8%A7%A3/%E8%A1%A8%E7%BB%93%E6%9E%84%E5%90%8C%E6%AD%A5");
+            if (isNotUniqueCodeEvent(data.getSql()) && StringUtil.contains(data.getSql().toUpperCase(), ConnectorConstant.OPERTION_ALTER)) {
+                Alter alter = parseAlter(data.getSql());
+                if (alter == null) {
+                    return;
                 }
+
+                // ALTER TABLE `test`.`my_user` MODIFY COLUMN `name` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL AFTER `id`
+                String tableName = StringUtil.replace(alter.getTable().getName(), "`", "");
+                if (isFilterTable(data.getDatabase(), tableName)) {
+                    logger.info("sql:{}", data.getSql());
+                    trySendEvent(new DDLChangedEvent(data.getDatabase(), tableName, ConnectorConstant.OPERTION_ALTER, data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
+                }
+            }
+        }
+
+        private Alter parseAlter(String sql) {
+            try {
+                Statement statement = CCJSqlParserUtil.parse(sql);
+                if (statement instanceof Alter) {
+                    return (Alter) statement;
+                } else {
+                    return null;
+                }
+            } catch (JSQLParserException e) {
+                logger.error("不支持ddl sql，支持标准的sql格式，请查看文档https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E8%A1%A8%E7%BB%93%E6%9E%84%E5%90%8C%E6%AD%A5");
+                return null;
             }
         }
 
@@ -349,5 +364,4 @@ public class MySQLListener extends AbstractDatabaseListener {
         }
 
     }
-
 }
