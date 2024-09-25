@@ -330,6 +330,10 @@ public class MySQLListener extends AbstractDatabaseListener {
                 // 依次执行下面两条语句 use db1; alter table db2.my_user add column name varchar(128);
                 // data.getDatabase() 的值为 db1, 不是 db2, 必须从 alter 中获取 databaseName
                 String databaseName = alter.getTable().getSchemaName();
+                // alter 中没有 databaseName 说明是 alter table my_user xxx 这种格式, 直接在上下文中获取即可
+                if (StringUtil.isBlank(databaseName)) {
+                    databaseName = data.getDatabase();
+                }
                 if (isFilterTable(databaseName, tableName)) {
                     logger.info("sql:{}", data.getSql());
                     trySendEvent(new DDLChangedEvent(databaseName, tableName, ConnectorConstant.OPERTION_ALTER, data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
