@@ -41,7 +41,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.util.HashMap;
 import java.util.Map;
 
 @Controller
@@ -141,29 +140,23 @@ public class LicenseController extends BaseController {
     }
 
     private String getLicenseContent(Map<String, String> params) throws IOException {
-        Map<String, Object> map = new HashMap<>();
-        String company = params.get("company");
-        String owner = params.get("owner");
-        String phone = params.get("phone");
-        String mail = params.get("mail");
-        String remark = params.get("remark");
-        map.put("licenseKey", licenseService.getKey());
-        map.put("company", StringUtil.isNotBlank(company) ? company : appConfig.getCompany());
+        ProductInfo info = JsonUtil.jsonToObj(JsonUtil.objToJson(params), ProductInfo.class);
         UserInfo userInfo = getUserInfo();
         Assert.notNull(userInfo, "会话过期，请重新登录");
-        map.put("owner", StringUtil.isNotBlank(owner) ? owner : userInfo.getNickname());
-        map.put("phone", StringUtil.isNotBlank(phone) ? phone : userInfo.getPhone());
-        map.put("mail", StringUtil.isNotBlank(mail) ? mail : userInfo.getMail());
-        map.put("remark", StringUtil.isNotBlank(remark) ? remark : StringUtil.EMPTY);
-        return invoke(SERVER_ADDRESS, map);
+        info.setLicenseKey(licenseService.getKey());
+        info.setCompany(StringUtil.isNotBlank(info.getCompany()) ? info.getCompany() : appConfig.getCompany());
+        info.setOwner(StringUtil.isNotBlank(info.getOwner()) ? info.getOwner() : userInfo.getNickname());
+        info.setPhone(StringUtil.isNotBlank(info.getPhone()) ? info.getPhone() : userInfo.getPhone());
+        info.setMail(StringUtil.isNotBlank(info.getMail()) ? info.getMail() : userInfo.getMail());
+        return invoke(info);
     }
 
-    public String invoke(String url, Map params) throws IOException {
-        String data = URLEncoder.encode(JsonUtil.objToJson(params), "UTF-8");
+    public String invoke(ProductInfo info) throws IOException {
+        String data = URLEncoder.encode(JsonUtil.objToJson(info), "UTF-8");
         StringEntity se = new StringEntity(data);
         se.setContentEncoding("UTF-8");
         se.setContentType("application/json");
-        HttpPost httpPost = new HttpPost(url);
+        HttpPost httpPost = new HttpPost(SERVER_ADDRESS);
         httpPost.setEntity(se);
         CloseableHttpClient httpClient = HttpClients.createDefault();
         try {
