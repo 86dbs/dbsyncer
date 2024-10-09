@@ -28,7 +28,7 @@ public class UserInfo {
     private String roleCode;
 
     /**
-     * 邮箱(多个邮箱使用分号拼接)
+     * 邮箱(多个邮箱使用逗号拼接)
      */
     private String mail;
 

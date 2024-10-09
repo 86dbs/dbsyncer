@@ -36,6 +36,11 @@ public class ProductInfo {
     private String phone;
 
     /**
+     * 邮箱(多个邮箱使用逗号拼接)
+     */
+    private String mail;
+
+    /**
      * 备注信息
      */
     private String remark;
@@ -80,6 +85,14 @@ public class ProductInfo {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getMail() {
+        return mail;
+    }
+
+    public void setMail(String mail) {
+        this.mail = mail;
     }
 
     public String getRemark() {
