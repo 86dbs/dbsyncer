@@ -7,6 +7,7 @@ import org.dbsyncer.biz.AppConfigService;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.VersionVo;
 import org.dbsyncer.common.config.AppConfig;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.springframework.stereotype.Component;
 
@@ -26,13 +27,17 @@ public class AppConfigServiceImpl implements AppConfigService {
     @Resource
     private SystemConfigService systemConfigService;
 
+    public static final String WATERMARK_USERNAME = "${username}";
+
     @Override
-    public VersionVo getVersionInfo() {
+    public VersionVo getVersionInfo(String username) {
         VersionVo versionVo = new VersionVo(appConfig.getName(), appConfig.getCopyright());
         // 是否启用水印
         SystemConfig systemConfig = systemConfigService.getSystemConfig();
         if (systemConfig.isEnableWatermark()) {
-            versionVo.setWatermark(systemConfigService.getWatermark(systemConfig));
+            String watermark = systemConfigService.getWatermark(systemConfig);
+            watermark = StringUtil.replace(watermark, WATERMARK_USERNAME, username);
+            versionVo.setWatermark(watermark);
         }
         return versionVo;
     }

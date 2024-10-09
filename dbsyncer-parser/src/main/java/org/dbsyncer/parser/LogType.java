@@ -278,7 +278,11 @@ public interface LogType {
         UPDATE("81", "修改"),
         DELETE("82", "删除"),
         UPLOAD_LICENSE_FILE("83", "上传授权许可文件"),
-        UPLOAD_LICENSE_FILE_ERROR("84", "上传授权许可文件失败");
+        UPLOAD_LICENSE_FILE_ERROR("84", "上传授权许可文件失败"),
+        ACTIVATE_FREE_LICENSE_FILE("85", "免费激活授权许可文件"),
+        ACTIVATE_FREE_LICENSE_FILE_ERROR("86", "免费激活授权许可文件失败"),
+        DELETE_LICENSE_FILE("87", "删除授权许可文件"),
+        DELETE_LICENSE_FILE_ERROR("88", "删除授权许可文件失败");
 
         private String type;
         private String message;

@@ -31,6 +31,7 @@
                         <th>用户</th>
                         <th>角色</th>
                         <th>邮箱</th>
+                        <th>手机</th>
                         <th>操作</th>
                     </tr>
                     </thead>
@@ -43,6 +44,7 @@
                                 <span class="label label-success">[[${m}]]</span>
                             </span>
                         </td>
+                        <td th:text="${u?.phone}"/>
                         <td>
                             <!-- 管理员或本人权限 -->
                             <button th:if="${currentUser?.roleCode eq 'admin' or currentUser?.username eq u?.username}" type="button" th:id="${u?.username}" class="btn btn-primary editUserBtn">

@@ -32,15 +32,21 @@ public class UserInfo {
      */
     private String mail;
 
+    /**
+     * 手机
+     */
+    private String phone;
+
     public UserInfo() {
     }
 
-    public UserInfo(String username, String nickname, String password, String roleCode, String mail) {
+    public UserInfo(String username, String nickname, String password, String roleCode, String mail, String phone) {
         this.username = username;
         this.nickname = nickname;
         this.password = password;
         this.roleCode = roleCode;
         this.mail = mail;
+        this.phone = phone;
     }
 
     public String getUsername() {
@@ -81,6 +87,14 @@ public class UserInfo {
 
     public void setMail(String mail) {
         this.mail = mail;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     @Override
