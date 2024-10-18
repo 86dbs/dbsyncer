@@ -38,7 +38,7 @@ public class ProductInfo {
     /**
      * 邮箱(多个邮箱使用逗号拼接)
      */
-    private String mail;
+    private String email;
 
     /**
      * 备注信息
@@ -87,12 +87,12 @@ public class ProductInfo {
         this.phone = phone;
     }
 
-    public String getMail() {
-        return mail;
+    public String getEmail() {
+        return email;
     }
 
-    public void setMail(String mail) {
-        this.mail = mail;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getRemark() {

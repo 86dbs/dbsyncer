@@ -30,7 +30,7 @@ public class UserInfo {
     /**
      * 邮箱(多个邮箱使用逗号拼接)
      */
-    private String mail;
+    private String email;
 
     /**
      * 手机
@@ -40,12 +40,12 @@ public class UserInfo {
     public UserInfo() {
     }
 
-    public UserInfo(String username, String nickname, String password, String roleCode, String mail, String phone) {
+    public UserInfo(String username, String nickname, String password, String roleCode, String email, String phone) {
         this.username = username;
         this.nickname = nickname;
         this.password = password;
         this.roleCode = roleCode;
-        this.mail = mail;
+        this.email = email;
         this.phone = phone;
     }
 
@@ -81,12 +81,12 @@ public class UserInfo {
         this.roleCode = roleCode;
     }
 
-    public String getMail() {
-        return mail;
+    public String getEmail() {
+        return email;
     }
 
-    public void setMail(String mail) {
-        this.mail = mail;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getPhone() {
