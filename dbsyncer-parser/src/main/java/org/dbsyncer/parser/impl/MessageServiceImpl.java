@@ -32,8 +32,8 @@ public class MessageServiceImpl implements MessageService {
 
         List<String> mails = new ArrayList<>();
         userConfig.getUserInfoList().forEach(userInfo -> {
-            if (StringUtil.isNotBlank(userInfo.getMail())) {
-                Arrays.asList(StringUtil.split(userInfo.getMail(), StringUtil.COMMA)).forEach(mail -> mails.add(mail));
+            if (StringUtil.isNotBlank(userInfo.getEmail())) {
+                Arrays.asList(StringUtil.split(userInfo.getEmail(), StringUtil.COMMA)).forEach(email -> mails.add(email));
             }
         });
         if (CollectionUtils.isEmpty(mails)) {

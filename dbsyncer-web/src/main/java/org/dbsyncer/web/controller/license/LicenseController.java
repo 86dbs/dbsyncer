@@ -147,7 +147,7 @@ public class LicenseController extends BaseController {
         info.setCompany(StringUtil.isNotBlank(info.getCompany()) ? info.getCompany() : appConfig.getCompany());
         info.setOwner(StringUtil.isNotBlank(info.getOwner()) ? info.getOwner() : userInfo.getNickname());
         info.setPhone(StringUtil.isNotBlank(info.getPhone()) ? info.getPhone() : userInfo.getPhone());
-        info.setMail(StringUtil.isNotBlank(info.getMail()) ? info.getMail() : userInfo.getMail());
+        info.setEmail(StringUtil.isNotBlank(info.getEmail()) ? info.getEmail() : userInfo.getEmail());
         return invoke(info);
     }
 

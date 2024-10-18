@@ -40,7 +40,7 @@
                         <td th:text="${u?.username + '(' + u?.nickname + ')'}"/>
                         <td th:text="${u?.roleName}"/>
                         <td>
-                            <span href="javascript:;" th:each="m : ${#strings.listSplit(u?.mail,',')}">
+                            <span href="javascript:;" th:each="m : ${#strings.listSplit(u?.email,',')}">
                                 <span class="label label-success">[[${m}]]</span>
                             </span>
                         </td>
