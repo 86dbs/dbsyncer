@@ -92,13 +92,14 @@
                 <div class="col-md-12">
                     <label>备注</label>
                     <textarea name="remark" class="form-control dbsyncer_textarea_resize_none" maxlength="64" rows="3" />
+                    <small class="text-muted">填写的信息会严格保密，我们不会向其他人共享您的信息</small>
                 </div>
             </div>
         </div>
         <div class="form-group">
             <div class="row">
                 <div class="col-md-12">
-                    <button id="activateBtn" class="btn btn-primary" type="button" th:title="填写的信息会严格保密，我们不会向其他人共享您的信息">在线激活(首次可免费体验15天)</button>
+                    <button id="activateBtn" class="btn btn-primary" type="button">在线激活(首次可免费体验15天)</button>
                 </div>
             </div>
         </div>
@@ -107,9 +108,10 @@
         <div class="row">
             <div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3 class="panel-title">离线激活（无法访问互联网时） 1.复制机器码给 <a href="javascript:;" id="myService" class="text-success"><span class='fa fa-wechat'></span>星河同步官方</a> 帮您生成License文件; 2.上传License文件</h3>
+                    <h3 class="panel-title">离线激活（无法访问互联网时） 1.复制机器码给 <a href="javascript:;" id="myService" class="text-success"><span class='fa fa-wechat'></span>星河同步官方</a> 帮您生成激活码文件; 2.上传</h3>
                 </div>
                 <div class="panel-body">
+                    <label>机器码</label>
                     <div class="input-group">
                         <input id="licenseKey" type="text" class="form-control text-primary" readonly="readonly" th:value="${key}">
                         <span class="input-group-btn"><button id="copyBtn" class="btn btn-default" type="button" th:title="复制机器码"><i class="fa fa-copy"></i>&nbsp;复制</button></span>
