@@ -13,6 +13,10 @@ public class NCharValueMapper extends AbstractValueMapper<String> {
 
     @Override
     protected String convert(ConnectorInstance connectorInstance, Object val) {
+        if (val instanceof Number) {
+            Number number = (Number) val;
+            return number.toString();
+        }
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }
