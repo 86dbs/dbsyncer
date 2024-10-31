@@ -101,17 +101,14 @@ public class LicenseController extends BaseController {
     @ResponseBody
     public RestResult activate(HttpServletRequest request) {
         try {
-            ProductInfo productInfo = licenseService.getProductInfo();
-            if (productInfo == null || (productInfo != null && CollectionUtils.isEmpty(productInfo.getProducts()))) {
-                String content = getLicenseContent(getParams(request));
-                if (StringUtil.isNotBlank(content)) {
-                    String filename = "license";
-                    File dest = new File(licenseService.getLicensePath() + filename);
-                    FileUtils.writeStringToFile(dest, content, Charset.defaultCharset());
-                    licenseService.updateLicense();
-                    logger.info("{}:{}", LogType.UserLog.ACTIVATE_FREE_LICENSE_FILE.getMessage(), filename);
-                    logService.log(LogType.UserLog.ACTIVATE_FREE_LICENSE_FILE);
-                }
+            String content = getLicenseContent(getParams(request));
+            if (StringUtil.isNotBlank(content)) {
+                String filename = "license";
+                File dest = new File(licenseService.getLicensePath() + filename);
+                FileUtils.writeStringToFile(dest, content, Charset.defaultCharset());
+                licenseService.updateLicense();
+                logger.info("{}:{}", LogType.UserLog.ACTIVATE_FREE_LICENSE_FILE.getMessage(), filename);
+                logService.log(LogType.UserLog.ACTIVATE_FREE_LICENSE_FILE);
             }
             return RestResult.restSuccess("ok");
         } catch (Exception e) {
