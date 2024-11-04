@@ -36,7 +36,7 @@ public class ESDateValueMapper extends AbstractValueMapper<java.util.Date> {
         }
 
         if (val instanceof Integer) {
-            return new java.util.Date((Long) val - 288_000_00);
+            return new java.util.Date((Long) val);
         }
 
         throw new ElasticsearchException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
