@@ -2,6 +2,7 @@ package org.dbsyncer.sdk.connector.schema;
 
 import microsoft.sql.DateTimeOffset;
 import org.dbsyncer.common.util.DateFormatUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.AbstractValueMapper;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -18,6 +19,14 @@ import java.time.OffsetDateTime;
  * @date 2022/8/25 0:07
  */
 public class TimestampValueMapper extends AbstractValueMapper<Timestamp> {
+
+    @Override
+    protected boolean skipConvert(Object val) {
+        if (val instanceof String) {
+            return StringUtil.equals((CharSequence) val, "0000-00-00 00:00:00");
+        }
+        return super.skipConvert(val);
+    }
 
     @Override
     protected Timestamp convert(ConnectorInstance connectorInstance, Object val) throws SQLException {
