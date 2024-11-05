@@ -29,6 +29,11 @@ public class ESConfig extends ConnectorConfig {
      */
     private String password;
 
+    /**
+     * 查询请求超时(秒)
+     */
+    private int timeoutSeconds = 10;
+
     public String getUrl() {
         return url;
     }
@@ -53,4 +58,11 @@ public class ESConfig extends ConnectorConfig {
         this.password = password;
     }
 
+    public int getTimeoutSeconds() {
+        return timeoutSeconds;
+    }
+
+    public void setTimeoutSeconds(int timeoutSeconds) {
+        this.timeoutSeconds = timeoutSeconds;
+    }
 }

@@ -6,6 +6,7 @@ package org.dbsyncer.connector.elasticsearch.cdc;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.elasticsearch.ElasticsearchConnector;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.listener.AbstractQuartzListener;
@@ -79,6 +80,7 @@ public final class ESQuartzListener extends AbstractQuartzListener {
         }
         point.setCommand(ConnectorConstant.OPERTION_QUERY, command.get(ConnectorConstant.OPERTION_QUERY));
         point.setCommand(ConnectorConstant.OPERTION_QUERY_FILTER, JsonUtil.objToJson(filters));
+        point.setCommand(ElasticsearchConnector.SOURCE_INDEX_NAME, command.get(ElasticsearchConnector.SOURCE_INDEX_NAME));
         return point;
     }
 }
