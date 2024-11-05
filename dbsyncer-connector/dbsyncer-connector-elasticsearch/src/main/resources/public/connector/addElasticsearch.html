@@ -18,7 +18,10 @@
         <div class="col-sm-4">
             <input class="form-control" name="url" type="text" maxlength="1024" dbsyncer-valid="require" th:value="${connector?.config?.url}?:'http://127.0.0.1:9200'"/>
         </div>
-        <div class="col-sm-6"></div>
+        <label class="col-sm-2 control-label">请求超时(秒)</label>
+        <div class="col-sm-4">
+            <input class="form-control" name="timeoutSeconds" type="number" dbsyncer-valid="require" min="1" max="120" th:value="${connector?.config?.timeoutSeconds}?:10"/>
+        </div>
     </div>
 </div>
 
