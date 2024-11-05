@@ -162,6 +162,10 @@ public abstract class DateFormatUtil {
 
             // 2022-07-21T05:00:59+0800
             if (s.length() == 24) {
+                // 2024-06-14T16:00:00.000Z
+                if (StringUtil.endsWith(s, "Z")) {
+                    return stringToTimestamp(s, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                }
                 return stringToTimestamp(s, TS_TZ_FORMATTER);
             }
 
