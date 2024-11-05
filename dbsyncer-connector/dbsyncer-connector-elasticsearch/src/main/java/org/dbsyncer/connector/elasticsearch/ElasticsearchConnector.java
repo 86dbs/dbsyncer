@@ -239,7 +239,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         genSearchSourceBuilder(builder, config.getCommand());
         builder.from((config.getPageIndex() - 1) * config.getPageSize());
         builder.size(config.getPageSize());
-        builder.timeout(TimeValue.timeValueMillis(10));
+        builder.timeout(TimeValue.timeValueSeconds(10));
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(config.getTable());
         if (!CollectionUtils.isEmpty(primaryKeys)) {
             primaryKeys.forEach(pk -> builder.sort(pk, SortOrder.ASC));
@@ -258,6 +258,9 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             List<Map<String, Object>> list = new ArrayList<>();
             for (SearchHit hit : searchHits) {
                 list.add(hit.getSourceAsMap());
+            }
+            if (searchResponse.getInternalResponse().timedOut()) {
+                throw new ElasticsearchException("search timeout:"+ searchResponse.getTook().getMillis() +"ms, pageIndex:" + config.getPageIndex() + ", pageSize:" + config.getPageSize());
             }
             return new Result(list);
         } catch (IOException e) {
