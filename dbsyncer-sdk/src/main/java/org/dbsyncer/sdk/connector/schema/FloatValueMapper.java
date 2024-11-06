@@ -4,8 +4,6 @@ import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.AbstractValueMapper;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 
-import java.math.BigDecimal;
-
 /**
  * @author AE86
  * @version 1.0.0
@@ -15,13 +13,9 @@ public class FloatValueMapper extends AbstractValueMapper<Float> {
 
     @Override
     protected Float convert(ConnectorInstance connectorInstance, Object val) {
-        if (val instanceof BigDecimal) {
-            BigDecimal bigDecimal = (BigDecimal) val;
-            return bigDecimal.floatValue();
-        }
-        if (val instanceof Double) {
-            Double dbl = (Double) val;
-            return dbl.floatValue();
+        if (val instanceof Number) {
+            Number number = (Number) val;
+            return number.floatValue();
         }
         if (val instanceof String) {
             String strVal = (String) val;

@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.elasticsearch.validator;
 
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.connector.elasticsearch.config.ESConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.springframework.util.Assert;
@@ -23,6 +24,7 @@ public final class ESConfigValidator implements ConfigValidator<ESConfig> {
         String username = params.get("username");
         String password = params.get("password");
         String url = params.get("url");
+        String timeoutSeconds = params.get("timeoutSeconds");
         Assert.hasText(username, "Username is empty.");
         Assert.hasText(password, "Password is empty.");
         Assert.hasText(url, "Url is empty.");
@@ -30,5 +32,6 @@ public final class ESConfigValidator implements ConfigValidator<ESConfig> {
         connectorConfig.setUsername(username);
         connectorConfig.setPassword(password);
         connectorConfig.setUrl(url);
+        connectorConfig.setTimeoutSeconds(NumberUtil.toInt(timeoutSeconds));
     }
 }
