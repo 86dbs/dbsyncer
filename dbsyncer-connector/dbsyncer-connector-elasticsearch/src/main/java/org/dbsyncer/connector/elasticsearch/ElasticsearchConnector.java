@@ -94,6 +94,8 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
 
     public static final String _TYPE = "_type";
 
+    private static final int MAX_SIZE = 10000;
+
     private final Map<String, FilterMapper> filters = new LinkedHashMap<>();
 
     private final ESConfigValidator configValidator = new ESConfigValidator();
@@ -238,17 +240,16 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     public Result reader(ESConnectorInstance connectorInstance, ReaderConfig config) {
         SearchSourceBuilder builder = new SearchSourceBuilder();
         genSearchSourceBuilder(builder, config.getCommand());
-        builder.from((config.getPageIndex() - 1) * config.getPageSize());
-        builder.size(config.getPageSize());
         builder.timeout(TimeValue.timeValueSeconds(connectorInstance.getConfig().getTimeoutSeconds()));
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(config.getTable());
-        if (!CollectionUtils.isEmpty(primaryKeys)) {
-            primaryKeys.forEach(pk -> builder.sort(pk, SortOrder.ASC));
-            // 深度分页
-            if (!CollectionUtils.isEmpty(config.getCursors())) {
-                builder.from(0);
-                builder.searchAfter(config.getCursors());
-            }
+        primaryKeys.forEach(pk -> builder.sort(pk, SortOrder.ASC));
+        // 深度分页
+        if (!CollectionUtils.isEmpty(config.getCursors())) {
+            builder.from(0);
+            builder.searchAfter(config.getCursors());
+        } else {
+            builder.from((config.getPageIndex() - 1) * config.getPageSize());
+            builder.size(config.getPageSize() > MAX_SIZE ? MAX_SIZE : config.getPageSize());
         }
 
         try {

@@ -46,7 +46,7 @@ public class Mapping extends AbstractConfigModel {
     private String metaId;
 
     // 批量读取
-    private int readNum = 20000;
+    private int readNum = 10000;
 
     // 单次写入
     private int batchNum = 1000;
