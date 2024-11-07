@@ -249,8 +249,8 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             builder.searchAfter(config.getCursors());
         } else {
             builder.from((config.getPageIndex() - 1) * config.getPageSize());
-            builder.size(config.getPageSize() > MAX_SIZE ? MAX_SIZE : config.getPageSize());
         }
+        builder.size(config.getPageSize() > MAX_SIZE ? MAX_SIZE : config.getPageSize());
 
         try {
             SearchRequest rq = new SearchRequest(new String[]{config.getCommand().get(_SOURCE_INDEX)}, builder);
