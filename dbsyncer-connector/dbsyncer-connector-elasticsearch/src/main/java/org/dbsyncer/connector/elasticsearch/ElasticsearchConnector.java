@@ -39,8 +39,11 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RequestOptions;
@@ -284,9 +287,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             final String pk = pkFields.get(0).getName();
             final String indexName = config.getCommand().get(_TARGET_INDEX);
             final String type = config.getCommand().get(_TYPE);
-            // 8.x 版本以上废弃Type
-            boolean removeType = EasyVersion.V_8_0_0.onOrBefore(connectorInstance.getVersion());
-            data.forEach(row -> addRequest(request, indexName, type, removeType, config.getEvent(), String.valueOf(row.get(pk)), row));
+            data.forEach(row -> addRequest(request, indexName, type, config.getEvent(), String.valueOf(row.get(pk)), row));
 
             BulkResponse response = connectorInstance.getConnection().bulkWithVersion(request, RequestOptions.DEFAULT);
             RestStatus restStatus = response.status();
@@ -418,17 +419,21 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         }
     }
 
-    private void addRequest(BulkRequest request, String index, String type, boolean removeType, String event, String id, Map data) {
+    private void addRequest(BulkRequest request, String index, String type, String event, String id, Map data) {
         if (isUpdate(event)) {
-            request.add(new EasyUpdateRequest(index, type, removeType, id, data, XContentType.JSON));
+            UpdateRequest req = new UpdateRequest(index, type, id);
+            req.doc(data, XContentType.JSON);
+            request.add(req);
             return;
         }
         if (isInsert(event)) {
-            request.add(new EasyIndexRequest(index, type, removeType, id, data, XContentType.JSON));
+            IndexRequest req = new IndexRequest(index, type, id);
+            req.source(data, XContentType.JSON);
+            request.add(req);
             return;
         }
         if (isDelete(event)) {
-            request.add(new EasyDeleteRequest(index, type, removeType, id));
+            request.add(new DeleteRequest(index, type, id));
         }
     }
 

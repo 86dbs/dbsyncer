@@ -120,7 +120,7 @@ final class RequestConverters {
         return new Request(HttpGet.METHOD_NAME, "/");
     }
 
-    static Request bulk(BulkRequest bulkRequest) throws IOException {
+    static Request bulk(BulkRequest bulkRequest, Version version) throws IOException {
         Request request = new Request(HttpPost.METHOD_NAME, "/_bulk");
 
         RequestConverters.Params parameters = new RequestConverters.Params();
@@ -168,12 +168,9 @@ final class RequestConverters {
                     if (Strings.hasLength(action.index())) {
                         metadata.field("_index", action.index());
                     }
-                    if (action instanceof RemoveTypeRequest) {
-                        RemoveTypeRequest req = (RemoveTypeRequest) action;
-                        // 为了兼容6.x版本，必须传入
-                        if (!req.isRemoveType() && Strings.hasLength(action.type())) {
-                            metadata.field("_type", action.type());
-                        }
+                    // 8.x 版本已弃用
+                    if (EasyVersion.V_8_0_0.after(version) && Strings.hasLength(action.type())) {
+                        metadata.field("_type", action.type());
                     }
                     if (Strings.hasLength(action.id())) {
                         metadata.field("_id", action.id());

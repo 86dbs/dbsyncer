@@ -56,7 +56,11 @@ public final class EasyRestHighLevelClient extends RestHighLevelClient {
      * @return the response
      */
     public final BulkResponse bulkWithVersion(BulkRequest bulkRequest, RequestOptions options) throws IOException {
-        return performRequest(bulkRequest, RequestConverters::bulk, options, response -> parseEntity(response.getEntity(), BulkResponse::fromXContent), emptySet());
+        return performRequest(bulkRequest,
+                request -> RequestConverters.bulk(request, version),
+                options,
+                response -> parseEntity(response.getEntity(), BulkResponse::fromXContent),
+                emptySet());
     }
 
     /**
