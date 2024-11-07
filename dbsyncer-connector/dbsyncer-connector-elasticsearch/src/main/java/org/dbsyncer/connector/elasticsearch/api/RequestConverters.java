@@ -12,6 +12,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NByteArrayEntity;
 import org.apache.lucene.util.BytesRef;
+import org.dbsyncer.connector.elasticsearch.api.index.RemoveTypeRequest;
 import org.elasticsearch.Version;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -167,9 +168,12 @@ final class RequestConverters {
                     if (Strings.hasLength(action.index())) {
                         metadata.field("_index", action.index());
                     }
-                    // 为了兼容6.x版本，必须传入
-                    if (Strings.hasLength(action.type())) {
-                        metadata.field("_type", action.type());
+                    if (action instanceof RemoveTypeRequest) {
+                        RemoveTypeRequest req = (RemoveTypeRequest) action;
+                        // 为了兼容6.x版本，必须传入
+                        if (!req.isRemoveType() && Strings.hasLength(action.type())) {
+                            metadata.field("_type", action.type());
+                        }
                     }
                     if (Strings.hasLength(action.id())) {
                         metadata.field("_id", action.id());

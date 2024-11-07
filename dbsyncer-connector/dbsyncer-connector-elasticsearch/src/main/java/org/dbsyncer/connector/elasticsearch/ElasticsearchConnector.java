@@ -7,6 +7,11 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.elasticsearch.api.EasyVersion;
+import org.dbsyncer.connector.elasticsearch.api.bulk.BulkResponse;
+import org.dbsyncer.connector.elasticsearch.api.index.EasyDeleteRequest;
+import org.dbsyncer.connector.elasticsearch.api.index.EasyIndexRequest;
+import org.dbsyncer.connector.elasticsearch.api.index.EasyUpdateRequest;
 import org.dbsyncer.connector.elasticsearch.cdc.ESQuartzListener;
 import org.dbsyncer.connector.elasticsearch.config.ESConfig;
 import org.dbsyncer.connector.elasticsearch.enums.ESFieldTypeEnum;
@@ -32,15 +37,10 @@ import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.Version;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RequestOptions;
@@ -87,11 +87,11 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
 
     private final String TYPE = "Elasticsearch";
 
-    public static final String SOURCE_INDEX_NAME = "_source_index";
+    public static final String _SOURCE_INDEX = "_source_index";
 
-    public static final String TARGET_INDEX_NAME = "_target_index";
+    public static final String _TARGET_INDEX = "_target_index";
 
-    public static final String INDEX_TYPE = "_doc";
+    public static final String _TYPE = "_type";
 
     private final Map<String, FilterMapper> filters = new LinkedHashMap<>();
 
@@ -186,8 +186,8 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             GetIndexRequest request = new GetIndexRequest(index);
             GetIndexResponse indexResponse = connectorInstance.getConnection().indices().get(request, RequestOptions.DEFAULT);
             MappingMetadata mappingMetaData = indexResponse.getMappings().get(index);
-            // 6.x 版本
-            if (Version.V_7_0_0.after(connectorInstance.getVersion())) {
+            // 低于7.x 版本
+            if (EasyVersion.V_7_0_0.after(connectorInstance.getVersion())) {
                 Map<String, Object> sourceMap = XContentHelper.convertToMap(mappingMetaData.source().compressedReference(), true, null).v2();
                 if (CollectionUtils.isEmpty(sourceMap)) {
                     throw new ElasticsearchException("未获取到索引配置");
@@ -219,12 +219,12 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             SearchSourceBuilder builder = new SearchSourceBuilder();
             genSearchSourceBuilder(builder, command);
             // 7.x 版本以上
-            if (Version.V_7_0_0.onOrBefore(connectorInstance.getVersion())) {
+            if (EasyVersion.V_7_0_0.onOrBefore(connectorInstance.getVersion())) {
                 builder.trackTotalHits(true);
             }
             builder.from(0);
             builder.size(0);
-            SearchRequest request = new SearchRequest(new String[]{command.get(SOURCE_INDEX_NAME)}, builder);
+            SearchRequest request = new SearchRequest(new String[]{command.get(_SOURCE_INDEX)}, builder);
             SearchResponse response = connectorInstance.getConnection().searchWithVersion(request, RequestOptions.DEFAULT);
             return response.getHits().getTotalHits().value;
         } catch (IOException e) {
@@ -251,7 +251,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         }
 
         try {
-            SearchRequest rq = new SearchRequest(new String[]{config.getCommand().get(SOURCE_INDEX_NAME)}, builder);
+            SearchRequest rq = new SearchRequest(new String[]{config.getCommand().get(_SOURCE_INDEX)}, builder);
             SearchResponse searchResponse = connectorInstance.getConnection().searchWithVersion(rq, RequestOptions.DEFAULT);
             SearchHits hits = searchResponse.getHits();
             SearchHit[] searchHits = hits.getHits();
@@ -282,9 +282,11 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         try {
             final BulkRequest request = new BulkRequest();
             final String pk = pkFields.get(0).getName();
-            final String indexName = config.getCommand().get(TARGET_INDEX_NAME);
-            final String indexType = config.getCommand().get(INDEX_TYPE);
-            data.forEach(row -> addRequest(request, indexName, indexType, config.getEvent(), String.valueOf(row.get(pk)), row));
+            final String indexName = config.getCommand().get(_TARGET_INDEX);
+            final String type = config.getCommand().get(_TYPE);
+            // 8.x 版本以上废弃Type
+            boolean removeType = EasyVersion.V_8_0_0.onOrBefore(connectorInstance.getVersion());
+            data.forEach(row -> addRequest(request, indexName, type, removeType, config.getEvent(), String.valueOf(row.get(pk)), row));
 
             BulkResponse response = connectorInstance.getConnection().bulkWithVersion(request, RequestOptions.DEFAULT);
             RestStatus restStatus = response.status();
@@ -306,7 +308,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         Map<String, String> command = new HashMap<>();
         // 查询字段
         Table table = commandConfig.getTable();
-        command.put(SOURCE_INDEX_NAME, table.getName());
+        command.put(_SOURCE_INDEX, table.getName());
         List<Field> column = table.getColumn();
         if (!CollectionUtils.isEmpty(column)) {
             List<String> fieldNames = column.stream().map(c -> c.getName()).collect(Collectors.toList());
@@ -326,8 +328,8 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         Table table = commandConfig.getTable();
         PrimaryKeyUtil.findTablePrimaryKeys(table);
         Map<String, String> command = new HashMap<>();
-        command.put(TARGET_INDEX_NAME, table.getName());
-        command.put(INDEX_TYPE, table.getIndexType());
+        command.put(_TARGET_INDEX, table.getName());
+        command.put(_TYPE, table.getIndexType());
         return command;
     }
 
@@ -416,21 +418,17 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         }
     }
 
-    private void addRequest(BulkRequest request, String index, String type, String event, String id, Map data) {
+    private void addRequest(BulkRequest request, String index, String type, boolean removeType, String event, String id, Map data) {
         if (isUpdate(event)) {
-            UpdateRequest req = new UpdateRequest(index, type, id);
-            req.doc(data, XContentType.JSON);
-            request.add(req);
+            request.add(new EasyUpdateRequest(index, type, removeType, id, data, XContentType.JSON));
             return;
         }
         if (isInsert(event)) {
-            IndexRequest req = new IndexRequest(index, type, id);
-            req.source(data, XContentType.JSON);
-            request.add(req);
+            request.add(new EasyIndexRequest(index, type, removeType, id, data, XContentType.JSON));
             return;
         }
         if (isDelete(event)) {
-            request.add(new DeleteRequest(index, type, id));
+            request.add(new EasyDeleteRequest(index, type, removeType, id));
         }
     }
 
