@@ -8,6 +8,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.elasticsearch.api.EasyVersion;
+import org.dbsyncer.connector.elasticsearch.api.bulk.BulkItemResponse;
 import org.dbsyncer.connector.elasticsearch.api.bulk.BulkResponse;
 import org.dbsyncer.connector.elasticsearch.cdc.ESQuartzListener;
 import org.dbsyncer.connector.elasticsearch.config.ESConfig;
@@ -260,7 +261,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
                 list.add(hit.getSourceAsMap());
             }
             if (searchResponse.getInternalResponse().timedOut()) {
-                throw new ElasticsearchException("search timeout:"+ searchResponse.getTook().getMillis() +"ms, pageIndex:" + config.getPageIndex() + ", pageSize:" + config.getPageSize());
+                throw new ElasticsearchException("search timeout:" + searchResponse.getTook().getMillis() + "ms, pageIndex:" + config.getPageIndex() + ", pageSize:" + config.getPageSize());
             }
             return new Result(list);
         } catch (IOException e) {
@@ -291,7 +292,19 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             if (restStatus.getStatus() != RestStatus.OK.getStatus()) {
                 throw new ElasticsearchException(String.format("error code:%s", restStatus.getStatus()));
             }
-            result.addSuccessData(data);
+            BulkItemResponse[] items = response.getItems();
+            BulkItemResponse r = null;
+            for (int i = 0; i < items.length; i++) {
+                r = items[i];
+                if (r.isFailed()) {
+                    result.getFailData().add(data.get(i));
+                    result.getError().append("\n[").append(i)
+                            .append("]: index [").append(r.getIndex()).append("], type [")
+                            .append(r.getType()).append("], id [").append(r.getId())
+                            .append("], message [").append(r.getFailureMessage()).append("]");
+                }
+                result.getSuccessData().add(data.get(i));
+            }
         } catch (Exception e) {
             // 记录错误数据
             result.addFailData(data);
