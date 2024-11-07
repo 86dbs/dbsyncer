@@ -12,6 +12,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NByteArrayEntity;
 import org.apache.lucene.util.BytesRef;
+import org.dbsyncer.connector.elasticsearch.api.index.RemoveTypeRequest;
 import org.elasticsearch.Version;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -167,9 +168,12 @@ final class RequestConverters {
                     if (Strings.hasLength(action.index())) {
                         metadata.field("_index", action.index());
                     }
-                    // 为了兼容6.x版本，必须传入
-                    if (Strings.hasLength(action.type())) {
-                        metadata.field("_type", action.type());
+                    if (action instanceof RemoveTypeRequest) {
+                        RemoveTypeRequest req = (RemoveTypeRequest) action;
+                        // 为了兼容6.x版本，必须传入
+                        if (!req.isRemoveType() && Strings.hasLength(action.type())) {
+                            metadata.field("_type", action.type());
+                        }
                     }
                     if (Strings.hasLength(action.id())) {
                         metadata.field("_id", action.id());
@@ -417,10 +421,10 @@ final class RequestConverters {
         params.putParam(RestSearchAction.TYPED_KEYS_PARAM, "true");
         params.withRouting(searchRequest.routing());
         params.withPreference(searchRequest.preference());
-        params.withIndicesOptions(searchRequest.indicesOptions());
+        params.withIndicesOptions(searchRequest.indicesOptions(), version);
         params.withSearchType(searchRequest.searchType().name().toLowerCase(Locale.ROOT));
         // 7.x 版本以上支持该参数
-        if (Version.V_7_0_0.onOrBefore(version)) {
+        if (EasyVersion.V_7_0_0.onOrBefore(version)) {
             params.putParam("ccs_minimize_roundtrips", Boolean.toString(searchRequest.isCcsMinimizeRoundtrips()));
         }
         if (searchRequest.getPreFilterShardSize() != null) {
@@ -502,12 +506,12 @@ final class RequestConverters {
         return request;
     }
 
-    static Request count(CountRequest countRequest) throws IOException {
+    static Request count(CountRequest countRequest, Version version) throws IOException {
         Request request = new Request(HttpPost.METHOD_NAME, endpoint(countRequest.indices(), countRequest.types(), "_count"));
         RequestConverters.Params params = new RequestConverters.Params();
         params.withRouting(countRequest.routing());
         params.withPreference(countRequest.preference());
-        params.withIndicesOptions(countRequest.indicesOptions());
+        params.withIndicesOptions(countRequest.indicesOptions(), version);
         if (countRequest.terminateAfter() != 0){
             params.withTerminateAfter(countRequest.terminateAfter());
         }
@@ -535,13 +539,13 @@ final class RequestConverters {
         return request;
     }
 
-    static Request fieldCaps(FieldCapabilitiesRequest fieldCapabilitiesRequest) throws IOException {
+    static Request fieldCaps(FieldCapabilitiesRequest fieldCapabilitiesRequest, Version version) throws IOException {
         String methodName = fieldCapabilitiesRequest.indexFilter() != null ? HttpPost.METHOD_NAME  : HttpGet.METHOD_NAME;
         Request request = new Request(methodName, endpoint(fieldCapabilitiesRequest.indices(), "_field_caps"));
 
         RequestConverters.Params params = new RequestConverters.Params();
         params.withFields(fieldCapabilitiesRequest.fields());
-        params.withIndicesOptions(fieldCapabilitiesRequest.indicesOptions());
+        params.withIndicesOptions(fieldCapabilitiesRequest.indicesOptions(), version);
         request.addParameters(params.asMap());
         if (fieldCapabilitiesRequest.indexFilter() != null) {
             request.setEntity(createEntity(fieldCapabilitiesRequest, REQUEST_BODY_CONTENT_TYPE));
@@ -549,11 +553,11 @@ final class RequestConverters {
         return request;
     }
 
-    static Request rankEval(RankEvalRequest rankEvalRequest) throws IOException {
+    static Request rankEval(RankEvalRequest rankEvalRequest, Version version) throws IOException {
         Request request = new Request(HttpGet.METHOD_NAME, endpoint(rankEvalRequest.indices(), Strings.EMPTY_ARRAY, "_rank_eval"));
 
         RequestConverters.Params params = new RequestConverters.Params();
-        params.withIndicesOptions(rankEvalRequest.indicesOptions());
+        params.withIndicesOptions(rankEvalRequest.indicesOptions(), version);
         params.putParam("search_type", rankEvalRequest.searchType().name().toLowerCase(Locale.ROOT));
         request.addParameters(params.asMap());
         request.setEntity(createEntity(rankEvalRequest.getRankEvalSpec(), REQUEST_BODY_CONTENT_TYPE));
@@ -568,20 +572,20 @@ final class RequestConverters {
         return prepareReindexRequest(reindexRequest, false);
     }
 
-    static Request deleteByQuery(DeleteByQueryRequest deleteByQueryRequest) throws IOException {
-        return prepareDeleteByQueryRequest(deleteByQueryRequest, true);
+    static Request deleteByQuery(DeleteByQueryRequest deleteByQueryRequest, Version version) throws IOException {
+        return prepareDeleteByQueryRequest(deleteByQueryRequest, true, version);
     }
 
-    static Request submitDeleteByQuery(DeleteByQueryRequest deleteByQueryRequest) throws IOException {
-        return prepareDeleteByQueryRequest(deleteByQueryRequest, false);
+    static Request submitDeleteByQuery(DeleteByQueryRequest deleteByQueryRequest, Version version) throws IOException {
+        return prepareDeleteByQueryRequest(deleteByQueryRequest, false, version);
     }
 
-    static Request updateByQuery(UpdateByQueryRequest updateByQueryRequest) throws IOException {
-        return prepareUpdateByQueryRequest(updateByQueryRequest, true);
+    static Request updateByQuery(UpdateByQueryRequest updateByQueryRequest, Version version) throws IOException {
+        return prepareUpdateByQueryRequest(updateByQueryRequest, true, version);
     }
 
-    static Request submitUpdateByQuery(UpdateByQueryRequest updateByQueryRequest) throws IOException {
-        return prepareUpdateByQueryRequest(updateByQueryRequest, false);
+    static Request submitUpdateByQuery(UpdateByQueryRequest updateByQueryRequest, Version version) throws IOException {
+        return prepareUpdateByQueryRequest(updateByQueryRequest, false, version);
     }
 
     private static Request prepareReindexRequest(ReindexRequest reindexRequest, boolean waitForCompletion) throws IOException {
@@ -603,8 +607,7 @@ final class RequestConverters {
         return request;
     }
 
-    private static Request prepareDeleteByQueryRequest(DeleteByQueryRequest deleteByQueryRequest,
-                                                       boolean waitForCompletion) throws IOException {
+    private static Request prepareDeleteByQueryRequest(DeleteByQueryRequest deleteByQueryRequest, boolean waitForCompletion, Version version) throws IOException {
         String endpoint =
                 endpoint(deleteByQueryRequest.indices(), deleteByQueryRequest.getDocTypes(), "_delete_by_query");
         Request request = new Request(HttpPost.METHOD_NAME, endpoint);
@@ -614,7 +617,7 @@ final class RequestConverters {
                 .withTimeout(deleteByQueryRequest.getTimeout())
                 .withWaitForActiveShards(deleteByQueryRequest.getWaitForActiveShards())
                 .withRequestsPerSecond(deleteByQueryRequest.getRequestsPerSecond())
-                .withIndicesOptions(deleteByQueryRequest.indicesOptions())
+                .withIndicesOptions(deleteByQueryRequest.indicesOptions(), version)
                 .withWaitForCompletion(waitForCompletion)
                 .withSlices(deleteByQueryRequest.getSlices());
         if (deleteByQueryRequest.isAbortOnVersionConflict() == false) {
@@ -634,8 +637,7 @@ final class RequestConverters {
         return request;
     }
 
-    static Request prepareUpdateByQueryRequest(UpdateByQueryRequest updateByQueryRequest,
-                                               boolean waitForCompletion) throws IOException {
+    static Request prepareUpdateByQueryRequest(UpdateByQueryRequest updateByQueryRequest, boolean waitForCompletion, Version version) throws IOException {
         String endpoint =
                 endpoint(updateByQueryRequest.indices(), updateByQueryRequest.getDocTypes(), "_update_by_query");
         Request request = new Request(HttpPost.METHOD_NAME, endpoint);
@@ -646,7 +648,7 @@ final class RequestConverters {
                 .withTimeout(updateByQueryRequest.getTimeout())
                 .withWaitForActiveShards(updateByQueryRequest.getWaitForActiveShards())
                 .withRequestsPerSecond(updateByQueryRequest.getRequestsPerSecond())
-                .withIndicesOptions(updateByQueryRequest.indicesOptions())
+                .withIndicesOptions(updateByQueryRequest.indicesOptions(), version)
                 .withWaitForCompletion(waitForCompletion)
                 .withSlices(updateByQueryRequest.getSlices());
         if (updateByQueryRequest.isAbortOnVersionConflict() == false) {
@@ -1021,7 +1023,7 @@ final class RequestConverters {
             return this;
         }
 
-        RequestConverters.Params withIndicesOptions(IndicesOptions indicesOptions) {
+        RequestConverters.Params withIndicesOptions(IndicesOptions indicesOptions, Version version) {
             if (indicesOptions != null) {
                 withIgnoreUnavailable(indicesOptions.ignoreUnavailable());
                 putParam("allow_no_indices", Boolean.toString(indicesOptions.allowNoIndices()));
@@ -1039,7 +1041,10 @@ final class RequestConverters {
                     expandWildcards = joiner.toString();
                 }
                 putParam("expand_wildcards", expandWildcards);
-                putParam("ignore_throttled", Boolean.toString(indicesOptions.ignoreThrottled()));
+                // 8.x 版本已弃用
+                if (EasyVersion.V_8_0_0.after(version)) {
+                    putParam("ignore_throttled", Boolean.toString(indicesOptions.ignoreThrottled()));
+                }
             }
             return this;
         }

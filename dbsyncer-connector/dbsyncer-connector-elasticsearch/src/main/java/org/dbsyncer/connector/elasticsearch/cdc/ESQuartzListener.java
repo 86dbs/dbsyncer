@@ -80,7 +80,7 @@ public final class ESQuartzListener extends AbstractQuartzListener {
         }
         point.setCommand(ConnectorConstant.OPERTION_QUERY, command.get(ConnectorConstant.OPERTION_QUERY));
         point.setCommand(ConnectorConstant.OPERTION_QUERY_FILTER, JsonUtil.objToJson(filters));
-        point.setCommand(ElasticsearchConnector.SOURCE_INDEX_NAME, command.get(ElasticsearchConnector.SOURCE_INDEX_NAME));
+        point.setCommand(ElasticsearchConnector._SOURCE_INDEX, command.get(ElasticsearchConnector._SOURCE_INDEX));
         return point;
     }
 }
