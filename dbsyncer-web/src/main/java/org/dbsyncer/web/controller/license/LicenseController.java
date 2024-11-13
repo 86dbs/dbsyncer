@@ -70,7 +70,6 @@ public class LicenseController extends BaseController {
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("key", licenseService.getKey());
-        model.put("company", appConfig.getCompany());
         model.put("userInfo", getUserInfo());
         model.put("productInfo", licenseService.getProductInfo());
         return "license/license";
@@ -141,8 +140,6 @@ public class LicenseController extends BaseController {
         UserInfo userInfo = getUserInfo();
         Assert.notNull(userInfo, "会话过期，请重新登录");
         info.setLicenseKey(licenseService.getKey());
-        info.setCompany(StringUtil.isNotBlank(info.getCompany()) ? info.getCompany() : appConfig.getCompany());
-        info.setOwner(StringUtil.isNotBlank(info.getOwner()) ? info.getOwner() : userInfo.getNickname());
         info.setPhone(StringUtil.isNotBlank(info.getPhone()) ? info.getPhone() : userInfo.getPhone());
         info.setEmail(StringUtil.isNotBlank(info.getEmail()) ? info.getEmail() : userInfo.getEmail());
         return invoke(info);
