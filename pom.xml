@@ -50,7 +50,7 @@
         <protobuf.version>3.21.1</protobuf.version>
         <log4j2.version>2.17.1</log4j2.version>
         <junit.version>4.13.1</junit.version>
-        <jsql-parse.version>4.7</jsql-parse.version>
+        <jsql-parse.version>4.9</jsql-parse.version>
     </properties>
 
     <!-- 镜像仓库地址 -->

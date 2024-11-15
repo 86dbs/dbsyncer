@@ -14,7 +14,6 @@ import org.apache.http.util.EntityUtils;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.config.AppConfig;
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
