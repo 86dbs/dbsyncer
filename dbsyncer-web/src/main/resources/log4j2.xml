@@ -6,7 +6,7 @@
     <Properties>
         <Property name="LOG_HOME"><![CDATA[logs]]></Property>
         <!-- 日志输出格式 -->
-        <property name="LOG_PATTERN" value="%d{HH:mm:ss:SSS} [%thread] [%p] - %l - %m%n" />
+        <property name="LOG_PATTERN" value="%d{HH:mm:ss:SSS} [%thread] [%p] - %c{1.} %M:%L - %m%n" />
     </Properties>
 
     <!--先定义所有的appender-->
