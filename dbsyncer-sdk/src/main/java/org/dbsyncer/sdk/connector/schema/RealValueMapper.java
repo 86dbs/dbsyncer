@@ -15,7 +15,7 @@ public class RealValueMapper extends AbstractValueMapper<Float> {
     protected Float convert(ConnectorInstance connectorInstance, Object val) {
         if (val instanceof Number) {
             Number num = (Number) val;
-            return Float.valueOf(num.floatValue());
+            return num.floatValue();
         }
 
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
