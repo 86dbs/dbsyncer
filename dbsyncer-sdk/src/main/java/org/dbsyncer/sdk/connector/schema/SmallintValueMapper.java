@@ -1,10 +1,9 @@
 package org.dbsyncer.sdk.connector.schema;
 
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.AbstractValueMapper;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
-
-import java.math.BigDecimal;
 
 /**
  * @author AE86
@@ -15,17 +14,16 @@ public class SmallintValueMapper extends AbstractValueMapper<Integer> {
 
     @Override
     protected Integer convert(ConnectorInstance connectorInstance, Object val) {
-        if (val instanceof Short) {
-            Short s = (Short) val;
-            return new Integer(s);
-        }
         if (val instanceof Boolean) {
             Boolean b = (Boolean) val;
             return new Integer(b ? 1 : 0);
         }
-        if (val instanceof BigDecimal) {
-            BigDecimal bd = (BigDecimal) val;
-            return bd.intValue();
+        if (val instanceof Number) {
+            Number num = (Number) val;
+            return num.intValue();
+        }
+        if (val instanceof String) {
+            return NumberUtil.toInt((String) val);
         }
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
