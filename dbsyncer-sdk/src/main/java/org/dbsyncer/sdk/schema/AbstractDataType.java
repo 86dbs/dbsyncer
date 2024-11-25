@@ -5,6 +5,7 @@ package org.dbsyncer.sdk.schema;
 
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.model.Field;
 
 import java.lang.reflect.ParameterizedType;
 
@@ -15,12 +16,20 @@ import java.lang.reflect.ParameterizedType;
  */
 public abstract class AbstractDataType<T> implements DataType {
 
-    private static final long serialVersionUID = 1L;
     private final Class<T> parameterClazz;
     protected ConnectorInstance connectorInstance;
 
     public AbstractDataType() {
         parameterClazz = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+    }
+
+    /**
+     * 获取默认值
+     *
+     * @return null
+     */
+    protected T getDefaultVal() {
+        return null;
     }
 
     protected T convertString(Object val) {
@@ -83,13 +92,8 @@ public abstract class AbstractDataType<T> implements DataType {
         throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), getType(), val));
     }
 
-    /**
-     * 获取默认值
-     *
-     * @return null
-     */
-    protected Object getDefaultVal() {
-        return null;
+    protected T throwUnsupportedException(Object val, Field field) {
+        throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), field.getTypeName(), val));
     }
 
     @Override
@@ -136,6 +140,11 @@ public abstract class AbstractDataType<T> implements DataType {
             default:
                 return getDefaultVal();
         }
+    }
+
+    @Override
+    public T convert(Object val, Field field) {
+        return throwUnsupportedException(val, field);
     }
 
     public ConnectorInstance getConnectorInstance() {

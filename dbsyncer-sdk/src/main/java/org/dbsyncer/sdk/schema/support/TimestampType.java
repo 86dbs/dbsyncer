@@ -13,7 +13,7 @@ import java.sql.Timestamp;
  * @Version 1.0.0
  * @Date 2024-11-21 23:56
  */
-public class TimeStampType extends AbstractDataType<Timestamp> {
+public class TimestampType extends AbstractDataType<Timestamp> {
 
     @Override
     public DataTypeEnum getType() {

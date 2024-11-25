@@ -3,26 +3,17 @@
  */
 package org.dbsyncer.sdk.schema;
 
-import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 
 /**
  * @Author 穿云
  * @Version 1.0.0
- * @Date 2024-11-23 23:00
+ * @Date 2024-11-25 22:48
  */
-public interface DataType {
+public interface SchemaResolver {
 
     /**
      * 转换为标准数据类型
-     *
-     * @param val 转换值
-     * @return Object
-     */
-    Object convert(Object val);
-
-    /**
-     * 转换为指定数据类型
      *
      * @param val 转换值
      * @param field 数据类型
@@ -31,9 +22,12 @@ public interface DataType {
     Object convert(Object val, Field field);
 
     /**
-     * 返回数据类型
+     * 转换为指定数据类型
      *
-     * @return
+     * @param val 转换值
+     * @param field 数据类型
+     * @return Object
      */
-    DataTypeEnum getType();
+    Object convertValue(Object val, Field field);
+
 }
