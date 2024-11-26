@@ -17,7 +17,7 @@ public interface SchemaResolver {
     /**
      * 转换为标准数据类型
      *
-     * @param val 转换值
+     * @param val   转换值
      * @param field 数据类型
      * @return Object
      */
@@ -26,7 +26,7 @@ public interface SchemaResolver {
     /**
      * 转换为指定数据类型
      *
-     * @param val 转换值
+     * @param val   转换值
      * @param field 数据类型
      * @return Object
      */

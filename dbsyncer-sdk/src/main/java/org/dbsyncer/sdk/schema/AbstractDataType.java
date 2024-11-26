@@ -4,7 +4,6 @@
 package org.dbsyncer.sdk.schema;
 
 import org.dbsyncer.sdk.SdkException;
-import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
 
 import java.lang.reflect.ParameterizedType;
@@ -17,7 +16,7 @@ import java.lang.reflect.ParameterizedType;
 public abstract class AbstractDataType<T> implements DataType {
 
     private final Class<T> parameterClazz;
-    protected ConnectorInstance connectorInstance;
+    protected SchemaResolver schemaResolver;
 
     public AbstractDataType() {
         parameterClazz = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
@@ -33,15 +32,6 @@ public abstract class AbstractDataType<T> implements DataType {
     protected abstract T merge(Object val, Field field);
 
     /**
-     * 转换为指定数据类型
-     *
-     * @param val
-     * @param field
-     * @return
-     */
-    protected abstract T convert(Object val, Field field);
-
-    /**
      * 获取默认合并值
      *
      * @return
@@ -49,15 +39,20 @@ public abstract class AbstractDataType<T> implements DataType {
     protected abstract T getDefaultMergedVal();
 
     /**
+     * 转换为指定数据类型
+     *
+     * @param val
+     * @param field
+     * @return
+     */
+    protected abstract Object convert(Object val, Field field);
+
+    /**
      * 获取默认转换值
      *
      * @return
      */
     protected abstract Object getDefaultConvertedVal();
-
-    protected T throwUnsupportedException(Object val, Field field) {
-        throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), field.getTypeName(), val));
-    }
 
     @Override
     public Object mergeValue(Object val, Field field) {
@@ -81,11 +76,15 @@ public abstract class AbstractDataType<T> implements DataType {
         return convert(val, field);
     }
 
-    public ConnectorInstance getConnectorInstance() {
-        return connectorInstance;
+    protected T throwUnsupportedException(Object val, Field field) {
+        throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), field.getTypeName(), val));
     }
 
-    public void setConnectorInstance(ConnectorInstance connectorInstance) {
-        this.connectorInstance = connectorInstance;
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
+    }
+
+    public void setSchemaResolver(SchemaResolver schemaResolver) {
+        this.schemaResolver = schemaResolver;
     }
 }

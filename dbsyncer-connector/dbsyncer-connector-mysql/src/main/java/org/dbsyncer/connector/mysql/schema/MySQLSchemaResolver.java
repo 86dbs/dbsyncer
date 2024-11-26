@@ -3,11 +3,14 @@
  */
 package org.dbsyncer.connector.mysql.schema;
 
+import org.dbsyncer.connector.mysql.schema.support.MySQLByteType;
+import org.dbsyncer.connector.mysql.schema.support.MySQLShortType;
 import org.dbsyncer.connector.mysql.schema.support.MySQLStringType;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * MySQL标准数据类型解析器
@@ -19,11 +22,13 @@ import java.util.Map;
  */
 public final class MySQLSchemaResolver extends AbstractSchemaResolver {
 
-    @Override
-    protected void initDataTypes(Map<String, DataType> map) {
-        map.put("VARCHAR", new MySQLStringType());
-        // TODO
+    private final MySQLStringType stringType = new MySQLStringType();
+    private final MySQLByteType byteType = new MySQLByteType();
+    private final MySQLShortType shortType = new MySQLShortType();
 
+    @Override
+    protected void initDataTypes(Map<String, DataType> mapping) {
+        Stream.of(shortType, stringType, byteType).forEach(t -> t.postProcessBeforeInitialization(mapping));
     }
 
 }
