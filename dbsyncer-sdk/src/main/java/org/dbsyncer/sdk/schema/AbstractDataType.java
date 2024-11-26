@@ -24,127 +24,61 @@ public abstract class AbstractDataType<T> implements DataType {
     }
 
     /**
-     * 获取默认值
+     * 转换为标准数据类型
      *
-     * @return null
+     * @param val
+     * @param field
+     * @return
      */
-    protected T getDefaultVal() {
-        return null;
-    }
+    protected abstract T merge(Object val, Field field);
 
-    protected T convertString(Object val) {
-        return throwUnsupportedException(val);
-    }
+    /**
+     * 转换为指定数据类型
+     *
+     * @param val
+     * @param field
+     * @return
+     */
+    protected abstract T convert(Object val, Field field);
 
-    protected T convertByte(Object val) {
-        return throwUnsupportedException(val);
-    }
+    /**
+     * 获取默认合并值
+     *
+     * @return
+     */
+    protected abstract T getDefaultMergedVal();
 
-    protected T convertShort(Object val) {
-        return throwUnsupportedException(val);
-    }
-
-    protected T convertInt(Object val) {
-        return throwUnsupportedException(val);
-    }
-
-    protected T convertLong(Object val) {
-        return throwUnsupportedException(val);
-    }
-
-    protected T convertDecimal(Object val) {
-        return throwUnsupportedException(val);
-    }
-
-    protected T convertDouble(Object val) {
-        return throwUnsupportedException(val);
-    }
-
-    protected T convertFloat(Object val) {
-        return throwUnsupportedException(val);
-    }
-
-    protected T convertBoolean(Object val) {
-        return throwUnsupportedException(val);
-    }
-
-    protected T convertDate(Object val) {
-        return throwUnsupportedException(val);
-    }
-
-    protected T convertTime(Object val) {
-        return throwUnsupportedException(val);
-    }
-
-    protected T convertTimeStamp(Object val) {
-        return throwUnsupportedException(val);
-    }
-
-    protected T convertBytes(Object val) {
-        return throwUnsupportedException(val);
-    }
-
-    protected T convertArray(Object val) {
-        return throwUnsupportedException(val);
-    }
-
-    protected T throwUnsupportedException(Object val) {
-        throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), getType(), val));
-    }
+    /**
+     * 获取默认转换值
+     *
+     * @return
+     */
+    protected abstract Object getDefaultConvertedVal();
 
     protected T throwUnsupportedException(Object val, Field field) {
         throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), field.getTypeName(), val));
     }
 
     @Override
-    public Object convert(Object val) {
-        if (val == null) {
-            return getDefaultVal();
+    public Object mergeValue(Object val, Field field) {
+        if (val == null || field == null) {
+            return getDefaultMergedVal();
         }
-
         // 数据类型匹配
         if (val.getClass().equals(parameterClazz)) {
             return val;
         }
-
         // 异构数据类型转换
-        switch (getType()) {
-            case STRING:
-                return convertString(val);
-            case BYTE:
-                return convertByte(val);
-            case SHORT:
-                return convertShort(val);
-            case INT:
-                return convertInt(val);
-            case LONG:
-                return convertLong(val);
-            case DECIMAL:
-                return convertDecimal(val);
-            case DOUBLE:
-                return convertDouble(val);
-            case FLOAT:
-                return convertFloat(val);
-            case BOOLEAN:
-                return convertBoolean(val);
-            case DATE:
-                return convertDate(val);
-            case TIME:
-                return convertTime(val);
-            case TIMESTAMP:
-                return convertTimeStamp(val);
-            case BYTES:
-                return convertBytes(val);
-            case ARRAY:
-                return convertArray(val);
-            default:
-                return getDefaultVal();
-        }
+        return merge(val, field);
     }
 
     @Override
-    public T convert(Object val, Field field) {
-        return throwUnsupportedException(val, field);
+    public Object convertValue(Object val, Field field) {
+        if (val == null || field == null) {
+            return getDefaultConvertedVal();
+        }
+        // 异构数据类型转换
+        return convert(val, field);
     }
 
     public ConnectorInstance getConnectorInstance() {

@@ -6,6 +6,8 @@ package org.dbsyncer.sdk.schema;
 import org.dbsyncer.sdk.model.Field;
 
 /**
+ * 数据类型解析器
+ *
  * @Author 穿云
  * @Version 1.0.0
  * @Date 2024-11-25 22:48
@@ -19,7 +21,7 @@ public interface SchemaResolver {
      * @param field 数据类型
      * @return Object
      */
-    Object convert(Object val, Field field);
+    Object merge(Object val, Field field);
 
     /**
      * 转换为指定数据类型
@@ -28,6 +30,6 @@ public interface SchemaResolver {
      * @param field 数据类型
      * @return Object
      */
-    Object convertValue(Object val, Field field);
+    Object convert(Object val, Field field);
 
 }

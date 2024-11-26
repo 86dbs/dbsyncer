@@ -3,14 +3,10 @@
  */
 package org.dbsyncer.connector.mysql.schema;
 
-import org.dbsyncer.sdk.SdkException;
-import org.dbsyncer.sdk.enums.DataTypeEnum;
-import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.connector.mysql.schema.support.MySQLStringType;
+import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
-import org.dbsyncer.sdk.schema.SchemaResolver;
-import org.dbsyncer.sdk.schema.support.StringType;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -21,33 +17,13 @@ import java.util.Map;
  * @Version 1.0.0
  * @Date 2024-11-25 22:08
  */
-public final class MySQLSchemaResolver implements SchemaResolver {
+public final class MySQLSchemaResolver extends AbstractSchemaResolver {
 
-    private final Map<DataTypeEnum, DataType> STANDARD_TYPES = new LinkedHashMap<>();
-    private final Map<String, DataType> DATA_TYPES = new LinkedHashMap<>();
-
-    private MySQLSchemaResolver() {
-        DATA_TYPES.putIfAbsent("VARCHAR", new StringType());
+    @Override
+    protected void initDataTypes(Map<String, DataType> map) {
+        map.put("VARCHAR", new MySQLStringType());
         // TODO
-    }
 
-    @Override
-    public Object convert(Object val, Field field) {
-        if (DATA_TYPES.containsKey(field.getTypeName())) {
-            DataType dataType = DATA_TYPES.get(field.getTypeName());
-            if (STANDARD_TYPES.containsKey(dataType.getType())) {
-                return STANDARD_TYPES.get(dataType.getType()).convert(val);
-            }
-        }
-        throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), field.getTypeName(), val));
-    }
-
-    @Override
-    public Object convertValue(Object val, Field field) {
-        if (DATA_TYPES.containsKey(field.getTypeName())) {
-            return DATA_TYPES.get(field.getTypeName()).convert(val, field);
-        }
-        throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), field.getTypeName(), val));
     }
 
 }

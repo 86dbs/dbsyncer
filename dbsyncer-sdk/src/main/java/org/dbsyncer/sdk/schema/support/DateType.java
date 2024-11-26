@@ -13,7 +13,7 @@ import java.sql.Date;
  * @Version 1.0.0
  * @Date 2024-11-21 23:56
  */
-public class DateType extends AbstractDataType<Date> {
+public abstract class DateType extends AbstractDataType<Date> {
 
     @Override
     public DataTypeEnum getType() {

@@ -11,7 +11,7 @@ import org.dbsyncer.sdk.schema.AbstractDataType;
  * @Version 1.0.0
  * @Date 2024-11-21 23:56
  */
-public class ShortType extends AbstractDataType<Short> {
+public abstract class ShortType extends AbstractDataType<Short> {
 
     @Override
     public DataTypeEnum getType() {

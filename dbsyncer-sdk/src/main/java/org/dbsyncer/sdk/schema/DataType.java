@@ -17,9 +17,10 @@ public interface DataType {
      * 转换为标准数据类型
      *
      * @param val 转换值
+     * @param field 数据类型
      * @return Object
      */
-    Object convert(Object val);
+    Object mergeValue(Object val, Field field);
 
     /**
      * 转换为指定数据类型
@@ -28,7 +29,7 @@ public interface DataType {
      * @param field 数据类型
      * @return Object
      */
-    Object convert(Object val, Field field);
+    Object convertValue(Object val, Field field);
 
     /**
      * 返回数据类型

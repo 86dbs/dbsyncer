@@ -11,7 +11,7 @@ import org.dbsyncer.sdk.schema.AbstractDataType;
  * @Version 1.0.0
  * @Date 2024-11-21 23:56
  */
-public class BooleanType extends AbstractDataType<Boolean> {
+public abstract class BooleanType extends AbstractDataType<Boolean> {
 
     @Override
     public DataTypeEnum getType() {

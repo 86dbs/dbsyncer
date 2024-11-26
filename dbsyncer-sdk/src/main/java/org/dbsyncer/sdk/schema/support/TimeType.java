@@ -13,7 +13,7 @@ import java.sql.Time;
  * @Version 1.0.0
  * @Date 2024-11-21 23:56
  */
-public class TimeType extends AbstractDataType<Time> {
+public abstract class TimeType extends AbstractDataType<Time> {
 
     @Override
     public DataTypeEnum getType() {
