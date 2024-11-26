@@ -27,8 +27,10 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
     private final MySQLShortType shortType = new MySQLShortType();
 
     @Override
-    protected void initDataTypes(Map<String, DataType> mapping) {
-        Stream.of(shortType, stringType, byteType).forEach(t -> t.postProcessBeforeInitialization(mapping));
+    protected void initDataTypeMapping(Map<String, DataType> mapping) {
+        Stream.of(shortType, stringType, byteType).forEach(t -> {
+            t.getSupportedTypeName().forEach(typeName -> mapping.put(typeName, t));
+        });
     }
 
 }

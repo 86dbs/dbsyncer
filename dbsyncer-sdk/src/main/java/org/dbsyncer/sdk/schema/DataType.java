@@ -6,7 +6,7 @@ package org.dbsyncer.sdk.schema;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 
-import java.util.Map;
+import java.util.Set;
 
 /**
  * @Author 穿云
@@ -16,11 +16,11 @@ import java.util.Map;
 public interface DataType {
 
     /**
-     * 初始化
+     * 获取支持的转换类型
      *
-     * @param mapping 数据类型映射关系
+     * @return
      */
-    void postProcessBeforeInitialization(Map<String, DataType> mapping);
+    Set<String> getSupportedTypeName();
 
     /**
      * 转换为标准数据类型

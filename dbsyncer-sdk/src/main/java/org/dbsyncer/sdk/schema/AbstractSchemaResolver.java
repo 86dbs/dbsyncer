@@ -22,11 +22,11 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
     private ConnectorInstance connectorInstance;
 
     public AbstractSchemaResolver() {
-        initDataTypes(mapping);
+        initDataTypeMapping(mapping);
         Assert.notEmpty(mapping, "At least one data type is required.");
     }
 
-    protected abstract void initDataTypes(Map<String, DataType> mapping);
+    protected abstract void initDataTypeMapping(Map<String, DataType> mapping);
 
     @Override
     public Object merge(Object val, Field field) {

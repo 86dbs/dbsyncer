@@ -4,10 +4,10 @@
 package org.dbsyncer.connector.mysql.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.DataType;
 import org.dbsyncer.sdk.schema.support.ByteType;
 
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @Author 穿云
@@ -15,6 +15,13 @@ import java.util.Map;
  * @Date 2024-11-26 22:59
  */
 public class MySQLByteType extends ByteType {
+
+    private final Set<String> supported = new HashSet<>();
+
+    public MySQLByteType() {
+        supported.add("TINYINT");
+    }
+
     @Override
     protected Byte merge(Object val, Field field) {
         return 0;
@@ -36,7 +43,7 @@ public class MySQLByteType extends ByteType {
     }
 
     @Override
-    public void postProcessBeforeInitialization(Map<String, DataType> mapping) {
-        mapping.put("TINYINT", this);
+    public Set<String> getSupportedTypeName() {
+        return supported;
     }
 }
