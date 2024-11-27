@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.mysql.schema;
 
+import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.connector.mysql.schema.support.*;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
@@ -23,15 +24,25 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
         Stream.of(
-                new MySQLStringType(),
+                new MySQLBooleanType(),
+                new MySQLBytesType(),
                 new MySQLByteType(),
-                new MySQLShortType(),
+                new MySQLDateType(),
+                new MySQLDecimalType(),
+                new MySQLDoubleType(),
+                new MySQLFloatType(),
                 new MySQLIntType(),
                 new MySQLLongType(),
-                new MySQLDateType(),
+                new MySQLShortType(),
+                new MySQLStringType(),
                 new MySQLTimestampType(),
-                new MySQLBooleanType()
-        ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> mapping.put(typeName, t)));
+                new MySQLTimeType()
+        ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
+            if (mapping.containsKey(typeName)) {
+                throw new MySQLException("Duplicate type name: " + typeName);
+            }
+            mapping.put(typeName, t);
+        }));
     }
 
 }
