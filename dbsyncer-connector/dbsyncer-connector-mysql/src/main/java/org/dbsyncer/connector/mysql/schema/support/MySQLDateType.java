@@ -18,18 +18,18 @@ import java.util.stream.Collectors;
  */
 public final class MySQLDateType extends DateType {
 
-    enum TypeEnum {
+    private enum TypeEnum {
         DATE
     }
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(type -> type.name()).collect(Collectors.toSet());
+        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
     }
 
     @Override
     protected Date merge(Object val, Field field) {
-        return null;
+        return throwUnsupportedException(val, field);
     }
 
     @Override
@@ -39,7 +39,10 @@ public final class MySQLDateType extends DateType {
 
     @Override
     protected Object convert(Object val, Field field) {
-        return null;
+        if (val instanceof Date) {
+            return val;
+        }
+        return throwUnsupportedException(val, field);
     }
 
     @Override

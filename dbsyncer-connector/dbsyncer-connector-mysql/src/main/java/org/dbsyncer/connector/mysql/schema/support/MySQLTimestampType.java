@@ -18,19 +18,19 @@ import java.util.stream.Collectors;
  */
 public final class MySQLTimestampType extends TimestampType {
 
-    enum TypeEnum {
+    private enum TypeEnum {
         DATETIME,
         TIMESTAMP;
     }
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(type -> type.name()).collect(Collectors.toSet());
+        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
     }
 
     @Override
     protected Timestamp merge(Object val, Field field) {
-        return null;
+        return throwUnsupportedException(val, field);
     }
 
     @Override
@@ -40,7 +40,10 @@ public final class MySQLTimestampType extends TimestampType {
 
     @Override
     protected Object convert(Object val, Field field) {
-        return null;
+        if (val instanceof Timestamp) {
+            return val;
+        }
+        return throwUnsupportedException(val, field);
     }
 
     @Override

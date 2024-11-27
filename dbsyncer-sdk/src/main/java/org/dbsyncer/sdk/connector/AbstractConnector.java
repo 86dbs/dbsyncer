@@ -139,7 +139,8 @@ public abstract class AbstractConnector {
                 }
                 try {
                     // 根据目标字段类型转换值
-                    row.put(f.getName(), resolver.convert(row.get(f.getName()), f));
+                    Object o = resolver.merge(row.get(f.getName()), f);
+                    row.put(f.getName(), resolver.convert(o, f));
                 } catch (Exception e) {
                     logger.error("convert value error: ({}, {}, {})", config.getTableName(), f.getName(), row.get(f.getName()));
                     throw new SdkException(e);

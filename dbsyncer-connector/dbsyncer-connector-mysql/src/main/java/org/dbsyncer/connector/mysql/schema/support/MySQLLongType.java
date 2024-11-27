@@ -17,18 +17,18 @@ import java.util.stream.Collectors;
  */
 public final class MySQLLongType extends LongType {
 
-    enum TypeEnum {
+    private enum TypeEnum {
         BIGINT
     }
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(type -> type.name()).collect(Collectors.toSet());
+        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
     }
 
     @Override
     protected Long merge(Object val, Field field) {
-        return 0L;
+        return throwUnsupportedException(val, field);
     }
 
     @Override
@@ -38,7 +38,10 @@ public final class MySQLLongType extends LongType {
 
     @Override
     protected Object convert(Object val, Field field) {
-        return null;
+        if (val instanceof Number) {
+            return ((Number) val).longValue();
+        }
+        return throwUnsupportedException(val, field);
     }
 
     @Override

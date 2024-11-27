@@ -4,7 +4,7 @@
 package org.dbsyncer.connector.mysql.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.ByteType;
+import org.dbsyncer.sdk.schema.support.BooleanType;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -15,10 +15,10 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2024-11-26 22:59
  */
-public final class MySQLByteType extends ByteType {
+public final class MySQLBooleanType extends BooleanType {
 
     private enum TypeEnum {
-        TINYINT
+        BIT
     }
 
     @Override
@@ -27,22 +27,20 @@ public final class MySQLByteType extends ByteType {
     }
 
     @Override
-    protected Byte merge(Object val, Field field) {
-        if (val instanceof Number) {
-            return ((Number) val).byteValue();
-        }
+    protected Boolean merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
 
     @Override
-    protected Byte getDefaultMergedVal() {
-        return 0;
+    protected Boolean getDefaultMergedVal() {
+        return false;
     }
 
     @Override
     protected Object convert(Object val, Field field) {
-        if (val instanceof Byte) {
-            return val;
+        if(val instanceof Boolean) {
+            Boolean b = (Boolean) val;
+            return (short) (b ? 1 : 0);
         }
         return throwUnsupportedException(val, field);
     }

@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  */
 public final class MySQLStringType extends StringType {
 
-    enum TypeEnum {
+    private enum TypeEnum {
         CHAR, // 固定长度，最多255个字符
         VARCHAR, // 固定长度，最多65535个字符，64K
         TINYTEXT, // 可变长度，最多255字符
@@ -30,12 +30,12 @@ public final class MySQLStringType extends StringType {
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(type -> type.name()).collect(Collectors.toSet());
+        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
     }
 
     @Override
     protected String merge(Object val, Field field) {
-        switch (TypeEnum.valueOf(field.getTypeName())){
+        switch (TypeEnum.valueOf(field.getTypeName())) {
             case CHAR:
             case VARCHAR:
             case TINYTEXT:
@@ -55,7 +55,10 @@ public final class MySQLStringType extends StringType {
 
     @Override
     protected Object convert(Object val, Field field) {
-        return null;
+        if (val instanceof String) {
+            return val;
+        }
+        return throwUnsupportedException(val, field);
     }
 
     @Override

@@ -26,9 +26,11 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
                 new MySQLStringType(),
                 new MySQLByteType(),
                 new MySQLShortType(),
+                new MySQLIntType(),
                 new MySQLLongType(),
                 new MySQLDateType(),
-                new MySQLTimestampType()
+                new MySQLTimestampType(),
+                new MySQLBooleanType()
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> mapping.put(typeName, t)));
     }
 
