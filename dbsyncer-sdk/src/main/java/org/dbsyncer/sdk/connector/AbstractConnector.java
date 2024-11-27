@@ -35,6 +35,7 @@ import org.dbsyncer.sdk.connector.schema.VarBinaryValueMapper;
 import org.dbsyncer.sdk.connector.schema.VarcharValueMapper;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,6 +84,15 @@ public abstract class AbstractConnector {
     }
 
     /**
+     * 获取标准数据类型解析器
+     *
+     * @return
+     */
+    protected SchemaResolver getSchemaResolver() {
+        return null;
+    }
+
+    /**
      * 转换字段值
      *
      * @param connectorInstance
@@ -90,6 +100,12 @@ public abstract class AbstractConnector {
      */
     public void convertProcessBeforeWriter(ConnectorInstance connectorInstance, WriterBatchConfig config) {
         if (CollectionUtils.isEmpty(config.getFields()) || CollectionUtils.isEmpty(config.getData())) {
+            return;
+        }
+
+        final SchemaResolver resolver = getSchemaResolver();
+        if (resolver != null) {
+            convert(config, resolver);
             return;
         }
 
@@ -110,6 +126,23 @@ public abstract class AbstractConnector {
                         logger.error("convert value error: ({}, {})", f.getName(), row.get(f.getName()));
                         throw new SdkException(e);
                     }
+                }
+            }
+        }
+    }
+
+    private void convert(WriterBatchConfig config, SchemaResolver resolver) {
+        for (Map row : config.getData()) {
+            for (Field f : config.getFields()) {
+                if (null == f) {
+                    continue;
+                }
+                try {
+                    // 根据目标字段类型转换值
+                    row.put(f.getName(), resolver.convert(row.get(f.getName()), f));
+                } catch (Exception e) {
+                    logger.error("convert value error: ({}, {}, {})", config.getTableName(), f.getName(), row.get(f.getName()));
+                    throw new SdkException(e);
                 }
             }
         }

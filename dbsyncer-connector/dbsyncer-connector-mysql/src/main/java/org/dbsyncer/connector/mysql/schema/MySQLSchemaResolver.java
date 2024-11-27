@@ -3,9 +3,7 @@
  */
 package org.dbsyncer.connector.mysql.schema;
 
-import org.dbsyncer.connector.mysql.schema.support.MySQLByteType;
-import org.dbsyncer.connector.mysql.schema.support.MySQLShortType;
-import org.dbsyncer.connector.mysql.schema.support.MySQLStringType;
+import org.dbsyncer.connector.mysql.schema.support.*;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
@@ -22,15 +20,16 @@ import java.util.stream.Stream;
  */
 public final class MySQLSchemaResolver extends AbstractSchemaResolver {
 
-    private final MySQLStringType stringType = new MySQLStringType();
-    private final MySQLByteType byteType = new MySQLByteType();
-    private final MySQLShortType shortType = new MySQLShortType();
-
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
-        Stream.of(shortType, stringType, byteType).forEach(t -> {
-            t.getSupportedTypeName().forEach(typeName -> mapping.put(typeName, t));
-        });
+        Stream.of(
+                new MySQLStringType(),
+                new MySQLByteType(),
+                new MySQLShortType(),
+                new MySQLLongType(),
+                new MySQLDateType(),
+                new MySQLTimestampType()
+        ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> mapping.put(typeName, t)));
     }
 
 }

@@ -4,7 +4,6 @@
 package org.dbsyncer.sdk.schema;
 
 import org.dbsyncer.sdk.SdkException;
-import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
 import org.springframework.util.Assert;
 
@@ -19,7 +18,6 @@ import java.util.Map;
 public abstract class AbstractSchemaResolver implements SchemaResolver {
 
     private final Map<String, DataType> mapping = new LinkedHashMap<>();
-    private ConnectorInstance connectorInstance;
 
     public AbstractSchemaResolver() {
         initDataTypeMapping(mapping);
@@ -30,25 +28,20 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
 
     @Override
     public Object merge(Object val, Field field) {
-        if (mapping.containsKey(field.getTypeName())) {
-            return mapping.get(field.getTypeName()).mergeValue(val, field);
+        DataType dataType = mapping.get(field.getTypeName());
+        if (dataType != null) {
+            return dataType.mergeValue(val, field);
         }
         throw new SdkException(String.format("%s does not support type [%s] merge into [%s], val [%s]", getClass().getSimpleName(), val.getClass(), field.getTypeName(), val));
     }
 
     @Override
     public Object convert(Object val, Field field) {
-        if (mapping.containsKey(field.getTypeName())) {
-            return mapping.get(field.getTypeName()).convertValue(val, field);
+        DataType dataType = mapping.get(field.getTypeName());
+        if (dataType != null) {
+            return dataType.convertValue(val, field);
         }
         throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), field.getTypeName(), val));
     }
 
-    public ConnectorInstance getConnectorInstance() {
-        return connectorInstance;
-    }
-
-    public void setConnectorInstance(ConnectorInstance connectorInstance) {
-        this.connectorInstance = connectorInstance;
-    }
 }

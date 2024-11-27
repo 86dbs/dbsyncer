@@ -16,10 +16,9 @@ import java.lang.reflect.ParameterizedType;
 public abstract class AbstractDataType<T> implements DataType {
 
     private final Class<T> parameterClazz;
-    protected SchemaResolver schemaResolver;
 
     public AbstractDataType() {
-        parameterClazz = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+        parameterClazz = (Class<T>) ((ParameterizedType) getClass().getSuperclass().getGenericSuperclass()).getActualTypeArguments()[0];
     }
 
     /**
@@ -56,7 +55,7 @@ public abstract class AbstractDataType<T> implements DataType {
 
     @Override
     public Object mergeValue(Object val, Field field) {
-        if (val == null || field == null) {
+        if (val == null) {
             return getDefaultMergedVal();
         }
         // 数据类型匹配
@@ -69,7 +68,7 @@ public abstract class AbstractDataType<T> implements DataType {
 
     @Override
     public Object convertValue(Object val, Field field) {
-        if (val == null || field == null) {
+        if (val == null) {
             return getDefaultConvertedVal();
         }
         // 异构数据类型转换
@@ -80,11 +79,4 @@ public abstract class AbstractDataType<T> implements DataType {
         throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), field.getTypeName(), val));
     }
 
-    public SchemaResolver getSchemaResolver() {
-        return schemaResolver;
-    }
-
-    public void setSchemaResolver(SchemaResolver schemaResolver) {
-        this.schemaResolver = schemaResolver;
-    }
 }

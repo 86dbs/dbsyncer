@@ -6,22 +6,26 @@ package org.dbsyncer.connector.mysql.schema.support;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.ShortType;
 
-import java.util.HashSet;
+import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @Author 穿云
  * @Version 1.0.0
  * @Date 2024-11-26 22:59
  */
-public class MySQLShortType extends ShortType {
+public final class MySQLShortType extends ShortType {
 
-    private final Set<String> supported = new HashSet<>();
+    enum TypeEnum {
+        TINYINT_UNSIGNED,
+        TINYINT_UNSIGNED_ZEROFILL,
+        SMALLINT;
+    }
 
-    public MySQLShortType() {
-        supported.add("TINYINT UNSIGNED");
-        supported.add("TINYINT UNSIGNED ZEROFILL");
-        supported.add("SMALLINT");
+    @Override
+    public Set<String> getSupportedTypeName() {
+        return Arrays.stream(TypeEnum.values()).map(type -> type.name()).collect(Collectors.toSet());
     }
 
     @Override
@@ -44,8 +48,4 @@ public class MySQLShortType extends ShortType {
         return null;
     }
 
-    @Override
-    public Set<String> getSupportedTypeName() {
-        return supported;
-    }
 }

@@ -6,20 +6,24 @@ package org.dbsyncer.connector.mysql.schema.support;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.ByteType;
 
-import java.util.HashSet;
+import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @Author 穿云
  * @Version 1.0.0
  * @Date 2024-11-26 22:59
  */
-public class MySQLByteType extends ByteType {
+public final class MySQLByteType extends ByteType {
 
-    private final Set<String> supported = new HashSet<>();
+    enum TypeEnum {
+        TINYINT
+    }
 
-    public MySQLByteType() {
-        supported.add("TINYINT");
+    @Override
+    public Set<String> getSupportedTypeName() {
+        return Arrays.stream(TypeEnum.values()).map(type -> type.name()).collect(Collectors.toSet());
     }
 
     @Override
@@ -42,8 +46,4 @@ public class MySQLByteType extends ByteType {
         return null;
     }
 
-    @Override
-    public Set<String> getSupportedTypeName() {
-        return supported;
-    }
 }
