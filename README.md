@@ -41,7 +41,7 @@
 ## 📦安装配置
 
 #### 版本介绍
-- dbsyncer-x.x.x.zip（开源版）
+- dbsyncer-x.x.x.zip（社区版）
 - dbsyncer-enterprise-x.x.x.zip（[专业版](https://gitee.com/ghi/dbsyncer/wikis/DBSyncer%E4%B8%93%E4%B8%9A%E7%89%88)）
 
 #### 方式一 下载安装包
@@ -91,6 +91,10 @@ $ ./build.sh
 | Windows | AMD Ryzen 7 5800x 8核心 12GB | 4GB | 7553/秒 | 9000/秒 |
 
 <img src="https://foruda.gitee.com/images/1722860668272963387/7110f00f_376718.png" />
+
+<img src="https://foruda.gitee.com/images/1723201166659982908/b519cee8_13999669.png" />
+
+[专业版介绍](https://gitee.com/ghi/dbsyncer/wikis/DBSyncer%E4%B8%93%E4%B8%9A%E7%89%88)
 
 [更多测试报告](https://gitee.com/ghi/dbsyncer/wikis/%E5%BF%AB%E9%80%9F%E4%BA%86%E8%A7%A3/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95)
 
