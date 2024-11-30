@@ -31,12 +31,12 @@
 | Sqlite     | ✔ |   | |
 | 后期计划       | Redis | | |
 
-## 📚[使用手册Wiki](https://gitee.com/ghi/dbsyncer/wikis "https://gitee.com/ghi/dbsyncer/wikis")
-
 ## ✨预览
 ![连接器和驱动](https://images.gitee.com/uploads/images/2021/0903/003755_01016fc1_376718.png "驱动管理.png")
 
 ![监控](https://foruda.gitee.com/images/1694424923138969858/111e55e0_376718.png "监控")
+
+## 📚[使用手册 Wiki](https://gitee.com/ghi/dbsyncer/wikis "https://gitee.com/ghi/dbsyncer/wikis")
 
 ## 📦安装配置
 
@@ -73,7 +73,7 @@ $ cd dbsyncer
 $ chmod u+x build.sh
 $ ./build.sh
 ```
-## 🏆性能测试
+## 🏆[性能测试](https://gitee.com/ghi/dbsyncer/wikis/%E5%BF%AB%E9%80%9F%E4%BA%86%E8%A7%A3/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95)
 #### 全量同步
 
 | 系统 | 机器配置 |  数据量 |  耗时 |
@@ -95,9 +95,7 @@ $ ./build.sh
 
 [专业版介绍](https://gitee.com/ghi/dbsyncer/wikis/DBSyncer%E4%B8%93%E4%B8%9A%E7%89%88)
 
-[更多测试报告](https://gitee.com/ghi/dbsyncer/wikis/%E5%BF%AB%E9%80%9F%E4%BA%86%E8%A7%A3/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95)
-
-## 🐞常见问题
+## 🐞[常见问题](https://gitee.com/ghi/dbsyncer/wikis/%E5%92%A8%E8%AF%A2%E9%97%AE%E9%A2%98/%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98) 
 * MySQL无法连接。默认使用的驱动版本为8.0.21，如果为mysql5.x需要手动替换驱动 [mysql-connector-java-5.1.40.jar](https://gitee.com/ghi/dbsyncer/attach_files) 
 * SQLServer无法连接。案例：[驱动程序无法通过使用安全套接字层(SSL)加密与 SQL Server 建立安全连接。错误:“The server selected protocol version TLS10 is not accepted by client preferences [TLS12]”](https://gitee.com/ghi/dbsyncer/issues/I4PL46?from=project-issue) 
 * 同步数据乱码。案例：[mysql8表导入sqlserver2008R2后，sqlserver表nvarchar字段内容为乱码](https://gitee.com/ghi/dbsyncer/issues/I4JXY0) 
