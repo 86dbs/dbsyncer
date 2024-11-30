@@ -39,8 +39,8 @@
 ## 📚[使用手册 Wiki](https://gitee.com/ghi/dbsyncer/wikis "https://gitee.com/ghi/dbsyncer/wikis")
 
 ## 📦安装配置
-- dbsyncer-x.x.x.zip [社区版安装教程](https://gitee.com/ghi/dbsyncer/wikis/%E8%A7%86%E9%A2%91%E6%95%99%E7%A8%8B/%E7%A4%BE%E5%8C%BA%E7%89%88%E5%AE%89%E8%A3%85)
-- dbsyncer-enterprise-x.x.x.zip [专业版安装教程](https://gitee.com/ghi/dbsyncer/wikis/%E8%A7%86%E9%A2%91%E6%95%99%E7%A8%8B/%E4%B8%93%E4%B8%9A%E7%89%88%E5%AE%89%E8%A3%85)
+- dbsyncer-x.x.x.zip [社区版安装教程](https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E7%A4%BE%E5%8C%BA%E7%89%88%E5%AE%89%E8%A3%85)
+- dbsyncer-enterprise-x.x.x.zip [专业版安装教程](https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E4%B8%93%E4%B8%9A%E7%89%88%E5%AE%89%E8%A3%85)
 
 #### 方式一 下载安装包
 1. 安装[JDK 1.8](https://www.oracle.com/java/technologies/jdk8-downloads.html)（省略详细）
@@ -88,7 +88,7 @@ $ ./build.sh
 
 <img src="https://foruda.gitee.com/images/1722860668272963387/7110f00f_376718.png" />
 
-<img src="https://foruda.gitee.com/images/1723201166659982908/b519cee8_13999669.png" />
+<img src="https://foruda.gitee.com/images/1732952268144233045/b607609e_376718.png" />
 
 [专业版介绍](https://gitee.com/ghi/dbsyncer/wikis/DBSyncer%E4%B8%93%E4%B8%9A%E7%89%88)
 
