@@ -44,6 +44,7 @@
 - dbsyncer-x.x.x.zip（社区版）
 - dbsyncer-enterprise-x.x.x.zip（[专业版](https://gitee.com/ghi/dbsyncer/wikis/DBSyncer%E4%B8%93%E4%B8%9A%E7%89%88)）
 
+[部署环境教程](https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E7%8E%AF%E5%A2%83%E9%83%A8%E7%BD%B2)
 #### 方式一 下载安装包
 1. 安装[JDK 1.8](https://www.oracle.com/java/technologies/jdk8-downloads.html)（省略详细）
 2. 下载安装包[dbsyncer-x.x.x.zip](https://gitee.com/ghi/dbsyncer/releases)（也可手动编译）
@@ -51,9 +52,7 @@
 4. 打开浏览器访问：http://127.0.0.1:18686
 5. 账号和密码：admin/admin
 
-[更多环境部署](https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E7%8E%AF%E5%A2%83%E9%83%A8%E7%BD%B2)
 #### 方式二 🐳 docker
-
 * 阿里云镜像（推荐）
 ```shell
 docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
