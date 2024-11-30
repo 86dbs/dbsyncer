@@ -15,9 +15,9 @@ public class DoubleValueMapper extends AbstractValueMapper<Double> {
 
     @Override
     protected Double convert(ConnectorInstance connectorInstance, Object val) {
-        if (val instanceof BigDecimal) {
-            BigDecimal bigDecimal = (BigDecimal) val;
-            return bigDecimal.doubleValue();
+        if (val instanceof Number) {
+            Number num = (Number) val;
+            return num.doubleValue();
         }
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
