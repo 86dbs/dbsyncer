@@ -1,5 +1,6 @@
 package org.dbsyncer.plugin.impl;
 
+import com.sun.mail.util.MailSSLSocketFactory;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.plugin.model.NotifyMessage;
@@ -20,6 +21,7 @@ import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Properties;
 
@@ -57,19 +59,26 @@ public final class MailNotifyServiceProvider implements NotifyService {
 
     @PostConstruct
     private void init() {
-        final Properties props = new Properties();
-        props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.host", "smtp.qq.com");
-        props.put("mail.user", username);
-        props.put("mail.password", password);
-
-        // 构建授权信息，用于进行SMTP进行身份验证
-        session = Session.getInstance(props, new Authenticator() {
-            @Override
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(username, password);
-            }
-        });
+        try {
+            final Properties props = new Properties();
+            props.put("mail.smtp.auth", "true");
+            props.put("mail.smtp.host", "smtp.qq.com");
+            props.put("mail.user", username);
+            props.put("mail.password", password);
+            MailSSLSocketFactory sf = new MailSSLSocketFactory();
+            sf.setTrustAllHosts(true);
+            props.put("mail.smtp.ssl.enable", "true");
+            props.put("mail.smtp.ssl.socketFactory", sf);
+            // 构建授权信息，用于进行SMTP进行身份验证
+            session = Session.getInstance(props, new Authenticator() {
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(username, password);
+                }
+            });
+        } catch (GeneralSecurityException e) {
+            logger.error("MailNotifyServiceProvider init error!", e);
+        }
     }
 
     @Override
