@@ -39,12 +39,9 @@
 ## 📚[使用手册 Wiki](https://gitee.com/ghi/dbsyncer/wikis "https://gitee.com/ghi/dbsyncer/wikis")
 
 ## 📦安装配置
+- dbsyncer-x.x.x.zip [社区版安装教程](https://gitee.com/ghi/dbsyncer/wikis/%E8%A7%86%E9%A2%91%E6%95%99%E7%A8%8B/%E7%A4%BE%E5%8C%BA%E7%89%88%E5%AE%89%E8%A3%85)
+- dbsyncer-enterprise-x.x.x.zip [专业版安装教程](https://gitee.com/ghi/dbsyncer/wikis/%E8%A7%86%E9%A2%91%E6%95%99%E7%A8%8B/%E4%B8%93%E4%B8%9A%E7%89%88%E5%AE%89%E8%A3%85)
 
-#### 版本介绍
-- dbsyncer-x.x.x.zip（社区版）
-- dbsyncer-enterprise-x.x.x.zip（[专业版](https://gitee.com/ghi/dbsyncer/wikis/DBSyncer%E4%B8%93%E4%B8%9A%E7%89%88)）
-
-[部署环境教程](https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E7%8E%AF%E5%A2%83%E9%83%A8%E7%BD%B2)
 #### 方式一 下载安装包
 1. 安装[JDK 1.8](https://www.oracle.com/java/technologies/jdk8-downloads.html)（省略详细）
 2. 下载安装包[dbsyncer-x.x.x.zip](https://gitee.com/ghi/dbsyncer/releases)（也可手动编译）
