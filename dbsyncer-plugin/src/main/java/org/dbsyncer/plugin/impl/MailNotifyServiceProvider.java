@@ -69,7 +69,7 @@ public final class MailNotifyServiceProvider implements NotifyService {
             sf.setTrustAllHosts(true);
             props.put("mail.smtp.ssl.enable", "true");
             props.put("mail.smtp.ssl.socketFactory", sf);
-            // 构建授权信息，用于进行SMTP进行身份验证
+            // 构建授权信息，用于进行SMTP身份验证
             session = Session.getInstance(props, new Authenticator() {
                 @Override
                 protected PasswordAuthentication getPasswordAuthentication() {
