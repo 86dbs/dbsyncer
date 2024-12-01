@@ -21,6 +21,11 @@ public class ProductInfo {
     private String licenseKey;
 
     /**
+     * 系统名称
+     */
+    private String osName;
+
+    /**
      * 公司名称
      */
     private String company;
@@ -61,6 +66,14 @@ public class ProductInfo {
 
     public void setLicenseKey(String licenseKey) {
         this.licenseKey = licenseKey;
+    }
+
+    public String getOsName() {
+        return osName;
+    }
+
+    public void setOsName(String osName) {
+        this.osName = osName;
     }
 
     public String getCompany() {

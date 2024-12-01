@@ -139,6 +139,7 @@ public class LicenseController extends BaseController {
         UserInfo userInfo = getUserInfo();
         Assert.notNull(userInfo, "会话过期，请重新登录");
         info.setLicenseKey(licenseService.getKey());
+        info.setOsName(System.getProperty("os.name"));
         info.setPhone(StringUtil.isNotBlank(info.getPhone()) ? info.getPhone() : userInfo.getPhone());
         info.setEmail(StringUtil.isNotBlank(info.getEmail()) ? info.getEmail() : userInfo.getEmail());
         return invoke(info);
