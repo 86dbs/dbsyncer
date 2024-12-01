@@ -1,5 +1,4 @@
 #!/bin/bash
-#test
 SCRIPT_DIR=$(cd $(dirname $0);pwd)
 DBS_HOME=$(cd $SCRIPT_DIR/..;pwd)
 echo DBS_HOME=$DBS_HOME
