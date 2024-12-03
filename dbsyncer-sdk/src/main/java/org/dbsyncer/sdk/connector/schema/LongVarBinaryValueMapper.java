@@ -18,6 +18,9 @@ public class LongVarBinaryValueMapper extends AbstractValueMapper<byte[]> {
 
     @Override
     protected byte[] convert(ConnectorInstance connectorInstance, Object val) {
+        if (val instanceof String) {
+            return ((String) val).getBytes();
+        }
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }
