@@ -4,6 +4,8 @@ import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.AbstractValueMapper;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * @author AE86
  * @version 1.0.0
@@ -19,7 +21,7 @@ public class LongVarBinaryValueMapper extends AbstractValueMapper<byte[]> {
     @Override
     protected byte[] convert(ConnectorInstance connectorInstance, Object val) {
         if (val instanceof String) {
-            return ((String) val).getBytes();
+            return ((String) val).getBytes(StandardCharsets.UTF_8);
         }
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
