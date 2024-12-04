@@ -5,9 +5,9 @@ package org.dbsyncer.sdk.connector.database;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.plugin.ReaderContext;
 
 import java.util.List;
 
@@ -82,18 +82,18 @@ public interface Database {
     /**
      * 获取分页参数
      *
-     * @param config
+     * @param context
      * @return
      */
-    Object[] getPageArgs(ReaderConfig config);
+    Object[] getPageArgs(ReaderContext context);
 
     /**
      * 获取游标分页参数
      *
-     * @param config
+     * @param context
      * @return
      */
-    default Object[] getPageCursorArgs(ReaderConfig config) {
+    default Object[] getPageCursorArgs(ReaderContext context) {
         throw new SdkException("Unsupported override method getPageCursorArgs:" + getClass().getName());
     }
 

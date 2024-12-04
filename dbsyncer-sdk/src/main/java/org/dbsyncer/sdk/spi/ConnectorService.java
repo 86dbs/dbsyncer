@@ -7,7 +7,6 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -16,6 +15,7 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.storage.StorageService;
 
 import java.util.List;
@@ -126,10 +126,10 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * 分页获取数据源数据
      *
      * @param connectorInstance
-     * @param connectorConfig
+     * @param context
      * @return
      */
-    Result reader(I connectorInstance, ReaderConfig connectorConfig);
+    Result reader(I connectorInstance, ReaderContext context);
 
     /**
      * 批量写入目标源数据

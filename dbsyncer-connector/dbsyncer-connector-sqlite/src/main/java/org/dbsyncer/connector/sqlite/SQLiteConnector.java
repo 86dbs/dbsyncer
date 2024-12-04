@@ -4,11 +4,8 @@
 package org.dbsyncer.connector.sqlite;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlite.validator.SQLiteConfigValidator;
-import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
@@ -20,6 +17,7 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.util.ArrayList;
@@ -79,9 +77,9 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Object[] getPageArgs(ReaderConfig config) {
-        int pageIndex = config.getPageIndex();
-        int pageSize = config.getPageSize();
+    public Object[] getPageArgs(ReaderContext context) {
+        int pageIndex = context.getPageIndex();
+        int pageSize = context.getPageSize();
         return new Object[]{pageSize, (pageIndex - 1) * pageSize};
     }
 

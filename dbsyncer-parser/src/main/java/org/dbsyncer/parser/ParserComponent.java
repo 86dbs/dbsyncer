@@ -1,7 +1,6 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.parser.model.BatchWriter;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
@@ -63,10 +62,9 @@ public interface ParserComponent {
      * 批执行
      *
      * @param pluginContext
-     * @param batchWriter
      * @param executor
      * @return
      */
-    Result writeBatch(PluginContext pluginContext, BatchWriter batchWriter, Executor executor);
+    Result writeBatch(PluginContext pluginContext, Executor executor);
 
 }

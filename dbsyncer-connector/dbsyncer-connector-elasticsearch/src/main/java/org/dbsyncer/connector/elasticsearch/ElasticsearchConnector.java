@@ -18,7 +18,6 @@ import org.dbsyncer.connector.elasticsearch.schema.ESOtherValueMapper;
 import org.dbsyncer.connector.elasticsearch.util.ESUtil;
 import org.dbsyncer.connector.elasticsearch.validator.ESConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -32,6 +31,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.elasticsearch.ElasticsearchException;
@@ -65,14 +65,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -237,23 +230,23 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     }
 
     @Override
-    public Result reader(ESConnectorInstance connectorInstance, ReaderConfig config) {
+    public Result reader(ESConnectorInstance connectorInstance, ReaderContext context) {
         SearchSourceBuilder builder = new SearchSourceBuilder();
-        genSearchSourceBuilder(builder, config.getCommand());
+        genSearchSourceBuilder(builder, context.getCommand());
         builder.timeout(TimeValue.timeValueSeconds(connectorInstance.getConfig().getTimeoutSeconds()));
-        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(config.getTable());
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(context.getSourceTable());
         primaryKeys.forEach(pk -> builder.sort(pk, SortOrder.ASC));
         // 深度分页
-        if (!CollectionUtils.isEmpty(config.getCursors())) {
+        if (!CollectionUtils.isEmpty(context.getCursors())) {
             builder.from(0);
-            builder.searchAfter(config.getCursors());
+            builder.searchAfter(context.getCursors());
         } else {
-            builder.from((config.getPageIndex() - 1) * config.getPageSize());
+            builder.from((context.getPageIndex() - 1) * context.getPageSize());
         }
-        builder.size(config.getPageSize() > MAX_SIZE ? MAX_SIZE : config.getPageSize());
+        builder.size(context.getPageSize() > MAX_SIZE ? MAX_SIZE : context.getPageSize());
 
         try {
-            SearchRequest rq = new SearchRequest(new String[]{config.getCommand().get(_SOURCE_INDEX)}, builder);
+            SearchRequest rq = new SearchRequest(new String[]{context.getCommand().get(_SOURCE_INDEX)}, builder);
             SearchResponse searchResponse = connectorInstance.getConnection().searchWithVersion(rq, RequestOptions.DEFAULT);
             SearchHits hits = searchResponse.getHits();
             SearchHit[] searchHits = hits.getHits();
@@ -262,7 +255,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
                 list.add(hit.getSourceAsMap());
             }
             if (searchResponse.getInternalResponse().timedOut()) {
-                throw new ElasticsearchException("search timeout:" + searchResponse.getTook().getMillis() + "ms, pageIndex:" + config.getPageIndex() + ", pageSize:" + config.getPageSize());
+                throw new ElasticsearchException("search timeout:" + searchResponse.getTook().getMillis() + "ms, pageIndex:" + context.getPageIndex() + ", pageSize:" + context.getPageSize());
             }
             return new Result(list);
         } catch (IOException e) {

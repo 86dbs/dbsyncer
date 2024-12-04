@@ -7,7 +7,6 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -15,20 +14,14 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -173,10 +166,10 @@ public class ConnectorFactory implements DisposableBean {
         return getConnectorService(connectorInstance.getConfig()).getCount(connectorInstance, command);
     }
 
-    public Result reader(ConnectorInstance connectorInstance, ReaderConfig config) {
+    public Result reader(ConnectorInstance connectorInstance, ReaderContext context) {
         Assert.notNull(connectorInstance, "ConnectorInstance can not null");
-        Assert.notNull(config, "ReaderConfig can not null");
-        Result result = getConnectorService(connectorInstance.getConfig()).reader(connectorInstance, config);
+        Assert.notNull(context, "ReaderContext can not null");
+        Result result = getConnectorService(connectorInstance.getConfig()).reader(connectorInstance, context);
         Assert.notNull(result, "Connector reader result can not null");
         return result;
     }

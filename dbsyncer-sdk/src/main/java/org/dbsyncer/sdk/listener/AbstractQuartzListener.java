@@ -9,7 +9,6 @@ import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.event.ScanChangedEvent;
 import org.dbsyncer.sdk.model.Point;
@@ -105,16 +104,22 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         final Map<String, String> command = tableGroupQuartzCommand.getCommand();
         final List<String> primaryKeys = tableGroupQuartzCommand.getPrimaryKeys();
         final Table table = tableGroupQuartzCommand.getTable();
-        boolean supportedCursor = StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR));
 
         // 检查增量点
         Point point = checkLastPoint(command, index);
         int pageIndex = 1;
         Object[] cursors = PrimaryKeyUtil.getLastCursors((String) snapshot.get(index + CURSOR));
 
+        final QuartzListenerContext context = new QuartzListenerContext();
+        context.setSourceTable(table);
+        context.setCommand(point.getCommand());
+        context.setArgs(point.getArgs());
+        context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
+        context.setPageSize(READ_NUM);
         while (running) {
-            ReaderConfig readerConfig = new ReaderConfig(table, point.getCommand(), point.getArgs(), supportedCursor, cursors, pageIndex++, READ_NUM);
-            Result reader = connectorService.reader(connectorInstance, readerConfig);
+            context.setCursors(cursors);
+            context.setPageSize(pageIndex++);
+            Result reader = connectorService.reader(connectorInstance, context);
             List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
                 cursors = new Object[0];
@@ -154,7 +159,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         if (point.refreshed()) {
             snapshot.putAll(point.getPosition());
         }
-        if (supportedCursor) {
+        if (context.isSupportedCursor()) {
             snapshot.put(index + CURSOR, StringUtil.join(cursors, ","));
         }
 

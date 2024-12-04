@@ -5,7 +5,6 @@ package org.dbsyncer.connector.postgresql;
 
 import org.dbsyncer.connector.postgresql.cdc.DqlPostgreSQLListener;
 import org.dbsyncer.connector.postgresql.validator.DqlPostgreSQLConfigValidator;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -13,6 +12,7 @@ import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.plugin.ReaderContext;
 
 /**
  * DQLSqlServer连接器实现
@@ -54,9 +54,9 @@ public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
     }
 
     @Override
-    public Object[] getPageArgs(ReaderConfig config) {
-        int pageSize = config.getPageSize();
-        int pageIndex = config.getPageIndex();
+    public Object[] getPageArgs(ReaderContext context) {
+        int pageSize = context.getPageSize();
+        int pageIndex = context.getPageIndex();
         return new Object[]{pageSize, (pageIndex - 1) * pageSize};
     }
 

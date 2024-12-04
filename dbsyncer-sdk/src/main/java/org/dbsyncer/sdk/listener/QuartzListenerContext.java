@@ -1,18 +1,22 @@
-package org.dbsyncer.plugin.impl;
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
+package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.plugin.AbstractPluginContext;
-import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
 import java.util.List;
+import java.util.Map;
 
 /**
- * @author AE86
- * @version 1.0.0s
- * @date 2022/6/30 16:04
+ * @Author 穿云
+ * @Version 1.0.0
+ * @Date 2024-12-05 01:07
  */
-public final class FullPluginContext extends AbstractPluginContext implements ReaderContext {
+public final class QuartzListenerContext implements ReaderContext {
+
+    private Map<String, String> command;
 
     private Table sourceTable;
 
@@ -27,8 +31,12 @@ public final class FullPluginContext extends AbstractPluginContext implements Re
     private int pageSize;
 
     @Override
-    public ModelEnum getModelEnum() {
-        return ModelEnum.FULL;
+    public Map<String, String> getCommand() {
+        return command;
+    }
+
+    public void setCommand(Map<String, String> command) {
+        this.command = command;
     }
 
     @Override
