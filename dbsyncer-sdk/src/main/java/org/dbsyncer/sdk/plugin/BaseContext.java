@@ -13,4 +13,6 @@ import java.util.Map;
 public interface BaseContext {
 
     Map<String, String> getCommand();
+
+    void setCommand(Map<String, String> command);
 }
