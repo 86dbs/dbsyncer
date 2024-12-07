@@ -10,13 +10,7 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.event.FullRefreshEvent;
-import org.dbsyncer.parser.model.BatchWriter;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.FieldMapping;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Picker;
-import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.model.Task;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -24,7 +18,6 @@ import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.FullPluginContext;
 import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -142,13 +135,19 @@ public class ParserComponentImpl implements ParserComponent {
         // 获取同步字段
         Picker picker = new Picker(fieldMapping);
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
-        boolean supportedCursor = StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR));
-        int pageSize = mapping.getReadNum();
-        int batchSize = mapping.getBatchNum();
-        final ConnectorInstance sConnectorInstance = connectorFactory.connect(sConfig);
-        final ConnectorInstance tConnectorInstance = connectorFactory.connect(tConfig);
-        final String event = ConnectorConstant.OPERTION_INSERT;
-        final FullPluginContext context = new FullPluginContext(sConnectorInstance, tConnectorInstance, sTableName, tTableName, event, group.getPluginExtInfo());
+        final FullPluginContext context = new FullPluginContext();
+        context.setSourceConnectorInstance(connectorFactory.connect(sConfig));
+        context.setTargetConnectorInstance(connectorFactory.connect(tConfig));
+        context.setSourceTableName(sTableName);
+        context.setTargetTableName(tTableName);
+        context.setEvent(ConnectorConstant.OPERTION_INSERT);
+        context.setCommand(command);
+        context.setBatchSize(mapping.getBatchNum());
+        context.setPluginExtInfo(group.getPluginExtInfo());
+        context.setForceUpdate(mapping.isForceUpdate());
+        context.setSourceTable(sourceTable);
+        context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
+        context.setPageSize(mapping.getReadNum());
         // 0、插件前置处理
         pluginFactory.process(group.getPlugin(), context, ProcessEnum.BEFORE);
 
@@ -159,8 +158,10 @@ public class ParserComponentImpl implements ParserComponent {
             }
 
             // 1、获取数据源数据
-            ReaderConfig readerConfig = new ReaderConfig(sourceTable, command, new ArrayList<>(), supportedCursor, task.getCursors(), task.getPageIndex(), pageSize);
-            Result reader = connectorFactory.reader(sConnectorInstance, readerConfig);
+            context.setArgs(new ArrayList<>());
+            context.setCursors(task.getCursors());
+            context.setPageIndex(task.getPageIndex());
+            Result reader = connectorFactory.reader(context.getSourceConnectorInstance(), context);
             List<Map> source = reader.getSuccessData();
             if (CollectionUtils.isEmpty(source)) {
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
@@ -179,8 +180,8 @@ public class ParserComponentImpl implements ParserComponent {
             pluginFactory.process(group.getPlugin(), context, ProcessEnum.CONVERT);
 
             // 5、写入目标源
-            BatchWriter batchWriter = new BatchWriter(tConnectorInstance, command, tTableName, event, picker.getTargetFields(), target, batchSize, mapping.isForceUpdate());
-            Result result = writeBatch(context, batchWriter, executor);
+            context.setTargetFields(picker.getTargetFields());
+            Result result = writeBatch(context, executor);
 
             // 6、更新结果
             task.setPageIndex(task.getPageIndex() + 1);
@@ -193,7 +194,7 @@ public class ParserComponentImpl implements ParserComponent {
             pluginFactory.process(group.getPlugin(), context, ProcessEnum.AFTER);
 
             // 8、判断尾页
-            if (source.size() < pageSize) {
+            if (source.size() < context.getPageIndex()) {
                 logger.info("完成全量:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
                 break;
             }
@@ -201,25 +202,25 @@ public class ParserComponentImpl implements ParserComponent {
     }
 
     @Override
-    public Result writeBatch(PluginContext pluginContext, BatchWriter batchWriter, Executor executor) {
+    public Result writeBatch(PluginContext context, Executor executor) {
         final Result result = new Result();
         // 终止同步数据到目标源库
-        if (pluginContext.isTerminated()) {
-            result.getSuccessData().addAll(batchWriter.getDataList());
+        if (context.isTerminated()) {
+            result.getSuccessData().addAll(context.getTargetList());
             return result;
         }
 
-        List<Map> dataList = batchWriter.getDataList();
-        int batchSize = batchWriter.getBatchSize();
-        String tableName = batchWriter.getTableName();
-        String event = batchWriter.getEvent();
-        Map<String, String> command = batchWriter.getCommand();
-        List<Field> fields = batchWriter.getFields();
+        List<Map> dataList = context.getTargetList();
+        int batchSize = context.getBatchSize();
+        String tableName = context.getTargetTableName();
+        String event = context.getEvent();
+        Map<String, String> command = context.getCommand();
+        List<Field> fields = context.getTargetFields();
         // 总数
         int total = dataList.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(batchWriter.getConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, dataList, batchWriter.isForceUpdate()));
+            return connectorFactory.writer(context.getTargetConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, dataList, context.isForceUpdate()));
         }
 
         // 批量任务, 拆分
@@ -241,7 +242,7 @@ public class ParserComponentImpl implements ParserComponent {
 
             executor.execute(() -> {
                 try {
-                    Result w = connectorFactory.writer(batchWriter.getConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, data, batchWriter.isForceUpdate()));
+                    Result w = connectorFactory.writer(context.getTargetConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, data, context.isForceUpdate()));
                     result.addSuccessData(w.getSuccessData());
                     result.addFailData(w.getFailData());
                     result.getError().append(w.getError());

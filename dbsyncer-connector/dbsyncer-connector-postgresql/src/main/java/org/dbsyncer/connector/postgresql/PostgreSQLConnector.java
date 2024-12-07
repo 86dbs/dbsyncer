@@ -10,7 +10,6 @@ import org.dbsyncer.connector.postgresql.schema.PostgreSQLOtherValueMapper;
 import org.dbsyncer.connector.postgresql.validator.PostgreSQLConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -20,6 +19,7 @@ import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,16 +109,16 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Object[] getPageArgs(ReaderConfig config) {
-        int pageIndex = config.getPageIndex();
-        int pageSize = config.getPageSize();
+    public Object[] getPageArgs(ReaderContext context) {
+        int pageIndex = context.getPageIndex();
+        int pageSize = context.getPageSize();
         return new Object[]{pageSize, (pageIndex - 1) * pageSize};
     }
 
     @Override
-    public Object[] getPageCursorArgs(ReaderConfig config) {
-        int pageSize = config.getPageSize();
-        Object[] cursors = config.getCursors();
+    public Object[] getPageCursorArgs(ReaderContext context) {
+        int pageSize = context.getPageSize();
+        Object[] cursors = context.getCursors();
         if (null == cursors) {
             return new Object[]{pageSize, 0};
         }

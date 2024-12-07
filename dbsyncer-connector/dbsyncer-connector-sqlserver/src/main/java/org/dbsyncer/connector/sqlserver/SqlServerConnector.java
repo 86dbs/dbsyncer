@@ -9,7 +9,6 @@ import org.dbsyncer.connector.sqlserver.cdc.SqlServerListener;
 import org.dbsyncer.connector.sqlserver.validator.SqlServerConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
@@ -21,6 +20,7 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.ReaderContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,9 +79,9 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Object[] getPageArgs(ReaderConfig config) {
-        int pageSize = config.getPageSize();
-        int pageIndex = config.getPageIndex();
+    public Object[] getPageArgs(ReaderContext context) {
+        int pageSize = context.getPageSize();
+        int pageIndex = context.getPageIndex();
         return new Object[]{(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
     }
 

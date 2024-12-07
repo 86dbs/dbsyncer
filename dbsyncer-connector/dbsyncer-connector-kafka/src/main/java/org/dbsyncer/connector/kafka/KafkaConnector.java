@@ -10,7 +10,6 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.validator.KafkaConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -19,6 +18,7 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -108,7 +108,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     }
 
     @Override
-    public Result reader(KafkaConnectorInstance connectorInstance, ReaderConfig config) {
+    public Result reader(KafkaConnectorInstance connectorInstance, ReaderContext context) {
         throw new KafkaException("Full synchronization is not supported");
     }
 

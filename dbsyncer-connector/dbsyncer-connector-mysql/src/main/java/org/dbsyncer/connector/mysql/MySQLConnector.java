@@ -8,13 +8,13 @@ import org.dbsyncer.connector.mysql.cdc.MySQLListener;
 import org.dbsyncer.connector.mysql.storage.MySQLStorageService;
 import org.dbsyncer.connector.mysql.validator.MySQLConfigValidator;
 import org.dbsyncer.sdk.connector.ConfigValidator;
-import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -109,16 +109,16 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Object[] getPageArgs(ReaderConfig config) {
-        int pageSize = config.getPageSize();
-        int pageIndex = config.getPageIndex();
+    public Object[] getPageArgs(ReaderContext context) {
+        int pageSize = context.getPageSize();
+        int pageIndex = context.getPageIndex();
         return new Object[]{(pageIndex - 1) * pageSize, pageSize};
     }
 
     @Override
-    public Object[] getPageCursorArgs(ReaderConfig config) {
-        int pageSize = config.getPageSize();
-        Object[] cursors = config.getCursors();
+    public Object[] getPageCursorArgs(ReaderContext context) {
+        int pageSize = context.getPageSize();
+        Object[] cursors = context.getCursors();
         if (null == cursors) {
             return new Object[]{0, pageSize};
         }

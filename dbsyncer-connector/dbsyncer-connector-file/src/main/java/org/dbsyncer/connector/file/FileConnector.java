@@ -9,12 +9,11 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.file.cdc.FileListener;
-import org.dbsyncer.connector.file.model.FileResolver;
 import org.dbsyncer.connector.file.config.FileConfig;
+import org.dbsyncer.connector.file.model.FileResolver;
 import org.dbsyncer.connector.file.model.FileSchema;
 import org.dbsyncer.connector.file.validator.FileConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -24,16 +23,13 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.Types;
@@ -161,20 +157,20 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     }
 
     @Override
-    public Result reader(FileConnectorInstance connectorInstance, ReaderConfig config) {
+    public Result reader(FileConnectorInstance connectorInstance, ReaderContext context) {
         List<Map<String, Object>> list = new ArrayList<>();
         FileReader reader = null;
         try {
             FileConfig fileConfig = connectorInstance.getConfig();
-            FileSchema fileSchema = connectorInstance.getFileSchema(config.getCommand().get(FILE_NAME));
+            FileSchema fileSchema = connectorInstance.getFileSchema(context.getCommand().get(FILE_NAME));
             final List<Field> fields = fileSchema.getFields();
             Assert.notEmpty(fields, "The fields of file schema is empty.");
             final char separator = fileConfig.getSeparator();
 
-            reader = new FileReader(new File(config.getCommand().get(FILE_PATH)));
+            reader = new FileReader(context.getCommand().get(FILE_PATH));
             LineIterator lineIterator = IOUtils.lineIterator(reader);
-            int from = (config.getPageIndex() - 1) * config.getPageSize();
-            int to = from + config.getPageSize();
+            int from = (context.getPageIndex() - 1) * context.getPageSize();
+            int to = from + context.getPageSize();
             AtomicLong count = new AtomicLong();
             while (lineIterator.hasNext()) {
                 if (count.get() >= from && count.get() < to) {

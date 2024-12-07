@@ -7,12 +7,7 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
-import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.DDLConfig;
-import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.config.ReaderConfig;
-import org.dbsyncer.sdk.config.SqlBuilderConfig;
-import org.dbsyncer.sdk.config.WriterBatchConfig;
+import org.dbsyncer.sdk.config.*;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
@@ -22,11 +17,8 @@ import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
-import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.model.Filter;
-import org.dbsyncer.sdk.model.MetaInfo;
-import org.dbsyncer.sdk.model.PageSql;
-import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.model.*;
+import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
@@ -42,14 +34,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -160,18 +145,18 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public Result reader(DatabaseConnectorInstance connectorInstance, ReaderConfig config) {
+    public Result reader(DatabaseConnectorInstance connectorInstance, ReaderContext context) {
         // 1、获取select SQL
-        boolean supportedCursor = enableCursor() && config.isSupportedCursor() && null != config.getCursors();
+        boolean supportedCursor = enableCursor() && context.isSupportedCursor() && null != context.getCursors();
         String queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY;
-        String querySql = config.getCommand().get(queryKey);
+        final String querySql = context.getCommand().get(queryKey);
         Assert.hasText(querySql, "查询语句不能为空.");
 
         // 2、设置参数
-        Collections.addAll(config.getArgs(), supportedCursor ? getPageCursorArgs(config) : getPageArgs(config));
+        Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
 
         // 3、执行SQL
-        List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, config.getArgs().toArray()));
+        List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, context.getArgs().toArray()));
 
         // 4、返回结果集
         return new Result(list);

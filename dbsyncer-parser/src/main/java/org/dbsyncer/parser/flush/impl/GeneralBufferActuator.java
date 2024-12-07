@@ -15,14 +15,7 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
-import org.dbsyncer.parser.model.BatchWriter;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.FieldMapping;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Picker;
-import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.model.WriterRequest;
-import org.dbsyncer.parser.model.WriterResponse;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -134,9 +127,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             return;
         }
 
-        final String sourceTableName = group.getSourceTable().getName();
-        final String targetTableName = group.getTargetTable().getName();
-        final String event = response.getEvent();
         final Picker picker = new Picker(group.getFieldMapping());
         final List<Map> sourceDataList = response.getDataList();
         // 2、映射字段
@@ -146,22 +136,31 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         ConvertUtil.convert(group.getConvert(), targetDataList);
 
         // 4、插件转换
-        final ConnectorInstance sConnectorInstance = connectorFactory.connect(getConnectorConfig(mapping.getSourceConnectorId()));
-        final ConnectorInstance tConnectorInstance = connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId()));
-        final IncrementPluginContext context = new IncrementPluginContext(sConnectorInstance, tConnectorInstance, sourceTableName, targetTableName, event, sourceDataList, targetDataList, group.getPluginExtInfo());
+        final IncrementPluginContext context = new IncrementPluginContext();
+        context.setSourceConnectorInstance(connectorFactory.connect(getConnectorConfig(mapping.getSourceConnectorId())));
+        context.setTargetConnectorInstance(connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())));
+        context.setSourceTableName(group.getSourceTable().getName());
+        context.setTargetTableName(group.getTargetTable().getName());
+        context.setEvent(response.getEvent());
+        context.setTargetFields(picker.getTargetFields());
+        context.setCommand(group.getCommand());
+        context.setBatchSize(generalBufferConfig.getBufferWriterCount());
+        context.setSourceList(sourceDataList);
+        context.setTargetList(targetDataList);
+        context.setPluginExtInfo(group.getPluginExtInfo());
+        context.setForceUpdate(mapping.isForceUpdate());
         pluginFactory.process(group.getPlugin(), context, ProcessEnum.CONVERT);
 
         // 5、批量执行同步
-        BatchWriter batchWriter = new BatchWriter(tConnectorInstance, group.getCommand(), targetTableName, event, picker.getTargetFields(), targetDataList, generalBufferConfig.getBufferWriterCount(), mapping.isForceUpdate());
-        Result result = parserComponent.writeBatch(context, batchWriter, getExecutor());
+        Result result = parserComponent.writeBatch(context, getExecutor());
 
         // 6.发布刷新增量点事件
         applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
 
         // 7、持久化同步结果
         result.setTableGroupId(tableGroup.getId());
-        result.setTargetTableGroupName(targetTableName);
-        flushStrategy.flushIncrementData(mapping.getMetaId(), result, event);
+        result.setTargetTableGroupName(context.getTargetTableName());
+        flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
 
         // 8、执行批量处理后的
         pluginFactory.process(group.getPlugin(), context, ProcessEnum.AFTER);

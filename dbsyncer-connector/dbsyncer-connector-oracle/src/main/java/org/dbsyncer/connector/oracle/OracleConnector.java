@@ -5,11 +5,11 @@ package org.dbsyncer.connector.oracle;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.cdc.OracleListener;
+import org.dbsyncer.connector.oracle.schema.OracleClobValueMapper;
 import org.dbsyncer.connector.oracle.schema.OracleOtherValueMapper;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.config.ReaderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -19,6 +19,7 @@ import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
 
     public OracleConnector() {
         VALUE_MAPPERS.put(Types.OTHER, new OracleOtherValueMapper());
+        VALUE_MAPPERS.put(Types.CLOB, new OracleClobValueMapper());
     }
 
     @Override
@@ -111,16 +113,16 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Object[] getPageArgs(ReaderConfig config) {
-        int pageSize = config.getPageSize();
-        int pageIndex = config.getPageIndex();
+    public Object[] getPageArgs(ReaderContext context) {
+        int pageSize = context.getPageSize();
+        int pageIndex = context.getPageIndex();
         return new Object[]{pageIndex * pageSize, (pageIndex - 1) * pageSize};
     }
 
     @Override
-    public Object[] getPageCursorArgs(ReaderConfig config) {
-        int pageSize = config.getPageSize();
-        Object[] cursors = config.getCursors();
+    public Object[] getPageCursorArgs(ReaderContext context) {
+        int pageSize = context.getPageSize();
+        Object[] cursors = context.getCursors();
         if (null == cursors) {
             return new Object[]{pageSize, 0};
         }

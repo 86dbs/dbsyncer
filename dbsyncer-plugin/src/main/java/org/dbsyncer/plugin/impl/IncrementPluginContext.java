@@ -1,11 +1,7 @@
 package org.dbsyncer.plugin.impl;
 
-import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.plugin.AbstractPluginContext;
 import org.dbsyncer.sdk.enums.ModelEnum;
-import org.dbsyncer.plugin.AbstractPluginContext;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author AE86
@@ -13,10 +9,6 @@ import java.util.Map;
  * @date 2022/6/30 16:06
  */
 public final class IncrementPluginContext extends AbstractPluginContext {
-
-    public IncrementPluginContext(ConnectorInstance sourceConnectorInstance, ConnectorInstance targetConnectorInstance, String sourceTableName, String targetTableName, String event, List<Map> sourceList, List<Map> targetList, String pluginExtInfo) {
-        super.init(sourceConnectorInstance, targetConnectorInstance, sourceTableName, targetTableName, event, sourceList, targetList, pluginExtInfo);
-    }
 
     @Override
     public ModelEnum getModelEnum() {

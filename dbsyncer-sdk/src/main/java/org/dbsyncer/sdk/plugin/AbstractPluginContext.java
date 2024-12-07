@@ -1,7 +1,7 @@
-package org.dbsyncer.plugin;
+package org.dbsyncer.sdk.plugin;
 
 import org.dbsyncer.sdk.connector.ConnectorInstance;
-import org.dbsyncer.sdk.plugin.PluginContext;
+import org.dbsyncer.sdk.model.Field;
 
 import java.util.List;
 import java.util.Map;
@@ -45,6 +45,26 @@ public abstract class AbstractPluginContext implements PluginContext {
     private String event;
 
     /**
+     * 目标字段
+     */
+    private List<Field> targetFields;
+
+    /**
+     * 执行命令
+     */
+    private Map<String, String> command;
+
+    /**
+     * 批量处理任务数
+     */
+    private int batchSize;
+
+    /**
+     * 是否覆盖更新
+     */
+    private boolean forceUpdate;
+
+    /**
      * 数据源数据集合
      */
     private List<Map> sourceList;
@@ -58,17 +78,6 @@ public abstract class AbstractPluginContext implements PluginContext {
      * 插件参数
      */
     private String pluginExtInfo;
-
-    public void init(ConnectorInstance sourceConnectorInstance, ConnectorInstance targetConnectorInstance, String sourceTableName, String targetTableName, String event, List<Map> sourceList, List<Map> targetList, String pluginExtInfo) {
-        this.sourceConnectorInstance = sourceConnectorInstance;
-        this.targetConnectorInstance = targetConnectorInstance;
-        this.sourceTableName = sourceTableName;
-        this.targetTableName = targetTableName;
-        this.event = event;
-        this.sourceList = sourceList;
-        this.targetList = targetList;
-        this.pluginExtInfo = pluginExtInfo;
-    }
 
     @Override
     public boolean isTerminated() {
@@ -85,9 +94,17 @@ public abstract class AbstractPluginContext implements PluginContext {
         return sourceConnectorInstance;
     }
 
+    public void setSourceConnectorInstance(ConnectorInstance sourceConnectorInstance) {
+        this.sourceConnectorInstance = sourceConnectorInstance;
+    }
+
     @Override
     public ConnectorInstance getTargetConnectorInstance() {
         return targetConnectorInstance;
+    }
+
+    public void setTargetConnectorInstance(ConnectorInstance targetConnectorInstance) {
+        this.targetConnectorInstance = targetConnectorInstance;
     }
 
     @Override
@@ -95,14 +112,62 @@ public abstract class AbstractPluginContext implements PluginContext {
         return sourceTableName;
     }
 
+    public void setSourceTableName(String sourceTableName) {
+        this.sourceTableName = sourceTableName;
+    }
+
     @Override
     public String getTargetTableName() {
         return targetTableName;
     }
 
+    public void setTargetTableName(String targetTableName) {
+        this.targetTableName = targetTableName;
+    }
+
     @Override
     public String getEvent() {
         return event;
+    }
+
+    public void setEvent(String event) {
+        this.event = event;
+    }
+
+    @Override
+    public List<Field> getTargetFields() {
+        return targetFields;
+    }
+
+    public void setTargetFields(List<Field> targetFields) {
+        this.targetFields = targetFields;
+    }
+
+    @Override
+    public int getBatchSize() {
+        return batchSize;
+    }
+
+    public void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
+    }
+
+    @Override
+    public boolean isForceUpdate() {
+        return forceUpdate;
+    }
+
+    public void setForceUpdate(boolean forceUpdate) {
+        this.forceUpdate = forceUpdate;
+    }
+
+    @Override
+    public Map<String, String> getCommand() {
+        return command;
+    }
+
+    public void setCommand(Map<String, String> command) {
+        this.command = command;
     }
 
     @Override
@@ -126,5 +191,9 @@ public abstract class AbstractPluginContext implements PluginContext {
     @Override
     public String getPluginExtInfo() {
         return pluginExtInfo;
+    }
+
+    public void setPluginExtInfo(String pluginExtInfo) {
+        this.pluginExtInfo = pluginExtInfo;
     }
 }
