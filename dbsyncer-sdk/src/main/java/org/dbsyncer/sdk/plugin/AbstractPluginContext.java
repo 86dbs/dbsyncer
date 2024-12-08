@@ -130,6 +130,7 @@ public abstract class AbstractPluginContext implements PluginContext {
         return event;
     }
 
+    @Override
     public void setEvent(String event) {
         this.event = event;
     }
@@ -166,6 +167,7 @@ public abstract class AbstractPluginContext implements PluginContext {
         return command;
     }
 
+    @Override
     public void setCommand(Map<String, String> command) {
         this.command = command;
     }

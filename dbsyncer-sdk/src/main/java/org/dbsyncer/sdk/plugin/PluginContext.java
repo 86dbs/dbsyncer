@@ -63,6 +63,8 @@ public interface PluginContext extends BaseContext {
      */
     String getEvent();
 
+    void setEvent(String event);
+
     /**
      * 目标字段
      */
