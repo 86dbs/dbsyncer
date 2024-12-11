@@ -146,6 +146,7 @@ public class ParserComponentImpl implements ParserComponent {
         context.setPluginExtInfo(group.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
         context.setSourceTable(sourceTable);
+        context.setTargetFields(picker.getTargetFields());
         context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
         context.setPageSize(mapping.getReadNum());
         // 0、插件前置处理
