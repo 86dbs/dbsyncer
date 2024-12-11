@@ -126,12 +126,12 @@ public class MyPlugin implements PluginService {
 }</pre>
                     </li>
                     <li>
-                        <simple>/META-INF/新建services文件夹，并在services下新建一个文件，命名为org.dbsyncer.common.spi.ConvertService，文件写入实现类路径org.test.MyPlugin，如果有多个实现就换行再写入</simple>
-                        <p><img draggable="false" th:src="@{'/img/plugin/spi.png'}"></p>
+                        <simple>/META-INF/新建services文件夹，并在services下新建一个文件，命名为org.dbsyncer.sdk.spi.PluginService，文件写入实现类路径org.test.MyPlugin，如果有多个实现就换行再写入</simple>
+                        <p><img draggable="false" th:src="@{'/img/plugin/spi.jpg'}" width="600px" height="300px" ></p>
                     </li>
                     <li>
-                        <simple>打包jar</simple>
-                        <p><img draggable="false" th:src="@{'/img/plugin/jar.png'}"></p>
+                        <simple>通过maven命令打包</simple>
+                        <pre>mvn clean compile package</pre>
                     </li>
                 </ol>
             </div>
