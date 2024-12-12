@@ -4,7 +4,10 @@ import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.AbstractValueMapper;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 
+import javax.sql.rowset.serial.SerialBlob;
+import java.nio.charset.StandardCharsets;
 import java.sql.Blob;
+import java.sql.SQLException;
 
 /**
  * @author AE86
@@ -20,6 +23,14 @@ public class BlobValueMapper extends AbstractValueMapper<Blob> {
 
     @Override
     protected Blob convert(ConnectorInstance connectorInstance, Object val) {
+        if (val instanceof String) {
+            String s = (String) val;
+            try {
+                return new SerialBlob(s.getBytes(StandardCharsets.UTF_8));
+            } catch (SQLException e) {
+                throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
+            }
+        }
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }
