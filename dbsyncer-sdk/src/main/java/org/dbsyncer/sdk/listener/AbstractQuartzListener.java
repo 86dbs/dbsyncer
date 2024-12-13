@@ -113,10 +113,10 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         final QuartzListenerContext context = new QuartzListenerContext();
         context.setSourceTable(table);
         context.setCommand(point.getCommand());
-        context.setArgs(point.getArgs());
         context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
         context.setPageSize(READ_NUM);
         while (running) {
+            context.setArgs(point.getArgs());
             context.setCursors(cursors);
             context.setPageIndex(pageIndex++);
             Result reader = connectorService.reader(connectorInstance, context);
