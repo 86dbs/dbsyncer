@@ -118,7 +118,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         context.setPageSize(READ_NUM);
         while (running) {
             context.setCursors(cursors);
-            context.setPageSize(pageIndex++);
+            context.setPageIndex(pageIndex++);
             Result reader = connectorService.reader(connectorInstance, context);
             List<Map> data = reader.getSuccessData();
             if (CollectionUtils.isEmpty(data)) {
