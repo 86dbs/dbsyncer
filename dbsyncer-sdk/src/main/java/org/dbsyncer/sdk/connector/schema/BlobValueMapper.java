@@ -24,6 +24,9 @@ public class BlobValueMapper extends AbstractValueMapper<byte[]> {
             if (s.startsWith("HEXTORAW(")) {
                 return StringUtil.hexStringToByteArray(s.replace("HEXTORAW('", "").replace("')", ""));
             }
+            if ("EMPTY_BLOB()".equals(s)) {
+                return null;
+            }
         }
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
