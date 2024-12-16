@@ -1,5 +1,6 @@
 package org.dbsyncer.sdk.connector.schema;
 
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.AbstractValueMapper;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -19,7 +20,7 @@ public class NumberValueMapper extends AbstractValueMapper<BigDecimal> {
             return new BigDecimal(val.toString());
         }
         if (val instanceof String) {
-            return new BigDecimal((String) val);
+            return new BigDecimal(NumberUtil.toLong((String) val));
         }
 
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
