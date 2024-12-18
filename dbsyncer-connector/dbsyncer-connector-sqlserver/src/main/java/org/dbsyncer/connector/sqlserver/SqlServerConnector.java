@@ -130,13 +130,17 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         Map<String, String> targetCommand = super.getTargetCommand(commandConfig);
-        targetCommand.put(ConnectorConstant.OPERTION_INSERT, "SET IDENTITY_INSERT " + commandConfig.getTable().getName() + " ON;" + targetCommand.get("INSERT"));
+        String insert = new StringBuilder("SET IDENTITY_INSERT ")
+                .append(commandConfig.getTable().getName())
+                .append(" ON;")
+                .append(targetCommand.get(ConnectorConstant.OPERTION_INSERT))
+                .toString();
+        targetCommand.put(ConnectorConstant.OPERTION_INSERT, insert);
         return targetCommand;
     }
 
     private String convertKey(String key) {
         return new StringBuilder("[").append(key).append("]").toString();
     }
-
 
 }
