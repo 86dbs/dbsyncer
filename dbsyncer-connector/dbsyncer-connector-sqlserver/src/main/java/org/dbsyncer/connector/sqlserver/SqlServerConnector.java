@@ -12,6 +12,7 @@ import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
@@ -24,6 +25,7 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -125,8 +127,16 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         return new ArrayList<>();
     }
 
+    @Override
+    public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
+        Map<String, String> targetCommand = super.getTargetCommand(commandConfig);
+        targetCommand.put(ConnectorConstant.OPERTION_INSERT, "SET IDENTITY_INSERT " + commandConfig.getTable().getName() + " ON;" + targetCommand.get("INSERT"));
+        return targetCommand;
+    }
+
     private String convertKey(String key) {
         return new StringBuilder("[").append(key).append("]").toString();
     }
+
 
 }
