@@ -140,15 +140,14 @@ public class LogMiner {
         } catch (Exception e) {
             if (e instanceof SQLRecoverableException) {
                 logger.error("Connection timed out, attempting to reconnect in 5 seconds");
-                reConnection();
+                reConnect();
                 return;
             }
             logger.error(e.getMessage(), e);
         }
     }
 
-
-    private void reConnection() throws SQLException {
+    private void reConnect() throws SQLException {
         connected = false;
         sleepFiveSeconds();
         start();
@@ -157,8 +156,8 @@ public class LogMiner {
     private void sleepFiveSeconds() {
         try {
             TimeUnit.SECONDS.sleep(5);
-        } catch (InterruptedException interruptedException) {
-            logger.error(interruptedException.getMessage(), interruptedException);
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage(), e);
         }
     }
 
