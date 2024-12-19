@@ -9,12 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -149,6 +144,19 @@ public class LogMiner {
             }
 
         } catch (Exception e) {
+            if (e instanceof SQLRecoverableException) {
+                //避免频繁重连 间隔5s 连接一次TimeUnit.sEcoNDs.sleep( timeout: 5);
+                logger.error("Connection timed out, attempting to reconnect in 5 seconds");
+                connected = false;
+                try {
+                    // 避免频繁的执行导致
+                    TimeUnit.SECONDS.sleep(5);
+                    start();
+                } catch (InterruptedException interruptedException) {
+                    logger.error(e.getMessage(), interruptedException);
+                }
+                return;
+            }
             logger.error(e.getMessage(), e);
         }
     }
