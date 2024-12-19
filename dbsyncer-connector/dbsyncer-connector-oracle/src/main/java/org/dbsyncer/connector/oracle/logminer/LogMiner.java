@@ -134,30 +134,31 @@ public class LogMiner {
 
                 // 7.确定新的SCN
                 startScn = Long.parseLong(endScn.toString());
-
-                try {
-                    // 避免频繁的执行导致 PGA 内存超出 PGA_AGGREGATE_LIMIT
-                    TimeUnit.SECONDS.sleep(5);
-                } catch (InterruptedException e) {
-                    logger.error(e.getMessage(), e);
-                }
+                sleepFiveSeconds();
             }
 
         } catch (Exception e) {
             if (e instanceof SQLRecoverableException) {
-                //避免频繁重连 间隔5s 连接一次TimeUnit.sEcoNDs.sleep( timeout: 5);
                 logger.error("Connection timed out, attempting to reconnect in 5 seconds");
-                connected = false;
-                try {
-                    // 避免频繁的执行导致
-                    TimeUnit.SECONDS.sleep(5);
-                    start();
-                } catch (InterruptedException interruptedException) {
-                    logger.error(e.getMessage(), interruptedException);
-                }
+                reConnection();
                 return;
             }
             logger.error(e.getMessage(), e);
+        }
+    }
+
+
+    private void reConnection() throws SQLException {
+        connected = false;
+        sleepFiveSeconds();
+        start();
+    }
+
+    private void sleepFiveSeconds() {
+        try {
+            TimeUnit.SECONDS.sleep(5);
+        } catch (InterruptedException interruptedException) {
+            logger.error(interruptedException.getMessage(), interruptedException);
         }
     }
 
