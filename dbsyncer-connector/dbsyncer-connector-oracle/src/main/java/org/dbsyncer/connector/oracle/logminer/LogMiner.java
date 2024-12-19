@@ -9,12 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -139,16 +134,29 @@ public class LogMiner {
 
                 // 7.确定新的SCN
                 startScn = Long.parseLong(endScn.toString());
-
-                try {
-                    // 避免频繁的执行导致 PGA 内存超出 PGA_AGGREGATE_LIMIT
-                    TimeUnit.SECONDS.sleep(5);
-                } catch (InterruptedException e) {
-                    logger.error(e.getMessage(), e);
-                }
+                sleepFiveSeconds();
             }
 
         } catch (Exception e) {
+            if (e instanceof SQLRecoverableException) {
+                logger.error("Connection timed out, attempting to reconnect in 5 seconds");
+                reConnect();
+                return;
+            }
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    private void reConnect() throws SQLException {
+        connected = false;
+        sleepFiveSeconds();
+        start();
+    }
+
+    private void sleepFiveSeconds() {
+        try {
+            TimeUnit.SECONDS.sleep(5);
+        } catch (InterruptedException e) {
             logger.error(e.getMessage(), e);
         }
     }

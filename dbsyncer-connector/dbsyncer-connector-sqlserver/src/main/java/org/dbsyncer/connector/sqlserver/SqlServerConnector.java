@@ -39,6 +39,9 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     private final String QUERY_VIEW = "select name from sysobjects where xtype in('v')";
     private final String QUERY_TABLE = "select name from sys.tables where schema_id = schema_id('%s') and is_ms_shipped = 0";
+    private final String QUERY_TABLE_IDENTITY = "select is_identity from sys.columns where object_id = object_id('%s') and is_identity > 0";
+    private final String SET_TABLE_IDENTITY_ON = "set identity_insert %s.[%s] on;";
+    private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
 
     private final String TYPE = "SqlServer";
     private final SqlServerConfigValidator configValidator = new SqlServerConfigValidator();
@@ -130,12 +133,18 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         Map<String, String> targetCommand = super.getTargetCommand(commandConfig);
-        String insert = new StringBuilder("SET IDENTITY_INSERT ")
-                .append(commandConfig.getTable().getName())
-                .append(" ON;")
-                .append(targetCommand.get(ConnectorConstant.OPERTION_INSERT))
-                .toString();
-        targetCommand.put(ConnectorConstant.OPERTION_INSERT, insert);
+        String tableName = commandConfig.getTable().getName();
+        // 判断表是否包含标识自增列
+        DatabaseConnectorInstance db = (DatabaseConnectorInstance) commandConfig.getConnectorInstance();
+        List<Integer> result = db.execute(databaseTemplate -> databaseTemplate.queryForList(String.format(QUERY_TABLE_IDENTITY, tableName), Integer.class));
+        // 允许显式插入标识列的值
+        if (!CollectionUtils.isEmpty(result)) {
+            DatabaseConfig config = (DatabaseConfig) commandConfig.getConnectorConfig();
+            String insert = String.format(SET_TABLE_IDENTITY_ON, config.getSchema(), tableName)
+                    + targetCommand.get(ConnectorConstant.OPERTION_INSERT)
+                    + String.format(SET_TABLE_IDENTITY_OFF, config.getSchema(), tableName);
+            targetCommand.put(ConnectorConstant.OPERTION_INSERT, insert);
+        }
         return targetCommand;
     }
 

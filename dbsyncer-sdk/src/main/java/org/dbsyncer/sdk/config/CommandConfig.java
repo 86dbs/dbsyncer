@@ -1,5 +1,9 @@
+/**
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.config;
 
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.Table;
@@ -21,13 +25,13 @@ public class CommandConfig {
 
     private List<Filter> filter;
 
-    private ConnectorConfig connectorConfig;
+    private ConnectorInstance connectorInstance;
 
-    public CommandConfig(String connectorType, Table table, ConnectorConfig connectorConfig, List<Filter> filter) {
+    public CommandConfig(String connectorType, Table table, ConnectorInstance connectorInstance, List<Filter> filter) {
         this.connectorType = connectorType;
         this.table = table;
         this.filter = filter;
-        this.connectorConfig = connectorConfig;
+        this.connectorInstance = connectorInstance;
     }
 
     public String getConnectorType() {
@@ -43,6 +47,10 @@ public class CommandConfig {
     }
 
     public ConnectorConfig getConnectorConfig() {
-        return connectorConfig;
+        return connectorInstance.getConfig();
+    }
+
+    public ConnectorInstance getConnectorInstance() {
+        return connectorInstance;
     }
 }
