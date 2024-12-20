@@ -109,6 +109,6 @@ $ ./build.sh
 
 <p>
 <img src="https://foruda.gitee.com/images/1734712597822804473/12d5531f_376718.png" title="微信扫码" width="258px" height="290px" />
-<img src="https://foruda.gitee.com/images/1734712794453541544/e3f937fb_376718.png" title="微信扫码" width="240px" height="310px" />
-<img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" width="250px" height="340px" />
+<img src="https://foruda.gitee.com/images/1734712794453541544/e3f937fb_376718.png" title="微信扫码" width="265px" height="310px" />
+<img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" width="265px" height="340px" />
 <p>
