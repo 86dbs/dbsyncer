@@ -38,7 +38,13 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         // 标记运行中
         changeMetaState(mapping.getMetaId(), MetaEnum.RUNNING);
 
-        puller.start(mapping);
+        try {
+            puller.start(mapping);
+        } catch (Exception e) {
+            // rollback
+            changeMetaState(mapping.getMetaId(), MetaEnum.READY);
+            throw new ManagerException(e.getMessage());
+        }
     }
 
     public void close(Mapping mapping) {
