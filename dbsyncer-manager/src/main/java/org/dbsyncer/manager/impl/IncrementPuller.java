@@ -88,7 +88,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
         List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
-        Assert.notEmpty(list, "映射关系不能为空.");
+        Assert.notEmpty(list, "表映射关系不能为空，请先添加源表到目标表关系.");
         Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "Meta不能为空.");
 
