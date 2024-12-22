@@ -38,7 +38,7 @@ public final class MySQLBytesType extends BytesType {
 
     @Override
     protected byte[] getDefaultMergedVal() {
-        return new byte[0];
+        return null;
     }
 
     @Override

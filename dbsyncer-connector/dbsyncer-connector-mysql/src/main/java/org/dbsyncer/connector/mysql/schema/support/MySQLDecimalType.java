@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.connector.mysql.schema.support;
 
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.DecimalType;
 
@@ -32,15 +31,6 @@ public final class MySQLDecimalType extends DecimalType {
 
         TypeEnum(String value) {
             this.value = value;
-        }
-
-        public TypeEnum getTypeEnum(String value) {
-            for (TypeEnum type : TypeEnum.values()) {
-                if (StringUtil.equals(value, type.value)) {
-                    return type;
-                }
-            }
-            throw new IllegalArgumentException("Can not find type:" + value);
         }
 
         public String getValue() {

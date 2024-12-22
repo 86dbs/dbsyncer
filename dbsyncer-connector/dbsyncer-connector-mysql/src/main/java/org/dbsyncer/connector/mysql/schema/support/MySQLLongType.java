@@ -56,7 +56,7 @@ public final class MySQLLongType extends LongType {
 
     @Override
     protected Long getDefaultMergedVal() {
-        return 0L;
+        return null;
     }
 
     @Override

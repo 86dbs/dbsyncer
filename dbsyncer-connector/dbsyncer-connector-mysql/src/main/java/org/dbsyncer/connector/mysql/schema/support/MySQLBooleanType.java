@@ -33,7 +33,7 @@ public final class MySQLBooleanType extends BooleanType {
 
     @Override
     protected Boolean getDefaultMergedVal() {
-        return false;
+        return null;
     }
 
     @Override

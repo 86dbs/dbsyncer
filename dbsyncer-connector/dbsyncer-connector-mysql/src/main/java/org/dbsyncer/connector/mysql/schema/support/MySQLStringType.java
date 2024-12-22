@@ -50,7 +50,7 @@ public final class MySQLStringType extends StringType {
 
     @Override
     protected String getDefaultMergedVal() {
-        return "";
+        return null;
     }
 
     @Override
