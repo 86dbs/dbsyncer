@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.connector.mysql.schema.support;
 
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.FloatType;
 
@@ -29,15 +28,6 @@ public final class MySQLFloatType extends FloatType {
             this.value = value;
         }
 
-        public TypeEnum getTypeEnum(String value) {
-            for (TypeEnum type : TypeEnum.values()) {
-                if (StringUtil.equals(value, type.value)) {
-                    return type;
-                }
-            }
-            throw new IllegalArgumentException("Can not find type:" + value);
-        }
-
         public String getValue() {
             return value;
         }
@@ -58,7 +48,7 @@ public final class MySQLFloatType extends FloatType {
 
     @Override
     protected Float getDefaultMergedVal() {
-        return 0f;
+        return null;
     }
 
     @Override

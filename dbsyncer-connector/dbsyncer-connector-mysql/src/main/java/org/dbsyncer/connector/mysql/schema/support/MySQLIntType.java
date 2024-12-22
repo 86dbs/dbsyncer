@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.connector.mysql.schema.support;
 
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.IntType;
 
@@ -32,15 +31,6 @@ public final class MySQLIntType extends IntType {
 
         private final String value;
 
-        public TypeEnum getTypeEnum(String value) {
-            for (TypeEnum type : TypeEnum.values()) {
-                if (StringUtil.equals(value, type.value)) {
-                    return type;
-                }
-            }
-            throw new IllegalArgumentException("Can not find type:" + value);
-        }
-
         TypeEnum(String value) {
             this.value = value;
         }
@@ -63,12 +53,15 @@ public final class MySQLIntType extends IntType {
             calendar.setTime(d);
             return calendar.get(Calendar.YEAR);
         }
+        if (val instanceof Number) {
+            return ((Number) val).intValue();
+        }
         return throwUnsupportedException(val, field);
     }
 
     @Override
     protected Integer getDefaultMergedVal() {
-        return 0;
+        return null;
     }
 
     @Override

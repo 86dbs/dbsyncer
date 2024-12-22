@@ -242,7 +242,7 @@ public class ConnectionTest {
         final String update = "UPDATE `test`.`vote_records_test` SET `user_id` = ?, `create_time` = now() WHERE `id` = ?";
         final String delete = "DELETE from `test`.`vote_records_test` WHERE `id` = ?";
 
-        // 模拟单表增删改事件，每个事件间隔2条数据
+        // 模拟单表增删改事件
         for (int i = 0; i < threadSize; i++) {
             final int offset = i;
             pool.submit(() -> {
@@ -250,8 +250,6 @@ public class ConnectionTest {
                     logger.info("{}-开始任务", Thread.currentThread().getName());
                     // 增删改事件密集型
                     mockData(connectorInstance, num, offset, insert, update, delete);
-                    // 增改事件密集型
-//                    mockData2(connectorInstance, num, offset, insert, update);
                     logger.info("{}-结束任务", Thread.currentThread().getName());
                 } catch (Exception e) {
                     logger.error(e.getMessage());
@@ -267,7 +265,6 @@ public class ConnectionTest {
             logger.error(e.getMessage());
         }
         pool.shutdown();
-//        logger.info("总数：{}, 耗时：{}秒", (threadSize * num * 3), (Instant.now().toEpochMilli() - begin) / 1000);
         logger.info("总数：{}, 耗时：{}秒", (threadSize * num), (Instant.now().toEpochMilli() - begin) / 1000);
     }
 
@@ -306,39 +303,6 @@ public class ConnectionTest {
             updateData.clear();
             deleteData.clear();
             logger.info("{}, 数据行[{}, {}], 已处理:{}", Thread.currentThread().getName(), start, start + num, i + start);
-        }
-    }
-
-    private void mockData2(DatabaseConnectorInstance connectorInstance, int num, int offset, String insert, String update) {
-        List<Object[]> insertData = new ArrayList<>();
-        List<Object[]> updateData = new ArrayList<>();
-        final int batch = 100;
-        int start = offset * num;
-        logger.info("{}-offset:{}, start:{}", Thread.currentThread().getName(), offset, start);
-        for (int i = 1; i <= num; i++) {
-            // insert
-            Object[] insertArgs = new Object[6];
-            insertArgs[0] = i + start;
-            insertArgs[1] = randomUserId(20);
-            insertArgs[2] = RandomUtil.nextInt(1, 9999);
-            insertArgs[3] = RandomUtil.nextInt(0, 3);
-            insertArgs[4] = RandomUtil.nextInt(1, 3);
-            insertArgs[5] = Timestamp.valueOf(LocalDateTime.now());
-            insertData.add(insertArgs);
-
-            // update
-            Object[] updateArgs = new Object[2];
-            updateArgs[0] = randomUserId(20);
-            updateArgs[1] = i + start;
-            updateData.add(updateArgs);
-
-            if (i % batch == 0) {
-                connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(insert, insertData));
-                connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(update, updateData));
-                logger.info("{}, 数据行[{}, {}], 已处理:{}", Thread.currentThread().getName(), start, start + num, i + start);
-                insertData.clear();
-                updateData.clear();
-            }
         }
     }
 

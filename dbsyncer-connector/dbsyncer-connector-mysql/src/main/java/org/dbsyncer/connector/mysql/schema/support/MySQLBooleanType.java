@@ -7,6 +7,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.BooleanType;
 
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -28,17 +29,24 @@ public final class MySQLBooleanType extends BooleanType {
 
     @Override
     protected Boolean merge(Object val, Field field) {
+        if (val instanceof Integer) {
+            return (Integer) val == 1;
+        }
+        if (val instanceof BitSet) {
+            BitSet bitSet = (BitSet) val;
+            return bitSet.get(0);
+        }
         return throwUnsupportedException(val, field);
     }
 
     @Override
     protected Boolean getDefaultMergedVal() {
-        return false;
+        return null;
     }
 
     @Override
     protected Object convert(Object val, Field field) {
-        if(val instanceof Boolean) {
+        if (val instanceof Boolean) {
             Boolean b = (Boolean) val;
             return (short) (b ? 1 : 0);
         }

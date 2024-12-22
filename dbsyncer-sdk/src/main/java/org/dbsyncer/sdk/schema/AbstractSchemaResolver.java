@@ -26,9 +26,13 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
 
     protected abstract void initDataTypeMapping(Map<String, DataType> mapping);
 
+    protected DataType getDataType(Map<String, DataType> mapping, Field field) {
+        return mapping.get(field.getTypeName());
+    }
+
     @Override
     public Object merge(Object val, Field field) {
-        DataType dataType = mapping.get(field.getTypeName());
+        DataType dataType = getDataType(mapping, field);
         if (dataType != null) {
             return dataType.mergeValue(val, field);
         }
@@ -37,7 +41,7 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
 
     @Override
     public Object convert(Object val, Field field) {
-        DataType dataType = mapping.get(field.getTypeName());
+        DataType dataType = getDataType(mapping, field);
         if (dataType != null) {
             return dataType.convertValue(val, field);
         }

@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.connector.mysql.schema.support;
 
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.LongType;
 
@@ -30,15 +29,6 @@ public final class MySQLLongType extends LongType {
             this.value = value;
         }
 
-        public TypeEnum getTypeEnum(String value) {
-            for (TypeEnum type : TypeEnum.values()) {
-                if (StringUtil.equals(value, type.value)) {
-                    return type;
-                }
-            }
-            throw new IllegalArgumentException("Can not find type:" + value);
-        }
-
         public String getValue() {
             return value;
         }
@@ -51,12 +41,15 @@ public final class MySQLLongType extends LongType {
 
     @Override
     protected Long merge(Object val, Field field) {
+        if (val instanceof Number) {
+            return ((Number) val).longValue();
+        }
         return throwUnsupportedException(val, field);
     }
 
     @Override
     protected Long getDefaultMergedVal() {
-        return 0L;
+        return null;
     }
 
     @Override
