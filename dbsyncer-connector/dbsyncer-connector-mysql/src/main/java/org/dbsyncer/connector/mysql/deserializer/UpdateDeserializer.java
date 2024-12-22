@@ -20,10 +20,17 @@ public class UpdateDeserializer extends UpdateRowsEventDataDeserializer {
         super(tableMapEventByTableId);
     }
 
+    @Override
+    protected Serializable deserializeTiny(ByteArrayInputStream inputStream) throws IOException {
+        return inputStream.readInteger(1);
+    }
+
+    @Override
     protected Serializable deserializeDatetimeV2(int meta, ByteArrayInputStream inputStream) throws IOException {
         return datetimeV2Deserialize.deserializeDatetimeV2(meta, inputStream);
     }
 
+    @Override
     protected byte[] deserializeJson(int meta, ByteArrayInputStream inputStream) throws IOException {
         return jsonBinaryDeserialize.deserializeJson(meta, inputStream);
     }
