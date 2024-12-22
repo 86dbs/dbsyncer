@@ -142,7 +142,7 @@ public abstract class AbstractConnector {
                     Object o = resolver.merge(row.get(f.getName()), f);
                     row.put(f.getName(), resolver.convert(o, f));
                 } catch (Exception e) {
-                    logger.error("convert value error: ({}, {}, {})", config.getTableName(), f.getName(), row.get(f.getName()));
+                    logger.error("convert value error: ({}, {}, {}, {})", config.getTableName(), f.getName(), row.get(f.getName()), e);
                     throw new SdkException(e);
                 }
             }

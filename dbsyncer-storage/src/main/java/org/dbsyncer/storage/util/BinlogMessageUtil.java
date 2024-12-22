@@ -77,6 +77,8 @@ public abstract class BinlogMessageUtil {
             // 字节
             case "[B":
                 return ByteString.copyFrom((byte[]) v);
+            case "java.lang.Byte":
+                return ByteString.copyFromUtf8(String.valueOf(v));
 
             // 字符串
             case "java.lang.String":

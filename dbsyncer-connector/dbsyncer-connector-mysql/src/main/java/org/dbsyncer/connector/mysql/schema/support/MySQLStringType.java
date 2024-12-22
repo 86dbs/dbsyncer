@@ -6,6 +6,7 @@ package org.dbsyncer.connector.mysql.schema.support;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -35,12 +36,18 @@ public final class MySQLStringType extends StringType {
 
     @Override
     protected String merge(Object val, Field field) {
+        if (val instanceof byte[]) {
+            return new String((byte[]) val, StandardCharsets.UTF_8);
+        }
         switch (TypeEnum.valueOf(field.getTypeName())) {
             case CHAR:
             case VARCHAR:
             case TINYTEXT:
             case TEXT:
             case MEDIUMTEXT:
+            case LONGTEXT:
+            case ENUM:
+            case JSON:
                 return String.valueOf(val);
 
             default:

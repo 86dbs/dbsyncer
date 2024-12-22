@@ -6,7 +6,9 @@ package org.dbsyncer.connector.mysql.schema.support;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.BytesType;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,6 +35,13 @@ public final class MySQLBytesType extends BytesType {
 
     @Override
     protected byte[] merge(Object val, Field field) {
+        if (val instanceof String) {
+            return ((String) val).getBytes(StandardCharsets.UTF_8);
+        }
+        if (val instanceof BitSet) {
+            BitSet bitSet = (BitSet) val;
+            return bitSet.toByteArray();
+        }
         return throwUnsupportedException(val, field);
     }
 
