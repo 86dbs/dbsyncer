@@ -32,18 +32,18 @@ public final class MySQLBytesType extends BytesType {
     }
 
     @Override
-    protected Byte[] merge(Object val, Field field) {
+    protected byte[] merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
 
     @Override
-    protected Byte[] getDefaultMergedVal() {
-        return new Byte[0];
+    protected byte[] getDefaultMergedVal() {
+        return new byte[0];
     }
 
     @Override
     protected Object convert(Object val, Field field) {
-        if (val instanceof Byte[]) {
+        if (val instanceof byte[]) {
             return val;
         }
         return throwUnsupportedException(val, field);
