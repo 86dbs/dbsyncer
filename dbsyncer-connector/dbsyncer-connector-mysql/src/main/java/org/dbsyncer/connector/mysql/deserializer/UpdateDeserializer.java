@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
 
-public class UpdateDeserializer extends UpdateRowsEventDataDeserializer {
+public final class UpdateDeserializer extends UpdateRowsEventDataDeserializer {
 
     private final DatetimeV2Deserialize datetimeV2Deserialize = new DatetimeV2Deserialize();
     private final JsonBinaryDeserialize jsonBinaryDeserialize = new JsonBinaryDeserialize();
