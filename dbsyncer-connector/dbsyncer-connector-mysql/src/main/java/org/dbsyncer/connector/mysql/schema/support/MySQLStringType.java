@@ -56,21 +56,11 @@ public final class MySQLStringType extends StringType {
     }
 
     @Override
-    protected String getDefaultMergedVal() {
-        return null;
-    }
-
-    @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof String) {
             return val;
         }
         return throwUnsupportedException(val, field);
-    }
-
-    @Override
-    protected Object getDefaultConvertedVal() {
-        return null;
     }
 
 }

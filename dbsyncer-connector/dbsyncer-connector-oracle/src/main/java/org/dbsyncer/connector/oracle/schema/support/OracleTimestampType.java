@@ -1,11 +1,12 @@
 /**
  * DBSyncer Copyright 2020-2024 All Rights Reserved.
  */
-package org.dbsyncer.connector.mysql.schema.support;
+package org.dbsyncer.connector.oracle.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.FloatType;
+import org.dbsyncer.sdk.schema.support.TimestampType;
 
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -13,14 +14,13 @@ import java.util.stream.Collectors;
 /**
  * @Author 穿云
  * @Version 1.0.0
- * @Date 2024-11-26 22:59
+ * @Date 2024-12-25 00:03
  */
-public final class MySQLFloatType extends FloatType {
+public final class OracleTimestampType extends TimestampType {
 
     private enum TypeEnum {
-        FLOAT("FLOAT"),
-        FLOAT_UNSIGNED("FLOAT UNSIGNED"),
-        FLOAT_UNSIGNED_ZEROFILL("FLOAT UNSIGNED ZEROFILL");
+        TIMESTAMP("TIMESTAMP"),
+        TIMESTAMP_WITH_LOCAL_TIME_ZONE("TIMESTAMP WITH LOCAL TIME ZONE");
 
         private final String value;
 
@@ -39,18 +39,12 @@ public final class MySQLFloatType extends FloatType {
     }
 
     @Override
-    protected Float merge(Object val, Field field) {
-        if (val instanceof Number) {
-            return ((Number) val).floatValue();
-        }
+    protected Timestamp merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
 
     @Override
     protected Object convert(Object val, Field field) {
-        if (val instanceof Number) {
-            return ((Number) val).shortValue();
-        }
         return throwUnsupportedException(val, field);
     }
 

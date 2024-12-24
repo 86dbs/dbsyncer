@@ -53,21 +53,11 @@ public final class MySQLDoubleType extends DoubleType {
     }
 
     @Override
-    protected Double getDefaultMergedVal() {
-        return null;
-    }
-
-    @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof Number) {
             return ((Number) val).doubleValue();
         }
         return throwUnsupportedException(val, field);
-    }
-
-    @Override
-    protected Object getDefaultConvertedVal() {
-        return null;
     }
 
 }

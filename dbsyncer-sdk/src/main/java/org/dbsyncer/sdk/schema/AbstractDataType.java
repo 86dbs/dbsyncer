@@ -35,7 +35,9 @@ public abstract class AbstractDataType<T> implements DataType {
      *
      * @return
      */
-    protected abstract T getDefaultMergedVal();
+    protected T getDefaultMergedVal() {
+        return null;
+    }
 
     /**
      * 转换为指定数据类型
@@ -51,7 +53,9 @@ public abstract class AbstractDataType<T> implements DataType {
      *
      * @return
      */
-    protected abstract Object getDefaultConvertedVal();
+    protected Object getDefaultConvertedVal() {
+        return null;
+    }
 
     @Override
     public Object mergeValue(Object val, Field field) {

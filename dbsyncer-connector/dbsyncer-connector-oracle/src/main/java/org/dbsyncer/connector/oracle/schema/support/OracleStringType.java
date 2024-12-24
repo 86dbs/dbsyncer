@@ -1,10 +1,10 @@
 /**
  * DBSyncer Copyright 2020-2024 All Rights Reserved.
  */
-package org.dbsyncer.connector.mysql.schema.support;
+package org.dbsyncer.connector.oracle.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.FloatType;
+import org.dbsyncer.sdk.schema.support.StringType;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -13,14 +13,19 @@ import java.util.stream.Collectors;
 /**
  * @Author 穿云
  * @Version 1.0.0
- * @Date 2024-11-26 22:59
+ * @Date 2024-12-25 00:03
  */
-public final class MySQLFloatType extends FloatType {
+public final class OracleStringType extends StringType {
 
     private enum TypeEnum {
-        FLOAT("FLOAT"),
-        FLOAT_UNSIGNED("FLOAT UNSIGNED"),
-        FLOAT_UNSIGNED_ZEROFILL("FLOAT UNSIGNED ZEROFILL");
+        CHAR("CHAR"),
+        NCHAR("NCHAR"),
+        VARCHAR2("VARCHAR2"),
+        NVARCHAR2("NVARCHAR2"),
+        LONG("LONG"),
+        CLOB("CLOB"),
+        NCLOB("NCLOB"),
+        ROWID("ROWID");
 
         private final String value;
 
@@ -39,18 +44,12 @@ public final class MySQLFloatType extends FloatType {
     }
 
     @Override
-    protected Float merge(Object val, Field field) {
-        if (val instanceof Number) {
-            return ((Number) val).floatValue();
-        }
+    protected String merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
 
     @Override
     protected Object convert(Object val, Field field) {
-        if (val instanceof Number) {
-            return ((Number) val).shortValue();
-        }
         return throwUnsupportedException(val, field);
     }
 

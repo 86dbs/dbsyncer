@@ -34,21 +34,11 @@ public final class MySQLTimestampType extends TimestampType {
     }
 
     @Override
-    protected Timestamp getDefaultMergedVal() {
-        return null;
-    }
-
-    @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof Timestamp) {
             return val;
         }
         return throwUnsupportedException(val, field);
-    }
-
-    @Override
-    protected Object getDefaultConvertedVal() {
-        return null;
     }
 
 }

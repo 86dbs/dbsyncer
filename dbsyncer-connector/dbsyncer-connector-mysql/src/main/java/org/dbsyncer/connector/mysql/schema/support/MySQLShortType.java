@@ -47,21 +47,11 @@ public final class MySQLShortType extends ShortType {
     }
 
     @Override
-    protected Short getDefaultMergedVal() {
-        return null;
-    }
-
-    @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof Number) {
             return ((Number) val).shortValue();
         }
         return throwUnsupportedException(val, field);
-    }
-
-    @Override
-    protected Object getDefaultConvertedVal() {
-        return null;
     }
 
 }
