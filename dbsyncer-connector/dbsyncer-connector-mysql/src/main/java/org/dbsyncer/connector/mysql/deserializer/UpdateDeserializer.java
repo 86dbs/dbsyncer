@@ -26,6 +26,11 @@ public final class UpdateDeserializer extends UpdateRowsEventDataDeserializer {
     }
 
     @Override
+    protected Serializable deserializeShort(ByteArrayInputStream inputStream) throws IOException {
+        return inputStream.readInteger(2);
+    }
+
+    @Override
     protected Serializable deserializeDatetimeV2(int meta, ByteArrayInputStream inputStream) throws IOException {
         return datetimeV2Deserialize.deserializeDatetimeV2(meta, inputStream);
     }

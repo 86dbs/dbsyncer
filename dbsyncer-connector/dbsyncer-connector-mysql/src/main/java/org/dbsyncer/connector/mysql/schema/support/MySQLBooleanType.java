@@ -29,8 +29,8 @@ public final class MySQLBooleanType extends BooleanType {
 
     @Override
     protected Boolean merge(Object val, Field field) {
-        if (val instanceof Integer) {
-            return (Integer) val == 1;
+        if (val instanceof Number) {
+            return ((Number) val).shortValue() == 1;
         }
         if (val instanceof BitSet) {
             BitSet bitSet = (BitSet) val;
