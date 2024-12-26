@@ -6,9 +6,8 @@ package org.dbsyncer.connector.oracle.schema.support;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.IntType;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @Author 穿云
@@ -17,25 +16,9 @@ import java.util.stream.Collectors;
  */
 public final class OracleIntType extends IntType {
 
-    private enum TypeEnum {
-        INT("INT"),
-        INTEGER("INTEGER"),
-        NUMBER("NUMBER9");
-
-        private final String value;
-
-        TypeEnum(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(TypeEnum::getValue).collect(Collectors.toSet());
+        return Collections.emptySet();
     }
 
     @Override

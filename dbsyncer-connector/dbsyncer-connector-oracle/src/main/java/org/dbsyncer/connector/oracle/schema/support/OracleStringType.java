@@ -22,10 +22,11 @@ public final class OracleStringType extends StringType {
         NCHAR("NCHAR"),
         VARCHAR2("VARCHAR2"),
         NVARCHAR2("NVARCHAR2"),
-        LONG("LONG"),
         CLOB("CLOB"),
         NCLOB("NCLOB"),
-        ROWID("ROWID");
+        LONG("LONG"),
+        ROWID("ROWID"),
+        UROWID("UROWID");
 
         private final String value;
 
