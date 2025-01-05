@@ -33,21 +33,11 @@ public final class MySQLDateType extends DateType {
     }
 
     @Override
-    protected Date getDefaultMergedVal() {
-        return null;
-    }
-
-    @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof Date) {
             return val;
         }
         return throwUnsupportedException(val, field);
-    }
-
-    @Override
-    protected Object getDefaultConvertedVal() {
-        return null;
     }
 
 }

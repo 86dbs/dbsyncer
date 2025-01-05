@@ -35,7 +35,9 @@ public abstract class AbstractDataType<T> implements DataType {
      *
      * @return
      */
-    protected abstract T getDefaultMergedVal();
+    protected T getDefaultMergedVal() {
+        return null;
+    }
 
     /**
      * 转换为指定数据类型
@@ -51,7 +53,9 @@ public abstract class AbstractDataType<T> implements DataType {
      *
      * @return
      */
-    protected abstract Object getDefaultConvertedVal();
+    protected Object getDefaultConvertedVal() {
+        return null;
+    }
 
     @Override
     public Object mergeValue(Object val, Field field) {
@@ -76,7 +80,7 @@ public abstract class AbstractDataType<T> implements DataType {
     }
 
     protected T throwUnsupportedException(Object val, Field field) {
-        throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), field.getTypeName(), val));
+        throw new SdkException(String.format("%s does not support type [%s] convert to %s(%s), val [%s]", getClass().getSimpleName(), val.getClass(), field.getName(), field.getTypeName(), val));
     }
 
 }

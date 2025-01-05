@@ -48,21 +48,11 @@ public final class MySQLLongType extends LongType {
     }
 
     @Override
-    protected Long getDefaultMergedVal() {
-        return null;
-    }
-
-    @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof Number) {
             return ((Number) val).longValue();
         }
         return throwUnsupportedException(val, field);
-    }
-
-    @Override
-    protected Object getDefaultConvertedVal() {
-        return null;
     }
 
 }

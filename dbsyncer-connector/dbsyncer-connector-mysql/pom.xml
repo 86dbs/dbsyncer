@@ -26,6 +26,11 @@
             <artifactId>mysql-connector-java</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.vividsolutions</groupId>
+            <artifactId>jts</artifactId>
+        </dependency>
+
         <!-- binlog -->
         <dependency>
             <groupId>com.zendesk</groupId>

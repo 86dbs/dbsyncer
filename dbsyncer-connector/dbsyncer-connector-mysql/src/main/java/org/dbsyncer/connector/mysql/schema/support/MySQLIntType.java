@@ -60,21 +60,11 @@ public final class MySQLIntType extends IntType {
     }
 
     @Override
-    protected Integer getDefaultMergedVal() {
-        return null;
-    }
-
-    @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof Number) {
             return ((Number) val).intValue();
         }
         return throwUnsupportedException(val, field);
-    }
-
-    @Override
-    protected Object getDefaultConvertedVal() {
-        return null;
     }
 
 }

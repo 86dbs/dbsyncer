@@ -29,8 +29,8 @@ public final class MySQLBooleanType extends BooleanType {
 
     @Override
     protected Boolean merge(Object val, Field field) {
-        if (val instanceof Integer) {
-            return (Integer) val == 1;
+        if (val instanceof Number) {
+            return ((Number) val).shortValue() == 1;
         }
         if (val instanceof BitSet) {
             BitSet bitSet = (BitSet) val;
@@ -40,22 +40,12 @@ public final class MySQLBooleanType extends BooleanType {
     }
 
     @Override
-    protected Boolean getDefaultMergedVal() {
-        return null;
-    }
-
-    @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof Boolean) {
             Boolean b = (Boolean) val;
             return (short) (b ? 1 : 0);
         }
         return throwUnsupportedException(val, field);
-    }
-
-    @Override
-    protected Object getDefaultConvertedVal() {
-        return null;
     }
 
 }
