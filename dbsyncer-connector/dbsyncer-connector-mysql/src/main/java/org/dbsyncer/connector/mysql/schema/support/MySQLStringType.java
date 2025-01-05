@@ -43,7 +43,6 @@ public final class MySQLStringType extends StringType {
     protected String merge(Object val, Field field) {
         if (TypeEnum.valueOf(field.getTypeName()) == TypeEnum.GEOMETRY && val instanceof byte[]) {
             try {
-                System.out.printf("%s %s %n", field.getName(), Arrays.toString((byte[]) val));
                 return deserializeGeometry((byte[]) val);
             } catch (ParseException e) {
                 throw new MySQLException(e);
