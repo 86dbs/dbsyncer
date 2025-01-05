@@ -57,10 +57,10 @@ public final class MySQLStringType extends StringType {
 
     @Override
     protected Object convert(Object val, Field field) {
-        if (TypeEnum.valueOf(field.getTypeName()) == TypeEnum.GEOMETRY && val instanceof String) {
-            return serializeGeometry((String) val);
-        }
         if (val instanceof String) {
+            if (TypeEnum.valueOf(field.getTypeName()) == TypeEnum.GEOMETRY) {
+                return serializeGeometry((String) val);
+            }
             return val;
         }
         return throwUnsupportedException(val, field);
