@@ -3,9 +3,14 @@
  */
 package org.dbsyncer.connector.mysql.schema.support;
 
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.io.*;
+import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Set;
@@ -26,7 +31,7 @@ public final class MySQLStringType extends StringType {
         MEDIUMTEXT, // 可变长度，最多2的24次方-1个字符，16M
         LONGTEXT, // 可变长度，最多2的32次方-1个字符，4GB
         ENUM, // 2字节，最大可达65535个不同的枚举值
-        JSON, GEOMETRY, POINT, LINESTRING, POLYGON, MULTIPOINT, MULTILINESTRING, MULTIPOLYGON, GEOMETRYCOLLECTION;
+        JSON, GEOMETRY; // POINT, LINESTRING, POLYGON, MULTIPOINT, MULTILINESTRING, MULTIPOLYGON, GEOMETRYCOLLECTION
     }
 
     @Override
@@ -36,31 +41,44 @@ public final class MySQLStringType extends StringType {
 
     @Override
     protected String merge(Object val, Field field) {
+        if (TypeEnum.valueOf(field.getTypeName()) == TypeEnum.GEOMETRY && val instanceof byte[]) {
+            try {
+                System.out.printf("%s %s %n", field.getName(), Arrays.toString((byte[]) val));
+                return deserializeGeometry((byte[]) val);
+            } catch (ParseException e) {
+                throw new MySQLException(e);
+            }
+        }
         if (val instanceof byte[]) {
             return new String((byte[]) val, StandardCharsets.UTF_8);
         }
-        switch (TypeEnum.valueOf(field.getTypeName())) {
-            case CHAR:
-            case VARCHAR:
-            case TINYTEXT:
-            case TEXT:
-            case MEDIUMTEXT:
-            case LONGTEXT:
-            case ENUM:
-            case JSON:
-                return String.valueOf(val);
-
-            default:
-                return throwUnsupportedException(val, field);
-        }
+        return throwUnsupportedException(val, field);
     }
 
     @Override
     protected Object convert(Object val, Field field) {
+        if (TypeEnum.valueOf(field.getTypeName()) == TypeEnum.GEOMETRY && val instanceof String) {
+            try {
+                return serializeGeometry((String) val);
+            } catch (ParseException e) {
+                throw new MySQLException(e);
+            }
+        }
         if (val instanceof String) {
             return val;
         }
         return throwUnsupportedException(val, field);
     }
 
+    private String deserializeGeometry(byte[] bytes) throws ParseException {
+        byte[] geometryBytes = ByteBuffer.allocate(bytes.length - 4).order(ByteOrder.LITTLE_ENDIAN).put(bytes, 4, bytes.length - 4).array();
+        WKBReader reader = new WKBReader();
+        return reader.read(geometryBytes).toText();
+    }
+
+    private byte[] serializeGeometry(String wellKnownText) throws ParseException {
+        Geometry geometry = new WKTReader().read(wellKnownText);
+        byte[] bytes = new WKBWriter(2, ByteOrderValues.LITTLE_ENDIAN).write(geometry);
+        return ByteBuffer.allocate(bytes.length + 4).order(ByteOrder.LITTLE_ENDIAN).putInt(geometry.getSRID()).put(bytes).array();
+    }
 }
