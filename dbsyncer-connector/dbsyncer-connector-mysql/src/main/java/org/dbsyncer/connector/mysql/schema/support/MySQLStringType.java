@@ -41,12 +41,13 @@ public final class MySQLStringType extends StringType {
 
     @Override
     protected String merge(Object val, Field field) {
-        if (TypeEnum.valueOf(field.getTypeName()) == TypeEnum.GEOMETRY && val instanceof byte[]) {
-            try {
+        switch (TypeEnum.valueOf(field.getTypeName())) {
+            case GEOMETRY:
                 return deserializeGeometry((byte[]) val);
-            } catch (ParseException e) {
-                throw new MySQLException(e);
-            }
+            case ENUM:
+                return String.valueOf(val);
+            default:
+               break;
         }
         if (val instanceof byte[]) {
             return new String((byte[]) val, StandardCharsets.UTF_8);
@@ -57,11 +58,7 @@ public final class MySQLStringType extends StringType {
     @Override
     protected Object convert(Object val, Field field) {
         if (TypeEnum.valueOf(field.getTypeName()) == TypeEnum.GEOMETRY && val instanceof String) {
-            try {
-                return serializeGeometry((String) val);
-            } catch (ParseException e) {
-                throw new MySQLException(e);
-            }
+            return serializeGeometry((String) val);
         }
         if (val instanceof String) {
             return val;
@@ -69,15 +66,23 @@ public final class MySQLStringType extends StringType {
         return throwUnsupportedException(val, field);
     }
 
-    private String deserializeGeometry(byte[] bytes) throws ParseException {
-        byte[] geometryBytes = ByteBuffer.allocate(bytes.length - 4).order(ByteOrder.LITTLE_ENDIAN).put(bytes, 4, bytes.length - 4).array();
-        WKBReader reader = new WKBReader();
-        return reader.read(geometryBytes).toText();
+    private String deserializeGeometry(byte[] bytes) {
+        try {
+            byte[] geometryBytes = ByteBuffer.allocate(bytes.length - 4).order(ByteOrder.LITTLE_ENDIAN).put(bytes, 4, bytes.length - 4).array();
+            WKBReader reader = new WKBReader();
+            return reader.read(geometryBytes).toText();
+        } catch (ParseException e) {
+            throw new MySQLException(e);
+        }
     }
 
-    private byte[] serializeGeometry(String wellKnownText) throws ParseException {
-        Geometry geometry = new WKTReader().read(wellKnownText);
-        byte[] bytes = new WKBWriter(2, ByteOrderValues.LITTLE_ENDIAN).write(geometry);
-        return ByteBuffer.allocate(bytes.length + 4).order(ByteOrder.LITTLE_ENDIAN).putInt(geometry.getSRID()).put(bytes).array();
+    private byte[] serializeGeometry(String wellKnownText) {
+        try {
+            Geometry geometry = new WKTReader().read(wellKnownText);
+            byte[] bytes = new WKBWriter(2, ByteOrderValues.LITTLE_ENDIAN).write(geometry);
+            return ByteBuffer.allocate(bytes.length + 4).order(ByteOrder.LITTLE_ENDIAN).putInt(geometry.getSRID()).put(bytes).array();
+        } catch (ParseException e) {
+            throw new MySQLException(e);
+        }
     }
 }
