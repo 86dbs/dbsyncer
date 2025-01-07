@@ -15,6 +15,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Properties;
 
@@ -41,6 +42,7 @@ public class Application {
             properties.put("info.app.build.time", buildTime);
         }
         properties.put("info.app.version", version);
+        properties.put("info.app.start.time", LocalDateTime.now().format(DateFormatUtil.CHINESE_STANDARD_TIME_FORMATTER));
         properties.put("spring.thymeleaf.prefix", "classpath:/public/");
         properties.put("management.endpoints.web.base-path", "/app");
         properties.put("management.endpoints.web.exposure.include", "*");
