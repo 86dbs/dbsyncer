@@ -19,9 +19,7 @@ public final class MySQLLongType extends LongType {
 
     private enum TypeEnum {
         BIGINT("BIGINT"),
-        INT_UNSIGNED("INT UNSIGNED"),
-        INT_UNSIGNED_ZEROFILL("INT UNSIGNED ZEROFILL"),
-        INTEGER_UNSIGNED("INTEGER UNSIGNED");
+        INT_UNSIGNED("INT UNSIGNED");
 
         private final String value;
 

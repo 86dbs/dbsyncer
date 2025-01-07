@@ -21,11 +21,7 @@ public final class MySQLDecimalType extends DecimalType {
     private enum TypeEnum {
         DECIMAL("DECIMAL"),
         DECIMAL_UNSIGNED("DECIMAL UNSIGNED"),
-        BIGINT_UNSIGNED("BIGINT UNSIGNED"),
-        BIGINT_UNSIGNED_ZEROFILL("BIGINT UNSIGNED ZEROFILL"),
-        NUMERIC("NUMERIC"),
-        NUMERIC_UNSIGNED("NUMERIC UNSIGNED"),
-        NUMERIC_UNSIGNED_ZEROFILL("NUMERIC UNSIGNED ZEROFILL");
+        BIGINT_UNSIGNED("BIGINT UNSIGNED");
 
         private final String value;
 

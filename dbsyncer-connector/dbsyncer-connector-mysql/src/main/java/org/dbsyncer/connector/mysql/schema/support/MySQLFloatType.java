@@ -19,8 +19,7 @@ public final class MySQLFloatType extends FloatType {
 
     private enum TypeEnum {
         FLOAT("FLOAT"),
-        FLOAT_UNSIGNED("FLOAT UNSIGNED"),
-        FLOAT_UNSIGNED_ZEROFILL("FLOAT UNSIGNED ZEROFILL");
+        FLOAT_UNSIGNED("FLOAT UNSIGNED");
 
         private final String value;
 
