@@ -39,16 +39,13 @@ public final class MySQLFloatType extends FloatType {
 
     @Override
     protected Float merge(Object val, Field field) {
-        if (val instanceof Number) {
-            return ((Number) val).floatValue();
-        }
         return throwUnsupportedException(val, field);
     }
 
     @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof Number) {
-            return ((Number) val).shortValue();
+            return ((Number) val).floatValue();
         }
         return throwUnsupportedException(val, field);
     }
