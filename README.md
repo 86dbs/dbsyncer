@@ -109,5 +109,5 @@ $ ./build.sh
 
 <p>
 <img src="https://foruda.gitee.com/images/1736260801470091844/976e1ef2_13999669.png "微信客服+公众号.png"" title="微信扫码" width="397px" height="208px" />
-<img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" width="265px" height="340px" />
+<img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" width="162px" height="208px" />
 <p>
