@@ -108,6 +108,6 @@ $ ./build.sh
 4) 开源不易，感谢粉丝朋友们的支持！[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C) 
 
 <p>
-<img src="https://foruda.gitee.com/images/1736260801470091844/976e1ef2_13999669.png "微信客服+公众号.png"" title="微信扫码" width="595px" height="312px" />
+<img src="https://foruda.gitee.com/images/1736348493470674811/5761f9e8_13999669.png "二维码_01.png"" title="微信扫码" width="215px" height="236.5px" /><img src="https://foruda.gitee.com/images/1736348568894927308/12fe6e2d_13999669.png "二维码_02.png"" title="微信扫码" width="215px" height="236.5px" />
 <img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" width="279px" height="358px" />
 <p>
