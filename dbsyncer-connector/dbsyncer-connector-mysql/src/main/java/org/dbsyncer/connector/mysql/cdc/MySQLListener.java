@@ -61,10 +61,8 @@ public class MySQLListener extends AbstractDatabaseListener {
 
     private final String BINLOG_FILENAME = "fileName";
     private final String BINLOG_POSITION = "position";
-    private final int MASTER = 0;
-    private Map<Long, TableMapEventData> tables = new HashMap<>();
+    private final Map<Long, TableMapEventData> tables = new HashMap<>();
     private BinaryLogClient client;
-    private List<Host> cluster;
     private String database;
     private final Lock connectLock = new ReentrantLock();
 
@@ -110,9 +108,10 @@ public class MySQLListener extends AbstractDatabaseListener {
             throw new MySQLException("url is invalid");
         }
         database = DatabaseUtil.getDatabaseName(config.getUrl());
-        cluster = readNodes(config.getUrl());
+        List<Host> cluster = readNodes(config.getUrl());
         Assert.notEmpty(cluster, "MySQL连接地址有误.");
 
+        int MASTER = 0;
         final Host host = cluster.get(MASTER);
         final String username = config.getUsername();
         final String password = config.getPassword();
@@ -141,9 +140,8 @@ public class MySQLListener extends AbstractDatabaseListener {
 
         List<Host> cluster = new ArrayList<>();
         String[] arr = StringUtil.split(url, ",");
-        int size = arr.length;
-        for (int i = 0; i < size; i++) {
-            String[] host = StringUtil.split(arr[i], ":");
+        for (String s : arr) {
+            String[] host = StringUtil.split(s, ":");
             if (2 == host.length) {
                 cluster.add(new Host(host[0], Integer.parseInt(host[1])));
             }
@@ -190,9 +188,9 @@ public class MySQLListener extends AbstractDatabaseListener {
         }
     }
 
-    final class Host {
-        private String ip;
-        private int port;
+    static final class Host {
+        private final String ip;
+        private final int port;
 
         public Host(String ip, int port) {
             this.ip = ip;
