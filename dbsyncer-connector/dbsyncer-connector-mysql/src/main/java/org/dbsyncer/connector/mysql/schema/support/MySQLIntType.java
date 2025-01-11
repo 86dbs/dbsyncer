@@ -21,10 +21,8 @@ public final class MySQLIntType extends IntType {
 
     private enum TypeEnum {
         SMALLINT_UNSIGNED("SMALLINT UNSIGNED"),
-        SMALLINT_UNSIGNED_ZEROFILL("SMALLINT UNSIGNED ZEROFILL"),
         MEDIUMINT("MEDIUMINT"),
         MEDIUMINT_UNSIGNED("MEDIUMINT UNSIGNED"),
-        MEDIUMINT_UNSIGNED_ZEROFILL("MEDIUMINT UNSIGNED ZEROFILL"),
         INT("INT"),
         INTEGER("INTEGER"),
         YEAR("YEAR");
@@ -52,9 +50,6 @@ public final class MySQLIntType extends IntType {
             Calendar calendar = Calendar.getInstance();
             calendar.setTime(d);
             return calendar.get(Calendar.YEAR);
-        }
-        if (val instanceof Number) {
-            return ((Number) val).intValue();
         }
         return throwUnsupportedException(val, field);
     }

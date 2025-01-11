@@ -19,7 +19,6 @@ public final class MySQLShortType extends ShortType {
 
     private enum TypeEnum {
         TINYINT_UNSIGNED("TINYINT UNSIGNED"),
-        TINYINT_UNSIGNED_ZEROFILL("TINYINT UNSIGNED ZEROFILL"),
         SMALLINT("SMALLINT");
 
         private final String value;

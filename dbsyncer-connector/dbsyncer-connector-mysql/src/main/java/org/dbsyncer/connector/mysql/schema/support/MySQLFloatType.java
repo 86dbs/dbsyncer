@@ -19,8 +19,7 @@ public final class MySQLFloatType extends FloatType {
 
     private enum TypeEnum {
         FLOAT("FLOAT"),
-        FLOAT_UNSIGNED("FLOAT UNSIGNED"),
-        FLOAT_UNSIGNED_ZEROFILL("FLOAT UNSIGNED ZEROFILL");
+        FLOAT_UNSIGNED("FLOAT UNSIGNED");
 
         private final String value;
 
@@ -40,16 +39,13 @@ public final class MySQLFloatType extends FloatType {
 
     @Override
     protected Float merge(Object val, Field field) {
-        if (val instanceof Number) {
-            return ((Number) val).floatValue();
-        }
         return throwUnsupportedException(val, field);
     }
 
     @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof Number) {
-            return ((Number) val).shortValue();
+            return ((Number) val).floatValue();
         }
         return throwUnsupportedException(val, field);
     }

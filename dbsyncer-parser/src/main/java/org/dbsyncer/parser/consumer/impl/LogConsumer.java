@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  * @Date 2023-11-12 02:25
  */
 public final class LogConsumer extends AbstractConsumer<RowChangedEvent> {
-    private Map<String, List<FieldPicker>> tablePicker = new LinkedHashMap<>();
+    private final Map<String, List<FieldPicker>> tablePicker = new LinkedHashMap<>();
 
     //判断上次是否为ddl，是ddl需要强制刷新下picker
     private boolean ddlChanged;

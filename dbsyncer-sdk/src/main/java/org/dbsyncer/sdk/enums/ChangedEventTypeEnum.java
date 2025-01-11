@@ -22,7 +22,7 @@ public enum ChangedEventTypeEnum {
     ROW;
 
     public static boolean isDDL(ChangedEventTypeEnum event) {
-        return event != null && DDL == event;
+        return DDL == event;
     }
 
 }
