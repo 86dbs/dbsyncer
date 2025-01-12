@@ -20,7 +20,7 @@ import java.util.List;
  * @Date 2023-11-12 02:18
  */
 public final class QuartzConsumer extends AbstractConsumer<ScanChangedEvent> {
-    private List<FieldPicker> tablePicker = new LinkedList<>();
+    private final List<FieldPicker> tablePicker = new LinkedList<>();
 
     @Override
     public void postProcessBeforeInitialization() {
