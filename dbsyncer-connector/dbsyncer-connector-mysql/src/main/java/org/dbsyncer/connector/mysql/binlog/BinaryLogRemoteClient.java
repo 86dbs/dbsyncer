@@ -96,7 +96,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private boolean useBinlogFilenamePositionInGtidMode;
     private Boolean isMariaDB;
 
-    private final int versionTag = 8400;
+    private final int versionTag = 840000;
 
     private final List<BinaryLogRemoteClient.EventListener> eventListeners = new CopyOnWriteArrayList<>();
     private final List<BinaryLogRemoteClient.LifecycleListener> lifecycleListeners = new CopyOnWriteArrayList<>();
@@ -436,7 +436,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         ResultSetRowPacket resultSetRow = resultSet[0];
         String version = resultSetRow.getValue(0);
         version = version.replace(".", "");
-        version = String.format("%-4s", version).replace(" ", "0");
+        version = String.format("%-6s", version).replace(" ", "0");
         return Integer.parseInt(version) >= versionTag;
     }
 
