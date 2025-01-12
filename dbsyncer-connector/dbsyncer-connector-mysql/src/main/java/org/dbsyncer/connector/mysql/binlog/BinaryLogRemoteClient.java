@@ -96,6 +96,8 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private boolean useBinlogFilenamePositionInGtidMode;
     private Boolean isMariaDB;
 
+    private final int versionTag = 8400;
+
     private final List<BinaryLogRemoteClient.EventListener> eventListeners = new CopyOnWriteArrayList<>();
     private final List<BinaryLogRemoteClient.LifecycleListener> lifecycleListeners = new CopyOnWriteArrayList<>();
 
@@ -425,8 +427,26 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
     }
 
+    private boolean comparisonVersion() throws IOException {
+        channel.write(new QueryCommand("SELECT VERSION()"));
+        ResultSetRowPacket[] resultSet = readResultSet();
+        if (resultSet.length == 0) {
+            throw new IOException("Failed to comparisonVersion,command SELECT VERSION()");
+        }
+        ResultSetRowPacket resultSetRow = resultSet[0];
+        String version = resultSetRow.getValue(0);
+        version = version.replace(".", "");
+        version = String.format("%-4s", version).replace(" ", "0");
+        return Integer.parseInt(version) >= versionTag;
+    }
+
     private void fetchBinlogFilenameAndPosition() throws IOException {
-        channel.write(new QueryCommand("show master status"));
+        if (comparisonVersion()) {
+            channel.write(new QueryCommand("SHOW BINARY LOG STATUS"));
+        } else {
+            channel.write(new QueryCommand("show master status"));
+        }
+
         ResultSetRowPacket[] resultSet = readResultSet();
         if (resultSet.length == 0) {
             throw new IOException("Failed to determine binlog filename/position");
