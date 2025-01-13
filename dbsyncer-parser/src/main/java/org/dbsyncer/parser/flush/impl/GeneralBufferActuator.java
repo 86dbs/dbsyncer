@@ -87,7 +87,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Override
     protected String getPartitionKey(WriterRequest request) {
-        return request.getTableGroupId();
+        return request.getTableName();
     }
 
     @Override
@@ -96,10 +96,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             response.addData(request.getRow());
         }
         if (request.getChangedOffset() != null) {
-            response.addChangedOffset(request.getChangedOffset());
+            response.setChangedOffset(request.getChangedOffset());
         }
         if (!response.isMerged()) {
-            response.setTableGroupId(request.getTableGroupId());
+            response.setTableName(request.getTableName());
             response.setEvent(request.getEvent());
             response.setTypeEnum(request.getTypeEnum());
             response.setSql(request.getSql());
@@ -116,8 +116,19 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Override
     public void pull(WriterResponse response) {
+        // TODO add cache
+        List<TableGroup> groupAll = profileComponent.getTableGroupAll(response.getChangedOffset().getMetaId());
+        if (!CollectionUtils.isEmpty(groupAll)) {
+            groupAll.forEach(tableGroup -> {
+                if (StringUtil.equals(tableGroup.getSourceTable().getName(), response.getTableName())) {
+                    distributeTableGroup(response, tableGroup);
+                }
+            });
+        }
+    }
+
+    private void distributeTableGroup(WriterResponse response, TableGroup tableGroup) {
         // 0、获取配置信息
-        final TableGroup tableGroup = getTableGroup(response.getTableGroupId());
         final Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
         final TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
 
@@ -128,7 +139,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         }
 
         final Picker picker = new Picker(group.getFieldMapping());
-        final List<Map> sourceDataList = response.getDataList();
+
+        final List<Map> sourceDataList = null; //response.getDataList();
         // 2、映射字段
         List<Map> targetDataList = picker.pickTargetData(sourceDataList);
 
@@ -155,7 +167,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         Result result = parserComponent.writeBatch(context, getExecutor());
 
         // 6.发布刷新增量点事件
-        applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
+        applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
 
         // 7、持久化同步结果
         result.setTableGroupId(tableGroup.getId());
@@ -180,10 +192,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Override
     public Executor getExecutor() {
         return generalExecutor;
-    }
-
-    public TableGroup getTableGroup(String tableGroupId) {
-        return profileComponent.getTableGroup(tableGroupId);
     }
 
     /**
@@ -227,7 +235,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 profileComponent.editTableGroup(tableGroup);
 
                 // 6.发布更新事件，持久化增量数据
-                applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getOffsetList()));
+                applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
                 flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
                 return;
             }

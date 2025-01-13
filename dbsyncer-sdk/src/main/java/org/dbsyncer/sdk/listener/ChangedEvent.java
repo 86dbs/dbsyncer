@@ -4,9 +4,12 @@
 package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
+import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
+import org.dbsyncer.sdk.listener.event.RowChangedEvent;
+import org.dbsyncer.sdk.listener.event.ScanChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * 变更事件
@@ -39,24 +42,29 @@ public interface ChangedEvent {
     String getEvent();
 
     /**
-     * 获取变更SQL
-     *
-     * @return
-     */
-    String getSql();
-
-    /**
-     * 获取变更行数据
-     *
-     * @return
-     */
-    Map<String, Object> getChangedRow();
-
-    /**
      * 获取增量偏移量
      *
      * @return
      */
     ChangedOffset getChangedOffset();
+
+    /**
+     * 获取变更SQL
+     *
+     * {@link DDLChangedEvent}
+     */
+    default String getSql() {
+        return null;
+    }
+
+    /**
+     * 获取变更行数据
+     *
+     * {@link RowChangedEvent}
+     * {@link ScanChangedEvent}
+     */
+    default List<Object> getChangedRow() {
+        return null;
+    }
 
 }

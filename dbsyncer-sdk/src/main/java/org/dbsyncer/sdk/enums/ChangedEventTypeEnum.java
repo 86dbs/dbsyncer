@@ -25,4 +25,7 @@ public enum ChangedEventTypeEnum {
         return DDL == event;
     }
 
+    public static boolean isScan(ChangedEventTypeEnum type) {
+        return SCAN == type;
+    }
 }

@@ -2,11 +2,9 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.BufferResponse;
-import org.dbsyncer.sdk.model.ChangedOffset;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author AE86
@@ -15,9 +13,7 @@ import java.util.Map;
  */
 public class WriterResponse extends AbstractWriter implements BufferResponse {
 
-    private List<Map> dataList = new LinkedList<>();
-
-    private List<ChangedOffset> offsetList = new LinkedList<>();
+    private final List<List<Object>> dataList = new LinkedList<>();
 
     private transient boolean isMerged;
 
@@ -31,20 +27,12 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
         return StringUtil.SYMBOL.concat(getEvent());
     }
 
-    public void addData(Map data) {
+    public void addData(List<Object> data) {
         dataList.add(data);
     }
 
-    public void addChangedOffset(ChangedOffset changedOffset) {
-        offsetList.add(changedOffset);
-    }
-
-    public List<Map> getDataList() {
+    public List<List<Object>> getDataList() {
         return dataList;
-    }
-
-    public List<ChangedOffset> getOffsetList() {
-        return offsetList;
     }
 
     public boolean isMerged() {

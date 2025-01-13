@@ -65,7 +65,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
                     case ConnectorConstant.OPERTION_UPDATE:
                     case ConnectorConstant.OPERTION_INSERT:
                         try {
-                            queryDqlData(dqlMapper, changedEvent.getDataList());
+                            queryDqlData(dqlMapper, changedEvent.getChangedRow());
                         } catch (Exception e) {
                             return;
                         }

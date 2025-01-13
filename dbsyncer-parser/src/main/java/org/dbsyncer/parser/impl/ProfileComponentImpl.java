@@ -154,11 +154,10 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public List<TableGroup> getSortedTableGroupAll(String mappingId) {
-        List<TableGroup> list = getTableGroupAll(mappingId)
+        return getTableGroupAll(mappingId)
                 .stream()
                 .sorted(Comparator.comparing(TableGroup::getIndex).reversed())
                 .collect(Collectors.toList());
-        return list;
     }
 
     @Override

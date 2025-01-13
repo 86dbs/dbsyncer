@@ -144,7 +144,7 @@ public class OracleListener extends AbstractDatabaseListener {
             String tableName = getTableName(alter.getTable());
             if (tableFiledMap.containsKey(tableName)) {
                 logger.info("sql:{}", event.getRedoSql());
-                trySendEvent(new DDLChangedEvent(null, tableName, ConnectorConstant.OPERTION_ALTER, event.getRedoSql(), null, event.getScn()));
+                trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER, event.getRedoSql(), null, event.getScn()));
             }
         }
     }

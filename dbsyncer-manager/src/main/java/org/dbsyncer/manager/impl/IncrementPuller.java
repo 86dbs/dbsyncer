@@ -10,14 +10,11 @@ import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.consumer.impl.LogConsumer;
-import org.dbsyncer.parser.consumer.impl.QuartzConsumer;
+import org.dbsyncer.parser.consumer.ParserConsumer;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.AbstractListener;
@@ -106,7 +103,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 logger.error("运行异常，结束增量同步{}:{}", metaId, e.getMessage());
             }
         });
-        worker.setName(new StringBuilder("increment-worker-").append(mapping.getId()).toString());
+        worker.setName("increment-worker-" + mapping.getId());
         worker.setDaemon(false);
         worker.start();
     }
@@ -125,20 +122,16 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     @Override
     public void onApplicationEvent(RefreshOffsetEvent event) {
-        List<ChangedOffset> offsetList = event.getOffsetList();
-        if (!CollectionUtils.isEmpty(offsetList)) {
-            offsetList.forEach(offset -> {
-                if (offset.isRefreshOffset() && map.containsKey(offset.getMetaId())) {
-                    map.get(offset.getMetaId()).refreshEvent(offset);
-                }
-            });
+        ChangedOffset offset = event.getChangedOffset();
+        if (offset != null && offset.isRefreshOffset() && map.containsKey(offset.getMetaId())) {
+            map.get(offset.getMetaId()).refreshEvent(offset);
         }
     }
 
     @Override
     public void run() {
         // 定时同步增量信息
-        map.values().forEach(listener -> listener.flushEvent());
+        map.values().forEach(Listener::flushEvent);
     }
 
     private Listener getListener(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta) {
@@ -150,18 +143,18 @@ public final class IncrementPuller extends AbstractPuller implements Application
         if (null == listener) {
             throw new ManagerException(String.format("Unsupported listener type \"%s\".", connectorConfig.getConnectorType()));
         }
+        listener.register(new ParserConsumer(bufferActuatorRouter, profileComponent, logService, meta.getId(), list));
 
         // 默认定时抽取
         if (ListenerTypeEnum.isTiming(listenerType) && listener instanceof AbstractQuartzListener) {
             AbstractQuartzListener quartzListener = (AbstractQuartzListener) listener;
-            quartzListener.setCommands(list.stream().map(t -> new TableGroupQuartzCommand(t.getSourceTable(), t.getCommand())).collect(Collectors.toList()));
-            quartzListener.register(new QuartzConsumer().init(bufferActuatorRouter, profileComponent, logService, meta.getId(), mapping, list));
-        }
-
-        // 基于日志抽取
-        if (ListenerTypeEnum.isLog(listenerType) && listener instanceof AbstractListener) {
-            AbstractListener abstractListener = (AbstractListener) listener;
-            abstractListener.register(new LogConsumer().init(bufferActuatorRouter, profileComponent, logService, meta.getId(), mapping, list));
+            List<TableGroupQuartzCommand> quartzCommands = list.stream().map(t -> {
+                final TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, t);
+                final Picker picker = new Picker(group.getFieldMapping());
+                Assert.notEmpty(picker.getSourceFields(), "表字段映射关系不能为空：" + group.getSourceTable().getName() + " > " + group.getTargetTable().getName());
+                return new TableGroupQuartzCommand(t.getSourceTable(), picker.getSourceFields(), t.getCommand());
+            }).collect(Collectors.toList());
+            quartzListener.setCommands(quartzCommands);
         }
 
         if (listener instanceof AbstractListener) {

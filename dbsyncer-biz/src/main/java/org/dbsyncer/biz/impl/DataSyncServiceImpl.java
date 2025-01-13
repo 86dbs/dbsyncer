@@ -163,12 +163,17 @@ public class DataSyncServiceImpl implements DataSyncService {
         }
         TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
         String sourceTableName = tableGroup.getSourceTable().getName();
-        RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, Collections.EMPTY_LIST);
+
         // 转换为源字段
         final Picker picker = new Picker(tableGroup.getFieldMapping());
-        changedEvent.setChangedRow(picker.pickSourceData(binlogData));
+        Map map = picker.pickSourceData(binlogData);
+        List<Field> sourceFields = picker.getSourceFields();
+        List<Object> changedRow = new ArrayList<>(sourceFields.size());
+        sourceFields.forEach(field -> changedRow.add(map.get(field.getName())));
+        RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow);
+
         // 执行同步是否成功
-        bufferActuatorRouter.execute(metaId, tableGroupId, changedEvent);
+        bufferActuatorRouter.execute(metaId, changedEvent);
         storageService.remove(StorageEnum.DATA, metaId, messageId);
         // 更新失败数
         Meta meta = profileComponent.getMeta(metaId);

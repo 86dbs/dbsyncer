@@ -44,15 +44,15 @@ public final class BufferActuatorRouter implements DisposableBean {
      */
     private final Map<String, Map<String, TableGroupBufferActuator>> router = new ConcurrentHashMap<>();
 
-    public void execute(String metaId, String tableGroupId, ChangedEvent event) {
-        if (router.containsKey(metaId) && router.get(metaId).containsKey(tableGroupId)) {
-            router.get(metaId).get(tableGroupId).offer(new WriterRequest(tableGroupId, event));
+    public void execute(String metaId, ChangedEvent event) {
+        if (router.containsKey(metaId) && router.get(metaId).containsKey(event.getSourceTableName())) {
+            router.get(metaId).get(event.getSourceTableName()).offer(new WriterRequest(event));
             return;
         }
-        generalBufferActuator.offer(new WriterRequest(tableGroupId, event));
+        generalBufferActuator.offer(new WriterRequest(event));
     }
 
-    public void bind(String metaId, String tableGroupId) {
+    public void bind(String metaId, String tableName) {
         router.computeIfAbsent(metaId, k -> new ConcurrentHashMap<>());
 
         // TODO 暂定执行器上限，待替换为LRU模型
@@ -60,11 +60,11 @@ public final class BufferActuatorRouter implements DisposableBean {
             return;
         }
 
-        router.get(metaId).computeIfAbsent(tableGroupId, k -> {
+        router.get(metaId).computeIfAbsent(tableName, k -> {
             TableGroupBufferActuator newBufferActuator = null;
             try {
                 newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuator.clone();
-                newBufferActuator.setTableGroupId(tableGroupId);
+                newBufferActuator.setTableName(tableName);
                 newBufferActuator.buildConfig();
             } catch (CloneNotSupportedException ex) {
                 logger.error(ex.getMessage(), ex);

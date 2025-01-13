@@ -4,13 +4,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.Field;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Picker {
@@ -80,10 +74,10 @@ public class Picker {
         }
     }
 
-    public List<Field> getTargetFields() {
+    private List<Field> getFields(List<Field> list) {
         List<Field> fields = new ArrayList<>();
         Set<String> keys = new HashSet<>();
-        targetFields.forEach(f -> {
+        list.forEach(f -> {
             if (!keys.contains(f.getName())) {
                 fields.add(f);
                 keys.add(f.getName());
@@ -92,7 +86,16 @@ public class Picker {
         return Collections.unmodifiableList(fields);
     }
 
-    public Map<String, Field> getTargetFieldMap() {
-        return targetFields.stream().filter(f -> null != f).collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
+    public List<Field> getSourceFields() {
+        return getFields(sourceFields);
     }
+
+    public List<Field> getTargetFields() {
+        return getFields(targetFields);
+    }
+
+    public Map<String, Field> getTargetFieldMap() {
+        return targetFields.stream().filter(Objects::nonNull).collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
+    }
+
 }

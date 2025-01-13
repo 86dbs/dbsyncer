@@ -23,7 +23,7 @@ public final class ChangedOffset {
     /**
      * 是否触发刷新增量点事件
      */
-    private boolean refreshOffset;
+    private boolean refreshOffset = true;
 
     public String getMetaId() {
         return metaId;

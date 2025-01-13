@@ -7,12 +7,11 @@ import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
-import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.Watcher;
-import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 
 import java.util.List;
 import java.util.Map;
@@ -22,44 +21,29 @@ import java.util.Map;
  * @Author AE86
  * @Date 2023-11-12 01:32
  */
-public abstract class AbstractConsumer<E extends ChangedEvent> implements Watcher {
-    private BufferActuatorRouter bufferActuatorRouter;
-    private ProfileComponent profileComponent;
-    private LogService logService;
-    private String metaId;
-    protected Mapping mapping;
-    protected List<TableGroup> tableGroups;
+public final class ParserConsumer implements Watcher {
+    private final BufferActuatorRouter bufferActuatorRouter;
+    private final ProfileComponent profileComponent;
+    private final LogService logService;
+    private final String metaId;
 
-    public AbstractConsumer init(BufferActuatorRouter bufferActuatorRouter, ProfileComponent profileComponent, LogService logService, String metaId, Mapping mapping, List<TableGroup> tableGroups) {
+    public ParserConsumer(BufferActuatorRouter bufferActuatorRouter, ProfileComponent profileComponent, LogService logService, String metaId, List<TableGroup> tableGroups) {
         this.bufferActuatorRouter = bufferActuatorRouter;
         this.profileComponent = profileComponent;
         this.logService = logService;
         this.metaId = metaId;
-        this.mapping = mapping;
-        this.tableGroups = tableGroups;
-        postProcessBeforeInitialization();
-        return this;
-    }
-
-    public abstract void postProcessBeforeInitialization();
-
-    public abstract void onChange(E e);
-
-    public void onDDLChanged(DDLChangedEvent event) {
+        // 注册到路由服务中
+        tableGroups.forEach(t -> bufferActuatorRouter.bind(metaId, t.getSourceTable().getName()));
     }
 
     @Override
     public void changeEvent(ChangedEvent event) {
         event.getChangedOffset().setMetaId(metaId);
-        switch (event.getType()){
-            case ROW:
-            case SCAN:
-                onChange((E) event);
-                break;
-            case DDL:
-                onDDLChanged((DDLChangedEvent) event);
-                break;
+        if (ChangedEventTypeEnum.isScan(event.getType())) {
+            // TODO 如果是DDL，阻塞等待队列消费完成
+            event.getChangedOffset().setRefreshOffset(false);
         }
+        bufferActuatorRouter.execute(metaId, event);
     }
 
     @Override
@@ -80,13 +64,5 @@ public abstract class AbstractConsumer<E extends ChangedEvent> implements Watche
     public long getMetaUpdateTime() {
         Meta meta = profileComponent.getMeta(metaId);
         return meta != null ? meta.getUpdateTime() : 0L;
-    }
-
-    protected void bind(String tableGroupId) {
-        bufferActuatorRouter.bind(metaId, tableGroupId);
-    }
-
-    protected void execute(String tableGroupId, ChangedEvent event) {
-        bufferActuatorRouter.execute(metaId, tableGroupId, event);
     }
 }
