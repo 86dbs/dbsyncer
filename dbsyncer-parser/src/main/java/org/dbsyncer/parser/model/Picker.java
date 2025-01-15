@@ -9,8 +9,8 @@ import java.util.stream.Collectors;
 
 public class Picker {
 
-    private List<Field> sourceFields = new ArrayList<>();
-    private List<Field> targetFields = new ArrayList<>();
+    private final List<Field> sourceFields = new ArrayList<>();
+    private final List<Field> targetFields = new ArrayList<>();
 
     public Picker(List<FieldMapping> fieldMapping) {
         if (!CollectionUtils.isEmpty(fieldMapping)) {

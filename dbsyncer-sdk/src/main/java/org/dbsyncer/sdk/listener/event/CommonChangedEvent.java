@@ -26,13 +26,14 @@ public abstract class CommonChangedEvent implements ChangedEvent {
     /**
      * 增量偏移量
      */
-    private ChangedOffset changedOffset = new ChangedOffset();
+    private final ChangedOffset changedOffset = new ChangedOffset();
 
     @Override
     public String getSourceTableName() {
         return sourceTableName;
     }
 
+    @Override
     public void setSourceTableName(String sourceTableName) {
         this.sourceTableName = sourceTableName;
     }

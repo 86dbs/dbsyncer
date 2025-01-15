@@ -22,35 +22,31 @@ public interface ChangedEvent {
 
     /**
      * 获取变更事件类型
-     *
-     * @return
      */
     ChangedEventTypeEnum getType();
 
     /**
      * 获取变更表名称
-     *
-     * @return
      */
     String getSourceTableName();
 
     /**
+     * 获取变更表名称(DQL场景自定义表名称)
+     */
+    void setSourceTableName(String sourceTableName);
+
+    /**
      * 获取变更事件
-     *
-     * @return
      */
     String getEvent();
 
     /**
      * 获取增量偏移量
-     *
-     * @return
      */
     ChangedOffset getChangedOffset();
 
     /**
      * 获取变更SQL
-     *
      * {@link DDLChangedEvent}
      */
     default String getSql() {
@@ -59,7 +55,6 @@ public interface ChangedEvent {
 
     /**
      * 获取变更行数据
-     *
      * {@link RowChangedEvent}
      * {@link ScanChangedEvent}
      */

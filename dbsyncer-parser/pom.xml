@@ -26,12 +26,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.scxhtb</groupId>
-            <artifactId>dbsyncer-parser-plus</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>com.github.jsqlparser</groupId>
             <artifactId>jsqlparser</artifactId>
         </dependency>
