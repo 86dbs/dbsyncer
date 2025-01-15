@@ -35,6 +35,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -138,11 +139,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             return;
         }
 
-        final Picker picker = new Picker(group.getFieldMapping());
-
-        final List<Map> sourceDataList = null; //response.getDataList();
         // 2、映射字段
-        List<Map> targetDataList = picker.pickTargetData(sourceDataList);
+        final Picker picker = new Picker(group.getFieldMapping());
+        List<Map> sourceDataList = new ArrayList<>();
+        List<Map> targetDataList = picker.pickTargetData(response.getDataList(), sourceDataList);
 
         // 3、参数转换
         ConvertUtil.convert(group.getConvert(), targetDataList);

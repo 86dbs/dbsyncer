@@ -20,10 +20,7 @@ import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.AbstractListener;
 import org.dbsyncer.sdk.listener.AbstractQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.ChangedOffset;
-import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
+import org.dbsyncer.sdk.model.*;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.slf4j.Logger;
@@ -151,8 +148,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
             List<TableGroupQuartzCommand> quartzCommands = list.stream().map(t -> {
                 final TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, t);
                 final Picker picker = new Picker(group.getFieldMapping());
-                Assert.notEmpty(picker.getSourceFields(), "表字段映射关系不能为空：" + group.getSourceTable().getName() + " > " + group.getTargetTable().getName());
-                return new TableGroupQuartzCommand(t.getSourceTable(), picker.getSourceFields(), t.getCommand());
+                List<Field> fields = picker.getSourceFields();
+                Assert.notEmpty(fields, "表字段映射关系不能为空：" + group.getSourceTable().getName() + " > " + group.getTargetTable().getName());
+                return new TableGroupQuartzCommand(t.getSourceTable(), fields, t.getCommand());
             }).collect(Collectors.toList());
             quartzListener.setCommands(quartzCommands);
         }

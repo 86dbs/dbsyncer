@@ -28,25 +28,61 @@ public class Picker {
     public List<Map> pickTargetData(List<Map> source) {
         List<Map> targetMapList = new ArrayList<>();
         if (!CollectionUtils.isEmpty(source)) {
-            final int size = source.size();
             final int sFieldSize = sourceFields.size();
             final int tFieldSize = targetFields.size();
             Map<String, Object> target = null;
-            for (int i = 0; i < size; i++) {
+            for (Map row : source) {
                 target = new HashMap<>();
-                exchange(sFieldSize, tFieldSize, sourceFields, targetFields, source.get(i), target);
+                exchange(sFieldSize, tFieldSize, sourceFields, targetFields, row, target);
                 targetMapList.add(target);
             }
         }
         return targetMapList;
     }
 
-    public Map pickSourceData(Map target) {
+    public List<Map> pickTargetData(List<List<Object>> rows, List<Map> sourceMapList) {
+        List<Map> targetMapList = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(rows)) {
+            final int sFieldSize = sourceFields.size();
+            final int tFieldSize = targetFields.size();
+            Map<String, Object> source = null;
+            Map<String, Object> target = null;
+            List<Object> row = null;
+            List<Field> sFields = getFields(sourceFields);
+            for (int i = 0; i < rows.size(); i++) {
+                source = new HashMap<>();
+                target = new HashMap<>();
+                row = rows.get(i);
+                for (int j = 0; j < row.size(); i++) {
+                    source.put(sFields.get(j).getName(), row.get(j));
+                }
+                exchange(sFieldSize, tFieldSize, sourceFields, targetFields, source, target);
+                sourceMapList.add(source);
+                targetMapList.add(target);
+            }
+        }
+        return targetMapList;
+    }
+
+    public List<Object> pickSourceData(Map target) {
         Map<String, Object> source = new HashMap<>();
         if (!CollectionUtils.isEmpty(target)) {
             exchange(targetFields.size(), sourceFields.size(), targetFields, sourceFields, target, source);
         }
-        return source;
+
+        return getFields(sourceFields).stream().map(field -> source.get(field.getName())).collect(Collectors.toList());
+    }
+
+    public List<Field> getSourceFields() {
+        return getFields(sourceFields);
+    }
+
+    public List<Field> getTargetFields() {
+        return getFields(targetFields);
+    }
+
+    public Map<String, Field> getTargetFieldMap() {
+        return targetFields.stream().filter(Objects::nonNull).collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
     }
 
     private void exchange(int sFieldSize, int tFieldSize, List<Field> sFields, List<Field> tFields, Map<String, Object> source, Map<String, Object> target) {
@@ -84,18 +120,6 @@ public class Picker {
             }
         });
         return Collections.unmodifiableList(fields);
-    }
-
-    public List<Field> getSourceFields() {
-        return getFields(sourceFields);
-    }
-
-    public List<Field> getTargetFields() {
-        return getFields(targetFields);
-    }
-
-    public Map<String, Field> getTargetFieldMap() {
-        return targetFields.stream().filter(Objects::nonNull).collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
     }
 
 }

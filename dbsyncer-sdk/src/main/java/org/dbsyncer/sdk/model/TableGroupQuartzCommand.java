@@ -5,6 +5,7 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class TableGroupQuartzCommand {
 
@@ -20,7 +21,7 @@ public class TableGroupQuartzCommand {
         this.table = table;
         this.fields = fields;
         this.command = command;
-        this.primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(table);;
+        this.primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(table);
     }
 
     public Table getTable() {
@@ -40,8 +41,6 @@ public class TableGroupQuartzCommand {
     }
 
     public List<Object> getChangedRow(Map<String, Object> row) {
-        List<Object> changedRow = new ArrayList<>(fields.size());
-        fields.forEach(field -> changedRow.add(row.get(field.getName())));
-        return changedRow;
+        return fields.stream().map(field -> row.get(field.getName())).collect(Collectors.toList());
     }
 }

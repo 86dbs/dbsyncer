@@ -166,10 +166,7 @@ public class DataSyncServiceImpl implements DataSyncService {
 
         // 转换为源字段
         final Picker picker = new Picker(tableGroup.getFieldMapping());
-        Map map = picker.pickSourceData(binlogData);
-        List<Field> sourceFields = picker.getSourceFields();
-        List<Object> changedRow = new ArrayList<>(sourceFields.size());
-        sourceFields.forEach(field -> changedRow.add(map.get(field.getName())));
+        List<Object> changedRow = picker.pickSourceData(binlogData);
         RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow);
 
         // 执行同步是否成功
