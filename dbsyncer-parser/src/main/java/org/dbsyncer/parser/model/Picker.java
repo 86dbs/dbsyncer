@@ -21,12 +21,8 @@ public class Picker {
     public Picker(List<FieldMapping> fieldMapping) {
         if (!CollectionUtils.isEmpty(fieldMapping)) {
             fieldMapping.forEach(m -> {
-                if (m.getSource() != null) {
-                    sourceFields.add(m.getSource());
-                }
-                if (m.getTarget() != null) {
-                    targetFields.add(m.getTarget());
-                }
+                sourceFields.add(m.getSource());
+                targetFields.add(m.getTarget());
             });
         }
     }
@@ -83,12 +79,13 @@ public class Picker {
     public List<Field> getTargetFields() {
         List<Field> fields = new ArrayList<>();
         Set<String> keys = new HashSet<>();
-        targetFields.forEach(f -> {
-            if (!keys.contains(f.getName())) {
+        targetFields.stream().forEach(f -> {
+            if (f != null && !keys.contains(f.getName())) {
                 fields.add(f);
                 keys.add(f.getName());
             }
         });
+        keys.clear();
         return Collections.unmodifiableList(fields);
     }
 
