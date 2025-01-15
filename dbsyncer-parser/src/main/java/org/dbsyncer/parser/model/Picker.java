@@ -100,8 +100,7 @@ public class Picker {
                     continue;
                 }
                 // 合并值
-                String mergedValue = new StringBuilder(StringUtil.toString(target.get(tFieldName))).append(StringUtil.toString(v)).toString();
-                target.put(tFieldName, mergedValue);
+                target.put(tFieldName, StringUtil.toString(target.get(tFieldName)) + StringUtil.toString(v));
             }
         }
     }
