@@ -19,6 +19,7 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -75,6 +76,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private ConnectorFactory connectorFactory;
+
+    @Resource
+    private TableGroupContext tableGroupContext;
 
     @Override
     public String add(Map<String, String> params) {
@@ -151,6 +155,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             // 删除meta
             profileComponent.removeConfigModel(metaId);
             log(LogType.MetaLog.DELETE, meta);
+
+            // 删除驱动表映射关系
+            tableGroupContext.clear(metaId);
 
             // 删除tableGroup
             List<TableGroup> groupList = profileComponent.getTableGroupAll(id);

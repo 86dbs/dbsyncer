@@ -33,7 +33,7 @@ public final class ParserConsumer implements Watcher {
         this.logService = logService;
         this.metaId = metaId;
         // 注册到路由服务中
-        tableGroups.forEach(t -> bufferActuatorRouter.bind(metaId, t.getSourceTable().getName()));
+        bufferActuatorRouter.bind(metaId, tableGroups);
     }
 
     @Override

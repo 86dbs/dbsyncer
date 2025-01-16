@@ -49,7 +49,7 @@ public class Picker {
                 source = new HashMap<>();
                 target = new HashMap<>();
                 row = rows.get(i);
-                for (int j = 0; j < row.size(); i++) {
+                for (int j = 0; j < row.size(); j++) {
                     source.put(sFields.get(j).getName(), row.get(j));
                 }
                 exchange(sFieldSize, tFieldSize, sourceFields, targetFields, source, target);

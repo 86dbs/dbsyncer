@@ -149,7 +149,7 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
         TableGroup tableGroup = new TableGroup().setMappingId(mappingId);
-        return operationTemplate.queryAll(new QueryConfig(tableGroup, GroupStrategyEnum.TABLE));
+        return operationTemplate.queryAll(new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE));
     }
 
     @Override

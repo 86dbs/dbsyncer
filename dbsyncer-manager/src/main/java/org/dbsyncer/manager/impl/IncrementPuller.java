@@ -3,13 +3,15 @@
  */
 package org.dbsyncer.manager.impl;
 
-import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.scheduled.ScheduledTaskJob;
+import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.consumer.ParserConsumer;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
@@ -21,8 +23,6 @@ import org.dbsyncer.sdk.listener.AbstractListener;
 import org.dbsyncer.sdk.listener.AbstractQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.*;
-import org.dbsyncer.common.scheduled.ScheduledTaskJob;
-import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -32,11 +32,7 @@ import org.springframework.util.Assert;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -67,7 +63,10 @@ public final class IncrementPuller extends AbstractPuller implements Application
     @Resource
     private LogService logService;
 
-    private Map<String, Listener> map = new ConcurrentHashMap<>();
+    @Resource
+    private TableGroupContext tableGroupContext;
+
+    private final Map<String, Listener> map = new ConcurrentHashMap<>();
 
     @PostConstruct
     private void init() {
@@ -92,8 +91,12 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 meta.setBeginTime(now);
                 meta.setEndTime(now);
                 profileComponent.editConfigModel(meta);
-                map.putIfAbsent(metaId, getListener(mapping, connector, list, meta));
-                map.get(metaId).start();
+                map.computeIfAbsent(metaId, k-> {
+                    tableGroupContext.put(mapping, list);
+                    Listener listener = getListener(mapping, connector, list, meta);
+                    listener.start();
+                    return listener;
+                });
             } catch (Exception e) {
                 close(metaId);
                 logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());

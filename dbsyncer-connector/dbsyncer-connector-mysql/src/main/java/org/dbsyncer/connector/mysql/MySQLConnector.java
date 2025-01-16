@@ -5,6 +5,7 @@ package org.dbsyncer.connector.mysql;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.cdc.MySQLListener;
+import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
 import org.dbsyncer.connector.mysql.storage.MySQLStorageService;
 import org.dbsyncer.connector.mysql.validator.MySQLConfigValidator;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -15,6 +16,7 @@ import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -33,12 +35,12 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String TYPE = "MySQL";
     private final MySQLConfigValidator configValidator = new MySQLConfigValidator();
+    private final MySQLSchemaResolver schemaResolver = new MySQLSchemaResolver();
 
     @Override
     public String getConnectorType() {
-        return TYPE;
+        return "MySQL";
     }
 
     @Override
@@ -135,4 +137,8 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         return true;
     }
 
+    @Override
+    protected SchemaResolver getSchemaResolver() {
+        return schemaResolver;
+    }
 }
