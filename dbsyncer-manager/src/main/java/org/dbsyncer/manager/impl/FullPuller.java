@@ -5,15 +5,18 @@ package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.*;
-import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.dbsyncer.manager.AbstractPuller;
+import org.dbsyncer.parser.LogService;
+import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ParserComponent;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -50,9 +53,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     @Resource
     private LogService logService;
 
-    @Resource
-    private TableGroupContext tableGroupContext;
-
     private final Map<String, Task> map = new ConcurrentHashMap<>();
 
     @Override
@@ -65,7 +65,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
                 Assert.notEmpty(list, "映射关系不能为空");
                 logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
                 map.computeIfAbsent(metaId, k -> {
-                    tableGroupContext.put(mapping, list);
                     Task task = new Task(metaId);
                     doTask(task, mapping, list, executor);
                     return task;
