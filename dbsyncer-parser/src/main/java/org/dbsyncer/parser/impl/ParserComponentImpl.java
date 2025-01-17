@@ -181,7 +181,6 @@ public class ParserComponentImpl implements ParserComponent {
             pluginFactory.process(group.getPlugin(), context, ProcessEnum.CONVERT);
 
             // 5、写入目标源
-            context.setTargetFields(picker.getTargetFields());
             Result result = writeBatch(context, executor);
 
             // 6、更新结果
