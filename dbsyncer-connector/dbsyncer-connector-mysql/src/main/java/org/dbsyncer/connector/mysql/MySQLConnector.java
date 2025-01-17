@@ -5,6 +5,7 @@ package org.dbsyncer.connector.mysql;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.cdc.MySQLListener;
+import org.dbsyncer.connector.mysql.schema.MySQLDateValueMapper;
 import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
 import org.dbsyncer.connector.mysql.storage.MySQLStorageService;
 import org.dbsyncer.connector.mysql.validator.MySQLConfigValidator;
@@ -22,6 +23,7 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Types;
 import java.util.List;
 
 /**
@@ -37,6 +39,10 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
     private final MySQLConfigValidator configValidator = new MySQLConfigValidator();
     private final MySQLSchemaResolver schemaResolver = new MySQLSchemaResolver();
+
+    public MySQLConnector() {
+        VALUE_MAPPERS.put(Types.DATE, new MySQLDateValueMapper());
+    }
 
     @Override
     public String getConnectorType() {

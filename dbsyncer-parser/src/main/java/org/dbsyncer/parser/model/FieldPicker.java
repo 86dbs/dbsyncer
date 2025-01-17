@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 public class FieldPicker {
 
-    private TableGroup tableGroup;
+    private final TableGroup tableGroup;
     private List<Node> index;
     private int indexSize;
     private boolean enabledFilter;
