@@ -88,8 +88,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String id = profileComponent.addConfigModel(model);
 
         // 匹配相似表 on
-        String autoMatchTable = params.get("autoMatchTable");
-        if (StringUtil.isNotBlank(autoMatchTable)) {
+        if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
             matchSimilarTable(model);
         }
 
@@ -135,7 +134,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
             log(LogType.MappingLog.UPDATE, model);
 
-            mappingChecker.batchMergeTableGroupConfig(model, params);
+            // 更新meta
+            tableGroupService.updateMeta(mapping, params.get("metaSnapshot"));
             return profileComponent.editConfigModel(model);
         }
     }
@@ -206,12 +206,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public List<MappingVo> getMappingAll() {
-        List<MappingVo> list = profileComponent.getMappingAll()
+        return profileComponent.getMappingAll()
                 .stream()
-                .map(m -> convertMapping2Vo(m))
+                .map(this::convertMapping2Vo)
                 .sorted(Comparator.comparing(MappingVo::getUpdateTime).reversed())
                 .collect(Collectors.toList());
-        return list;
     }
 
     @Override
@@ -337,7 +336,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 }
             }
         }
-        mappingChecker.updateMeta(mapping);
     }
 
     private void clearMetaIfFinished(String metaId) {

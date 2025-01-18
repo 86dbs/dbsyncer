@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz;
 
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 
 import java.util.List;
@@ -59,5 +60,13 @@ public interface TableGroupService {
      * @return
      */
     List<TableGroup> getTableGroupAll(String mappingId);
+
+    /**
+     * 更新元信息
+     *
+     * @param mapping
+     * @param metaSnapshot
+     */
+    void updateMeta(Mapping mapping, String metaSnapshot);
 
 }

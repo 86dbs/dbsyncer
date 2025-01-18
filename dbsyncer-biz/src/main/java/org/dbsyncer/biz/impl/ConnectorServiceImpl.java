@@ -44,7 +44,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private Map<String, Boolean> health = new LinkedHashMap<>();
+    private final Map<String, Boolean> health = new LinkedHashMap<>();
 
     @Resource
     private ProfileComponent profileComponent;

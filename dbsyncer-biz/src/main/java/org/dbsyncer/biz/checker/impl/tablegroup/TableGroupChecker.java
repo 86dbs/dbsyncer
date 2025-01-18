@@ -27,13 +27,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -160,6 +154,39 @@ public class TableGroupChecker extends AbstractChecker {
             });
         }
         return new Table(tableName, metaInfo.getTableType(), metaInfo.getColumn(), metaInfo.getSql(), metaInfo.getIndexType());
+    }
+
+    /**
+     * 合并表配置
+     *
+     * @param mapping
+     * @param params
+     */
+    public void batchMergeConfig(Mapping mapping, Map<String, String> params) {
+        List<TableGroup> groupAll = profileComponent.getTableGroupAll(mapping.getId());
+        if (!CollectionUtils.isEmpty(groupAll)) {
+            // 手动排序
+            String[] sortedTableGroupIds = StringUtil.split(params.get("sortedTableGroupIds"), StringUtil.VERTICAL_LINE);
+            if (null != sortedTableGroupIds && sortedTableGroupIds.length > 0) {
+                Map<String, TableGroup> tableGroupMap = groupAll.stream().collect(Collectors.toMap(TableGroup::getId, f -> f, (k1, k2) -> k1));
+                groupAll.clear();
+                int size = sortedTableGroupIds.length;
+                int i = size;
+                while (i > 0) {
+                    TableGroup g = tableGroupMap.get(sortedTableGroupIds[size - i]);
+                    Assert.notNull(g, "Invalid sorted tableGroup.");
+                    g.setIndex(i);
+                    groupAll.add(g);
+                    i--;
+                }
+            }
+
+            // 合并配置
+            for (TableGroup g : groupAll) {
+                mergeConfig(mapping, g);
+                profileComponent.editConfigModel(g);
+            }
+        }
     }
 
     private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {
