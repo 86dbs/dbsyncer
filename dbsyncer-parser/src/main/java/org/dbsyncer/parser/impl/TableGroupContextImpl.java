@@ -6,6 +6,7 @@ package org.dbsyncer.parser.impl;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.TableGroupPicker;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +28,7 @@ public final class TableGroupContextImpl implements TableGroupContext {
      */
     private final Map<String, InnerMapping> tableGroupMap = new ConcurrentHashMap<>();
 
-    private final List<TableGroup> EMPTY_LIST = new ArrayList<>();
+    private final List<TableGroupPicker> EMPTY_LIST = new ArrayList<>();
 
     @Override
     public void put(Mapping mapping, List<TableGroup> tableGroups) {
@@ -42,8 +43,8 @@ public final class TableGroupContextImpl implements TableGroupContext {
     }
 
     @Override
-    public List<TableGroup> getTableGroups(Mapping mapping, String tableName) {
-        InnerMapping innerMapping = tableGroupMap.get(mapping.getMetaId());
+    public List<TableGroupPicker> getTableGroupPickers(String metaId, String tableName) {
+        InnerMapping innerMapping = tableGroupMap.get(metaId);
         if (innerMapping != null) {
             return innerMapping.get(tableName);
         }
@@ -56,14 +57,14 @@ public final class TableGroupContextImpl implements TableGroupContext {
     }
 
     static final class InnerMapping {
-        Map<String, List<TableGroup>> mapping = new ConcurrentHashMap<>();
+        Map<String, List<TableGroupPicker>> pickerMap = new ConcurrentHashMap<>();
 
-        public List<TableGroup> get(String tableName) {
-            return mapping.get(tableName);
+        public List<TableGroupPicker> get(String tableName) {
+            return pickerMap.get(tableName);
         }
 
         public void add(String tableName, TableGroup tableGroup) {
-            mapping.computeIfAbsent(tableName, k -> new ArrayList<>()).add(tableGroup);
+            pickerMap.computeIfAbsent(tableName, k -> new ArrayList<>()).add(new TableGroupPicker(tableGroup));
         }
     }
 }

@@ -125,16 +125,16 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             return;
         }
         final Mapping mapping = profileComponent.getMapping(meta.getMappingId());
-        List<TableGroup> tableGroups = tableGroupContext.getTableGroups(mapping, response.getTableName());
+        List<TableGroupPicker> pickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
 
         // 1、ddl解析
         if (ChangedEventTypeEnum.isDDL(response.getTypeEnum())) {
-            tableGroups.forEach(tableGroup -> parseDDl(response, mapping, tableGroup));
+            pickers.forEach(picker -> parseDDl(response, mapping, picker.getTableGroup()));
             return;
         }
 
         // 2、dml解析
-        tableGroups.forEach(tableGroup -> distributeTableGroup(response, mapping, tableGroup));
+        pickers.forEach(picker -> distributeTableGroup(response, mapping, picker));
     }
 
     @Override
@@ -153,13 +153,16 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         return generalExecutor;
     }
 
-    private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroup tableGroup) {
+    private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker picker) {
         // 1、映射字段
-        final Picker picker = new Picker(tableGroup.getFieldMapping());
         List<Map> sourceDataList = new ArrayList<>();
         List<Map> targetDataList = picker.pickTargetData(response.getDataList(), sourceDataList);
+        if (CollectionUtils.isEmpty(targetDataList)) {
+            return;
+        }
 
         // 2、参数转换
+        TableGroup tableGroup = picker.getTableGroup();
         ConvertUtil.convert(tableGroup.getConvert(), targetDataList);
 
         // 3、插件转换

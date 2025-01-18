@@ -83,7 +83,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Override
     public String add(Map<String, String> params) {
         ConfigModel model = mappingChecker.checkAddConfigModel(params);
-        log(LogType.MappingLog.INSERT, (Mapping) model);
+        log(LogType.MappingLog.INSERT, model);
 
         String id = profileComponent.addConfigModel(model);
 
@@ -156,14 +156,14 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             profileComponent.removeConfigModel(metaId);
             log(LogType.MetaLog.DELETE, meta);
 
-            // 删除驱动表映射关系
-            tableGroupContext.clear(metaId);
-
             // 删除tableGroup
             List<TableGroup> groupList = profileComponent.getTableGroupAll(id);
             if (!CollectionUtils.isEmpty(groupList)) {
                 groupList.forEach(t -> profileComponent.removeTableGroup(t.getId()));
             }
+
+            // 删除驱动表映射关系
+            tableGroupContext.clear(metaId);
 
             // 删除驱动
             profileComponent.removeConfigModel(id);

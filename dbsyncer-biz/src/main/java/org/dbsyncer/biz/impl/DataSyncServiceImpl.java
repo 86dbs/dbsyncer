@@ -113,7 +113,7 @@ public class DataSyncServiceImpl implements DataSyncService {
 
         // 3、反序列
         Map<String, Object> target = new HashMap<>();
-        final Picker picker = new Picker(tableGroup.getFieldMapping());
+        final Picker picker = new Picker(tableGroup);
         final Map<String, Field> fieldMap = picker.getTargetFieldMap();
         BinlogMap message = BinlogMap.parseFrom(bytes);
         message.getRowMap().forEach((k, v) -> {
@@ -122,7 +122,7 @@ public class DataSyncServiceImpl implements DataSyncService {
                     Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);
                     // 处理二进制对象显示
                     if (prettyBytes) {
-                        if (null != val && val instanceof byte[]) {
+                        if (val instanceof byte[]) {
                             byte[] b = (byte[]) val;
                             if (b.length > 128) {
                                 target.put(k, String.format("byte[%d]", b.length));
@@ -165,7 +165,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         String sourceTableName = tableGroup.getSourceTable().getName();
 
         // 转换为源字段
-        final Picker picker = new Picker(tableGroup.getFieldMapping());
+        final Picker picker = new Picker(tableGroup);
         List<Object> changedRow = picker.pickSourceData(binlogData);
         RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow);
 

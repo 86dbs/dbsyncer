@@ -133,7 +133,7 @@ public class ParserComponentImpl implements ParserComponent {
         String tTableName = group.getTargetTable().getName();
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
         // 获取同步字段
-        Picker picker = new Picker(fieldMapping);
+        Picker picker = new Picker(group);
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
         final FullPluginContext context = new FullPluginContext();
         context.setSourceConnectorInstance(connectorFactory.connect(sConfig));

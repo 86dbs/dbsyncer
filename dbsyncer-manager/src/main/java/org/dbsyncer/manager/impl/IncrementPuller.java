@@ -117,6 +117,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         }
         map.remove(metaId);
         publishClosedEvent(metaId);
+        tableGroupContext.clear(metaId);
         logger.info("关闭成功:{}", metaId);
     }
 
@@ -150,7 +151,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
             AbstractQuartzListener quartzListener = (AbstractQuartzListener) listener;
             List<TableGroupQuartzCommand> quartzCommands = list.stream().map(t -> {
                 final TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, t);
-                final Picker picker = new Picker(group.getFieldMapping());
+                final Picker picker = new Picker(group);
                 List<Field> fields = picker.getSourceFields();
                 Assert.notEmpty(fields, "表字段映射关系不能为空：" + group.getSourceTable().getName() + " > " + group.getTargetTable().getName());
                 return new TableGroupQuartzCommand(t.getSourceTable(), fields, t.getCommand());

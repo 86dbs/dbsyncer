@@ -5,6 +5,7 @@ package org.dbsyncer.parser;
 
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.TableGroupPicker;
 
 import java.util.List;
 
@@ -17,7 +18,7 @@ public interface TableGroupContext {
 
     void put(Mapping mapping, List<TableGroup> tableGroups);
 
-    List<TableGroup> getTableGroups(Mapping mapping, String tableName);
+    List<TableGroupPicker> getTableGroupPickers(String metaId, String tableName);
 
     void clear(String metaId);
 }

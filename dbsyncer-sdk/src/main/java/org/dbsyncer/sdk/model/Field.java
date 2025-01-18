@@ -37,11 +37,6 @@ public class Field {
     private String labelName;
 
     /**
-     * 是否系统字段
-     */
-    private boolean unmodifiabled;
-
-    /**
      * 字段大小
      */
     private int columnSize;
@@ -74,15 +69,6 @@ public class Field {
         this.pk = pk;
         this.columnSize = columnSize;
         this.ratio = ratio;
-    }
-
-    public Field(String name, String typeName, int type, boolean pk, String labelName, boolean unmodifiabled) {
-        this.name = name;
-        this.typeName = typeName;
-        this.type = type;
-        this.pk = pk;
-        this.labelName = labelName;
-        this.unmodifiabled = unmodifiabled;
     }
 
     public String getName() {
@@ -121,18 +107,8 @@ public class Field {
         return labelName;
     }
 
-    public Field setLabelName(String labelName) {
+    public void setLabelName(String labelName) {
         this.labelName = labelName;
-        return this;
-    }
-
-    public boolean isUnmodifiabled() {
-        return unmodifiabled;
-    }
-
-    public Field setUnmodifiabled(boolean unmodifiabled) {
-        this.unmodifiabled = unmodifiabled;
-        return this;
     }
 
     public int getColumnSize() {
