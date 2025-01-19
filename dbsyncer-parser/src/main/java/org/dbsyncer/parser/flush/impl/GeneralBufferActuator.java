@@ -130,7 +130,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         switch (response.getTypeEnum()) {
             case DDL:
-                // ddl解析, TODO 如果是DDL，阻塞等待队列消费完成
+                // ddl解析
                 pickers.forEach(picker -> parseDDl(response, mapping, picker.getTableGroup()));
                 break;
             case SCAN:
