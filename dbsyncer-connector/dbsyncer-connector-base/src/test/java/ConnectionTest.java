@@ -445,7 +445,7 @@ public class ConnectionTest {
 
     private DatabaseConfig createMysqlConfig() {
         DatabaseConfig config = new DatabaseConfig();
-        config.setUrl("jdbc:mysql://127.0.0.1:3305/test?rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true&failOverReadOnly=false");
+        config.setUrl("jdbc:mysql://127.0.0.1:3305/test?rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true&failOverReadOnly=false&tinyInt1isBit=false");
         config.setUsername("root");
         config.setPassword("123");
         config.setDriverClassName("com.mysql.cj.jdbc.Driver");

@@ -56,6 +56,12 @@ public final class MySQLShortType extends ShortType {
             Boolean b = (Boolean) val;
             return (short) (b ? 1 : 0);
         }
+        if (val instanceof byte[]) {
+            byte[] bytes = (byte[]) val;
+            if (bytes.length > 1) {
+                return (short) bytes[1];
+            }
+        }
         return throwUnsupportedException(val, field);
     }
 
