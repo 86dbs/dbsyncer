@@ -19,11 +19,13 @@ public class TableGroupPicker {
 
     private final Picker picker;
 
+    private final List<Field> sourceFields;
     private final List<Field> targetFields;
 
     public TableGroupPicker(TableGroup tableGroup) {
         this.tableGroup = tableGroup;
         this.picker = new Picker(tableGroup);
+        this.sourceFields = picker.getSourceFields();
         this.targetFields = picker.getTargetFields();
     }
 
@@ -31,8 +33,12 @@ public class TableGroupPicker {
         return tableGroup;
     }
 
-    public List<Map> pickTargetData(List<List<Object>> rows, List<Map> sourceMapList) {
-        return picker.pickTargetData(rows, sourceMapList);
+    public Picker getPicker() {
+        return picker;
+    }
+
+    public List<Field> getSourceFields() {
+        return sourceFields;
     }
 
     public List<Field> getTargetFields() {

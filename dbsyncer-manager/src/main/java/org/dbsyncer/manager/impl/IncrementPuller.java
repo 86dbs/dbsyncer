@@ -124,7 +124,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
     @Override
     public void onApplicationEvent(RefreshOffsetEvent event) {
         ChangedOffset offset = event.getChangedOffset();
-        if (offset != null && offset.isRefreshOffset() && map.containsKey(offset.getMetaId())) {
+        if (offset != null && map.containsKey(offset.getMetaId())) {
             map.get(offset.getMetaId()).refreshEvent(offset);
         }
     }

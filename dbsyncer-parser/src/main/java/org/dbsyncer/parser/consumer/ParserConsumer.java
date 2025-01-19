@@ -39,9 +39,9 @@ public final class ParserConsumer implements Watcher {
     @Override
     public void changeEvent(ChangedEvent event) {
         event.getChangedOffset().setMetaId(metaId);
-        if (ChangedEventTypeEnum.isScan(event.getType())) {
-            // TODO 如果是DDL，阻塞等待队列消费完成
-            event.getChangedOffset().setRefreshOffset(false);
+        // TODO 如果是DDL，阻塞等待队列消费完成
+        if (ChangedEventTypeEnum.isDDL(event.getType())) {
+
         }
         bufferActuatorRouter.execute(metaId, event);
     }

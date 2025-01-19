@@ -20,13 +20,11 @@ public class Picker {
     private final List<Field> targetFields = new ArrayList<>();
     private final int sFieldSize;
     private final int tFieldSize;
-    private final TableGroup tableGroup;
     private final boolean enabledFilter;
     private List<Filter> add;
     private List<Filter> or;
 
     public Picker(TableGroup tableGroup) {
-        this.tableGroup = tableGroup;
         if (!CollectionUtils.isEmpty(tableGroup.getFieldMapping())) {
             tableGroup.getFieldMapping().forEach(m -> {
                 sourceFields.add(m.getSource());
@@ -57,7 +55,7 @@ public class Picker {
         return targetMapList;
     }
 
-    public List<Map> pickTargetData(List<List<Object>> rows, List<Map> sourceMapList) {
+    public List<Map> pickTargetData(List<Field> sourceFields, boolean enableFilter, List<List<Object>> rows, List<Map> sourceMapList) {
         List<Map> targetMapList = new ArrayList<>();
         if (CollectionUtils.isEmpty(rows)) {
             return targetMapList;
@@ -66,20 +64,21 @@ public class Picker {
         Map<String, Object> target = null;
         for (List<Object> row : rows) {
             // 排除下标不一致的数据
-            if (row.size() != getOriginalFields().size()) {
+            if (row.size() != sourceFields.size()) {
                 continue;
             }
             source = new HashMap<>();
-            for (int j = 0; j < getOriginalFields().size(); j++) {
-                source.put(getOriginalFields().get(j).getName(), row.get(j));
+            for (int j = 0; j < sourceFields.size(); j++) {
+                source.put(sourceFields.get(j).getName(), row.get(j));
             }
             target = new HashMap<>();
             exchange(sFieldSize, tFieldSize, sourceFields, targetFields, source, target);
             // 根据条件过滤数据
-            if (filter(target)) {
-                sourceMapList.add(source);
-                targetMapList.add(target);
+            if (enableFilter && !filter(target)) {
+                continue;
             }
+            sourceMapList.add(source);
+            targetMapList.add(target);
         }
         return targetMapList;
     }
@@ -198,10 +197,6 @@ public class Picker {
         });
         keys.clear();
         return Collections.unmodifiableList(fields);
-    }
-
-    private List<Field> getOriginalFields() {
-        return tableGroup.getSourceTable().getColumn();
     }
 
 }

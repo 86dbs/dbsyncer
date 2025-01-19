@@ -26,6 +26,7 @@ import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,14 +128,24 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         final Mapping mapping = profileComponent.getMapping(meta.getMappingId());
         List<TableGroupPicker> pickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
 
-        // 1、ddl解析
-        if (ChangedEventTypeEnum.isDDL(response.getTypeEnum())) {
-            pickers.forEach(picker -> parseDDl(response, mapping, picker.getTableGroup()));
-            return;
+        switch (response.getTypeEnum()) {
+            case DDL:
+                // ddl解析, TODO 如果是DDL，阻塞等待队列消费完成
+                pickers.forEach(picker -> parseDDl(response, mapping, picker.getTableGroup()));
+                break;
+            case SCAN:
+                // dml解析
+                pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false));
+                break;
+            case ROW:
+                // dml解析
+                pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
+                // 发布刷新增量点事件
+                applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
+                break;
+            default:
+                break;
         }
-
-        // 2、dml解析
-        pickers.forEach(picker -> distributeTableGroup(response, mapping, picker));
     }
 
     @Override
@@ -153,16 +164,16 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         return generalExecutor;
     }
 
-    private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker picker) {
+    private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) {
         // 1、映射字段
         List<Map> sourceDataList = new ArrayList<>();
-        List<Map> targetDataList = picker.pickTargetData(response.getDataList(), sourceDataList);
+        List<Map> targetDataList = tableGroupPicker.getPicker().pickTargetData(sourceFields, enableFilter, response.getDataList(), sourceDataList);
         if (CollectionUtils.isEmpty(targetDataList)) {
             return;
         }
 
         // 2、参数转换
-        TableGroup tableGroup = picker.getTableGroup();
+        TableGroup tableGroup = tableGroupPicker.getTableGroup();
         ConvertUtil.convert(tableGroup.getConvert(), targetDataList);
 
         // 3、插件转换
@@ -172,7 +183,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         context.setSourceTableName(tableGroup.getSourceTable().getName());
         context.setTargetTableName(tableGroup.getTargetTable().getName());
         context.setEvent(response.getEvent());
-        context.setTargetFields(picker.getTargetFields());
+        context.setTargetFields(tableGroupPicker.getTargetFields());
         context.setCommand(tableGroup.getCommand());
         context.setBatchSize(generalBufferConfig.getBufferWriterCount());
         context.setSourceList(sourceDataList);
@@ -184,15 +195,12 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         // 4、批量执行同步
         Result result = parserComponent.writeBatch(context, getExecutor());
 
-        // 5.发布刷新增量点事件
-        applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
-
-        // 6、持久化同步结果
+        // 5、持久化同步结果
         result.setTableGroupId(tableGroup.getId());
         result.setTargetTableGroupName(context.getTargetTableName());
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
 
-        // 7、执行批量处理后的
+        // 6、执行后置处理
         pluginFactory.process(tableGroup.getPlugin(), context, ProcessEnum.AFTER);
     }
 

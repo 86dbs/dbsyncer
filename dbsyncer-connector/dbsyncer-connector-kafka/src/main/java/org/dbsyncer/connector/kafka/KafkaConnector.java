@@ -49,16 +49,6 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     }
 
     @Override
-    public boolean isSupportedTiming() {
-        return false;
-    }
-
-    @Override
-    public boolean isSupportedLog() {
-        return false;
-    }
-
-    @Override
     public Class<KafkaConfig> getConfigClass() {
         return KafkaConfig.class;
     }

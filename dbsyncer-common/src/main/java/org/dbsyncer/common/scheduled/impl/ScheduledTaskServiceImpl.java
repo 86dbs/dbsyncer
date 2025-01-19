@@ -32,7 +32,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService, Disposabl
     @Resource
     private ThreadPoolTaskScheduler taskScheduler;
 
-    private Map<String, ScheduledFuture> map = new ConcurrentHashMap<>();
+    private final Map<String, ScheduledFuture> map = new ConcurrentHashMap<>();
 
     @Override
     public void start(String key, String cron, ScheduledTaskJob job) {

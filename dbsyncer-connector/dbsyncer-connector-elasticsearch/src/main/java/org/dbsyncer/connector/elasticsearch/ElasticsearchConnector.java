@@ -112,16 +112,6 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     }
 
     @Override
-    public boolean isSupportedTiming() {
-        return true;
-    }
-
-    @Override
-    public boolean isSupportedLog() {
-        return false;
-    }
-
-    @Override
     public Class<ESConfig> getConfigClass() {
         return ESConfig.class;
     }

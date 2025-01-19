@@ -84,15 +84,6 @@ public abstract class AbstractConnector {
     }
 
     /**
-     * 获取标准数据类型解析器
-     *
-     * @return
-     */
-    protected SchemaResolver getSchemaResolver() {
-        return null;
-    }
-
-    /**
      * 转换字段值
      *
      * @param connectorInstance
@@ -100,12 +91,6 @@ public abstract class AbstractConnector {
      */
     public void convertProcessBeforeWriter(ConnectorInstance connectorInstance, WriterBatchConfig config) {
         if (CollectionUtils.isEmpty(config.getFields()) || CollectionUtils.isEmpty(config.getData())) {
-            return;
-        }
-
-        final SchemaResolver resolver = getSchemaResolver();
-        if (resolver != null) {
-            convert(config, resolver);
             return;
         }
 
@@ -131,7 +116,11 @@ public abstract class AbstractConnector {
         }
     }
 
-    private void convert(WriterBatchConfig config, SchemaResolver resolver) {
+    public void convertProcessBeforeWriter(SchemaResolver resolver, WriterBatchConfig config) {
+        if (CollectionUtils.isEmpty(config.getFields()) || CollectionUtils.isEmpty(config.getData())) {
+            return;
+        }
+
         for (Map row : config.getData()) {
             for (Field f : config.getFields()) {
                 if (null == f) {

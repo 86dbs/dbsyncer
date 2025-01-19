@@ -67,16 +67,6 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     }
 
     @Override
-    public boolean isSupportedTiming() {
-        return false;
-    }
-
-    @Override
-    public boolean isSupportedLog() {
-        return true;
-    }
-
-    @Override
     public Class<FileConfig> getConfigClass() {
         return FileConfig.class;
     }

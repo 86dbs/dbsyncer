@@ -144,7 +144,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected SchemaResolver getSchemaResolver() {
+    public SchemaResolver getSchemaResolver() {
         return schemaResolver;
     }
 }
