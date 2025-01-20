@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 public final class MySQLShortType extends ShortType {
 
     private enum TypeEnum {
-        BIT("BIT"),
         TINYINT_UNSIGNED("TINYINT UNSIGNED"),
         SMALLINT("SMALLINT");
 
@@ -44,24 +43,24 @@ public final class MySQLShortType extends ShortType {
         if (val instanceof Number) {
             return ((Number) val).shortValue();
         }
-        if (val instanceof BitSet) {
-            BitSet bitSet = (BitSet) val;
-            byte[] bytes = bitSet.toByteArray();
-            if (bytes.length > 0) {
-                return (short) bytes[0];
-            }
-            return 0;
-        }
-        if (val instanceof Boolean) {
-            Boolean b = (Boolean) val;
-            return (short) (b ? 1 : 0);
-        }
-        if (val instanceof byte[]) {
-            byte[] bytes = (byte[]) val;
-            if (bytes.length > 1) {
-                return (short) bytes[1];
-            }
-        }
+//        if (val instanceof BitSet) {
+//            BitSet bitSet = (BitSet) val;
+//            byte[] bytes = bitSet.toByteArray();
+//            if (bytes.length > 0) {
+//                return (short) bytes[0];
+//            }
+//            return 0;
+//        }
+//        if (val instanceof Boolean) {
+//            Boolean b = (Boolean) val;
+//            return (short) (b ? 1 : 0);
+//        }
+//        if (val instanceof byte[]) {
+//            byte[] bytes = (byte[]) val;
+//            if (bytes.length > 1) {
+//                return (short) bytes[1];
+//            }
+//        }
         return throwUnsupportedException(val, field);
     }
 
