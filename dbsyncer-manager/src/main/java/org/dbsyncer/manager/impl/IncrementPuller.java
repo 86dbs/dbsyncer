@@ -86,12 +86,12 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
         Thread worker = new Thread(() -> {
             try {
-                logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
-                long now = Instant.now().toEpochMilli();
-                meta.setBeginTime(now);
-                meta.setEndTime(now);
-                profileComponent.editConfigModel(meta);
                 map.computeIfAbsent(metaId, k-> {
+                    logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
+                    long now = Instant.now().toEpochMilli();
+                    meta.setBeginTime(now);
+                    meta.setEndTime(now);
+                    profileComponent.editConfigModel(meta);
                     tableGroupContext.put(mapping, list);
                     Listener listener = getListener(mapping, connector, list, meta);
                     listener.start();
