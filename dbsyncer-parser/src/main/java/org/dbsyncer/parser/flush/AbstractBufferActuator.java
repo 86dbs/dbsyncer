@@ -106,7 +106,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      * @param request
      * @return
      */
-    protected boolean isRunning(BufferRequest request) {
+    public boolean isRunning(BufferRequest request) {
         Meta meta = profileComponent.getMeta(request.getMetaId());
         return meta != null && MetaEnum.isRunning(meta.getState());
     }

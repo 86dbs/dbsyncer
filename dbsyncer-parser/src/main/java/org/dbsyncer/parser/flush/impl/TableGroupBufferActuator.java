@@ -44,7 +44,7 @@ public class TableGroupBufferActuator extends GeneralBufferActuator implements C
     }
 
     @Override
-    protected boolean isRunning(BufferRequest request) {
+    public boolean isRunning(BufferRequest request) {
         return running;
     }
 

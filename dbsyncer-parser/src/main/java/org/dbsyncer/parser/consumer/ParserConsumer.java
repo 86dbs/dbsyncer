@@ -9,7 +9,6 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.Watcher;
 
@@ -39,10 +38,6 @@ public final class ParserConsumer implements Watcher {
     @Override
     public void changeEvent(ChangedEvent event) {
         event.getChangedOffset().setMetaId(metaId);
-        // TODO 如果是DDL，阻塞等待队列消费完成
-        if (ChangedEventTypeEnum.isDDL(event.getType())) {
-
-        }
         bufferActuatorRouter.execute(metaId, event);
     }
 
