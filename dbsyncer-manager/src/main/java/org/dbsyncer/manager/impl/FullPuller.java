@@ -57,14 +57,14 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     @Override
     public void start(Mapping mapping) {
+        List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
+        Assert.notEmpty(list, "映射关系不能为空");
         Thread worker = new Thread(() -> {
             final String metaId = mapping.getMetaId();
             ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());
             try {
-                List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
-                Assert.notEmpty(list, "映射关系不能为空");
-                logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
                 map.computeIfAbsent(metaId, k -> {
+                    logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
                     Task task = new Task(metaId);
                     doTask(task, mapping, list, executor);
                     return task;

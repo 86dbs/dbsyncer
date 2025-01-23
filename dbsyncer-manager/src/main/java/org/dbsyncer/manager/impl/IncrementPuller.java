@@ -77,7 +77,6 @@ public final class IncrementPuller extends AbstractPuller implements Application
     public void start(Mapping mapping) {
         final String mappingId = mapping.getId();
         final String metaId = mapping.getMetaId();
-        logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
         Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
         List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
@@ -87,11 +86,12 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
         Thread worker = new Thread(() -> {
             try {
-                long now = Instant.now().toEpochMilli();
-                meta.setBeginTime(now);
-                meta.setEndTime(now);
-                profileComponent.editConfigModel(meta);
                 map.computeIfAbsent(metaId, k-> {
+                    logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
+                    long now = Instant.now().toEpochMilli();
+                    meta.setBeginTime(now);
+                    meta.setEndTime(now);
+                    profileComponent.editConfigModel(meta);
                     tableGroupContext.put(mapping, list);
                     Listener listener = getListener(mapping, connector, list, meta);
                     listener.start();
