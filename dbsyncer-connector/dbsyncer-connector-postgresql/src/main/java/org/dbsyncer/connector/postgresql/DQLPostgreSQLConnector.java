@@ -23,12 +23,11 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
  */
 public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
 
-    private final String TYPE = "DqlPostgreSQL";
     private final DqlPostgreSQLConfigValidator configValidator = new DqlPostgreSQLConfigValidator();
 
     @Override
     public String getConnectorType() {
-        return TYPE;
+        return "DqlPostgreSQL";
     }
 
     @Override

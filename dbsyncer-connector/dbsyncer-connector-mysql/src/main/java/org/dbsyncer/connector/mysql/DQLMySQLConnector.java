@@ -23,12 +23,11 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
  */
 public final class DQLMySQLConnector extends AbstractDQLConnector {
 
-    private final String TYPE = "DqlMySQL";
     private final DqlMySQLConfigValidator configValidator = new DqlMySQLConfigValidator();
 
     @Override
     public String getConnectorType() {
-        return TYPE;
+        return "DqlMySQL";
     }
 
     @Override

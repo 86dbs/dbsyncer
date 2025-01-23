@@ -38,7 +38,6 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String TYPE = "PostgreSQL";
     private final PostgreSQLConfigValidator configValidator = new PostgreSQLConfigValidator();
 
     public PostgreSQLConnector() {
@@ -48,7 +47,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getConnectorType() {
-        return TYPE;
+        return "PostgreSQL";
     }
 
     @Override

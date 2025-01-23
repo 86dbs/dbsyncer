@@ -79,18 +79,10 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String TYPE = "Elasticsearch";
-
     public static final String _SOURCE_INDEX = "_source_index";
-
-    public static final String _TARGET_INDEX = "_target_index";
-
-    public static final String _TYPE = "_type";
-
-    private static final int MAX_SIZE = 10000;
-
+    private final String _TARGET_INDEX = "_target_index";
+    private final String _TYPE = "_type";
     private final Map<String, FilterMapper> filters = new LinkedHashMap<>();
-
     private final ESConfigValidator configValidator = new ESConfigValidator();
 
     public ElasticsearchConnector() {
@@ -108,7 +100,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
 
     @Override
     public String getConnectorType() {
-        return TYPE;
+        return "Elasticsearch";
     }
 
     @Override
@@ -233,7 +225,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         } else {
             builder.from((context.getPageIndex() - 1) * context.getPageSize());
         }
-        builder.size(context.getPageSize() > MAX_SIZE ? MAX_SIZE : context.getPageSize());
+        builder.size(Math.min(context.getPageSize(), 10000));
 
         try {
             SearchRequest rq = new SearchRequest(new String[]{context.getCommand().get(_SOURCE_INDEX)}, builder);

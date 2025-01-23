@@ -51,7 +51,6 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String TYPE = "File";
     private final String FILE_NAME = "fileName";
     private final String FILE_PATH = "filePath";
     private final FileResolver fileResolver = new FileResolver();
@@ -63,7 +62,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
 
     @Override
     public String getConnectorType() {
-        return TYPE;
+        return "File";
     }
 
     @Override
