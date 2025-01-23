@@ -85,4 +85,8 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         map.put(SqlBuilderEnum.QUERY_COUNT.getName(), queryCount.toString());
         return map;
     }
+
+    public MetaInfo getTableMetaInfo(DatabaseConnectorInstance connectorInstance, String tableNamePattern) {
+        return super.getMetaInfo(connectorInstance, tableNamePattern);
+    }
 }
