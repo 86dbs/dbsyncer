@@ -4,9 +4,6 @@
 package org.dbsyncer.connector.oracle.cdc;
 
 import org.dbsyncer.sdk.listener.ChangedEvent;
-import org.dbsyncer.sdk.model.Field;
-
-import java.util.List;
 
 /**
  * @Author AE86
@@ -24,12 +21,6 @@ public class DqlOracleListener extends OracleListener {
     @Override
     public void sendChangedEvent(ChangedEvent event) {
         super.sendDqlChangedEvent(event);
-    }
-
-    @Override
-    protected Integer[] getPrimaryKeyIndexArray(List<Field> column, List<String> primaryKeys) {
-        // ROW_ID
-        return new Integer[]{0};
     }
 
 }

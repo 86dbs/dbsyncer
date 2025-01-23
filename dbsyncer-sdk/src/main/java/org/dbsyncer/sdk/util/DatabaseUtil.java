@@ -31,7 +31,7 @@ public abstract class DatabaseUtil {
             try {
                 rs.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new SdkException(e);
             }
         }
     }
