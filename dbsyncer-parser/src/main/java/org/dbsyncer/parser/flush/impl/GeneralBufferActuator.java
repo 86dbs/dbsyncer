@@ -67,7 +67,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     private ParserComponent parserComponent;
 
     @Resource
-    protected ProfileComponent profileComponent;
+    private ProfileComponent profileComponent;
 
     @Resource
     private PluginFactory pluginFactory;

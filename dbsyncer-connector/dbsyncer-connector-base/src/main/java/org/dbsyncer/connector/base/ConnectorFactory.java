@@ -183,7 +183,7 @@ public class ConnectorFactory implements DisposableBean {
             AbstractConnector conn = (AbstractConnector) connector;
             try {
                 SchemaResolver schemaResolver = connector.getSchemaResolver();
-                if (schemaResolver != null) {
+                if (config.isEnableSchemaResolver() && schemaResolver != null) {
                     conn.convertProcessBeforeWriter(schemaResolver, config);
                 } else {
                     conn.convertProcessBeforeWriter(connectorInstance, config);

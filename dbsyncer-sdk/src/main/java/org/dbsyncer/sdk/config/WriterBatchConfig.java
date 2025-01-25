@@ -10,35 +10,40 @@ public class WriterBatchConfig {
     /**
      * 表名
      */
-    private String tableName;
+    private final String tableName;
     /**
      * 事件
      */
-    private String event;
+    private final String event;
     /**
      * 执行命令
      */
-    private Map<String, String> command;
+    private final Map<String, String> command;
     /**
      * 字段信息
      */
-    private List<Field> fields;
+    private final List<Field> fields;
     /**
      * 集合数据
      */
-    private List<Map> data;
+    private final List<Map> data;
     /**
      * 覆盖写入
      */
-    private boolean forceUpdate;
+    private final boolean forceUpdate;
+    /**
+     * 是否启用字段解析器
+     */
+    private final boolean enableSchemaResolver;
 
-    public WriterBatchConfig(String tableName, String event, Map<String, String> command, List<Field> fields, List<Map> data, boolean forceUpdate) {
+    public WriterBatchConfig(String tableName, String event, Map<String, String> command, List<Field> fields, List<Map> data, boolean forceUpdate, boolean enableSchemaResolver) {
         this.tableName = tableName;
         this.event = event;
         this.command = command;
         this.fields = fields;
         this.data = data;
         this.forceUpdate = forceUpdate;
+        this.enableSchemaResolver = enableSchemaResolver;
     }
 
     public String getTableName() {
@@ -63,5 +68,9 @@ public class WriterBatchConfig {
 
     public boolean isForceUpdate() {
         return forceUpdate;
+    }
+
+    public boolean isEnableSchemaResolver() {
+        return enableSchemaResolver;
     }
 }

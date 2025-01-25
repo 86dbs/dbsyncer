@@ -65,6 +65,11 @@ public abstract class AbstractPluginContext implements PluginContext {
     private boolean forceUpdate;
 
     /**
+     * 是否启用字段解析器
+     */
+    private boolean enableSchemaResolver;
+
+    /**
      * 数据源数据集合
      */
     private List<Map> sourceList;
@@ -160,6 +165,15 @@ public abstract class AbstractPluginContext implements PluginContext {
 
     public void setForceUpdate(boolean forceUpdate) {
         this.forceUpdate = forceUpdate;
+    }
+
+    @Override
+    public boolean isEnableSchemaResolver() {
+        return enableSchemaResolver;
+    }
+
+    public void setEnableSchemaResolver(boolean enableSchemaResolver) {
+        this.enableSchemaResolver = enableSchemaResolver;
     }
 
     @Override

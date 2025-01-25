@@ -81,6 +81,11 @@ public interface PluginContext extends BaseContext {
     boolean isForceUpdate();
 
     /**
+     * 是否启用字段解析器
+     */
+    boolean isEnableSchemaResolver();
+
+    /**
      * 数据源数据集合
      */
     List<Map> getSourceList();

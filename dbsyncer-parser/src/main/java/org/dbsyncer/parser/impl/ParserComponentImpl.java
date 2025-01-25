@@ -220,7 +220,8 @@ public class ParserComponentImpl implements ParserComponent {
         int total = dataList.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(context.getTargetConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, dataList, context.isForceUpdate()));
+            WriterBatchConfig batchConfig = new WriterBatchConfig(tableName, event, command, fields, dataList, context.isForceUpdate(), context.isEnableSchemaResolver());
+            return connectorFactory.writer(context.getTargetConnectorInstance(), batchConfig);
         }
 
         // 批量任务, 拆分
@@ -242,7 +243,8 @@ public class ParserComponentImpl implements ParserComponent {
 
             executor.execute(() -> {
                 try {
-                    Result w = connectorFactory.writer(context.getTargetConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, data, context.isForceUpdate()));
+                    WriterBatchConfig batchConfig = new WriterBatchConfig(tableName, event, command, fields, data, context.isForceUpdate(), context.isEnableSchemaResolver());
+                    Result w = connectorFactory.writer(context.getTargetConnectorInstance(), batchConfig);
                     result.addSuccessData(w.getSuccessData());
                     result.addFailData(w.getFailData());
                     result.getError().append(w.getError());
