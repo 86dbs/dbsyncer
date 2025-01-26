@@ -6,9 +6,9 @@ package org.dbsyncer.sdk.config;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.SqlTable;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author AE86
@@ -61,14 +61,14 @@ public class DatabaseConfig extends ConnectorConfig {
     /**
      * 参数配置
      */
-    private Map<String, String> properties = new LinkedHashMap<>();
+    private Map<String, String> properties = new ConcurrentHashMap<>();
 
     public String getProperty(String key) {
         return properties.get(key);
     }
 
     public String getProperty(String key, String defaultValue) {
-        return properties.containsKey(key) ? properties.get(key) : defaultValue;
+        return properties.getOrDefault(key, defaultValue);
     }
 
     public String getDriverClassName() {

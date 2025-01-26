@@ -22,9 +22,9 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author AE86
@@ -74,7 +74,7 @@ public abstract class AbstractChecker implements Checker {
     protected void modifySuperConfigModel(AbstractConfigModel model, Map<String, String> params) {
         // 全局参数
         String mappingParams = params.get("params");
-        model.setParams(StringUtil.isNotBlank(mappingParams) ? JsonUtil.jsonToObj(mappingParams, Map.class) : new LinkedHashMap());
+        model.setParams(StringUtil.isNotBlank(mappingParams) ? JsonUtil.jsonToObj(mappingParams, Map.class) : new ConcurrentHashMap<>());
 
         // 过滤条件
         String filterJson = params.get("filter");

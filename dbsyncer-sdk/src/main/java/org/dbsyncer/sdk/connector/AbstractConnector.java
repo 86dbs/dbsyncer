@@ -40,14 +40,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected final Map<Integer, ValueMapper> VALUE_MAPPERS = new LinkedHashMap<>();
+    protected final Map<Integer, ValueMapper> VALUE_MAPPERS = new ConcurrentHashMap<>();
 
     public AbstractConnector() {
         // 常用类型

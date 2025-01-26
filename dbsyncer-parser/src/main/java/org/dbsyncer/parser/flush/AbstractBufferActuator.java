@@ -17,10 +17,10 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.lang.reflect.ParameterizedType;
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -207,14 +207,11 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         }
 
         AtomicLong batchCounter = new AtomicLong();
-        Map<String, Response> map = new LinkedHashMap<>();
+        Map<String, Response> map = new ConcurrentHashMap<>();
         while (!queue.isEmpty() && batchCounter.get() < config.getBufferPullCount()) {
             Request poll = queue.poll();
             String key = getPartitionKey(poll);
-            if (!map.containsKey(key)) {
-                map.putIfAbsent(key, responseClazz.newInstance());
-            }
-            Response response = map.get(key);
+            Response response = map.putIfAbsent(key, responseClazz.newInstance());
             partition(poll, response);
             batchCounter.incrementAndGet();
 

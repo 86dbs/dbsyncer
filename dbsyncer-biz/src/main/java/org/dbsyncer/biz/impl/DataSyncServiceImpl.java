@@ -39,9 +39,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -183,7 +183,7 @@ public class DataSyncServiceImpl implements DataSyncService {
 
     private Map getData(String metaId, String messageId) {
         Query query = new Query(1, 1);
-        Map<String, FieldResolver> fieldResolvers = new LinkedHashMap<>();
+        Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
         fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
         query.setFieldResolverMap(fieldResolvers);
         query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);

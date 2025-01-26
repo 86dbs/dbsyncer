@@ -24,11 +24,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -55,7 +55,7 @@ public class PluginFactory implements DisposableBean {
 
     private final List<Plugin> plugins = new LinkedList<>();
 
-    private final Map<String, PluginService> service = new LinkedHashMap<>();
+    private final Map<String, PluginService> service = new ConcurrentHashMap<>();
 
     @Resource
     private ApplicationContext applicationContext;
