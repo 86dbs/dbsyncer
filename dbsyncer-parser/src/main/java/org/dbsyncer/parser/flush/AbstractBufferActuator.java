@@ -7,6 +7,7 @@ import org.dbsyncer.common.config.BufferActuatorConfig;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Meta;
@@ -211,7 +212,16 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         while (!queue.isEmpty() && batchCounter.get() < config.getBufferPullCount()) {
             Request poll = queue.poll();
             String key = getPartitionKey(poll);
-            Response response = map.putIfAbsent(key, responseClazz.newInstance());
+            Response response = map.compute(key, (k,v) -> {
+                if (v == null) {
+                    try {
+                        return responseClazz.newInstance();
+                    } catch (Exception e) {
+                        throw new ParserException(e);
+                    }
+                }
+                return v;
+            });
             partition(poll, response);
             batchCounter.incrementAndGet();
 
@@ -230,5 +240,41 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     public void setConfig(BufferActuatorConfig config) {
         this.config = config;
+    }
+
+    public static void main(String[] args) {
+
+        Map<String, User> map = new ConcurrentHashMap<>();
+
+        map.compute("zhangsan ", (k,v) -> {
+            if (v == null) {
+                return new User("张三");
+            }
+            return v;
+        });
+        map.compute("zhangsan ", (k,v) -> {
+            if (v == null) {
+                return new User("何鲁丽");
+            }
+            return v;
+        });
+        for (Map.Entry<String, User> entry : map.entrySet()) {
+            System.out.println(entry.getKey() + ", "+ entry.getValue());
+        }
+    }
+
+    static class User {
+        String name;
+        public User(String name) {
+            this.name = name;
+            System.out.println("asd");
+        }
+
+        @Override
+        public String toString() {
+            return "User{" +
+                    "name='" + name + '\'' +
+                    '}';
+        }
     }
 }
