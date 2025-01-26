@@ -242,39 +242,4 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         this.config = config;
     }
 
-    public static void main(String[] args) {
-
-        Map<String, User> map = new ConcurrentHashMap<>();
-
-        map.compute("zhangsan ", (k,v) -> {
-            if (v == null) {
-                return new User("张三");
-            }
-            return v;
-        });
-        map.compute("zhangsan ", (k,v) -> {
-            if (v == null) {
-                return new User("何鲁丽");
-            }
-            return v;
-        });
-        for (Map.Entry<String, User> entry : map.entrySet()) {
-            System.out.println(entry.getKey() + ", "+ entry.getValue());
-        }
-    }
-
-    static class User {
-        String name;
-        public User(String name) {
-            this.name = name;
-            System.out.println("asd");
-        }
-
-        @Override
-        public String toString() {
-            return "User{" +
-                    "name='" + name + '\'' +
-                    '}';
-        }
-    }
 }
