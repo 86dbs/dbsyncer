@@ -127,10 +127,13 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             querySql.append(notContainsWhere ? " WHERE " : StringUtil.EMPTY);
             PrimaryKeyUtil.buildSql(querySql, primaryKeys, quotation, " AND ", " = ? ", notContainsWhere);
             DqlMapper dqlMapper = new DqlMapper(instance, sqlName, querySql.toString(), sqlColumns, tablePKIndex, sqlPKIndexMap);
-            if (!dqlMap.containsKey(tableName)) {
-                dqlMap.putIfAbsent(tableName, new ArrayList<>());
-            }
-            dqlMap.get(tableName).add(dqlMapper);
+            dqlMap.compute(tableName, (k, v)-> {
+                if(v == null) {
+                    return new ArrayList<>();
+                }
+                return v;
+            }).add(dqlMapper);
+
             // 注册监听表名
             filterTable.add(tableName);
         }

@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class CacheServiceImpl implements CacheService {
 
-    private Map<String, Object> cache = new ConcurrentHashMap<>();
+    private final Map<String, Object> cache = new ConcurrentHashMap<>();
 
     @Override
     public Object put(String key, Object value) {

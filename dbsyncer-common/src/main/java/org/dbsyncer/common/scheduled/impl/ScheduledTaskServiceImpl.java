@@ -73,7 +73,12 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService, Disposabl
             logger.error(msg);
             throw new CommonException(msg);
         }
-        map.putIfAbsent(key, scheduledFutureMapper.apply());
+        map.compute(key, (k,v) -> {
+            if (v == null) {
+                return scheduledFutureMapper.apply();
+            }
+            return v;
+        });
     }
 
     @Override
