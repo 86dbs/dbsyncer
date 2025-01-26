@@ -28,8 +28,6 @@ public final class TableGroupContextImpl implements TableGroupContext {
      */
     private final Map<String, InnerMapping> tableGroupMap = new ConcurrentHashMap<>();
 
-    private final List<TableGroupPicker> EMPTY_LIST = new ArrayList<>();
-
     @Override
     public void put(Mapping mapping, List<TableGroup> tableGroups) {
         tableGroupMap.computeIfAbsent(mapping.getMetaId(), k -> {
@@ -44,11 +42,15 @@ public final class TableGroupContextImpl implements TableGroupContext {
 
     @Override
     public List<TableGroupPicker> getTableGroupPickers(String metaId, String tableName) {
-        InnerMapping innerMapping = tableGroupMap.get(metaId);
-        if (innerMapping != null) {
-            return innerMapping.get(tableName);
-        }
-        return EMPTY_LIST;
+        List<TableGroupPicker> list = new ArrayList<>();
+        tableGroupMap.computeIfPresent(metaId, (k, innerMapping) -> {
+            innerMapping.pickerMap.computeIfPresent(tableName, (x, pickers) -> {
+                list.addAll(pickers);
+                return pickers;
+            });
+            return innerMapping;
+        });
+        return list;
     }
 
     @Override
@@ -58,10 +60,6 @@ public final class TableGroupContextImpl implements TableGroupContext {
 
     static final class InnerMapping {
         Map<String, List<TableGroupPicker>> pickerMap = new ConcurrentHashMap<>();
-
-        public List<TableGroupPicker> get(String tableName) {
-            return pickerMap.get(tableName);
-        }
 
         public void add(String tableName, TableGroup tableGroup) {
             pickerMap.computeIfAbsent(tableName, k -> new ArrayList<>()).add(new TableGroupPicker(tableGroup));
