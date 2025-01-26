@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.parser.impl;
 
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.parser.ParserException;
@@ -11,6 +10,7 @@ import org.dbsyncer.parser.command.impl.PersistenceCommand;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.GroupStrategyEnum;
 import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.model.QueryConfig;
 import org.dbsyncer.parser.strategy.GroupStrategy;
@@ -24,10 +24,9 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 操作配置模板
@@ -58,28 +57,30 @@ public final class OperationTemplate {
 
     public <T> List<T> queryAll(QueryConfig<T> query) {
         String groupId = getGroupId(query.getConfigModel(), query.getGroupStrategyEnum());
-        Group group = cacheService.get(groupId, Group.class);
-        if (null != group) {
-            List<String> index = group.getIndex();
-            if (!CollectionUtils.isEmpty(index)) {
-                List<T> list = new ArrayList<>();
-                index.forEach(e -> {
-                    Object v = cacheService.get(e);
-                    if (null != v) {
-                        list.add((T) v);
-                    }
-                });
-                return list;
-            }
-        }
-        return Collections.EMPTY_LIST;
+        List<T> list = new ArrayList<>();
+        cacheService.getCache().computeIfPresent(groupId, (k, v) -> {
+            Group group = (Group) v;
+            group.getIndex().forEach(id ->
+                cacheService.getCache().computeIfPresent(id, (x,y) -> {
+                    list.add((T) y);
+                    return y;
+                })
+            );
+            return group;
+        });
+        return list;
     }
 
     public int queryCount(QueryConfig query) {
         ConfigModel model = query.getConfigModel();
         String groupId = getGroupId(model, query.getGroupStrategyEnum());
-        Group group = cacheService.get(groupId, Group.class);
-        return null != group ? group.getIndex().size() : 0;
+        AtomicInteger count = new AtomicInteger();
+        cacheService.getCache().computeIfPresent(groupId, (k, v) -> {
+            Group group = (Group) v;
+            count.set(group.size());
+            return group;
+        });
+        return count.get();
     }
 
     public <T> T queryObject(Class<T> clazz, String id) {
@@ -114,10 +115,16 @@ public final class OperationTemplate {
 
         // 2、分组
         String groupId = getGroupId(model, strategy);
-        cacheService.putIfAbsent(groupId, new Group());
-        Group group = cacheService.get(groupId, Group.class);
-        group.addIfAbsent(id);
-        logger.debug("Put the model [{}] for {} group into cache.", id, groupId);
+        cacheService.getCache().compute(groupId, (k, v) -> {
+            Group group = (Group) v;
+            if (group == null) {
+                group = new Group();
+            }
+            if (!group.contains(id)) {
+                group.add(id);
+            }
+            return group;
+        });
     }
 
     public void remove(OperationConfig config) {
@@ -126,13 +133,11 @@ public final class OperationTemplate {
         // 删除分组
         ConfigModel model = cacheService.get(id, ConfigModel.class);
         String groupId = getGroupId(model, config.getGroupStrategyEnum());
-        Group group = cacheService.get(groupId, Group.class);
-        if (null != group) {
+        cacheService.getCache().computeIfPresent(groupId, (k, v) -> {
+            Group group = (Group) v;
             group.remove(id);
-            if (0 >= group.size()) {
-                cacheService.remove(groupId);
-            }
-        }
+            return group.isEmpty() ? null : group;
+        });
         cacheService.remove(id);
         storageService.remove(StorageEnum.CONFIG, id);
     }
@@ -146,37 +151,6 @@ public final class OperationTemplate {
         String groupId = groupStrategy.getGroupId(model);
         Assert.hasText(groupId, "GroupId can not be empty.");
         return groupId;
-    }
-
-    public class Group {
-
-        private List<String> index;
-
-        public Group() {
-            this.index = new LinkedList<>();
-        }
-
-        public synchronized void addIfAbsent(String e) {
-            if (!index.contains(e)) {
-                index.add(e);
-            }
-        }
-
-        public synchronized void remove(String e) {
-            index.remove(e);
-        }
-
-        public int size() {
-            return index.size();
-        }
-
-        public List<String> getIndex() {
-            return Collections.unmodifiableList(index);
-        }
-
-        public void setIndex(List<String> index) {
-            this.index = index;
-        }
     }
 
 }

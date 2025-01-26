@@ -23,8 +23,8 @@ public class CacheServiceImpl implements CacheService {
     }
 
     @Override
-    public Object putIfAbsent(String key, Object value) {
-        return cache.putIfAbsent(key, value);
+    public Map<String, Object> getCache() {
+        return cache;
     }
 
     @Override

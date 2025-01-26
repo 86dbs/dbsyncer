@@ -123,10 +123,15 @@ public class OpenApiController implements InitializingBean {
                 // 匹配解析包
                 for (int i = 0; i < length; i++) {
                     if (StringUtil.startsWith((String) array[i], obj.getKey())) {
-                        Object bean = applicationContext.getBean(v.getBeanType());
-                        InvocableHandlerMethod invocableHandlerMethod = new InvocableHandlerMethod(bean, v.getMethod());
-                        invocableHandlerMethod.setHandlerMethodArgumentResolvers(resolvers);
-                        handlers.putIfAbsent((String) array[i], invocableHandlerMethod);
+                        handlers.compute((String) array[i], (x, y) -> {
+                            if (y == null) {
+                                Object bean = applicationContext.getBean(v.getBeanType());
+                                InvocableHandlerMethod invocableHandlerMethod = new InvocableHandlerMethod(bean, v.getMethod());
+                                invocableHandlerMethod.setHandlerMethodArgumentResolvers(resolvers);
+                                return invocableHandlerMethod;
+                            }
+                            return y;
+                        });
                         filter = true;
                         break;
                     }

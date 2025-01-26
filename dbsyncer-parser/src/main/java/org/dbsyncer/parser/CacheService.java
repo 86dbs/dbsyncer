@@ -19,13 +19,11 @@ public interface CacheService {
     Object put(String key, Object value);
 
     /**
-     * 存放K-V，不存在k则写入
+     * 获取缓存
      *
-     * @param key
-     * @param value
      * @return
      */
-    Object putIfAbsent(String key, Object value);
+    Map<String, Object> getCache();
 
     /**
      * 根据Key删除

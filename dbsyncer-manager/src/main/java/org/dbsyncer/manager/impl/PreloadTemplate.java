@@ -18,6 +18,7 @@ import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.impl.OperationTemplate;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
@@ -175,18 +176,13 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         if (null == config) {
             return;
         }
-        OperationTemplate.Group group = JsonUtil.jsonToObj(config.toString(), OperationTemplate.Group.class);
-        if (null == group) {
+        Group group = JsonUtil.jsonToObj(config.toString(), Group.class);
+        if (null == group || group.isEmpty()) {
             return;
         }
 
-        List<String> index = group.getIndex();
-        if (CollectionUtils.isEmpty(index)) {
-            return;
-        }
-
-        for (String e : index) {
-            Map m = map.get(e);
+        for (String id : group.getIndex()) {
+            Map m = map.get(id);
             ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(profileComponent, m.toString()));
             operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, commandEnum.getGroupStrategyEnum()));
             // Load tableGroups
