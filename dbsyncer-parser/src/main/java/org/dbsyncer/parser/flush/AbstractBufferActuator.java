@@ -202,7 +202,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         return config.getBufferQueueCapacity();
     }
 
-    private void submit() throws IllegalAccessException, InstantiationException {
+    private void submit() {
         if (queue.isEmpty()) {
             return;
         }
