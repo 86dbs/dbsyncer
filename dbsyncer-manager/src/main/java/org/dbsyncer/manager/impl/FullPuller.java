@@ -151,7 +151,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         meta.setUpdateTime(Instant.now().toEpochMilli());
         Map<String, String> snapshot = meta.getSnapshot();
         snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(task.getPageIndex()));
-        snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.join(task.getCursors(), ","));
+        snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.getIfBlank(StringUtil.join(task.getCursors(), StringUtil.COMMA), StringUtil.EMPTY));
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(task.getTableGroupIndex()));
         profileComponent.editConfigModel(meta);
     }

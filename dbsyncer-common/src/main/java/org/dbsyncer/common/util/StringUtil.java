@@ -47,6 +47,10 @@ public abstract class StringUtil {
         return StringUtils.isNotBlank(cs);
     }
 
+    public static String getIfBlank(final String str, final String defaultStr) {
+        return isBlank(str) ? defaultStr : str;
+    }
+
     public static String[] split(String str, String separatorChars) {
         return StringUtils.split(str, separatorChars);
     }

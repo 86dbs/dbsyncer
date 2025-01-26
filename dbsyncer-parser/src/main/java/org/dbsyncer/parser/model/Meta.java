@@ -3,8 +3,8 @@ package org.dbsyncer.parser.model;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -50,7 +50,7 @@ public class Meta extends ConfigModel {
         this.total = new AtomicLong(0);
         this.success = new AtomicLong(0);
         this.fail = new AtomicLong(0);
-        this.snapshot = new ConcurrentHashMap<>();
+        this.snapshot = new HashMap<>();
         this.beginTime = 0L;
         this.endTime = 0L;
     }

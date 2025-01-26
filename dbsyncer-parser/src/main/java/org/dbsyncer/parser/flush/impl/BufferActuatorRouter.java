@@ -57,6 +57,7 @@ public final class BufferActuatorRouter implements DisposableBean {
                 });
                 return processor;
             });
+            return;
         }
         offer(generalBufferActuator, event);
     }
