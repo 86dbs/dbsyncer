@@ -48,7 +48,7 @@ public abstract class StringUtil {
     }
 
     public static String getIfBlank(final String str, final String defaultStr) {
-        return isBlank(str) ? defaultStr : str;
+        return isNotBlank(str) ? str : defaultStr;
     }
 
     public static String[] split(String str, String separatorChars) {
