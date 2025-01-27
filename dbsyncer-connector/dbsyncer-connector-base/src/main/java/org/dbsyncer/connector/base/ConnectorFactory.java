@@ -15,6 +15,7 @@ import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Component;
@@ -181,7 +182,12 @@ public class ConnectorFactory implements DisposableBean {
         if (connector instanceof AbstractConnector) {
             AbstractConnector conn = (AbstractConnector) connector;
             try {
-                conn.convertProcessBeforeWriter(connectorInstance, config);
+                SchemaResolver schemaResolver = connector.getSchemaResolver();
+                if (config.isEnableSchemaResolver() && schemaResolver != null) {
+                    conn.convertProcessBeforeWriter(schemaResolver, config);
+                } else {
+                    conn.convertProcessBeforeWriter(connectorInstance, config);
+                }
             } catch (Exception e) {
                 Result result = new Result();
                 result.getError().append(e.getMessage());

@@ -26,12 +26,11 @@ import java.util.List;
  */
 public final class DQLSqlServerConnector extends AbstractDQLConnector {
 
-    private final String TYPE = "DqlSqlServer";
     private final DqlSqlServerConfigValidator configValidator = new DqlSqlServerConfigValidator();
 
     @Override
     public String getConnectorType() {
-        return TYPE;
+        return "DqlSqlServer";
     }
 
     @Override

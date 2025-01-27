@@ -40,22 +40,11 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String TYPE = "Kafka";
     private final KafkaConfigValidator configValidator = new KafkaConfigValidator();
 
     @Override
     public String getConnectorType() {
-        return TYPE;
-    }
-
-    @Override
-    public boolean isSupportedTiming() {
-        return false;
-    }
-
-    @Override
-    public boolean isSupportedLog() {
-        return false;
+        return "Kafka";
     }
 
     @Override

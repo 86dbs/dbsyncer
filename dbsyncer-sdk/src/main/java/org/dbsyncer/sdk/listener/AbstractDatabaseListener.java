@@ -8,7 +8,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
@@ -33,7 +32,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
      * 自定义SQL，支持1对多
      * <p>MY_USER > [用户表1, 用户表2]
      */
-    private Map<String, List<DqlMapper>> dqlMap = new ConcurrentHashMap<>();
+    private final Map<String, List<DqlMapper>> dqlMap = new ConcurrentHashMap<>();
 
     /**
      * 发送增量事件
@@ -58,7 +57,6 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             return;
         }
 
-        RowChangedEvent changedEvent = (RowChangedEvent) event;
         boolean processed = false;
         for (DqlMapper dqlMapper : dqlMappers) {
             if (!processed) {
@@ -66,21 +64,21 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
                     case ConnectorConstant.OPERTION_UPDATE:
                     case ConnectorConstant.OPERTION_INSERT:
                         try {
-                            queryDqlData(dqlMapper, changedEvent.getDataList());
+                            queryDqlData(dqlMapper, event.getChangedRow());
                         } catch (Exception e) {
                             return;
                         }
                         break;
                     case ConnectorConstant.OPERTION_DELETE:
-                        getPKData(dqlMapper, changedEvent.getDataList());
+                        getPKData(dqlMapper, event.getChangedRow());
                         break;
                     default:
                         break;
                 }
                 processed = true;
             }
-            changedEvent.setSourceTableName(dqlMapper.sqlName);
-            changeEvent(changedEvent);
+            event.setSourceTableName(dqlMapper.sqlName);
+            changeEvent(event);
         }
     }
 
@@ -129,10 +127,13 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             querySql.append(notContainsWhere ? " WHERE " : StringUtil.EMPTY);
             PrimaryKeyUtil.buildSql(querySql, primaryKeys, quotation, " AND ", " = ? ", notContainsWhere);
             DqlMapper dqlMapper = new DqlMapper(instance, sqlName, querySql.toString(), sqlColumns, tablePKIndex, sqlPKIndexMap);
-            if (!dqlMap.containsKey(tableName)) {
-                dqlMap.putIfAbsent(tableName, new ArrayList<>());
-            }
-            dqlMap.get(tableName).add(dqlMapper);
+            dqlMap.compute(tableName, (k, v)-> {
+                if(v == null) {
+                    return new ArrayList<>();
+                }
+                return v;
+            }).add(dqlMapper);
+
             // 注册监听表名
             filterTable.add(tableName);
         }
@@ -193,7 +194,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
         }
     }
 
-    final class DqlMapper {
+    static final class DqlMapper {
         DatabaseConnectorInstance instance;
         String sqlName;
         String sql;

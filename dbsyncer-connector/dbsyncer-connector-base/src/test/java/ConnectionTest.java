@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -119,6 +120,17 @@ public class ConnectionTest {
 
         TimeUnit.SECONDS.sleep(3);
         logger.info("test end");
+    }
+
+    @Test
+    public void testQuery() {
+        final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
+        // 3、执行SQL
+        String querySql = "SELECT * from test_schema where id = ?";
+        Object[] args = new Object[1];
+        args[0] = 9999999;
+        List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, args));
+        logger.info("test list={}", list);
     }
 
     @Test
@@ -433,7 +445,7 @@ public class ConnectionTest {
 
     private DatabaseConfig createMysqlConfig() {
         DatabaseConfig config = new DatabaseConfig();
-        config.setUrl("jdbc:mysql://127.0.0.1:3305/test?rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true&failOverReadOnly=false");
+        config.setUrl("jdbc:mysql://127.0.0.1:3305/test?rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true&failOverReadOnly=false&tinyInt1isBit=false");
         config.setUsername("root");
         config.setPassword("123");
         config.setDriverClassName("com.mysql.cj.jdbc.Driver");

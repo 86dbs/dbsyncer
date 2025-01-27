@@ -2,9 +2,8 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.parser.flush.BufferRequest;
 import org.dbsyncer.sdk.listener.ChangedEvent;
-import org.dbsyncer.sdk.model.ChangedOffset;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * @author AE86
@@ -13,30 +12,24 @@ import java.util.Map;
  */
 public class WriterRequest extends AbstractWriter implements BufferRequest {
 
-    private Map row;
+    private final List<Object> row;
 
-    private ChangedOffset changedOffset;
-
-    public WriterRequest(String tableGroupId, ChangedEvent event) {
+    public WriterRequest(ChangedEvent event) {
         setTypeEnum(event.getType());
-        setTableGroupId(tableGroupId);
+        setChangedOffset(event.getChangedOffset());
+        setTableName(event.getSourceTableName());
         setEvent(event.getEvent());
         setSql(event.getSql());
         this.row = event.getChangedRow();
-        this.changedOffset = event.getChangedOffset();
     }
 
     @Override
     public String getMetaId() {
-        return changedOffset.getMetaId();
+        return getChangedOffset().getMetaId();
     }
 
-    public Map getRow() {
+    public List<Object> getRow() {
         return row;
-    }
-
-    public ChangedOffset getChangedOffset() {
-        return changedOffset;
     }
 
 }

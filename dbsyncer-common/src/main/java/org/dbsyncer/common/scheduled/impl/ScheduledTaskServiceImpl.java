@@ -32,7 +32,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService, Disposabl
     @Resource
     private ThreadPoolTaskScheduler taskScheduler;
 
-    private Map<String, ScheduledFuture> map = new ConcurrentHashMap<>();
+    private final Map<String, ScheduledFuture> map = new ConcurrentHashMap<>();
 
     @Override
     public void start(String key, String cron, ScheduledTaskJob job) {
@@ -73,7 +73,12 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService, Disposabl
             logger.error(msg);
             throw new CommonException(msg);
         }
-        map.putIfAbsent(key, scheduledFutureMapper.apply());
+        map.compute(key, (k,v) -> {
+            if (v == null) {
+                return scheduledFutureMapper.apply();
+            }
+            return v;
+        });
     }
 
     @Override

@@ -40,14 +40,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected final Map<Integer, ValueMapper> VALUE_MAPPERS = new LinkedHashMap<>();
+    protected final Map<Integer, ValueMapper> VALUE_MAPPERS = new ConcurrentHashMap<>();
 
     public AbstractConnector() {
         // 常用类型
@@ -84,15 +84,6 @@ public abstract class AbstractConnector {
     }
 
     /**
-     * 获取标准数据类型解析器
-     *
-     * @return
-     */
-    protected SchemaResolver getSchemaResolver() {
-        return null;
-    }
-
-    /**
      * 转换字段值
      *
      * @param connectorInstance
@@ -100,12 +91,6 @@ public abstract class AbstractConnector {
      */
     public void convertProcessBeforeWriter(ConnectorInstance connectorInstance, WriterBatchConfig config) {
         if (CollectionUtils.isEmpty(config.getFields()) || CollectionUtils.isEmpty(config.getData())) {
-            return;
-        }
-
-        final SchemaResolver resolver = getSchemaResolver();
-        if (resolver != null) {
-            convert(config, resolver);
             return;
         }
 
@@ -131,7 +116,11 @@ public abstract class AbstractConnector {
         }
     }
 
-    private void convert(WriterBatchConfig config, SchemaResolver resolver) {
+    public void convertProcessBeforeWriter(SchemaResolver resolver, WriterBatchConfig config) {
+        if (CollectionUtils.isEmpty(config.getFields()) || CollectionUtils.isEmpty(config.getData())) {
+            return;
+        }
+
         for (Map row : config.getData()) {
             for (Field f : config.getFields()) {
                 if (null == f) {

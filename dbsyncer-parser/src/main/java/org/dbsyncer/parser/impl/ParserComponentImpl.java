@@ -133,7 +133,7 @@ public class ParserComponentImpl implements ParserComponent {
         String tTableName = group.getTargetTable().getName();
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
         // 获取同步字段
-        Picker picker = new Picker(fieldMapping);
+        Picker picker = new Picker(group);
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
         final FullPluginContext context = new FullPluginContext();
         context.setSourceConnectorInstance(connectorFactory.connect(sConfig));
@@ -220,7 +220,8 @@ public class ParserComponentImpl implements ParserComponent {
         int total = dataList.size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(context.getTargetConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, dataList, context.isForceUpdate()));
+            WriterBatchConfig batchConfig = new WriterBatchConfig(tableName, event, command, fields, dataList, context.isForceUpdate(), context.isEnableSchemaResolver());
+            return connectorFactory.writer(context.getTargetConnectorInstance(), batchConfig);
         }
 
         // 批量任务, 拆分
@@ -242,7 +243,8 @@ public class ParserComponentImpl implements ParserComponent {
 
             executor.execute(() -> {
                 try {
-                    Result w = connectorFactory.writer(context.getTargetConnectorInstance(), new WriterBatchConfig(tableName, event, command, fields, data, context.isForceUpdate()));
+                    WriterBatchConfig batchConfig = new WriterBatchConfig(tableName, event, command, fields, data, context.isForceUpdate(), context.isEnableSchemaResolver());
+                    Result w = connectorFactory.writer(context.getTargetConnectorInstance(), batchConfig);
                     result.addSuccessData(w.getSuccessData());
                     result.addFailData(w.getFailData());
                     result.getError().append(w.getError());

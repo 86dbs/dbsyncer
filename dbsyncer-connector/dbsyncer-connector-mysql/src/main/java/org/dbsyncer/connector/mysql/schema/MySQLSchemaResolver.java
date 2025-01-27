@@ -5,7 +5,6 @@ package org.dbsyncer.connector.mysql.schema;
 
 import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.connector.mysql.schema.support.*;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
@@ -22,14 +21,10 @@ import java.util.stream.Stream;
  */
 public final class MySQLSchemaResolver extends AbstractSchemaResolver {
 
-    private MySQLBytesType bytesType;
-
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
-        bytesType = new MySQLBytesType();
         Stream.of(
-                new MySQLBooleanType(),
-                bytesType,
+                new MySQLBytesType(),
                 new MySQLByteType(),
                 new MySQLDateType(),
                 new MySQLDecimalType(),
@@ -49,15 +44,4 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
         }));
     }
 
-    @Override
-    protected DataType getDataType(Map<String, DataType> mapping, Field field) {
-        DataType dataType = super.getDataType(mapping, field);
-        // bit(n > 1)
-        if (dataType instanceof MySQLBooleanType) {
-            if (field.getColumnSize() > 1) {
-                return bytesType;
-            }
-        }
-        return dataType;
-    }
 }

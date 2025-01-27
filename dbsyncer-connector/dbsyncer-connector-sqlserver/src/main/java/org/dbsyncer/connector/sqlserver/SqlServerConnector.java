@@ -43,12 +43,11 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     private final String SET_TABLE_IDENTITY_ON = "set identity_insert %s.[%s] on;";
     private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
 
-    private final String TYPE = "SqlServer";
     private final SqlServerConfigValidator configValidator = new SqlServerConfigValidator();
 
     @Override
     public String getConnectorType() {
-        return TYPE;
+        return "SqlServer";
     }
 
     @Override

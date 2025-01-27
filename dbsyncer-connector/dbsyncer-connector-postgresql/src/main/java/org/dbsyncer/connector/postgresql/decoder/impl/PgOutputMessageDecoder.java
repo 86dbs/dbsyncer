@@ -21,9 +21,9 @@ import org.springframework.util.Assert;
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @Author AE86
@@ -36,7 +36,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
 
     private static final LocalDateTime PG_EPOCH = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
     private static final String GET_TABLE_SCHEMA = "select t.oid,t.relname as tableName from pg_class t inner join (select ns.oid as nspoid, ns.nspname from pg_namespace ns where ns.nspname = '%s') as n on n.nspoid = t.relnamespace where relkind = 'r'";
-    private static final Map<Integer, TableId> tables = new LinkedHashMap<>();
+    private static final Map<Integer, TableId> tables = new ConcurrentHashMap<>();
     private ConnectorService connectorService;
     private DatabaseConnectorInstance connectorInstance;
 

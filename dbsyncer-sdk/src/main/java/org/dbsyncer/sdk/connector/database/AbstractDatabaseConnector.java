@@ -50,21 +50,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    /**
-     * 系统函数表达式$convert()$
-     */
-    private final String SYS_EXPRESSION = "^[$].*[$]$";
-
-    @Override
-    public boolean isSupportedTiming() {
-        return true;
-    }
-
-    @Override
-    public boolean isSupportedLog() {
-        return true;
-    }
-
     @Override
     public Class<DatabaseConfig> getConfigClass() {
         return DatabaseConfig.class;
@@ -524,7 +509,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             // 排除定时表达式
             if (QuartzFilterEnum.getQuartzFilterEnum(value) == null) {
                 // 系统函数表达式 $select max(update_time)$
-                Matcher matcher = Pattern.compile(SYS_EXPRESSION).matcher(value);
+                Matcher matcher = Pattern.compile("^[$].*[$]$").matcher(value);
                 if (matcher.find()) {
                     return StringUtil.substring(value, 1, value.length() - 1);
                 }

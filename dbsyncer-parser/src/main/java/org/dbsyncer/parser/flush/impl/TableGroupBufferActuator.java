@@ -34,7 +34,7 @@ public class TableGroupBufferActuator extends GeneralBufferActuator implements C
 
     private String taskKey;
 
-    private String tableGroupId;
+    private String tableName;
 
     private volatile boolean running;
 
@@ -44,7 +44,7 @@ public class TableGroupBufferActuator extends GeneralBufferActuator implements C
     }
 
     @Override
-    protected boolean isRunning(BufferRequest request) {
+    public boolean isRunning(BufferRequest request) {
         return running;
     }
 
@@ -61,7 +61,7 @@ public class TableGroupBufferActuator extends GeneralBufferActuator implements C
         int coreSize = tableGroupBufferConfig.getThreadCoreSize();
         int maxSize = tableGroupBufferConfig.getMaxThreadSize();
         int queueCapacity = tableGroupBufferConfig.getThreadQueueCapacity();
-        String threadNamePrefix = "TableGroupExecutor-" + tableGroupId + StringUtil.SYMBOL;
+        String threadNamePrefix = "TableGroupExecutor-" + tableName + StringUtil.SYMBOL + tableName.hashCode() + StringUtil.SYMBOL;
         threadPoolTaskExecutor = ThreadPoolUtil.newThreadPoolTaskExecutor(coreSize, maxSize, queueCapacity, 30, threadNamePrefix);
         running = true;
         scheduledTaskService.start(taskKey, tableGroupBufferConfig.getBufferPeriodMillisecond(), this);
@@ -80,11 +80,11 @@ public class TableGroupBufferActuator extends GeneralBufferActuator implements C
         scheduledTaskService.stop(taskKey);
     }
 
-    public String getTableGroupId() {
-        return tableGroupId;
+    public String getTableName() {
+        return tableName;
     }
 
-    public void setTableGroupId(String tableGroupId) {
-        this.tableGroupId = tableGroupId;
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
     }
 }

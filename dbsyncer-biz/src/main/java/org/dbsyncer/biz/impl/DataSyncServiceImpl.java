@@ -39,9 +39,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -113,7 +113,7 @@ public class DataSyncServiceImpl implements DataSyncService {
 
         // 3、反序列
         Map<String, Object> target = new HashMap<>();
-        final Picker picker = new Picker(tableGroup.getFieldMapping());
+        final Picker picker = new Picker(tableGroup);
         final Map<String, Field> fieldMap = picker.getTargetFieldMap();
         BinlogMap message = BinlogMap.parseFrom(bytes);
         message.getRowMap().forEach((k, v) -> {
@@ -122,7 +122,7 @@ public class DataSyncServiceImpl implements DataSyncService {
                     Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);
                     // 处理二进制对象显示
                     if (prettyBytes) {
-                        if (null != val && val instanceof byte[]) {
+                        if (val instanceof byte[]) {
                             byte[] b = (byte[]) val;
                             if (b.length > 128) {
                                 target.put(k, String.format("byte[%d]", b.length));
@@ -163,12 +163,14 @@ public class DataSyncServiceImpl implements DataSyncService {
         }
         TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
         String sourceTableName = tableGroup.getSourceTable().getName();
-        RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, Collections.EMPTY_LIST);
+
         // 转换为源字段
-        final Picker picker = new Picker(tableGroup.getFieldMapping());
-        changedEvent.setChangedRow(picker.pickSourceData(binlogData));
+        final Picker picker = new Picker(tableGroup);
+        List<Object> changedRow = picker.pickSourceData(binlogData);
+        RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow);
+
         // 执行同步是否成功
-        bufferActuatorRouter.execute(metaId, tableGroupId, changedEvent);
+        bufferActuatorRouter.execute(metaId, changedEvent);
         storageService.remove(StorageEnum.DATA, metaId, messageId);
         // 更新失败数
         Meta meta = profileComponent.getMeta(metaId);
@@ -181,7 +183,7 @@ public class DataSyncServiceImpl implements DataSyncService {
 
     private Map getData(String metaId, String messageId) {
         Query query = new Query(1, 1);
-        Map<String, FieldResolver> fieldResolvers = new LinkedHashMap<>();
+        Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
         fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
         query.setFieldResolverMap(fieldResolvers);
         query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);

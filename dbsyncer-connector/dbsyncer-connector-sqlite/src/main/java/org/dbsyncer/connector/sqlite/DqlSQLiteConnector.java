@@ -26,13 +26,11 @@ import java.util.List;
  */
 public final class DqlSQLiteConnector extends AbstractDQLConnector {
 
-    private final String TYPE = "DqlSQLite";
-
     private final DqlSQLiteConfigValidator configValidator = new DqlSQLiteConfigValidator();
 
     @Override
     public String getConnectorType() {
-        return TYPE;
+        return "DqlSQLite";
     }
 
     @Override

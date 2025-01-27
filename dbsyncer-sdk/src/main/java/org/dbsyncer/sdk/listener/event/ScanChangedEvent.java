@@ -5,7 +5,7 @@ package org.dbsyncer.sdk.listener.event;
 
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * 定时扫表变更事件
@@ -15,21 +15,21 @@ import java.util.Map;
  * @Date 2023-08-20 20:00
  */
 public final class ScanChangedEvent extends CommonChangedEvent {
+    private final List<Object> changedRow;
 
-    private int tableGroupIndex;
-
-    public ScanChangedEvent(int index, String event, Map<String, Object> changedRow) {
-        this.tableGroupIndex = index;
+    public ScanChangedEvent(String sourceTableName, String event, List<Object> data) {
+        setSourceTableName(sourceTableName);
         setEvent(event);
-        setChangedRow(changedRow);
-    }
-
-    public int getTableGroupIndex() {
-        return tableGroupIndex;
+        this.changedRow = data;
     }
 
     @Override
     public ChangedEventTypeEnum getType() {
         return ChangedEventTypeEnum.SCAN;
+    }
+
+    @Override
+    public List<Object> getChangedRow() {
+        return changedRow;
     }
 }

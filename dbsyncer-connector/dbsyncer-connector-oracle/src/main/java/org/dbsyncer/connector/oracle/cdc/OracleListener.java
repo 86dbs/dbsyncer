@@ -56,7 +56,6 @@ public class OracleListener extends AbstractDatabaseListener {
     @Override
     public void start() {
         try {
-            // TODO [increment-worker-1184659161326161921] 这里应该单独启动一个线程，线程名要有一定意义，如:binlog-parser-127.0.0.1:3306_123，便于监控排查问题
             final DatabaseConfig config = getConnectorInstance().getConfig();
             String driverClassName = config.getDriverClassName();
             String username = config.getUsername();
@@ -144,7 +143,7 @@ public class OracleListener extends AbstractDatabaseListener {
             String tableName = getTableName(alter.getTable());
             if (tableFiledMap.containsKey(tableName)) {
                 logger.info("sql:{}", event.getRedoSql());
-                trySendEvent(new DDLChangedEvent(null, tableName, ConnectorConstant.OPERTION_ALTER, event.getRedoSql(), null, event.getScn()));
+                trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER, event.getRedoSql(), null, event.getScn()));
             }
         }
     }

@@ -23,12 +23,11 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
  */
 public final class DQLOracleConnector extends AbstractDQLConnector {
 
-    private final String TYPE = "DqlOracle";
     private final DqlOracleConfigValidator configValidator = new DqlOracleConfigValidator();
 
     @Override
     public String getConnectorType() {
-        return TYPE;
+        return "DqlOracle";
     }
 
     @Override

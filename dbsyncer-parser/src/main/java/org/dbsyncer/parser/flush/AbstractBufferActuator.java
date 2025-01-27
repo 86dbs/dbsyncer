@@ -7,6 +7,7 @@ import org.dbsyncer.common.config.BufferActuatorConfig;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Meta;
@@ -17,10 +18,10 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.lang.reflect.ParameterizedType;
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -80,7 +81,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      */
     protected void buildQueueConfig() {
         taskLock = new ReentrantLock();
-        this.queue = new LinkedBlockingQueue(config.getBufferQueueCapacity());
+        this.queue = new LinkedBlockingQueue<>(config.getBufferQueueCapacity());
         logger.info("{} initialized with queue capacity: {}", this.getClass().getSimpleName(), config.getBufferQueueCapacity());
     }
 
@@ -106,7 +107,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      * @param request
      * @return
      */
-    protected boolean isRunning(BufferRequest request) {
+    public boolean isRunning(BufferRequest request) {
         Meta meta = profileComponent.getMeta(request.getMetaId());
         return meta != null && MetaEnum.isRunning(meta.getState());
     }
@@ -201,20 +202,26 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         return config.getBufferQueueCapacity();
     }
 
-    private void submit() throws IllegalAccessException, InstantiationException {
+    private void submit() {
         if (queue.isEmpty()) {
             return;
         }
 
         AtomicLong batchCounter = new AtomicLong();
-        Map<String, Response> map = new LinkedHashMap<>();
+        Map<String, Response> map = new ConcurrentHashMap<>();
         while (!queue.isEmpty() && batchCounter.get() < config.getBufferPullCount()) {
             Request poll = queue.poll();
             String key = getPartitionKey(poll);
-            if (!map.containsKey(key)) {
-                map.putIfAbsent(key, responseClazz.newInstance());
-            }
-            Response response = map.get(key);
+            Response response = map.compute(key, (k,v) -> {
+                if (v == null) {
+                    try {
+                        return responseClazz.newInstance();
+                    } catch (Exception e) {
+                        throw new ParserException(e);
+                    }
+                }
+                return v;
+            });
             partition(poll, response);
             batchCounter.incrementAndGet();
 
@@ -234,4 +241,5 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     public void setConfig(BufferActuatorConfig config) {
         this.config = config;
     }
+
 }

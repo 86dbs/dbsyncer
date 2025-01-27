@@ -8,6 +8,7 @@ import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.biz.vo.PluginVo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
@@ -22,9 +23,9 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -90,7 +91,7 @@ public class PluginServiceImpl implements PluginService {
     }
 
     private Map<String, List<String>> getPluginClassNameMap() {
-        Map<String, List<String>> map = new HashMap<>();
+        Map<String, List<String>> map = new ConcurrentHashMap<>();
         List<Mapping> mappingAll = profileComponent.getMappingAll();
         if (CollectionUtils.isEmpty(mappingAll)) {
             return map;
@@ -99,8 +100,7 @@ public class PluginServiceImpl implements PluginService {
         for (Mapping m : mappingAll) {
             Plugin plugin = m.getPlugin();
             if (null != plugin) {
-                map.putIfAbsent(plugin.getClassName(), new ArrayList<>());
-                map.get(plugin.getClassName()).add(m.getName());
+                putPluginMap(map, plugin.getClassName(), m.getName());
                 continue;
             }
 
@@ -111,13 +111,25 @@ public class PluginServiceImpl implements PluginService {
             for (TableGroup t : tableGroupAll) {
                 Plugin p = t.getPlugin();
                 if (null != p) {
-                    map.putIfAbsent(p.getClassName(), new ArrayList<>());
-                    map.get(p.getClassName()).add(m.getName());
+                    putPluginMap(map, p.getClassName(), m.getName());
                     break;
                 }
             }
         }
 
         return map;
+    }
+
+    private void putPluginMap(Map<String, List<String>> map, String className, String name) {
+        map.compute(className, (k,v) -> {
+            if (v == null) {
+                try {
+                    return new ArrayList<>();
+                } catch (Exception e) {
+                    throw new ParserException(e);
+                }
+            }
+            return v;
+        }).add(name);
     }
 }

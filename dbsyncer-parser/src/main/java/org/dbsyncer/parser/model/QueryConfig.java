@@ -7,7 +7,7 @@ import org.dbsyncer.parser.enums.GroupStrategyEnum;
 
 public class QueryConfig<T> {
 
-    private ConfigModel configModel;
+    private final ConfigModel configModel;
 
     private GroupStrategyEnum groupStrategyEnum = GroupStrategyEnum.DEFAULT;
 

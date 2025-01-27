@@ -36,12 +36,11 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     private final String QUERY_VIEW = "SELECT name FROM sqlite_master WHERE type = 'view'";
     private final String QUERY_TABLE = "SELECT name FROM sqlite_master WHERE type='table'";
 
-    private final String TYPE = "SQLite";
     private final SQLiteConfigValidator configValidator = new SQLiteConfigValidator();
 
     @Override
     public String getConnectorType() {
-        return TYPE;
+        return "SQLite";
     }
 
     @Override
