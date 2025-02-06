@@ -7,7 +7,6 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
-import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 
@@ -49,15 +48,11 @@ public abstract class PrimaryKeyUtil {
     /**
      * 返回主键属性字段集合
      *
-     * @param config
+     * @param fields
      * @return
      */
-    public static List<Field> findConfigPrimaryKeyFields(WriterBatchConfig config) {
-        if (null == config) {
-            throw new SdkException("The config is null.");
-        }
-
-        List<Field> list = findPrimaryKeyFields(config.getFields());
+    public static List<Field> findExistPrimaryKeyFields(List<Field> fields) {
+        List<Field> list = findPrimaryKeyFields(fields);
         if (CollectionUtils.isEmpty(list)) {
             throw new SdkException("主键为空");
         }

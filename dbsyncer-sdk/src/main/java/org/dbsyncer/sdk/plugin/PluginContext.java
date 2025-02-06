@@ -95,6 +95,8 @@ public interface PluginContext extends BaseContext {
      */
     List<Map> getTargetList();
 
+    void setTargetList(List<Map> targetList);
+
     /**
      * 获取插件参数
      *
@@ -102,4 +104,11 @@ public interface PluginContext extends BaseContext {
      */
     String getPluginExtInfo();
 
+    /**
+     * 浅拷贝
+     *
+     * @return
+     * @throws CloneNotSupportedException
+     */
+    Object clone() throws CloneNotSupportedException;
 }

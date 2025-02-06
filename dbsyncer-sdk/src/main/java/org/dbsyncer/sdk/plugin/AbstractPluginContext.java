@@ -11,7 +11,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2022/6/30 16:00
  */
-public abstract class AbstractPluginContext implements PluginContext {
+public abstract class AbstractPluginContext implements PluginContext, Cloneable {
 
     /**
      * 是否终止任务
@@ -211,5 +211,10 @@ public abstract class AbstractPluginContext implements PluginContext {
 
     public void setPluginExtInfo(String pluginExtInfo) {
         this.pluginExtInfo = pluginExtInfo;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

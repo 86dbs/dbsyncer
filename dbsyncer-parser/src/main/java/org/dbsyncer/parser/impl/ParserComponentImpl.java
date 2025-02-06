@@ -10,7 +10,12 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.event.FullRefreshEvent;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Picker;
+import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -18,11 +23,9 @@ import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.FullPluginContext;
 import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
@@ -149,6 +152,7 @@ public class ParserComponentImpl implements ParserComponent {
         context.setTargetFields(picker.getTargetFields());
         context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
         context.setPageSize(mapping.getReadNum());
+        context.setEnableSchemaResolver(profileComponent.getSystemConfig().isEnableSchemaResolver());
         // 0、插件前置处理
         pluginFactory.process(group.getPlugin(), context, ProcessEnum.BEFORE);
 
@@ -212,16 +216,11 @@ public class ParserComponentImpl implements ParserComponent {
 
         List<Map> dataList = context.getTargetList();
         int batchSize = context.getBatchSize();
-        String tableName = context.getTargetTableName();
-        String event = context.getEvent();
-        Map<String, String> command = context.getCommand();
-        List<Field> fields = context.getTargetFields();
         // 总数
         int total = dataList.size();
         // 单次任务
         if (total <= batchSize) {
-            WriterBatchConfig batchConfig = new WriterBatchConfig(tableName, event, command, fields, dataList, context.isForceUpdate(), context.isEnableSchemaResolver());
-            return connectorFactory.writer(context.getTargetConnectorInstance(), batchConfig);
+            return connectorFactory.writer(context);
         }
 
         // 批量任务, 拆分
@@ -241,19 +240,25 @@ public class ParserComponentImpl implements ParserComponent {
                 toIndex += batchSize;
             }
 
-            executor.execute(() -> {
-                try {
-                    WriterBatchConfig batchConfig = new WriterBatchConfig(tableName, event, command, fields, data, context.isForceUpdate(), context.isEnableSchemaResolver());
-                    Result w = connectorFactory.writer(context.getTargetConnectorInstance(), batchConfig);
-                    result.addSuccessData(w.getSuccessData());
-                    result.addFailData(w.getFailData());
-                    result.getError().append(w.getError());
-                } catch (Exception e) {
-                    logger.error(e.getMessage());
-                } finally {
-                    latch.countDown();
-                }
-            });
+            try {
+                PluginContext tmpContext = (PluginContext) context.clone();
+                tmpContext.setTargetList(data);
+                executor.execute(() -> {
+                    try {
+                        Result w = connectorFactory.writer(tmpContext);
+                        result.addSuccessData(w.getSuccessData());
+                        result.addFailData(w.getFailData());
+                        result.getError().append(w.getError());
+                    } catch (Exception e) {
+                        logger.error(e.getMessage());
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            } catch (CloneNotSupportedException e) {
+                logger.error(e.getMessage(), e);
+                latch.countDown();
+            }
         }
         try {
             latch.await();

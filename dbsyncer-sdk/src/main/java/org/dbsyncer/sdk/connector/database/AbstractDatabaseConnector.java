@@ -18,6 +18,7 @@ import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.*;
+import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.DatabaseUtil;
@@ -148,14 +149,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public Result writer(DatabaseConnectorInstance connectorInstance, WriterBatchConfig config) {
-        String event = config.getEvent();
-        List<Map> data = config.getData();
+    public Result writer(DatabaseConnectorInstance connectorInstance, PluginContext context) {
+        String event = context.getEvent();
+        List<Map> data = context.getTargetList();
+        List<Field> targetFields = context.getTargetFields();
 
         // 1、获取SQL
-        String executeSql = config.getCommand().get(event);
+        String executeSql = context.getCommand().get(event);
         Assert.hasText(executeSql, "执行SQL语句不能为空.");
-        if (CollectionUtils.isEmpty(config.getFields())) {
+        if (CollectionUtils.isEmpty(targetFields)) {
             logger.error("writer fields can not be empty.");
             throw new SdkException("writer fields can not be empty.");
         }
@@ -163,8 +165,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             logger.error("writer data can not be empty.");
             throw new SdkException("writer data can not be empty.");
         }
-        List<Field> fields = new ArrayList<>(config.getFields());
-        List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeyFields(config);
+        List<Field> fields = new ArrayList<>(targetFields);
+        List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(targetFields);
         // Update / Delete
         if (!isInsert(event)) {
             if (isDelete(event)) {
@@ -181,8 +183,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             // 2、设置参数
             execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
         } catch (Exception e) {
-            if (config.isForceUpdate()) {
-                data.forEach(row -> forceUpdate(result, connectorInstance, config, pkFields, row));
+            if (context.isForceUpdate()) {
+                data.forEach(row -> forceUpdate(result, connectorInstance, context, pkFields, row));
             }
         }
 
@@ -193,8 +195,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     result.getSuccessData().add(data.get(i));
                     continue;
                 }
-                if (config.isForceUpdate()) {
-                    forceUpdate(result, connectorInstance, config, pkFields, data.get(i));
+                if (context.isForceUpdate()) {
+                    forceUpdate(result, connectorInstance, context, pkFields, data.get(i));
                 }
             }
         }
@@ -567,11 +569,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return args;
     }
 
-    private void forceUpdate(Result result, DatabaseConnectorInstance connectorInstance, WriterBatchConfig config, List<Field> pkFields,
+    private void forceUpdate(Result result, DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> pkFields,
                              Map row) {
-        if (isUpdate(config.getEvent()) || isInsert(config.getEvent())) {
+        if (isUpdate(context.getEvent()) || isInsert(context.getEvent())) {
             // 存在执行覆盖更新，否则写入
-            final String queryCount = config.getCommand().get(ConnectorConstant.OPERTION_QUERY_EXIST);
+            final String queryCount = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_EXIST);
             int size = pkFields.size();
             Object[] args = new Object[size];
             for (int i = 0; i < size; i++) {
@@ -579,17 +581,17 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             }
             final String event = existRow(connectorInstance, queryCount, args) ? ConnectorConstant.OPERTION_UPDATE
                     : ConnectorConstant.OPERTION_INSERT;
-            logger.warn("{}表执行{}失败, 重新执行{}, {}", config.getTableName(), config.getEvent(), event, row);
-            writer(result, connectorInstance, config, pkFields, row, event);
+            logger.warn("{}表执行{}失败, 重新执行{}, {}", context.getTargetTableName(), context.getEvent(), event, row);
+            writer(result, connectorInstance, context, pkFields, row, event);
         }
     }
 
-    private void writer(Result result, DatabaseConnectorInstance connectorInstance, WriterBatchConfig config, List<Field> pkFields, Map row,
+    private void writer(Result result, DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> pkFields, Map row,
                         String event) {
         // 1、获取 SQL
-        String sql = config.getCommand().get(event);
+        String sql = context.getCommand().get(event);
 
-        List<Field> fields = new ArrayList<>(config.getFields());
+        List<Field> fields = new ArrayList<>(context.getTargetFields());
         // Update / Delete
         if (!isInsert(event)) {
             if (isDelete(event)) {

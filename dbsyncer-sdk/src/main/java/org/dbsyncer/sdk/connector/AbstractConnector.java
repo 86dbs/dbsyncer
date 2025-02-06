@@ -6,7 +6,6 @@ package org.dbsyncer.sdk.connector;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
-import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.schema.BigintValueMapper;
 import org.dbsyncer.sdk.connector.schema.BinaryValueMapper;
 import org.dbsyncer.sdk.connector.schema.BitValueMapper;
@@ -35,6 +34,7 @@ import org.dbsyncer.sdk.connector.schema.VarBinaryValueMapper;
 import org.dbsyncer.sdk.connector.schema.VarcharValueMapper;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,17 +87,17 @@ public abstract class AbstractConnector {
      * 转换字段值
      *
      * @param connectorInstance
-     * @param config
+     * @param context
      */
-    public void convertProcessBeforeWriter(ConnectorInstance connectorInstance, WriterBatchConfig config) {
-        if (CollectionUtils.isEmpty(config.getFields()) || CollectionUtils.isEmpty(config.getData())) {
+    public void convertProcessBeforeWriter(ConnectorInstance connectorInstance, PluginContext context) {
+        if (CollectionUtils.isEmpty(context.getTargetFields()) || CollectionUtils.isEmpty(context.getTargetList())) {
             return;
         }
 
         // 获取字段映射规则
-        for (Map row : config.getData()) {
+        for (Map row : context.getTargetList()) {
             // 根据目标字段类型转换值
-            for (Field f : config.getFields()) {
+            for (Field f : context.getTargetFields()) {
                 if (null == f) {
                     continue;
                 }
@@ -108,7 +108,7 @@ public abstract class AbstractConnector {
                     try {
                         row.put(f.getName(), valueMapper.convertValue(connectorInstance, row.get(f.getName())));
                     } catch (Exception e) {
-                        logger.error("convert value error: ({}, {})", f.getName(), row.get(f.getName()));
+                        logger.error("convert value error: ({}, {}, {})", context.getTargetTableName(), f.getName(), row.get(f.getName()));
                         throw new SdkException(e);
                     }
                 }
@@ -116,13 +116,13 @@ public abstract class AbstractConnector {
         }
     }
 
-    public void convertProcessBeforeWriter(SchemaResolver resolver, WriterBatchConfig config) {
-        if (CollectionUtils.isEmpty(config.getFields()) || CollectionUtils.isEmpty(config.getData())) {
+    public void convertProcessBeforeWriter(SchemaResolver resolver, PluginContext context) {
+        if (CollectionUtils.isEmpty(context.getTargetFields()) || CollectionUtils.isEmpty(context.getTargetList())) {
             return;
         }
 
-        for (Map row : config.getData()) {
-            for (Field f : config.getFields()) {
+        for (Map row : context.getTargetList()) {
+            for (Field f : context.getTargetFields()) {
                 if (null == f) {
                     continue;
                 }
@@ -131,7 +131,7 @@ public abstract class AbstractConnector {
                     Object o = resolver.merge(row.get(f.getName()), f);
                     row.put(f.getName(), resolver.convert(o, f));
                 } catch (Exception e) {
-                    logger.error(String.format("convert value error: (%s, %s, %s)", config.getTableName(), f.getName(), row.get(f.getName())), e);
+                    logger.error(String.format("convert value error: (%s, %s, %s)", context.getTargetTableName(), f.getName(), row.get(f.getName())), e);
                     throw new SdkException(e);
                 }
             }
