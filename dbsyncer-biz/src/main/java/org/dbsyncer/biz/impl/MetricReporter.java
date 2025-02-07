@@ -82,9 +82,7 @@ public class MetricReporter implements ScheduledTaskJob {
 
     private final MappingReportMetric mappingReportMetric = new MappingReportMetric();
 
-    private AppReportMetric report = new AppReportMetric();
-
-    private final int SHOW_BUFFER_ACTUATOR_SIZE = 7;
+    private final AppReportMetric report = new AppReportMetric();
 
     @PostConstruct
     private void init() {
@@ -107,10 +105,10 @@ public class MetricReporter implements ScheduledTaskJob {
                     tableList.add(collect(bufferActuator, tableGroupCode, mapping.getName(), bufferActuator.getTableName()))
                 );
             });
-            List<MetricResponseInfo> sortList = tableList.stream()
+            list.addAll(tableList.stream()
                     .sorted(Comparator.comparing(MetricResponseInfo::getQueueUp).reversed())
-                    .collect(Collectors.toList());
-            list.addAll(sortList.size() <= SHOW_BUFFER_ACTUATOR_SIZE ? sortList : sortList.subList(0, SHOW_BUFFER_ACTUATOR_SIZE));
+                    .limit(7)
+                    .collect(Collectors.toList()));
         }
         return list.stream().map(MetricResponseInfo::getResponse).collect(Collectors.toList());
     }

@@ -113,6 +113,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
         // 合并驱动公共字段
         mergeMappingColumn(mapping);
+        // 更新meta
+        updateMeta(mapping, null);
 
         // 重置排序
         resetTableGroupAllIndex(mappingId);

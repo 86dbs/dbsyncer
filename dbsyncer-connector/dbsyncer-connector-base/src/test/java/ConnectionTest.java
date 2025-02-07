@@ -35,6 +35,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @Author AE86
@@ -333,22 +334,13 @@ public class ConnectionTest {
         int total = dataList.size();
         int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
         final CountDownLatch latch = new CountDownLatch(taskSize);
-        int fromIndex = 0;
-        int toIndex = batchSize;
+        int offset = 0;
         for (int i = 0; i < taskSize; i++) {
-            final List<Object[]> data;
-            if (toIndex > total) {
-                toIndex = fromIndex + (total % batchSize);
-                data = dataList.subList(fromIndex, toIndex);
-            } else {
-                data = dataList.subList(fromIndex, toIndex);
-                fromIndex += batchSize;
-                toIndex += batchSize;
-            }
-
+            List<Object[]> slice = dataList.stream().skip(offset).limit(batchSize).collect(Collectors.toList());
+            offset += batchSize;
             pool.submit(() -> {
                 try {
-                    connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, data));
+                    connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, slice));
                 } catch (Exception e) {
                     logger.error(e.getMessage());
                 } finally {
