@@ -212,7 +212,7 @@ public class ParserComponentImpl implements ParserComponent {
 
     @Override
     public Result writeBatch(PluginContext context, Executor executor) {
-        final Result result = new Result();
+        Result result = new Result();
         // 终止同步数据到目标源库
         if (context.isTerminated()) {
             result.getSuccessData().addAll(context.getTargetList());
@@ -234,9 +234,8 @@ public class ParserComponentImpl implements ParserComponent {
         for (int i = 0; i < taskSize; i++) {
             try {
                 PluginContext tmpContext = (PluginContext) context.clone();
-                List<Map> slice = context.getTargetList().stream().skip(offset).limit(batchSize).collect(Collectors.toList());
+                tmpContext.setTargetList(context.getTargetList().stream().skip(offset).limit(batchSize).collect(Collectors.toList()));
                 offset += batchSize;
-                tmpContext.setTargetList(slice);
                 executor.execute(() -> {
                     try {
                         Result w = connectorFactory.writer(tmpContext);
