@@ -10,7 +10,12 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.event.FullRefreshEvent;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Picker;
+import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -18,11 +23,9 @@ import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.FullPluginContext;
 import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
@@ -40,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 /**
  * @author AE86
@@ -149,6 +153,7 @@ public class ParserComponentImpl implements ParserComponent {
         context.setTargetFields(picker.getTargetFields());
         context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
         context.setPageSize(mapping.getReadNum());
+        context.setEnableSchemaResolver(profileComponent.getSystemConfig().isEnableSchemaResolver());
         // 0、插件前置处理
         pluginFactory.process(group.getPlugin(), context, ProcessEnum.BEFORE);
 
@@ -162,7 +167,7 @@ public class ParserComponentImpl implements ParserComponent {
             context.setArgs(new ArrayList<>());
             context.setCursors(task.getCursors());
             context.setPageIndex(task.getPageIndex());
-            Result reader = connectorFactory.reader(context.getSourceConnectorInstance(), context);
+            Result reader = connectorFactory.reader(context);
             List<Map> source = reader.getSuccessData();
             if (CollectionUtils.isEmpty(source)) {
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
@@ -210,50 +215,35 @@ public class ParserComponentImpl implements ParserComponent {
             return result;
         }
 
-        List<Map> dataList = context.getTargetList();
         int batchSize = context.getBatchSize();
-        String tableName = context.getTargetTableName();
-        String event = context.getEvent();
-        Map<String, String> command = context.getCommand();
-        List<Field> fields = context.getTargetFields();
         // 总数
-        int total = dataList.size();
-        // 单次任务
-        if (total <= batchSize) {
-            WriterBatchConfig batchConfig = new WriterBatchConfig(tableName, event, command, fields, dataList, context.isForceUpdate(), context.isEnableSchemaResolver());
-            return connectorFactory.writer(context.getTargetConnectorInstance(), batchConfig);
-        }
-
+        int total = context.getTargetList().size();
         // 批量任务, 拆分
         int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
-
-        final CountDownLatch latch = new CountDownLatch(taskSize);
-        int fromIndex = 0;
-        int toIndex = batchSize;
+        CountDownLatch latch = new CountDownLatch(taskSize);
+        int offset = 0;
         for (int i = 0; i < taskSize; i++) {
-            final List<Map> data;
-            if (toIndex > total) {
-                toIndex = fromIndex + (total % batchSize);
-                data = dataList.subList(fromIndex, toIndex);
-            } else {
-                data = dataList.subList(fromIndex, toIndex);
-                fromIndex += batchSize;
-                toIndex += batchSize;
+            try {
+                PluginContext tmpContext = (PluginContext) context.clone();
+                List<Map> slice = context.getTargetList().stream().skip(offset).limit(batchSize).collect(Collectors.toList());
+                offset += batchSize;
+                tmpContext.setTargetList(slice);
+                executor.execute(() -> {
+                    try {
+                        Result w = connectorFactory.writer(tmpContext);
+                        result.addSuccessData(w.getSuccessData());
+                        result.addFailData(w.getFailData());
+                        result.getError().append(w.getError());
+                    } catch (Exception e) {
+                        logger.error(e.getMessage());
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            } catch (CloneNotSupportedException e) {
+                logger.error(e.getMessage(), e);
+                latch.countDown();
             }
-
-            executor.execute(() -> {
-                try {
-                    WriterBatchConfig batchConfig = new WriterBatchConfig(tableName, event, command, fields, data, context.isForceUpdate(), context.isEnableSchemaResolver());
-                    Result w = connectorFactory.writer(context.getTargetConnectorInstance(), batchConfig);
-                    result.addSuccessData(w.getSuccessData());
-                    result.addFailData(w.getFailData());
-                    result.getError().append(w.getError());
-                } catch (Exception e) {
-                    logger.error(e.getMessage());
-                } finally {
-                    latch.countDown();
-                }
-            });
         }
         try {
             latch.await();

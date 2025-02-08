@@ -11,18 +11,13 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2022/6/30 16:00
  */
-public abstract class AbstractPluginContext implements PluginContext {
+public abstract class AbstractPluginContext extends AbstractBaseContext implements PluginContext, Cloneable {
 
     /**
      * 是否终止任务
      * <p>true：目标源不再接收同步数据，默认值false
      */
     private boolean terminated;
-
-    /**
-     * 数据源连接实例
-     */
-    private ConnectorInstance sourceConnectorInstance;
 
     /**
      * 目标源连接实例
@@ -48,11 +43,6 @@ public abstract class AbstractPluginContext implements PluginContext {
      * 目标字段
      */
     private List<Field> targetFields;
-
-    /**
-     * 执行命令
-     */
-    private Map<String, String> command;
 
     /**
      * 批量处理任务数
@@ -92,15 +82,6 @@ public abstract class AbstractPluginContext implements PluginContext {
     @Override
     public void setTerminated(boolean terminated) {
         this.terminated = terminated;
-    }
-
-    @Override
-    public ConnectorInstance getSourceConnectorInstance() {
-        return sourceConnectorInstance;
-    }
-
-    public void setSourceConnectorInstance(ConnectorInstance sourceConnectorInstance) {
-        this.sourceConnectorInstance = sourceConnectorInstance;
     }
 
     @Override
@@ -177,16 +158,6 @@ public abstract class AbstractPluginContext implements PluginContext {
     }
 
     @Override
-    public Map<String, String> getCommand() {
-        return command;
-    }
-
-    @Override
-    public void setCommand(Map<String, String> command) {
-        this.command = command;
-    }
-
-    @Override
     public List<Map> getSourceList() {
         return sourceList;
     }
@@ -211,5 +182,10 @@ public abstract class AbstractPluginContext implements PluginContext {
 
     public void setPluginExtInfo(String pluginExtInfo) {
         this.pluginExtInfo = pluginExtInfo;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

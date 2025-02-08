@@ -90,9 +90,8 @@ public final class BufferActuatorRouter implements DisposableBean {
     public void unbind(String metaId) {
         router.computeIfPresent(metaId, (k, processor) -> {
             processor.values().forEach(TableGroupBufferActuator::stop);
-            return processor;
+            return null;
         });
-        router.remove(metaId);
     }
 
     private void offer(AbstractBufferActuator actuator, ChangedEvent event) {

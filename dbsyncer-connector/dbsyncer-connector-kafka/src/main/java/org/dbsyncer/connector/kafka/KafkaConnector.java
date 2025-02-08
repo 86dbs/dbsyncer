@@ -10,7 +10,6 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.validator.KafkaConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -18,6 +17,7 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
@@ -102,16 +102,16 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     }
 
     @Override
-    public Result writer(KafkaConnectorInstance connectorInstance, WriterBatchConfig config) {
-        List<Map> data = config.getData();
-        if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(config.getFields())) {
+    public Result writer(KafkaConnectorInstance connectorInstance, PluginContext context) {
+        List<Map> data = context.getTargetList();
+        if (CollectionUtils.isEmpty(data)) {
             logger.error("writer data can not be empty.");
             throw new KafkaException("writer data can not be empty.");
         }
 
         Result result = new Result();
         final KafkaConfig cfg = connectorInstance.getConfig();
-        final List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeyFields(config);
+        final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
         try {
             String topic = cfg.getTopic();
             // 默认取第一个主键
