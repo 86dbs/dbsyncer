@@ -80,7 +80,7 @@ public class PluginFactory implements DisposableBean {
 
     public synchronized void loadPlugins() {
         if (!CollectionUtils.isEmpty(plugins)) {
-            List<Plugin> unmodifiablePlugin = plugins.stream().filter(p -> p.isUnmodifiable()).collect(Collectors.toList());
+            List<Plugin> unmodifiablePlugin = plugins.stream().filter(Plugin::isUnmodifiable).collect(Collectors.toList());
             plugins.clear();
             plugins.addAll(unmodifiablePlugin);
         }
@@ -91,7 +91,7 @@ public class PluginFactory implements DisposableBean {
         }
         Collection<File> files = FileUtils.listFiles(new File(PLUGIN_PATH), new String[]{"jar"}, true);
         if (!CollectionUtils.isEmpty(files)) {
-            files.forEach(f -> loadPlugin(f));
+            files.forEach(this::loadPlugin);
         }
         logger.info("PreLoad plugin:{}", plugins.size());
     }
@@ -135,7 +135,7 @@ public class PluginFactory implements DisposableBean {
     }
 
     public String createPluginId(String pluginClassName, String pluginVersion) {
-        return new StringBuilder(pluginClassName).append("_").append(pluginVersion).toString();
+        return pluginClassName + "_" + pluginVersion;
     }
 
     /**

@@ -29,6 +29,8 @@ import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,6 +156,8 @@ public class ParserComponentImpl implements ParserComponent {
         context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
         context.setPageSize(mapping.getReadNum());
         context.setEnableSchemaResolver(profileComponent.getSystemConfig().isEnableSchemaResolver());
+        ConnectorService sourceConnector = connectorFactory.getConnectorService(context.getSourceConnectorInstance().getConfig());
+        picker.setSourceResolver(context.isEnableSchemaResolver() ? sourceConnector.getSchemaResolver() : null);
         // 0、插件前置处理
         pluginFactory.process(group.getPlugin(), context, ProcessEnum.BEFORE);
 
@@ -218,6 +222,11 @@ public class ParserComponentImpl implements ParserComponent {
         int batchSize = context.getBatchSize();
         // 总数
         int total = context.getTargetList().size();
+        // 单次任务
+        if (total <= batchSize) {
+            return connectorFactory.writer(context);
+        }
+
         // 批量任务, 拆分
         int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
         CountDownLatch latch = new CountDownLatch(taskSize);

@@ -184,17 +184,17 @@ public class ConnectorFactory implements DisposableBean {
     }
 
     public Result writer(PluginContext context) {
-        ConnectorInstance connectorInstance = context.getTargetConnectorInstance();
-        Assert.notNull(connectorInstance, "ConnectorInstance can not null");
-        ConnectorService connector = getConnectorService(connectorInstance.getConfig());
-        if (connector instanceof AbstractConnector) {
-            AbstractConnector conn = (AbstractConnector) connector;
+        ConnectorInstance targetInstance = context.getTargetConnectorInstance();
+        Assert.notNull(targetInstance, "targetConnectorInstance can not null");
+        ConnectorService targetConnector = getConnectorService(targetInstance.getConfig());
+        if (targetConnector instanceof AbstractConnector) {
+            AbstractConnector conn = (AbstractConnector) targetConnector;
             try {
-                SchemaResolver schemaResolver = connector.getSchemaResolver();
-                if (context.isEnableSchemaResolver() && schemaResolver != null) {
-                    conn.convertProcessBeforeWriter(schemaResolver, context);
+                // 支持标准解析器
+                if (context.isEnableSchemaResolver() && targetConnector.getSchemaResolver() != null) {
+                    conn.convertProcessBeforeWriter(context, targetConnector.getSchemaResolver());
                 } else {
-                    conn.convertProcessBeforeWriter(connectorInstance, context);
+                    conn.convertProcessBeforeWriter(context, targetInstance);
                 }
             } catch (Exception e) {
                 Result result = new Result();
@@ -204,7 +204,7 @@ public class ConnectorFactory implements DisposableBean {
             }
         }
 
-        Result result = connector.writer(connectorInstance, context);
+        Result result = targetConnector.writer(targetInstance, context);
         Assert.notNull(result, "Connector writer batch result can not null");
         return result;
     }
