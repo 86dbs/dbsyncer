@@ -50,7 +50,7 @@ public class ConnectorController extends BaseController {
         try {
             return RestResult.restSuccess(connectorService.copy(id));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -62,7 +62,7 @@ public class ConnectorController extends BaseController {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(connectorService.add(params));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -74,7 +74,7 @@ public class ConnectorController extends BaseController {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(connectorService.edit(params));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -85,7 +85,7 @@ public class ConnectorController extends BaseController {
         try {
             return RestResult.restSuccess(connectorService.remove(id));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }

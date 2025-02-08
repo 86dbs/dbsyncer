@@ -65,7 +65,7 @@ public class TableGroupController extends BaseController {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(tableGroupService.edit(params));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -76,7 +76,7 @@ public class TableGroupController extends BaseController {
         try {
             return RestResult.restSuccess(tableGroupService.refreshFields(id));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -87,7 +87,7 @@ public class TableGroupController extends BaseController {
         try {
             return RestResult.restSuccess(tableGroupService.remove(mappingId, ids));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }

@@ -66,7 +66,7 @@ public class PluginController {
             }
             return RestResult.restSuccess("ok");
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }

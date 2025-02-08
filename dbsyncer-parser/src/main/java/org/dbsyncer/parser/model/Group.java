@@ -3,8 +3,7 @@
  */
 package org.dbsyncer.parser.model;
 
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -13,7 +12,7 @@ import java.util.List;
  * @Date 2025-01-26 21:36
  */
 public final class Group {
-    private final List<String> index = new LinkedList<>();
+    private final List<String> index = new ArrayList<>();
 
     public synchronized void remove(String e) {
         index.remove(e);
@@ -24,7 +23,7 @@ public final class Group {
     }
 
     public List<String> getIndex() {
-        return Collections.unmodifiableList(index);
+        return index;
     }
 
     public boolean contains(String id) {
