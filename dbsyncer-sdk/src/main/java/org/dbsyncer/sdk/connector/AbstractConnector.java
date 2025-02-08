@@ -86,10 +86,10 @@ public abstract class AbstractConnector {
     /**
      * 转换字段值
      *
-     * @param connectorInstance
      * @param context
+     * @param connectorInstance
      */
-    public void convertProcessBeforeWriter(ConnectorInstance connectorInstance, PluginContext context) {
+    public void convertProcessBeforeWriter(PluginContext context, ConnectorInstance connectorInstance) {
         if (CollectionUtils.isEmpty(context.getTargetFields()) || CollectionUtils.isEmpty(context.getTargetList())) {
             return;
         }
@@ -116,7 +116,7 @@ public abstract class AbstractConnector {
         }
     }
 
-    public void convertProcessBeforeWriter(SchemaResolver resolver, PluginContext context) {
+    public void convertProcessBeforeWriter(PluginContext context, SchemaResolver targetResolver) {
         if (CollectionUtils.isEmpty(context.getTargetFields()) || CollectionUtils.isEmpty(context.getTargetList())) {
             return;
         }
@@ -127,9 +127,7 @@ public abstract class AbstractConnector {
                     continue;
                 }
                 try {
-                    // 根据目标字段类型转换值
-                    Object o = resolver.merge(row.get(f.getName()), f);
-                    row.put(f.getName(), resolver.convert(o, f));
+                    row.computeIfPresent(f.getName(), (k, v) -> targetResolver.convert(v, f));
                 } catch (Exception e) {
                     logger.error(String.format("convert value error: (%s, %s, %s)", context.getTargetTableName(), f.getName(), row.get(f.getName())), e);
                     throw new SdkException(e);

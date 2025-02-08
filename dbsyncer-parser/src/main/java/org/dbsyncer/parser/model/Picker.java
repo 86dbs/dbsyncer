@@ -8,6 +8,7 @@ import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.filter.CompareFilter;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -23,6 +24,7 @@ public class Picker {
     private final boolean enabledFilter;
     private List<Filter> add;
     private List<Filter> or;
+    private SchemaResolver sourceResolver;
 
     public Picker(TableGroup tableGroup) {
         if (!CollectionUtils.isEmpty(tableGroup.getFieldMapping())) {
@@ -174,6 +176,10 @@ public class Picker {
             }
             if (null != sField && null != tField) {
                 v = source.get(sField.getName());
+                // 合并为标准数据类型
+                if (sourceResolver != null) {
+                    v = sourceResolver.merge(v, sField);
+                }
                 tFieldName = tField.getName();
                 // 映射值
                 if (!target.containsKey(tFieldName)) {
@@ -199,4 +205,8 @@ public class Picker {
         return Collections.unmodifiableList(fields);
     }
 
+    public Picker setSourceResolver(SchemaResolver sourceResolver) {
+        this.sourceResolver = sourceResolver;
+        return this;
+    }
 }

@@ -261,7 +261,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             throw new ElasticsearchException("writer data can not be empty.");
         }
 
-        final Result result = new Result();
+        Result result = new Result();
         final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
         try {
             final BulkRequest request = new BulkRequest();
