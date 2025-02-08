@@ -56,6 +56,7 @@ public class SystemConfigChecker extends AbstractChecker {
         params.put("enableStorageWriteFull", StringUtil.isNotBlank(params.get("enableStorageWriteFull")) ? "true" : "false");
         params.put("enableCDN", StringUtil.isNotBlank(params.get("enableCDN")) ? "true" : "false");
         params.put("enableWatermark", StringUtil.isNotBlank(params.get("enableWatermark")) ? "true" : "false");
+        params.put("enableSchemaResolver", StringUtil.isNotBlank(params.get("enableSchemaResolver")) ? "true" : "false");
         String watermark = params.get("watermark");
         if (StringUtil.isNotBlank(watermark)) {
             Assert.isTrue(watermark.length() <= 64, "允许水印内容最多输入64个字.");
