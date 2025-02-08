@@ -174,7 +174,8 @@ public class ConnectorFactory implements DisposableBean {
         return getConnectorService(connectorInstance.getConfig()).getCount(connectorInstance, command);
     }
 
-    public Result reader(ConnectorInstance connectorInstance, ReaderContext context) {
+    public Result reader(ReaderContext context) {
+        ConnectorInstance connectorInstance = context.getSourceConnectorInstance();
         Assert.notNull(connectorInstance, "ConnectorInstance can not null");
         Assert.notNull(context, "ReaderContext can not null");
         Result result = getConnectorService(connectorInstance.getConfig()).reader(connectorInstance, context);

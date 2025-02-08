@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.plugin;
 
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+
 import java.util.Map;
 
 /**
@@ -12,7 +14,18 @@ import java.util.Map;
  */
 public interface BaseContext {
 
+    /**
+     * 执行命令
+     */
     Map<String, String> getCommand();
 
     void setCommand(Map<String, String> command);
+
+    /**
+     * 数据源连接实例
+     */
+    ConnectorInstance getSourceConnectorInstance();
+
+    void setSourceConnectorInstance(ConnectorInstance sourceConnectorInstance);
+
 }

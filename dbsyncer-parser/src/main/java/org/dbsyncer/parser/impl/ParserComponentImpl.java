@@ -167,7 +167,7 @@ public class ParserComponentImpl implements ParserComponent {
             context.setArgs(new ArrayList<>());
             context.setCursors(task.getCursors());
             context.setPageIndex(task.getPageIndex());
-            Result reader = connectorFactory.reader(context.getSourceConnectorInstance(), context);
+            Result reader = connectorFactory.reader(context);
             List<Map> source = reader.getSuccessData();
             if (CollectionUtils.isEmpty(source)) {
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);

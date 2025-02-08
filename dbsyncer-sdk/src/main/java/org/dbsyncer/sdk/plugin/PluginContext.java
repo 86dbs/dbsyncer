@@ -39,11 +39,6 @@ public interface PluginContext extends BaseContext {
     void setTerminated(boolean terminated);
 
     /**
-     * 数据源连接实例
-     */
-    ConnectorInstance getSourceConnectorInstance();
-
-    /**
      * 目标源连接实例
      */
     ConnectorInstance getTargetConnectorInstance();
