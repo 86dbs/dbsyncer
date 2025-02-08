@@ -70,7 +70,7 @@ public class ProjectGroupController extends BaseController {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(projectGroupService.add(params));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -90,7 +90,7 @@ public class ProjectGroupController extends BaseController {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(projectGroupService.edit(params));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -108,7 +108,7 @@ public class ProjectGroupController extends BaseController {
         try {
             return RestResult.restSuccess(projectGroupService.remove(id));
         } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
