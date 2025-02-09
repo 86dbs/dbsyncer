@@ -42,6 +42,7 @@ public class Application {
             properties.put("info.app.build.time", buildTime);
         }
         properties.put("info.app.version", version);
+        properties.put("info.app.current", Version.CURRENT);
         properties.put("info.app.start.time", LocalDateTime.now().format(DateFormatUtil.CHINESE_STANDARD_TIME_FORMATTER));
         properties.put("spring.thymeleaf.prefix", "classpath:/public/");
         properties.put("management.endpoints.web.base-path", "/app");
