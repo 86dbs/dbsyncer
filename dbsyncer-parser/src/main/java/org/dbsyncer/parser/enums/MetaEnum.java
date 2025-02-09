@@ -32,15 +32,6 @@ public enum MetaEnum {
         this.message = message;
     }
 
-    public static MetaEnum getMetaEnum(int code) throws ParserException {
-        for (MetaEnum e : MetaEnum.values()) {
-            if (code == e.getCode()) {
-                return e;
-            }
-        }
-        throw new ParserException(String.format("Meta code \"%s\" does not exist.", code));
-    }
-
     public static boolean isRunning(int state) {
         return RUNNING.getCode() == state || STOPPING.getCode() == state;
     }
