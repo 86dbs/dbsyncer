@@ -72,7 +72,7 @@ public class SystemConfig extends ConfigModel {
     /**
      * 是否启用字段解析器
      */
-    private boolean enableSchemaResolver = true;
+    private boolean enableSchemaResolver;
 
     public int getExpireDataDays() {
         return expireDataDays;
