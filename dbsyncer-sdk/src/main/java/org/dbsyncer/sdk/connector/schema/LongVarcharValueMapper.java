@@ -3,11 +3,13 @@
  */
 package org.dbsyncer.sdk.connector.schema;
 
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.AbstractValueMapper;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 
 import java.sql.Date;
+import java.sql.Timestamp;
 
 /**
  * @author AE86
@@ -23,6 +25,9 @@ public class LongVarcharValueMapper extends AbstractValueMapper<String> {
         }
         if (val instanceof Date) {
             return String.valueOf(val);
+        }
+        if (val instanceof Timestamp) {
+            return DateFormatUtil.timestampToString((Timestamp) val);
         }
         if (val instanceof Number) {
             Number num = (Number) val;
