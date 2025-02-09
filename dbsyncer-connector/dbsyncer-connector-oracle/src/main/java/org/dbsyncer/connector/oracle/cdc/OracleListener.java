@@ -76,7 +76,7 @@ public class OracleListener extends AbstractDatabaseListener {
             });
             logMiner.start();
         } catch (Exception e) {
-            logger.error("启动失败:{}", e.getMessage());
+            logger.error("启动失败:{}", e.getMessage(), e);
             throw new OracleException(e);
         }
     }
