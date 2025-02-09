@@ -203,7 +203,7 @@ public class ParserComponentImpl implements ParserComponent {
             pluginFactory.process(group.getPlugin(), context, ProcessEnum.AFTER);
 
             // 8、判断尾页
-            if (source.size() < context.getPageIndex()) {
+            if (source.size() < context.getPageSize()) {
                 logger.info("完成全量:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
                 break;
             }
