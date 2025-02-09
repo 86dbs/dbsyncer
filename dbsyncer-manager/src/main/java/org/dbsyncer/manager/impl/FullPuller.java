@@ -63,12 +63,9 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             final String metaId = mapping.getMetaId();
             ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());
             try {
-                map.computeIfAbsent(metaId, k -> {
-                    logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
-                    Task task = new Task(metaId);
-                    doTask(task, mapping, list, executor);
-                    return task;
-                });
+                Task task = map.computeIfAbsent(metaId, k -> new Task(metaId));
+                logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
+                doTask(task, mapping, list, executor);
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
                 logService.log(LogType.SystemLog.ERROR, e.getMessage());
@@ -90,10 +87,10 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     @Override
     public void close(String metaId) {
-        Task task = map.get(metaId);
-        if (null != task) {
+        map.computeIfPresent(metaId, (k, task) -> {
             task.stop();
-        }
+            return null;
+        });
     }
 
     @Override
