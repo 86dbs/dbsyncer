@@ -59,22 +59,37 @@ public class LogMinerHelper {
 
     public static List<LogFile> getOnlineLogFilesForOffsetScn(Connection connection, BigInteger offsetScn) throws SQLException {
         List<LogFile> redoLogFiles = new ArrayList<>();
-
-        String onlineLogQuery = "SELECT MIN(F.MEMBER) AS FILE_NAME, L.NEXT_CHANGE# AS NEXT_CHANGE, F.GROUP#, L.FIRST_CHANGE# AS FIRST_CHANGE, L.STATUS " +
-                " FROM V$LOG L, V$LOGFILE F " +
-                " WHERE F.GROUP# = L.GROUP# AND L.NEXT_CHANGE# > 0 " +
-                " GROUP BY F.GROUP#, L.NEXT_CHANGE#, L.FIRST_CHANGE#, L.STATUS ORDER BY 3";
-
+        String onlineLogQuery = "SELECT MIN(F.MEMBER) AS FILE_NAME, L.STATUS, L.FIRST_CHANGE# AS FIRST_CHANGE, L.NEXT_CHANGE# AS NEXT_CHANGE FROM V$LOG L, V$LOGFILE F WHERE F.GROUP# = L.GROUP# AND L.NEXT_CHANGE# > 0 GROUP BY F.GROUP#, L.NEXT_CHANGE#, L.FIRST_CHANGE#, L.STATUS";
         try (PreparedStatement s = connection.prepareStatement(onlineLogQuery)) {
             try (ResultSet rs = s.executeQuery()) {
                 while (rs.next()) {
-                    String fileName = rs.getString(1);
-                    BigInteger nextChangeNumber = new BigInteger(rs.getString(2));
-                    BigInteger firstChangeNumber = new BigInteger(rs.getString(4));
-                    String status = rs.getString(5);
+                    String fileName = rs.getString(1);// FILE_NAME
+                    String status = rs.getString(2); // STATUS
+                    BigInteger firstChangeNumber = new BigInteger(rs.getString(3));//FIRST_CHANGE
+                    BigInteger nextChangeNumber = new BigInteger(rs.getString(4));//NEXT_CHANGE
                     LogFile logFile = new LogFile(fileName, firstChangeNumber, nextChangeNumber, "CURRENT".equalsIgnoreCase(status));
                     // 添加Current Redo || scn 范围符合的
                     if (logFile.isCurrent() || logFile.getNextScn().compareTo(offsetScn) >= 0) {
+                        redoLogFiles.add(logFile);
+                    }
+                }
+            }
+        }
+        return redoLogFiles;
+    }
+
+    public static List<LogFile> get10GOnlineLogFilesForOffsetScn(Connection connection, BigInteger offsetScn) throws SQLException {
+        List<LogFile> redoLogFiles = new ArrayList<>();
+        String onlineLogQuery = "SELECT MIN(F.MEMBER) AS FILE_NAME, L.STATUS, L.FIRST_CHANGE# AS FIRST_CHANGE FROM V$LOG L, V$LOGFILE F WHERE F.GROUP# = L.GROUP# GROUP BY F.GROUP#, L.FIRST_CHANGE#, L.STATUS";
+        try (PreparedStatement s = connection.prepareStatement(onlineLogQuery)) {
+            try (ResultSet rs = s.executeQuery()) {
+                while (rs.next()) {
+                    String fileName = rs.getString(1);// FILE_NAME
+                    String status = rs.getString(2); // STATUS
+                    BigInteger firstChangeNumber = new BigInteger(rs.getString(3));//FIRST_CHANGE
+                    LogFile logFile = new LogFile(fileName, firstChangeNumber, null, "CURRENT".equalsIgnoreCase(status));
+                    // 添加Current Redo || scn 范围符合的
+                    if (logFile.isCurrent() || logFile.getFirstScn().compareTo(offsetScn) >= 0) {
                         redoLogFiles.add(logFile);
                     }
                 }
