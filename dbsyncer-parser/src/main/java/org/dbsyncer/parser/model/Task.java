@@ -16,9 +16,6 @@ public class Task {
 
     private long endTime;
 
-    public Task() {
-    }
-
     public Task(String id) {
         this.id = id;
         this.state = StateEnum.RUNNING;
