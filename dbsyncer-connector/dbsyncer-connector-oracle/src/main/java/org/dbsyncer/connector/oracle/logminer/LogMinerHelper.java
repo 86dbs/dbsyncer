@@ -118,10 +118,8 @@ public class LogMinerHelper {
     }
 
     public static void addLogFile(Connection connection, String fileName) throws SQLException {
-        String addLogFile = "BEGIN sys.dbms_logmnr.add_logfile(LOGFILENAME => '%s', OPTIONS => %s);END;";
-        String options = "DBMS_LOGMNR.ADDFILE";
-//        String options = "DBMS_LOGMNR.NEW";
-        executeCallableStatement(connection, String.format(addLogFile, fileName, options));
+        String addLogFile = "BEGIN sys.dbms_logmnr.add_logfile(LOGFILENAME => '%s', OPTIONS => DBMS_LOGMNR.ADDFILE);END;";
+        executeCallableStatement(connection, String.format(addLogFile, fileName));
     }
 
     public static List<BigInteger> getCurrentRedoLogSequences(Connection connection) throws SQLException {
