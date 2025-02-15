@@ -93,10 +93,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
                     meta.setEndTime(now);
                     profileComponent.editConfigModel(meta);
                     tableGroupContext.put(mapping, list);
-                    Listener listener = getListener(mapping, connector, list, meta);
-                    listener.start();
-                    return listener;
-                });
+                    return getListener(mapping, connector, list, meta);
+                }).start();
             } catch (Exception e) {
                 close(metaId);
                 logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
@@ -110,15 +108,14 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     @Override
     public void close(String metaId) {
-        Listener listener = map.get(metaId);
-        if (null != listener) {
-            bufferActuatorRouter.unbind(metaId);
+        map.computeIfPresent(metaId, (k, listener)->{
             listener.close();
-        }
-        map.remove(metaId);
-        publishClosedEvent(metaId);
-        tableGroupContext.clear(metaId);
-        logger.info("关闭成功:{}", metaId);
+            bufferActuatorRouter.unbind(metaId);
+            tableGroupContext.clear(metaId);
+            publishClosedEvent(metaId);
+            logger.info("关闭成功:{}", metaId);
+            return null;
+        });
     }
 
     @Override
