@@ -40,8 +40,8 @@ public class LogMinerHelper {
     private static final String LOG_MINER_KEY_GRANTED_ROLE = "GRANTED_ROLE";
     private static final String LOG_MINER_SQL_QUERY_PRIVILEGES = "SELECT * FROM SESSION_PRIVS";
     private static final String LOG_MINER_KEY_PRIVILEGE = "PRIVILEGE";
-    private static final List<String> LOG_MINER_PRIVILEGES_NEEDED = Arrays.asList("EXECUTE_CATALOG_ROLE", "CREATE SESSION", "SELECT ANY TRANSACTION", "SELECT ANY DICTIONARY", "LOGMINING");
-    private static final List<String> LOG_MINER_ORACLE_11_PRIVILEGES_NEEDED = Arrays.asList("EXECUTE_CATALOG_ROLE", "CREATE SESSION", "SELECT ANY TRANSACTION", "SELECT ANY DICTIONARY");
+    private static final List<String> LOG_MINER_PRIVILEGES_NEEDED = Arrays.asList("SELECT_CATALOG_ROLE", "CREATE SESSION", "SELECT ANY TRANSACTION", "SELECT ANY DICTIONARY", "LOGMINING");
+    private static final List<String> LOG_MINER_ORACLE_11_PRIVILEGES_NEEDED = Arrays.asList("SELECT_CATALOG_ROLE", "CREATE SESSION", "SELECT ANY TRANSACTION", "SELECT ANY DICTIONARY");
     private static final String LOG_MINER_DBA_ROLE = "DBA";
     private static final String LOG_MINER_SQL_GET_CURRENT_SCN = "select CURRENT_SCN from V$DATABASE";
     private static final String LOG_MINER_SQL_IS_CDB = "select cdb from v$database";
