@@ -16,6 +16,7 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.slf4j.Logger;
@@ -162,6 +163,13 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     @Override
     public boolean isAlive(String id) {
         return health.containsKey(id) && health.get(id);
+    }
+
+    @Override
+    public Object getPosition(String id) {
+        Connector connector = getConnector(id);
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+        return connectorFactory.getPosition(connectorInstance);
     }
 
     private boolean isAlive(ConnectorConfig config) {

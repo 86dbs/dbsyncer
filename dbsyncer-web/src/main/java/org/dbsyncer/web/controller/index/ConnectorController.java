@@ -90,4 +90,15 @@ public class ConnectorController extends BaseController {
         }
     }
 
+    @GetMapping(value = "/getPosition")
+    @ResponseBody
+    public RestResult getPosition(@RequestParam(value = "id") String id) {
+        try {
+            return RestResult.restSuccess(connectorService.getPosition(id));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
 }

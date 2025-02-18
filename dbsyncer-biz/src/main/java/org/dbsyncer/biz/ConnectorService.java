@@ -78,4 +78,12 @@ public interface ConnectorService {
      * @return
      */
     boolean isAlive(String id);
+
+    /**
+     * 获取位点信息
+     *
+     * @param params
+     * @return
+     */
+    Object getPosition(String params);
 }

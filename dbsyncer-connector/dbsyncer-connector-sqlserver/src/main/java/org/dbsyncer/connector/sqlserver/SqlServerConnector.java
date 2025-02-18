@@ -5,6 +5,7 @@ package org.dbsyncer.connector.sqlserver;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.sqlserver.cdc.Lsn;
 import org.dbsyncer.connector.sqlserver.cdc.SqlServerListener;
 import org.dbsyncer.connector.sqlserver.validator.SqlServerConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
@@ -145,6 +146,23 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
             targetCommand.put(ConnectorConstant.OPERTION_INSERT, insert);
         }
         return targetCommand;
+    }
+
+    @Override
+    public Object getPosition(DatabaseConnectorInstance connectorInstance) {
+        String sql = "SELECT * from cdc.lsn_time_mapping order by tran_begin_time desc";
+        List<Map<String, Object>> result = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql));
+        if (!CollectionUtils.isEmpty(result)) {
+            List<Object> list = new ArrayList<>();
+            result.forEach(r -> {
+                r.computeIfPresent("start_lsn", (k, lsn)-> new Lsn((byte[]) lsn).toString());
+                r.computeIfPresent("tran_begin_lsn", (k, lsn)-> new Lsn((byte[]) lsn).toString());
+                r.computeIfPresent("tran_id", (k, lsn)-> new Lsn((byte[]) lsn).toString());
+                list.add(r);
+            });
+            return list;
+        }
+        return result;
     }
 
     private String convertKey(String key) {

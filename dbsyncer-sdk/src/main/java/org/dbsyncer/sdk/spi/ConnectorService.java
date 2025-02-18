@@ -4,6 +4,7 @@
 package org.dbsyncer.sdk.spi;
 
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
@@ -180,4 +181,13 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
         return null;
     }
 
+    /**
+     * 获取指定时间的位点信息
+     *
+     * @param connectorInstance
+     * @return
+     */
+    default Object getPosition(I connectorInstance) {
+        return StringUtil.EMPTY;
+    }
 }

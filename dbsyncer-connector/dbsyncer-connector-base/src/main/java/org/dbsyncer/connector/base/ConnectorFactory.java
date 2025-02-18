@@ -145,6 +145,11 @@ public class ConnectorFactory implements DisposableBean {
         return getConnectorService(connectorInstance.getConfig()).getMetaInfo(connectorInstance, tableName);
     }
 
+    public Object getPosition(ConnectorInstance connectorInstance) {
+        Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
+        return getConnectorService(connectorInstance.getConfig()).getPosition(connectorInstance);
+    }
+
     /**
      * 获取连接器同步参数
      *
