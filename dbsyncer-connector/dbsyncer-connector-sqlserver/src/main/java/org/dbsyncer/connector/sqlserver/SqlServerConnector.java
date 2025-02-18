@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.sqlserver;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlserver.cdc.Lsn;
 import org.dbsyncer.connector.sqlserver.cdc.SqlServerListener;
@@ -24,6 +25,7 @@ import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -158,6 +160,8 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
                 r.computeIfPresent("start_lsn", (k, lsn)-> new Lsn((byte[]) lsn).toString());
                 r.computeIfPresent("tran_begin_lsn", (k, lsn)-> new Lsn((byte[]) lsn).toString());
                 r.computeIfPresent("tran_id", (k, lsn)-> new Lsn((byte[]) lsn).toString());
+                r.computeIfPresent("tran_begin_time", (k, tranBeginTime)-> DateFormatUtil.timestampToString((Timestamp) tranBeginTime));
+                r.computeIfPresent("tran_end_time", (k, tranEndTime)-> DateFormatUtil.timestampToString((Timestamp) tranEndTime));
                 list.add(r);
             });
             return list;
