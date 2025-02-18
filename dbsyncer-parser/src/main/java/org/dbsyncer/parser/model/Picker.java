@@ -50,14 +50,14 @@ public class Picker {
             Map<String, Object> target = null;
             for (Map row : source) {
                 target = new HashMap<>();
-                exchange(sFieldSize, tFieldSize, sourceFields, targetFields, row, target);
+                exchange(sFieldSize, tFieldSize, this.sourceFields, this.targetFields, row, target);
                 targetMapList.add(target);
             }
         }
         return targetMapList;
     }
 
-    public List<Map> pickTargetData(List<Field> sourceFields, boolean enableFilter, List<List<Object>> rows, List<Map> sourceMapList) {
+    public List<Map> pickTargetData(List<Field> sourceOriginalFields, boolean enableFilter, List<List<Object>> rows, List<Map> sourceMapList) {
         List<Map> targetMapList = new ArrayList<>();
         if (CollectionUtils.isEmpty(rows)) {
             return targetMapList;
@@ -66,15 +66,15 @@ public class Picker {
         Map<String, Object> target = null;
         for (List<Object> row : rows) {
             // 排除下标不一致的数据
-            if (row.size() != sourceFields.size()) {
+            if (row.size() != sourceOriginalFields.size()) {
                 continue;
             }
             source = new HashMap<>();
-            for (int j = 0; j < sourceFields.size(); j++) {
-                source.put(sourceFields.get(j).getName(), row.get(j));
+            for (int j = 0; j < sourceOriginalFields.size(); j++) {
+                source.put(sourceOriginalFields.get(j).getName(), row.get(j));
             }
             target = new HashMap<>();
-            exchange(sFieldSize, tFieldSize, sourceFields, targetFields, source, target);
+            exchange(sFieldSize, tFieldSize, this.sourceFields, this.targetFields, source, target);
             // 根据条件过滤数据
             if (enableFilter && !filter(target)) {
                 continue;
