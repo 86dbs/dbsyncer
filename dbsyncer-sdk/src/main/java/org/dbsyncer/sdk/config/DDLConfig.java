@@ -1,7 +1,6 @@
 package org.dbsyncer.sdk.config;
 
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
-import org.dbsyncer.sdk.model.Field;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -14,9 +13,9 @@ public class DDLConfig {
 
     private DDLOperationEnum ddlOperationEnum;
 
-    private List<Field> addFields = new LinkedList<>();
+    private List<String> addFieldNames = new LinkedList<>();
 
-    private List<Field> removeFields = new LinkedList<>();
+    private List<String> removeFieldNames = new LinkedList<>();
 
     //记录源表的源字段名称
     private String sourceColumnName;
@@ -32,20 +31,20 @@ public class DDLConfig {
         this.sql = sql;
     }
 
-    public List<Field> getAddFields() {
-        return addFields;
+    public List<String> getAddFieldNames() {
+        return addFieldNames;
     }
 
-    public void setAddFields(List<Field> addFields) {
-        this.addFields = addFields;
+    public void setAddFieldNames(List<String> addFieldNames) {
+        this.addFieldNames = addFieldNames;
     }
 
-    public List<Field> getRemoveFields() {
-        return removeFields;
+    public List<String> getRemoveFieldNames() {
+        return removeFieldNames;
     }
 
-    public void setRemoveFields(List<Field> removeFields) {
-        this.removeFields = removeFields;
+    public void setRemoveFieldNames(List<String> removeFieldNames) {
+        this.removeFieldNames = removeFieldNames;
     }
 
     public String getSourceColumnName() {

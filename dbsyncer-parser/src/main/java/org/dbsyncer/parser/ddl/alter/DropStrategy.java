@@ -6,7 +6,6 @@ import org.dbsyncer.parser.ddl.AlterStrategy;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
-import org.dbsyncer.sdk.model.Field;
 
 import java.util.List;
 
@@ -20,7 +19,7 @@ public class DropStrategy implements AlterStrategy {
     @Override
     public void parse(AlterExpression expression, DDLConfig ddlConfig, List<FieldMapping> originalFieldMappings) {
         if (expression.getColumnName() != null) {
-            dropColumn(expression, ddlConfig, originalFieldMappings);
+            dropColumn(expression, ddlConfig);
         }
         if (expression.getIndex() != null) {
             dropIndex(expression, originalFieldMappings);
@@ -33,19 +32,11 @@ public class DropStrategy implements AlterStrategy {
      *
      * @param expression
      * @param ddlConfig
-     * @param originalFieldMappings
      */
-    private void dropColumn(AlterExpression expression, DDLConfig ddlConfig, List<FieldMapping> originalFieldMappings) {
+    private void dropColumn(AlterExpression expression, DDLConfig ddlConfig) {
         String columnName = StringUtil.replace(expression.getColumnName(), StringUtil.BACK_QUOTE, StringUtil.EMPTY);
-        columnName = StringUtil.replace(columnName,StringUtil.DOUBLE_QUOTATION,StringUtil.EMPTY);
-        Field field = new Field(columnName, null, 0);
-        //需要把列替换成目标的列名
-        String finalColumnName = columnName;
-        originalFieldMappings.stream()
-                .filter(x -> StringUtil.equals(x.getSource().getName(), finalColumnName)).findFirst()
-                .ifPresent(fieldMapping -> expression.setColumnName(fieldMapping.getTarget().getName()));
-        //加入还是原名
-        ddlConfig.getRemoveFields().add(field);
+        columnName = StringUtil.replace(columnName, StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY);
+        ddlConfig.getRemoveFieldNames().add(columnName);
     }
 
     /**

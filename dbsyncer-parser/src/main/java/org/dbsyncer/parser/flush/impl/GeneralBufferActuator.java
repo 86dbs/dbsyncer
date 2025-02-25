@@ -229,42 +229,40 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             String sConnType = sConnConfig.getConnectorType();
             String tConnType = tConnConfig.getConnectorType();
             // 0.生成目标表执行SQL(暂支持同源)
-            if (StringUtil.equals(sConnType, tConnType)) {
-                // 1.转换为目标SQL，执行到目标库
-                String targetTableName = tableGroup.getTargetTable().getName();
-                List<FieldMapping> originalFieldMappings = tableGroup.getFieldMapping();
-                DDLConfig targetDDLConfig = ddlParser.parseDDlConfig(response.getSql(), tConnType, targetTableName, originalFieldMappings);
-                ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
-                Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
-                result.setTableGroupId(tableGroup.getId());
-                result.setTargetTableGroupName(targetTableName);
-
-                // 2.获取目标表最新的属性字段
-                MetaInfo targetMetaInfo = parserComponent.getMetaInfo(mapping.getTargetConnectorId(), targetTableName);
-                MetaInfo originMetaInfo = parserComponent.getMetaInfo(mapping.getSourceConnectorId(), tableGroup.getSourceTable().getName());
-
-                // 3.更新表字段映射(根据保留的更改的属性，进行更改)
-                tableGroup.getSourceTable().setColumn(originMetaInfo.getColumn());
-                tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
-                tableGroup.setFieldMapping(ddlParser.refreshFiledMappings(originalFieldMappings, originMetaInfo, targetMetaInfo, targetDDLConfig));
-
-                // 4.更新执行命令
-                Map<String, String> commands = parserComponent.getCommand(mapping, tableGroup);
-                tableGroup.setCommand(commands);
-
-                // 5.持久化存储 & 更新缓存配置
-                profileComponent.editTableGroup(tableGroup);
-
-                // 6.发布更新事件，持久化增量数据
-                applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
-                flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
+            if (!StringUtil.equals(sConnType, tConnType)) {
+                logger.warn("暂只支持数据库同源并且是关系性解析DDL");
                 return;
             }
+            // 1.转换为目标SQL，执行到目标库
+            String targetTableName = tableGroup.getTargetTable().getName();
+            ConnectorService connectorService = connectorFactory.getConnectorService(tConnType);
+            DDLConfig targetDDLConfig = ddlParser.parseDDlConfig(connectorService, tableGroup, response.getSql());
+            ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
+            Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
+            result.setTableGroupId(tableGroup.getId());
+            result.setTargetTableGroupName(targetTableName);
+
+            // 2.获取目标表最新的属性字段
+            MetaInfo sourceMetaInfo = parserComponent.getMetaInfo(mapping.getSourceConnectorId(), tableGroup.getSourceTable().getName());
+            MetaInfo targetMetaInfo = parserComponent.getMetaInfo(mapping.getTargetConnectorId(), targetTableName);
+
+            // 3.更新表字段映射(根据保留的更改的属性，进行更改)
+            tableGroup.getSourceTable().setColumn(sourceMetaInfo.getColumn());
+            tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
+            ddlParser.refreshFiledMappings(tableGroup, targetDDLConfig);
+
+            // 4.更新执行命令
+            tableGroup.setCommand(parserComponent.getCommand(mapping, tableGroup));
+
+            // 5.持久化存储 & 更新缓存配置
+            profileComponent.editTableGroup(tableGroup);
+
+            // 6.发布更新事件，持久化增量数据
+            applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
+            flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            return;
         }
-        logger.warn("暂只支持数据库同源并且是关系性解析DDL");
     }
 
     /**

@@ -8,7 +8,6 @@ import org.dbsyncer.parser.ddl.AlterStrategy;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
-import org.dbsyncer.sdk.model.Field;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -21,8 +20,7 @@ import java.util.List;
 public class AddStrategy implements AlterStrategy {
 
     @Override
-    public void parse(AlterExpression expression, DDLConfig ddlConfig,
-            List<FieldMapping> originFiledMapping) {
+    public void parse(AlterExpression expression, DDLConfig ddlConfig, List<FieldMapping> originFiledMapping) {
         if (expression.getColDataTypeList() != null) {
             parseAddColumn(expression, ddlConfig, originFiledMapping);
         }
@@ -34,8 +32,7 @@ public class AddStrategy implements AlterStrategy {
 
     //解析增加列
     //exampleSql: ALTER TABLE cost ADD duan INT after(before) `tmp`;
-    private void parseAddColumn(AlterExpression expression, DDLConfig ddlConfig,
-            List<FieldMapping> originFiledMapping) {
+    private void parseAddColumn(AlterExpression expression, DDLConfig ddlConfig, List<FieldMapping> originFiledMapping) {
         //如果是增加列
         for (AlterExpression.ColumnDataType columnDataType : expression.getColDataTypeList()) {
             boolean findColumn = false;
@@ -46,16 +43,13 @@ public class AddStrategy implements AlterStrategy {
                 if (findColumn) {
                     //对before（after）字段进行映射
                     String finalSpe = spe;
-                    FieldMapping fieldMapping = originFiledMapping.stream()
-                            .filter(x -> StringUtil.equals(x.getSource().getName(), finalSpe))
-                            .findFirst().get();
+                    FieldMapping fieldMapping = originFiledMapping.stream().filter(x -> StringUtil.equals(x.getSource().getName(), finalSpe)).findFirst().get();
                     columnSpecs.add(fieldMapping.getTarget().getName());
                     findColumn = false;
                     continue;
                 }
 
-                if (StringUtil.equalsIgnoreCase(spe, "before") || StringUtil.equalsIgnoreCase(spe,
-                        "after")) {
+                if (StringUtil.equalsIgnoreCase(spe, "before") || StringUtil.equalsIgnoreCase(spe, "after")) {
                     findColumn = true;
                 }
                 columnSpecs.add(spe);
@@ -64,9 +58,7 @@ public class AddStrategy implements AlterStrategy {
             String columName = columnDataType.getColumnName();
             columName = StringUtil.replace(columName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
             columName = StringUtil.replace(columName, StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY);
-            Field field = new Field(columName, columnDataType.getColDataType().getDataType(),
-                    0);//感觉不需要都行，只需要名称，后续可以自己刷新
-            ddlConfig.getAddFields().add(field);
+            ddlConfig.getAddFieldNames().add(columName);
         }
 
     }
@@ -77,17 +69,13 @@ public class AddStrategy implements AlterStrategy {
      * @param expression
      * @param originFiledMapping
      */
-    private void parseAddIndex(AlterExpression expression,
-            List<FieldMapping> originFiledMapping) {
+    private void parseAddIndex(AlterExpression expression, List<FieldMapping> originFiledMapping) {
         Index index = expression.getIndex();
         List<ColumnParams> columnNames = index.getColumns();
         List<ColumnParams> targetNames = new LinkedList<>();
         for (ColumnParams columnParams : columnNames) {
-            FieldMapping fieldMapping = originFiledMapping.stream()
-                    .filter(x -> StringUtil.equals(x.getSource().getName(),
-                            columnParams.getColumnName())).findFirst().get();
-            ColumnParams target = new ColumnParams(fieldMapping.getTarget().getName(),
-                    columnParams.getParams());
+            FieldMapping fieldMapping = originFiledMapping.stream().filter(x -> StringUtil.equals(x.getSource().getName(), columnParams.getColumnName())).findFirst().get();
+            ColumnParams target = new ColumnParams(fieldMapping.getTarget().getName(), columnParams.getParams());
             targetNames.add(target);
         }
         index.setColumns(targetNames);

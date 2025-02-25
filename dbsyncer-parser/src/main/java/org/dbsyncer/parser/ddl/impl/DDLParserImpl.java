@@ -9,10 +9,9 @@ import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
 import net.sf.jsqlparser.statement.alter.AlterOperation;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.sdk.config.DDLConfig;
-import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.parser.ddl.AlterStrategy;
 import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.ddl.alter.AddStrategy;
@@ -20,9 +19,10 @@ import org.dbsyncer.parser.ddl.alter.ChangeStrategy;
 import org.dbsyncer.parser.ddl.alter.DropStrategy;
 import org.dbsyncer.parser.ddl.alter.ModifyStrategy;
 import org.dbsyncer.parser.model.FieldMapping;
-import org.dbsyncer.sdk.enums.DDLOperationEnum;
+import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +30,11 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.LinkedList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * alter情况
@@ -65,25 +66,24 @@ public class DDLParserImpl implements DDLParser {
     }
 
     @Override
-    public DDLConfig parseDDlConfig(String sql, String targetConnectorType, String targetTableName, List<FieldMapping> originalFieldMappings) {
-        ConnectorService connectorService = connectorFactory.getConnectorService(targetConnectorType);
+    public DDLConfig parseDDlConfig(ConnectorService connectorService, TableGroup tableGroup, String sql) {
         // 替换为目标库执行SQL
         DDLConfig ddlConfig = new DDLConfig();
         try {
             Statement statement = CCJSqlParserUtil.parse(sql);
-            if (statement instanceof Alter) {
+            if (statement instanceof Alter && connectorService instanceof Database) {
                 Alter alter = (Alter) statement;
                 Database database = (Database) connectorService;
                 String quotation = database.buildSqlWithQuotation();
                 // 替换成目标表名
-                alter.getTable().setName(new StringBuilder(quotation).append(targetTableName).append(quotation).toString());
+                alter.getTable().setName(quotation + tableGroup.getTargetTable().getName() + quotation);
                 ddlConfig.setSql(alter.toString());
                 for (AlterExpression expression : alter.getAlterExpressions()) {
-                    if (STRATEGIES.containsKey(expression.getOperation())) {
-                        STRATEGIES.get(expression.getOperation()).parse(expression, ddlConfig, originalFieldMappings);
-                    }
+                    STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy) -> {
+                        strategy.parse(expression, ddlConfig, tableGroup.getFieldMapping());
+                        return strategy;
+                    });
                 }
-                ddlConfig.setSql(alter.toString());
             }
         } catch (JSQLParserException e) {
             logger.error(e.getMessage(), e);
@@ -92,50 +92,78 @@ public class DDLParserImpl implements DDLParser {
     }
 
     @Override
-    public List<FieldMapping> refreshFiledMappings(List<FieldMapping> originalFieldMappings, MetaInfo originMetaInfo, MetaInfo targetMetaInfo, DDLConfig targetDDLConfig) {
-        List<FieldMapping> newTargetMappingList = new LinkedList<>();
-        //处理映射关系
-        for (FieldMapping fieldMapping : originalFieldMappings) {
-            String fieldSourceName = fieldMapping.getSource().getName();
-            String filedTargetName = fieldMapping.getTarget().getName();
-            //找到更改的源表的名称，也就是找到了对应的映射关系，这样就可以从源表找到更改后的名称进行对应，
-            if (fieldSourceName.equals(targetDDLConfig.getSourceColumnName())) {
-                // 说明字段名没有改变，只是改变了属性
-                if (targetDDLConfig.getDdlOperationEnum() == DDLOperationEnum.ALTER_MODIFY) {
-                    Field source = originMetaInfo.getColumn().stream().filter(x -> StringUtil.equals(x.getName(), fieldSourceName)).findFirst().get();
-                    Field target = targetMetaInfo.getColumn().stream().filter(x -> StringUtil.equals(x.getName(), filedTargetName)).findFirst().get();
-                    //替换
-                    newTargetMappingList.add(new FieldMapping(source, target));
-                    continue;
-                } else if (targetDDLConfig.getDdlOperationEnum() == DDLOperationEnum.ALTER_CHANGE) {
-                    Field source = originMetaInfo.getColumn().stream().filter(x -> StringUtil.equals(x.getName(), targetDDLConfig.getChangedColumnName())).findFirst().get();
-                    Field target = targetMetaInfo.getColumn().stream().filter(x -> StringUtil.equals(x.getName(), targetDDLConfig.getChangedColumnName())).findFirst().get();
-                    //替换
-                    newTargetMappingList.add(new FieldMapping(source, target));
-                    continue;
+    public void refreshFiledMappings(TableGroup tableGroup, DDLConfig targetDDLConfig) {
+        switch (targetDDLConfig.getDdlOperationEnum()) {
+            case ALTER_ADD:
+                appendFieldMappings(tableGroup, targetDDLConfig.getAddFieldNames());
+                break;
+            case ALTER_DROP:
+                removeFieldMappings(tableGroup, targetDDLConfig.getRemoveFieldNames());
+                break;
+            case ALTER_CHANGE:
+                renameFieldMapping(tableGroup, targetDDLConfig.getSourceColumnName(), targetDDLConfig.getChangedColumnName());
+                break;
+            case ALTER_MODIFY:
+                // 可以忽略，仅修改字段属性，名称未变
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void renameFieldMapping(TableGroup tableGroup, String oldFieldName, String newFieldName) {
+        Map<String, Field> sourceFiledMap = tableGroup.getSourceTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        for (FieldMapping fieldMapping : tableGroup.getFieldMapping()) {
+            Field source = fieldMapping.getSource();
+            if (source != null && StringUtil.equals(oldFieldName, source.getName())) {
+                source.setName(newFieldName);
+                sourceFiledMap.computeIfPresent(newFieldName, (k, field) -> {
+                    fieldMapping.setSource(field);
+                    return field;
+                });
+            }
+        }
+    }
+
+    private void removeFieldMappings(TableGroup tableGroup, List<String> removeFieldNames) {
+        Iterator<FieldMapping> iterator = tableGroup.getFieldMapping().iterator();
+        while (iterator.hasNext()) {
+            FieldMapping fieldMapping = iterator.next();
+            Field source = fieldMapping.getSource();
+            if (source != null && removeFieldNames.contains(source.getName())) {
+                iterator.remove();
+            }
+        }
+    }
+
+    private void appendFieldMappings(TableGroup tableGroup, List<String> addFieldNames) {
+        List<FieldMapping> fieldMappings = tableGroup.getFieldMapping();
+        Iterator<String> iterator = addFieldNames.iterator();
+        while (iterator.hasNext()) {
+            String name = iterator.next();
+            for (FieldMapping fieldMapping : fieldMappings) {
+                Field source = fieldMapping.getSource();
+                Field target = fieldMapping.getTarget();
+                // 检查重复字段
+                if (source != null && target != null && StringUtil.equals(source.getName(), name) && StringUtil.equals(target.getName(), name)) {
+                    iterator.remove();
                 }
             }
-            newTargetMappingList.add(fieldMapping);
+        }
+        if (CollectionUtils.isEmpty(addFieldNames)) {
+            return;
         }
 
-        if (DDLOperationEnum.ALTER_ADD == targetDDLConfig.getDdlOperationEnum()) {
-            //处理新增的映射关系
-            List<Field> addFields = targetDDLConfig.getAddFields();
-            for (Field field : addFields) {
-                Field source = originMetaInfo.getColumn().stream().filter(x -> StringUtil.equals(x.getName(), field.getName())).findFirst().get();
-                Field target = targetMetaInfo.getColumn().stream().filter(x -> StringUtil.equals(x.getName(), field.getName())).findFirst().get();
-                newTargetMappingList.add(new FieldMapping(source, target));
-            }
+        Map<String, Field> sourceFiledMap = tableGroup.getSourceTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> targetFiledMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        if (CollectionUtils.isEmpty(sourceFiledMap) || CollectionUtils.isEmpty(targetFiledMap)) {
+            return;
         }
-
-        if (DDLOperationEnum.ALTER_DROP == targetDDLConfig.getDdlOperationEnum()) {
-            //处理删除字段的映射关系
-            List<Field> removeFields = targetDDLConfig.getRemoveFields();
-            for (Field field : removeFields) {
-                newTargetMappingList.removeIf(x -> StringUtil.equals(x.getSource().getName(), field.getName()));
+        addFieldNames.forEach(newFieldName -> {
+            if (sourceFiledMap.containsKey(newFieldName) && targetFiledMap.containsKey(newFieldName)) {
+                fieldMappings.add(new FieldMapping(sourceFiledMap.get(newFieldName), targetFiledMap.get(newFieldName)));
             }
-        }
-        return newTargetMappingList;
+        });
     }
 
 }
