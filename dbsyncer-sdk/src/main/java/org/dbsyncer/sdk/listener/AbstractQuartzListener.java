@@ -87,7 +87,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         final Lock taskLock = lock;
         boolean locked = false;
         try {
-            locked = taskLock.tryLock();
+            locked = taskLock.tryLock(3, TimeUnit.SECONDS);
             if (locked) {
                 for (int i = 0; i < commands.size(); i++) {
                     execute(commands.get(i), i);

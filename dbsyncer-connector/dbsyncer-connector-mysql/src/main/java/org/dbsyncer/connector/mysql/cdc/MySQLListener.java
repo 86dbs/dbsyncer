@@ -347,6 +347,7 @@ public class MySQLListener extends AbstractDatabaseListener {
             if (StringUtil.isBlank(databaseName)) {
                 databaseName = data.getDatabase();
             }
+            databaseName = StringUtil.replace(databaseName, "`", "");
             if (isFilterTable(databaseName, tableName)) {
                 logger.info("sql:{}", data.getSql());
                 trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER,
