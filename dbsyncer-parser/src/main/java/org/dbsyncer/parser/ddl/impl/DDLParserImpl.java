@@ -22,6 +22,7 @@ import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.database.Database;
+import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
@@ -37,11 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * alter情况
- * <ol>
- *     <li>只是修改字段的属性值</li>
- *     <li>修改字段的名称</li>
- * </ol>
+ * ddl解析器, 支持类型参考：{@link DDLOperationEnum}
  *
  * @author life
  * @version 1.0.0
@@ -66,27 +63,22 @@ public class DDLParserImpl implements DDLParser {
     }
 
     @Override
-    public DDLConfig parseDDlConfig(ConnectorService connectorService, TableGroup tableGroup, String sql) {
-        // 替换为目标库执行SQL
+    public DDLConfig parseDDlConfig(ConnectorService connectorService, TableGroup tableGroup, String sql) throws JSQLParserException {
         DDLConfig ddlConfig = new DDLConfig();
-        try {
-            Statement statement = CCJSqlParserUtil.parse(sql);
-            if (statement instanceof Alter && connectorService instanceof Database) {
-                Alter alter = (Alter) statement;
-                Database database = (Database) connectorService;
-                String quotation = database.buildSqlWithQuotation();
-                // 替换成目标表名
-                alter.getTable().setName(quotation + tableGroup.getTargetTable().getName() + quotation);
-                ddlConfig.setSql(alter.toString());
-                for (AlterExpression expression : alter.getAlterExpressions()) {
-                    STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy) -> {
-                        strategy.parse(expression, ddlConfig, tableGroup.getFieldMapping());
-                        return strategy;
-                    });
-                }
+        Statement statement = CCJSqlParserUtil.parse(sql);
+        if (statement instanceof Alter && connectorService instanceof Database) {
+            Alter alter = (Alter) statement;
+            Database database = (Database) connectorService;
+            String quotation = database.buildSqlWithQuotation();
+            // 替换成目标表名
+            alter.getTable().setName(quotation + tableGroup.getTargetTable().getName() + quotation);
+            ddlConfig.setSql(alter.toString());
+            for (AlterExpression expression : alter.getAlterExpressions()) {
+                STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy) -> {
+                    strategy.parse(expression, ddlConfig, tableGroup.getFieldMapping());
+                    return strategy;
+                });
             }
-        } catch (JSQLParserException e) {
-            logger.error(e.getMessage(), e);
         }
         return ddlConfig;
     }
@@ -94,33 +86,55 @@ public class DDLParserImpl implements DDLParser {
     @Override
     public void refreshFiledMappings(TableGroup tableGroup, DDLConfig targetDDLConfig) {
         switch (targetDDLConfig.getDdlOperationEnum()) {
+            case ALTER_MODIFY:
+                updateFieldMapping(tableGroup, targetDDLConfig.getSourceColumnName());
+                break;
             case ALTER_ADD:
                 appendFieldMappings(tableGroup, targetDDLConfig.getAddFieldNames());
-                break;
-            case ALTER_DROP:
-                removeFieldMappings(tableGroup, targetDDLConfig.getRemoveFieldNames());
                 break;
             case ALTER_CHANGE:
                 renameFieldMapping(tableGroup, targetDDLConfig.getSourceColumnName(), targetDDLConfig.getChangedColumnName());
                 break;
-            case ALTER_MODIFY:
-                // 可以忽略，仅修改字段属性，名称未变
+            case ALTER_DROP:
+                removeFieldMappings(tableGroup, targetDDLConfig.getRemoveFieldNames());
                 break;
             default:
                 break;
         }
     }
 
-    private void renameFieldMapping(TableGroup tableGroup, String oldFieldName, String newFieldName) {
+    private void updateFieldMapping(TableGroup tableGroup, String updateFieldName) {
         Map<String, Field> sourceFiledMap = tableGroup.getSourceTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> targetFiledMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
         for (FieldMapping fieldMapping : tableGroup.getFieldMapping()) {
             Field source = fieldMapping.getSource();
-            if (source != null && StringUtil.equals(oldFieldName, source.getName())) {
-                source.setName(newFieldName);
-                sourceFiledMap.computeIfPresent(newFieldName, (k, field) -> {
+            Field target = fieldMapping.getTarget();
+            // 支持1对多场景
+            if (source != null && StringUtil.equals(updateFieldName, source.getName())) {
+                sourceFiledMap.computeIfPresent(updateFieldName, (k, field) -> {
                     fieldMapping.setSource(field);
                     return field;
                 });
+                if (target != null && StringUtil.equals(updateFieldName, target.getName())) {
+                    targetFiledMap.computeIfPresent(updateFieldName, (k, field) -> {
+                        fieldMapping.setTarget(field);
+                        return field;
+                    });
+                }
+            }
+        }
+    }
+
+    private void renameFieldMapping(TableGroup tableGroup, String oldFieldName, String newFieldName) {
+        for (FieldMapping fieldMapping : tableGroup.getFieldMapping()) {
+            Field source = fieldMapping.getSource();
+            Field target = fieldMapping.getTarget();
+            // 支持1对多场景
+            if (source != null && StringUtil.equals(oldFieldName, source.getName())) {
+                source.setName(newFieldName);
+                if (target != null && StringUtil.equals(oldFieldName, target.getName())) {
+                    target.setName(newFieldName);
+                }
             }
         }
     }
