@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 /**
  * 通用执行器（单线程消费，多线程批量写，按序执行）
@@ -139,15 +140,16 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         switch (response.getTypeEnum()) {
             case DDL:
-                // ddl解析
-                pickers.forEach(picker -> parseDDl(response, mapping, picker.getTableGroup()));
+                tableGroupContext.update(mapping, pickers.stream().map(picker -> {
+                    TableGroup tableGroup = profileComponent.getTableGroup(picker.getTableGroup().getId());
+                    parseDDl(response, mapping, tableGroup);
+                    return tableGroup;
+                }).collect(Collectors.toList()));
                 break;
             case SCAN:
-                // dml解析
                 pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false));
                 break;
             case ROW:
-                // dml解析
                 pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
                 // 发布刷新增量点事件
                 applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));

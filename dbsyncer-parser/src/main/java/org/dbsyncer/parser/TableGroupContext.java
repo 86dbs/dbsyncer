@@ -18,6 +18,8 @@ public interface TableGroupContext {
 
     void put(Mapping mapping, List<TableGroup> tableGroups);
 
+    void update(Mapping mapping, List<TableGroup> tableGroups);
+
     List<TableGroupPicker> getTableGroupPickers(String metaId, String tableName);
 
     void clear(String metaId);
