@@ -58,7 +58,7 @@ public class ListenerConfig {
     /**
      * 禁用ddl事件
      */
-    private boolean enableDDL = true;
+    private boolean enableDDL;
 
     public ListenerConfig() {
     }
