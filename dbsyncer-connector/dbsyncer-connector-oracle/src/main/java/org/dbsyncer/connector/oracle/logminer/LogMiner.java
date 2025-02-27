@@ -61,7 +61,9 @@ public class LogMiner {
     }
 
     private void closeQuietly() {
-        LogMinerHelper.endLogMiner(connection);
+        if (isValid()) {
+            LogMinerHelper.endLogMiner(connection);
+        }
         if (null != worker && !worker.isInterrupted()) {
             worker.interrupt();
             worker = null;
@@ -140,7 +142,7 @@ public class LogMiner {
                 logger.info("Reconnect successfully");
                 break;
             } catch (Exception e) {
-                logger.error(url, e);
+                logger.error("Reconnect failed", e);
                 sleepSeconds(5);
             }
         }

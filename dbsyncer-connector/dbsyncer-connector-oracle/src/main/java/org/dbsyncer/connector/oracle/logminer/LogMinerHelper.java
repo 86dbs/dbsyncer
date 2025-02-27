@@ -101,9 +101,9 @@ public class LogMinerHelper {
         if (connection != null) {
             try {
                 executeCallableStatement(connection, LOG_MINER_SQL_END_LOG_MINER);
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 if (e.getMessage().toUpperCase().contains("ORA-01307")) {
-                    logger.info("LogMiner session was already closed");
+                    logger.info("LogMiner session was already closed", e);
                 } else {
                     logger.warn("Cannot close log miner session gracefully", e);
                 }
