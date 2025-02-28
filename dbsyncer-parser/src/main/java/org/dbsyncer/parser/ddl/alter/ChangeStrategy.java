@@ -23,13 +23,15 @@ public class ChangeStrategy implements AlterStrategy {
 
     @Override
     public void parse(AlterExpression expression, DDLConfig ddlConfig) {
-        for (AlterExpression.ColumnDataType columnDataType : expression.getColDataTypeList()) {
-            String oldColumnName = StringUtil.replace(expression.getColumnOldName(), StringUtil.BACK_QUOTE, StringUtil.EMPTY);
-            oldColumnName = StringUtil.replace(oldColumnName, StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY);
+        if (expression.getColDataTypeList() != null) {
+            for (AlterExpression.ColumnDataType columnDataType : expression.getColDataTypeList()) {
+                String oldColumnName = StringUtil.replace(expression.getColumnOldName(), StringUtil.BACK_QUOTE, StringUtil.EMPTY);
+                oldColumnName = StringUtil.replace(oldColumnName, StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY);
 
-            String changedColumnName = StringUtil.replace(columnDataType.getColumnName(), StringUtil.BACK_QUOTE, StringUtil.EMPTY);
-            changedColumnName = StringUtil.replace(changedColumnName, StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY);
-            ddlConfig.getChangedFieldNames().put(oldColumnName, changedColumnName);
+                String changedColumnName = StringUtil.replace(columnDataType.getColumnName(), StringUtil.BACK_QUOTE, StringUtil.EMPTY);
+                changedColumnName = StringUtil.replace(changedColumnName, StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY);
+                ddlConfig.getChangedFieldNames().put(oldColumnName, changedColumnName);
+            }
         }
         ddlConfig.setDdlOperationEnum(DDLOperationEnum.ALTER_CHANGE);
     }
