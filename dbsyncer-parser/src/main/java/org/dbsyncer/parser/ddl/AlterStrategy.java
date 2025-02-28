@@ -1,10 +1,10 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
 package org.dbsyncer.parser.ddl;
 
 import net.sf.jsqlparser.statement.alter.AlterExpression;
-import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.sdk.config.DDLConfig;
-
-import java.util.List;
 
 /**
  * Alter策略
@@ -20,7 +20,6 @@ public interface AlterStrategy {
      *
      * @param expression
      * @param ddlConfig
-     * @param fieldMappingList
      */
-    void parse(AlterExpression expression, DDLConfig ddlConfig, List<FieldMapping> fieldMappingList);
+    void parse(AlterExpression expression, DDLConfig ddlConfig);
 }

@@ -238,7 +238,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             // 1.转换为目标SQL，执行到目标库
             String targetTableName = tableGroup.getTargetTable().getName();
             ConnectorService connectorService = connectorFactory.getConnectorService(tConnType);
-            DDLConfig targetDDLConfig = ddlParser.parseDDlConfig(connectorService, tableGroup, response.getSql());
+            DDLConfig targetDDLConfig = ddlParser.parse(connectorService, tableGroup, response.getSql());
             ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
             Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
             result.setTableGroupId(tableGroup.getId());

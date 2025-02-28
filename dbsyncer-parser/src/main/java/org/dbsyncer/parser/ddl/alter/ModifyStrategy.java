@@ -1,38 +1,32 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
 package org.dbsyncer.parser.ddl.alter;
 
 import net.sf.jsqlparser.statement.alter.AlterExpression;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ddl.AlterStrategy;
-import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
 
-import java.util.List;
-
 /**
- * 解析modify的属性
- * exampleSql: ALTER TABLE `test`.`test_table` MODIFY COLUMN `test` varchar(251) NULL DEFAULT NULL
- * alter modify parser
+ * 字段属性变更
+ * <code>
+ *     ALTER TABLE `test`.`test_user`
+ * MODIFY COLUMN `name` varchar(203) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL AFTER `id`,
+ * MODIFY COLUMN `remark` varchar(204) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL AFTER `name`
+ * </code>
  *
  * @author life
  */
 public class ModifyStrategy implements AlterStrategy {
 
     @Override
-    public void parse(AlterExpression expression, DDLConfig ddlConfig, List<FieldMapping> originalFieldMappings) {
-        //先查找到当前的表和目标的表对应的字段
+    public void parse(AlterExpression expression, DDLConfig ddlConfig) {
         for (AlterExpression.ColumnDataType columnDataType : expression.getColDataTypeList()) {
             String columnName = StringUtil.replace(columnDataType.getColumnName(), StringUtil.BACK_QUOTE, StringUtil.EMPTY);
             columnName = StringUtil.replace(columnName, StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY);
-            for (FieldMapping fieldMapping : originalFieldMappings) {
-                if (StringUtil.equals(fieldMapping.getSource().getName(), columnName)) {
-                    //TODO life 找到目标的表名，先是alter进行属性替换，然后config记录新的
-                    columnDataType.setColumnName(fieldMapping.getTarget().getName());
-                    //因为只是修改属性，所以表名称没有变化
-                    ddlConfig.setSourceColumnName(fieldMapping.getSource().getName());
-                    ddlConfig.setChangedColumnName(fieldMapping.getSource().getName());
-                }
-            }
+            ddlConfig.getModifiedFieldNames().add(columnName);
         }
         ddlConfig.setDdlOperationEnum(DDLOperationEnum.ALTER_MODIFY);
     }

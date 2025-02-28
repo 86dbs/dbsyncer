@@ -10,7 +10,7 @@ import org.dbsyncer.sdk.spi.ConnectorService;
 
 public interface DDLParser {
 
-    DDLConfig parseDDlConfig(ConnectorService connectorService, TableGroup tableGroup, String sql) throws JSQLParserException;
+    DDLConfig parse(ConnectorService connectorService, TableGroup tableGroup, String sql) throws JSQLParserException;
 
     void refreshFiledMappings(TableGroup tableGroup, DDLConfig targetDDLConfig);
 }
