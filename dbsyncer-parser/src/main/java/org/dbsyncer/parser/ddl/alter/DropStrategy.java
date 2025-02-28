@@ -11,6 +11,11 @@ import org.dbsyncer.sdk.enums.DDLOperationEnum;
 
 /**
  * 解析drop
+ * <code>
+ *     ALTER TABLE `test`.`test_user`
+ * DROP COLUMN `aaa`,
+ * DROP COLUMN `bbb`
+ * </code>
  *
  * @author life
  */

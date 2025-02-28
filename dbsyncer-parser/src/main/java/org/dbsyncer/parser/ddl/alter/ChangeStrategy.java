@@ -11,7 +11,11 @@ import org.dbsyncer.sdk.enums.DDLOperationEnum;
 
 /**
  * 解析change属性
- * exampleSql: ALTER TABLE test_table CHANGE duan1  duan2 INT(10)
+ * <code>
+ *     ALTER TABLE `test`.`test_user`
+ * CHANGE COLUMN `name` `name2` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL AFTER `id`,
+ * CHANGE COLUMN `remark` `remark2` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL AFTER `name2`
+ * </code>
  *
  * @author life
  */

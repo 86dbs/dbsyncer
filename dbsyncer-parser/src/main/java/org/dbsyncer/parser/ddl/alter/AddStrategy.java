@@ -10,7 +10,12 @@ import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
 
 /**
- * 解析add的属性 exampleSql: ALTER TABLE cost ADD duan INT after(before) `tmp`;
+ * 新增字段
+ * <code>
+ *     ALTER TABLE `test`.`test_user`
+ * ADD COLUMN `aaa` varchar(255) NULL AFTER `create_date`,
+ * ADD COLUMN `bbb` varchar(255) NULL AFTER `aaa`
+ * </code>
  *
  * @author life
  */
