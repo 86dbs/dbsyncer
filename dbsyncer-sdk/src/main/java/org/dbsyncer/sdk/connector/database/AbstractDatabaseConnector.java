@@ -11,6 +11,7 @@ import org.dbsyncer.sdk.config.*;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.OperationEnum;
@@ -661,7 +662,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 return true;
             });
             Map<String, String> successMap = new HashMap<>();
-            successMap.put("sql", config.getSql());
+            successMap.put(ConfigConstant.BINLOG_DATA, config.getSql());
             result.addSuccessData(Collections.singletonList(successMap));
         } catch (Exception e) {
             result.getError().append(String.format("执行ddl: %s, 异常：%s", config.getSql(), e.getMessage()));

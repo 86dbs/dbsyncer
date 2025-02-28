@@ -41,6 +41,19 @@ public final class TableGroupContextImpl implements TableGroupContext {
     }
 
     @Override
+    public void update(Mapping mapping, List<TableGroup> tableGroups) {
+        tableGroupMap.computeIfPresent(mapping.getMetaId(), (k, innerMap) -> {
+            // 先清空表映射关系，再更新表映射关系
+            tableGroups.stream().findFirst().ifPresent(tableGroup -> innerMap.remove(tableGroup.getSourceTable().getName()));
+            tableGroups.forEach(tableGroup -> {
+                String sourceTableName = tableGroup.getSourceTable().getName();
+                innerMap.add(sourceTableName, PickerUtil.mergeTableGroupConfig(mapping, tableGroup));
+            });
+            return innerMap;
+        });
+    }
+
+    @Override
     public List<TableGroupPicker> getTableGroupPickers(String metaId, String tableName) {
         List<TableGroupPicker> list = new ArrayList<>();
         tableGroupMap.computeIfPresent(metaId, (k, innerMapping) -> {
@@ -63,6 +76,10 @@ public final class TableGroupContextImpl implements TableGroupContext {
 
         public void add(String tableName, TableGroup tableGroup) {
             pickerMap.computeIfAbsent(tableName, k -> new ArrayList<>()).add(new TableGroupPicker(tableGroup));
+        }
+
+        public void remove(String tableName) {
+            pickerMap.remove(tableName);
         }
     }
 }

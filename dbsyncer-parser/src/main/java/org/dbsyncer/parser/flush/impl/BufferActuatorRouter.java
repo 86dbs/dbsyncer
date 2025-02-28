@@ -98,8 +98,11 @@ public final class BufferActuatorRouter implements DisposableBean {
         if (ChangedEventTypeEnum.isDDL(event.getType())) {
             WriterRequest request = new WriterRequest(event);
             // DDL事件，阻塞等待队列消费完成
-            while (actuator.getQueue().isEmpty() && actuator.isRunning(request)){
-                actuator.offer(request);
+            while (actuator.isRunning(request)) {
+                if (actuator.getQueue().isEmpty()) {
+                    actuator.offer(request);
+                    return;
+                }
                 try {
                     TimeUnit.MILLISECONDS.sleep(10);
                 } catch (InterruptedException ex) {

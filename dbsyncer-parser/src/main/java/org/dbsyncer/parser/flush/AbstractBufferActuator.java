@@ -23,6 +23,7 @@ import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -179,7 +180,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     public void run() {
         boolean locked = false;
         try {
-            locked = taskLock.tryLock();
+            locked = taskLock.tryLock(3, TimeUnit.SECONDS);
             if (locked) {
                 submit();
             }
