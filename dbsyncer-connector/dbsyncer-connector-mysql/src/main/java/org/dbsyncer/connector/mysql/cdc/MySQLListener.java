@@ -337,7 +337,7 @@ public class MySQLListener extends AbstractDatabaseListener {
 
         private void parseAlter(QueryEventData data, Alter alter) {
             // ALTER TABLE `test`.`my_user` MODIFY COLUMN `name` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL AFTER `id`
-            String tableName = StringUtil.replace(alter.getTable().getName(), "`", "");
+            String tableName = StringUtil.replace(alter.getTable().getName(), StringUtil.BACK_QUOTE, StringUtil.EMPTY);
             // databaseName 的取值不能为 QueryEventData#getDatabase, getDatabase 获取的是执行 SQL 语句时所在的数据库上下文,
             // 不是 alter 语句修改的表所在的数据库
             // 依次执行下面两条语句 use db1; alter table db2.my_user add column name varchar(128);
@@ -347,7 +347,7 @@ public class MySQLListener extends AbstractDatabaseListener {
             if (StringUtil.isBlank(databaseName)) {
                 databaseName = data.getDatabase();
             }
-            databaseName = StringUtil.replace(databaseName, "`", "");
+            databaseName = StringUtil.replace(databaseName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
             if (isFilterTable(databaseName, tableName)) {
                 trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER,
                         data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
