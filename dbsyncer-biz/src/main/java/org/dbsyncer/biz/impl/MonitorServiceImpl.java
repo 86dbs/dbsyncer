@@ -14,7 +14,6 @@ import org.dbsyncer.biz.metric.MetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.CpuMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.DiskMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.DoubleRoundMetricDetailFormatter;
-import org.dbsyncer.biz.metric.impl.GCMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.MemoryMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.ValueMetricDetailFormatter;
 import org.dbsyncer.biz.model.AppReportMetric;
@@ -59,9 +58,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -95,7 +94,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     @Resource
     private SystemConfigService systemConfigService;
 
-    private Map<String, MetricDetailFormatter> metricDetailFormatterMap = new LinkedHashMap<>();
+    private Map<String, MetricDetailFormatter> metricDetailFormatterMap = new ConcurrentHashMap<>();
 
     @PostConstruct
     private void init() {
@@ -262,7 +261,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             return new Paging(pageNum, pageSize);
         }
         Query query = new Query(pageNum, pageSize);
-        Map<String, FieldResolver> fieldResolvers = new LinkedHashMap<>();
+        Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
         fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
         query.setFieldResolverMap(fieldResolvers);
 

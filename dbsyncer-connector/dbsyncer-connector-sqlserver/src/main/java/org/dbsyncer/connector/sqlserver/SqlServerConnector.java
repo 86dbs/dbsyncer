@@ -4,7 +4,9 @@
 package org.dbsyncer.connector.sqlserver;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.sqlserver.cdc.Lsn;
 import org.dbsyncer.connector.sqlserver.cdc.SqlServerListener;
 import org.dbsyncer.connector.sqlserver.validator.SqlServerConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
@@ -23,6 +25,7 @@ import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -43,12 +46,11 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     private final String SET_TABLE_IDENTITY_ON = "set identity_insert %s.[%s] on;";
     private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
 
-    private final String TYPE = "SqlServer";
     private final SqlServerConfigValidator configValidator = new SqlServerConfigValidator();
 
     @Override
     public String getConnectorType() {
-        return TYPE;
+        return "SqlServer";
     }
 
     @Override
@@ -146,6 +148,25 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
             targetCommand.put(ConnectorConstant.OPERTION_INSERT, insert);
         }
         return targetCommand;
+    }
+
+    @Override
+    public Object getPosition(DatabaseConnectorInstance connectorInstance) {
+        String sql = "SELECT * from cdc.lsn_time_mapping order by tran_begin_time desc";
+        List<Map<String, Object>> result = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql));
+        if (!CollectionUtils.isEmpty(result)) {
+            List<Object> list = new ArrayList<>();
+            result.forEach(r -> {
+                r.computeIfPresent("start_lsn", (k, lsn)-> new Lsn((byte[]) lsn).toString());
+                r.computeIfPresent("tran_begin_lsn", (k, lsn)-> new Lsn((byte[]) lsn).toString());
+                r.computeIfPresent("tran_id", (k, lsn)-> new Lsn((byte[]) lsn).toString());
+                r.computeIfPresent("tran_begin_time", (k, tranBeginTime)-> DateFormatUtil.timestampToString((Timestamp) tranBeginTime));
+                r.computeIfPresent("tran_end_time", (k, tranEndTime)-> DateFormatUtil.timestampToString((Timestamp) tranEndTime));
+                list.add(r);
+            });
+            return list;
+        }
+        return result;
     }
 
     private String convertKey(String key) {

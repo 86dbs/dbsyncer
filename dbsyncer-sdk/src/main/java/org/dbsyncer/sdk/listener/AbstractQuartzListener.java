@@ -87,7 +87,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         final Lock taskLock = lock;
         boolean locked = false;
         try {
-            locked = taskLock.tryLock();
+            locked = taskLock.tryLock(3, TimeUnit.SECONDS);
             if (locked) {
                 for (int i = 0; i < commands.size(); i++) {
                     execute(commands.get(i), i);
@@ -109,10 +109,10 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         running = false;
     }
 
-    private void execute(TableGroupQuartzCommand tableGroupQuartzCommand, int index) {
-        final Map<String, String> command = tableGroupQuartzCommand.getCommand();
-        final List<String> primaryKeys = tableGroupQuartzCommand.getPrimaryKeys();
-        final Table table = tableGroupQuartzCommand.getTable();
+    private void execute(TableGroupQuartzCommand cmd, int index) {
+        final Map<String, String> command = cmd.getCommand();
+        final List<String> primaryKeys = cmd.getPrimaryKeys();
+        final Table table = cmd.getTable();
 
         // 检查增量点
         Point point = checkLastPoint(command, index);
@@ -137,21 +137,21 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
 
             for (Map<String, Object> row : data) {
                 if (customEvent) {
-                    trySendEvent(new ScanChangedEvent(index, event, row));
+                    trySendEvent(new ScanChangedEvent(table.getName(), event, cmd.getChangedRow(row)));
                     continue;
                 }
 
                 Object eventValue = StringUtil.toString(row.get(eventFieldName));
                 if (update.contains(eventValue)) {
-                    trySendEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_UPDATE, row));
+                    trySendEvent(new ScanChangedEvent(table.getName(), ConnectorConstant.OPERTION_UPDATE, cmd.getChangedRow(row)));
                     continue;
                 }
                 if (insert.contains(eventValue)) {
-                    trySendEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_INSERT, row));
+                    trySendEvent(new ScanChangedEvent(table.getName(), ConnectorConstant.OPERTION_INSERT, cmd.getChangedRow(row)));
                     continue;
                 }
                 if (delete.contains(eventValue)) {
-                    trySendEvent(new ScanChangedEvent(index, ConnectorConstant.OPERTION_DELETE, row));
+                    trySendEvent(new ScanChangedEvent(table.getName(), ConnectorConstant.OPERTION_DELETE, cmd.getChangedRow(row)));
                 }
             }
             // 更新记录点
@@ -174,9 +174,9 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
 
     }
 
-    private void trySendEvent(ChangedEvent event){
+    private void trySendEvent(ChangedEvent event) {
         // 如果消费事件失败，重试
-        while (running){
+        while (running) {
             try {
                 changeEvent(event);
                 break;

@@ -19,14 +19,15 @@ import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.listener.event.RowChangedEvent;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.filter.FieldResolver;
 import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.listener.event.RowChangedEvent;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.storage.util.BinlogMessageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +40,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -111,18 +112,25 @@ public class DataSyncServiceImpl implements DataSyncService {
             return Collections.EMPTY_MAP;
         }
 
-        // 3、反序列
+        // 3、获取DDL
         Map<String, Object> target = new HashMap<>();
-        final Picker picker = new Picker(tableGroup.getFieldMapping());
-        final Map<String, Field> fieldMap = picker.getTargetFieldMap();
         BinlogMap message = BinlogMap.parseFrom(bytes);
+        String event = (String) row.get(ConfigConstant.DATA_EVENT);
+        if (StringUtil.equals(event, ConnectorConstant.OPERTION_ALTER)) {
+            message.getRowMap().forEach((k, v) -> target.put(k, v.toStringUtf8()));
+            return target;
+        }
+
+        // 4、反序列
+        final Picker picker = new Picker(tableGroup);
+        final Map<String, Field> fieldMap = picker.getTargetFieldMap();
         message.getRowMap().forEach((k, v) -> {
             if (fieldMap.containsKey(k)) {
                 try {
                     Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);
                     // 处理二进制对象显示
                     if (prettyBytes) {
-                        if (null != val && val instanceof byte[]) {
+                        if (val instanceof byte[]) {
                             byte[] b = (byte[]) val;
                             if (b.length > 128) {
                                 target.put(k, String.format("byte[%d]", b.length));
@@ -163,12 +171,14 @@ public class DataSyncServiceImpl implements DataSyncService {
         }
         TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
         String sourceTableName = tableGroup.getSourceTable().getName();
-        RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, Collections.EMPTY_LIST);
+
         // 转换为源字段
-        final Picker picker = new Picker(tableGroup.getFieldMapping());
-        changedEvent.setChangedRow(picker.pickSourceData(binlogData));
+        final Picker picker = new Picker(tableGroup);
+        List<Object> changedRow = picker.pickSourceData(binlogData);
+        RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow);
+
         // 执行同步是否成功
-        bufferActuatorRouter.execute(metaId, tableGroupId, changedEvent);
+        bufferActuatorRouter.execute(metaId, changedEvent);
         storageService.remove(StorageEnum.DATA, metaId, messageId);
         // 更新失败数
         Meta meta = profileComponent.getMeta(metaId);
@@ -181,7 +191,7 @@ public class DataSyncServiceImpl implements DataSyncService {
 
     private Map getData(String metaId, String messageId) {
         Query query = new Query(1, 1);
-        Map<String, FieldResolver> fieldResolvers = new LinkedHashMap<>();
+        Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
         fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
         query.setFieldResolverMap(fieldResolvers);
         query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);

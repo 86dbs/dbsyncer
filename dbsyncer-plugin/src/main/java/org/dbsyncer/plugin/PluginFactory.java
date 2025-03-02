@@ -24,11 +24,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -55,7 +55,7 @@ public class PluginFactory implements DisposableBean {
 
     private final List<Plugin> plugins = new LinkedList<>();
 
-    private final Map<String, PluginService> service = new LinkedHashMap<>();
+    private final Map<String, PluginService> service = new ConcurrentHashMap<>();
 
     @Resource
     private ApplicationContext applicationContext;
@@ -80,7 +80,7 @@ public class PluginFactory implements DisposableBean {
 
     public synchronized void loadPlugins() {
         if (!CollectionUtils.isEmpty(plugins)) {
-            List<Plugin> unmodifiablePlugin = plugins.stream().filter(p -> p.isUnmodifiable()).collect(Collectors.toList());
+            List<Plugin> unmodifiablePlugin = plugins.stream().filter(Plugin::isUnmodifiable).collect(Collectors.toList());
             plugins.clear();
             plugins.addAll(unmodifiablePlugin);
         }
@@ -91,7 +91,7 @@ public class PluginFactory implements DisposableBean {
         }
         Collection<File> files = FileUtils.listFiles(new File(PLUGIN_PATH), new String[]{"jar"}, true);
         if (!CollectionUtils.isEmpty(files)) {
-            files.forEach(f -> loadPlugin(f));
+            files.forEach(this::loadPlugin);
         }
         logger.info("PreLoad plugin:{}", plugins.size());
     }
@@ -135,7 +135,7 @@ public class PluginFactory implements DisposableBean {
     }
 
     public String createPluginId(String pluginClassName, String pluginVersion) {
-        return new StringBuilder(pluginClassName).append("_").append(pluginVersion).toString();
+        return pluginClassName + "_" + pluginVersion;
     }
 
     /**

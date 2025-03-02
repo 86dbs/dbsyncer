@@ -68,7 +68,6 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-
         <!-- dbsyncer-connector-sqlserver -->
         <dependency>
             <groupId>org.ghi</groupId>

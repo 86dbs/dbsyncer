@@ -1,28 +1,25 @@
 package org.dbsyncer.sdk.config;
 
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
-import org.dbsyncer.sdk.model.Field;
 
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class DDLConfig {
-    /**
-     * 执行命令
-     */
+
     private String sql;
 
     private DDLOperationEnum ddlOperationEnum;
 
-    private List<Field> addFields = new LinkedList<>();
+    private List<String> addedFieldNames = new LinkedList<>();
 
-    private List<Field> removeFields = new LinkedList<>();
+    private List<String> modifiedFieldNames = new LinkedList<>();
 
-    //记录源表的源字段名称
-    private String sourceColumnName;
+    private List<String> droppedFieldNames = new LinkedList<>();
 
-    //记录改变后的字段名称
-    private String changedColumnName;
+    private Map<String, String> changedFieldNames = new LinkedHashMap<>();
 
     public String getSql() {
         return sql;
@@ -32,43 +29,43 @@ public class DDLConfig {
         this.sql = sql;
     }
 
-    public List<Field> getAddFields() {
-        return addFields;
-    }
-
-    public void setAddFields(List<Field> addFields) {
-        this.addFields = addFields;
-    }
-
-    public List<Field> getRemoveFields() {
-        return removeFields;
-    }
-
-    public void setRemoveFields(List<Field> removeFields) {
-        this.removeFields = removeFields;
-    }
-
-    public String getSourceColumnName() {
-        return sourceColumnName;
-    }
-
-    public void setSourceColumnName(String sourceColumnName) {
-        this.sourceColumnName = sourceColumnName;
-    }
-
-    public String getChangedColumnName() {
-        return changedColumnName;
-    }
-
-    public void setChangedColumnName(String changedColumnName) {
-        this.changedColumnName = changedColumnName;
-    }
-
     public DDLOperationEnum getDdlOperationEnum() {
         return ddlOperationEnum;
     }
 
     public void setDdlOperationEnum(DDLOperationEnum ddlOperationEnum) {
         this.ddlOperationEnum = ddlOperationEnum;
+    }
+
+    public List<String> getAddedFieldNames() {
+        return addedFieldNames;
+    }
+
+    public void setAddedFieldNames(List<String> addedFieldNames) {
+        this.addedFieldNames = addedFieldNames;
+    }
+
+    public List<String> getModifiedFieldNames() {
+        return modifiedFieldNames;
+    }
+
+    public void setModifiedFieldNames(List<String> modifiedFieldNames) {
+        this.modifiedFieldNames = modifiedFieldNames;
+    }
+
+    public List<String> getDroppedFieldNames() {
+        return droppedFieldNames;
+    }
+
+    public void setDroppedFieldNames(List<String> droppedFieldNames) {
+        this.droppedFieldNames = droppedFieldNames;
+    }
+
+    public Map<String, String> getChangedFieldNames() {
+        return changedFieldNames;
+    }
+
+    public void setChangedFieldNames(Map<String, String> changedFieldNames) {
+        this.changedFieldNames = changedFieldNames;
     }
 }

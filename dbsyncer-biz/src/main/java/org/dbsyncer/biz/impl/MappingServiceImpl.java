@@ -19,6 +19,7 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -76,16 +77,18 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Resource
     private ConnectorFactory connectorFactory;
 
+    @Resource
+    private TableGroupContext tableGroupContext;
+
     @Override
     public String add(Map<String, String> params) {
         ConfigModel model = mappingChecker.checkAddConfigModel(params);
-        log(LogType.MappingLog.INSERT, (Mapping) model);
+        log(LogType.MappingLog.INSERT, model);
 
         String id = profileComponent.addConfigModel(model);
 
         // 匹配相似表 on
-        String autoMatchTable = params.get("autoMatchTable");
-        if (StringUtil.isNotBlank(autoMatchTable)) {
+        if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
             matchSimilarTable(model);
         }
 
@@ -131,7 +134,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
             log(LogType.MappingLog.UPDATE, model);
 
-            mappingChecker.batchMergeTableGroupConfig(model, params);
+            // 更新meta
+            tableGroupService.updateMeta(mapping, params.get("metaSnapshot"));
             return profileComponent.editConfigModel(model);
         }
     }
@@ -157,6 +161,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             if (!CollectionUtils.isEmpty(groupList)) {
                 groupList.forEach(t -> profileComponent.removeTableGroup(t.getId()));
             }
+
+            // 删除驱动表映射关系
+            tableGroupContext.clear(metaId);
 
             // 删除驱动
             profileComponent.removeConfigModel(id);
@@ -199,12 +206,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public List<MappingVo> getMappingAll() {
-        List<MappingVo> list = profileComponent.getMappingAll()
+        return profileComponent.getMappingAll()
                 .stream()
-                .map(m -> convertMapping2Vo(m))
+                .map(this::convertMapping2Vo)
                 .sorted(Comparator.comparing(MappingVo::getUpdateTime).reversed())
                 .collect(Collectors.toList());
-        return list;
     }
 
     @Override
@@ -330,7 +336,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 }
             }
         }
-        mappingChecker.updateMeta(mapping);
     }
 
     private void clearMetaIfFinished(String metaId) {

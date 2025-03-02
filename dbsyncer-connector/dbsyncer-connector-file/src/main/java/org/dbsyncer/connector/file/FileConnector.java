@@ -14,7 +14,6 @@ import org.dbsyncer.connector.file.model.FileResolver;
 import org.dbsyncer.connector.file.model.FileSchema;
 import org.dbsyncer.connector.file.validator.FileConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -23,13 +22,18 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.Types;
@@ -51,7 +55,6 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String TYPE = "File";
     private final String FILE_NAME = "fileName";
     private final String FILE_PATH = "filePath";
     private final FileResolver fileResolver = new FileResolver();
@@ -63,17 +66,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
 
     @Override
     public String getConnectorType() {
-        return TYPE;
-    }
-
-    @Override
-    public boolean isSupportedTiming() {
-        return false;
-    }
-
-    @Override
-    public boolean isSupportedLog() {
-        return true;
+        return "File";
     }
 
     @Override
@@ -192,24 +185,23 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     }
 
     @Override
-    public Result writer(FileConnectorInstance connectorInstance, WriterBatchConfig config) {
-        List<Map> data = config.getData();
+    public Result writer(FileConnectorInstance connectorInstance, PluginContext context) {
+        List<Map> data = context.getTargetList();
         if (CollectionUtils.isEmpty(data)) {
             logger.error("writer data can not be empty.");
             throw new FileException("writer data can not be empty.");
         }
 
-        final List<Field> fields = config.getFields();
         final String separator = new String(new char[]{connectorInstance.getConfig().getSeparator()});
 
         Result result = new Result();
         OutputStream output = null;
         try {
-            final String filePath = connectorInstance.getFilePath(config.getCommand().get(FILE_NAME));
+            final String filePath = connectorInstance.getFilePath(context.getCommand().get(FILE_NAME));
             output = new FileOutputStream(filePath, true);
             List<String> lines = data.stream().map(row -> {
                 List<String> array = new ArrayList<>();
-                fields.forEach(field -> {
+                context.getTargetFields().forEach(field -> {
                     Object o = row.get(field.getName());
                     array.add(null != o ? String.valueOf(o) : "");
                 });

@@ -18,7 +18,6 @@ import org.dbsyncer.connector.elasticsearch.schema.ESOtherValueMapper;
 import org.dbsyncer.connector.elasticsearch.util.ESUtil;
 import org.dbsyncer.connector.elasticsearch.validator.ESConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -31,6 +30,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
@@ -65,7 +65,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.Types;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -79,18 +86,10 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String TYPE = "Elasticsearch";
-
     public static final String _SOURCE_INDEX = "_source_index";
-
-    public static final String _TARGET_INDEX = "_target_index";
-
-    public static final String _TYPE = "_type";
-
-    private static final int MAX_SIZE = 10000;
-
-    private final Map<String, FilterMapper> filters = new LinkedHashMap<>();
-
+    private final String _TARGET_INDEX = "_target_index";
+    private final String _TYPE = "_type";
+    private final Map<String, FilterMapper> filters = new ConcurrentHashMap<>();
     private final ESConfigValidator configValidator = new ESConfigValidator();
 
     public ElasticsearchConnector() {
@@ -108,17 +107,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
 
     @Override
     public String getConnectorType() {
-        return TYPE;
-    }
-
-    @Override
-    public boolean isSupportedTiming() {
-        return true;
-    }
-
-    @Override
-    public boolean isSupportedLog() {
-        return false;
+        return "Elasticsearch";
     }
 
     @Override
@@ -243,7 +232,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         } else {
             builder.from((context.getPageIndex() - 1) * context.getPageSize());
         }
-        builder.size(context.getPageSize() > MAX_SIZE ? MAX_SIZE : context.getPageSize());
+        builder.size(Math.min(context.getPageSize(), 10000));
 
         try {
             SearchRequest rq = new SearchRequest(new String[]{context.getCommand().get(_SOURCE_INDEX)}, builder);
@@ -265,21 +254,21 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     }
 
     @Override
-    public Result writer(ESConnectorInstance connectorInstance, WriterBatchConfig config) {
-        List<Map> data = config.getData();
-        if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(config.getFields())) {
+    public Result writer(ESConnectorInstance connectorInstance, PluginContext context) {
+        List<Map> data = context.getTargetList();
+        if (CollectionUtils.isEmpty(data)) {
             logger.error("writer data can not be empty.");
             throw new ElasticsearchException("writer data can not be empty.");
         }
 
-        final Result result = new Result();
-        final List<Field> pkFields = PrimaryKeyUtil.findConfigPrimaryKeyFields(config);
+        Result result = new Result();
+        final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
         try {
             final BulkRequest request = new BulkRequest();
             final String pk = pkFields.get(0).getName();
-            final String indexName = config.getCommand().get(_TARGET_INDEX);
-            final String type = config.getCommand().get(_TYPE);
-            data.forEach(row -> addRequest(request, indexName, type, config.getEvent(), String.valueOf(row.get(pk)), row));
+            final String indexName = context.getCommand().get(_TARGET_INDEX);
+            final String type = context.getCommand().get(_TYPE);
+            data.forEach(row -> addRequest(request, indexName, type, context.getEvent(), String.valueOf(row.get(pk)), row));
 
             BulkResponse response = connectorInstance.getConnection().bulkWithVersion(request, RequestOptions.DEFAULT);
             RestStatus restStatus = response.status();

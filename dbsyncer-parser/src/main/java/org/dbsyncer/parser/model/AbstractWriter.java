@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
+import org.dbsyncer.sdk.model.ChangedOffset;
 
 /**
  * @author AE86
@@ -11,7 +12,9 @@ public abstract class AbstractWriter {
 
     private ChangedEventTypeEnum typeEnum;
 
-    private String tableGroupId;
+    private ChangedOffset changedOffset;
+
+    private String tableName;
 
     private String event;
 
@@ -25,12 +28,20 @@ public abstract class AbstractWriter {
         this.typeEnum = typeEnum;
     }
 
-    public String getTableGroupId() {
-        return tableGroupId;
+    public ChangedOffset getChangedOffset() {
+        return changedOffset;
     }
 
-    public void setTableGroupId(String tableGroupId) {
-        this.tableGroupId = tableGroupId;
+    public void setChangedOffset(ChangedOffset changedOffset) {
+        this.changedOffset = changedOffset;
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
     }
 
     public String getEvent() {

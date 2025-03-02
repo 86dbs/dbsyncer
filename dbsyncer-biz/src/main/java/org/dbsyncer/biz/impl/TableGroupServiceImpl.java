@@ -4,25 +4,25 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.TableGroupService;
-import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 /**
@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroupService {
 
     @Resource
-    private Checker tableGroupChecker;
+    private TableGroupChecker tableGroupChecker;
 
     @Resource
     private ProfileComponent profileComponent;
@@ -42,7 +42,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     @Override
     public String add(Map<String, String> params) {
         String mappingId = params.get("mappingId");
-        assertRunning(profileComponent.getMapping(mappingId));
+        Mapping mapping = profileComponent.getMapping(mappingId);
+        assertRunning(mapping);
 
         synchronized (LOCK) {
             // table1, table2
@@ -63,7 +64,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
             }
 
             // 合并驱动公共字段
-            mergeMappingColumn(mappingId);
+            mergeMappingColumn(mapping);
+            // 更新meta
+            updateMeta(mapping, null);
             return 1 < tableSize ? String.valueOf(tableSize) : id;
         }
     }
@@ -73,12 +76,15 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        assertRunning(profileComponent.getMapping(tableGroup.getMappingId()));
+        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+        assertRunning(mapping);
 
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
         log(LogType.TableGroupLog.UPDATE, model);
-
-        return profileComponent.editTableGroup(model);
+        profileComponent.editTableGroup(model);
+        // 更新meta
+        updateMeta(mapping, null);
+        return id;
     }
 
     @Override
@@ -87,9 +93,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         Assert.notNull(tableGroup, "Can not find tableGroup.");
         assertRunning(profileComponent.getMapping(tableGroup.getMappingId()));
 
-        TableGroupChecker checker = (TableGroupChecker) tableGroupChecker;
-        checker.refreshTableFields(tableGroup);
-
+        tableGroupChecker.refreshTableFields(tableGroup);
         return profileComponent.editTableGroup(tableGroup);
     }
 
@@ -97,7 +101,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     public boolean remove(String mappingId, String ids) {
         Assert.hasText(mappingId, "Mapping id can not be null");
         Assert.hasText(ids, "TableGroup ids can not be null");
-        assertRunning(profileComponent.getMapping(mappingId));
+        Mapping mapping = profileComponent.getMapping(mappingId);
+        assertRunning(mapping);
 
         // 批量删除表
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
@@ -107,7 +112,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         });
 
         // 合并驱动公共字段
-        mergeMappingColumn(mappingId);
+        mergeMappingColumn(mapping);
+        // 更新meta
+        updateMeta(mapping, null);
 
         // 重置排序
         resetTableGroupAllIndex(mappingId);
@@ -126,6 +133,43 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         return profileComponent.getSortedTableGroupAll(mappingId);
     }
 
+    @Override
+    public void updateMeta(Mapping mapping, String metaSnapshot) {
+        Meta meta = profileComponent.getMeta(mapping.getMetaId());
+        Assert.notNull(meta, "驱动meta不存在.");
+
+        // 清空状态
+        meta.clear();
+
+        // 手动配置增量点
+        if (StringUtil.isNotBlank(metaSnapshot)) {
+            Map snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
+            if (!CollectionUtils.isEmpty(snapshot)) {
+                meta.setSnapshot(snapshot);
+            }
+        }
+
+        getMetaTotal(meta, mapping.getModel());
+
+        meta.setUpdateTime(Instant.now().toEpochMilli());
+        profileComponent.editConfigModel(meta);
+    }
+
+    private void getMetaTotal(Meta meta, String model) {
+        // 全量同步
+        if (ModelEnum.isFull(model)) {
+            // 统计tableGroup总条数
+            AtomicLong count = new AtomicLong(0);
+            List<TableGroup> groupAll = profileComponent.getTableGroupAll(meta.getMappingId());
+            if (!CollectionUtils.isEmpty(groupAll)) {
+                for (TableGroup g : groupAll) {
+                    count.getAndAdd(g.getSourceTable().getCount());
+                }
+            }
+            meta.setTotal(count);
+        }
+    }
+
     private void resetTableGroupAllIndex(String mappingId) {
         synchronized (LOCK) {
             List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
@@ -140,11 +184,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         }
     }
 
-    private void mergeMappingColumn(String mappingId) {
-        List<TableGroup> groups = profileComponent.getTableGroupAll(mappingId);
-
-        Mapping mapping = profileComponent.getMapping(mappingId);
-        Assert.notNull(mapping, "mapping not exist.");
+    private void mergeMappingColumn(Mapping mapping) {
+        List<TableGroup> groups = profileComponent.getTableGroupAll(mapping.getId());
 
         List<Field> sourceColumn = null;
         List<Field> targetColumn = null;

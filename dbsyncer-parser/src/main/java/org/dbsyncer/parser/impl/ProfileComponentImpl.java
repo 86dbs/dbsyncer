@@ -149,16 +149,15 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
         TableGroup tableGroup = new TableGroup().setMappingId(mappingId);
-        return operationTemplate.queryAll(new QueryConfig(tableGroup, GroupStrategyEnum.TABLE));
+        return operationTemplate.queryAll(new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE));
     }
 
     @Override
     public List<TableGroup> getSortedTableGroupAll(String mappingId) {
-        List<TableGroup> list = getTableGroupAll(mappingId)
+        return getTableGroupAll(mappingId)
                 .stream()
                 .sorted(Comparator.comparing(TableGroup::getIndex).reversed())
                 .collect(Collectors.toList());
-        return list;
     }
 
     @Override

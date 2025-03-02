@@ -14,8 +14,8 @@ import java.util.List;
  * @Author AE86
  * @Date 2020-06-15 20:00
  */
-public class RowChangedEvent extends CommonChangedEvent {
-    private List<Object> dataList;
+public final class RowChangedEvent extends CommonChangedEvent {
+    private final List<Object> changedRow;
 
     public RowChangedEvent(String sourceTableName, String event, List<Object> data) {
         this(sourceTableName, event, data, null, null);
@@ -26,15 +26,16 @@ public class RowChangedEvent extends CommonChangedEvent {
         setEvent(event);
         setNextFileName(nextFileName);
         setPosition(position);
-        this.dataList = data;
-    }
-
-    public List<Object> getDataList() {
-        return dataList;
+        this.changedRow = data;
     }
 
     @Override
     public ChangedEventTypeEnum getType() {
         return ChangedEventTypeEnum.ROW;
+    }
+
+    @Override
+    public List<Object> getChangedRow() {
+        return changedRow;
     }
 }

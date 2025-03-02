@@ -18,7 +18,7 @@ public class Result<T> {
     /**
      * 错误日志
      */
-    private StringBuffer error = new StringBuffer();
+    private final StringBuffer error = new StringBuffer();
 
     /**
      * 驱动表映射关系ID

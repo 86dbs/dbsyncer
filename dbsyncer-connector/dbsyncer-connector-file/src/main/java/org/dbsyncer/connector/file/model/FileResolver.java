@@ -9,9 +9,9 @@ import org.dbsyncer.connector.file.column.impl.FileColumnValue;
 import org.dbsyncer.sdk.model.Field;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @Author AE86
@@ -20,11 +20,11 @@ import java.util.Map;
  */
 public class FileResolver {
 
-    private ColumnValue value = new FileColumnValue();
+    private final ColumnValue value = new FileColumnValue();
 
     public Map<String, Object> parseMap(List<Field> fields, char separator, String line) {
-        Map<String, Object> row = new LinkedHashMap<>();
-        parse(fields, separator, line, (key, value) -> row.put(key, value));
+        Map<String, Object> row = new ConcurrentHashMap<>();
+        parse(fields, separator, line, row::put);
         return row;
     }
 

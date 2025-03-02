@@ -30,7 +30,6 @@ import org.dbsyncer.sdk.model.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,7 +55,6 @@ public class OracleListener extends AbstractDatabaseListener {
     @Override
     public void start() {
         try {
-            // TODO [increment-worker-1184659161326161921] 这里应该单独启动一个线程，线程名要有一定意义，如:binlog-parser-127.0.0.1:3306_123，便于监控排查问题
             final DatabaseConfig config = getConnectorInstance().getConfig();
             String driverClassName = config.getDriverClassName();
             String username = config.getUsername();
@@ -77,7 +75,7 @@ public class OracleListener extends AbstractDatabaseListener {
             });
             logMiner.start();
         } catch (Exception e) {
-            logger.error("启动失败:{}", e.getMessage());
+            logger.error("启动失败:{}", e.getMessage(), e);
             throw new OracleException(e);
         }
     }
@@ -144,19 +142,15 @@ public class OracleListener extends AbstractDatabaseListener {
             String tableName = getTableName(alter.getTable());
             if (tableFiledMap.containsKey(tableName)) {
                 logger.info("sql:{}", event.getRedoSql());
-                trySendEvent(new DDLChangedEvent(null, tableName, ConnectorConstant.OPERTION_ALTER, event.getRedoSql(), null, event.getScn()));
+                trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER, event.getRedoSql(), null, event.getScn()));
             }
         }
     }
 
     @Override
     public void close() {
-        try {
-            if (logMiner != null) {
-                logMiner.close();
-            }
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
+        if (logMiner != null) {
+            logMiner.close();
         }
     }
 

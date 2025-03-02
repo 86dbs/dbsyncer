@@ -38,7 +38,6 @@ public final class OracleConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String TYPE = "Oracle";
     private final OracleConfigValidator configValidator = new OracleConfigValidator();
 
     public OracleConnector() {
@@ -48,7 +47,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getConnectorType() {
-        return TYPE;
+        return "Oracle";
     }
 
     @Override

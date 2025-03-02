@@ -35,9 +35,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @Author AE86
@@ -188,7 +188,7 @@ public class Shard {
             // 取得对应的文档对象
             doc = searcher.doc(docs[begin++].doc);
             iterator = doc.iterator();
-            r = new LinkedHashMap<>();
+            r = new ConcurrentHashMap();
             while (iterator.hasNext()) {
                 f = iterator.next();
 
@@ -204,7 +204,7 @@ public class Shard {
                             continue;
                         }
                     } catch (InvalidTokenOffsetsException e) {
-                        e.printStackTrace();
+                        logger.error(e.getLocalizedMessage(), e);
                     }
                 }
 

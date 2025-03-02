@@ -42,13 +42,9 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
         Field field = null;
         for (int i = 0; i < size; i++) {
             field = fields.get(i);
-            if (field.isUnmodifiabled()) {
-                sql.append(field.getName());
-            } else {
-                sql.append(quotation);
-                sql.append(database.buildFieldName(field));
-                sql.append(quotation);
-            }
+            sql.append(quotation);
+            sql.append(database.buildFieldName(field));
+            sql.append(quotation);
 
             // "USERNAME" as "myName"
             if (StringUtil.isNotBlank(field.getLabelName())) {

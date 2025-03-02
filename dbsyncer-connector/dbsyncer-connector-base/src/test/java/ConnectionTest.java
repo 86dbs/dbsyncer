@@ -28,12 +28,14 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @Author AE86
@@ -119,6 +121,17 @@ public class ConnectionTest {
 
         TimeUnit.SECONDS.sleep(3);
         logger.info("test end");
+    }
+
+    @Test
+    public void testQuery() {
+        final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
+        // 3、执行SQL
+        String querySql = "SELECT * from test_schema where id = ?";
+        Object[] args = new Object[1];
+        args[0] = 9999999;
+        List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, args));
+        logger.info("test list={}", list);
     }
 
     @Test
@@ -321,22 +334,13 @@ public class ConnectionTest {
         int total = dataList.size();
         int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
         final CountDownLatch latch = new CountDownLatch(taskSize);
-        int fromIndex = 0;
-        int toIndex = batchSize;
+        int offset = 0;
         for (int i = 0; i < taskSize; i++) {
-            final List<Object[]> data;
-            if (toIndex > total) {
-                toIndex = fromIndex + (total % batchSize);
-                data = dataList.subList(fromIndex, toIndex);
-            } else {
-                data = dataList.subList(fromIndex, toIndex);
-                fromIndex += batchSize;
-                toIndex += batchSize;
-            }
-
+            List<Object[]> slice = dataList.stream().skip(offset).limit(batchSize).collect(Collectors.toList());
+            offset += batchSize;
             pool.submit(() -> {
                 try {
-                    connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, data));
+                    connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, slice));
                 } catch (Exception e) {
                     logger.error(e.getMessage());
                 } finally {
@@ -433,7 +437,7 @@ public class ConnectionTest {
 
     private DatabaseConfig createMysqlConfig() {
         DatabaseConfig config = new DatabaseConfig();
-        config.setUrl("jdbc:mysql://127.0.0.1:3305/test?rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true&failOverReadOnly=false");
+        config.setUrl("jdbc:mysql://127.0.0.1:3305/test?rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true&failOverReadOnly=false&tinyInt1isBit=false");
         config.setUsername("root");
         config.setPassword("123");
         config.setDriverClassName("com.mysql.cj.jdbc.Driver");

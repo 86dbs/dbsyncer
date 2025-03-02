@@ -6,7 +6,6 @@ package org.dbsyncer.sdk.connector;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
-import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.schema.BigintValueMapper;
 import org.dbsyncer.sdk.connector.schema.BinaryValueMapper;
 import org.dbsyncer.sdk.connector.schema.BitValueMapper;
@@ -35,19 +34,20 @@ import org.dbsyncer.sdk.connector.schema.VarBinaryValueMapper;
 import org.dbsyncer.sdk.connector.schema.VarcharValueMapper;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected final Map<Integer, ValueMapper> VALUE_MAPPERS = new LinkedHashMap<>();
+    protected final Map<Integer, ValueMapper> VALUE_MAPPERS = new ConcurrentHashMap<>();
 
     public AbstractConnector() {
         // 常用类型
@@ -84,35 +84,20 @@ public abstract class AbstractConnector {
     }
 
     /**
-     * 获取标准数据类型解析器
-     *
-     * @return
-     */
-    protected SchemaResolver getSchemaResolver() {
-        return null;
-    }
-
-    /**
      * 转换字段值
      *
+     * @param context
      * @param connectorInstance
-     * @param config
      */
-    public void convertProcessBeforeWriter(ConnectorInstance connectorInstance, WriterBatchConfig config) {
-        if (CollectionUtils.isEmpty(config.getFields()) || CollectionUtils.isEmpty(config.getData())) {
-            return;
-        }
-
-        final SchemaResolver resolver = getSchemaResolver();
-        if (resolver != null) {
-            convert(config, resolver);
+    public void convertProcessBeforeWriter(PluginContext context, ConnectorInstance connectorInstance) {
+        if (CollectionUtils.isEmpty(context.getTargetFields()) || CollectionUtils.isEmpty(context.getTargetList())) {
             return;
         }
 
         // 获取字段映射规则
-        for (Map row : config.getData()) {
+        for (Map row : context.getTargetList()) {
             // 根据目标字段类型转换值
-            for (Field f : config.getFields()) {
+            for (Field f : context.getTargetFields()) {
                 if (null == f) {
                     continue;
                 }
@@ -123,7 +108,7 @@ public abstract class AbstractConnector {
                     try {
                         row.put(f.getName(), valueMapper.convertValue(connectorInstance, row.get(f.getName())));
                     } catch (Exception e) {
-                        logger.error("convert value error: ({}, {})", f.getName(), row.get(f.getName()));
+                        logger.error("convert value error: ({}, {}, {})", context.getTargetTableName(), f.getName(), row.get(f.getName()));
                         throw new SdkException(e);
                     }
                 }
@@ -131,18 +116,20 @@ public abstract class AbstractConnector {
         }
     }
 
-    private void convert(WriterBatchConfig config, SchemaResolver resolver) {
-        for (Map row : config.getData()) {
-            for (Field f : config.getFields()) {
+    public void convertProcessBeforeWriter(PluginContext context, SchemaResolver targetResolver) {
+        if (CollectionUtils.isEmpty(context.getTargetFields()) || CollectionUtils.isEmpty(context.getTargetList())) {
+            return;
+        }
+
+        for (Map row : context.getTargetList()) {
+            for (Field f : context.getTargetFields()) {
                 if (null == f) {
                     continue;
                 }
                 try {
-                    // 根据目标字段类型转换值
-                    Object o = resolver.merge(row.get(f.getName()), f);
-                    row.put(f.getName(), resolver.convert(o, f));
+                    row.computeIfPresent(f.getName(), (k, v) -> targetResolver.convert(v, f));
                 } catch (Exception e) {
-                    logger.error(String.format("convert value error: (%s, %s, %s)", config.getTableName(), f.getName(), row.get(f.getName())), e);
+                    logger.error(String.format("convert value error: (%s, %s, %s)", context.getTargetTableName(), f.getName(), row.get(f.getName())), e);
                     throw new SdkException(e);
                 }
             }

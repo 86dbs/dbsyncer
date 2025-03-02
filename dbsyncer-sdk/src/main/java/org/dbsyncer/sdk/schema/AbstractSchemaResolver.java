@@ -7,8 +7,8 @@ import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.model.Field;
 import org.springframework.util.Assert;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @Author 穿云
@@ -17,7 +17,7 @@ import java.util.Map;
  */
 public abstract class AbstractSchemaResolver implements SchemaResolver {
 
-    private final Map<String, DataType> mapping = new LinkedHashMap<>();
+    private final Map<String, DataType> mapping = new ConcurrentHashMap<>();
 
     public AbstractSchemaResolver() {
         initDataTypeMapping(mapping);

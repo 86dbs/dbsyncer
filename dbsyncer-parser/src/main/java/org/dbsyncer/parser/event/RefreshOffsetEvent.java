@@ -15,7 +15,7 @@ import java.util.List;
  */
 public final class RefreshOffsetEvent extends ApplicationContextEvent {
 
-    private List<ChangedOffset> offsetList;
+    private final ChangedOffset changedOffset;
 
     /**
      * Create a new ContextStartedEvent.
@@ -23,12 +23,12 @@ public final class RefreshOffsetEvent extends ApplicationContextEvent {
      * @param source the {@code ApplicationContext} that the event is raised for
      *               (must not be {@code null})
      */
-    public RefreshOffsetEvent(ApplicationContext source, List<ChangedOffset> offsetList) {
+    public RefreshOffsetEvent(ApplicationContext source, ChangedOffset changedOffset) {
         super(source);
-        this.offsetList = offsetList;
+        this.changedOffset = changedOffset;
     }
 
-    public List<ChangedOffset> getOffsetList() {
-        return offsetList;
+    public ChangedOffset getChangedOffset() {
+        return changedOffset;
     }
 }

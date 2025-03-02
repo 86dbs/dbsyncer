@@ -20,10 +20,6 @@ public final class ChangedOffset {
      * 增量偏移量
      */
     private Object position;
-    /**
-     * 是否触发刷新增量点事件
-     */
-    private boolean refreshOffset;
 
     public String getMetaId() {
         return metaId;
@@ -49,11 +45,4 @@ public final class ChangedOffset {
         this.position = position;
     }
 
-    public boolean isRefreshOffset() {
-        return refreshOffset;
-    }
-
-    public void setRefreshOffset(boolean refreshOffset) {
-        this.refreshOffset = refreshOffset;
-    }
 }

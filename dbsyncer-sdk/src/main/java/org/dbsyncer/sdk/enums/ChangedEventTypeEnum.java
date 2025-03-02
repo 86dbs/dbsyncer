@@ -17,7 +17,7 @@ public enum ChangedEventTypeEnum {
      */
     SCAN,
     /**
-     * 表行变更，比如mysql, 会获取变动行所有列的值
+     * 表行变更
      */
     ROW;
 

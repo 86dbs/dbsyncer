@@ -7,6 +7,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.ByteType;
 
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 public final class MySQLByteType extends ByteType {
 
     private enum TypeEnum {
+        BIT,
         TINYINT
     }
 
@@ -30,6 +32,24 @@ public final class MySQLByteType extends ByteType {
     protected Byte merge(Object val, Field field) {
         if (val instanceof Number) {
             return ((Number) val).byteValue();
+        }
+        if (val instanceof BitSet) {
+            BitSet bitSet = (BitSet) val;
+            byte[] bytes = bitSet.toByteArray();
+            if (bytes.length > 0) {
+                return bytes[0];
+            }
+            return 0;
+        }
+        if (val instanceof Boolean) {
+            Boolean b = (Boolean) val;
+            return (byte) (b ? 1 : 0);
+        }
+        if (val instanceof byte[]) {
+            byte[] bytes = (byte[]) val;
+            if (bytes.length > 1) {
+                return bytes[1];
+            }
         }
         return throwUnsupportedException(val, field);
     }

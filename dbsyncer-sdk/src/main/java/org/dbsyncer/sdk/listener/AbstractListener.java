@@ -57,7 +57,7 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
                     break;
                 case ConnectorConstant.OPERTION_INSERT:
                     // 是否支持监听新增事件
-                     processEvent(listenerConfig.isEnableInsert(), event);
+                    processEvent(listenerConfig.isEnableInsert(), event);
                     break;
                 case ConnectorConstant.OPERTION_DELETE:
                     // 是否支持监听删除事件
@@ -65,7 +65,7 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
                     break;
                 case ConnectorConstant.OPERTION_ALTER:
                     // 表结构变更事件
-                    processEvent(listenerConfig.isEnableDDL(),event);
+                    processEvent(listenerConfig.isEnableDDL(), event);
                     break;
                 default:
                     break;

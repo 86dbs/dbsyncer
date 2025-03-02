@@ -80,9 +80,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(pageSql));
 
         // 获取查询总数SQL
-        StringBuilder queryCount = new StringBuilder();
-        queryCount.append("SELECT COUNT(1) FROM (").append(querySql).append(") DBS_T");
-        map.put(SqlBuilderEnum.QUERY_COUNT.getName(), queryCount.toString());
+        map.put(SqlBuilderEnum.QUERY_COUNT.getName(), "SELECT COUNT(1) FROM (" + querySql + ") DBS_T");
         return map;
     }
 

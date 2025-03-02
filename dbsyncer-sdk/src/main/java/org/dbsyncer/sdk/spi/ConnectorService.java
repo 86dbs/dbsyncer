@@ -4,10 +4,10 @@
 package org.dbsyncer.sdk.spi;
 
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
-import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -15,7 +15,9 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
 
 import java.util.List;
@@ -36,20 +38,6 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * 连接器类型
      */
     String getConnectorType();
-
-    /**
-     * 是否支持定时策略
-     *
-     * @return
-     */
-    boolean isSupportedTiming();
-
-    /**
-     * 是否支持日志分析
-     *
-     * @return
-     */
-    boolean isSupportedLog();
 
     /**
      * 获取配置对象
@@ -135,10 +123,10 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * 批量写入目标源数据
      *
      * @param connectorInstance
-     * @param connectorConfig
+     * @param context
      * @return
      */
-    Result writer(I connectorInstance, WriterBatchConfig connectorConfig);
+    Result writer(I connectorInstance, PluginContext context);
 
     /**
      * 执行DDL命令
@@ -184,4 +172,22 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
         return null;
     }
 
+    /**
+     * 获取标准数据类型解析器
+     *
+     * @return
+     */
+    default SchemaResolver getSchemaResolver() {
+        return null;
+    }
+
+    /**
+     * 获取指定时间的位点信息
+     *
+     * @param connectorInstance
+     * @return
+     */
+    default Object getPosition(I connectorInstance) {
+        return StringUtil.EMPTY;
+    }
 }

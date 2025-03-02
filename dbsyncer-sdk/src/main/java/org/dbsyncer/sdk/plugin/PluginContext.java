@@ -39,11 +39,6 @@ public interface PluginContext extends BaseContext {
     void setTerminated(boolean terminated);
 
     /**
-     * 数据源连接实例
-     */
-    ConnectorInstance getSourceConnectorInstance();
-
-    /**
      * 目标源连接实例
      */
     ConnectorInstance getTargetConnectorInstance();
@@ -81,6 +76,11 @@ public interface PluginContext extends BaseContext {
     boolean isForceUpdate();
 
     /**
+     * 是否启用字段解析器
+     */
+    boolean isEnableSchemaResolver();
+
+    /**
      * 数据源数据集合
      */
     List<Map> getSourceList();
@@ -90,6 +90,8 @@ public interface PluginContext extends BaseContext {
      */
     List<Map> getTargetList();
 
+    void setTargetList(List<Map> targetList);
+
     /**
      * 获取插件参数
      *
@@ -97,4 +99,11 @@ public interface PluginContext extends BaseContext {
      */
     String getPluginExtInfo();
 
+    /**
+     * 浅拷贝
+     *
+     * @return
+     * @throws CloneNotSupportedException
+     */
+    Object clone() throws CloneNotSupportedException;
 }

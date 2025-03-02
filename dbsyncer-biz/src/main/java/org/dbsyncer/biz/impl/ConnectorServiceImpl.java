@@ -16,8 +16,9 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,13 +26,12 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -44,7 +44,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private Map<String, Boolean> health = new LinkedHashMap<>();
+    private final Map<String, Boolean> health = new ConcurrentHashMap<>();
 
     @Resource
     private ProfileComponent profileComponent;
@@ -117,17 +117,16 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public List<Connector> getConnectorAll() {
-        List<Connector> list = profileComponent.getConnectorAll()
+        return profileComponent.getConnectorAll()
                 .stream()
                 .sorted(Comparator.comparing(Connector::getUpdateTime).reversed())
                 .collect(Collectors.toList());
-        return list;
     }
 
     @Override
     public List<String> getConnectorTypeAll() {
         ArrayList<String> connectorTypes = new ArrayList<>(connectorFactory.getConnectorTypeAll());
-        Collections.sort(connectorTypes, Comparator.comparing(String::toString));
+        connectorTypes.sort(Comparator.comparing(String::toString));
         return connectorTypes;
     }
 
@@ -150,20 +149,27 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
         // 移除删除的连接器
         Set<String> remove = new HashSet<>();
-        health.keySet().forEach(k -> {
-            if (!exist.contains(k)) {
-                remove.add(k);
+        for (Map.Entry<String, Boolean> entry : health.entrySet()) {
+            if (!exist.contains(entry.getKey())) {
+                remove.add(entry.getKey());
             }
-        });
+        }
 
         if (!CollectionUtils.isEmpty(remove)) {
-            remove.forEach(k -> health.remove(k));
+            remove.forEach(health::remove);
         }
     }
 
     @Override
     public boolean isAlive(String id) {
         return health.containsKey(id) && health.get(id);
+    }
+
+    @Override
+    public Object getPosition(String id) {
+        Connector connector = getConnector(id);
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+        return connectorFactory.getPosition(connectorInstance);
     }
 
     private boolean isAlive(ConnectorConfig config) {

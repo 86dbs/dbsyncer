@@ -90,7 +90,7 @@ public class LicenseController extends BaseController {
             return RestResult.restSuccess("ok");
         } catch (Exception e) {
             logService.log(LogType.UserLog.UPLOAD_LICENSE_FILE_ERROR);
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -111,7 +111,7 @@ public class LicenseController extends BaseController {
             return RestResult.restSuccess("ok");
         } catch (Exception e) {
             logService.log(LogType.UserLog.ACTIVATE_FREE_LICENSE_FILE_ERROR);
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
@@ -129,7 +129,7 @@ public class LicenseController extends BaseController {
             return RestResult.restSuccess("ok");
         } catch (Exception e) {
             logService.log(LogType.UserLog.DELETE_LICENSE_FILE_ERROR);
-            logger.error(e.getLocalizedMessage(), e.getClass());
+            logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }

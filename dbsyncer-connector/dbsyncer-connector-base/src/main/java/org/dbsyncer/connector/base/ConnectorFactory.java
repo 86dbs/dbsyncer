@@ -7,21 +7,29 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
-import org.dbsyncer.sdk.config.WriterBatchConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -137,6 +145,11 @@ public class ConnectorFactory implements DisposableBean {
         return getConnectorService(connectorInstance.getConfig()).getMetaInfo(connectorInstance, tableName);
     }
 
+    public Object getPosition(ConnectorInstance connectorInstance) {
+        Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
+        return getConnectorService(connectorInstance.getConfig()).getPosition(connectorInstance);
+    }
+
     /**
      * 获取连接器同步参数
      *
@@ -166,7 +179,8 @@ public class ConnectorFactory implements DisposableBean {
         return getConnectorService(connectorInstance.getConfig()).getCount(connectorInstance, command);
     }
 
-    public Result reader(ConnectorInstance connectorInstance, ReaderContext context) {
+    public Result reader(ReaderContext context) {
+        ConnectorInstance connectorInstance = context.getSourceConnectorInstance();
         Assert.notNull(connectorInstance, "ConnectorInstance can not null");
         Assert.notNull(context, "ReaderContext can not null");
         Result result = getConnectorService(connectorInstance.getConfig()).reader(connectorInstance, context);
@@ -174,23 +188,28 @@ public class ConnectorFactory implements DisposableBean {
         return result;
     }
 
-    public Result writer(ConnectorInstance connectorInstance, WriterBatchConfig config) {
-        Assert.notNull(connectorInstance, "ConnectorInstance can not null");
-        Assert.notNull(config, "WriterBatchConfig can not null");
-        ConnectorService connector = getConnectorService(connectorInstance.getConfig());
-        if (connector instanceof AbstractConnector) {
-            AbstractConnector conn = (AbstractConnector) connector;
+    public Result writer(PluginContext context) {
+        ConnectorInstance targetInstance = context.getTargetConnectorInstance();
+        Assert.notNull(targetInstance, "targetConnectorInstance can not null");
+        ConnectorService targetConnector = getConnectorService(targetInstance.getConfig());
+        if (targetConnector instanceof AbstractConnector) {
+            AbstractConnector conn = (AbstractConnector) targetConnector;
             try {
-                conn.convertProcessBeforeWriter(connectorInstance, config);
+                // 支持标准解析器
+                if (context.isEnableSchemaResolver() && targetConnector.getSchemaResolver() != null) {
+                    conn.convertProcessBeforeWriter(context, targetConnector.getSchemaResolver());
+                } else {
+                    conn.convertProcessBeforeWriter(context, targetInstance);
+                }
             } catch (Exception e) {
                 Result result = new Result();
                 result.getError().append(e.getMessage());
-                result.addFailData(config.getData());
+                result.addFailData(context.getTargetList());
                 return result;
             }
         }
 
-        Result result = connector.writer(connectorInstance, config);
+        Result result = targetConnector.writer(targetInstance, context);
         Assert.notNull(result, "Connector writer batch result can not null");
         return result;
     }

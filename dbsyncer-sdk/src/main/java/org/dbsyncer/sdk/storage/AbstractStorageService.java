@@ -66,7 +66,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
                 return select(sharding, query);
             }
         } catch (InterruptedException e) {
-            logger.warn("tryLock error", e.getLocalizedMessage());
+            logger.warn("tryLock error:{}", e.getLocalizedMessage());
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
         } finally {

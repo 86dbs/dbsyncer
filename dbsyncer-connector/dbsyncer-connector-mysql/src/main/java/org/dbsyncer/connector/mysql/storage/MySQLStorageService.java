@@ -68,7 +68,7 @@ public class MySQLStorageService extends AbstractStorageService {
     public void init(Properties properties) {
         DatabaseConfig config = new DatabaseConfig();
         config.setConnectorType(properties.getProperty("dbsyncer.storage.type"));
-        config.setUrl(properties.getProperty("dbsyncer.storage.mysql.url", "jdbc:mysql://127.0.0.1:3306/dbsyncer?rewriteBatchedStatements=true&seUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true"));
+        config.setUrl(properties.getProperty("dbsyncer.storage.mysql.url", "jdbc:mysql://127.0.0.1:3306/dbsyncer?rewriteBatchedStatements=true&seUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true&tinyInt1isBit=false"));
         config.setUsername(properties.getProperty("dbsyncer.storage.mysql.username", "admin"));
         config.setPassword(properties.getProperty("dbsyncer.storage.mysql.password", "admin"));
         config.setDriverClassName(properties.getProperty("dbsyncer.storage.mysql.driver-class-name"));

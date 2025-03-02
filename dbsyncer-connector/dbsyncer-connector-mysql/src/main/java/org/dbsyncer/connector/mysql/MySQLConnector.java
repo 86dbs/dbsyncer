@@ -6,16 +6,21 @@ package org.dbsyncer.connector.mysql;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.cdc.MySQLListener;
 import org.dbsyncer.connector.mysql.schema.MySQLDateValueMapper;
+import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
 import org.dbsyncer.connector.mysql.storage.MySQLStorageService;
 import org.dbsyncer.connector.mysql.validator.MySQLConfigValidator;
+import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -36,6 +41,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final MySQLConfigValidator configValidator = new MySQLConfigValidator();
+    private final MySQLSchemaResolver schemaResolver = new MySQLSchemaResolver();
 
     public MySQLConnector() {
         VALUE_MAPPERS.put(Types.DATE, new MySQLDateValueMapper());
@@ -136,8 +142,23 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    protected String getQueryCountSql(CommandConfig commandConfig, List<String> primaryKeys, String schema, String queryFilterSql) {
+        final Table table = commandConfig.getTable();
+        if (StringUtil.isNotBlank(queryFilterSql) || TableTypeEnum.isView(table.getType())) {
+            return super.getQueryCountSql(commandConfig, primaryKeys, schema, queryFilterSql);
+        }
+
+        // 从系统表查询
+        return String.format("SELECT TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '%s' LIMIT 1", table.getName());
+    }
+
+    @Override
     public boolean enableCursor() {
         return true;
     }
 
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
+    }
 }

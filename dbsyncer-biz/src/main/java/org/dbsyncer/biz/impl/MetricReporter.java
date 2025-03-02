@@ -6,11 +6,7 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.enums.BufferActuatorMetricEnum;
 import org.dbsyncer.biz.enums.StatisticEnum;
 import org.dbsyncer.biz.enums.ThreadPoolMetricEnum;
-import org.dbsyncer.biz.model.AppReportMetric;
-import org.dbsyncer.biz.model.MappingReportMetric;
-import org.dbsyncer.biz.model.MetricResponse;
-import org.dbsyncer.biz.model.MetricResponseInfo;
-import org.dbsyncer.biz.model.Sample;
+import org.dbsyncer.biz.model.*;
 import org.dbsyncer.biz.vo.HistoryStackVo;
 import org.dbsyncer.common.metric.Bucket;
 import org.dbsyncer.common.metric.TimeRegistry;
@@ -23,10 +19,8 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
-import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
@@ -44,12 +38,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -93,9 +82,7 @@ public class MetricReporter implements ScheduledTaskJob {
 
     private final MappingReportMetric mappingReportMetric = new MappingReportMetric();
 
-    private AppReportMetric report = new AppReportMetric();
-
-    private final int SHOW_BUFFER_ACTUATOR_SIZE = 7;
+    private final AppReportMetric report = new AppReportMetric();
 
     @PostConstruct
     private void init() {
@@ -114,24 +101,16 @@ public class MetricReporter implements ScheduledTaskJob {
             bufferActuatorRouter.getRouter().forEach((metaId, group) -> {
                 Meta meta = profileComponent.getMeta(metaId);
                 Mapping mapping = profileComponent.getMapping(meta.getMappingId());
-                group.forEach((k, bufferActuator) -> {
-                    if (bufferActuator instanceof TableGroupBufferActuator) {
-                        TableGroupBufferActuator actuator = bufferActuator;
-                        TableGroup tableGroup = profileComponent.getTableGroup(actuator.getTableGroupId());
-                        String metricName = new StringBuilder()
-                                .append(tableGroup.getSourceTable().getName())
-                                .append(" > ")
-                                .append(tableGroup.getTargetTable().getName()).toString();
-                        tableList.add(collect(bufferActuator, tableGroupCode, mapping.getName(), metricName));
-                    }
-                });
+                group.forEach((k, bufferActuator) ->
+                    tableList.add(collect(bufferActuator, tableGroupCode, mapping.getName(), bufferActuator.getTableName()))
+                );
             });
-            List<MetricResponseInfo> sortList = tableList.stream()
+            list.addAll(tableList.stream()
                     .sorted(Comparator.comparing(MetricResponseInfo::getQueueUp).reversed())
-                    .collect(Collectors.toList());
-            list.addAll(sortList.size() <= SHOW_BUFFER_ACTUATOR_SIZE ? sortList : sortList.subList(0, SHOW_BUFFER_ACTUATOR_SIZE));
+                    .limit(7)
+                    .collect(Collectors.toList()));
         }
-        return list.stream().map(info -> info.getResponse()).collect(Collectors.toList());
+        return list.stream().map(MetricResponseInfo::getResponse).collect(Collectors.toList());
     }
 
     public AppReportMetric getAppReportMetric() {
