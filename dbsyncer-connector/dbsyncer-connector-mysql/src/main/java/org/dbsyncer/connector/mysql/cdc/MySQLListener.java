@@ -16,7 +16,6 @@ import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
 import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 import com.github.shyiko.mysql.binlog.network.ServerException;
 import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.QueueOverflowException;
@@ -33,6 +32,7 @@ import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.util.DatabaseUtil;
+import org.dbsyncer.sdk.util.SqlParserUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -327,10 +327,10 @@ public class MySQLListener extends AbstractDatabaseListener {
             try {
                 // skip BEGIN
                 if (!StringUtil.equalsIgnoreCase("BEGIN", sql)) {
-                    return CCJSqlParserUtil.parse(sql);
+                    return SqlParserUtil.parse(sql);
                 }
             } catch (JSQLParserException e) {
-                logger.warn("不支持的ddl:{}，标准的ddl请查看文档https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E8%A1%A8%E7%BB%93%E6%9E%84%E5%90%8C%E6%AD%A5", sql);
+                logger.warn("不支持的ddl:{}", sql);
             }
             return null;
         }

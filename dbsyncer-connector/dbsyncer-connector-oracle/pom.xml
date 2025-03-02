@@ -30,12 +30,6 @@
             <artifactId>orai18n</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>com.github.jsqlparser</groupId>
-            <artifactId>jsqlparser</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
         <!-- sqlserver-driver -->
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>

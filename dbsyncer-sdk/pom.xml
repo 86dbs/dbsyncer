@@ -45,5 +45,10 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.github.jsqlparser</groupId>
+            <artifactId>jsqlparser</artifactId>
+        </dependency>
+
     </dependencies>
 </project>

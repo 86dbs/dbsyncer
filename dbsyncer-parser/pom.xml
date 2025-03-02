@@ -25,11 +25,6 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.github.jsqlparser</groupId>
-            <artifactId>jsqlparser</artifactId>
-        </dependency>
-
         <!-- antlr4-runtime -->
         <dependency>
             <groupId>org.antlr</groupId>
