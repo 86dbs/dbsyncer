@@ -16,7 +16,6 @@ import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
 import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 import com.github.shyiko.mysql.binlog.network.ServerException;
 import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.QueueOverflowException;
@@ -33,6 +32,7 @@ import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.util.DatabaseUtil;
+import org.dbsyncer.sdk.util.SqlParserUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -327,17 +327,17 @@ public class MySQLListener extends AbstractDatabaseListener {
             try {
                 // skip BEGIN
                 if (!StringUtil.equalsIgnoreCase("BEGIN", sql)) {
-                    return CCJSqlParserUtil.parse(sql);
+                    return SqlParserUtil.parse(sql);
                 }
             } catch (JSQLParserException e) {
-                logger.warn("不支持的ddl:{}，标准的ddl请查看文档https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E8%A1%A8%E7%BB%93%E6%9E%84%E5%90%8C%E6%AD%A5", sql);
+                logger.warn("不支持的ddl:{}", sql);
             }
             return null;
         }
 
         private void parseAlter(QueryEventData data, Alter alter) {
             // ALTER TABLE `test`.`my_user` MODIFY COLUMN `name` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL AFTER `id`
-            String tableName = StringUtil.replace(alter.getTable().getName(), "`", "");
+            String tableName = StringUtil.replace(alter.getTable().getName(), StringUtil.BACK_QUOTE, StringUtil.EMPTY);
             // databaseName 的取值不能为 QueryEventData#getDatabase, getDatabase 获取的是执行 SQL 语句时所在的数据库上下文,
             // 不是 alter 语句修改的表所在的数据库
             // 依次执行下面两条语句 use db1; alter table db2.my_user add column name varchar(128);
@@ -347,7 +347,7 @@ public class MySQLListener extends AbstractDatabaseListener {
             if (StringUtil.isBlank(databaseName)) {
                 databaseName = data.getDatabase();
             }
-            databaseName = StringUtil.replace(databaseName, "`", "");
+            databaseName = StringUtil.replace(databaseName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
             if (isFilterTable(databaseName, tableName)) {
                 trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER,
                         data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
