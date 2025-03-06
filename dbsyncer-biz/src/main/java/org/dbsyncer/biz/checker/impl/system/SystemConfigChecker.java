@@ -3,8 +3,10 @@
  */
 package org.dbsyncer.biz.checker.impl.system;
 
+import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.BeanUtil;
+import org.dbsyncer.common.util.NetworkUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.LogService;
@@ -54,9 +56,16 @@ public class SystemConfigChecker extends AbstractChecker {
         params.put("enableStorageWriteSuccess", StringUtil.isNotBlank(params.get("enableStorageWriteSuccess")) ? "true" : "false");
         params.put("enableStorageWriteFail", StringUtil.isNotBlank(params.get("enableStorageWriteFail")) ? "true" : "false");
         params.put("enableStorageWriteFull", StringUtil.isNotBlank(params.get("enableStorageWriteFull")) ? "true" : "false");
-        params.put("enableCDN", StringUtil.isNotBlank(params.get("enableCDN")) ? "true" : "false");
         params.put("enableWatermark", StringUtil.isNotBlank(params.get("enableWatermark")) ? "true" : "false");
         params.put("enableSchemaResolver", StringUtil.isNotBlank(params.get("enableSchemaResolver")) ? "true" : "false");
+        String enableCDN = "false";
+        if (StringUtil.isNotBlank(params.get("enableCDN"))) {
+            if (!NetworkUtil.isInternetAvailable()) {
+                throw new BizException("无法访问互联网，不支持开启[CDN静态资源]");
+            }
+            enableCDN = "true";
+        }
+        params.put("enableCDN", enableCDN);
         String watermark = params.get("watermark");
         if (StringUtil.isNotBlank(watermark)) {
             Assert.isTrue(watermark.length() <= 64, "允许水印内容最多输入64个字.");
