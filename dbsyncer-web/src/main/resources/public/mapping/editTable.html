@@ -61,10 +61,13 @@
                     <span class="fa fa-refresh"></span>刷新表
                 </button>
             </div>
-            <div class="col-md-8"></div>
-            <div class="col-md-2 text-right">
+            <div class="col-md-6"></div>
+            <div class="col-md-4 text-right">
                 <button id="tableGroupDelBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-default" disabled="disabled">
                     <span class="fa fa-remove"></span>删除
+                </button>
+                <button id="tableGroupBatchAddBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-info">
+                    <span class="fa fa-upload"></span>导入
                 </button>
                 <button id="tableGroupAddBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-primary">
                     <span class="fa fa-plus"></span>添加
