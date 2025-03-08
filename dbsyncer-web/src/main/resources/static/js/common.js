@@ -3,8 +3,9 @@ var $location = (window.location + '').split('/');
 var $path = document.location.pathname;
 var $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.substr(1).indexOf("/")+1);
 // 全局内容区域
-var $initContainer = $("#initContainer");
+var $initContainer = $(".contentDiv");
     $initContainer.css("min-height", $(window).height() - 125);
+
 // 监控定时器
 var timer;
 
@@ -33,7 +34,7 @@ function refreshLoginUser() {
 function backIndexPage(projectGroupId) {
     // 加载页面
     projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
-    doLoader("/index?projectGroupId="+ projectGroupId +"&refresh=" + new Date().getTime());
+    doLoader("/index?projectGroupId="+ projectGroupId +"&refresh=" + new Date().getTime(),1);
 }
 
 // 美化SQL
@@ -194,10 +195,19 @@ $.fn.serializeJson = function () {
 };
 
 // 全局加载页面
-function doLoader(url){
+function doLoader(url,route=0){
     clearInterval(timer);
     // 加载页面
-    $initContainer.load($basePath + url, function (response, status, xhr) {
+    const contents = document.querySelectorAll('.contentDiv');
+    contents.forEach(function(content) {
+        content.classList.add('hidden');
+    });
+
+    const contentToShow = $('#initContainer' + route);
+    if (contentToShow) {
+        contentToShow.removeClass('hidden');
+    }
+    contentToShow.load($basePath + url, function (response, status, xhr) {
         if (status != 'success') {
             bootGrowl(response);
         }

@@ -27,3 +27,4 @@
 .dbsyncer_driver_name { margin-bottom: 5px;}
 .dbsyncer_block_increment { background: -webkit-linear-gradient(left, #ffffff, #dffbdc);}
 .dbsyncer_block_full { background: -webkit-linear-gradient(left, #ffffff, #dcf5fb);}
+.hidden {display: none;}
