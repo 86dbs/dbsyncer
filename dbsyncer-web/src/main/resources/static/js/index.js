@@ -46,8 +46,9 @@ $(function () {
 
     // 绑定所有的菜单链接点击事件，根据不同的URL加载页面
     $("#menu li a[url]").click(function () {
+        var route = $(this).data('route');
         // 加载页面
-        doLoader($(this).attr("url"));
+        doLoader($(this).attr("url"),route);
     });
 
     // 头部导航栏选中切换事件

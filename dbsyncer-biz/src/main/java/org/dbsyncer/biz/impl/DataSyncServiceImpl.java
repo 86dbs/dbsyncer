@@ -246,7 +246,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         byte[] b = null;
         if (s.startsWith("[") && s.endsWith("]")) {
             s = StringUtil.substring(s, 1, s.length() - 1);
-            String[] split = StringUtil.split(s, ",");
+            String[] split = StringUtil.split(s, StringUtil.COMMA);
             int length = split.length;
             b = new byte[length];
             for (int i = 0; i < length; i++) {

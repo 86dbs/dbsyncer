@@ -139,7 +139,7 @@ public class MySQLListener extends AbstractDatabaseListener {
         url = StringUtil.replace(url, "/", "");
 
         List<Host> cluster = new ArrayList<>();
-        String[] arr = StringUtil.split(url, ",");
+        String[] arr = StringUtil.split(url, StringUtil.COMMA);
         for (String s : arr) {
             String[] host = StringUtil.split(s, ":");
             if (2 == host.length) {

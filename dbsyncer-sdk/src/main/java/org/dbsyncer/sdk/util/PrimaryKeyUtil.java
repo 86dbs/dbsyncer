@@ -158,7 +158,7 @@ public abstract class PrimaryKeyUtil {
     public static Object[] getLastCursors(String str) {
         Object[] cursors = null;
         if (StringUtil.isNotBlank(str)) {
-            String[] split = StringUtil.split(str, ",");
+            String[] split = StringUtil.split(str, StringUtil.COMMA);
             int length = split.length;
             cursors = new Object[length];
             for (int i = 0; i < length; i++) {

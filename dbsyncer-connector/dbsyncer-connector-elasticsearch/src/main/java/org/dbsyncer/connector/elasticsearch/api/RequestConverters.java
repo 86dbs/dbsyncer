@@ -12,6 +12,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NByteArrayEntity;
 import org.apache.lucene.util.BytesRef;
+import org.dbsyncer.common.util.StringUtil;
 import org.elasticsearch.Version;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -1027,7 +1028,7 @@ final class RequestConverters {
                 if (indicesOptions.expandWildcardsOpen() == false && indicesOptions.expandWildcardsClosed() == false) {
                     expandWildcards = "none";
                 } else {
-                    StringJoiner joiner = new StringJoiner(",");
+                    StringJoiner joiner = new StringJoiner(StringUtil.COMMA);
                     if (indicesOptions.expandWildcardsOpen()) {
                         joiner.add("open");
                     }

@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.mysql.schema.support;
 
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.LongType;
 
@@ -49,6 +50,9 @@ public final class MySQLLongType extends LongType {
     protected Object convert(Object val, Field field) {
         if (val instanceof Number) {
             return ((Number) val).longValue();
+        }
+        if (val instanceof String) {
+            return NumberUtil.toLong((String) val);
         }
         return throwUnsupportedException(val, field);
     }

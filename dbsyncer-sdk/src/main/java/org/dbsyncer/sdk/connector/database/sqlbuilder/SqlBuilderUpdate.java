@@ -42,7 +42,7 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
             sql.append(database.buildFieldName(fields.get(i)));
             sql.append(quotation).append("=?");
             if (i < size - 1) {
-                sql.append(",");
+                sql.append(StringUtil.COMMA);
             }
         }
 

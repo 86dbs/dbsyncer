@@ -4,6 +4,7 @@
 package org.dbsyncer.biz.checker.impl.tablegroup;
 
 import org.dbsyncer.biz.BizException;
+import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -55,6 +56,7 @@ public class TableGroupChecker extends AbstractChecker {
         String targetTable = params.get("targetTable");
         String sourceTablePK = params.get("sourceTablePK");
         String targetTablePK = params.get("targetTablePK");
+        String fieldMappings = params.get("fieldMappings");
         Assert.hasText(mappingId, "tableGroup mappingId is empty.");
         Assert.hasText(sourceTable, "tableGroup sourceTable is empty.");
         Assert.hasText(targetTable, "tableGroup targetTable is empty.");
@@ -74,7 +76,11 @@ public class TableGroupChecker extends AbstractChecker {
         this.modifyConfigModel(tableGroup, params);
 
         // 匹配相似字段映射关系
-        matchFieldMapping(tableGroup);
+        if (StringUtil.isNotBlank(fieldMappings)) {
+            matchFieldMapping(tableGroup, fieldMappings);
+        } else {
+            matchFieldMapping(tableGroup);
+        }
 
         // 合并配置
         mergeConfig(mapping, tableGroup);
@@ -143,7 +149,7 @@ public class TableGroupChecker extends AbstractChecker {
         Assert.notNull(metaInfo, "无法获取连接器表信息:" + tableName);
         // 自定义主键
         if (StringUtil.isNotBlank(primaryKeyStr) && !CollectionUtils.isEmpty(metaInfo.getColumn())) {
-            String[] pks = StringUtil.split(primaryKeyStr, ",");
+            String[] pks = StringUtil.split(primaryKeyStr, StringUtil.COMMA);
             Arrays.asList(pks).stream().forEach(pk -> {
                 for (Field field : metaInfo.getColumn()) {
                     if (StringUtil.equalsIgnoreCase(field.getName(), pk)) {
@@ -194,11 +200,10 @@ public class TableGroupChecker extends AbstractChecker {
         if (!CollectionUtils.isEmpty(list)) {
             for (TableGroup g : list) {
                 // 数据源表和目标表都存在
-                if (StringUtil.equals(sourceTable, g.getSourceTable().getName())
-                        && StringUtil.equals(targetTable, g.getTargetTable().getName())) {
+                if (StringUtil.equals(sourceTable, g.getSourceTable().getName()) && StringUtil.equals(targetTable, g.getTargetTable().getName())) {
                     final String error = String.format("映射关系已存在.%s > %s", sourceTable, targetTable);
                     logger.error(error);
-                    throw new BizException(error);
+                    throw new RepeatedTableGroupException(error);
                 }
             }
         }
@@ -247,6 +252,56 @@ public class TableGroupChecker extends AbstractChecker {
             String tPK = targetTablePrimaryKeys.stream().findFirst().get();
             tableGroup.getFieldMapping().add(new FieldMapping(m1.get(sPK), m2.get(tPK)));
         }
+    }
+
+    private void matchFieldMapping(TableGroup tableGroup, String fieldMappings) {
+        // A1|A2,B1|B2,|C2
+        List<Field> sCol = tableGroup.getSourceTable().getColumn();
+        List<Field> tCol = tableGroup.getTargetTable().getColumn();
+        if (CollectionUtils.isEmpty(sCol) || CollectionUtils.isEmpty(tCol) || StringUtil.isBlank(fieldMappings)) {
+            return;
+        }
+
+        Map<String, Field> sMap = sCol.stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> tMap = tCol.stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        List<FieldMapping> fieldMappingList = tableGroup.getFieldMapping();
+        Set<String> exist = new HashSet<>();
+        String[] fieldMapping = StringUtil.split(fieldMappings, StringUtil.COMMA);
+        for (String mapping : fieldMapping) {
+            String[] m = StringUtil.split(mapping, StringUtil.VERTICAL_LINE);
+            if (m.length == 2) {
+                String sName = m[0];
+                String tName = m[1];
+                if (!exist.contains(mapping) && sMap.containsKey(sName) && tMap.containsKey(tName)) {
+                    fieldMappingList.add(new FieldMapping(sMap.get(sName), tMap.get(tName)));
+                    exist.add(mapping);
+                }
+                continue;
+            }
+
+            // |C2,C3|
+            if (m.length == 1) {
+                String name = m[0];
+                if (StringUtil.startsWith(mapping, StringUtil.VERTICAL_LINE)) {
+                    if (!exist.contains(mapping)) {
+                        tMap.computeIfPresent(name, (k, field) -> {
+                            fieldMappingList.add(new FieldMapping(null, field));
+                            exist.add(mapping);
+                            return field;
+                        });
+                    }
+                    continue;
+                }
+                if (!exist.contains(mapping)) {
+                    sMap.computeIfPresent(name, (k, field) -> {
+                        fieldMappingList.add(new FieldMapping(field, null));
+                        exist.add(mapping);
+                        return field;
+                    });
+                }
+            }
+        }
+        exist.clear();
     }
 
     private void shuffleColumn(List<Field> col, Set<String> key, Map<String, Field> map) {

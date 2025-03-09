@@ -24,7 +24,7 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
 
     @Override
     public String getSuffixName() {
-        return StringUtil.SYMBOL.concat(getEvent());
+        return StringUtil.HORIZONTAL.concat(getEvent());
     }
 
     public void addData(List<Object> data) {

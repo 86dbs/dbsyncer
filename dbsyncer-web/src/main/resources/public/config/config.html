@@ -15,7 +15,7 @@
             <div class="col-md-7">
                 <table class="table table-hover">
                     <caption>配置列表([[${config?.size()} ?: 0]])，<a onClick="downLoad()" href="javascript:;"
-                                                                 th:title="'下载文件大小'+${#numbers.formatDecimal((fileSize / 1024),0 ,2)}+'KB'">下载</a>
+                                                                 th:title="'下载文件大小'+${#numbers.formatDecimal((fileSize / 1024),0 ,2)}+'KB'"><i class="fa fa-download" aria-hidden="true"></i>下载</a>
                     </caption>
                     <thead>
                     <tr>

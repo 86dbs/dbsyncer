@@ -16,7 +16,7 @@ public class ReplaceHandler extends AbstractHandler {
     @Override
     protected Object convert(String args, Object value) {
         Assert.hasText(args, "缺少替换参数.");
-        String[] split = StringUtil.split(args, ",");
+        String[] split = StringUtil.split(args, StringUtil.COMMA);
         String a = split[0];
         String b = split.length == 2 ? split[1] : "";
         return StringUtil.replace(String.valueOf(value), a, b);

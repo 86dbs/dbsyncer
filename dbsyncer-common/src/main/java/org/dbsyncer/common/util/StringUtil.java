@@ -9,7 +9,7 @@ public abstract class StringUtil {
 
     public static final String EMPTY = "";
 
-    public static final String SYMBOL = "-";
+    public static final String HORIZONTAL = "-";
 
     public static final String UNDERLINE = "_";
 
@@ -30,6 +30,12 @@ public abstract class StringUtil {
     public static final String VERTICAL_LINE = "|";
 
     public static final String COMMA = ",";
+
+    public static final String BREAK_LINE = "\r\n";
+
+    public static final String EQUAL = "=";
+
+    public static final String STAR = "*";
 
     public static boolean equals(CharSequence cs1, CharSequence cs2) {
         return StringUtils.equals(cs1, cs2);

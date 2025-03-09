@@ -81,7 +81,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public String getPageSql(PageSql config) {
         List<String> primaryKeys = buildPrimaryKeys(config.getPrimaryKeys());
-        String orderBy = StringUtil.join(primaryKeys, ",");
+        String orderBy = StringUtil.join(primaryKeys, StringUtil.COMMA);
         return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, orderBy, config.getQuerySql());
     }
 
