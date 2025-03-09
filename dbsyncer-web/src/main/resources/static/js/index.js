@@ -49,6 +49,18 @@ $(function () {
         var route = $(this).data('route');
         // 加载页面
         doLoader($(this).attr("url"),route);
+
+        // 加载页面
+        const contents = document.querySelectorAll('.contentDiv');
+        contents.forEach(function(content) {
+            content.classList.add('hidden');
+        });
+
+        const contentToShow = $('#initContainer' + route);
+        if (contentToShow) {
+            contentToShow.removeClass('hidden');
+        }
+
     });
 
     // 头部导航栏选中切换事件

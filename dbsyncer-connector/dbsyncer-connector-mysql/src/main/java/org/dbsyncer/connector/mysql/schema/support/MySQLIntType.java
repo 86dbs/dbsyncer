@@ -54,12 +54,4 @@ public final class MySQLIntType extends IntType {
         return throwUnsupportedException(val, field);
     }
 
-    @Override
-    protected Object convert(Object val, Field field) {
-        if (val instanceof Number) {
-            return ((Number) val).intValue();
-        }
-        return throwUnsupportedException(val, field);
-    }
-
 }

@@ -42,9 +42,4 @@ public final class OracleDateType extends DateType {
         return throwUnsupportedException(val, field);
     }
 
-    @Override
-    protected Object convert(Object val, Field field) {
-        return throwUnsupportedException(val, field);
-    }
-
 }

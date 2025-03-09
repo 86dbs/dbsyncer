@@ -45,12 +45,4 @@ public final class MySQLBytesType extends BytesType {
         return throwUnsupportedException(val, field);
     }
 
-    @Override
-    protected Object convert(Object val, Field field) {
-        if (val instanceof byte[]) {
-            return val;
-        }
-        return throwUnsupportedException(val, field);
-    }
-
 }

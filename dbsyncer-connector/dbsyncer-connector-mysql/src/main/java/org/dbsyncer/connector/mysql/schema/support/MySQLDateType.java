@@ -32,12 +32,4 @@ public final class MySQLDateType extends DateType {
         return throwUnsupportedException(val, field);
     }
 
-    @Override
-    protected Object convert(Object val, Field field) {
-        if (val instanceof Date) {
-            return val;
-        }
-        return throwUnsupportedException(val, field);
-    }
-
 }

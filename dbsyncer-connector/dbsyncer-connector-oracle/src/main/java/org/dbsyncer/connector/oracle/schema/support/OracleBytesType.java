@@ -44,9 +44,4 @@ public final class OracleBytesType extends BytesType {
         return throwUnsupportedException(val, field);
     }
 
-    @Override
-    protected Object convert(Object val, Field field) {
-        return throwUnsupportedException(val, field);
-    }
-
 }
