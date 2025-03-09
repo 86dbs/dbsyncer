@@ -127,5 +127,5 @@
     </form>
 </div>
 
-<script th:src="@{/js/license/license.js}"></script>
+<script th:if="${not #strings.isEmpty(key)}" th:src="@{/js/license/license.js}"></script>
 </html>
