@@ -28,6 +28,9 @@ public abstract class StringType extends AbstractDataType<String> {
 
     @Override
     protected Object convert(Object val, Field field) {
+        if (val instanceof String) {
+            return val;
+        }
         if (val instanceof byte[]) {
             return new String((byte[]) val);
         }

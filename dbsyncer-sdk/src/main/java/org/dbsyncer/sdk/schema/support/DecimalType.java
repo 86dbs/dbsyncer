@@ -20,8 +20,12 @@ public abstract class DecimalType extends AbstractDataType<BigDecimal> {
     public DataTypeEnum getType() {
         return DataTypeEnum.DECIMAL;
     }
+
     @Override
     protected Object convert(Object val, Field field) {
+        if (val instanceof BigDecimal) {
+            return val;
+        }
         if (val instanceof String) {
             return new BigDecimal((String) val);
         }
