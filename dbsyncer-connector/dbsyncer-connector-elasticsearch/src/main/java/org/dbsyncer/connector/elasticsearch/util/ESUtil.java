@@ -41,7 +41,7 @@ public abstract class ESUtil {
     }
 
     public static EasyRestHighLevelClient getConnection(ESConfig config) {
-        String[] ipAddress = StringUtil.split(config.getUrl(), ",");
+        String[] ipAddress = StringUtil.split(config.getUrl(), StringUtil.COMMA);
         HttpHost[] hosts = Arrays.stream(ipAddress).map(node -> HttpHost.create(node)).filter(Objects::nonNull).toArray(
                 HttpHost[]::new);
         RestClientBuilder builder = RestClient.builder(hosts);

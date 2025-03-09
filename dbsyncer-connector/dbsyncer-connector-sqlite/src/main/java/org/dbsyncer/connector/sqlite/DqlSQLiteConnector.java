@@ -49,7 +49,7 @@ public final class DqlSQLiteConnector extends AbstractDQLConnector {
     @Override
     public String getPageSql(PageSql config) {
         List<String> primaryKeys = config.getPrimaryKeys();
-        String orderBy = StringUtil.join(primaryKeys, ",");
+        String orderBy = StringUtil.join(primaryKeys, StringUtil.COMMA);
         return String.format(DatabaseConstant.SQLITE_PAGE_SQL, orderBy, config.getQuerySql());
     }
 

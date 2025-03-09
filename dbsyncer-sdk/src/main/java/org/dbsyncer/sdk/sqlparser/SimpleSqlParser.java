@@ -261,6 +261,7 @@ import net.sf.jsqlparser.statement.update.UpdateModifierPriority;
 import net.sf.jsqlparser.statement.update.UpdateSet;
 import net.sf.jsqlparser.statement.upsert.Upsert;
 import net.sf.jsqlparser.statement.upsert.UpsertType;
+import org.dbsyncer.common.util.StringUtil;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -21634,7 +21635,7 @@ BUT NOT for Schema or  Aliases (without quoting)
                     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
                         case K_COMMA:{
                             jj_consume_token(K_COMMA);
-                            retval.append(",");
+                            retval.append(StringUtil.COMMA);
                             break;
                         }
                         case 396:{

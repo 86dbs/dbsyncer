@@ -151,7 +151,7 @@ public class MetricReporter implements ScheduledTaskJob {
             mappingReportMetric.setUpdate(getMappingUpdate(metaAll));
             mappingReportMetric.setDelete(getMappingDelete(metaAll));
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            logger.error(e.getMessage(), e);
         } finally {
             running = false;
         }
