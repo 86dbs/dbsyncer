@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.oracle.schema.support;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.BytesType;
 
@@ -44,4 +45,17 @@ public final class OracleBytesType extends BytesType {
         return throwUnsupportedException(val, field);
     }
 
+    @Override
+    protected Object convert(Object val, Field field) {
+        if (val instanceof String) {
+            String s = (String) val;
+            if (s.startsWith("HEXTORAW(")) {
+                return StringUtil.hexStringToByteArray(s.replace("HEXTORAW('", "").replace("')", ""));
+            }
+            if ("EMPTY_BLOB()".equals(s)) {
+                return null;
+            }
+        }
+        return super.convert(val, field);
+    }
 }

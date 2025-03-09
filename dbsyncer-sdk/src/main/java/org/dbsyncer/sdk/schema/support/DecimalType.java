@@ -29,6 +29,13 @@ public abstract class DecimalType extends AbstractDataType<BigDecimal> {
         if (val instanceof String) {
             return new BigDecimal((String) val);
         }
+        if (val instanceof Number) {
+            return new BigDecimal(val.toString());
+        }
+        if (val instanceof Boolean) {
+            Boolean b = (Boolean) val;
+            return new BigDecimal(b ? 1 : 0);
+        }
         return throwUnsupportedException(val, field);
     }
 }
