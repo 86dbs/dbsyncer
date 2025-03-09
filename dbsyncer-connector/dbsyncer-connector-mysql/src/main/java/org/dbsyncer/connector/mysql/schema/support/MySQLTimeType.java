@@ -32,12 +32,4 @@ public final class MySQLTimeType extends TimeType {
         return throwUnsupportedException(val, field);
     }
 
-    @Override
-    protected Object convert(Object val, Field field) {
-        if (val instanceof Time) {
-            return val;
-        }
-        return throwUnsupportedException(val, field);
-    }
-
 }

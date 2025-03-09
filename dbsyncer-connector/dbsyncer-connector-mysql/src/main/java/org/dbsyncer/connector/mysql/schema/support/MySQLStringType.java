@@ -4,7 +4,11 @@
 package org.dbsyncer.connector.mysql.schema.support;
 
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.io.*;
+import com.vividsolutions.jts.io.ByteOrderValues;
+import com.vividsolutions.jts.io.ParseException;
+import com.vividsolutions.jts.io.WKBReader;
+import com.vividsolutions.jts.io.WKBWriter;
+import com.vividsolutions.jts.io.WKTReader;
 import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
@@ -63,7 +67,7 @@ public final class MySQLStringType extends StringType {
             }
             return val;
         }
-        return throwUnsupportedException(val, field);
+        return super.convert(val, field);
     }
 
     private String deserializeGeometry(byte[] bytes) {

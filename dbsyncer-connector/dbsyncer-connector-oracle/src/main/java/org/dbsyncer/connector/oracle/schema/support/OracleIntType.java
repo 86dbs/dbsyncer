@@ -26,9 +26,4 @@ public final class OracleIntType extends IntType {
         return throwUnsupportedException(val, field);
     }
 
-    @Override
-    protected Object convert(Object val, Field field) {
-        return throwUnsupportedException(val, field);
-    }
-
 }

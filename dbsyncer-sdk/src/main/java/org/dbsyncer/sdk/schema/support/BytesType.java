@@ -4,6 +4,7 @@
 package org.dbsyncer.sdk.schema.support;
 
 import org.dbsyncer.sdk.enums.DataTypeEnum;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractDataType;
 
 /**
@@ -16,5 +17,17 @@ public abstract class BytesType extends AbstractDataType<byte[]> {
     @Override
     public DataTypeEnum getType() {
         return DataTypeEnum.BYTES;
+    }
+
+    @Override
+    protected Object convert(Object val, Field field) {
+        if (val instanceof byte[]) {
+            return val;
+        }
+        if (val instanceof String) {
+            String s = (String) val;
+            return s.getBytes();
+        }
+        return throwUnsupportedException(val, field);
     }
 }

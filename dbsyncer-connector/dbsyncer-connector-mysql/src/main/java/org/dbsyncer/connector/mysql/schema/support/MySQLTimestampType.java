@@ -33,12 +33,4 @@ public final class MySQLTimestampType extends TimestampType {
         return throwUnsupportedException(val, field);
     }
 
-    @Override
-    protected Object convert(Object val, Field field) {
-        if (val instanceof Timestamp) {
-            return val;
-        }
-        return throwUnsupportedException(val, field);
-    }
-
 }

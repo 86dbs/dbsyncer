@@ -26,9 +26,4 @@ public final class OracleLongType extends LongType {
         return throwUnsupportedException(val, field);
     }
 
-    @Override
-    protected Object convert(Object val, Field field) {
-        return throwUnsupportedException(val, field);
-    }
-
 }

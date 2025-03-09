@@ -41,9 +41,4 @@ public final class OracleFloatType extends FloatType {
         return throwUnsupportedException(val, field);
     }
 
-    @Override
-    protected Object convert(Object val, Field field) {
-        return throwUnsupportedException(val, field);
-    }
-
 }
