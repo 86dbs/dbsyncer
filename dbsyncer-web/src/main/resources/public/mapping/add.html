@@ -61,7 +61,20 @@
                             <div class="form-group">
                                 <div class="col-sm-2 text-right"><label>匹配相似表</label></div>
                                 <div class="col-sm-10">
-                                    <input class="dbsyncer_switch" name="autoMatchTable" type="checkbox">
+                                    <input class="dbsyncer_switch" id="autoMatchTable" name="autoMatchTable" type="checkbox">
+                                </div>
+                            </div>
+
+                            <!-- 表映射关系 -->
+                            <div class="form-group" id="tableGroups">
+                                <div class="col-sm-2 text-right"><label>表映射关系</label><i class="fa fa-question-circle fa_gray" aria-hidden="true" title="适用于快速配置大量表映射关系场景"></i></div>
+                                <div class="col-sm-10">
+                                    <p class="text-muted">
+                                        示例：数据源表|目标源表=源表字段A1*|目标字段A2*,源表字段B1|目标字段B2<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="'|'表示映射关系，'='表示后面是表字段映射关系，有多个字段使用英文','拼接，'*'表示主键，如有多张表换行追加"></i>
+                                        <a href="https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E6%89%B9%E9%87%8F%E9%85%8D%E7%BD%AE%E8%A1%A8%E6%98%A0%E5%B0%84%E5%85%B3%E7%B3%BB" title="操作手册>批量配置表映射关系"
+                                           target='_blank'>参考文档</a>
+                                    </p>
+                                    <textarea name="tableGroups" class="form-control dbsyncer_textarea_resize_none" rows="20"></textarea>
                                 </div>
                             </div>
 

@@ -7,6 +7,7 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.MonitorService;
+import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.vo.ConnectorVo;
@@ -31,6 +32,8 @@ import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -43,6 +46,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 /**
@@ -52,6 +56,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class MappingServiceImpl extends BaseServiceImpl implements MappingService {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
     private MappingChecker mappingChecker;
@@ -89,9 +95,15 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         // 匹配相似表 on
         if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
-            matchSimilarTable(model);
+            matchSimilarTableGroups(model);
+            return id;
         }
 
+        // 自定义表映射关系
+        String tableGroups = params.get("tableGroups");
+        if (StringUtil.isNotBlank(tableGroups)) {
+            matchCustomizedTableGroups(model, tableGroups);
+        }
         return id;
     }
 
@@ -305,7 +317,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      *
      * @param model
      */
-    private void matchSimilarTable(ConfigModel model) {
+    private void matchSimilarTableGroups(ConfigModel model) {
         Mapping mapping = (Mapping) model;
         Connector s = profileComponent.getConnector(mapping.getSourceConnectorId());
         Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
@@ -327,15 +339,85 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                     continue;
                 }
                 if (StringUtil.equalsIgnoreCase(sourceTable.getName(), targetTable.getName())) {
-                    Map<String, String> params = new HashMap<>();
-                    params.put("mappingId", mapping.getId());
-                    params.put("sourceTable", sourceTable.getName());
-                    params.put("targetTable", targetTable.getName());
-                    tableGroupService.add(params);
+                    addTableGroup(mapping.getId(), sourceTable.getName(), targetTable.getName(), StringUtil.EMPTY);
                     break;
                 }
             }
         }
+    }
+
+    /**
+     * 自定义配置表映射关系
+     *
+     * @param model
+     * @param tableGroups
+     */
+    private void matchCustomizedTableGroups(ConfigModel model, String tableGroups) {
+        Mapping mapping = (Mapping) model;
+        Connector s = profileComponent.getConnector(mapping.getSourceConnectorId());
+        Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
+        if (CollectionUtils.isEmpty(s.getTable()) || CollectionUtils.isEmpty(t.getTable())) {
+            return;
+        }
+        String[] lines = StringUtil.split(tableGroups, StringUtil.BREAK_LINE);
+        // 数据源表|目标源表=源表字段A1*|目标字段A2*
+        for (String line : lines) {
+            String[] tableGroup = StringUtil.split(line, StringUtil.EQUAL);
+            String[] tableGroupNames = StringUtil.split(tableGroup[0], StringUtil.VERTICAL_LINE);
+            if (tableGroupNames.length == 2) {
+                addTableGroup(mapping.getId(), tableGroupNames[0], tableGroupNames[1], tableGroup.length == 2 ? tableGroup[1] : StringUtil.EMPTY);
+            }
+        }
+    }
+
+    private void addTableGroup(String id, String sourceTableName, String targetTableName, String fieldMappings) {
+        try {
+            Map<String, String> params = new HashMap<>();
+            params.put("mappingId", id);
+            params.put("sourceTable", sourceTableName);
+            params.put("targetTable", targetTableName);
+            // A1*|A2*,B1|B2,|C3
+            if (StringUtil.isNotBlank(fieldMappings)) {
+                String[] mappings = StringUtil.split(fieldMappings, StringUtil.COMMA);
+                StringJoiner fms = new StringJoiner(StringUtil.COMMA);
+                StringJoiner sPk = new StringJoiner(StringUtil.COMMA);
+                StringJoiner tPk = new StringJoiner(StringUtil.COMMA);
+                for (String mapping : mappings) {
+                    String[] m = StringUtil.split(mapping, "\\" + StringUtil.VERTICAL_LINE);
+                    if (m.length == 2) {
+                        fms.add(replaceStar(m[0], sPk) + StringUtil.VERTICAL_LINE + replaceStar(m[1], tPk));
+                        continue;
+                    }
+                    // |C2,C3|
+                    if (m.length == 1) {
+                        String name = replaceStar(m[0], tPk);;
+                        if (StringUtil.startsWith(mapping, StringUtil.VERTICAL_LINE)) {
+                            fms.add(StringUtil.VERTICAL_LINE + name);
+                            continue;
+                        }
+                        fms.add(name + StringUtil.VERTICAL_LINE);
+                    }
+                }
+                params.put("fieldMappings", fms.toString());
+                if (StringUtil.isNotBlank(sPk.toString())) {
+                    params.put("sourceTablePK", sPk.toString());
+                }
+                if (StringUtil.isNotBlank(tPk.toString())) {
+                    params.put("targetTablePK", tPk.toString());
+                }
+            }
+            tableGroupService.add(params);
+        } catch (RepeatedTableGroupException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    private String replaceStar(String name, StringJoiner joiner) {
+        if (StringUtil.endsWith(name, StringUtil.STAR)) {
+            name = StringUtil.replace(name.trim(), StringUtil.STAR, StringUtil.EMPTY);
+            joiner.add(name);
+        }
+        return name;
     }
 
     private void clearMetaIfFinished(String metaId) {

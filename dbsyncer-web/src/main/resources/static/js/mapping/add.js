@@ -9,6 +9,29 @@ function submit(data) {
     });
 }
 
+// 绑定开关切换事件
+function bindToggleSwitch($switch, $toggle) {
+    let $textarea = $toggle.find("textarea");
+    return $switch.bootstrapSwitch({
+        onText: "Yes",
+        offText: "No",
+        onColor: "success",
+        offColor: "info",
+        size: "normal",
+        onSwitchChange: function (event, state) {
+            if (state) {
+                $textarea.attr('tmp', $textarea.val());
+                $textarea.val('');
+                $toggle.addClass("hidden");
+            } else {
+                $textarea.val($textarea.attr('tmp'));
+                $textarea.removeAttr('tmp');
+                $toggle.removeClass("hidden");
+            }
+        }
+    });
+}
+
 $(function () {
     // 兼容IE PlaceHolder
     $('input[type="text"],input[type="password"],textarea').PlaceHolder();
@@ -17,7 +40,7 @@ $(function () {
     initSelectIndex($(".select-control"), 1);
 
     // 绑定匹配相似表复选框事件
-    initSwitch();
+    bindToggleSwitch($('#autoMatchTable'), $("#tableGroups"));
 
     //保存
     $("#mappingSubmitBtn").click(function () {
