@@ -198,7 +198,15 @@ $.fn.serializeJson = function () {
 function doLoader(url,route=0){
     clearInterval(timer);
 
+    // 加载页面
+    const contents = document.querySelectorAll('.contentDiv');
+    contents.forEach(function(content) {
+        content.classList.add('hidden');
+    });
     const contentToShow = $('#initContainer' + route);
+    if (contentToShow) {
+        contentToShow.removeClass('hidden');
+    }
     contentToShow.load($basePath + url, function (response, status, xhr) {
         if (status != 'success') {
             bootGrowl(response);
@@ -206,6 +214,8 @@ function doLoader(url,route=0){
         watermark();
         $.loadingT(false);
     });
+
+
 }
 
 // 异常请求
