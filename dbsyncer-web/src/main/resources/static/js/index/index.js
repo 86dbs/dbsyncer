@@ -190,9 +190,16 @@ function doPost(url) {
 function createTimer($projectGroupSelect){
     doGetWithoutLoading("/monitor/getRefreshIntervalSeconds",{}, function (data) {
         if (data.success == true) {
-            timer = setInterval(function(){
-                backIndexPage($projectGroupSelect.selectpicker('val'));
-            }, data.resultValue * 1000);
+
+            if (timer2 == null) {
+                timer2 = setInterval(function(){
+                    // 加载页面
+                   var projectGroupId= $projectGroupSelect.selectpicker('val');
+                    projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
+                    timerLoad("/index?projectGroupId="+ projectGroupId +"&refresh=" + new Date().getTime(),1);
+                }, data.resultValue * 1000);
+            }
+
         } else {
             bootGrowl(data.resultValue, "danger");
         }
