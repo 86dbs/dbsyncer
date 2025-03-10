@@ -214,8 +214,6 @@ function doLoader(url,route=0){
         watermark();
         $.loadingT(false);
     });
-
-
 }
 
 // 异常请求
