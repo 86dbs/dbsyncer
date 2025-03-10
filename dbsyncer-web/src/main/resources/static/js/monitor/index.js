@@ -500,9 +500,11 @@ function createTimer() {
     showChartTable();
     doGetWithoutLoading("/monitor/getRefreshIntervalSeconds", {}, function (data) {
         if (data.success == true) {
-            timer = setInterval(function () {
-                showChartTable();
-            }, data.resultValue * 1000);
+            if (timer == null) {
+                timer = setInterval(function () {
+                    showChartTable();
+                }, data.resultValue * 1000);
+            }
         } else {
             bootGrowl(data.resultValue, "danger");
         }

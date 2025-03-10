@@ -49,7 +49,6 @@ $(function () {
         var route = $(this).data('route');
         // 加载页面
         doLoader($(this).attr("url"),route);
-
         // 加载页面
         const contents = document.querySelectorAll('.contentDiv');
         contents.forEach(function(content) {

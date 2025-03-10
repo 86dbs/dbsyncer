@@ -7,7 +7,7 @@ var $initContainer = $(".contentDiv");
     $initContainer.css("min-height", $(window).height() - 125);
 
 // 监控定时器
-var timer;
+var timer=null,timer2=null;
 
 // ******************* 插件封装 ***************************
 // 全局提示框
@@ -196,8 +196,6 @@ $.fn.serializeJson = function () {
 
 // 全局加载页面
 function doLoader(url,route=0){
-    clearInterval(timer);
-
     // 加载页面
     const contents = document.querySelectorAll('.contentDiv');
     contents.forEach(function(content) {
@@ -207,6 +205,17 @@ function doLoader(url,route=0){
     if (contentToShow) {
         contentToShow.removeClass('hidden');
     }
+    contentToShow.load($basePath + url, function (response, status, xhr) {
+        if (status != 'success') {
+            bootGrowl(response);
+        }
+        watermark();
+        $.loadingT(false);
+    });
+}
+function timerLoad(url,route=1) {
+
+    const contentToShow = $('#initContainer' + route);
     contentToShow.load($basePath + url, function (response, status, xhr) {
         if (status != 'success') {
             bootGrowl(response);
