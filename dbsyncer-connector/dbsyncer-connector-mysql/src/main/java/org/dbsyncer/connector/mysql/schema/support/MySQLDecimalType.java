@@ -47,12 +47,4 @@ public final class MySQLDecimalType extends DecimalType {
         return throwUnsupportedException(val, field);
     }
 
-    @Override
-    protected Object convert(Object val, Field field) {
-        if (val instanceof Number) {
-            return val.toString();
-        }
-        return throwUnsupportedException(val, field);
-    }
-
 }

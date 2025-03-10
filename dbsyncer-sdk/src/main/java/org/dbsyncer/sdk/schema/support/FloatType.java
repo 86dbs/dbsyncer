@@ -24,6 +24,9 @@ public abstract class FloatType extends AbstractDataType<Float> {
         if (val instanceof Number) {
             return ((Number) val).floatValue();
         }
+        if (val instanceof String) {
+            return Float.parseFloat((String) val);
+        }
         return throwUnsupportedException(val, field);
     }
 }

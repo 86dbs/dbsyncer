@@ -4,6 +4,7 @@
 package org.dbsyncer.sdk.schema.support;
 
 import org.dbsyncer.common.util.DateFormatUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractDataType;
@@ -30,6 +31,11 @@ public abstract class DateType extends AbstractDataType<Date> {
             return val;
         }
 
+        if (val instanceof Timestamp) {
+            Timestamp timestamp = (Timestamp) val;
+            return Date.valueOf(timestamp.toLocalDateTime().toLocalDate());
+        }
+
         if (val instanceof LocalDateTime) {
             LocalDateTime dateTime = (LocalDateTime) val;
             return Timestamp.valueOf(dateTime);
@@ -37,9 +43,12 @@ public abstract class DateType extends AbstractDataType<Date> {
 
         if (val instanceof String) {
             String s = (String) val;
+            if (StringUtil.equals(s, "0000-00-00")) {
+                return s;
+            }
             Timestamp timestamp = DateFormatUtil.stringToTimestamp(s);
             if (null != timestamp) {
-                return timestamp;
+                return Date.valueOf(timestamp.toLocalDateTime().toLocalDate());
             }
         }
         return throwUnsupportedException(val, field);

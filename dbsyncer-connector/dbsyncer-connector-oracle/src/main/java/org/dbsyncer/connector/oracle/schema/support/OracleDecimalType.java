@@ -43,9 +43,4 @@ public final class OracleDecimalType extends DecimalType {
         return throwUnsupportedException(val, field);
     }
 
-    @Override
-    protected Object convert(Object val, Field field) {
-        return throwUnsupportedException(val, field);
-    }
-
 }
