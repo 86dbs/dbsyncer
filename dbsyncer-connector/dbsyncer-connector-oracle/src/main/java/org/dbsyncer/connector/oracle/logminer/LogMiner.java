@@ -102,7 +102,7 @@ public class LogMiner {
             int version = conn.getMetaData().getDatabaseMajorVersion();
             // 19支持cdb模式
             if (version == 19) {
-                //LogMinerHelper.setSessionContainerIfCdbMode(conn);
+                LogMinerHelper.setSessionContainerIfCdbMode(conn);
             }
             // 低于10不支持
             else if (version < 10) {
