@@ -27,6 +27,7 @@ public class BlobValueMapper extends AbstractValueMapper<byte[]> {
             if ("EMPTY_BLOB()".equals(s)) {
                 return null;
             }
+            return s.getBytes();
         }
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }

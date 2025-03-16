@@ -5,7 +5,7 @@ $(function () {
     refreshLoginUser();
 
     // 初始化版权信息
-    doGetter("/index/version.json",{}, function (data) {
+    doGetter("/index/version.json", {}, function (data) {
         if (data.success == true) {
             // 获取底部版权信息
             $("#appCopyRight").html(data.resultValue.appCopyRight);
@@ -48,13 +48,23 @@ $(function () {
     $("#menu li a[url]").click(function () {
         var route = $(this).data('route');
         // 加载页面
-        doLoader($(this).attr("url"),route);
+        doLoader($(this).attr("url"), route);
         // 加载页面
         const contents = document.querySelectorAll('.contentDiv');
-        contents.forEach(function(content) {
+        contents.forEach(function (content) {
             content.classList.add('hidden');
         });
-
+        if (route === 1) {
+            if (timer != null) {
+                clearInterval(timer);
+                timer = null;
+            }
+        } else if (route === 2) {
+            if (timer2 != null) {
+                clearInterval(timer2);
+                timer2 = null;
+            }
+        }
         const contentToShow = $('#initContainer' + route);
         if (contentToShow) {
             contentToShow.removeClass('hidden');

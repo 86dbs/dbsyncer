@@ -1,13 +1,13 @@
 // 获取项目地址
 var $location = (window.location + '').split('/');
 var $path = document.location.pathname;
-var $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.substr(1).indexOf("/")+1);
+var $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.substr(1).indexOf("/") + 1);
 // 全局内容区域
 var $initContainer = $(".contentDiv");
-    $initContainer.css("min-height", $(window).height() - 125);
+$initContainer.css("min-height", $(window).height() - 125);
 
 // 监控定时器
-var timer=null,timer2=null;
+var timer = null, timer2 = null;
 
 // ******************* 插件封装 ***************************
 // 全局提示框
@@ -34,14 +34,14 @@ function refreshLoginUser() {
 function backIndexPage(projectGroupId) {
     // 加载页面
     projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
-    doLoader("/index?projectGroupId="+ projectGroupId +"&refresh=" + new Date().getTime(),1);
+    doLoader("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
 }
 
 // 美化SQL
-function beautifySql(){
+function beautifySql() {
     var $sql = $(".sql");
     var $tmp = $sql.attr('tmp');
-    if(null == $tmp){
+    if (null == $tmp) {
         $sql.attr('tmp', $sql.val());
         $sql.val(sqlFormatter.format($sql.val()));
         return;
@@ -51,10 +51,10 @@ function beautifySql(){
 }
 
 // 初始化select组件，默认选中
-function initSelectIndex($select, $selectedIndex){
+function initSelectIndex($select, $selectedIndex) {
     let select = initSelect($select);
 
-    if($selectedIndex < 0){
+    if ($selectedIndex < 0) {
         return select;
     }
 
@@ -62,24 +62,26 @@ function initSelectIndex($select, $selectedIndex){
         var v = $(this).selectpicker('val');
         if (undefined == v || '' == v) {
             var $option = $(this).find("option")[$selectedIndex];
-            if(undefined != $option){
+            if (undefined != $option) {
                 $(this).selectpicker('val', $option.value);
             }
         }
     });
     return select;
 }
-function initSelect($select){
+
+function initSelect($select) {
     return $select.selectpicker({
-        "title":"请选择",
-        "actionsBox":true,
-        "liveSearch":true,
-        "selectAllText":"全选",
-        "deselectAllText":"取消全选",
-        "noneResultsText":"没有找到 {0}",
-        "selectedTextFormat":"count > 10"
+        "title": "请选择",
+        "actionsBox": true,
+        "liveSearch": true,
+        "selectAllText": "全选",
+        "deselectAllText": "取消全选",
+        "noneResultsText": "没有找到 {0}",
+        "selectedTextFormat": "count > 10"
     });
 }
+
 // 绑定多值输入框事件
 function initMultipleInputTags() {
     $("input[data-role=tagsinput]").tagsinput({
@@ -102,36 +104,37 @@ function initSwitch() {
 }
 
 // ******************* 水印 ***************************
-window.onresize = function() {
+window.onresize = function () {
     watermark();
 }
-window.onscroll = function() {
+window.onscroll = function () {
     watermark();
 }
 //水印样式默认设置
-const settings={
-    watermark_txt:"",
-    watermark_x:50,//水印起始位置x轴坐标
-    watermark_y:55,//水印起始位置Y轴坐标
-    watermark_rows:2000,//水印行数
-    watermark_cols:2000,//水印列数
-    watermark_x_space:70,//水印x轴间隔
-    watermark_y_space:30,//水印y轴间隔
-    watermark_color:'#aaaaaa',//水印字体颜色
-    watermark_alpha:0.2,//水印透明度
-    watermark_fontsize:'15px',//水印字体大小
-    watermark_font:'微软雅黑',//水印字体
-    watermark_width:210,//水印宽度
-    watermark_height:80,//水印长度
-    watermark_angle:15//水印倾斜度数
+const settings = {
+    watermark_txt: "",
+    watermark_x: 50,//水印起始位置x轴坐标
+    watermark_y: 55,//水印起始位置Y轴坐标
+    watermark_rows: 2000,//水印行数
+    watermark_cols: 2000,//水印列数
+    watermark_x_space: 70,//水印x轴间隔
+    watermark_y_space: 30,//水印y轴间隔
+    watermark_color: '#aaaaaa',//水印字体颜色
+    watermark_alpha: 0.2,//水印透明度
+    watermark_fontsize: '15px',//水印字体大小
+    watermark_font: '微软雅黑',//水印字体
+    watermark_width: 210,//水印宽度
+    watermark_height: 80,//水印长度
+    watermark_angle: 15//水印倾斜度数
 };
 let timestampWatermark;
+
 function watermark() {
     const now = Date.now();
     if (timestampWatermark != null && now - timestampWatermark < 200) {
         return;
     }
-    if(isBlank(settings.watermark_txt)){
+    if (isBlank(settings.watermark_txt)) {
         return;
     }
     timestampWatermark = now;
@@ -139,12 +142,12 @@ function watermark() {
 
     const water = document.body;
     //获取页面最大宽度
-    const page_width = Math.max(water.scrollWidth,water.clientWidth);
+    const page_width = Math.max(water.scrollWidth, water.clientWidth);
     //获取页面最大高度
-    const page_height = Math.max(water.scrollHeight,water.clientHeight);
+    const page_height = Math.max(water.scrollHeight, water.clientHeight);
     //水印数量自适应元素区域尺寸
-    settings.watermark_cols=Math.ceil(page_width/(settings.watermark_x_space+settings.watermark_width));
-    settings.watermark_rows=Math.ceil(page_height/(settings.watermark_y_space+settings.watermark_height));
+    settings.watermark_cols = Math.ceil(page_width / (settings.watermark_x_space + settings.watermark_width));
+    settings.watermark_rows = Math.ceil(page_height / (settings.watermark_y_space + settings.watermark_height));
     let x;
     let y;
     for (let i = 0; i < settings.watermark_rows; i++) {
@@ -153,7 +156,7 @@ function watermark() {
             x = settings.watermark_x + (settings.watermark_width + settings.watermark_x_space) * j;
             let mask_div = document.createElement('div');
             mask_div.className = 'dbsyncer_mask';
-            mask_div.innerHTML=(settings.watermark_txt);
+            mask_div.innerHTML = (settings.watermark_txt);
             mask_div.style.webkitTransform = "rotate(-" + settings.watermark_angle + "deg)";
             mask_div.style.MozTransform = "rotate(-" + settings.watermark_angle + "deg)";
             mask_div.style.msTransform = "rotate(-" + settings.watermark_angle + "deg)";
@@ -163,7 +166,7 @@ function watermark() {
             mask_div.style.left = x + 'px';
             mask_div.style.top = y + 'px';
             mask_div.style.overflow = "hidden";
-            mask_div.style.pointerEvents='none';
+            mask_div.style.pointerEvents = 'none';
             mask_div.style.opacity = settings.watermark_alpha;
             mask_div.style.fontSize = settings.watermark_fontsize;
             mask_div.style.fontFamily = settings.watermark_font;
@@ -195,10 +198,10 @@ $.fn.serializeJson = function () {
 };
 
 // 全局加载页面
-function doLoader(url,route=0){
+function doLoader(url, route = 0) {
     // 加载页面
     const contents = document.querySelectorAll('.contentDiv');
-    contents.forEach(function(content) {
+    contents.forEach(function (content) {
         content.classList.add('hidden');
     });
     const contentToShow = $('#initContainer' + route);
@@ -213,7 +216,8 @@ function doLoader(url,route=0){
         $.loadingT(false);
     });
 }
-function timerLoad(url,route=1) {
+
+function timerLoad(url, route = 1) {
 
     const contentToShow = $('#initContainer' + route);
     contentToShow.load($basePath + url, function (response, status, xhr) {
@@ -226,7 +230,7 @@ function timerLoad(url,route=1) {
 }
 
 // 异常请求
-function doRequest(action, data){
+function doRequest(action, data) {
     $.loadingT(false);
     // 异常请求：302
     if (!(data instanceof Object)) {
@@ -257,7 +261,7 @@ function doPoster(url, params, action) {
 
 // 全局Ajax get
 function doGetter(url, params, action, loading) {
-    if(loading == undefined || loading == true){
+    if (loading == undefined || loading == true) {
         $.loadingT(true);
     }
     $.get($basePath + url, params, function (data) {

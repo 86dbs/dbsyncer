@@ -33,7 +33,7 @@ function bindRemoveProjectGroup($projectGroupSelect) {
             buttons: [{
                 label: "确定",
                 action: function (dialog) {
-                    doPoster('/projectGroup/remove',{id: $id}, function (data) {
+                    doPoster('/projectGroup/remove', {id: $id}, function (data) {
                         if (data.success == true) {
                             // 显示主页
                             backIndexPage();
@@ -98,7 +98,7 @@ function bindEditMapping() {
 function bindQueryData() {
     $(".mappingList .queryData").click(function () {
         // 阻止触发click传递事件
-        event.cancelBubble=true;
+        event.cancelBubble = true;
         var $menu = $('#menu > li');
         $menu.removeClass('active');
         $menu.find("a[url='/monitor']").parent().addClass('active');
@@ -175,7 +175,7 @@ function bindMappingDropdownMenu() {
 }
 
 function doPost(url) {
-    doPoster(url, null, function(data){
+    doPoster(url, null, function (data) {
         if (data.success == true) {
             // 显示主页
             backIndexPage();
@@ -187,16 +187,16 @@ function doPost(url) {
 }
 
 // 创建定时器
-function createTimer($projectGroupSelect){
-    doGetWithoutLoading("/monitor/getRefreshIntervalSeconds",{}, function (data) {
+function createTimer($projectGroupSelect) {
+    doGetWithoutLoading("/monitor/getRefreshIntervalSeconds", {}, function (data) {
         if (data.success == true) {
 
             if (timer2 == null) {
-                timer2 = setInterval(function(){
+                timer2 = setInterval(function () {
                     // 加载页面
-                   var projectGroupId= $projectGroupSelect.selectpicker('val');
+                    var projectGroupId = $projectGroupSelect.selectpicker('val');
                     projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
-                    timerLoad("/index?projectGroupId="+ projectGroupId +"&refresh=" + new Date().getTime(),1);
+                    timerLoad("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
                 }, data.resultValue * 1000);
             }
 
