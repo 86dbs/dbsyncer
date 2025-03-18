@@ -183,12 +183,16 @@ public class UserConfigServiceImpl implements UserConfigService {
             config = profileComponent.getUserConfig();
             if (null == config) {
                 config = (UserConfig) userConfigChecker.checkAddConfigModel(new HashMap<>());
-                UserRoleEnum admin = UserRoleEnum.ADMIN;
-                config.getUserInfoList().add(new UserInfo(DEFAULT_USERNAME, DEFAULT_USERNAME, DEFAULT_PASSWORD, admin.getCode(), StringUtil.EMPTY, StringUtil.EMPTY));
+                config.getUserInfoList().add(getDefaultUser());
                 profileComponent.addConfigModel(config);
             }
             return config;
         }
+    }
+
+    @Override
+    public UserInfo getDefaultUser() {
+        return new UserInfo(DEFAULT_USERNAME, DEFAULT_USERNAME, DEFAULT_PASSWORD, UserRoleEnum.ADMIN.getCode(), StringUtil.EMPTY, StringUtil.EMPTY);
     }
 
     private UserInfoVo convertUserInfo2Vo(UserInfo userInfo) {

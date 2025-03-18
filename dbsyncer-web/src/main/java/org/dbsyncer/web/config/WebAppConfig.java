@@ -8,6 +8,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -40,6 +41,7 @@ import java.util.List;
  */
 @Configuration
 @EnableWebSecurity
+@ConfigurationProperties(prefix = "dbsyncer.web.security")
 public class WebAppConfig extends WebSecurityConfigurerAdapter implements AuthenticationProvider, HttpSessionListener {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -61,6 +63,11 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
     @Resource
     private UserConfigService userConfigService;
+
+    /**
+     * 是否重置管理员密码
+     */
+    private boolean resetPwd;
 
     /**
      * 登录失败
@@ -141,6 +148,14 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         password = SHA1Util.b64_sha1(password);
 
         UserInfo userInfo = userConfigService.getUserInfo(username);
+        // 重置密码
+        if (resetPwd && userInfo != null) {
+            UserInfo defUser = userConfigService.getDefaultUser();
+            if (StringUtil.equals(defUser.getUsername(), username) && StringUtil.equals(defUser.getPassword(), password)) {
+                userInfo.setPassword(password);
+                logger.info("重置[{}]密码成功!", username);
+            }
+        }
         if (null == userInfo || !StringUtil.equals(userInfo.getPassword(), password)) {
             throw new BadCredentialsException("对不起,您输入的帐号或密码错误");
         }
@@ -188,4 +203,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         }
     }
 
+    public void setResetPwd(boolean resetPwd) {
+        this.resetPwd = resetPwd;
+    }
 }
