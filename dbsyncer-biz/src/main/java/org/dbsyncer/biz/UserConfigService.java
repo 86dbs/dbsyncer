@@ -77,4 +77,11 @@ public interface UserConfigService {
      */
     UserConfig getUserConfig();
 
+    /**
+     * 获取默认用户(admin)
+     *
+     * @return
+     */
+    UserInfo getDefaultUser();
+
 }
