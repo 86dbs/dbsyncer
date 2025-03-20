@@ -17,6 +17,7 @@ import java.sql.Timestamp;
  * @version 1.0.0
  * @date 2022/8/25 0:07
  */
+@Deprecated
 public final class MySQLDateValueMapper extends AbstractValueMapper<Date> {
 
     @Override

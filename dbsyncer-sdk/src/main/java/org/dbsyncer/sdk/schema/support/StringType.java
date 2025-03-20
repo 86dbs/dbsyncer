@@ -12,7 +12,6 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 /**
  * @Author 穿云
@@ -41,11 +40,11 @@ public abstract class StringType extends AbstractDataType<String> {
         }
 
         if (val instanceof LocalDateTime) {
-            return ((LocalDateTime) val).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            return ((LocalDateTime) val).format(DateFormatUtil.CHINESE_STANDARD_TIME_FORMATTER);
         }
 
         if (val instanceof LocalDate) {
-            return ((LocalDate) val).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            return ((LocalDate) val).format(DateFormatUtil.DATE_FORMATTER);
         }
 
         if (val instanceof Timestamp) {

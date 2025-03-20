@@ -4,7 +4,6 @@
 package org.dbsyncer.sdk.schema.support;
 
 import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractDataType;
@@ -32,9 +31,6 @@ public abstract class TimestampType extends AbstractDataType<Timestamp> {
             return val;
         }
         if (val instanceof String) {
-            if (StringUtil.equals((CharSequence) val, "0000-00-00 00:00:00")) {
-                return val;
-            }
             Timestamp timestamp = DateFormatUtil.stringToTimestamp((String) val);
             if (null != timestamp) {
                 return timestamp;
