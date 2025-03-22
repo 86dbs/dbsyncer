@@ -4,7 +4,7 @@
 <configuration status="WARN" monitorInterval="30">
 
     <Properties>
-        <Property name="LOG_HOME"><![CDATA[logs]]></Property>
+        <Property name="LOG_HOME">${sys:LOG_HOME:-logs}</Property>
         <!-- 日志输出格式 -->
         <property name="LOG_PATTERN" value="%d{HH:mm:ss:SSS} [%thread] [%p] - %c{1.} %M:%L - %m%n" />
     </Properties>
