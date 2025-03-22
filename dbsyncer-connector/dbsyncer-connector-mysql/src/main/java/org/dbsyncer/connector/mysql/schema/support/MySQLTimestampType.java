@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.mysql.schema.support;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.TimestampType;
 
@@ -33,4 +34,13 @@ public final class MySQLTimestampType extends TimestampType {
         return throwUnsupportedException(val, field);
     }
 
+    @Override
+    protected Object convert(Object val, Field field) {
+        if (val instanceof String) {
+            if (StringUtil.equals((String) val, "0000-00-00 00:00:00")) {
+                return val;
+            }
+        }
+        return super.convert(val, field);
+    }
 }

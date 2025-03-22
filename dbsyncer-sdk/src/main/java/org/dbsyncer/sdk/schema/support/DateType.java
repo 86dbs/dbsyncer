@@ -4,7 +4,6 @@
 package org.dbsyncer.sdk.schema.support;
 
 import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractDataType;
@@ -26,7 +25,7 @@ public abstract class DateType extends AbstractDataType<Date> {
     }
 
     @Override
-    public Object convert(Object val, Field field) {
+    protected Object convert(Object val, Field field) {
         if (val instanceof Date) {
             return val;
         }
@@ -43,9 +42,6 @@ public abstract class DateType extends AbstractDataType<Date> {
 
         if (val instanceof String) {
             String s = (String) val;
-            if (StringUtil.equals(s, "0000-00-00")) {
-                return s;
-            }
             Timestamp timestamp = DateFormatUtil.stringToTimestamp(s);
             if (null != timestamp) {
                 return Date.valueOf(timestamp.toLocalDateTime().toLocalDate());
