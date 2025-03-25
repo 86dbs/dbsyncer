@@ -37,7 +37,6 @@ public final class ParserConsumer implements Watcher {
 
     @Override
     public void changeEvent(ChangedEvent event) {
-        event.getChangedOffset().setMetaId(metaId);
         bufferActuatorRouter.execute(metaId, event);
     }
 

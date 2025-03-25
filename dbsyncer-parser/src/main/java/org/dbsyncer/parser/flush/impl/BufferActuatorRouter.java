@@ -49,6 +49,7 @@ public final class BufferActuatorRouter implements DisposableBean {
     private final Map<String, Map<String, TableGroupBufferActuator>> router = new ConcurrentHashMap<>();
 
     public void execute(String metaId, ChangedEvent event) {
+        event.getChangedOffset().setMetaId(metaId);
         if (router.containsKey(metaId)) {
             router.computeIfPresent(metaId, (k, processor) -> {
                 processor.computeIfPresent(event.getSourceTableName(), (x, actuator) -> {
