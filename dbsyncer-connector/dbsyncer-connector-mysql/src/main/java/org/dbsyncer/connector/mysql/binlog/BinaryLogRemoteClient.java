@@ -11,6 +11,7 @@ import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 import com.github.shyiko.mysql.binlog.network.*;
 import com.github.shyiko.mysql.binlog.network.protocol.*;
 import com.github.shyiko.mysql.binlog.network.protocol.command.*;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.deserializer.DeleteDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.UpdateDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.WriteDeserializer;
@@ -96,7 +97,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private boolean useBinlogFilenamePositionInGtidMode;
     private Boolean isMariaDB;
 
-    private static final int MYSQL_VERSION_8_4 = 840000;
+    private static final long MYSQL_VERSION_8_4 = 8400000000L;
     private final List<BinaryLogRemoteClient.EventListener> eventListeners = new CopyOnWriteArrayList<>();
     private final List<BinaryLogRemoteClient.LifecycleListener> lifecycleListeners = new CopyOnWriteArrayList<>();
 
@@ -426,15 +427,15 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
     }
 
-    private Integer getVersion() throws IOException {
+    private Long getVersion() throws IOException {
         channel.write(new QueryCommand("SELECT VERSION()"));
         ResultSetRowPacket[] resultSet = readResultSet();
         if (resultSet.length == 0) {
             throw new IOException("Failed to getVersion, command SELECT VERSION()");
         }
         ResultSetRowPacket resultSetRow = resultSet[0];
-        String version = resultSetRow.getValue(0).replace(".", "");
-        return Integer.parseInt(String.format("%-6s", version).replace(" ", "0")) ;
+        String version = resultSetRow.getValue(0).replace(StringUtil.POINT, StringUtil.EMPTY).replace(StringUtil.HORIZONTAL, StringUtil.EMPTY);
+        return Long.parseLong(String.format("%-10s", version).replace(StringUtil.SPACE, "0"));
     }
 
     private void fetchBinlogFilenameAndPosition() throws IOException {
