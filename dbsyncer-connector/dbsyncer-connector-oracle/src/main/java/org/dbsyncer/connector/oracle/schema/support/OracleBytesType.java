@@ -55,6 +55,7 @@ public final class OracleBytesType extends BytesType {
             if ("EMPTY_BLOB()".equals(s)) {
                 return null;
             }
+            return s.getBytes();
         }
         return super.convert(val, field);
     }

@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
  * @version 1.0.0
  * @date 2022/8/25 0:07
  */
+@Deprecated
 public final class OracleClobValueMapper extends AbstractValueMapper<CustomType> {
 
     @Override
