@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
  * @version 1.0.0
  * @date 2022/8/25 0:07
  */
+@Deprecated
 public class BlobValueMapper extends AbstractValueMapper<byte[]> {
 
     @Override

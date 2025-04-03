@@ -59,7 +59,7 @@ public final class MySQLByteType extends ByteType {
         if (val instanceof Byte) {
             return val;
         }
-        return throwUnsupportedException(val, field);
+        return super.convert(val, field);
     }
 
 }

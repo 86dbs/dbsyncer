@@ -434,7 +434,10 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             throw new IOException("Failed to getVersion, command SELECT VERSION()");
         }
         ResultSetRowPacket resultSetRow = resultSet[0];
-        String version = resultSetRow.getValue(0).replace(StringUtil.POINT, StringUtil.EMPTY).replace(StringUtil.HORIZONTAL, StringUtil.EMPTY);
+        String version = resultSetRow.getValue(0).replace(StringUtil.POINT, StringUtil.EMPTY);
+        if (version.contains(StringUtil.HORIZONTAL)) {
+            version = version.split(StringUtil.HORIZONTAL)[0];
+        }
         return Long.parseLong(String.format("%-10s", version).replace(StringUtil.SPACE, "0"));
     }
 
