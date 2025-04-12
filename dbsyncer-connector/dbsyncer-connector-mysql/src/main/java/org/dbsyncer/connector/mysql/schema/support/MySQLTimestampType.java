@@ -31,6 +31,10 @@ public final class MySQLTimestampType extends TimestampType {
 
     @Override
     protected Timestamp merge(Object val, Field field) {
+        if (val instanceof java.util.Date) {
+            java.util.Date date = (java.util.Date) val;
+            return new Timestamp(date.getTime());
+        }
         return throwUnsupportedException(val, field);
     }
 
