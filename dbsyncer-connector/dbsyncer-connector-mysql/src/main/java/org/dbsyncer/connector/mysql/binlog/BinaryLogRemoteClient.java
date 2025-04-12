@@ -12,9 +12,12 @@ import com.github.shyiko.mysql.binlog.network.*;
 import com.github.shyiko.mysql.binlog.network.protocol.*;
 import com.github.shyiko.mysql.binlog.network.protocol.command.*;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.mysql.deserializer.DeleteDeserializer;
-import org.dbsyncer.connector.mysql.deserializer.UpdateDeserializer;
-import org.dbsyncer.connector.mysql.deserializer.WriteDeserializer;
+import org.dbsyncer.connector.mysql.deserializer.DeleteDeserialize;
+import org.dbsyncer.connector.mysql.deserializer.ExtDeleteDeserializer;
+import org.dbsyncer.connector.mysql.deserializer.ExtUpdateDeserializer;
+import org.dbsyncer.connector.mysql.deserializer.UpdateDeserialize;
+import org.dbsyncer.connector.mysql.deserializer.ExtWriteDeserializer;
+import org.dbsyncer.connector.mysql.deserializer.WriteDeserialize;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -191,7 +194,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     }
 
     private String createClientId() {
-        return new StringBuilder(hostname).append(":").append(port).append("_").append(connectionId).toString();
+        return hostname + ":" + port + "_" + connectionId;
     }
 
     private void openChannel() throws IOException {
@@ -584,12 +587,12 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         eventDataDeserializers.put(EventType.ROTATE, new RotateEventDataDeserializer());
         eventDataDeserializers.put(EventType.FORMAT_DESCRIPTION, new FormatDescriptionEventDataDeserializer());
         eventDataDeserializers.put(EventType.TABLE_MAP, new TableMapEventDataDeserializer());
-        eventDataDeserializers.put(EventType.UPDATE_ROWS, new UpdateRowsEventDataDeserializer(tableMapEventByTableId));
-        eventDataDeserializers.put(EventType.WRITE_ROWS, new WriteRowsEventDataDeserializer(tableMapEventByTableId));
-        eventDataDeserializers.put(EventType.DELETE_ROWS, new DeleteRowsEventDataDeserializer(tableMapEventByTableId));
-        eventDataDeserializers.put(EventType.EXT_WRITE_ROWS, (new WriteDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
-        eventDataDeserializers.put(EventType.EXT_UPDATE_ROWS, (new UpdateDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
-        eventDataDeserializers.put(EventType.EXT_DELETE_ROWS, (new DeleteDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
+        eventDataDeserializers.put(EventType.UPDATE_ROWS, new UpdateDeserialize(tableMapEventByTableId));
+        eventDataDeserializers.put(EventType.WRITE_ROWS, new WriteDeserialize(tableMapEventByTableId));
+        eventDataDeserializers.put(EventType.DELETE_ROWS, new DeleteDeserialize(tableMapEventByTableId));
+        eventDataDeserializers.put(EventType.EXT_WRITE_ROWS, (new ExtWriteDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
+        eventDataDeserializers.put(EventType.EXT_UPDATE_ROWS, (new ExtUpdateDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
+        eventDataDeserializers.put(EventType.EXT_DELETE_ROWS, (new ExtDeleteDeserializer(tableMapEventByTableId)).setMayContainExtraInformation(true));
         eventDataDeserializers.put(EventType.XID, new XidEventDataDeserializer());
         eventDataDeserializers.put(EventType.INTVAR, new IntVarEventDataDeserializer());
         eventDataDeserializers.put(EventType.QUERY, new QueryEventDataDeserializer());
