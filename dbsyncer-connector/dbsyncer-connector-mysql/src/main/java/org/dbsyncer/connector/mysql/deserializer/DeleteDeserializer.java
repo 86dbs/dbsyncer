@@ -4,7 +4,7 @@
 package org.dbsyncer.connector.mysql.deserializer;
 
 import com.github.shyiko.mysql.binlog.event.TableMapEventData;
-import com.github.shyiko.mysql.binlog.event.deserialization.WriteRowsEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.DeleteRowsEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
 import java.io.IOException;
@@ -16,11 +16,12 @@ import java.util.Map;
  * @Version 1.0.0
  * @Date 2025-04-12 15:21
  */
-public final class WriteDeserialize extends WriteRowsEventDataDeserializer {
+public final class DeleteDeserializer extends DeleteRowsEventDataDeserializer {
+
     private final DatetimeV2Deserialize datetimeV2Deserialize = new DatetimeV2Deserialize();
     private final JsonBinaryDeserialize jsonBinaryDeserialize = new JsonBinaryDeserialize();
 
-    public WriteDeserialize(Map<Long, TableMapEventData> tableMapEventByTableId) {
+    public DeleteDeserializer(Map<Long, TableMapEventData> tableMapEventByTableId) {
         super(tableMapEventByTableId);
     }
 
