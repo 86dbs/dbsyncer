@@ -48,17 +48,15 @@ public class Shard {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private File indexPath;
+    private final File indexPath;
 
-    private Directory directory;
+    private final Directory directory;
 
-    private Analyzer analyzer;
+    private final Analyzer analyzer;
 
     private IndexWriter indexWriter;
 
     private IndexReader indexReader;
-
-    private IndexWriterConfig config;
 
     private final Object LOCK = new Object();
 
@@ -253,7 +251,7 @@ public class Shard {
             IOUtils.close(writeLock); // release write lock
         }
         // 创建索引写入配置
-        config = new IndexWriterConfig(analyzer);
+        IndexWriterConfig config = new IndexWriterConfig(analyzer);
         // 默认32M, 减少合并次数
         config.setRAMBufferSizeMB(32);
         // 创建索引写入对象

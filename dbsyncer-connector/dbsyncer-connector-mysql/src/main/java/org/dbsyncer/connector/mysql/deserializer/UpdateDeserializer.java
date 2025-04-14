@@ -8,6 +8,7 @@ import com.github.shyiko.mysql.binlog.event.deserialization.UpdateRowsEventDataD
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -15,9 +16,12 @@ import java.util.Map;
  * @Version 1.0.0
  * @Date 2025-04-12 15:05
  */
-public class UpdateDeserialize extends UpdateRowsEventDataDeserializer {
+public final class UpdateDeserializer extends UpdateRowsEventDataDeserializer {
+
+    private final DatetimeV2Deserialize datetimeV2Deserialize = new DatetimeV2Deserialize();
     private final JsonBinaryDeserialize jsonBinaryDeserialize = new JsonBinaryDeserialize();
-    public UpdateDeserialize(Map<Long, TableMapEventData> tableMapEventByTableId) {
+
+    public UpdateDeserializer(Map<Long, TableMapEventData> tableMapEventByTableId) {
         super(tableMapEventByTableId);
     }
 
@@ -25,4 +29,8 @@ public class UpdateDeserialize extends UpdateRowsEventDataDeserializer {
         return jsonBinaryDeserialize.deserializeJson(meta, inputStream);
     }
 
+    @Override
+    protected Serializable deserializeDatetimeV2(int meta, ByteArrayInputStream inputStream) throws IOException {
+        return datetimeV2Deserialize.deserializeDatetimeV2(meta, inputStream);
+    }
 }
