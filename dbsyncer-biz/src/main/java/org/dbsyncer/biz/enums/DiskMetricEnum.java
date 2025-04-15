@@ -1,5 +1,8 @@
 package org.dbsyncer.biz.enums;
 
+import org.dbsyncer.biz.BizException;
+import org.dbsyncer.common.util.StringUtil;
+
 /**
  * 硬盘指标
  *
@@ -24,14 +27,23 @@ public enum DiskMetricEnum {
      */
     TOTAL("disk.space.total", "硬盘", "总共"),;
 
-    private String code;
-    private String group;
-    private String metricName;
+    private final String code;
+    private final String group;
+    private final String metricName;
 
     DiskMetricEnum(String code, String group, String metricName) {
         this.code = code;
         this.group = group;
         this.metricName = metricName;
+    }
+
+    public static DiskMetricEnum getMetric(String code) throws BizException {
+        for (DiskMetricEnum e : DiskMetricEnum.values()) {
+            if (StringUtil.equals(code, e.getCode())) {
+                return e;
+            }
+        }
+        return null;
     }
 
     public String getCode() {

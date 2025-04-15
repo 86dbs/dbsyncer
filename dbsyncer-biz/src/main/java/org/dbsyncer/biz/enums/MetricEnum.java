@@ -15,12 +15,12 @@ public enum MetricEnum {
     /**
      * 线程活跃数
      */
-    THREADS_LIVE("jvm.threads.live", "应用线程", "活跃数"),
+    THREADS_LIVE("jvm.threads.live", "应用线程", "活跃"),
 
     /**
      * 线程峰值
      */
-    THREADS_PEAK("jvm.threads.peak", "应用线程", "峰值数"),
+    THREADS_PEAK("jvm.threads.peak", "应用线程", "峰值"),
 
     /**
      * 内存已用
@@ -37,19 +37,19 @@ public enum MetricEnum {
      */
     MEMORY_MAX("jvm.memory.max", "内存", "总共"),
 
-//    /**
-//     * GC
-//     */
-//    GC_PAUSE("jvm.gc.pause", "GC", "已用"),
+    /**
+     * GC
+     */
+    GC_PAUSE("jvm.gc.pause", "GC", "已用"),
 
     /**
      * CPU已用
      */
     CPU_USAGE("system.cpu.usage", "CPU", "已用");
 
-    private String code;
-    private String group;
-    private String metricName;
+    private final String code;
+    private final String group;
+    private final String metricName;
 
     MetricEnum(String code, String group, String metricName) {
         this.code = code;
@@ -63,7 +63,7 @@ public enum MetricEnum {
                 return e;
             }
         }
-        throw new BizException(String.format("Metric code \"%s\" does not exist.", code));
+        return null;
     }
 
     public String getCode() {
