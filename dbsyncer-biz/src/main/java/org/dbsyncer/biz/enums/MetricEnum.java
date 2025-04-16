@@ -40,12 +40,12 @@ public enum MetricEnum {
     /**
      * GC
      */
-    GC_PAUSE("jvm.gc.pause", "GC", "已用"),
+    GC_PAUSE("jvm.gc.pause", "GC", ""),
 
     /**
      * CPU已用
      */
-    CPU_USAGE("system.cpu.usage", "CPU", "已用");
+    CPU_USAGE("system.cpu.usage", "CPU", "");
 
     private final String code;
     private final String group;

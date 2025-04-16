@@ -11,7 +11,7 @@
     <artifactId>dbsyncer-common</artifactId>
 
     <dependencies>
-        <!-- Log4j2框架的性能是最强的 -->
+        <!-- Log4j2 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-log4j2</artifactId>
