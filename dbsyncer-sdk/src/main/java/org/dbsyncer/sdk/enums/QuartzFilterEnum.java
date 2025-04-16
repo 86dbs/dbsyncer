@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.enums;
 
 import org.dbsyncer.common.util.StringUtil;
@@ -47,12 +50,12 @@ public enum QuartzFilterEnum {
      */
     TIME_STAMP_YES_END(8, "$timestamp_yes_end$", "系统昨天时间戳(结束23:59:59)", new YesTimestampFilter(false));
 
-    private Integer index;
-    private String type;
-    private String message;
-    private QuartzFilter quartzFilter;
+    private final int index;
+    private final String type;
+    private final String message;
+    private final QuartzFilter quartzFilter;
 
-    QuartzFilterEnum(Integer index, String type, String message, QuartzFilter quartzFilter) {
+    QuartzFilterEnum(int index, String type, String message, QuartzFilter quartzFilter) {
         this.index = index;
         this.type = type;
         this.message = message;
@@ -72,7 +75,7 @@ public enum QuartzFilterEnum {
         return null;
     }
 
-    public Integer getIndex() {
+    public int getIndex() {
         return index;
     }
 

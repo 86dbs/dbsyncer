@@ -65,9 +65,9 @@ public enum FilterEnum {
     });
 
     // 运算符名称
-    private String name;
+    private final String name;
     // 比较器
-    private CompareFilter compareFilter;
+    private final CompareFilter compareFilter;
 
     FilterEnum(String name, CompareFilter compareFilter) {
         this.name = name;

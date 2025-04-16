@@ -27,12 +27,12 @@ public enum ParserEnum {
     /**
      * 编码
      */
-    private String code;
+    private final String code;
 
     /**
      * 默认值
      */
-    private int defaultValue;
+    private final int defaultValue;
 
     ParserEnum(String code, int defaultValue) {
         this.code = code;

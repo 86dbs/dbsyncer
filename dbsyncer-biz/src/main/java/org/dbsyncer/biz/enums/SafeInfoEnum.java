@@ -14,7 +14,7 @@ public enum SafeInfoEnum {
      */
     PASSWORD("password");
 
-    private String code;
+    private final String code;
 
     SafeInfoEnum(String code) {
         this.code = code;

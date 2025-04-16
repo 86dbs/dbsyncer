@@ -65,22 +65,22 @@ public enum CommandEnum {
     /**
      * 命令类型
      */
-    private String modelType;
+    private final String modelType;
 
     /**
      * 执行器
      */
-    private CommandExecutor commandExecutor;
+    private final CommandExecutor commandExecutor;
 
     /**
      * 是否预加载
      */
-    private boolean preload;
+    private final boolean preload;
 
     /**
      * 分组持久化策略
      */
-    private GroupStrategyEnum groupStrategyEnum;
+    private final GroupStrategyEnum groupStrategyEnum;
 
     CommandEnum(String modelType, CommandExecutor commandExecutor) {
         this(modelType, commandExecutor, false);

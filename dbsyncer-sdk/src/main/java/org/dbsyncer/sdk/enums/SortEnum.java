@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.enums;
 
 /**
@@ -21,7 +24,7 @@ public enum SortEnum {
         this.code = code;
     }
 
-    private String code;
+    private final String code;
 
     public String getCode() {
         return code;

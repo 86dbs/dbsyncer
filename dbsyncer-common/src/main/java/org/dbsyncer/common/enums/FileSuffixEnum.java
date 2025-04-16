@@ -21,7 +21,7 @@ public enum FileSuffixEnum {
      */
     JSON("json");
 
-    private String name;
+    private final String name;
 
     FileSuffixEnum(String name) {
         this.name = name;

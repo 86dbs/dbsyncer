@@ -22,7 +22,7 @@ public enum FilterTypeEnum {
      */
     LONG("long");
 
-    private String type;
+    private final String type;
 
     FilterTypeEnum(String type) {
         this.type = type;
