@@ -11,9 +11,11 @@ import org.dbsyncer.biz.enums.BufferActuatorMetricEnum;
 import org.dbsyncer.biz.enums.DiskMetricEnum;
 import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.metric.MetricDetailFormatter;
+import org.dbsyncer.biz.metric.MetricGroupProcessor;
 import org.dbsyncer.biz.metric.impl.CpuMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.DiskMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.DoubleRoundMetricDetailFormatter;
+import org.dbsyncer.biz.metric.impl.GCMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.MemoryMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.ValueMetricDetailFormatter;
 import org.dbsyncer.biz.model.AppReportMetric;
@@ -94,23 +96,26 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     @Resource
     private SystemConfigService systemConfigService;
 
-    private Map<String, MetricDetailFormatter> metricDetailFormatterMap = new ConcurrentHashMap<>();
+    @Resource
+    private MetricGroupProcessor metricGroupProcessor;
+
+    private final Map<String, MetricDetailFormatter> metricMap = new ConcurrentHashMap<>();
 
     @PostConstruct
     private void init() {
-        metricDetailFormatterMap.putIfAbsent(BufferActuatorMetricEnum.GENERAL.getCode(), new ValueMetricDetailFormatter());
-        metricDetailFormatterMap.putIfAbsent(BufferActuatorMetricEnum.STORAGE.getCode(), new ValueMetricDetailFormatter());
-        metricDetailFormatterMap.putIfAbsent(BufferActuatorMetricEnum.TABLE_GROUP.getCode(), new ValueMetricDetailFormatter());
-        metricDetailFormatterMap.putIfAbsent(MetricEnum.THREADS_LIVE.getCode(), new DoubleRoundMetricDetailFormatter());
-        metricDetailFormatterMap.putIfAbsent(MetricEnum.THREADS_PEAK.getCode(), new DoubleRoundMetricDetailFormatter());
-        metricDetailFormatterMap.putIfAbsent(MetricEnum.MEMORY_USED.getCode(), new MemoryMetricDetailFormatter());
-        metricDetailFormatterMap.putIfAbsent(MetricEnum.MEMORY_COMMITTED.getCode(), new MemoryMetricDetailFormatter());
-        metricDetailFormatterMap.putIfAbsent(MetricEnum.MEMORY_MAX.getCode(), new MemoryMetricDetailFormatter());
-        metricDetailFormatterMap.putIfAbsent(MetricEnum.CPU_USAGE.getCode(), new CpuMetricDetailFormatter());
-//        metricDetailFormatterMap.putIfAbsent(MetricEnum.GC_PAUSE.getCode(), new GCMetricDetailFormatter());
-        metricDetailFormatterMap.putIfAbsent(DiskMetricEnum.THRESHOLD.getCode(), new DiskMetricDetailFormatter());
-        metricDetailFormatterMap.putIfAbsent(DiskMetricEnum.FREE.getCode(), new DiskMetricDetailFormatter());
-        metricDetailFormatterMap.putIfAbsent(DiskMetricEnum.TOTAL.getCode(), new DiskMetricDetailFormatter());
+        metricMap.putIfAbsent(BufferActuatorMetricEnum.GENERAL.getCode(), new ValueMetricDetailFormatter());
+        metricMap.putIfAbsent(BufferActuatorMetricEnum.STORAGE.getCode(), new ValueMetricDetailFormatter());
+        metricMap.putIfAbsent(BufferActuatorMetricEnum.TABLE_GROUP.getCode(), new ValueMetricDetailFormatter());
+        metricMap.putIfAbsent(MetricEnum.THREADS_LIVE.getCode(), new DoubleRoundMetricDetailFormatter());
+        metricMap.putIfAbsent(MetricEnum.THREADS_PEAK.getCode(), new DoubleRoundMetricDetailFormatter());
+        metricMap.putIfAbsent(MetricEnum.MEMORY_USED.getCode(), new MemoryMetricDetailFormatter());
+        metricMap.putIfAbsent(MetricEnum.MEMORY_COMMITTED.getCode(), new MemoryMetricDetailFormatter());
+        metricMap.putIfAbsent(MetricEnum.MEMORY_MAX.getCode(), new MemoryMetricDetailFormatter());
+        metricMap.putIfAbsent(MetricEnum.CPU_USAGE.getCode(), new CpuMetricDetailFormatter());
+        metricMap.putIfAbsent(MetricEnum.GC_PAUSE.getCode(), new GCMetricDetailFormatter());
+        metricMap.putIfAbsent(DiskMetricEnum.THRESHOLD.getCode(), new DiskMetricDetailFormatter());
+        metricMap.putIfAbsent(DiskMetricEnum.FREE.getCode(), new DiskMetricDetailFormatter());
+        metricMap.putIfAbsent(DiskMetricEnum.TOTAL.getCode(), new DiskMetricDetailFormatter());
 
         // 间隔10分钟预警
         scheduledTaskService.start("0 */10 * * * ?", this);
@@ -118,12 +123,11 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public List<MetaVo> getMetaAll() {
-        List<MetaVo> list = profileComponent.getMetaAll()
+        return profileComponent.getMetaAll()
                 .stream()
-                .map(m -> convertMeta2Vo(m))
+                .map(this::convertMeta2Vo)
                 .sorted(Comparator.comparing(MetaVo::getUpdateTime).reversed())
                 .collect(Collectors.toList());
-        return list;
     }
 
     @Override
@@ -332,18 +336,20 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         metrics.addAll(metricList);
 
         // 转换显示
-        return metrics.stream().map(metric -> {
+        List<MetricResponseVo> formatMetrics = metrics.stream().map(metric -> {
             MetricResponseVo vo = new MetricResponseVo();
             vo.setCode(metric.getCode());
             vo.setGroup(metric.getGroup());
             vo.setMetricName(metric.getMetricName());
             vo.setMeasurements(metric.getMeasurements());
-            MetricDetailFormatter detailFormatter = metricDetailFormatterMap.get(vo.getCode());
-            if (null != detailFormatter) {
-                detailFormatter.format(vo);
-            }
+            metricMap.computeIfPresent(vo.getCode(), (k, mdf) -> {
+                mdf.format(vo);
+                return mdf;
+            });
             return vo;
         }).collect(Collectors.toList());
+        // 合并分组显示
+        return metricGroupProcessor.process(formatMetrics);
     }
 
 }

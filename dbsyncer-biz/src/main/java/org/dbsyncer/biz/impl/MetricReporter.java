@@ -107,7 +107,7 @@ public class MetricReporter implements ScheduledTaskJob {
             });
             list.addAll(tableList.stream()
                     .sorted(Comparator.comparing(MetricResponseInfo::getQueueUp).reversed())
-                    .limit(7)
+                    .limit(11)
                     .collect(Collectors.toList()));
         }
         return list.stream().map(MetricResponseInfo::getResponse).collect(Collectors.toList());
@@ -254,13 +254,12 @@ public class MetricReporter implements ScheduledTaskJob {
         ThreadPoolTaskExecutor threadTask = (ThreadPoolTaskExecutor) bufferActuator.getExecutor();
         ThreadPoolExecutor pool = threadTask.getThreadPoolExecutor();
         info.setQueueUp(bufferActuator.getQueue().size());
-        StringBuilder msg = new StringBuilder();
-        msg.append("堆积").append(StringUtil.COLON).append(info.getQueueUp());
-        msg.append(StringUtil.FORWARD_SLASH).append(bufferActuator.getQueueCapacity()).append(StringUtil.SPACE);
-        msg.append(ThreadPoolMetricEnum.CORE_SIZE.getMetricName()).append(StringUtil.COLON).append(pool.getActiveCount());
-        msg.append(StringUtil.FORWARD_SLASH).append(pool.getMaximumPoolSize()).append(StringUtil.SPACE);
-        msg.append(ThreadPoolMetricEnum.COMPLETED.getMetricName()).append(StringUtil.COLON).append(pool.getCompletedTaskCount());
-        info.setResponse(new MetricResponse(code, group, metricName, Arrays.asList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), msg.toString()))));
+        String msg = "堆积" + StringUtil.COLON + info.getQueueUp() +
+                StringUtil.FORWARD_SLASH + bufferActuator.getQueueCapacity() + StringUtil.SPACE +
+                ThreadPoolMetricEnum.CORE_SIZE.getMetricName() + StringUtil.COLON + pool.getActiveCount() +
+                StringUtil.FORWARD_SLASH + pool.getMaximumPoolSize() + StringUtil.SPACE +
+                ThreadPoolMetricEnum.COMPLETED.getMetricName() + StringUtil.COLON + pool.getCompletedTaskCount();
+        info.setResponse(new MetricResponse(code, group, metricName, Collections.singletonList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), msg))));
         return info;
     }
 

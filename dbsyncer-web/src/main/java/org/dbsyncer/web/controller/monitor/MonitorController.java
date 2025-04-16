@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.web.controller.monitor;
 
+import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
@@ -38,6 +39,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -48,8 +50,8 @@ public class MonitorController extends BaseController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final static int COUNT = 60;
-    private HistoryStackVo cpu = new HistoryStackVo();
-    private HistoryStackVo memory = new HistoryStackVo();
+    private final HistoryStackVo cpu = new HistoryStackVo();
+    private final HistoryStackVo memory = new HistoryStackVo();
 
     @Resource
     private MonitorService monitorService;
@@ -224,7 +226,7 @@ public class MonitorController extends BaseController {
 
     private MetricResponse createDiskMetricResponse(DiskMetricEnum metricEnum, Object value) {
         return new MetricResponse(metricEnum.getCode(), metricEnum.getGroup(), metricEnum.getMetricName(),
-                Arrays.asList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), value)));
+                Collections.singletonList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), value)));
     }
 
     private MetricResponse getMetricResponse(String code) {
@@ -234,6 +236,9 @@ public class MonitorController extends BaseController {
         }
         MetricResponse metricResponse = new MetricResponse();
         MetricEnum metricEnum = MetricEnum.getMetric(metric.getName());
+        if (metricEnum == null) {
+            throw new BizException(String.format("Metric code \"%s\" does not exist.", code));
+        }
         metricResponse.setCode(metricEnum.getCode());
         metricResponse.setGroup(metricEnum.getGroup());
         metricResponse.setMetricName(metricEnum.getMetricName());
