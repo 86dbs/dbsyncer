@@ -74,6 +74,8 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
      */
     private String pluginExtInfo;
 
+    private String traceId;
+
     @Override
     public boolean isTerminated() {
         return terminated;
@@ -182,6 +184,15 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
 
     public void setPluginExtInfo(String pluginExtInfo) {
         this.pluginExtInfo = pluginExtInfo;
+    }
+
+    @Override
+    public String getTraceId() {
+        return traceId;
+    }
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
     }
 
     @Override

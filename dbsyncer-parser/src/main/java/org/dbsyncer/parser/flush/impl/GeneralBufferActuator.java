@@ -114,6 +114,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             response.setChangedOffset(request.getChangedOffset());
         }
         if (!response.isMerged()) {
+            response.setTraceId(request.getTraceId());
             response.setTableName(request.getTableName());
             response.setEvent(request.getEvent());
             response.setTypeEnum(request.getTypeEnum());
@@ -198,6 +199,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         context.setTargetConnectorInstance(connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())));
         context.setSourceTableName(tableGroup.getSourceTable().getName());
         context.setTargetTableName(tableGroup.getTargetTable().getName());
+        context.setTraceId(response.getTraceId());
         context.setEvent(response.getEvent());
         context.setTargetFields(tableGroupPicker.getTargetFields());
         context.setCommand(tableGroup.getCommand());
