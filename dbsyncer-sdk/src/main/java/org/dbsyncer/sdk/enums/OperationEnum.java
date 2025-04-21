@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.enums;
 
 /**
@@ -19,7 +22,7 @@ public enum OperationEnum {
     OR("or");
 
     // 描述
-    private String name;
+    private final String name;
 
     OperationEnum(String name) {
         this.name = name;

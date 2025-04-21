@@ -28,7 +28,7 @@ public enum GroupStrategyEnum {
      */
     TABLE(new TableGroupStrategy());
 
-    private GroupStrategy groupStrategy;
+    private final GroupStrategy groupStrategy;
 
     GroupStrategyEnum(GroupStrategy groupStrategy) {
         this.groupStrategy = groupStrategy;

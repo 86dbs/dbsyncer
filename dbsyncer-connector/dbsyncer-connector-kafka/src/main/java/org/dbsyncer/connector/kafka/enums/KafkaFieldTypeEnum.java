@@ -39,9 +39,9 @@ public enum KafkaFieldTypeEnum {
     TIME("Time", Time.class, Types.TIME),
     TIMESTAMP("Timestamp", Timestamp.class, Types.TIMESTAMP);
 
-    private String code;
-    private Class clazz;
-    private int type;
+    private final String code;
+    private final Class clazz;
+    private final int type;
 
     KafkaFieldTypeEnum(String code, Class clazz, int type) {
         this.code = code;

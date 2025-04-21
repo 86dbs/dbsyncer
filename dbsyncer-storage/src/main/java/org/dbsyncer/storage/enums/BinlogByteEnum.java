@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
 package org.dbsyncer.storage.enums;
 
 /**
@@ -47,7 +50,7 @@ public enum BinlogByteEnum {
         this.byteLength = byteLength;
     }
 
-    int byteLength;
+    final int byteLength;
 
     public int getByteLength() {
         return byteLength;

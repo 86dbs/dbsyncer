@@ -20,16 +20,16 @@ public enum StorageDataStatusEnum {
      */
     SUCCESS(1, "成功");
 
-    private Integer value;
+    private final int value;
 
-    private String message;
+    private final String message;
 
-    StorageDataStatusEnum(Integer value, String message) {
+    StorageDataStatusEnum(int value, String message) {
         this.value = value;
         this.message = message;
     }
 
-    public Integer getValue() {
+    public int getValue() {
         return value;
     }
 

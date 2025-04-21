@@ -75,8 +75,8 @@ public enum ESFieldTypeEnum {
     GEO_SHAPE("geo_shape", Types.VARCHAR),
     BINARY("binary", Types.BINARY);
 
-    private String code;
-    private int type;
+    private final String code;
+    private final int type;
 
     ESFieldTypeEnum(String code, int type) {
         this.code = code;

@@ -22,9 +22,9 @@ public enum BufferActuatorMetricEnum {
      */
     TABLE_GROUP("buffer.actuator.table.group", "表执行器", "");
 
-    private String code;
-    private String group;
-    private String metricName;
+    private final String code;
+    private final String group;
+    private final String metricName;
 
     BufferActuatorMetricEnum(String code, String group, String metricName) {
         this.code = code;

@@ -23,7 +23,7 @@ public enum StorageEnum {
      */
     DATA("data");
 
-    private String type;
+    private final String type;
 
     StorageEnum(String type) {
         this.type = type;

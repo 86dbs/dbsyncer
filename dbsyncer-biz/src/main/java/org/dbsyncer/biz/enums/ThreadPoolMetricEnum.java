@@ -30,7 +30,7 @@ public enum ThreadPoolMetricEnum {
      */
     REMAINING_CAPACITY("空闲队列");
 
-    private String metricName;
+    private final String metricName;
 
     ThreadPoolMetricEnum(String metricName) {
         this.metricName = metricName;

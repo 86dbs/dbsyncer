@@ -582,7 +582,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             }
             final String event = existRow(connectorInstance, queryCount, args) ? ConnectorConstant.OPERTION_UPDATE
                     : ConnectorConstant.OPERTION_INSERT;
-            logger.warn("{}表执行{}失败, 重新执行{}, {}", context.getTargetTableName(), context.getEvent(), event, row);
+            logger.warn("{} {}表执行{}失败, 重新执行{}, {}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, row);
             writer(result, connectorInstance, context, pkFields, row, event);
         }
     }
@@ -607,12 +607,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             // 2、设置参数
             int execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql, batchRow(fields, row)));
             if (execute == 0) {
-                throw new SdkException(String.format("尝试执行[%s]失败", event));
+                throw new SdkException(String.format("%s 尝试执行[%s]失败", context.getTraceId(), event));
             }
             result.getSuccessData().add(row);
         } catch (Exception e) {
             result.getFailData().add(row);
-            result.getError().append("SQL:").append(sql).append(System.lineSeparator())
+            result.getError().append(context.getTraceId())
+                    .append(" SQL:").append(sql).append(System.lineSeparator())
                     .append("DATA:").append(row).append(System.lineSeparator())
                     .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
             logger.error("执行{}失败: {}, DATA:{}", event, e.getMessage(), row);

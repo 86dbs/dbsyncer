@@ -33,8 +33,8 @@ public enum StorageStrategyEnum {
      */
     LOG(StorageEnum.LOG, new LogStrategy());
 
-    private StorageEnum type;
-    private Strategy strategy;
+    private final StorageEnum type;
+    private final Strategy strategy;
 
     StorageStrategyEnum(StorageEnum type, Strategy strategy) {
         this.type = type;

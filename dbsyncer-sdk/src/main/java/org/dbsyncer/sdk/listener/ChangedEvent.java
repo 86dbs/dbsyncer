@@ -21,6 +21,16 @@ import java.util.List;
 public interface ChangedEvent {
 
     /**
+     * 获取traceId
+     */
+    String getTraceId();
+
+    /**
+     * 设置traceId
+     */
+    void setTraceId(String traceId);
+
+    /**
      * 获取变更事件类型
      */
     ChangedEventTypeEnum getType();

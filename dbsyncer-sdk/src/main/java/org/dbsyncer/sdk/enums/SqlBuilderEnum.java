@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.enums;
 
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -49,12 +52,12 @@ public enum SqlBuilderEnum {
     /**
      * SQL构造器名称
      */
-    private String name;
+    private final String name;
 
     /**
      * SQL构造器
      */
-    private SqlBuilder sqlBuilder;
+    private final SqlBuilder sqlBuilder;
 
     SqlBuilderEnum(String name, SqlBuilder sqlBuilder) {
         this.name = name;

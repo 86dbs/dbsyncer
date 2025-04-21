@@ -100,6 +100,13 @@ public interface PluginContext extends BaseContext {
     String getPluginExtInfo();
 
     /**
+     * 获取TraceId
+     *
+     * @return
+     */
+    String getTraceId();
+
+    /**
      * 浅拷贝
      *
      * @return
