@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.listener.event;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 
@@ -18,7 +19,7 @@ public abstract class CommonChangedEvent implements ChangedEvent {
     /**
      * traceId
      */
-    private String traceId;
+    private String traceId = StringUtil.EMPTY;
     /**
      * 变更表名称
      */
