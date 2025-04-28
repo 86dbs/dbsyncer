@@ -14,7 +14,18 @@
                     <input name="forceUpdate" class="dbsyncer_switch" th:checked="${mapping?.forceUpdate}" type="checkbox">
                 </div>
             </div>
-            <div class="col-md-8"></div>
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">校验<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="Yes-校验数据源表与目标表差异数据; No-不生效"></i></label>
+                <div class="col-sm-9">
+                    <input name="compareData" class="dbsyncer_switch" th:checked="${mapping?.compareData}" type="checkbox" />
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">订正<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="Yes-校验数据源表与目标表差异数据，以源表为准，覆盖写入目标表; No-不生效"></i></label>
+                <div class="col-sm-9">
+                    <input name="recoverData" class="dbsyncer_switch" th:checked="${mapping?.recoverData}" type="checkbox" />
+                </div>
+            </div>
         </div>
     </div>
 
