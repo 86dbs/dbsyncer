@@ -1,7 +1,7 @@
 @echo off
 
 rem set up environment for Java
-rem set JAVA_HOME=D:\java\jdk1.8.0_40
+rem set JAVA_HOME=D:\java\jdk1.8.0_202
 rem set PATH=%JAVA_HOME%\bin;%JAVA_HOME%\jre\bin;
 rem set CLASSPATH=.;%JAVA_HOME%\lib;%JAVA_HOME%\lib\dt.jar;%JAVA_HOME%\lib\tools.jar
 
