@@ -9,7 +9,9 @@ import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
+import org.dbsyncer.biz.TaskSchedulerService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
+import org.dbsyncer.biz.scheduler.mapping.MappingCountTask;
 import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
@@ -78,6 +80,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private MonitorService monitorService;
 
     @Resource
+    private TaskSchedulerService taskSchedulerService;
+
+    @Resource
     private ManagerFactory managerFactory;
 
     @Resource
@@ -104,6 +109,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (StringUtil.isNotBlank(tableGroups)) {
             matchCustomizedTableGroups(model, tableGroups);
         }
+        // 统计总数
+        submitMappingCountTask(id);
         return id;
     }
 
@@ -148,8 +155,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
             // 更新meta
             tableGroupService.updateMeta(mapping, params.get("metaSnapshot"));
-            return profileComponent.editConfigModel(model);
+            profileComponent.editConfigModel(model);
         }
+        // 统计总数
+        submitMappingCountTask(id);
+        return id;
     }
 
     @Override
@@ -268,6 +278,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         updateConnectorTables(mapping.getSourceConnectorId());
         updateConnectorTables(mapping.getTargetConnectorId());
         return "刷新驱动表成功";
+    }
+
+    /**
+     * 提交统计驱动总数任务
+     */
+    private void submitMappingCountTask(String id) {
+        taskSchedulerService.submit(new MappingCountTask(id));
     }
 
     private void updateConnectorTables(String connectorId) {
