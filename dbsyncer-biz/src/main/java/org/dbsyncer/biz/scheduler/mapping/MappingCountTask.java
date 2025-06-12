@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 计算驱动总数任务
+ * 统计驱动总数任务
  *
  * @Author 穿云
  * @Version 1.0.0
