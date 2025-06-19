@@ -19,9 +19,9 @@ fi
 
 ###########################################################################
 # set up environment for Java
-#JAVA_HOME=/opt/jdk1.8.0_121
-PATH=$JAVA_HOME/bin
-# #CLASSPATH=.;$JAVA_HOME/lib;$JAVA_HOME/lib/dt.jar;$JAVA_HOME/lib/tools.jar
+#JAVA_HOME=/opt/jdk1.8.0_202
+#PATH=$JAVA_HOME/bin
+#CLASSPATH=.;$JAVA_HOME/lib;$JAVA_HOME/lib/dt.jar;$JAVA_HOME/lib/tools.jar
 SERVER_OPTS='-Xms3800m -Xmx3800m -Xmn1500m -Xss512k -XX:MetaspaceSize=192m'
 # set debug model
 #SERVER_OPTS="$SERVER_OPTS -Djava.compiler=NONE -Xnoagent -Xdebug -Xrunjdwp:transport=dt_socket,address=15005,server=y,suspend=n"
