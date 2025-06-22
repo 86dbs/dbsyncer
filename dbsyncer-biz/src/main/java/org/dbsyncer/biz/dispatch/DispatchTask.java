@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.biz.scheduler;
+package org.dbsyncer.biz.dispatch;
 
 import org.dbsyncer.biz.enums.TaskSchedulerEnum;
 
@@ -10,7 +10,12 @@ import org.dbsyncer.biz.enums.TaskSchedulerEnum;
  * @Version 1.0.0
  * @Date 2025-06-12 23:54
  */
-public interface Task extends Runnable {
+public interface DispatchTask extends Runnable {
+
+    /**
+     * 唯一任务id
+     */
+    String getUniqueId();
 
     TaskSchedulerEnum getType();
 

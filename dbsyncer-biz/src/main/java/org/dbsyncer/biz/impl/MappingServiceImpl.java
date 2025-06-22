@@ -9,9 +9,9 @@ import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
-import org.dbsyncer.biz.TaskSchedulerService;
+import org.dbsyncer.biz.DispatchTaskService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
-import org.dbsyncer.biz.scheduler.mapping.MappingCountTask;
+import org.dbsyncer.biz.dispatch.mapping.MappingCountTask;
 import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
@@ -80,7 +80,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private MonitorService monitorService;
 
     @Resource
-    private TaskSchedulerService taskSchedulerService;
+    private DispatchTaskService taskSchedulerService;
 
     @Resource
     private ManagerFactory managerFactory;
@@ -284,7 +284,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      * 提交统计驱动总数任务
      */
     private void submitMappingCountTask(String id) {
-        taskSchedulerService.submit(new MappingCountTask(id));
+        taskSchedulerService.execute(new MappingCountTask(id));
     }
 
     private void updateConnectorTables(String connectorId) {

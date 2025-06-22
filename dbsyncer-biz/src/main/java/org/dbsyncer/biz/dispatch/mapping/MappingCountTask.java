@@ -1,10 +1,10 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.biz.scheduler.mapping;
+package org.dbsyncer.biz.dispatch.mapping;
 
+import org.dbsyncer.biz.dispatch.AbstractDispatchTask;
 import org.dbsyncer.biz.enums.TaskSchedulerEnum;
-import org.dbsyncer.biz.scheduler.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
  * @Version 1.0.0
  * @Date 2025-06-13 00:00
  */
-public class MappingCountTask implements Task {
+public class MappingCountTask extends AbstractDispatchTask {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -26,12 +26,17 @@ public class MappingCountTask implements Task {
     }
 
     @Override
+    public String getUniqueId() {
+        return mappingId;
+    }
+
+    @Override
     public TaskSchedulerEnum getType() {
         return TaskSchedulerEnum.MAPPING_COUNT;
     }
 
     @Override
-    public void run() {
+    public void execute() {
         logger.info("正在统计驱动总数 ({})", mappingId);
     }
 }

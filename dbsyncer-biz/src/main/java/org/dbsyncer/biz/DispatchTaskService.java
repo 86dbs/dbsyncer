@@ -3,15 +3,15 @@
  */
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.scheduler.Task;
+import org.dbsyncer.biz.dispatch.DispatchTask;
 
 /**
  * @Author 穿云
  * @Version 1.0.0
  * @Date 2025-06-12 23:45
  */
-public interface TaskSchedulerService {
+public interface DispatchTaskService {
 
-    void submit(Task task);
+    void execute(DispatchTask task);
 
 }
