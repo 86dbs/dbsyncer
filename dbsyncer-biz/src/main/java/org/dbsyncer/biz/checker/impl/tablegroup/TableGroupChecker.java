@@ -17,7 +17,6 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
@@ -28,7 +27,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -81,10 +87,6 @@ public class TableGroupChecker extends AbstractChecker {
         } else {
             matchFieldMapping(tableGroup);
         }
-
-        // 合并配置
-        mergeConfig(mapping, tableGroup);
-
         return tableGroup;
     }
 
@@ -108,10 +110,6 @@ public class TableGroupChecker extends AbstractChecker {
 
         // 字段映射关系
         setFieldMapping(tableGroup, fieldMappingJson);
-
-        // 合并配置
-        mergeConfig(mapping, tableGroup);
-
         return tableGroup;
     }
 
@@ -132,18 +130,6 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable.getName(), StringUtil.join(targetTablePks, ",")));
     }
 
-    public void mergeConfig(Mapping mapping, TableGroup tableGroup) {
-        // 合并高级配置
-        TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
-
-        Map<String, String> command = parserComponent.getCommand(mapping, group);
-        tableGroup.setCommand(command);
-
-        // 获取数据源总数
-        long count = ModelEnum.isFull(mapping.getModel()) && !CollectionUtils.isEmpty(command) ? parserComponent.getCount(mapping.getSourceConnectorId(), command) : 0;
-        tableGroup.getSourceTable().setCount(count);
-    }
-
     private Table getTable(String connectorId, String tableName, String primaryKeyStr) {
         MetaInfo metaInfo = parserComponent.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接器表信息:" + tableName);
@@ -160,39 +146,6 @@ public class TableGroupChecker extends AbstractChecker {
             });
         }
         return new Table(tableName, metaInfo.getTableType(), metaInfo.getColumn(), metaInfo.getSql(), metaInfo.getIndexType());
-    }
-
-    /**
-     * 合并表配置
-     *
-     * @param mapping
-     * @param params
-     */
-    public void batchMergeConfig(Mapping mapping, Map<String, String> params) {
-        List<TableGroup> groupAll = profileComponent.getTableGroupAll(mapping.getId());
-        if (!CollectionUtils.isEmpty(groupAll)) {
-            // 手动排序
-            String[] sortedTableGroupIds = StringUtil.split(params.get("sortedTableGroupIds"), StringUtil.VERTICAL_LINE);
-            if (null != sortedTableGroupIds && sortedTableGroupIds.length > 0) {
-                Map<String, TableGroup> tableGroupMap = groupAll.stream().collect(Collectors.toMap(TableGroup::getId, f -> f, (k1, k2) -> k1));
-                groupAll.clear();
-                int size = sortedTableGroupIds.length;
-                int i = size;
-                while (i > 0) {
-                    TableGroup g = tableGroupMap.get(sortedTableGroupIds[size - i]);
-                    Assert.notNull(g, "Invalid sorted tableGroup.");
-                    g.setIndex(i);
-                    groupAll.add(g);
-                    i--;
-                }
-            }
-
-            // 合并配置
-            for (TableGroup g : groupAll) {
-                mergeConfig(mapping, g);
-                profileComponent.editConfigModel(g);
-            }
-        }
     }
 
     private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {

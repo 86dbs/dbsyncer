@@ -21,6 +21,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -91,6 +92,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Resource
     private TableGroupContext tableGroupContext;
 
+    @Resource
+    private ParserComponent parserComponent;
+
     @Override
     public String add(Map<String, String> params) {
         ConfigModel model = mappingChecker.checkAddConfigModel(params);
@@ -110,7 +114,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             matchCustomizedTableGroups(model, tableGroups);
         }
         // 统计总数
-        submitMappingCountTask(id);
+        submitMappingCountTask((Mapping) model, null);
         return id;
     }
 
@@ -148,17 +152,18 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String edit(Map<String, String> params) {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Mapping mapping = assertMappingExist(id);
+        String metaSnapshot = params.get("metaSnapshot");
         synchronized (LOCK) {
             assertRunning(mapping.getMetaId());
             Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
             log(LogType.MappingLog.UPDATE, model);
 
             // 更新meta
-            tableGroupService.updateMeta(mapping, params.get("metaSnapshot"));
+            tableGroupService.updateMeta(mapping, metaSnapshot);
             profileComponent.editConfigModel(model);
         }
         // 统计总数
-        submitMappingCountTask(id);
+        submitMappingCountTask(mapping, metaSnapshot);
         return id;
     }
 
@@ -283,8 +288,18 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     /**
      * 提交统计驱动总数任务
      */
-    private void submitMappingCountTask(String id) {
-        taskSchedulerService.execute(new MappingCountTask(id));
+    private void submitMappingCountTask(Mapping mapping, String metaSnapshot) {
+        // 只计算全量任务
+        if (!ModelEnum.isFull(mapping.getModel())) {
+            return;
+        }
+        MappingCountTask task = new MappingCountTask();
+        task.setMappingId(mapping.getId());
+        task.setMetaSnapshot(metaSnapshot);
+        task.setParserComponent(parserComponent);
+        task.setProfileComponent(profileComponent);
+        task.setTableGroupService(tableGroupService);
+        taskSchedulerService.execute(task);
     }
 
     private void updateConnectorTables(String connectorId) {

@@ -6,6 +6,8 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.DispatchTaskService;
 import org.dbsyncer.biz.dispatch.AbstractDispatchTask;
 import org.dbsyncer.biz.dispatch.DispatchTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +25,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 @Component
 public class DispatchTaskServiceImpl implements DispatchTaskService {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     @Resource
     private ThreadPoolTaskExecutor dispatchTaskExecutor;
 
@@ -33,13 +37,15 @@ public class DispatchTaskServiceImpl implements DispatchTaskService {
         // 幂等
         synchronized (active) {
             if (active.contains(task.getUniqueId())) {
+                logger.warn("The task has already been executed, {}", task.getUniqueId());
                 return;
             }
+            active.add(task.getUniqueId());
         }
         if (task instanceof AbstractDispatchTask) {
             AbstractDispatchTask adt = (AbstractDispatchTask) task;
             adt.setActive(active);
-            dispatchTaskExecutor.execute(adt);
         }
+        dispatchTaskExecutor.execute(task);
     }
 }
