@@ -19,4 +19,6 @@ public interface DispatchTask extends Runnable {
 
     TaskSchedulerEnum getType();
 
+    void destroy();
+
 }

@@ -5,13 +5,13 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
+import org.dbsyncer.biz.DispatchTaskService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
-import org.dbsyncer.biz.DispatchTaskService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
-import org.dbsyncer.biz.dispatch.mapping.MappingCountTask;
+import org.dbsyncer.biz.dispatch.task.MappingCountTask;
 import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
@@ -289,10 +289,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      * 提交统计驱动总数任务
      */
     private void submitMappingCountTask(Mapping mapping, String metaSnapshot) {
-        // 只计算全量任务
-        if (!ModelEnum.isFull(mapping.getModel())) {
-            return;
-        }
         MappingCountTask task = new MappingCountTask();
         task.setMappingId(mapping.getId());
         task.setMetaSnapshot(metaSnapshot);

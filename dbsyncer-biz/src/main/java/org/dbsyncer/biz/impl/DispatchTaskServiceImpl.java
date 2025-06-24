@@ -12,8 +12,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 任务调度实现
@@ -30,22 +30,20 @@ public class DispatchTaskServiceImpl implements DispatchTaskService {
     @Resource
     private ThreadPoolTaskExecutor dispatchTaskExecutor;
 
-    private final Set<String> active = new CopyOnWriteArraySet<>();
+    private final Map<String, DispatchTask> active = new ConcurrentHashMap<>();
 
     @Override
     public void execute(DispatchTask task) {
-        // 幂等
-        synchronized (active) {
-            if (active.contains(task.getUniqueId())) {
-                logger.warn("The task has already been executed, {}", task.getUniqueId());
-                return;
+        dispatchTaskExecutor.execute(active.compute(task.getUniqueId(), (k, t) -> {
+            if (t != null) {
+                t.destroy();
+                logger.warn("The dispatch task was terminated, {}", k);
             }
-            active.add(task.getUniqueId());
-        }
-        if (task instanceof AbstractDispatchTask) {
-            AbstractDispatchTask adt = (AbstractDispatchTask) task;
-            adt.setActive(active);
-        }
-        dispatchTaskExecutor.execute(task);
+            if (task instanceof AbstractDispatchTask) {
+                AbstractDispatchTask adt = (AbstractDispatchTask) task;
+                adt.setActive(active);
+            }
+            return task;
+        }));
     }
 }

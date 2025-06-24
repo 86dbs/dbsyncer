@@ -6,7 +6,7 @@ package org.dbsyncer.biz.dispatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Set;
+import java.util.Map;
 
 /**
  * @Author 穿云
@@ -17,24 +17,35 @@ public abstract class AbstractDispatchTask implements DispatchTask {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private Set<String> active;
+    private Map<String, DispatchTask> active;
+
+    private volatile boolean running;
 
     public abstract void execute() throws Exception;
 
     @Override
     public void run() {
-        try{
-            logger.info("dispatch task start, {}", getUniqueId());
+        try {
+            running = true;
             execute();
-            logger.info("dispatch task finished, {}", getUniqueId());
         } catch (Exception e) {
-            logger.error("dispatch task error", e);
+            logger.error("dispatch task，uniqueId:{}，error:{}", getUniqueId(), e);
         } finally {
+            running = false;
             active.remove(getUniqueId());
         }
     }
 
-    public void setActive(Set<String> active) {
+    @Override
+    public void destroy() {
+        this.running = false;
+    }
+
+    protected boolean isRunning() {
+        return running;
+    }
+
+    public void setActive(Map<String, DispatchTask> active) {
         this.active = active;
     }
 }

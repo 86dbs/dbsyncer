@@ -13,7 +13,10 @@ package org.dbsyncer.biz.enums;
 public enum TaskSchedulerEnum {
 
     /* 统计驱动总数 */
-    MAPPING_COUNT("统计驱动总数");
+    MAPPING_COUNT("统计驱动总数"),
+
+    /* 统计驱动表总数 */
+    TABLE_GROUP_COUNT("统计驱动表总数");
 
     TaskSchedulerEnum(String name){
         this.name = name;
