@@ -87,6 +87,10 @@ public class TableGroupChecker extends AbstractChecker {
         } else {
             matchFieldMapping(tableGroup);
         }
+
+        // 合并配置
+        mergeConfig(mapping, tableGroup);
+
         return tableGroup;
     }
 
@@ -110,6 +114,10 @@ public class TableGroupChecker extends AbstractChecker {
 
         // 字段映射关系
         setFieldMapping(tableGroup, fieldMappingJson);
+
+        // 合并配置
+        mergeConfig(mapping, tableGroup);
+
         return tableGroup;
     }
 
@@ -128,6 +136,13 @@ public class TableGroupChecker extends AbstractChecker {
         List<String> targetTablePks = targetTable.getColumn().stream().filter(c -> c.isPk()).map(c -> c.getName()).collect(Collectors.toList());
         tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable.getName(), StringUtil.join(sourceTablePks, ",")));
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable.getName(), StringUtil.join(targetTablePks, ",")));
+    }
+
+    public void mergeConfig(Mapping mapping, TableGroup tableGroup) {
+        // 合并高级配置
+        TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
+        Map<String, String> command = parserComponent.getCommand(mapping, group);
+        tableGroup.setCommand(command);
     }
 
     private Table getTable(String connectorId, String tableName, String primaryKeyStr) {

@@ -7,19 +7,17 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.postgresql.cdc.PostgreSQLListener;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLBitValueMapper;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLOtherValueMapper;
+import org.dbsyncer.connector.postgresql.schema.PostgreSQLSchemaResolver;
 import org.dbsyncer.connector.postgresql.validator.PostgreSQLConfigValidator;
-import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
-import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
-import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +37,8 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final PostgreSQLConfigValidator configValidator = new PostgreSQLConfigValidator();
+
+    private final PostgreSQLSchemaResolver schemaResolver = new PostgreSQLSchemaResolver();
 
     public PostgreSQLConnector() {
         VALUE_MAPPERS.put(Types.BIT, new PostgreSQLBitValueMapper());
@@ -130,20 +130,12 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String getQueryCountSql(CommandConfig commandConfig, List<String> primaryKeys, String schema, String queryFilterSql) {
-        final Table table = commandConfig.getTable();
-        if (StringUtil.isNotBlank(queryFilterSql) || TableTypeEnum.isView(table.getType())) {
-            return super.getQueryCountSql(commandConfig, primaryKeys, schema, queryFilterSql);
-        }
-
-        // 从系统表查询
-        DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
-        return String.format("SELECT N_LIVE_TUP FROM PG_STAT_USER_TABLES WHERE SCHEMANAME='%s' AND RELNAME='%s'", cfg.getSchema(), table.getName());
-    }
-
-    @Override
     public boolean enableCursor() {
         return true;
     }
 
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
+    }
 }
