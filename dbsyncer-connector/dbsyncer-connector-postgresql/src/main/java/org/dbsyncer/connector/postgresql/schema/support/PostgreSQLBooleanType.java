@@ -42,6 +42,9 @@ public class PostgreSQLBooleanType extends BooleanType {
 
     @Override
     protected Object convert(Object val, Field field) {
+        if (val instanceof Boolean) {
+            return val;
+        }
         return throwUnsupportedException(val, field);
     }
 }
