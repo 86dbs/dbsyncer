@@ -5,9 +5,11 @@ package org.dbsyncer.connector.postgresql.schema;
 
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLBooleanType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDateType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDecimalType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDoubleType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLIntType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLLongType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLStringType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLTimestampType;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
@@ -29,8 +31,10 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
         Stream.of(
                 new PostgreSQLStringType(),
                 new PostgreSQLIntType(),
+                new PostgreSQLLongType(),
                 new PostgreSQLDecimalType(),
                 new PostgreSQLDoubleType(),
+                new PostgreSQLDateType(),
                 new PostgreSQLTimestampType(),
                 new PostgreSQLBooleanType()
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {

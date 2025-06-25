@@ -4,26 +4,21 @@
 package org.dbsyncer.connector.postgresql.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.StringType;
-import org.postgresql.util.PGobject;
+import org.dbsyncer.sdk.schema.support.DateType;
 
+import java.sql.Date;
 import java.util.Arrays;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * @Author 穿云
  * @Version 1.0.0
- * @Date 2025-06-25 23:04
+ * @Date 2025-06-25 23:26
  */
-public class PostgreSQLStringType extends StringType {
+public class PostgreSQLDateType extends DateType {
     private enum TypeEnum {
-        UUID("uuid"),
-        VARCHAR("varchar"),
-        TEXT("text"),
-        JSON("json"),
-        POINT("point");
+        DATE("date");
 
         private final String value;
 
@@ -42,14 +37,7 @@ public class PostgreSQLStringType extends StringType {
     }
 
     @Override
-    protected String merge(Object val, Field field) {
-        if (val instanceof UUID) {
-            return val.toString();
-        }
-        if (val instanceof PGobject) {
-            PGobject pgObject = (PGobject) val;
-            return pgObject.getValue();
-        }
+    protected Date merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
 }

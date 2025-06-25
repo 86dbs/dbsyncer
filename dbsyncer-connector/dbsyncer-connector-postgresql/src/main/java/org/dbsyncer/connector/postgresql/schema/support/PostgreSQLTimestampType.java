@@ -18,7 +18,8 @@ import java.util.stream.Collectors;
  */
 public class PostgreSQLTimestampType extends TimestampType {
     private enum TypeEnum {
-        TIMESTAMP("timestamp");
+        TIMESTAMP("timestamp"),
+        TIMESTAMP_TZ("timestamptz");
 
         private final String value;
 
