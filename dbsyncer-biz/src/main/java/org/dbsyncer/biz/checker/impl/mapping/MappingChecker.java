@@ -5,13 +5,14 @@ package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
-import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -23,7 +24,9 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author AE86
@@ -37,9 +40,6 @@ public class MappingChecker extends AbstractChecker {
 
     @Resource
     private ProfileComponent profileComponent;
-
-    @Resource
-    private TableGroupChecker tableGroupChecker;
 
     @Resource
     private Map<String, MappingConfigChecker> map;
@@ -107,7 +107,7 @@ public class MappingChecker extends AbstractChecker {
         this.modifySuperConfigModel(mapping, params);
 
         // 合并关联的映射关系配置
-        tableGroupChecker.batchMergeConfig(mapping, params);
+        batchMergeConfig(mapping, params);
 
         return mapping;
     }
@@ -138,4 +138,29 @@ public class MappingChecker extends AbstractChecker {
         listener.setEnableDDL(StringUtil.isNotBlank(params.get("enableDDL")));
     }
 
+    private void batchMergeConfig(Mapping mapping, Map<String, String> params) {
+        List<TableGroup> groupAll = profileComponent.getTableGroupAll(mapping.getId());
+        if (!CollectionUtils.isEmpty(groupAll)) {
+            // 手动排序
+            String[] sortedTableGroupIds = StringUtil.split(params.get("sortedTableGroupIds"), StringUtil.VERTICAL_LINE);
+            if (null != sortedTableGroupIds && sortedTableGroupIds.length > 0) {
+                Map<String, TableGroup> tableGroupMap = groupAll.stream().collect(Collectors.toMap(TableGroup::getId, f -> f, (k1, k2) -> k1));
+                groupAll.clear();
+                int size = sortedTableGroupIds.length;
+                int i = size;
+                while (i > 0) {
+                    TableGroup g = tableGroupMap.get(sortedTableGroupIds[size - i]);
+                    Assert.notNull(g, "Invalid sorted tableGroup.");
+                    g.setIndex(i);
+                    groupAll.add(g);
+                    i--;
+                }
+            }
+
+            // 合并配置
+            for (TableGroup g : groupAll) {
+                profileComponent.editConfigModel(g);
+            }
+        }
+    }
 }

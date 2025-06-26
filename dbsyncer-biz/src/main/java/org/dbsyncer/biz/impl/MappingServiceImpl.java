@@ -5,11 +5,13 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
+import org.dbsyncer.biz.DispatchTaskService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
+import org.dbsyncer.biz.dispatch.task.MappingCountTask;
 import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
@@ -19,6 +21,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -78,6 +81,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private MonitorService monitorService;
 
     @Resource
+    private DispatchTaskService taskSchedulerService;
+
+    @Resource
     private ManagerFactory managerFactory;
 
     @Resource
@@ -85,6 +91,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private TableGroupContext tableGroupContext;
+
+    @Resource
+    private ParserComponent parserComponent;
 
     @Override
     public String add(Map<String, String> params) {
@@ -104,6 +113,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (StringUtil.isNotBlank(tableGroups)) {
             matchCustomizedTableGroups(model, tableGroups);
         }
+        // 统计总数
+        submitMappingCountTask((Mapping) model, null);
         return id;
     }
 
@@ -141,15 +152,19 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String edit(Map<String, String> params) {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Mapping mapping = assertMappingExist(id);
+        String metaSnapshot = params.get("metaSnapshot");
         synchronized (LOCK) {
             assertRunning(mapping.getMetaId());
             Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
             log(LogType.MappingLog.UPDATE, model);
 
             // 更新meta
-            tableGroupService.updateMeta(mapping, params.get("metaSnapshot"));
-            return profileComponent.editConfigModel(model);
+            tableGroupService.updateMeta(mapping, metaSnapshot);
+            profileComponent.editConfigModel(model);
         }
+        // 统计总数
+        submitMappingCountTask(mapping, metaSnapshot);
+        return id;
     }
 
     @Override
@@ -268,6 +283,19 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         updateConnectorTables(mapping.getSourceConnectorId());
         updateConnectorTables(mapping.getTargetConnectorId());
         return "刷新驱动表成功";
+    }
+
+    /**
+     * 提交统计驱动总数任务
+     */
+    private void submitMappingCountTask(Mapping mapping, String metaSnapshot) {
+        MappingCountTask task = new MappingCountTask();
+        task.setMappingId(mapping.getId());
+        task.setMetaSnapshot(metaSnapshot);
+        task.setParserComponent(parserComponent);
+        task.setProfileComponent(profileComponent);
+        task.setTableGroupService(tableGroupService);
+        taskSchedulerService.execute(task);
     }
 
     private void updateConnectorTables(String connectorId) {
