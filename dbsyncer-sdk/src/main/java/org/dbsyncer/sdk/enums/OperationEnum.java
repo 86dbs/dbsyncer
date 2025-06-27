@@ -12,20 +12,16 @@ package org.dbsyncer.sdk.enums;
  */
 public enum OperationEnum {
 
-    /**
-     * 并且
-     */
-    AND("and"),
-    /**
-     * 或者
-     */
-    OR("or");
+    AND("and", "并且"),
+    OR("or", "或者"),
+    SQL("sql", "自定义sql条件");
 
-    // 描述
     private final String name;
+    private final String message;
 
-    OperationEnum(String name) {
+    OperationEnum(String name,String message) {
         this.name = name;
+        this.message = message;
     }
 
     public static boolean isAnd(String name) {
@@ -38,6 +34,10 @@ public enum OperationEnum {
 
     public String getName() {
         return name;
+    }
+
+    public String getMessage() {
+        return message;
     }
 
 }
