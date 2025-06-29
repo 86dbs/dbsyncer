@@ -11,7 +11,7 @@
                 <label class="col-sm-3 control-label text-right">组合</label>
                 <div class="col-sm-9">
                     <select id="conditionOperation" class="form-control select-control">
-                        <option th:each="o,s:${condition?.operation}" th:value="${o?.name}" th:text="${o?.name}" />
+                        <option th:each="o,s:${condition?.operation}" th:value="${o?.name}" th:text="${o?.name}" th:title="${o?.message}" />
                     </select>
                 </div>
             </div>

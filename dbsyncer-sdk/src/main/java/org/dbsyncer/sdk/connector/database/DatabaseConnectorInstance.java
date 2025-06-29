@@ -17,7 +17,7 @@ import java.sql.Connection;
 public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConfig, Connection> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private DatabaseConfig config;
-    private SimpleDataSource dataSource;
+    private final SimpleDataSource dataSource;
 
     public DatabaseConnectorInstance(DatabaseConfig config) {
         this.config = config;
@@ -62,6 +62,10 @@ public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConf
     @Override
     public void close() {
         dataSource.close();
+    }
+
+    public SimpleDataSource getDataSource() {
+        return dataSource;
     }
 
     @Override
