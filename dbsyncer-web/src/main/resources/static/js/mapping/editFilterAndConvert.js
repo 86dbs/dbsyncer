@@ -10,6 +10,31 @@ function bindConfigListClick($del, $callback){
     $callback();
 }
 
+// 初始化组合条件事件
+function initConditionOperation(){
+    const $conditionOperation = initSelectIndex($("#conditionOperation"));
+    // 绑定插件下拉选择事件
+    const $conditionSourceField = $("#conditionSourceField");
+    const $conditionFilter = $("#conditionFilter");
+    $conditionOperation.on('changed.bs.select', function (e) {
+        const $conditionList = $("#conditionList");
+        const $isSql = "sql" == $(this).selectpicker('val');
+        $conditionFilter.prop("disabled", $isSql);
+        $conditionSourceField.prop("disabled", $isSql);
+        $conditionFilter.selectpicker('refresh');
+        $conditionSourceField.selectpicker('refresh');
+        $conditionList.find("tr").each(function (k, v) {
+            const $opr = $(this).find("td:eq(0)").text();
+            if ($isSql) {
+                $(this).remove();
+            } else if (!$isSql && $opr == 'sql') {
+                $(this).remove();
+            }
+        });
+        initFilterParams();
+    });
+}
+
 // 初始化过滤条件点击事件
 function initFilter(){
     bindConfigListClick($(".conditionDelete"), function(){ initFilterParams(); });
@@ -175,7 +200,8 @@ function bindConvertAddClick() {
 }
 
 $(function() {
-    initSelect($(".select-control-default"));
+    initConditionOperation();
+    // initSelect($(".select-control-default"));
     initSelectIndex($(".select-control"), 1);
     // 过滤条件
     initFilter();
