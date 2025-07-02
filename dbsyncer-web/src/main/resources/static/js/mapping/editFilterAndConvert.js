@@ -148,10 +148,11 @@ function bindConditionAddClick() {
 
 // 绑定添加定时系统参数
 function bindConditionQuartzFilterAddClick(){
-    var $conditionQuartzFilter = $(".conditionQuartzFilter");
+    const $conditionQuartzFilter = $(".conditionQuartzFilter");
     $conditionQuartzFilter.unbind("click");
     $conditionQuartzFilter.bind('click', function () {
-        $("#conditionArg").val($(this).text());
+        const $tmpVal = $("#conditionArg");
+        $tmpVal.val($tmpVal.val() + $(this).text());
     });
 }
 
