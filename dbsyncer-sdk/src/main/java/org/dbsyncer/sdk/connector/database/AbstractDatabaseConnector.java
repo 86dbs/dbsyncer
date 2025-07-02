@@ -7,18 +7,26 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
-import org.dbsyncer.sdk.config.*;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
-import org.dbsyncer.sdk.model.*;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Filter;
+import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
@@ -36,7 +44,15 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -357,22 +373,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * 获取查询总数SQL
-     *
-     * @param commandConfig
-     * @param primaryKeys
-     * @param schema
-     * @param queryFilterSql
-     * @return
-     */
-    protected String getQueryCountSql(CommandConfig commandConfig, List<String> primaryKeys, String schema, String queryFilterSql) {
-        Table table = commandConfig.getTable();
-        String tableName = table.getName();
-        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, table.getColumn(), queryFilterSql);
-        return SqlBuilderEnum.QUERY_COUNT.getSqlBuilder().buildSql(config);
-    }
-
-    /**
      * 获取查询条件SQL
      *
      * @param commandConfig
@@ -405,12 +405,32 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
         sql.append(orSql);
 
+        // 自定义SQL
+        Optional<Filter> sqlFilter = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), OperationEnum.SQL.getName())).findFirst();
+        sqlFilter.ifPresent(f -> sql.append(f.getValue()));
+
         // 如果有条件加上 WHERE
         if (StringUtil.isNotBlank(sql.toString())) {
             // WHERE (USER.USERNAME = 'zhangsan' AND USER.AGE='20') OR (USER.TEL='18299996666')
             sql.insert(0, " WHERE ");
         }
         return sql.toString();
+    }
+
+    /**
+     * 获取查询总数SQL
+     *
+     * @param commandConfig
+     * @param primaryKeys
+     * @param schema
+     * @param queryFilterSql
+     * @return
+     */
+    private String getQueryCountSql(CommandConfig commandConfig, List<String> primaryKeys, String schema, String queryFilterSql) {
+        Table table = commandConfig.getTable();
+        String tableName = table.getName();
+        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, table.getColumn(), queryFilterSql);
+        return SqlBuilderEnum.QUERY_COUNT.getSqlBuilder().buildSql(config);
     }
 
     /**
@@ -466,12 +486,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * 根据过滤条件获取查询SQL
      *
      * @param fieldMap
-     * @param queryOperator and/or
+     * @param queryOperator {@link OperationEnum}
      * @param filter
      * @return
      */
-    private String buildFilterSql(Map<String, Field> fieldMap, String queryOperator, List<Filter> filter) {
-        List<Filter> list = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), queryOperator)).collect(Collectors.toList());
+    private String buildFilterSql(Map<String, Field> fieldMap, String operator, List<Filter> filter) {
+        List<Filter> list = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), operator)).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(list)) {
             return "";
         }
@@ -490,11 +510,26 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             sql.append(quotation);
             sql.append(buildFieldName(field));
             sql.append(quotation);
-            sql.append(" ").append(c.getFilter()).append(" ");
             // 如果使用了函数则不加引号
-            sql.append(buildFilterValue(c.getValue()));
+            FilterEnum filterEnum = FilterEnum.getFilterEnum(c.getFilter());
+            switch (filterEnum) {
+                case IN:
+                    sql.append(StringUtil.SPACE).append(FilterEnum.IN.getName()).append(StringUtil.SPACE).append("(");
+                    sql.append(c.getValue());
+                    sql.append(")");
+                    break;
+                case IS_NULL:
+                case IS_NOT_NULL:
+                    sql.append(StringUtil.SPACE).append(filterEnum.getName().toUpperCase()).append(StringUtil.SPACE);
+                    break;
+                default:
+                    // > 10
+                    sql.append(StringUtil.SPACE).append(c.getFilter()).append(StringUtil.SPACE);
+                    sql.append(buildFilterValue(c.getValue()));
+                    break;
+            }
             if (i < end) {
-                sql.append(" ").append(queryOperator).append(" ");
+                sql.append(StringUtil.SPACE).append(operator).append(StringUtil.SPACE);
             }
         }
         sql.append(")");
@@ -507,7 +542,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * @param value
      * @return
      */
-    protected String buildFilterValue(String value) {
+    private String buildFilterValue(String value) {
         if (StringUtil.isNotBlank(value)) {
             // 排除定时表达式
             if (QuartzFilterEnum.getQuartzFilterEnum(value) == null) {
@@ -518,7 +553,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 }
             }
         }
-        return new StringBuilder(StringUtil.SINGLE_QUOTATION).append(value).append(StringUtil.SINGLE_QUOTATION).toString();
+        return StringUtil.SINGLE_QUOTATION + value + StringUtil.SINGLE_QUOTATION;
     }
 
     /**

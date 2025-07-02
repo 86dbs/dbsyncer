@@ -8,6 +8,8 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.filter.CompareFilter;
 
+import java.util.Arrays;
+
 /**
  * 运算符表达式类型
  *
@@ -20,7 +22,7 @@ public enum FilterEnum {
     /**
      * 等于
      */
-    EQUAL("=", (value, filterValue) -> StringUtil.equals(value, filterValue)),
+    EQUAL("=", StringUtil::equals),
     /**
      * 不等于
      */
@@ -45,10 +47,10 @@ public enum FilterEnum {
      * 模糊匹配
      */
     LIKE("like", (value, filterValue) -> {
-        boolean startsWith = StringUtil.startsWith(filterValue, "%") || StringUtil.startsWith(filterValue, "*");
-        boolean endsWith = StringUtil.endsWith(filterValue, "%") || StringUtil.endsWith(filterValue, "*");
-        String compareValue = StringUtil.replace(filterValue, "%", "");
-        compareValue = StringUtil.replace(compareValue, "*", "");
+        boolean startsWith = StringUtil.startsWith(filterValue, StringUtil.PERCENT) || StringUtil.startsWith(filterValue, StringUtil.STAR);
+        boolean endsWith = StringUtil.endsWith(filterValue, StringUtil.PERCENT) || StringUtil.endsWith(filterValue, StringUtil.STAR);
+        String compareValue = StringUtil.replace(filterValue, StringUtil.PERCENT, StringUtil.EMPTY);
+        compareValue = StringUtil.replace(compareValue, StringUtil.STAR, StringUtil.EMPTY);
         // 模糊匹配
         if (startsWith && endsWith) {
             return StringUtil.contains(value, compareValue);
@@ -62,7 +64,24 @@ public enum FilterEnum {
             return StringUtil.endsWith(value, compareValue);
         }
         return false;
-    });
+    }),
+    /**
+     * 集合匹配
+     */
+    IN("in", (value, filterValue) -> {
+        if (StringUtil.isNotBlank(filterValue)) {
+            return Arrays.stream(StringUtil.split(filterValue, StringUtil.COMMA)).anyMatch(v -> StringUtil.equals(v, value));
+        }
+        return false;
+    }),
+    /**
+     * Null值
+     */
+    IS_NULL("is null", (value, filterValue) -> value == null),
+    /**
+     * 非Null值
+     */
+    IS_NOT_NULL("is not null", (value, filterValue) -> value != null);
 
     // 运算符名称
     private final String name;

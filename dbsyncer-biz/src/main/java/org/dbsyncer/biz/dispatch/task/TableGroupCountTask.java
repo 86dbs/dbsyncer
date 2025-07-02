@@ -4,7 +4,7 @@
 package org.dbsyncer.biz.dispatch.task;
 
 import org.dbsyncer.biz.dispatch.AbstractCountTask;
-import org.dbsyncer.biz.enums.TaskSchedulerEnum;
+import org.dbsyncer.biz.enums.DispatchTaskEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -57,8 +57,8 @@ public class TableGroupCountTask extends AbstractCountTask {
     }
 
     @Override
-    public TaskSchedulerEnum getType() {
-        return TaskSchedulerEnum.TABLE_GROUP_COUNT;
+    public DispatchTaskEnum getType() {
+        return DispatchTaskEnum.TABLE_GROUP_COUNT;
     }
 
     public void setTableGroups(List<String> tableGroups) {

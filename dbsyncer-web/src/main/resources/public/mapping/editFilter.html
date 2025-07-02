@@ -8,10 +8,13 @@
     <div class="form-group">
         <div class="row">
             <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">组合</label>
+                <label class="col-sm-3 control-label text-right">组合<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="sql与and,or互斥，如果切换sql，将自动删除当前的条件，反之也会删除"></i></label>
                 <div class="col-sm-9">
                     <select id="conditionOperation" class="form-control select-control">
-                        <option th:each="o,s:${condition?.operation}" th:value="${o?.name}" th:text="${o?.name}" />
+                        <!-- 全局页面 -->
+                        <option th:if="${tableGroup} == null" th:each="o,s:${condition?.operation}" th:value="${o?.name}" th:text="${o?.name}" th:title="${o?.message}" th:selected="${mapping?.filter.size() gt 0 and mapping?.filter[0].operation eq 'sql'}"/>
+                        <!-- 表映射关系页面 -->
+                        <option th:if="${tableGroup} != null" th:each="o,s:${condition?.operation}" th:value="${o?.name}" th:text="${o?.name}" th:title="${o?.message}" th:selected="${tableGroup?.filter.size() gt 0 and tableGroup?.filter[0].operation eq 'sql'}"/>
                     </select>
                 </div>
             </div>

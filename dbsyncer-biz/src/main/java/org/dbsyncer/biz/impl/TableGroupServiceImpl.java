@@ -52,7 +52,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     private ParserComponent parserComponent;
 
     @Resource
-    private DispatchTaskService taskSchedulerService;
+    private DispatchTaskService dispatchTaskService;
 
     @Override
     public String add(Map<String, String> params) {
@@ -241,7 +241,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         task.setParserComponent(parserComponent);
         task.setProfileComponent(profileComponent);
         task.setTableGroupService(this);
-        taskSchedulerService.execute(task);
+        dispatchTaskService.execute(task);
     }
 
 }

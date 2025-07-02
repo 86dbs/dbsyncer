@@ -110,20 +110,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         return primaryKeys.stream().map(pk -> convertKey(pk)).collect(Collectors.toList());
     }
 
-    @Override
-    protected String getQueryCountSql(CommandConfig commandConfig, List<String> primaryKeys, String schema, String queryFilterSql) {
-        // 视图或有过滤条件，走默认方式
-        final Table table = commandConfig.getTable();
-        if (StringUtil.isNotBlank(queryFilterSql) || TableTypeEnum.isView(table.getType())) {
-            return super.getQueryCountSql(commandConfig, primaryKeys, schema, queryFilterSql);
-        }
-
-        DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
-        // 从存储过程查询（定时更新总数，可能存在误差）
-        return String.format("select rows from sysindexes where id = object_id('%s.%s') and indid in (0, 1)", cfg.getSchema(),
-                buildTableName(table.getName()));
-    }
-
     private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {
         List<String> tableNames = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
         if (!CollectionUtils.isEmpty(tableNames)) {

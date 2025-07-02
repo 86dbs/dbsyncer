@@ -10,6 +10,24 @@ function bindConfigListClick($del, $callback){
     $callback();
 }
 
+// 初始化组合条件事件
+function initConditionOperation() {
+    const $conditionOperation = initSelectIndex($("#conditionOperation"));
+    // 绑定插件下拉选择事件
+    $conditionOperation.on('changed.bs.select', function (e) {
+        const $isSql = "sql" == $(this).selectpicker('val');
+        $("#conditionList").find("tr").each(function (k, v) {
+            const $opr = $(this).find("td:eq(0)").text();
+            if ($isSql) {
+                $(this).remove();
+            } else if (!$isSql && $opr == 'sql') {
+                $(this).remove();
+            }
+        });
+        initFilterParams();
+    });
+}
+
 // 初始化过滤条件点击事件
 function initFilter(){
     bindConfigListClick($(".conditionDelete"), function(){ initFilterParams(); });
@@ -82,15 +100,25 @@ function bindConditionAddClick() {
         var conditionSourceField = $("#conditionSourceField").selectpicker("val");
         var conditionFilter = $("#conditionFilter").selectpicker("val");
         var conditionArg = $("#conditionArg").val();
+        var $conditionList = $("#conditionList");
+        // 自定义SQL
+        if (conditionOperation == 'sql') {
+            if (isBlank(conditionArg)) {
+                bootGrowl("参数不能空.", "danger");
+                return;
+            }
+            $conditionList.html('');
+            conditionSourceField = '';
+            conditionFilter = '';
+        }
         // 非空检查
-        if(conditionSourceField == null || conditionSourceField == undefined || conditionSourceField == ''){
+        else if(isBlank(conditionSourceField)){
             bootGrowl("数据源表字段不能空.", "danger");
             return;
         }
 
         // 检查重复字段
         var repeated = false;
-        var $conditionList = $("#conditionList");
         $conditionList.find("tr").each(function(k,v){
              var opr = $(this).find("td:eq(0)").text();
              var sf = $(this).find("td:eq(1)").text();
@@ -175,8 +203,8 @@ function bindConvertAddClick() {
 }
 
 $(function() {
-    initSelect($(".select-control-default"));
     initSelectIndex($(".select-control"), 1);
+    initConditionOperation();
     // 过滤条件
     initFilter();
     bindConditionAddClick();

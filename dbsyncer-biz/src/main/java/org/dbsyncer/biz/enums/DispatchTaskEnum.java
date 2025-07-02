@@ -10,7 +10,7 @@ package org.dbsyncer.biz.enums;
  * @Version 1.0.0
  * @Date 2025-06-13 00:00
  */
-public enum TaskSchedulerEnum {
+public enum DispatchTaskEnum {
 
     /* 统计驱动总数 */
     MAPPING_COUNT("统计驱动总数"),
@@ -18,7 +18,7 @@ public enum TaskSchedulerEnum {
     /* 统计驱动表总数 */
     TABLE_GROUP_COUNT("统计驱动表总数");
 
-    TaskSchedulerEnum(String name){
+    DispatchTaskEnum(String name){
         this.name = name;
     }
 

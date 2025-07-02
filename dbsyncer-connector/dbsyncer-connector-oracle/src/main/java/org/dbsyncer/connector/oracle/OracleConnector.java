@@ -8,17 +8,13 @@ import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleClobValueMapper;
 import org.dbsyncer.connector.oracle.schema.OracleOtherValueMapper;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
-import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
-import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
-import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -141,18 +137,6 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     @Override
     public String getValidationQuery() {
         return "select 1 from dual";
-    }
-
-    @Override
-    protected String getQueryCountSql(CommandConfig commandConfig, List<String> primaryKeys, String schema, String queryFilterSql) {
-        final Table table = commandConfig.getTable();
-        if (StringUtil.isNotBlank(queryFilterSql) || TableTypeEnum.isView(table.getType())) {
-            return super.getQueryCountSql(commandConfig, primaryKeys, schema, queryFilterSql);
-        }
-
-        // 从系统表查询
-        DatabaseConfig cfg = (DatabaseConfig) commandConfig.getConnectorConfig();
-        return String.format("SELECT NUM_ROWS FROM ALL_TABLES WHERE OWNER = '%s' AND TABLE_NAME = '%s'", cfg.getUsername().toUpperCase(), table.getName());
     }
 
 }
