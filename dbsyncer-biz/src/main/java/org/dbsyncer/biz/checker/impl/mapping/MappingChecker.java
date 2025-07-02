@@ -5,6 +5,7 @@ package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
+import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -43,6 +44,9 @@ public class MappingChecker extends AbstractChecker {
 
     @Resource
     private Map<String, MappingConfigChecker> map;
+
+    @Resource
+    private TableGroupChecker tableGroupChecker;
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
@@ -159,6 +163,7 @@ public class MappingChecker extends AbstractChecker {
 
             // 合并配置
             for (TableGroup g : groupAll) {
+                tableGroupChecker.mergeConfig(mapping, g);
                 profileComponent.editConfigModel(g);
             }
         }
