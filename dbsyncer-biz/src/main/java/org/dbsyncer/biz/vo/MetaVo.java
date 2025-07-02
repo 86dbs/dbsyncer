@@ -13,6 +13,8 @@ public class MetaVo extends Meta {
     private String model;
     // 驱动名称
     private String mappingName;
+    // 是否统计总数中
+    private boolean counting;
 
     public MetaVo(String model, String mappingName) {
         this.model = model;
@@ -33,5 +35,13 @@ public class MetaVo extends Meta {
 
     public void setMappingName(String mappingName) {
         this.mappingName = mappingName;
+    }
+
+    public boolean isCounting() {
+        return counting;
+    }
+
+    public void setCounting(boolean counting) {
+        this.counting = counting;
     }
 }

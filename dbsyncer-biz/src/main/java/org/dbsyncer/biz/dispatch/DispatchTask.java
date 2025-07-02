@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.biz.dispatch;
 
-import org.dbsyncer.biz.enums.TaskSchedulerEnum;
+import org.dbsyncer.biz.enums.DispatchTaskEnum;
 
 /**
  * @Author 穿云
@@ -17,7 +17,7 @@ public interface DispatchTask extends Runnable {
      */
     String getUniqueId();
 
-    TaskSchedulerEnum getType();
+    DispatchTaskEnum getType();
 
     void destroy();
 

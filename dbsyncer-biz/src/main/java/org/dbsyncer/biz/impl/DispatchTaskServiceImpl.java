@@ -46,4 +46,9 @@ public class DispatchTaskServiceImpl implements DispatchTaskService {
             return task;
         }));
     }
+
+    @Override
+    public boolean isRunning(String uniqueId) {
+        return active.containsKey(uniqueId);
+    }
 }

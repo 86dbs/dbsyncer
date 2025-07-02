@@ -81,7 +81,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private MonitorService monitorService;
 
     @Resource
-    private DispatchTaskService taskSchedulerService;
+    private DispatchTaskService dispatchTaskService;
 
     @Resource
     private ManagerFactory managerFactory;
@@ -295,7 +295,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         task.setParserComponent(parserComponent);
         task.setProfileComponent(profileComponent);
         task.setTableGroupService(tableGroupService);
-        taskSchedulerService.execute(task);
+        dispatchTaskService.execute(task);
     }
 
     private void updateConnectorTables(String connectorId) {
@@ -322,6 +322,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Assert.notNull(meta, "Meta can not be null.");
         MetaVo metaVo = new MetaVo(ModelEnum.getModelEnum(model).getName(), mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
+        metaVo.setCounting(dispatchTaskService.isRunning(mapping.getId()));
 
         MappingVo vo = new MappingVo(sConn, tConn, metaVo);
         BeanUtils.copyProperties(mapping, vo);

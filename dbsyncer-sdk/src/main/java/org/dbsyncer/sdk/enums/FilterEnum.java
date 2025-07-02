@@ -22,7 +22,7 @@ public enum FilterEnum {
     /**
      * 等于
      */
-    EQUAL("=", (value, filterValue) -> StringUtil.equals(value, filterValue)),
+    EQUAL("=", StringUtil::equals),
     /**
      * 不等于
      */
@@ -70,7 +70,7 @@ public enum FilterEnum {
      */
     IN("in", (value, filterValue) -> {
         if (StringUtil.isNotBlank(filterValue)) {
-            return Arrays.stream(StringUtil.split(filterValue, StringUtil.COMMA)).filter(v -> StringUtil.equals(v, value)).findFirst().isPresent();
+            return Arrays.stream(StringUtil.split(filterValue, StringUtil.COMMA)).anyMatch(v -> StringUtil.equals(v, value));
         }
         return false;
     }),
@@ -81,7 +81,7 @@ public enum FilterEnum {
     /**
      * 非Null值
      */
-    NOT_NULL("not null", (value, filterValue) -> value != null);
+    IS_NOT_NULL("is not null", (value, filterValue) -> value != null);
 
     // 运算符名称
     private final String name;

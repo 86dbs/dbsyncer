@@ -9,16 +9,13 @@ import org.dbsyncer.connector.mysql.schema.MySQLDateValueMapper;
 import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
 import org.dbsyncer.connector.mysql.storage.MySQLStorageService;
 import org.dbsyncer.connector.mysql.validator.MySQLConfigValidator;
-import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
-import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
-import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -139,17 +136,6 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         newCursors[cursorsLen] = 0;
         newCursors[cursorsLen + 1] = pageSize;
         return newCursors;
-    }
-
-    @Override
-    protected String getQueryCountSql(CommandConfig commandConfig, List<String> primaryKeys, String schema, String queryFilterSql) {
-        final Table table = commandConfig.getTable();
-        if (StringUtil.isNotBlank(queryFilterSql) || TableTypeEnum.isView(table.getType())) {
-            return super.getQueryCountSql(commandConfig, primaryKeys, schema, queryFilterSql);
-        }
-
-        // 从系统表查询
-        return String.format("SELECT TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '%s' LIMIT 1", table.getName());
     }
 
     @Override
