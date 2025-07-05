@@ -12,13 +12,15 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.dbsyncer.biz.UserConfigService;
+import org.dbsyncer.biz.vo.ProductInfoVo;
 import org.dbsyncer.biz.vo.RestResult;
-import org.dbsyncer.common.config.AppConfig;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.UserInfo;
+import org.dbsyncer.sdk.model.Product;
 import org.dbsyncer.sdk.model.ProductInfo;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
@@ -29,6 +31,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -40,7 +43,14 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/license")
@@ -53,9 +63,6 @@ public class LicenseController extends BaseController {
 
     @Resource
     private LicenseService licenseService;
-
-    @Resource
-    private AppConfig appConfig;
 
     @Resource
     private UserConfigService userConfigService;
@@ -132,6 +139,44 @@ public class LicenseController extends BaseController {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
+    }
+
+    @GetMapping("/query.json")
+    @ResponseBody
+    public RestResult query() {
+        ProductInfoVo infoVo = new ProductInfoVo();
+        if (StringUtil.isNotBlank(licenseService.getKey())) {
+            infoVo.setKey(licenseService.getKey());
+            ProductInfo productInfo = licenseService.getProductInfo();
+            if (productInfo != null && !CollectionUtils.isEmpty(productInfo.getProducts())) {
+                Optional<Product> first = productInfo.getProducts().stream().min(Comparator.comparing(Product::getEffectiveTime));
+                if (first.isPresent()) {
+                    infoVo.setEffectiveTime(first.get().getEffectiveTime());
+                    formatEffectiveTimeContent(infoVo);
+                }
+            }
+        }
+        return RestResult.restSuccess(infoVo);
+    }
+
+    private void formatEffectiveTimeContent(ProductInfoVo infoVo) {
+        LocalDateTime startDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(infoVo.getCurrentTime()), ZoneId.systemDefault());
+        LocalDateTime endDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(infoVo.getEffectiveTime()), ZoneId.systemDefault());
+        Period period = Period.between(startDateTime.toLocalDate(), endDateTime.toLocalDate());
+        Duration duration = Duration.between(startDateTime, endDateTime);
+        long years = Math.max(period.getYears(), 0);
+        long months = Math.max(period.getMonths(), 0);
+        if (years > 0) {
+            infoVo.setEffectiveContent(String.format("还剩%d年%d个月", years, months));
+            return;
+        }
+        long days = Math.max(period.getDays(), 0);
+        if (months > 0) {
+            infoVo.setEffectiveContent(String.format("还剩%d个月%d天", months, days));
+            return;
+        }
+        long hours = Math.max(duration.toHours() % 24, 0);
+        infoVo.setEffectiveContent(String.format("还剩%d天%d小时", days, hours));
     }
 
     private String getLicenseContent(Map<String, String> params) throws IOException {
