@@ -3,6 +3,8 @@
 $(function () {
     // 刷新登录用户
     refreshLoginUser();
+    // 刷新授权信息
+    refreshLicenseInfo();
 
     // 初始化版权信息
     doGetter("/index/version.json", {}, function (data) {
