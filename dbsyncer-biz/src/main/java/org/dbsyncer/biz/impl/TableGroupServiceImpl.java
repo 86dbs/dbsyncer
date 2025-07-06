@@ -108,7 +108,6 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     public String refreshFields(String id) {
         TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        assertRunning(profileComponent.getMapping(tableGroup.getMappingId()));
 
         tableGroupChecker.refreshTableFields(tableGroup);
         return profileComponent.editTableGroup(tableGroup);
