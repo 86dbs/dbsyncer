@@ -50,20 +50,22 @@ public final class BufferActuatorRouter implements DisposableBean {
 
     public void execute(String metaId, ChangedEvent event) {
         event.getChangedOffset().setMetaId(metaId);
-        if (router.containsKey(metaId)) {
-            router.computeIfPresent(metaId, (k, processor) -> {
-                TableGroupBufferActuator tableGroupBufferActuator = processor.computeIfPresent(event.getSourceTableName(), (x, actuator) -> {
-                    offer(actuator, event);
-                    return actuator;
-                });
-                if (tableGroupBufferActuator == null) {
+        router.compute(metaId, (k, processor) -> {
+            if (processor == null) {
+                offer(generalBufferActuator, event);
+                return null;
+            }
+
+            processor.compute(event.getSourceTableName(), (x, actuator) -> {
+                if (actuator == null) {
                     offer(generalBufferActuator, event);
+                    return null;
                 }
-                return processor;
+                offer(actuator, event);
+                return actuator;
             });
-            return;
-        }
-        offer(generalBufferActuator, event);
+            return processor;
+        });
     }
 
     public void bind(String metaId, List<TableGroup> tableGroups) {
