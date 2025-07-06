@@ -54,4 +54,20 @@ public class DiskQueryHelper {
         return query;
     }
 
+    public static Query newGreaterThan(AbstractFilter filter) {
+        Query query = null;
+        switch (filter.getFilterTypeEnum()) {
+            case LONG:
+                query = LongPoint.newRangeQuery(filter.getName(), NumberUtil.toLong(filter.getValue()), Long.MAX_VALUE);
+                break;
+            case INT:
+                query = IntPoint.newRangeQuery(filter.getName(), NumberUtil.toInt(filter.getValue()), Integer.MAX_VALUE);
+                break;
+        }
+        if (query == null) {
+            throw new StorageException("Unsupported method newLessThan.");
+        }
+        return query;
+    }
+
 }
