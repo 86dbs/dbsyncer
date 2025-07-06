@@ -123,8 +123,6 @@ public class TableGroupChecker extends AbstractChecker {
 
     /**
      * 刷新表字段
-     *
-     * @param tableGroup
      */
     public void refreshTableFields(TableGroup tableGroup) {
         Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
@@ -132,8 +130,8 @@ public class TableGroupChecker extends AbstractChecker {
 
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
-        List<String> sourceTablePks = sourceTable.getColumn().stream().filter(c -> c.isPk()).map(c -> c.getName()).collect(Collectors.toList());
-        List<String> targetTablePks = targetTable.getColumn().stream().filter(c -> c.isPk()).map(c -> c.getName()).collect(Collectors.toList());
+        List<String> sourceTablePks = sourceTable.getColumn().stream().filter(Field::isPk).map(Field::getName).collect(Collectors.toList());
+        List<String> targetTablePks = targetTable.getColumn().stream().filter(Field::isPk).map(Field::getName).collect(Collectors.toList());
         tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable.getName(), StringUtil.join(sourceTablePks, ",")));
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable.getName(), StringUtil.join(targetTablePks, ",")));
     }
@@ -151,7 +149,7 @@ public class TableGroupChecker extends AbstractChecker {
         // 自定义主键
         if (StringUtil.isNotBlank(primaryKeyStr) && !CollectionUtils.isEmpty(metaInfo.getColumn())) {
             String[] pks = StringUtil.split(primaryKeyStr, StringUtil.COMMA);
-            Arrays.asList(pks).stream().forEach(pk -> {
+            Arrays.stream(pks).forEach(pk -> {
                 for (Field field : metaInfo.getColumn()) {
                     if (StringUtil.equalsIgnoreCase(field.getName(), pk)) {
                         field.setPk(true);
