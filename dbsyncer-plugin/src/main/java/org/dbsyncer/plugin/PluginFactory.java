@@ -44,14 +44,14 @@ public class PluginFactory implements DisposableBean {
     /**
      * 插件路径dbsyncer/plugin/
      */
-    private final String PLUGIN_PATH = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar).append("plugins")
-            .append(File.separatorChar).toString();
+    private final String PLUGIN_PATH = System.getProperty("user.dir") + File.separatorChar + "plugins" +
+            File.separatorChar;
 
     /**
      * 依赖路径dbsyncer/lib/
      */
-    private final String LIBRARY_PATH = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar).append("lib")
-            .append(File.separatorChar).toString();
+    private final String LIBRARY_PATH = System.getProperty("user.dir") + File.separatorChar + "lib" +
+            File.separatorChar;
 
     private final List<Plugin> plugins = new LinkedList<>();
 
