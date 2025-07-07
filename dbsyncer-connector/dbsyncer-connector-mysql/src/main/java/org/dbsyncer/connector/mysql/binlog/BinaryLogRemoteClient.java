@@ -635,7 +635,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private void spawnWorkerThread() {
         this.worker = new Thread(() -> listenForEventPackets(channel));
         this.worker.setDaemon(false);
-        this.workerThreadName = new StringBuilder("binlog-parser-").append(createClientId()).toString();
+        this.workerThreadName = "binlog-parser-" + createClientId();
         this.worker.setName(workerThreadName);
         this.worker.start();
     }
@@ -644,8 +644,11 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         String clientId = createClientId();
         this.keepAlive = new Thread(() -> {
             while (connected) {
+                if (connectedError) {
+                    break;
+                }
                 try {
-                    TimeUnit.SECONDS.sleep(30);
+                    TimeUnit.SECONDS.sleep(15);
                     channel.write(new PingCommand());
                 } catch (Exception e) {
                     notifyException(e);
@@ -656,6 +659,10 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 try {
                     logger.info("Trying to restore lost connection to {}}", createClientId());
                     TimeUnit.MILLISECONDS.sleep(500);
+                    if (!connected) {
+                        logger.warn("Trying to stop");
+                        break;
+                    }
                     disconnect();
                     connect();
                     connectedError = false;
@@ -666,7 +673,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             }
         });
         this.keepAlive.setDaemon(false);
-        this.keepAlive.setName(new StringBuilder("binlog-keepalive-").append(clientId).toString());
+        this.keepAlive.setName("binlog-keepalive-" + clientId);
         this.keepAlive.start();
     }
 
