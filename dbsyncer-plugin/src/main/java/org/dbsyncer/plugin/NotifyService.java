@@ -13,8 +13,6 @@ public interface NotifyService {
 
     /**
      * 发送通知消息
-     *
-     * @param notifyMessage
      */
     void sendMessage(NotifyMessage notifyMessage);
 }

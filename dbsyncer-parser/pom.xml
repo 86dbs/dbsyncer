@@ -5,7 +5,7 @@
     <parent>
         <artifactId>dbsyncer</artifactId>
         <groupId>org.ghi</groupId>
-        <version>2.0.6</version>
+        <version>2.0.7</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>dbsyncer-parser</artifactId>
@@ -23,6 +23,12 @@
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-storage</artifactId>
             <version>${project.parent.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.scxhtb</groupId>
+            <artifactId>dbsyncer-parser-plus</artifactId>
+            <version>2.0.6</version>
         </dependency>
 
         <!-- antlr4-runtime -->
