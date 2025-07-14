@@ -25,6 +25,8 @@ public class PostgreSQLStringType extends StringType {
         VARCHAR("varchar"),
         TEXT("text"),
         JSON("json"),
+        CHAR("char"),
+        BPCHAR("bpchar"),
         POINT("point");
 
         private final String value;
