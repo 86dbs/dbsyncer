@@ -55,6 +55,7 @@ SERVER_OPTS="$SERVER_OPTS \
 -Dspring.config.location=$CONFIG_PATH \
 -DLOG_HOME=$DBS_HOME/logs \
 -Dsun.stdout.encoding=UTF-8 -Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME \
+-XX:+DisableAttachMechanism \
 -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:ParallelGCThreads=4 \
 -XX:+CMSClassUnloadingEnabled -XX:+DisableExplicitGC -XX:+UseCMSInitiatingOccupancyOnly \
 -XX:CMSInitiatingOccupancyFraction=68 -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps \
