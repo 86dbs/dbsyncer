@@ -9,7 +9,7 @@ for %%F in ("%~dp0\..\") do set "DBS_HOME=%%~dpF"
 echo DBS_HOME=%DBS_HOME%
 cd ../
 
-set SERVER_OPTS=-Xms3800m -Xmx3800m -Xmn1500m -Xss512k -XX:MetaspaceSize=192m
+set SERVER_OPTS=-Xms3800m -Xmx3800m -Xmn1500m -Xss512k -XX:MetaspaceSize=192m -XX:+DisableAttachMechanism
 rem debug model
 rem set SERVER_OPTS=%SERVER_OPTS% -Djava.compiler=NONE -Xnoagent -Xdebug -Xrunjdwp:transport=dt_socket,address=15005,server=y,suspend=n
 rem set IPv4
@@ -34,7 +34,7 @@ set SERVER_OPTS=%SERVER_OPTS% -Djava.ext.dirs="%JAVA_HOME%\jre\lib\ext;%DBS_HOME
 set SERVER_OPTS=%SERVER_OPTS% -Dspring.config.location=%DBS_HOME%conf\application.properties
 set SERVER_OPTS=%SERVER_OPTS% -DLOG_PATH=%DBS_HOME%\logs
 set SERVER_OPTS=%SERVER_OPTS% -Dsun.stdout.encoding=UTF-8 -Dfile.encoding=UTF-8 -Duser.dir=%DBS_HOME%
-set SERVER_OPTS=%SERVER_OPTS% -XX:+DisableAttachMechanism -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:ParallelGCThreads=4 -XX:+CMSClassUnloadingEnabled -XX:+DisableExplicitGC
+set SERVER_OPTS=%SERVER_OPTS% -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:ParallelGCThreads=4 -XX:+CMSClassUnloadingEnabled -XX:+DisableExplicitGC
 set SERVER_OPTS=%SERVER_OPTS% -XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=68 -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps
 set SERVER_OPTS=%SERVER_OPTS% -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=%DBS_HOME%logs -XX:ErrorFile=%DBS_HOME%logs\hs_err.log
 
