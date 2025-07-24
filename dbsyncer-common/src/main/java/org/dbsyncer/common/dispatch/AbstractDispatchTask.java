@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.biz.dispatch;
+package org.dbsyncer.common.dispatch;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

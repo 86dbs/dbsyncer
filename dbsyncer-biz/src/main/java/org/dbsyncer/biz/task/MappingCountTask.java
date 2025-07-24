@@ -1,10 +1,9 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.biz.dispatch.task;
+package org.dbsyncer.biz.task;
 
-import org.dbsyncer.biz.dispatch.AbstractCountTask;
-import org.dbsyncer.biz.enums.DispatchTaskEnum;
+import org.dbsyncer.common.enums.DispatchTaskEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;

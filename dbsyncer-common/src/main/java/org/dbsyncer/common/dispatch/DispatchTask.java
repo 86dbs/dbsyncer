@@ -1,9 +1,9 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.biz.dispatch;
+package org.dbsyncer.common.dispatch;
 
-import org.dbsyncer.biz.enums.DispatchTaskEnum;
+import org.dbsyncer.common.enums.DispatchTaskEnum;
 
 /**
  * @Author 穿云

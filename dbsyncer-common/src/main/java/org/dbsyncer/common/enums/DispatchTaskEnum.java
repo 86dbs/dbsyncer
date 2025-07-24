@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.biz.enums;
+package org.dbsyncer.common.enums;
 
 /**
  * 任务调度类型枚举
