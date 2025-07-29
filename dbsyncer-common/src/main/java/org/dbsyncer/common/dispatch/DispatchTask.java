@@ -5,6 +5,8 @@ package org.dbsyncer.common.dispatch;
 
 import org.dbsyncer.common.enums.DispatchTaskEnum;
 
+import java.util.function.Consumer;
+
 /**
  * @Author 穿云
  * @Version 1.0.0
@@ -21,4 +23,5 @@ public interface DispatchTask extends Runnable {
 
     void destroy();
 
+    void onDestroy(Consumer<DispatchTask> consumer);
 }

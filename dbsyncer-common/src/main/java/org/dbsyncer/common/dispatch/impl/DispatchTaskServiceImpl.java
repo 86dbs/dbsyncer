@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.common.dispatch.impl;
 
-import org.dbsyncer.common.dispatch.AbstractDispatchTask;
 import org.dbsyncer.common.dispatch.DispatchTask;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.slf4j.Logger;
@@ -39,10 +38,7 @@ public class DispatchTaskServiceImpl implements DispatchTaskService {
                 t.destroy();
                 logger.warn("The dispatch task was terminated, {}", k);
             }
-            if (task instanceof AbstractDispatchTask) {
-                AbstractDispatchTask adt = (AbstractDispatchTask) task;
-                adt.setActive(active);
-            }
+            task.onDestroy(dispatchTask -> active.remove(task.getUniqueId()));
             return task;
         }));
     }

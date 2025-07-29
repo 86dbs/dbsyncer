@@ -6,7 +6,7 @@ package org.dbsyncer.common.dispatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * @Author 穿云
@@ -17,7 +17,7 @@ public abstract class AbstractDispatchTask implements DispatchTask {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private Map<String, DispatchTask> active;
+    private Consumer<DispatchTask> consumer;
 
     private volatile boolean running;
 
@@ -32,7 +32,9 @@ public abstract class AbstractDispatchTask implements DispatchTask {
             logger.error("dispatch task，uniqueId:{}，error:{}", getUniqueId(), e);
         } finally {
             running = false;
-            active.remove(getUniqueId());
+            if (consumer != null) {
+                consumer.accept(this);
+            }
         }
     }
 
@@ -41,11 +43,12 @@ public abstract class AbstractDispatchTask implements DispatchTask {
         this.running = false;
     }
 
-    protected boolean isRunning() {
-        return running;
+    @Override
+    public void onDestroy(Consumer<DispatchTask> consumer) {
+        this.consumer = consumer;
     }
 
-    public void setActive(Map<String, DispatchTask> active) {
-        this.active = active;
+    protected boolean isRunning() {
+        return running;
     }
 }
