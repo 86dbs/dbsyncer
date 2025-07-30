@@ -3,10 +3,10 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.biz.DispatchTaskService;
+import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
-import org.dbsyncer.biz.dispatch.task.TableGroupCountTask;
+import org.dbsyncer.biz.task.TableGroupCountTask;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;

@@ -17,7 +17,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  * @Date 2025-06-22 23:20
  */
 @Configuration
-@ConfigurationProperties(prefix = "dbsyncer.biz.dispatch")
+@ConfigurationProperties(prefix = "dbsyncer.common.dispatch")
 public class DispatchTaskConfig {
     /**
      * 工作线程数

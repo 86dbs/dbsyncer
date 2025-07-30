@@ -1,11 +1,10 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.biz.impl;
+package org.dbsyncer.common.dispatch.impl;
 
-import org.dbsyncer.biz.DispatchTaskService;
-import org.dbsyncer.biz.dispatch.AbstractDispatchTask;
-import org.dbsyncer.biz.dispatch.DispatchTask;
+import org.dbsyncer.common.dispatch.DispatchTask;
+import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -39,10 +38,7 @@ public class DispatchTaskServiceImpl implements DispatchTaskService {
                 t.destroy();
                 logger.warn("The dispatch task was terminated, {}", k);
             }
-            if (task instanceof AbstractDispatchTask) {
-                AbstractDispatchTask adt = (AbstractDispatchTask) task;
-                adt.setActive(active);
-            }
+            task.onDestroy(dispatchTask -> active.remove(task.getUniqueId()));
             return task;
         }));
     }

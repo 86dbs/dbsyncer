@@ -1,9 +1,10 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.biz.dispatch;
+package org.dbsyncer.biz.task;
 
 import org.dbsyncer.biz.TableGroupService;
+import org.dbsyncer.common.dispatch.AbstractDispatchTask;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;

@@ -1,9 +1,11 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.biz.dispatch;
+package org.dbsyncer.common.dispatch;
 
-import org.dbsyncer.biz.enums.DispatchTaskEnum;
+import org.dbsyncer.common.enums.DispatchTaskEnum;
+
+import java.util.function.Consumer;
 
 /**
  * @Author 穿云
@@ -21,4 +23,5 @@ public interface DispatchTask extends Runnable {
 
     void destroy();
 
+    void onDestroy(Consumer<DispatchTask> consumer);
 }

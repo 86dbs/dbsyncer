@@ -1,9 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.biz;
-
-import org.dbsyncer.biz.dispatch.DispatchTask;
+package org.dbsyncer.common.dispatch;
 
 /**
  * @Author 穿云

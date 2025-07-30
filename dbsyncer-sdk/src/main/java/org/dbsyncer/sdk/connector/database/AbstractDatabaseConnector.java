@@ -469,10 +469,37 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             List<Table> tables = new ArrayList<>();
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
-            String databaseCatalog = null == catalog ? conn.getCatalog() : catalog;
-            String schemaNamePattern = null == schema ? conn.getSchema() : schema;
+            DatabaseMetaData metaData = conn.getMetaData();
+            String dbProductName = metaData.getDatabaseProductName().toLowerCase();
+            // 兼容处理 schema 和 catalog
+            String effectiveCatalog = null;
+            String effectiveSchema = null;
+            if (dbProductName.contains("mysql") || dbProductName.contains("mariadb")) {
+                // MySQL: schema=null, catalog=database name
+                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
+            } else if (dbProductName.contains("oracle")) {
+                // Oracle: schema=用户名（大写），catalog=null
+                effectiveSchema = (schema != null) ? schema : conn.getSchema();
+                if (effectiveSchema != null) {
+                    effectiveSchema = effectiveSchema.toUpperCase();
+                }
+            } else if (dbProductName.contains("postgresql")) {
+                // PostgreSQL: schema=public 等，catalog=数据库名
+                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
+                effectiveSchema = (schema != null) ? schema : "public";
+            } else if (dbProductName.contains("sql server")) {
+                // SQL Server: catalog=数据库名，schema=如 dbo
+                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
+                effectiveSchema = (schema != null) ? schema : "dbo";
+            } else {
+                // 其他数据库按默认处理
+                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
+                effectiveSchema = (schema != null) ? schema : conn.getSchema();
+            }
+
             String[] types = {TableTypeEnum.TABLE.getCode(), TableTypeEnum.VIEW.getCode(), TableTypeEnum.MATERIALIZED_VIEW.getCode()};
-            final ResultSet rs = conn.getMetaData().getTables(databaseCatalog, schemaNamePattern, tableNamePattern, types);
+            final ResultSet rs = conn.getMetaData().getTables(effectiveCatalog, effectiveSchema, tableNamePattern, types);
+            logger.info("Using dbProductName：{}, catalog: {}, schema: {}", dbProductName, effectiveCatalog, effectiveSchema);
             while (rs.next()) {
                 final String tableName = rs.getString("TABLE_NAME");
                 final String tableType = rs.getString("TABLE_TYPE");

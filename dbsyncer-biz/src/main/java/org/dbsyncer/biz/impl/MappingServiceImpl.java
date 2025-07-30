@@ -5,13 +5,13 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
-import org.dbsyncer.biz.DispatchTaskService;
+import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
-import org.dbsyncer.biz.dispatch.task.MappingCountTask;
+import org.dbsyncer.biz.task.MappingCountTask;
 import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
