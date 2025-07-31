@@ -37,12 +37,10 @@ public class LogMinerHelper {
     public static final int LOG_MINER_OC_MISSING_SCN = 34;
     public static final int LOG_MINER_OC_ROLLBACK = 36;
     private static final String LOG_MINER_SQL_QUERY_ROLES = "SELECT * FROM USER_ROLE_PRIVS";
-    private static final String LOG_MINER_KEY_GRANTED_ROLE = "GRANTED_ROLE";
     private static final String LOG_MINER_SQL_QUERY_PRIVILEGES = "SELECT * FROM SESSION_PRIVS";
-    private static final String LOG_MINER_KEY_PRIVILEGE = "PRIVILEGE";
-    private static final List<String> LOG_MINER_PRIVILEGES_NEEDED = Arrays.asList("SELECT_CATALOG_ROLE", "CREATE SESSION", "SELECT ANY TRANSACTION", "SELECT ANY DICTIONARY", "LOGMINING");
-    private static final List<String> LOG_MINER_ORACLE_11_PRIVILEGES_NEEDED = Arrays.asList("SELECT_CATALOG_ROLE", "CREATE SESSION", "SELECT ANY TRANSACTION", "SELECT ANY DICTIONARY");
-    private static final String LOG_MINER_DBA_ROLE = "DBA";
+    private static final List<String> LOG_MINER_PRIVILEGES_NEEDED = Arrays.asList("CREATE SESSION", "SELECT ANY TRANSACTION", "SELECT ANY DICTIONARY", "LOGMINING");
+    private static final List<String> LOG_MINER_ORACLE_11_PRIVILEGES_NEEDED = Arrays.asList("CREATE SESSION", "SELECT ANY TRANSACTION", "SELECT ANY DICTIONARY");
+    private static final String LOG_MINER_SELECT_CATALOG_ROLE_ROLE = "SELECT_CATALOG_ROLE";
     private static final String LOG_MINER_SQL_GET_CURRENT_SCN = "select CURRENT_SCN from V$DATABASE";
     private static final String LOG_MINER_SQL_IS_CDB = "select cdb from v$database";
     private static final String LOG_MINER_SQL_ALTER_SESSION_CONTAINER = "alter session set container=CDB$ROOT";
@@ -210,17 +208,21 @@ public class LogMinerHelper {
     }
 
     public static void checkPermissions(Connection connection, int version) throws SQLException {
-        List<String> roles = queryList(connection, LOG_MINER_SQL_QUERY_ROLES, LOG_MINER_KEY_GRANTED_ROLE);
+        List<String> roles = queryList(connection, LOG_MINER_SQL_QUERY_ROLES, "GRANTED_ROLE");
         if (CollectionUtils.isEmpty(roles)) {
             throw new RuntimeException("No permissions");
         }
 
         // DBA
-        if (roles.contains(LOG_MINER_DBA_ROLE)) {
+        if (roles.contains("DBA")) {
             return;
         }
+        // SELECT_CATALOG_ROLE 允许用户访问数据字典视图（如 DBA_, V$, ALL_* 等），用于查询数据库的元数据
+        if (!roles.contains(LOG_MINER_SELECT_CATALOG_ROLE_ROLE)) {
+            throw new IllegalArgumentException(String.format("No permission, please execute sql authorization：GRANT %s TO USERNAME;", LOG_MINER_SELECT_CATALOG_ROLE_ROLE));
+        }
 
-        List<String> privileges = queryList(connection, LOG_MINER_SQL_QUERY_PRIVILEGES, LOG_MINER_KEY_PRIVILEGE);
+        List<String> privileges = queryList(connection, LOG_MINER_SQL_QUERY_PRIVILEGES, "PRIVILEGE");
         if (CollectionUtils.isEmpty(privileges)) {
             throw new RuntimeException("No permissions");
         }
@@ -228,7 +230,7 @@ public class LogMinerHelper {
         long count = privileges.stream().filter(checkPrivileges::contains).count();
         if (count != checkPrivileges.size()) {
             String log = StringUtil.join(Collections.singleton(checkPrivileges), StringUtil.COMMA);
-            throw new IllegalArgumentException(String.format("No permission, please execute sql authorization：GRANT %s TO USER_ROLE;", log));
+            throw new IllegalArgumentException(String.format("No permission, please execute sql authorization：GRANT %s TO USERNAME;", log));
         }
     }
 }
