@@ -32,6 +32,9 @@ public class KafkaConfig extends ConnectorConfig {
     private String acks;
     private int retries;
     private int maxRequestSize;
+    
+    // 添加共享Topic配置
+    private boolean shareTopic = false;
 
     public String getBootstrapServers() {
         return bootstrapServers;
@@ -143,5 +146,13 @@ public class KafkaConfig extends ConnectorConfig {
 
     public void setMaxRequestSize(int maxRequestSize) {
         this.maxRequestSize = maxRequestSize;
+    }
+
+    public boolean isShareTopic() {
+        return shareTopic;
+    }
+
+    public void setShareTopic(boolean shareTopic) {
+        this.shareTopic = shareTopic;
     }
 }

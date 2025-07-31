@@ -18,6 +18,14 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <!-- connector -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector</artifactId>
+            <version>${project.parent.version}</version>
+            <type>pom</type>
+        </dependency>
+
         <!-- Mail -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
