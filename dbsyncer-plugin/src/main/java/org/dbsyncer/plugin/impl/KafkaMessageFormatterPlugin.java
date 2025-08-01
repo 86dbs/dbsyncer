@@ -1,10 +1,12 @@
 package org.dbsyncer.plugin.impl;
 
 import org.dbsyncer.common.config.AppConfig;
-import org.dbsyncer.sdk.plugin.PluginContext;
-import org.dbsyncer.sdk.spi.PluginService;
+import org.dbsyncer.connector.kafka.KafkaConnectorInstance;
+import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.plugin.PluginContext;
+import org.dbsyncer.sdk.spi.PluginService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,22 +31,34 @@ public final class KafkaMessageFormatterPlugin implements PluginService {
         try {
             // 检查目标连接器是否为Kafka并且启用了共享Topic
             ConnectorInstance targetConnectorInstance = context.getTargetConnectorInstance();
-            
-            // 通过反射检查是否是Kafka连接器实例
-            if (isKafkaConnectorInstance(targetConnectorInstance)) {
-                // 获取Kafka配置
-                Object kafkaConfig = getKafkaConfig(targetConnectorInstance);
-                
-                // 检查是否启用了共享Topic
-                if (isShareTopicEnabled(kafkaConfig)) {
-                    // 创建符合要求格式的消息
-                    List<Map> targetList = context.getTargetList();
-                    for (int i = 0; i < targetList.size(); i++) {
-                        Map<String, Object> originalData = targetList.get(i);
-                        Map<String, Object> formattedMessage = createFormattedMessage(originalData, context);
-                        targetList.set(i, formattedMessage);
-                    }
-                }
+            if (!(targetConnectorInstance instanceof KafkaConnectorInstance)) {
+                return;
+            }
+
+            // 获取Kafka配置
+            KafkaConfig kafkaConfig = ((KafkaConnectorInstance) targetConnectorInstance).getConfig();
+            if (!kafkaConfig.isShareTopic()) {
+                return;
+            }
+
+            // 提前获取一次元数据信息，避免在循环中重复执行
+            String dataSourceType = getDataSourceTypeFromSource(context);
+            String sourceAddress = getSourceAddressFromSource(context);
+            String sourceDBName = getSourceDBNameFromSource(context);
+            String targetTableName = context.getTargetTableName();
+            String event = context.getEvent();
+            long timestamp = System.currentTimeMillis();
+
+            // 提前提取主键字段列表
+            List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
+
+            // 创建符合要求格式的消息
+            List<Map> targetList = context.getTargetList();
+            for (int i = 0; i < targetList.size(); i++) {
+                Map<String, Object> originalData = targetList.get(i);
+                Map<String, Object> formattedMessage = createFormattedMessage(originalData, dataSourceType, sourceAddress,
+                        sourceDBName, targetTableName, event, timestamp, pkFields);
+                targetList.set(i, formattedMessage);
             }
         } catch (Exception e) {
             logger.error("Kafka消息格式化插件处理异常: {}", e.getMessage(), e);
@@ -52,56 +66,20 @@ public final class KafkaMessageFormatterPlugin implements PluginService {
     }
 
     /**
-     * 检查连接器实例是否为Kafka连接器实例
-     */
-    private boolean isKafkaConnectorInstance(ConnectorInstance connectorInstance) {
-        return connectorInstance != null && 
-               "Kafka".equals(connectorInstance.getClass().getSimpleName().replace("ConnectorInstance", ""));
-    }
-
-    /**
-     * 获取Kafka配置对象
-     */
-    private Object getKafkaConfig(ConnectorInstance connectorInstance) throws Exception {
-        Method getConfigMethod = connectorInstance.getClass().getMethod("getConfig");
-        return getConfigMethod.invoke(connectorInstance);
-    }
-
-    /**
-     * 检查是否启用了共享Topic
-     */
-    private boolean isShareTopicEnabled(Object kafkaConfig) throws Exception {
-        try {
-            Method isShareTopicMethod = kafkaConfig.getClass().getMethod("isShareTopic");
-            return (Boolean) isShareTopicMethod.invoke(kafkaConfig);
-        } catch (NoSuchMethodException e) {
-            // 如果没有这个方法，说明是旧版本，返回false
-            return false;
-        }
-    }
-
-    /**
      * 自动从源连接器获取数据源类型
      */
     private String getDataSourceTypeFromSource(PluginContext context) {
-        try {
-            ConnectorInstance sourceConnectorInstance = context.getSourceConnectorInstance();
-            if (sourceConnectorInstance != null) {
-                // 从连接器实例类名中提取数据源类型
-                String className = sourceConnectorInstance.getClass().getSimpleName();
-                if (className.contains("ConnectorInstance")) {
-                    String connectorType = className.replace("ConnectorInstance", "");
-                    // 特殊处理SQL Server的情况
-                    if ("SqlServer".equals(connectorType)) {
-                        return "SQL_SERVER";
-                    }
-                    return connectorType.toUpperCase();
-                }
-            }
-        } catch (Exception e) {
-            logger.warn("无法从源连接器获取数据源类型", e);
+        ConnectorInstance sourceConnectorInstance = context.getSourceConnectorInstance();
+        if (sourceConnectorInstance == null) {
+            return "UNKNOWN";
         }
-        return "UNKNOWN";
+        // 从连接器实例类名中提取数据源类型
+        String connectorType = sourceConnectorInstance.getConfig().getConnectorType();
+        // 特殊处理SQL Server的情况
+        if ("SqlServer".equals(connectorType)) {
+            return "SQL_SERVER";
+        }
+        return connectorType;
     }
 
     /**
@@ -113,7 +91,7 @@ public final class KafkaMessageFormatterPlugin implements PluginService {
             if (sourceConnectorInstance != null) {
                 Method getConfigMethod = sourceConnectorInstance.getClass().getMethod("getConfig");
                 Object config = getConfigMethod.invoke(sourceConnectorInstance);
-                
+
                 // 尝试获取URL属性
                 try {
                     Method getUrlMethod = config.getClass().getMethod("getUrl");
@@ -154,7 +132,7 @@ public final class KafkaMessageFormatterPlugin implements PluginService {
             if (sourceConnectorInstance != null) {
                 Method getConfigMethod = sourceConnectorInstance.getClass().getMethod("getConfig");
                 Object config = getConfigMethod.invoke(sourceConnectorInstance);
-                
+
                 // 尝试获取schema属性
                 try {
                     Method getSchemaMethod = config.getClass().getMethod("getSchema");
@@ -165,7 +143,7 @@ public final class KafkaMessageFormatterPlugin implements PluginService {
                 } catch (NoSuchMethodException e) {
                     logger.debug("源连接器配置中没有getSchema方法");
                 }
-                
+
                 // 尝试获取URL属性并从中提取数据库名
                 try {
                     Method getUrlMethod = config.getClass().getMethod("getUrl");
@@ -197,33 +175,38 @@ public final class KafkaMessageFormatterPlugin implements PluginService {
     /**
      * 创建符合要求格式的消息
      *
-     * @param data 原始数据
-     * @param context 插件上下文
+     * @param data            原始数据
+     * @param dataSourceType  数据源类型
+     * @param sourceAddress   源地址
+     * @param sourceDBName    源数据库名
+     * @param targetTableName 目标表名
+     * @param event           事件类型
+     * @param timestamp       时间戳
+     * @param pkFields        主键字段列表
      * @return 格式化后的消息
      */
-    private Map<String, Object> createFormattedMessage(Map<String, Object> data, PluginContext context) {
+    private Map<String, Object> createFormattedMessage(Map<String, Object> data, String dataSourceType,
+                                                       String sourceAddress, String sourceDBName, String targetTableName, String event, long timestamp, List<Field> pkFields) {
         Map<String, Object> message = new LinkedHashMap<>();
-        
+
         // 添加元数据信息，从源连接器自动获取
-        message.put("dataSourceType", getDataSourceTypeFromSource(context));
-        message.put("sourceAddress", getSourceAddressFromSource(context));
-        message.put("sourceDBName", getSourceDBNameFromSource(context));
-        message.put("tableName", context.getTargetTableName());
+        message.put("dataSourceType", dataSourceType);
+        message.put("sourceAddress", sourceAddress);
+        message.put("sourceDBName", sourceDBName);
+        message.put("tableName", targetTableName);
         message.put("type", "DML");
-        message.put("subType", context.getEvent());
+        message.put("subType", event);
         message.put("value", data);
-        long timestamp = System.currentTimeMillis();
         message.put("eventTimestamp", timestamp);
         message.put("collectTimestamp", timestamp);
-        
+
         // 添加主键信息
-        List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
         Map<String, Object> primaryKeys = new LinkedHashMap<>();
         for (Field field : pkFields) {
             primaryKeys.put(field.getName(), data.get(field.getName()));
         }
         message.put("primaryKeys", primaryKeys);
-        
+
         return message;
     }
 
