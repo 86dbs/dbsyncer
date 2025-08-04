@@ -147,9 +147,9 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
             bootGrowl("请选择数据源表", "danger");
             return;
         }
+        // 如果未选择目标表，则使用源表作为目标表
         if (undefined == m.targetTable) {
-            bootGrowl("请选择目标源表", "danger");
-            return;
+            m.targetTable = m.sourceTable;
         }
 
         let sLen = m.sourceTable.length;
