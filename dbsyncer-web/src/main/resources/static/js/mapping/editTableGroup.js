@@ -131,6 +131,16 @@ function bindFieldMappingAddClick($sourceSelect, $targetSelect){
             bootGrowl("至少有一个表字段.", "danger");
             return;
         }
+        
+        // 如果未选择目标字段，则使用源字段作为目标字段
+        if(sField != "" && tField == ""){
+            tField = sField;
+        }
+        
+        // 如果未选择源字段，则使用目标字段作为源字段
+        if(sField == "" && tField != ""){
+            sField = tField;
+        }
 
         // 检查重复字段
         let repeated = false;

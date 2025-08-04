@@ -12,6 +12,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
@@ -209,7 +210,7 @@ public class TableGroupChecker extends AbstractChecker {
             }
         });
 
-        // 沒有主键映射关系，取第一个主键作为映射关系
+        // 没有主键映射关系，取第一个主键作为映射关系
         if (!existSourcePKFieldMapping.get() || !existTargetPKFieldMapping.get()) {
             List<String> sourceTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
             List<String> targetTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getTargetTable());
@@ -305,6 +306,10 @@ public class TableGroupChecker extends AbstractChecker {
             t = tMap.get(row.get("target"));
             if (null == s && null == t) {
                 continue;
+            }
+            // 用源字段信息作为目标字段信息
+            if (null == t){
+                t = new Field(s.getName(), s.getTypeName(), s.getType(), s.isPk(), s.getColumnSize(), s.getRatio());
             }
 
             if (null != t) {
