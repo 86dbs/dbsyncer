@@ -31,6 +31,12 @@ public class BitValueMapper extends AbstractValueMapper<byte[]> {
             buffer.putShort((short) (b ? 1 : 0));
             return buffer.array();
         }
+        // 添加对Byte类型的支持
+        if (val instanceof Byte) {
+            ByteBuffer buffer = ByteBuffer.allocate(1);
+            buffer.put((Byte) val);
+            return buffer.array();
+        }
 
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }

@@ -106,7 +106,8 @@ public abstract class AbstractConnector {
                 if (null != valueMapper) {
                     // 当数据类型不同时，转换值类型
                     try {
-                        row.put(f.getName(), valueMapper.convertValue(connectorInstance, row.get(f.getName())));
+                        Object value = valueMapper.convertValue(connectorInstance, row.get(f.getName()));
+                        row.put(f.getName(), value);
                     } catch (Exception e) {
                         logger.error("convert value error: ({}, {}, {})", context.getTargetTableName(), f.getName(), row.get(f.getName()));
                         throw new SdkException(e);

@@ -116,7 +116,9 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
             String topic = cfg.getTopic();
             // 默认取第一个主键
             final String pk = pkFields.get(0).getName();
-            data.forEach(row -> connectorInstance.getConnection().send(topic, String.valueOf(row.get(pk)), row));
+            for (Map row : data){
+                connectorInstance.getConnection().send(topic, String.valueOf(row.get(pk)), row);
+            }
             result.addSuccessData(data);
         } catch (Exception e) {
             // 记录错误数据
