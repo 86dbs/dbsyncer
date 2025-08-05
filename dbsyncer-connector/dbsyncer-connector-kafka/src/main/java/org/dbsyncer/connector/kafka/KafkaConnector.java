@@ -41,6 +41,8 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final KafkaConfigValidator configValidator = new KafkaConfigValidator();
+    
+    private final KafkaConvertor kafkaConvertor = new KafkaConvertor();
 
     @Override
     public String getConnectorType() {
@@ -117,14 +119,18 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
             // 默认取第一个主键
             final String pk = pkFields.get(0).getName();
             KafkaClient kafkaClient = connectorInstance.getConnection();
-            data.forEach(row -> kafkaClient.send(topic, String.valueOf(row.get(pk)), row));
+            
+            // 格式化消息
+            List<Map> formattedData = kafkaConvertor.formatMessages(context, data, pkFields);
+            
+            formattedData.forEach(row -> kafkaClient.send(topic, String.valueOf(row.get(pk)), row));
             kafkaClient.producer.flush();
-            result.addSuccessData(data);
+            result.addSuccessData(formattedData);
         } catch (Exception e) {
             // 记录错误数据
             result.addFailData(data);
             result.getError().append(e.getMessage()).append(System.lineSeparator());
-            logger.error(e.getMessage());
+            logger.error(e.getMessage(), e);
         }
         return result;
     }

@@ -1,62 +1,58 @@
-package org.dbsyncer.plugin.impl;
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
+package org.dbsyncer.connector.kafka;
 
-import org.dbsyncer.common.config.AppConfig;
-import org.dbsyncer.connector.kafka.KafkaConnectorInstance;
-import org.dbsyncer.connector.kafka.config.KafkaConfig;
-import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.plugin.PluginContext;
-import org.dbsyncer.sdk.spi.PluginService;
-import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-@Component
-public final class KafkaMessageFormatterPlugin implements PluginService {
-
+/**
+ * Kafka消息格式化转换器
+ *
+ * @Author AE86
+ * @Version 1.0.0
+ * @Date 2023-08-05 15:30
+ */
+public class KafkaConvertor {
+    
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Resource
-    private AppConfig appConfig;
-
-    @Override
-    public void convert(PluginContext context) {
-        try {
-            // 检查目标连接器是否为Kafka并且启用了共享Topic
-            ConnectorInstance targetConnectorInstance = context.getTargetConnectorInstance();
-            if (!(targetConnectorInstance instanceof KafkaConnectorInstance)) {
-                return;
-            }
-
-            // 提前获取一次元数据信息，避免在循环中重复执行
-            String dataSourceType = context.getSourceConnectorInstance().getConfig().getConnectorType();
-            String sourceAddress = getSourceAddressFromSource(context);
-            String sourceDBName = getSourceDBNameFromSource(context);
-            String targetTableName = context.getTargetTableName();
-            String event = context.getEvent();
-            long timestamp = System.currentTimeMillis();
-
-            // 提前提取主键字段列表
-            List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
-
-            // 创建符合要求格式的消息
-            List<Map> targetList = context.getTargetList();
-            for (int i = 0; i < targetList.size(); i++) {
-                Map<String, Object> originalData = targetList.get(i);
-                Map<String, Object> formattedMessage = createFormattedMessage(originalData, dataSourceType, sourceAddress,
-                        sourceDBName, targetTableName, event, timestamp, pkFields);
-                targetList.set(i, formattedMessage);
-            }
-        } catch (Exception e) {
-            logger.error("Kafka消息格式化插件处理异常: {}", e.getMessage(), e);
+    /**
+     * 格式化消息为标准格式
+     *
+     * @param context 插件上下文
+     * @param data 原始数据
+     * @param pkFields 主键字段列表
+     * @return 格式化后的数据
+     */
+    public List<Map> formatMessages(PluginContext context, List<Map> data, List<Field> pkFields) {
+        List<Map> formattedData = new ArrayList<>();
+        
+        // 获取元数据信息
+        String dataSourceType = context.getSourceConnectorInstance().getConfig().getConnectorType();
+        String sourceAddress = getSourceAddressFromSource(context);
+        String sourceDBName = getSourceDBNameFromSource(context);
+        String targetTableName = context.getTargetTableName();
+        String event = context.getEvent();
+        long timestamp = System.currentTimeMillis();
+        
+        for (Map<String, Object> originalData : data) {
+            Map<String, Object> formattedMessage = createFormattedMessage(
+                originalData, dataSourceType, sourceAddress, sourceDBName, 
+                targetTableName, event, timestamp, pkFields);
+            formattedData.add(formattedMessage);
         }
+        
+        return formattedData;
     }
 
     /**
@@ -185,15 +181,5 @@ public final class KafkaMessageFormatterPlugin implements PluginService {
         message.put("primaryKeys", primaryKeys);
 
         return message;
-    }
-
-    @Override
-    public String getVersion() {
-        return appConfig.getVersion();
-    }
-
-    @Override
-    public String getName() {
-        return "KafkaMessageFormatter";
     }
 }

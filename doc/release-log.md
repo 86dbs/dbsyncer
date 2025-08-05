@@ -4,6 +4,6 @@
 
 - bug fixed: 数据同步到 kafka ，kafka接收不到消息
 - 支持 bit 数据类型
-- ui: target table allow null select
-- ui: target field allow null select
+- ui: when target table is null then use source table name
+- ui: when target field is null then use source field name
 - kafka use one topic to receive all tables
