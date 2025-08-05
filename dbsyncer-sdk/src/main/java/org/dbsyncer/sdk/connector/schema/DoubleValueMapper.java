@@ -19,6 +19,15 @@ public class DoubleValueMapper extends AbstractValueMapper<Double> {
             Number num = (Number) val;
             return num.doubleValue();
         }
+        // 如果 val 是 String 类型，尝试将其转换为 Double
+        else if (val instanceof String) {
+            String str = (String) val;
+            try {
+                return Double.parseDouble(str);
+            } catch (NumberFormatException e) {
+                throw new SdkException(String.format("%s can not convert String [%s] to Double", getClass().getSimpleName(), str), e);
+            }
+        }
         throw new SdkException(String.format("%s can not find type [%s], val [%s]", getClass().getSimpleName(), val.getClass(), val));
     }
 }
