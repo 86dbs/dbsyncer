@@ -35,14 +35,8 @@ public final class KafkaMessageFormatterPlugin implements PluginService {
                 return;
             }
 
-            // 获取Kafka配置
-            KafkaConfig kafkaConfig = ((KafkaConnectorInstance) targetConnectorInstance).getConfig();
-            if (!kafkaConfig.isShareTopic()) {
-                return;
-            }
-
             // 提前获取一次元数据信息，避免在循环中重复执行
-            String dataSourceType = getDataSourceTypeFromSource(context);
+            String dataSourceType = context.getSourceConnectorInstance().getConfig().getConnectorType();
             String sourceAddress = getSourceAddressFromSource(context);
             String sourceDBName = getSourceDBNameFromSource(context);
             String targetTableName = context.getTargetTableName();
@@ -63,23 +57,6 @@ public final class KafkaMessageFormatterPlugin implements PluginService {
         } catch (Exception e) {
             logger.error("Kafka消息格式化插件处理异常: {}", e.getMessage(), e);
         }
-    }
-
-    /**
-     * 自动从源连接器获取数据源类型
-     */
-    private String getDataSourceTypeFromSource(PluginContext context) {
-        ConnectorInstance sourceConnectorInstance = context.getSourceConnectorInstance();
-        if (sourceConnectorInstance == null) {
-            return "UNKNOWN";
-        }
-        // 从连接器实例类名中提取数据源类型
-        String connectorType = sourceConnectorInstance.getConfig().getConnectorType();
-        // 特殊处理SQL Server的情况
-        if ("SqlServer".equals(connectorType)) {
-            return "SQL_SERVER";
-        }
-        return connectorType;
     }
 
     /**

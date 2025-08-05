@@ -47,8 +47,6 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConfig> {
         int retries = NumberUtil.toInt(params.get("retries"));
         int maxRequestSize = NumberUtil.toInt(params.get("maxRequestSize"));
 
-        boolean shareTopic = Boolean.parseBoolean(params.get("shareTopic"));
-
         connectorConfig.setBootstrapServers(bootstrapServers);
         connectorConfig.setTopic(topic);
         connectorConfig.setFields(fields);
@@ -65,6 +63,6 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConfig> {
         connectorConfig.setAcks(acks);
         connectorConfig.setRetries(retries);
         connectorConfig.setMaxRequestSize(maxRequestSize);
-        connectorConfig.setShareTopic(shareTopic);
     }
+
 }
