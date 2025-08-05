@@ -15,6 +15,7 @@ public class WriterRequest extends AbstractWriter implements BufferRequest {
     private final List<Object> row;
 
     public WriterRequest(ChangedEvent event) {
+        setTraceId(event.getTraceId());
         setTypeEnum(event.getType());
         setChangedOffset(event.getChangedOffset());
         setTableName(event.getSourceTableName());

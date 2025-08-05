@@ -5,8 +5,10 @@ import oracle.jdbc.OracleConnection;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.DatabaseTemplate;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Field;
@@ -27,6 +29,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
@@ -45,6 +48,71 @@ import java.util.stream.Collectors;
 public class ConnectionTest {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Test
+    public void testBatchUpdateContinuesWithTransaction() throws InterruptedException {
+        for (int i = 0; i < 100; i++) {
+            testBatchUpdateWithTransaction();
+        }
+    }
+
+    @Test
+    public void testBatchUpdateWithTransaction() throws InterruptedException {
+        final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
+
+        // 模拟并发
+        final int threadSize = 10;
+        final ExecutorService pool = Executors.newFixedThreadPool(threadSize);
+        final CyclicBarrier barrier = new CyclicBarrier(threadSize);
+        final CountDownLatch latch = new CountDownLatch(threadSize);
+        final String sql = "UPDATE `test`.`vote_records` SET `user_id` = ?, `create_time` = now() WHERE `id` = ?";
+        final String sql2 = "UPDATE `test`.`vote_records_test` SET `user_id` = ?, `create_time` = now() WHERE `id` = ?";
+        for (int i = 0; i < threadSize; i++) {
+            final int k = i + 1;
+            pool.submit(() -> {
+                try {
+                    barrier.await();
+                    // 模拟操作
+                    System.out.println(String.format("%s %s:%s", LocalDateTime.now(), Thread.currentThread().getName(), k));
+                    Connection connection = null;
+                    try {
+                        connection = connectorInstance.getConnection();
+                        connection.setAutoCommit(false);
+                        DatabaseTemplate template = new DatabaseTemplate((SimpleConnection) connection);
+                        Object[] args = new Object[2];
+                        args[0] = randomUserId(20);
+                        args[1] = k;
+                        List<Object[]> list = new ArrayList<>();
+                        list.add(args);
+                        int[] ints = template.batchUpdate(sql, list);
+                        int[] ints2 = template.batchUpdate(sql2, list);
+                        connection.commit();
+                        System.out.println(String.format("%s %s:执行结果:%s,%s", LocalDateTime.now(), Thread.currentThread().getName(), Arrays.toString(ints), Arrays.toString(ints2)));
+                    } catch (Exception e) {
+                        logger.error(e.getMessage());
+                        throw new SdkException(e.getMessage(), e.getCause());
+                    } finally {
+                        connectorInstance.getDataSource().close(connection);
+                    }
+                } catch (Exception e) {
+                    logger.error(e.getMessage());
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        try {
+            latch.await();
+            logger.info("try to shutdown");
+            pool.shutdown();
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage());
+        }
+
+        TimeUnit.SECONDS.sleep(3);
+        logger.info("test end");
+    }
 
     @Test
     public void testByte() {

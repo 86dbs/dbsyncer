@@ -108,8 +108,10 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     @Override
     public void close(String metaId) {
-        map.computeIfPresent(metaId, (k, listener)->{
-            listener.close();
+        map.compute(metaId, (k, listener)->{
+            if (listener != null) {
+                listener.close();
+            }
             bufferActuatorRouter.unbind(metaId);
             tableGroupContext.clear(metaId);
             publishClosedEvent(metaId);

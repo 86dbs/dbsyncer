@@ -20,6 +20,8 @@ public abstract class AbstractWriter {
 
     private String sql;
 
+    private String traceId;
+
     public ChangedEventTypeEnum getTypeEnum() {
         return typeEnum;
     }
@@ -60,4 +62,11 @@ public abstract class AbstractWriter {
         this.sql = sql;
     }
 
+    public String getTraceId() {
+        return traceId;
+    }
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
+    }
 }

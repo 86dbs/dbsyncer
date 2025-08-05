@@ -84,9 +84,6 @@ public class BaseServiceImpl {
 
     /**
      * 发送通知消息
-     *
-     * @param title
-     * @param content
      */
     protected void sendNotifyMessage(String title, String content) {
         messageService.sendMessage(title, content);

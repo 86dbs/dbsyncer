@@ -105,7 +105,11 @@ public final class DatabaseQuartzListener extends AbstractQuartzListener {
     }
 
     private String replaceType(String replaceQuery, String type) {
-        return StringUtil.isNotBlank(replaceQuery) ? StringUtil.replace(replaceQuery, "'" + type + "'", "?") : replaceQuery;
+        if (StringUtil.isNotBlank(replaceQuery)) {
+            replaceQuery = StringUtil.replace(replaceQuery, "'" + type + "'", "?");
+            return StringUtil.replace(replaceQuery, type, "?");
+        }
+        return replaceQuery;
     }
 
 }

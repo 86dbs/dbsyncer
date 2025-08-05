@@ -1,7 +1,5 @@
 package org.dbsyncer.parser.enums;
 
-import org.dbsyncer.parser.ParserException;
-
 /**
  * 驱动状态枚举
  *
@@ -24,8 +22,8 @@ public enum MetaEnum {
      */
     STOPPING(2, "停止中");
 
-    private int code;
-    private String message;
+    private final int code;
+    private final String message;
 
     MetaEnum(int code, String message) {
         this.code = code;
@@ -40,15 +38,7 @@ public enum MetaEnum {
         return code;
     }
 
-    public void setCode(int code) {
-        this.code = code;
-    }
-
     public String getMessage() {
         return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
     }
 }

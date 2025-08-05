@@ -9,6 +9,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UnderlineToCamelUtils;
 import org.dbsyncer.connector.mysql.MySQLConnector;
+import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.sdk.NullExecutorException;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
@@ -60,7 +61,7 @@ public class MySQLStorageService extends AbstractStorageService {
     private final String DROP_TABLE = "DROP TABLE %s";
     private final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
     private final MySQLConnector connector = new MySQLConnector();
-    private Map<String, Executor> tables = new ConcurrentHashMap<>();
+    private final Map<String, Executor> tables = new ConcurrentHashMap<>();
     private DatabaseConnectorInstance connectorInstance;
     private String database;
 
@@ -69,8 +70,10 @@ public class MySQLStorageService extends AbstractStorageService {
         DatabaseConfig config = new DatabaseConfig();
         config.setConnectorType(properties.getProperty("dbsyncer.storage.type"));
         config.setUrl(properties.getProperty("dbsyncer.storage.mysql.url", "jdbc:mysql://127.0.0.1:3306/dbsyncer?rewriteBatchedStatements=true&seUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true&tinyInt1isBit=false"));
-        config.setUsername(properties.getProperty("dbsyncer.storage.mysql.username", "admin"));
-        config.setPassword(properties.getProperty("dbsyncer.storage.mysql.password", "admin"));
+        String username = properties.getProperty("dbsyncer.storage.mysql.username", "admin");
+        String password = properties.getProperty("dbsyncer.storage.mysql.password", "admin");
+        config.setUsername(StringUtil.replace(username.trim(), "\t", StringUtil.EMPTY));
+        config.setPassword(StringUtil.replace(password.trim(), "\t", StringUtil.EMPTY));
         config.setDriverClassName(properties.getProperty("dbsyncer.storage.mysql.driver-class-name"));
         logger.info("url:{}", config.getUrl());
         database = DatabaseUtil.getDatabaseName(config.getUrl());
@@ -114,26 +117,25 @@ public class MySQLStorageService extends AbstractStorageService {
         if (executor == null) {
             return;
         }
-        StringBuilder sql = new StringBuilder("DELETE FROM `").append(executor.getTable()).append("`");
+        StringBuilder sql = new StringBuilder("DELETE FROM ").append(StringUtil.BACK_QUOTE).append(executor.getTable()).append(StringUtil.BACK_QUOTE);
         List<Object> params = new ArrayList<>();
         buildQuerySqlWithParams(query, params, sql, new ArrayList<>());
-        final List<Object[]> args = params.stream().map(val -> new Object[]{val}).collect(Collectors.toList());
+        final List<Object[]> args = new ArrayList<>();
+        args.add(params.toArray());
         connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql.toString(), args));
     }
 
     @Override
     protected void deleteAll(String sharding) {
-        AtomicBoolean systemTable = new AtomicBoolean();
         tables.computeIfPresent(sharding, (k, executor) -> {
-            systemTable.set(executor.systemTable);
             String sql = getExecutorSql(executor, k);
             executeSql(sql);
+            // 非系统表
+            if (!executor.systemTable) {
+                return null;
+            }
             return executor;
         });
-        // 非系统表
-        if (!systemTable.get()) {
-            tables.remove(sharding);
-        }
     }
 
     @Override
@@ -213,7 +215,7 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     private Object[] getInsertArgs(Executor executor, Map params) {
-        return executor.getFields().stream().map(f -> params.get(f.getLabelName())).collect(Collectors.toList()).toArray();
+        return executor.getFields().stream().map(f -> params.get(f.getLabelName())).toArray();
     }
 
     private Object[] getUpdateArgs(Executor executor, Map params) {
@@ -287,17 +289,28 @@ public class MySQLStorageService extends AbstractStorageService {
             String name = UnderlineToCamelUtils.camelToUnderline(p.getName());
             switch (filterEnum) {
                 case EQUAL:
-                    sql.append(quotation).append(name).append(quotation).append(" = ?");
+                case NOT_EQUAL:
+                case LT:
+                case LT_AND_EQUAL:
+                case GT:
+                case GT_AND_EQUAL:
+                    sql.append(quotation).append(name).append(quotation).append(String.format(" %s ?", filterEnum.getName()));
                     args.add(p.getValue());
                     break;
                 case LIKE:
-                    sql.append(quotation).append(name).append(quotation).append(" LIKE ?");
+                    sql.append(quotation).append(name).append(quotation).append(String.format(" %s ?", filterEnum.getName()));
                     args.add(new StringBuilder("%").append(p.getValue()).append("%"));
                     break;
-                case LT:
-                    sql.append(quotation).append(name).append(quotation).append(" < ?");
-                    args.add(p.getValue());
+                case IN:
+                    sql.append(quotation).append(name).append(quotation).append(String.format(" %s ?", filterEnum.getName()));
+                    args.add(new StringBuilder("(").append(p.getValue()).append(")"));
                     break;
+                case IS_NULL:
+                case IS_NOT_NULL:
+                    sql.append(quotation).append(name).append(quotation).append(String.format(" %s ", filterEnum.getName()));
+                    break;
+                default:
+                    throw new MySQLException("Unsupported filter type: " + filterEnum.getName());
             }
             if (null != highLightKeys && p.isEnableHighLightSearch()) {
                 highLightKeys.add(p);
@@ -441,16 +454,16 @@ public class MySQLStorageService extends AbstractStorageService {
         // 开启高亮
         if (!CollectionUtils.isEmpty(list) && !CollectionUtils.isEmpty(highLightKeys)) {
             list.forEach(row ->
-                    highLightKeys.forEach(paramFilter -> {
-                        String text = String.valueOf(row.get(paramFilter.getName()));
-                        String replacement = new StringBuilder("<span style='color:red'>").append(paramFilter.getValue()).append("</span>").toString();
-                        row.put(paramFilter.getName(), StringUtil.replace(text, paramFilter.getValue(), replacement));
-                    })
+                highLightKeys.forEach(paramFilter -> {
+                    String text = String.valueOf(row.get(paramFilter.getName()));
+                    String replacement = "<span style='color:red'>" + paramFilter.getValue() + "</span>";
+                    row.put(paramFilter.getName(), StringUtil.replace(text, paramFilter.getValue(), replacement));
+                })
             );
         }
     }
 
-    final class FieldBuilder {
+    static final class FieldBuilder {
         Map<String, Field> fieldMap;
         List<Field> fields;
 
@@ -468,12 +481,11 @@ public class MySQLStorageService extends AbstractStorageService {
                     new Field(ConfigConstant.DATA_EVENT, "VARCHAR", Types.VARCHAR),
                     new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR),
                     new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB)
-            ).map(field -> {
+            ).peek(field -> {
                 field.setLabelName(field.getName());
                 // 转换列下划线
                 String labelName = UnderlineToCamelUtils.camelToUnderline(field.getName());
                 field.setName(labelName);
-                return field;
             }).collect(Collectors.toMap(Field::getLabelName, field -> field));
         }
 
@@ -492,16 +504,16 @@ public class MySQLStorageService extends AbstractStorageService {
         }
     }
 
-    final class Executor {
+    static final class Executor {
         private String table;
         private String query;
         private String insert;
         private String update;
         private String delete;
-        private String type;
-        private List<Field> fields;
-        private boolean systemTable;
-        private boolean orderByUpdateTime;
+        private final String type;
+        private final List<Field> fields;
+        private final boolean systemTable;
+        private final boolean orderByUpdateTime;
 
         public Executor(String type, List<Field> fields, boolean systemTable, boolean orderByUpdateTime) {
             this.type = type;

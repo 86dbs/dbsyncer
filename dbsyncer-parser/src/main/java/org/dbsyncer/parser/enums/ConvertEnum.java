@@ -108,13 +108,13 @@ public enum ConvertEnum {
     CLEAR("CLEAR", "清空", 0, new ClearHandler());
 
     // 转换编码
-    private String code;
+    private final String code;
     // 转换名称
-    private String name;
+    private final String name;
     // 参数个数
-    private int argNum;
+    private final int argNum;
     // 转换实现
-    private Handler handler;
+    private final Handler handler;
 
     ConvertEnum(String code, String name, int argNum, Handler handler) {
         this.code = code;

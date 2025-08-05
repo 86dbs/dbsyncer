@@ -26,8 +26,8 @@ public enum MessageDecoderEnum {
      */
     PG_OUTPUT("pgoutput", PgOutputMessageDecoder.class);
 
-    private String type;
-    private Class<?> clazz;
+    private final String type;
+    private final Class<?> clazz;
 
     MessageDecoderEnum(String type, Class<?> clazz) {
         this.type = type;

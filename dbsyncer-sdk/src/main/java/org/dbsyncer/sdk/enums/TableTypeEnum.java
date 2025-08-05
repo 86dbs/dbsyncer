@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.enums;
 
 /**
@@ -24,7 +27,7 @@ public enum TableTypeEnum {
      */
     MATERIALIZED_VIEW("MATERIALIZED VIEW");
 
-    private String code;
+    private final String code;
 
     TableTypeEnum(String code) {
         this.code = code;

@@ -21,9 +21,9 @@ public enum UserRoleEnum {
      */
     USER("user", "普通用户");
 
-    private String code;
+    private final String code;
 
-    private String name;
+    private final String name;
 
     UserRoleEnum(String code, String name) {
         this.code = code;

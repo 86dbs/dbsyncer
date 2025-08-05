@@ -3,12 +3,15 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
+import org.dbsyncer.biz.task.TableGroupCountTask;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -21,7 +24,13 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
@@ -39,6 +48,12 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     @Resource
     private ProfileComponent profileComponent;
 
+    @Resource
+    private ParserComponent parserComponent;
+
+    @Resource
+    private DispatchTaskService dispatchTaskService;
+
     @Override
     public String add(Map<String, String> params) {
         String mappingId = params.get("mappingId");
@@ -53,6 +68,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
             Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
 
             String id = null;
+            List<String> list = new ArrayList<>();
             for (int i = 0; i < tableSize; i++) {
                 params.put("sourceTable", sourceTableArray[i]);
                 params.put("targetTable", targetTableArray[i]);
@@ -61,12 +77,12 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
                 int tableGroupCount = profileComponent.getTableGroupCount(mappingId);
                 model.setIndex(tableGroupCount + 1);
                 id = profileComponent.addTableGroup(model);
+                list.add(id);
             }
+            submitTableGroupCountTask(mapping, list);
 
             // 合并驱动公共字段
             mergeMappingColumn(mapping);
-            // 更新meta
-            updateMeta(mapping, null);
             return 1 < tableSize ? String.valueOf(tableSize) : id;
         }
     }
@@ -82,8 +98,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
         log(LogType.TableGroupLog.UPDATE, model);
         profileComponent.editTableGroup(model);
-        // 更新meta
-        updateMeta(mapping, null);
+        List<String> list = new ArrayList<>();
+        list.add(model.getId());
+        submitTableGroupCountTask(mapping, list);
         return id;
     }
 
@@ -91,7 +108,6 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     public String refreshFields(String id) {
         TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        assertRunning(profileComponent.getMapping(tableGroup.getMappingId()));
 
         tableGroupChecker.refreshTableFields(tableGroup);
         return profileComponent.editTableGroup(tableGroup);
@@ -113,8 +129,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
         // 合并驱动公共字段
         mergeMappingColumn(mapping);
-        // 更新meta
-        updateMeta(mapping, null);
+        submitTableGroupCountTask(mapping, Collections.emptyList());
 
         // 重置排序
         resetTableGroupAllIndex(mappingId);
@@ -134,7 +149,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     @Override
-    public void updateMeta(Mapping mapping, String metaSnapshot) {
+    public Meta updateMeta(Mapping mapping, String metaSnapshot) {
         Meta meta = profileComponent.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "驱动meta不存在.");
 
@@ -153,6 +168,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
         meta.setUpdateTime(Instant.now().toEpochMilli());
         profileComponent.editConfigModel(meta);
+        return meta;
     }
 
     private void getMetaTotal(Meta meta, String model) {
@@ -212,6 +228,19 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
             }
         });
         return list;
+    }
+
+    /**
+     * 提交统计驱动表总数任务
+     */
+    private void submitTableGroupCountTask(Mapping mapping, List<String> list) {
+        TableGroupCountTask task = new TableGroupCountTask();
+        task.setMappingId(mapping.getId());
+        task.setTableGroups(list);
+        task.setParserComponent(parserComponent);
+        task.setProfileComponent(profileComponent);
+        task.setTableGroupService(this);
+        dispatchTaskService.execute(task);
     }
 
 }

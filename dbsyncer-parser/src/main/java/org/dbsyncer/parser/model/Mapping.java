@@ -57,22 +57,26 @@ public class Mapping extends AbstractConfigModel {
     // 覆盖写入
     private boolean forceUpdate = true;
 
+    // 数据校验
+    private boolean compareData = true;
+
+    // 数据订正
+    private boolean recoverData = true;
+
     public String getSourceConnectorId() {
         return sourceConnectorId;
     }
 
-    public Mapping setSourceConnectorId(String sourceConnectorId) {
+    public void setSourceConnectorId(String sourceConnectorId) {
         this.sourceConnectorId = sourceConnectorId;
-        return this;
     }
 
     public String getTargetConnectorId() {
         return targetConnectorId;
     }
 
-    public Mapping setTargetConnectorId(String targetConnectorId) {
+    public void setTargetConnectorId(String targetConnectorId) {
         this.targetConnectorId = targetConnectorId;
-        return this;
     }
 
     public List<Field> getSourceColumn() {
@@ -147,5 +151,21 @@ public class Mapping extends AbstractConfigModel {
 
     public void setForceUpdate(boolean forceUpdate) {
         this.forceUpdate = forceUpdate;
+    }
+
+    public boolean isCompareData() {
+        return compareData;
+    }
+
+    public void setCompareData(boolean compareData) {
+        this.compareData = compareData;
+    }
+
+    public boolean isRecoverData() {
+        return recoverData;
+    }
+
+    public void setRecoverData(boolean recoverData) {
+        this.recoverData = recoverData;
     }
 }

@@ -50,17 +50,22 @@ public final class BufferActuatorRouter implements DisposableBean {
 
     public void execute(String metaId, ChangedEvent event) {
         event.getChangedOffset().setMetaId(metaId);
-        if (router.containsKey(metaId)) {
-            router.computeIfPresent(metaId, (k, processor) -> {
-                processor.computeIfPresent(event.getSourceTableName(), (x, actuator) -> {
-                    offer(actuator, event);
-                    return actuator;
-                });
-                return processor;
+        router.compute(metaId, (k, processor) -> {
+            if (processor == null) {
+                offer(generalBufferActuator, event);
+                return null;
+            }
+
+            processor.compute(event.getSourceTableName(), (x, actuator) -> {
+                if (actuator == null) {
+                    offer(generalBufferActuator, event);
+                    return null;
+                }
+                offer(actuator, event);
+                return actuator;
             });
-            return;
-        }
-        offer(generalBufferActuator, event);
+            return processor;
+        });
     }
 
     public void bind(String metaId, List<TableGroup> tableGroups) {
@@ -69,6 +74,7 @@ public final class BufferActuatorRouter implements DisposableBean {
             for (TableGroup tableGroup : tableGroups) {
                 // 超过执行器上限
                 if (processor.size() >= tableGroupBufferConfig.getMaxBufferActuatorSize()) {
+                    logger.warn("Not allowed more than table processor limited size.  maxBufferActuatorSize:{}", tableGroupBufferConfig.getMaxBufferActuatorSize());
                     break;
                 }
                 final String tableName = tableGroup.getSourceTable().getName();

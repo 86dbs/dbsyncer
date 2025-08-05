@@ -24,8 +24,8 @@ public enum ModelEnum {
      */
     INCREMENT("increment", "增量");
 
-    private String code;
-    private String name;
+    private final String code;
+    private final String name;
 
     ModelEnum(String code, String name) {
         this.code = code;
@@ -49,15 +49,7 @@ public enum ModelEnum {
         return code;
     }
 
-    public void setCode(String code) {
-        this.code = code;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 }

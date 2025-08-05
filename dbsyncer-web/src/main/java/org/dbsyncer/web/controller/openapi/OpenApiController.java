@@ -56,10 +56,10 @@ public class OpenApiController implements InitializingBean {
     @Resource
     private ApplicationContext applicationContext;
 
-    private Map<String, String> parsePackage = new HashMap<>();
-    private Map<String, InvocableHandlerMethod> handlers = new ConcurrentHashMap<>();
-    private HandlerMethodArgumentResolverComposite resolvers = new HandlerMethodArgumentResolverComposite();
-    private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
+    private final Map<String, String> parsePackage = new HashMap<>();
+    private final Map<String, InvocableHandlerMethod> handlers = new ConcurrentHashMap<>();
+    private final HandlerMethodArgumentResolverComposite resolvers = new HandlerMethodArgumentResolverComposite();
+    private final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
     @ResponseBody
     @RequestMapping("/demo.json")
@@ -83,17 +83,15 @@ public class OpenApiController implements InitializingBean {
             String[] parameterNames = parameterNameDiscoverer.getParameterNames(invocableMethod.getMethod());
             logger.info(Arrays.toString(parameterNames));
             if (!ObjectUtils.isEmpty(parameterNames)) {
-                int length = parameterNames.length;
-                for (int i = 0; i < length; i++) {
-                    providedArgs.add(params.get(parameterNames[i]));
+                for (String parameterName : parameterNames) {
+                    providedArgs.add(params.get(parameterName));
                 }
             }
 
             ServletWebRequest webRequest = new ServletWebRequest(request, response);
             ModelAndViewContainer mavContainer = new ModelAndViewContainer();
             mavContainer.addAllAttributes(RequestContextUtils.getInputFlashMap(request));
-            Object invoke = invocableMethod.invokeForRequest(webRequest, mavContainer, providedArgs.toArray());
-            return invoke;
+            return invocableMethod.invokeForRequest(webRequest, mavContainer, providedArgs.toArray());
         } catch (Exception e) {
             logger.error(e.getMessage());
         }

@@ -11,12 +11,15 @@ ENV DBSYNCER_VERSION=${DBSYNCER_VERSION}
 WORKDIR /app
 COPY target/dbsyncer-$DBSYNCER_VERSION-bin.zip /app
 
-RUN unzip dbsyncer-$DBSYNCER_VERSION-bin.zip
+RUN unzip dbsyncer-$DBSYNCER_VERSION-bin.zip && \
+    rm -rf dbsyncer-$DBSYNCER_VERSION-bin.zip && \
+    mv dbsyncer-$DBSYNCER_VERSION dbsyncer
 
-RUN cd dbsyncer-$DBSYNCER_VERSION && \
+RUN cd dbsyncer && \
     cd bin && \
     chmod +x startup.sh \
     ./startup.sh
 
 EXPOSE 18686
-ENTRYPOINT ["/bin/bash","-c","/app/dbsyncer-${DBSYNCER_VERSION}/bin/startup-docker.sh"]
+VOLUME [ "/app/dbsyncer/conf", "/app/dbsyncer/data" ,"/app/dbsyncer/plugins"]
+ENTRYPOINT ["/bin/bash","-c","/app/dbsyncer/bin/startup-docker.sh"]

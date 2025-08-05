@@ -30,6 +30,45 @@ function refreshLoginUser() {
     });
 }
 
+// 刷新授权信息
+function refreshLicenseInfo() {
+    $(".license-info-item").addClass("hidden");
+    // 获取登录用户信息
+    doGetter("/license/query.json", {}, function (data) {
+        if (data.success == true) {
+            // 社区版
+            if (isBlank(data.resultValue.key)) {
+                return;
+            }
+            // 专业版
+            $("#licenseInfo").removeClass("hidden");
+            const $content = $("#effectiveContent");
+            const $effectiveTime = data.resultValue.effectiveTime;
+            if ($effectiveTime <= 0) {
+                $content.html("<span style=\"color:red\"><b>未激活</b></span>");
+                $content.removeClass("hidden");
+                return;
+            }
+            const $currentTime = data.resultValue.currentTime;
+            const $10days = 864000000;
+            // 有效期内
+            if ($currentTime < $effectiveTime && $effectiveTime - $10days > $currentTime) {
+                $("#licenseCheck").removeClass("hidden");
+            }
+            // 即将过期
+            else if ($currentTime < $effectiveTime && $effectiveTime - $10days <= $currentTime) {
+                $("#licenseRemind").removeClass("hidden");
+            }
+            // 已过期
+            else if ($currentTime > $effectiveTime) {
+                $("#licenseWarning").removeClass("hidden");
+            }
+            $content.html("&nbsp;" + data.resultValue.effectiveContent);
+            $content.removeClass("hidden");
+        }
+    });
+}
+
 // 跳转主页
 function backIndexPage(projectGroupId) {
     // 加载页面

@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.listener.event;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 
@@ -16,6 +17,10 @@ import org.dbsyncer.sdk.model.ChangedOffset;
 public abstract class CommonChangedEvent implements ChangedEvent {
 
     /**
+     * traceId
+     */
+    private String traceId = StringUtil.EMPTY;
+    /**
      * 变更表名称
      */
     private String sourceTableName;
@@ -27,6 +32,16 @@ public abstract class CommonChangedEvent implements ChangedEvent {
      * 增量偏移量
      */
     private final ChangedOffset changedOffset = new ChangedOffset();
+
+    @Override
+    public String getTraceId() {
+        return traceId;
+    }
+
+    @Override
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
+    }
 
     @Override
     public String getSourceTableName() {

@@ -42,7 +42,7 @@ public enum StatisticEnum {
      */
     DURATION("duration");
 
-    private String tagValueRepresentation;
+    private final String tagValueRepresentation;
 
     StatisticEnum(String tagValueRepresentation) {
         this.tagValueRepresentation = tagValueRepresentation;

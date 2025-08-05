@@ -161,6 +161,7 @@
                                                             [[${m?.meta?.model}]]同步>
                                                             <span th:if="${model eq 'full'}">
                                                                 总数:[[${total}]]
+                                                                <span th:if="${m?.meta?.counting}">(正在统计中)</span>
                                                                 <span th:if="${total gt 0 and (success + fail) gt 0}">,进度:[[${#numbers.formatPercent(((success + fail) / total), 2, 2)}]]</span>
                                                                 ,耗时:
                                                                 <span th:with="seconds=${(endTime - beginTime) / 1000}">

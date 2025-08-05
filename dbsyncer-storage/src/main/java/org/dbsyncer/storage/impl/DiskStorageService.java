@@ -169,8 +169,15 @@ public class DiskStorageService extends AbstractStorageService {
                     builder.add(DiskQueryHelper.newEqual(p), occur);
                     break;
                 case LT:
+                case LT_AND_EQUAL:
                     builder.add(DiskQueryHelper.newLessThan(p), occur);
                     break;
+                case GT:
+                case GT_AND_EQUAL:
+                    builder.add(DiskQueryHelper.newGreaterThan(p), occur);
+                    break;
+                default:
+                    throw new StorageException("Unsupported filter type: " + filterEnum.getName());
             }
 
             if (p.isEnableHighLightSearch()) {

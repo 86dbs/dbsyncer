@@ -1,6 +1,8 @@
 $(function () {
     // 绑定多值输入框事件
     initMultipleInputTags();
+    // 刷新授权信息
+    refreshLicenseInfo();
 
     new QRCode("qrcode", {
         text: "https://work.weixin.qq.com/u/vc7f073c9f993bc776?v=4.1.20.26620",

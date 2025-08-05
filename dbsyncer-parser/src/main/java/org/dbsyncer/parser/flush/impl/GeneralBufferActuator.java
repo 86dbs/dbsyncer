@@ -17,7 +17,6 @@ import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -35,7 +34,6 @@ import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
-import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,6 +112,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             response.setChangedOffset(request.getChangedOffset());
         }
         if (!response.isMerged()) {
+            response.setTraceId(request.getTraceId());
             response.setTableName(request.getTableName());
             response.setEvent(request.getEvent());
             response.setTypeEnum(request.getTypeEnum());
@@ -198,6 +197,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         context.setTargetConnectorInstance(connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())));
         context.setSourceTableName(tableGroup.getSourceTable().getName());
         context.setTargetTableName(tableGroup.getTargetTable().getName());
+        context.setTraceId(response.getTraceId());
         context.setEvent(response.getEvent());
         context.setTargetFields(tableGroupPicker.getTargetFields());
         context.setCommand(tableGroup.getCommand());
@@ -230,38 +230,35 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             ConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
             String sConnType = sConnConfig.getConnectorType();
             String tConnType = tConnConfig.getConnectorType();
-            // 0.生成目标表执行SQL(暂支持同源)
-            if (!StringUtil.equals(sConnType, tConnType)) {
-                logger.warn("暂只支持数据库同源并且是关系性解析DDL");
-                return;
-            }
-            // 1.转换为目标SQL，执行到目标库
-            String targetTableName = tableGroup.getTargetTable().getName();
             ConnectorService connectorService = connectorFactory.getConnectorService(tConnType);
             DDLConfig targetDDLConfig = ddlParser.parse(connectorService, tableGroup, response.getSql());
-            ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
-            Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
-            result.setTableGroupId(tableGroup.getId());
-            result.setTargetTableGroupName(targetTableName);
+            // 1.生成目标表执行SQL(暂支持同源)
+            if (mapping.getListener().isEnableDDL() && StringUtil.equals(sConnType, tConnType)) {
+                ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
+                Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
+                // 2.持久化增量事件数据
+                result.setTableGroupId(tableGroup.getId());
+                result.setTargetTableGroupName(tableGroup.getTargetTable().getName());
+                flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
+            }
 
-            // 2.获取目标表最新的属性字段
+            // 3.更新表属性字段
             MetaInfo sourceMetaInfo = parserComponent.getMetaInfo(mapping.getSourceConnectorId(), tableGroup.getSourceTable().getName());
-            MetaInfo targetMetaInfo = parserComponent.getMetaInfo(mapping.getTargetConnectorId(), targetTableName);
-
-            // 3.更新表字段映射(根据保留的更改的属性，进行更改)
+            MetaInfo targetMetaInfo = parserComponent.getMetaInfo(mapping.getTargetConnectorId(), tableGroup.getTargetTable().getName());
             tableGroup.getSourceTable().setColumn(sourceMetaInfo.getColumn());
             tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
+
+            // 4.更新表字段映射关系
             ddlParser.refreshFiledMappings(tableGroup, targetDDLConfig);
 
-            // 4.更新执行命令
+            // 5.更新执行命令
             tableGroup.setCommand(parserComponent.getCommand(mapping, tableGroup));
 
-            // 5.持久化存储 & 更新缓存配置
+            // 6.持久化存储 & 更新缓存配置
             profileComponent.editTableGroup(tableGroup);
 
-            // 6.发布更新事件，持久化增量数据
+            // 7.发布更新事件
             applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
-            flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }

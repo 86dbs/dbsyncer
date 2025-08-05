@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.enums;
 
 /**

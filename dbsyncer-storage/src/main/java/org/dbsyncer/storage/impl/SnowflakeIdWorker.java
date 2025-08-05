@@ -73,7 +73,7 @@ public class SnowflakeIdWorker {
     public SnowflakeId revert(Long id) {
         long workerId = id >> workerIdShift & ~(-1L << workerIdBits);
         long dataCenterId = id >> dataCenterIdShift & ~(-1L << dataCenterIdBits);
-        long timestamp = new Long(id >> timestampLeftShift) + twepoch;
+        long timestamp = (id >> timestampLeftShift) + twepoch;
         return new SnowflakeId(workerId, dataCenterId, timestamp);
     }
 
@@ -153,10 +153,10 @@ public class SnowflakeIdWorker {
         this.dataCenterId = dataCenterId;
     }
 
-    private class SnowflakeId {
-        private long workerId;
-        private long dataCenterId;
-        private long timestamp;
+    static class SnowflakeId {
+        private final long workerId;
+        private final long dataCenterId;
+        private final long timestamp;
 
         public SnowflakeId(long workerId, long dataCenterId, long timestamp) {
             this.workerId = workerId;

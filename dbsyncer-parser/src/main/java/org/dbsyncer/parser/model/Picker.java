@@ -37,7 +37,7 @@ public class Picker {
         this.tFieldSize = targetFields.size();
         // 解析过滤条件
         List<Filter> filter = tableGroup.getFilter();
-        enabledFilter = !CollectionUtils.isEmpty(filter);
+        enabledFilter = !CollectionUtils.isEmpty(filter) && filter.stream().noneMatch(f -> StringUtil.equals(f.getOperation(), OperationEnum.SQL.getName()));
         if (enabledFilter) {
             add = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), OperationEnum.AND.getName())).collect(Collectors.toList());
             or = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), OperationEnum.OR.getName())).collect(Collectors.toList());

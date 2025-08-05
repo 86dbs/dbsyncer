@@ -56,11 +56,13 @@ function bindRemoveProjectGroup($projectGroupSelect) {
 
 // 给分组下拉绑定事件
 function bindProjectGroupSelect($projectGroupSelect) {
-    // 绑定选择事件
-    $projectGroupSelect.on('change, changed.bs.select', function () {
+    $projectGroupSelect.off('change changed.bs.select');
+
+    $projectGroupSelect.on('change', function () {
         $.loadingT(true);
         doLoader("/index?projectGroupId=" + $(this).val());
     });
+
 }
 
 // 添加连接

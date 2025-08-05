@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<nav th:fragment="nav" class="navbar navbar-inverse" role="navigation" >
+<nav th:fragment="nav" class="navbar navbar-default" role="navigation" >
     <div class="container-fluid">
         <div class="navbar-header">
             <img draggable="false" th:src="@{'/img/logo.png'}" style="width: 50px; height: 50px;">&nbsp;
@@ -25,6 +25,15 @@
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
+                <li id="licenseInfo" class="hidden license-info-item">
+                    <a href="javascript:void(0);" style="cursor:default">
+                        专业版&nbsp;
+                        <img id="licenseCheck" class="hidden license-info-item" draggable="false" title="已激活" width="17px" height="17px" th:src="@{'/img/license/check.png'}">
+                        <img id="licenseRemind" class="hidden license-info-item" draggable="false" title="即将过期, 请联系星河同步官方续期" width="17px" height="17px" th:src="@{'/img/license/remind.png'}">
+                        <img id="licenseWarning" class="hidden license-info-item" draggable="false" title="已过期, 请联系星河同步官方续期" width="17px" height="17px" th:src="@{'/img/license/warning.png'}">
+                        <span id="effectiveContent" class="hidden license-info-item"></span>
+                    </a>
+                </li>
                 <li class="dropdown">
                     <a href="javascript:void(0);" class="dropdown-toggle" data-toggle="dropdown"><span id="currentUser"></span></a>
                     <ul class="dropdown-menu">

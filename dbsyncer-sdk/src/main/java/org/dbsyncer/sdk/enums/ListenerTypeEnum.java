@@ -18,7 +18,7 @@ public enum ListenerTypeEnum {
      */
     LOG("log");
 
-    private String type;
+    private final String type;
 
     ListenerTypeEnum(String type) {
         this.type = type;

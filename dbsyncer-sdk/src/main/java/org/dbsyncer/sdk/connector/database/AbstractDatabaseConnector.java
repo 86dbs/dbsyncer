@@ -7,18 +7,26 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
-import org.dbsyncer.sdk.config.*;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
-import org.dbsyncer.sdk.model.*;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Filter;
+import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
@@ -36,7 +44,15 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -94,14 +110,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             String schemaNamePattern = null == schema ? conn.getSchema() : schema;
             DatabaseMetaData metaData = conn.getMetaData();
             List<String> primaryKeys = findTablePrimaryKeys(metaData, catalog, schemaNamePattern, tableNamePattern);
-            ResultSet columnMetadata = metaData.getColumns(catalog, schemaNamePattern, tableNamePattern, null);
-            while (columnMetadata.next()) {
-                String columnName = columnMetadata.getString(4);
-                int columnType = columnMetadata.getInt(5);
-                String typeName = columnMetadata.getString(6);
-                int columnSize = columnMetadata.getInt(7);
-                int ratio = columnMetadata.getInt(9);
-                fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio));
+            try (ResultSet columnMetadata = metaData.getColumns(catalog, schemaNamePattern, tableNamePattern, null)) {
+                while (columnMetadata.next()) {
+                    String columnName = columnMetadata.getString("COLUMN_NAME");
+                    int columnType = columnMetadata.getInt("DATA_TYPE");
+                    String typeName = columnMetadata.getString("TYPE_NAME");
+                    int columnSize = Math.max(0, columnMetadata.getInt("COLUMN_SIZE"));
+                    int ratio = Math.max(0, columnMetadata.getInt("DECIMAL_DIGITS"));
+                    fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio));
+                }
             }
             return fields;
         });
@@ -357,22 +374,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * 获取查询总数SQL
-     *
-     * @param commandConfig
-     * @param primaryKeys
-     * @param schema
-     * @param queryFilterSql
-     * @return
-     */
-    protected String getQueryCountSql(CommandConfig commandConfig, List<String> primaryKeys, String schema, String queryFilterSql) {
-        Table table = commandConfig.getTable();
-        String tableName = table.getName();
-        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, table.getColumn(), queryFilterSql);
-        return SqlBuilderEnum.QUERY_COUNT.getSqlBuilder().buildSql(config);
-    }
-
-    /**
      * 获取查询条件SQL
      *
      * @param commandConfig
@@ -405,12 +406,32 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
         sql.append(orSql);
 
+        // 自定义SQL
+        Optional<Filter> sqlFilter = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), OperationEnum.SQL.getName())).findFirst();
+        sqlFilter.ifPresent(f -> sql.append(f.getValue()));
+
         // 如果有条件加上 WHERE
         if (StringUtil.isNotBlank(sql.toString())) {
             // WHERE (USER.USERNAME = 'zhangsan' AND USER.AGE='20') OR (USER.TEL='18299996666')
             sql.insert(0, " WHERE ");
         }
         return sql.toString();
+    }
+
+    /**
+     * 获取查询总数SQL
+     *
+     * @param commandConfig
+     * @param primaryKeys
+     * @param schema
+     * @param queryFilterSql
+     * @return
+     */
+    private String getQueryCountSql(CommandConfig commandConfig, List<String> primaryKeys, String schema, String queryFilterSql) {
+        Table table = commandConfig.getTable();
+        String tableName = table.getName();
+        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, table.getColumn(), queryFilterSql);
+        return SqlBuilderEnum.QUERY_COUNT.getSqlBuilder().buildSql(config);
     }
 
     /**
@@ -449,10 +470,37 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             List<Table> tables = new ArrayList<>();
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
-            String databaseCatalog = null == catalog ? conn.getCatalog() : catalog;
-            String schemaNamePattern = null == schema ? conn.getSchema() : schema;
+            DatabaseMetaData metaData = conn.getMetaData();
+            String dbProductName = metaData.getDatabaseProductName().toLowerCase();
+            // 兼容处理 schema 和 catalog
+            String effectiveCatalog = null;
+            String effectiveSchema = null;
+            if (dbProductName.contains("mysql") || dbProductName.contains("mariadb")) {
+                // MySQL: schema=null, catalog=database name
+                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
+            } else if (dbProductName.contains("oracle")) {
+                // Oracle: schema=用户名（大写），catalog=null
+                effectiveSchema = (schema != null) ? schema : conn.getSchema();
+                if (effectiveSchema != null) {
+                    effectiveSchema = effectiveSchema.toUpperCase();
+                }
+            } else if (dbProductName.contains("postgresql")) {
+                // PostgreSQL: schema=public 等，catalog=数据库名
+                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
+                effectiveSchema = (schema != null) ? schema : "public";
+            } else if (dbProductName.contains("sql server")) {
+                // SQL Server: catalog=数据库名，schema=如 dbo
+                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
+                effectiveSchema = (schema != null) ? schema : "dbo";
+            } else {
+                // 其他数据库按默认处理
+                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
+                effectiveSchema = (schema != null) ? schema : conn.getSchema();
+            }
+
             String[] types = {TableTypeEnum.TABLE.getCode(), TableTypeEnum.VIEW.getCode(), TableTypeEnum.MATERIALIZED_VIEW.getCode()};
-            final ResultSet rs = conn.getMetaData().getTables(databaseCatalog, schemaNamePattern, tableNamePattern, types);
+            final ResultSet rs = conn.getMetaData().getTables(effectiveCatalog, effectiveSchema, tableNamePattern, types);
+            logger.info("Using dbProductName：{}, catalog: {}, schema: {}", dbProductName, effectiveCatalog, effectiveSchema);
             while (rs.next()) {
                 final String tableName = rs.getString("TABLE_NAME");
                 final String tableType = rs.getString("TABLE_TYPE");
@@ -466,12 +514,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * 根据过滤条件获取查询SQL
      *
      * @param fieldMap
-     * @param queryOperator and/or
+     * @param queryOperator {@link OperationEnum}
      * @param filter
      * @return
      */
-    private String buildFilterSql(Map<String, Field> fieldMap, String queryOperator, List<Filter> filter) {
-        List<Filter> list = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), queryOperator)).collect(Collectors.toList());
+    private String buildFilterSql(Map<String, Field> fieldMap, String operator, List<Filter> filter) {
+        List<Filter> list = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), operator)).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(list)) {
             return "";
         }
@@ -490,11 +538,26 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             sql.append(quotation);
             sql.append(buildFieldName(field));
             sql.append(quotation);
-            sql.append(" ").append(c.getFilter()).append(" ");
             // 如果使用了函数则不加引号
-            sql.append(buildFilterValue(c.getValue()));
+            FilterEnum filterEnum = FilterEnum.getFilterEnum(c.getFilter());
+            switch (filterEnum) {
+                case IN:
+                    sql.append(StringUtil.SPACE).append(FilterEnum.IN.getName()).append(StringUtil.SPACE).append("(");
+                    sql.append(c.getValue());
+                    sql.append(")");
+                    break;
+                case IS_NULL:
+                case IS_NOT_NULL:
+                    sql.append(StringUtil.SPACE).append(filterEnum.getName().toUpperCase()).append(StringUtil.SPACE);
+                    break;
+                default:
+                    // > 10
+                    sql.append(StringUtil.SPACE).append(c.getFilter()).append(StringUtil.SPACE);
+                    sql.append(buildFilterValue(c.getValue()));
+                    break;
+            }
             if (i < end) {
-                sql.append(" ").append(queryOperator).append(" ");
+                sql.append(StringUtil.SPACE).append(operator).append(StringUtil.SPACE);
             }
         }
         sql.append(")");
@@ -507,7 +570,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * @param value
      * @return
      */
-    protected String buildFilterValue(String value) {
+    private String buildFilterValue(String value) {
         if (StringUtil.isNotBlank(value)) {
             // 排除定时表达式
             if (QuartzFilterEnum.getQuartzFilterEnum(value) == null) {
@@ -518,7 +581,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 }
             }
         }
-        return new StringBuilder(StringUtil.SINGLE_QUOTATION).append(value).append(StringUtil.SINGLE_QUOTATION).toString();
+        return StringUtil.SINGLE_QUOTATION + value + StringUtil.SINGLE_QUOTATION;
     }
 
     /**
@@ -582,7 +645,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             }
             final String event = existRow(connectorInstance, queryCount, args) ? ConnectorConstant.OPERTION_UPDATE
                     : ConnectorConstant.OPERTION_INSERT;
-            logger.warn("{}表执行{}失败, 重新执行{}, {}", context.getTargetTableName(), context.getEvent(), event, row);
+            logger.warn("{} {}表执行{}失败, 重新执行{}, {}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, row);
             writer(result, connectorInstance, context, pkFields, row, event);
         }
     }
@@ -607,12 +670,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             // 2、设置参数
             int execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql, batchRow(fields, row)));
             if (execute == 0) {
-                throw new SdkException(String.format("尝试执行[%s]失败", event));
+                throw new SdkException(String.format("%s 尝试执行[%s]失败", context.getTraceId(), event));
             }
             result.getSuccessData().add(row);
         } catch (Exception e) {
             result.getFailData().add(row);
-            result.getError().append("SQL:").append(sql).append(System.lineSeparator())
+            result.getError().append(context.getTraceId())
+                    .append(" SQL:").append(sql).append(System.lineSeparator())
                     .append("DATA:").append(row).append(System.lineSeparator())
                     .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
             logger.error("执行{}失败: {}, DATA:{}", event, e.getMessage(), row);
