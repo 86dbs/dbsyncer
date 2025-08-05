@@ -9,7 +9,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.Node;
 import org.slf4j.Logger;
@@ -21,8 +20,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * Kafka客户端，集成消费者、生产者API
@@ -36,7 +33,7 @@ public class KafkaClient {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private KafkaConsumer consumer;
-    private KafkaProducer producer;
+    public KafkaProducer producer;
     private NetworkClient networkClient;
 
     public KafkaClient(KafkaConsumer consumer, KafkaProducer producer) {
@@ -102,12 +99,8 @@ public class KafkaClient {
         return consumer.poll(timeout);
     }
 
-    public void send(String topic, String key, Map<String, Object> map) throws ExecutionException, InterruptedException {
-        Future<RecordMetadata> future = producer.send(new ProducerRecord<>(topic, key, map));
-        // 刷新缓冲区，确保消息发送
-        producer.flush();
-        // 等待发送完成，实现同步发送
-        future.get();
+    public void send(String topic, String key, Map<String, Object> map) {
+        producer.send(new ProducerRecord<>(topic, key, map));
     }
 
 }
