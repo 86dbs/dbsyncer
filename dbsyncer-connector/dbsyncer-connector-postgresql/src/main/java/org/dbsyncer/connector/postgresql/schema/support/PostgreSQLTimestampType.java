@@ -7,6 +7,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.TimestampType;
 
 import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,6 +40,10 @@ public class PostgreSQLTimestampType extends TimestampType {
 
     @Override
     protected Timestamp merge(Object val, Field field) {
+        if (val instanceof OffsetDateTime) {
+            OffsetDateTime offsetDateTime = (OffsetDateTime) val;
+            return Timestamp.from(offsetDateTime.toInstant());
+        }
         return throwUnsupportedException(val, field);
     }
 }
