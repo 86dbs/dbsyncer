@@ -6,6 +6,6 @@ public interface Puller {
 
     void start(Mapping mapping);
 
-    void close(String metaId);
+    void close();
 
 }

@@ -11,6 +11,7 @@ import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
+import org.springframework.context.ApplicationContext;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.consumer.ParserConsumer;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
@@ -26,14 +27,10 @@ import org.dbsyncer.sdk.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
-import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -43,40 +40,46 @@ import java.util.stream.Collectors;
  * @Author AE86
  * @Date 2020-04-26 15:28
  */
-@Component
 public final class IncrementPuller extends AbstractPuller implements ApplicationListener<RefreshOffsetEvent>, ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Resource
-    private BufferActuatorRouter bufferActuatorRouter;
+    
+    private final BufferActuatorRouter bufferActuatorRouter;
+    private final ScheduledTaskService scheduledTaskService;
+    private final ConnectorFactory connectorFactory;
+    private final ProfileComponent profileComponent;
+    private final LogService logService;
+    private final TableGroupContext tableGroupContext;
 
-    @Resource
-    private ScheduledTaskService scheduledTaskService;
+    // 由于每个mapping有独立的puller，所以可以简化为单个Listener实例
+    private Listener listener;
+    private String metaId;
 
-    @Resource
-    private ConnectorFactory connectorFactory;
+    public IncrementPuller(ApplicationContext applicationContext,
+                           BufferActuatorRouter bufferActuatorRouter,
+                           ScheduledTaskService scheduledTaskService,
+                           ConnectorFactory connectorFactory,
+                           ProfileComponent profileComponent,
+                           LogService logService,
+                           TableGroupContext tableGroupContext) {
+        super(applicationContext);
+        this.bufferActuatorRouter = bufferActuatorRouter;
+        this.scheduledTaskService = scheduledTaskService;
+        this.connectorFactory = connectorFactory;
+        this.profileComponent = profileComponent;
+        this.logService = logService;
+        this.tableGroupContext = tableGroupContext;
+    }
 
-    @Resource
-    private ProfileComponent profileComponent;
-
-    @Resource
-    private LogService logService;
-
-    @Resource
-    private TableGroupContext tableGroupContext;
-
-    private final Map<String, Listener> map = new ConcurrentHashMap<>();
-
-    @PostConstruct
-    private void init() {
+    public void init() {
         scheduledTaskService.start(3000, this);
     }
 
     @Override
     public void start(Mapping mapping) {
         final String mappingId = mapping.getId();
-        final String metaId = mapping.getMetaId();
+        metaId = mapping.getMetaId();
         Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
         List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
@@ -86,17 +89,16 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
         Thread worker = new Thread(() -> {
             try {
-                map.computeIfAbsent(metaId, k-> {
-                    logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
-                    long now = Instant.now().toEpochMilli();
-                    meta.setBeginTime(now);
-                    meta.setEndTime(now);
-                    profileComponent.editConfigModel(meta);
-                    tableGroupContext.put(mapping, list);
-                    return getListener(mapping, connector, list, meta);
-                }).start();
+                listener = getListener(mapping, connector, list, meta);
+                logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
+                long now = Instant.now().toEpochMilli();
+                meta.setBeginTime(now);
+                meta.setEndTime(now);
+                profileComponent.editConfigModel(meta);
+                tableGroupContext.put(mapping, list);
+                listener.start();
             } catch (Exception e) {
-                close(metaId);
+                close();
                 logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
                 logger.error("运行异常，结束增量同步{}:{}", metaId, e.getMessage());
             }
@@ -107,31 +109,30 @@ public final class IncrementPuller extends AbstractPuller implements Application
     }
 
     @Override
-    public void close(String metaId) {
-        map.compute(metaId, (k, listener)->{
-            if (listener != null) {
-                listener.close();
-            }
-            bufferActuatorRouter.unbind(metaId);
-            tableGroupContext.clear(metaId);
-            publishClosedEvent(metaId);
-            logger.info("关闭成功:{}", metaId);
-            return null;
-        });
+    public void close() {
+        if (listener != null) {
+            listener.close();
+        }
+        bufferActuatorRouter.unbind(metaId);
+        tableGroupContext.clear(metaId);
+        publishClosedEvent(metaId);
+        logger.info("关闭成功:{}", metaId);
     }
 
     @Override
     public void onApplicationEvent(RefreshOffsetEvent event) {
         ChangedOffset offset = event.getChangedOffset();
-        if (offset != null && map.containsKey(offset.getMetaId())) {
-            map.get(offset.getMetaId()).refreshEvent(offset);
+        if (offset != null && this.metaId != null && this.metaId.equals(offset.getMetaId()) && listener != null) {
+            listener.refreshEvent(offset);
         }
     }
 
     @Override
     public void run() {
         // 定时同步增量信息
-        map.values().forEach(Listener::flushEvent);
+        if (listener != null) {
+            listener.flushEvent();
+        }
     }
 
     private Listener getListener(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta) {
