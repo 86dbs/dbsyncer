@@ -6,6 +6,7 @@ package org.dbsyncer.sdk;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.ProductInfo;
 import org.dbsyncer.sdk.spi.LicenseService;
+import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,4 +51,16 @@ public class SdkSupportConfiguration {
             }
         };
     }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ServiceFactory serviceRegistry() {
+        return new ServiceFactory() {
+            @Override
+            public <T> T get(Class<T> serviceClass) {
+                throw new SdkException("Unsupported method");
+            }
+        };
+    }
+
 }

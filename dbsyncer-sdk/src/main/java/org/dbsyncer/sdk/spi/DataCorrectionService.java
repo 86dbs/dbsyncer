@@ -1,0 +1,23 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
+package org.dbsyncer.sdk.spi;
+
+/**
+ * 数据订正服务
+ *
+ * @Author 穿云
+ * @Version 1.0.0
+ * @Date 2025-05-12 23:37
+ */
+public interface DataCorrectionService {
+
+    /**
+     * 数据订正
+     *
+     * @param mappingId 驱动id
+     * @return 任务id
+     */
+    String correct(String mappingId);
+
+}
