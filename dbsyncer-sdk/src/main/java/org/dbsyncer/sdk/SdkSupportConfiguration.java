@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 import java.io.File;
 import java.util.ServiceLoader;
@@ -54,11 +55,16 @@ public class SdkSupportConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    @DependsOn(value = "licenseService")
     public ServiceFactory serviceRegistry() {
+        ServiceLoader<ServiceFactory> services = ServiceLoader.load(ServiceFactory.class, Thread.currentThread().getContextClassLoader());
+        for (ServiceFactory s : services) {
+            return s;
+        }
         return new ServiceFactory() {
             @Override
             public <T> T get(Class<T> serviceClass) {
-                throw new SdkException("Unsupported method");
+                return null;
             }
         };
     }

@@ -9,6 +9,8 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
+import org.dbsyncer.sdk.spi.ServiceFactory;
+import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -42,6 +44,9 @@ public final class BufferActuatorRouter implements DisposableBean {
 
     @Resource
     private GeneralBufferActuator generalBufferActuator;
+
+    @Resource
+    private ServiceFactory serviceFactory;
 
     /**
      * 驱动缓存执行路由列表
@@ -81,7 +86,13 @@ public final class BufferActuatorRouter implements DisposableBean {
                 processor.computeIfAbsent(tableName, name -> {
                     TableGroupBufferActuator newBufferActuator = null;
                     try {
-                        newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuator.clone();
+                        TableGroupBufferActuatorService service = serviceFactory.get(TableGroupBufferActuatorService.class);
+                        if (service instanceof TableGroupBufferActuator) {
+                            TableGroupBufferActuator temp = (TableGroupBufferActuator) service;
+                            newBufferActuator = (TableGroupBufferActuator) temp.clone();
+                        } else {
+                            newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuator.clone();
+                        }
                         newBufferActuator.setTableName(name);
                         newBufferActuator.buildConfig();
                     } catch (CloneNotSupportedException ex) {

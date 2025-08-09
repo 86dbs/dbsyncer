@@ -11,6 +11,7 @@ import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.parser.flush.BufferRequest;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.concurrent.Executor;
@@ -22,6 +23,7 @@ import java.util.concurrent.Executor;
  * @Author AE86
  * @Date 2023-03-27 16:50
  */
+@Component
 public class TableGroupBufferActuator extends GeneralBufferActuator implements Cloneable, TableGroupBufferActuatorService {
 
     @Resource
