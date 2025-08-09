@@ -56,7 +56,7 @@ public class SdkSupportConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @DependsOn(value = "licenseService")
-    public ServiceFactory serviceRegistry() {
+    public ServiceFactory serviceFactory() {
         ServiceLoader<ServiceFactory> services = ServiceLoader.load(ServiceFactory.class, Thread.currentThread().getContextClassLoader());
         for (ServiceFactory s : services) {
             return s;
