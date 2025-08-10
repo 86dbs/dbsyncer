@@ -6,11 +6,9 @@ package org.dbsyncer.sdk;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.ProductInfo;
 import org.dbsyncer.sdk.spi.LicenseService;
-import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 
 import java.io.File;
 import java.util.ServiceLoader;
@@ -49,22 +47,6 @@ public class SdkSupportConfiguration {
             @Override
             public void updateLicense() {
 
-            }
-        };
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    @DependsOn(value = "licenseService")
-    public ServiceFactory serviceFactory() {
-        ServiceLoader<ServiceFactory> services = ServiceLoader.load(ServiceFactory.class, Thread.currentThread().getContextClassLoader());
-        for (ServiceFactory s : services) {
-            return s;
-        }
-        return new ServiceFactory() {
-            @Override
-            public <T> T get(Class<T> serviceClass) {
-                return null;
             }
         };
     }
