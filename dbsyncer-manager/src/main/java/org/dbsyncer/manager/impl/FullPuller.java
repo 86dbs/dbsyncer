@@ -16,7 +16,6 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
-import org.springframework.context.ApplicationContext;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,27 +39,21 @@ import java.util.concurrent.Executors;
  * @Author AE86
  * @Date 2020-04-26 15:28
  */
+@Component
 public final class FullPuller extends AbstractPuller implements ApplicationListener<FullRefreshEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final ParserComponent parserComponent;
+    @Resource
+    private ParserComponent parserComponent;
 
-    private final ProfileComponent profileComponent;
+    @Resource
+    private ProfileComponent profileComponent;
 
-    private final LogService logService;
+    @Resource
+    private LogService logService;
 
-    private Task task;
-
-    public FullPuller(ApplicationContext applicationContext,
-                      ParserComponent parserComponent, 
-                      ProfileComponent profileComponent,
-                      LogService logService) {
-        super(applicationContext);
-        this.parserComponent = parserComponent;
-        this.profileComponent = profileComponent;
-        this.logService = logService;
-    }
+    private final Map<String, Task> map = new ConcurrentHashMap<>();
 
     @Override
     public void start(Mapping mapping) {
@@ -70,7 +63,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             final String metaId = mapping.getMetaId();
             ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());
             try {
-                task = new Task(metaId);
+                Task task = map.computeIfAbsent(metaId, k -> new Task(metaId));
                 logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
                 doTask(task, mapping, list, executor);
             } catch (Exception e) {
@@ -82,7 +75,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
                 } catch (Exception e) {
                     logService.log(LogType.SystemLog.ERROR, e.getMessage());
                 }
-                task = null;
+                map.remove(metaId);
                 publishClosedEvent(metaId);
                 logger.info("结束全量同步：{}, {}", metaId, mapping.getName());
             }
@@ -93,10 +86,11 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     }
 
     @Override
-    public void close() {
-        if (task != null) {
+    public void close(String metaId) {
+        map.computeIfPresent(metaId, (k, task) -> {
             task.stop();
-        }
+            return null;
+        });
     }
 
     @Override
