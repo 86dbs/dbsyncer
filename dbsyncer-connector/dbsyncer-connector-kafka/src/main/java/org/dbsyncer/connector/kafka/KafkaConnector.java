@@ -125,7 +125,6 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
             
             formattedData.forEach(row -> kafkaClient.send(topic, String.valueOf(row.get(pk)), row));
             kafkaClient.producer.flush();
-            logger.debug("----kafka wrote topic: {}, number: {}", topic, formattedData.size());
             result.addSuccessData(formattedData);
         } catch (Exception e) {
             // 记录错误数据
