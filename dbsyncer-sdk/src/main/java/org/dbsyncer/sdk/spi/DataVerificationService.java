@@ -10,5 +10,14 @@ package org.dbsyncer.sdk.spi;
  * @Version 1.0.0
  * @Date 2025-05-12 23:36
  */
-public interface CompareDataService {
+public interface DataVerificationService {
+
+    /**
+     * 数据校验
+     *
+     * @param mappingId 驱动id
+     * @return 任务id
+     */
+    String verify(String mappingId);
+
 }
