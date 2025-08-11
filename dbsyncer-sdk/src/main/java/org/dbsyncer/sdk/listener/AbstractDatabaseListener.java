@@ -140,10 +140,13 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
     }
 
     private Map<Integer, Integer> getPKIndexMap(List<Field> column, Map<String, Integer> tablePKIndexMap) {
+        Map<String, Integer> lowerCasePKMap = new HashMap<>();
+        tablePKIndexMap.forEach((k, v) -> lowerCasePKMap.put(k.toLowerCase(), v));
         Map<Integer, Integer> map = new HashMap<>();
         for (int i = 0; i < column.size(); i++) {
             final int index = i;
-            tablePKIndexMap.computeIfPresent(column.get(i).getName(), (k, v) -> map.put(index, v));
+            String colNameLower = column.get(i).getName().toLowerCase();
+            lowerCasePKMap.computeIfPresent(colNameLower, (k, v) -> map.put(index, v));
         }
         return map;
     }
