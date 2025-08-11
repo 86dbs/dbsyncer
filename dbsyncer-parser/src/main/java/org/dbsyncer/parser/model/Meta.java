@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.model;
 
+import com.alibaba.fastjson2.annotation.JSONField;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
@@ -31,6 +32,8 @@ public class Meta extends ConfigModel {
     private Map<String, String> snapshot;
     private long beginTime;
     private long endTime;
+    @JSONField(serialize = false)
+    private Task task;
 
     public Meta() {
         super.setType(ConfigConstant.META);
@@ -117,5 +120,13 @@ public class Meta extends ConfigModel {
 
     public void setEndTime(long endTime) {
         this.endTime = endTime;
+    }
+
+    public Task getTask() {
+        return task;
+    }
+
+    public void setTask(Task task) {
+        this.task = task;
     }
 }

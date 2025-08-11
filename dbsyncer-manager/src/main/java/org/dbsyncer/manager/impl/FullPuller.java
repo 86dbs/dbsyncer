@@ -53,8 +53,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     @Resource
     private LogService logService;
 
-    private final Map<String, Task> map = new ConcurrentHashMap<>();
-
     @Override
     public void start(Mapping mapping) {
         List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
@@ -63,7 +61,12 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             final String metaId = mapping.getMetaId();
             ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());
             try {
-                Task task = map.computeIfAbsent(metaId, k -> new Task(metaId));
+                Meta meta = profileComponent.getMeta(metaId);
+                Task task = meta.getTask();
+                if (task == null) {
+                    task = new Task(metaId);
+                    meta.setTask(task);
+                }
                 logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
                 doTask(task, mapping, list, executor);
             } catch (Exception e) {
@@ -75,7 +78,13 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
                 } catch (Exception e) {
                     logService.log(LogType.SystemLog.ERROR, e.getMessage());
                 }
-                map.remove(metaId);
+                
+                // 清除task引用
+                Meta meta = profileComponent.getMeta(metaId);
+                if (meta != null) {
+                    meta.setTask(null);
+                }
+                
                 publishClosedEvent(metaId);
                 logger.info("结束全量同步：{}, {}", metaId, mapping.getName());
             }
@@ -87,10 +96,14 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     @Override
     public void close(String metaId) {
-        map.computeIfPresent(metaId, (k, task) -> {
-            task.stop();
-            return null;
-        });
+        Meta meta = profileComponent.getMeta(metaId);
+        if (meta != null) {
+            Task task = meta.getTask();
+            if (task != null) {
+                task.stop();
+                meta.setTask(null);
+            }
+        }
     }
 
     @Override
