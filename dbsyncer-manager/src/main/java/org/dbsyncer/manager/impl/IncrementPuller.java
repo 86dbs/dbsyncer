@@ -66,8 +66,6 @@ public final class IncrementPuller extends AbstractPuller implements Application
     @Resource
     private TableGroupContext tableGroupContext;
 
-    private final Map<String, Listener> map = new ConcurrentHashMap<>();
-
     @PostConstruct
     private void init() {
         scheduledTaskService.start(3000, this);
@@ -86,15 +84,18 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
         Thread worker = new Thread(() -> {
             try {
-                map.computeIfAbsent(metaId, k-> {
+                Listener listener = meta.getListener();
+                if (listener == null) {
                     logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
                     long now = Instant.now().toEpochMilli();
                     meta.setBeginTime(now);
                     meta.setEndTime(now);
                     profileComponent.editConfigModel(meta);
                     tableGroupContext.put(mapping, list);
-                    return getListener(mapping, connector, list, meta);
-                }).start();
+                    listener = getListener(mapping, connector, list, meta);
+                    meta.setListener(listener);
+                }
+                listener.start();
             } catch (Exception e) {
                 close(metaId);
                 logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
@@ -108,30 +109,42 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     @Override
     public void close(String metaId) {
-        map.compute(metaId, (k, listener)->{
+        Meta meta = profileComponent.getMeta(metaId);
+        if (meta != null) {
+            Listener listener = meta.getListener();
             if (listener != null) {
                 listener.close();
+                meta.setListener(null);
             }
             bufferActuatorRouter.unbind(metaId);
             tableGroupContext.clear(metaId);
             publishClosedEvent(metaId);
             logger.info("关闭成功:{}", metaId);
-            return null;
-        });
+        }
     }
 
     @Override
     public void onApplicationEvent(RefreshOffsetEvent event) {
         ChangedOffset offset = event.getChangedOffset();
-        if (offset != null && map.containsKey(offset.getMetaId())) {
-            map.get(offset.getMetaId()).refreshEvent(offset);
+        if (offset != null) {
+            Meta meta = profileComponent.getMeta(offset.getMetaId());
+            if (meta != null) {
+                Listener listener = meta.getListener();
+                if (listener != null) {
+                    listener.refreshEvent(offset);
+                }
+            }
         }
     }
 
     @Override
     public void run() {
-        // 定时同步增量信息
-        map.values().forEach(Listener::flushEvent);
+        profileComponent.getMetaAll().forEach(meta -> {
+            Listener listener = meta.getListener();
+            if (listener != null) {
+                listener.flushEvent();
+            }
+        });
     }
 
     private Listener getListener(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta) {
