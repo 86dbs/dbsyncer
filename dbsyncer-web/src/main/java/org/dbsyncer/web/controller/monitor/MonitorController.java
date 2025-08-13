@@ -38,7 +38,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -86,6 +85,7 @@ public class MonitorController extends BaseController {
         model.put("metaId", monitorService.getDefaultMetaId(params));
         model.put("meta", monitorService.getMetaAll());
         model.put("storageDataStatus", monitorService.getStorageDataStatusEnumAll());
+        model.put("dataStatus", params.get("dataStatus"));
         model.put("pagingData", monitorService.queryData(params));
         model.put("pagingLog", monitorService.queryLog(params));
         return "monitor/monitor.html";
