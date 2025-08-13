@@ -9,6 +9,9 @@ import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.filter.CompareFilter;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * 运算符表达式类型
@@ -83,6 +86,14 @@ public enum FilterEnum {
      */
     IS_NOT_NULL("is not null", (value, filterValue) -> value != null);
 
+    /*
+    建立 name 与 FilterEnum 建立映射关系，用时便于快速查找
+     */
+    private static final Map<String, FilterEnum> MAPPING = new HashMap<>();
+    static {
+        Arrays.stream(org.dbsyncer.sdk.enums.FilterEnum.values()).forEach((item) -> MAPPING.put(item.getName().toUpperCase(), item));
+    }
+
     // 运算符名称
     private final String name;
     // 比较器
@@ -101,10 +112,10 @@ public enum FilterEnum {
      * @throws SdkException
      */
     public static FilterEnum getFilterEnum(String name) throws SdkException {
-        for (FilterEnum e : FilterEnum.values()) {
-            if (StringUtil.equals(name, e.getName())) {
-                return e;
-            }
+        Objects.requireNonNull(name,"name is null");
+        FilterEnum e = MAPPING.get(name.toUpperCase());
+        if (e != null) {
+            return e;
         }
         throw new SdkException(String.format("FilterEnum name \"%s\" does not exist.", name));
     }
@@ -117,12 +128,7 @@ public enum FilterEnum {
      * @throws SdkException
      */
     public static CompareFilter getCompareFilter(String filterName) throws SdkException {
-        for (FilterEnum e : FilterEnum.values()) {
-            if (StringUtil.equals(filterName, e.getName())) {
-                return e.getCompareFilter();
-            }
-        }
-        throw new SdkException(String.format("FilterEnum name \"%s\" does not exist.", filterName));
+        return getFilterEnum(filterName).getCompareFilter();
     }
 
     public String getName() {
