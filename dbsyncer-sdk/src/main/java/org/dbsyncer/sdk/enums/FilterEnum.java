@@ -86,12 +86,13 @@ public enum FilterEnum {
      */
     IS_NOT_NULL("is not null", (value, filterValue) -> value != null);
 
-    /*
-    建立 name 与 FilterEnum 建立映射关系，用时便于快速查找
+    /**
+     * 建立 name 与 FilterEnum 建立映射关系，用时便于快速查找
      */
     private static final Map<String, FilterEnum> MAPPING = new HashMap<>();
+
     static {
-        Arrays.stream(org.dbsyncer.sdk.enums.FilterEnum.values()).forEach((item) -> MAPPING.put(item.getName().toUpperCase(), item));
+        Arrays.stream(FilterEnum.values()).forEach((item) -> MAPPING.put(item.getName().toUpperCase(), item));
     }
 
     // 运算符名称
@@ -112,23 +113,12 @@ public enum FilterEnum {
      * @throws SdkException
      */
     public static FilterEnum getFilterEnum(String name) throws SdkException {
-        Objects.requireNonNull(name,"name is null");
+        Objects.requireNonNull(name, "name is null");
         FilterEnum e = MAPPING.get(name.toUpperCase());
         if (e != null) {
             return e;
         }
         throw new SdkException(String.format("FilterEnum name \"%s\" does not exist.", name));
-    }
-
-    /**
-     * 获取比较器
-     *
-     * @param filterName
-     * @return
-     * @throws SdkException
-     */
-    public static CompareFilter getCompareFilter(String filterName) throws SdkException {
-        return getFilterEnum(filterName).getCompareFilter();
     }
 
     public String getName() {
