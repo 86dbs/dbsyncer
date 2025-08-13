@@ -83,7 +83,6 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     protected void buildQueueConfig() {
         taskLock = new ReentrantLock();
         this.queue = new LinkedBlockingQueue<>(config.getBufferQueueCapacity());
-        logger.info("{} initialized with queue capacity: {}", this.getClass().getSimpleName(), config.getBufferQueueCapacity());
     }
 
     /**
