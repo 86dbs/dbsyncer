@@ -74,6 +74,11 @@ public class SystemConfig extends ConfigModel {
      */
     private boolean enableSchemaResolver = true;
 
+    /**
+     * 表执行器上限数
+     */
+    private int maxBufferActuatorSize = 20;
+
     public int getExpireDataDays() {
         return expireDataDays;
     }
@@ -160,5 +165,13 @@ public class SystemConfig extends ConfigModel {
 
     public void setEnableSchemaResolver(boolean enableSchemaResolver) {
         this.enableSchemaResolver = enableSchemaResolver;
+    }
+
+    public int getMaxBufferActuatorSize() {
+        return maxBufferActuatorSize;
+    }
+
+    public void setMaxBufferActuatorSize(int maxBufferActuatorSize) {
+        this.maxBufferActuatorSize = maxBufferActuatorSize;
     }
 }

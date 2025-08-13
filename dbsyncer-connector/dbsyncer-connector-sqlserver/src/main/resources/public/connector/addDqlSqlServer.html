@@ -10,7 +10,7 @@
         </div>
         <label class="col-sm-2 control-label">密码<strong class="text-primary">*</strong></label>
         <div class="col-sm-4 ">
-            <input class="form-control" name="password" type="password" maxlength="64" dbsyncer-valid="require" />
+            <input class="form-control" name="password" type="password" maxlength="64" dbsyncer-valid="require" th:value="${connector?.config?.password}"/>
         </div>
     </div>
     <div class="form-group">
