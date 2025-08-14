@@ -106,7 +106,7 @@ function bindQueryData() {
         $menu.find("a[url='/monitor']").parent().addClass('active');
 
         var $id = $(this).attr("id");
-        doLoader('/monitor?id=' + $id);
+        doLoader('/monitor?dataStatus=0&id=' + $id);
     });
 }
 

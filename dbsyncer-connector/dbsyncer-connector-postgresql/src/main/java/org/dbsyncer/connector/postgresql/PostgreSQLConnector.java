@@ -26,7 +26,7 @@ import java.sql.Types;
 import java.util.List;
 
 /**
- * SqlServer连接器实现
+ * PostgreSQL连接器实现
  *
  * @Author AE86
  * @Version 1.0.0
