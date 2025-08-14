@@ -18,6 +18,7 @@ import org.dbsyncer.biz.vo.HistoryStackVo;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -85,7 +86,7 @@ public class MonitorController extends BaseController {
         model.put("metaId", monitorService.getDefaultMetaId(params));
         model.put("meta", monitorService.getMetaAll());
         model.put("storageDataStatus", monitorService.getStorageDataStatusEnumAll());
-        model.put("dataStatus", params.get("dataStatus"));
+        model.put("dataStatus", NumberUtil.toInt(params.get("dataStatus"), -1));
         model.put("pagingData", monitorService.queryData(params));
         model.put("pagingLog", monitorService.queryLog(params));
         return "monitor/monitor.html";
