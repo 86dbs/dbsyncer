@@ -115,7 +115,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
             if (!CollectionUtils.isEmpty(lines)) {
                 StringBuilder json = new StringBuilder();
-                lines.forEach(line -> json.append(line));
+                lines.forEach(json::append);
                 preloadTemplate.reload(json.toString());
             }
         } catch (IOException e) {
