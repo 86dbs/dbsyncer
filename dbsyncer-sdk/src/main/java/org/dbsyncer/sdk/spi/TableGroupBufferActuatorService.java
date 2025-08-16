@@ -8,5 +8,7 @@ package org.dbsyncer.sdk.spi;
  * @Version 1.0.0
  * @Date 2024-01-26 00:55
  */
-public interface TableGroupBufferActuatorService {
+public interface TableGroupBufferActuatorService extends Cloneable {
+
+    Object clone() throws CloneNotSupportedException;
 }

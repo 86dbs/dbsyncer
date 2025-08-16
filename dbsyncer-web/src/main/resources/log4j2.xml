@@ -33,20 +33,6 @@
             <DefaultRolloverStrategy max="24"/>
         </RollingFile>
 
-        <!-- Debug Log -->
-        <RollingFile name="RollingFileInfo" fileName="${LOG_HOME}/debug.log"
-                     filePattern="${LOG_HOME}/$${date:yyyy-MM}/debug-%d{yyyy-MM-dd}-%i.log">
-            <!--控制台只输出level及以上级别的信息（onMatch），其他的直接拒绝（onMismatch）-->
-            <ThresholdFilter level="debug" onMatch="ACCEPT" onMismatch="DENY"/>
-            <PatternLayout pattern="${LOG_PATTERN}"/>
-            <Policies>
-                <TimeBasedTriggeringPolicy/>
-                <SizeBasedTriggeringPolicy size="128 MB"/>
-            </Policies>
-            <!-- DefaultRolloverStrategy属性如不设置，则默认为最多同一文件夹下7个文件，这里设置了24 -->
-            <DefaultRolloverStrategy max="24"/>
-        </RollingFile>
-
         <!-- Warn Log -->
         <RollingFile name="RollingFileWarn" fileName="${LOG_HOME}/warn.log"
                      filePattern="${LOG_HOME}/$${date:yyyy-MM}/warn-%d{yyyy-MM-dd}-%i.log">
@@ -77,7 +63,6 @@
         <root level="Info">
             <appender-ref ref="Console"/>
             <appender-ref ref="RollingFileInfo"/>
-            <appender-ref ref="RollingFileDebug"/>
             <appender-ref ref="RollingFileWarn"/>
             <appender-ref ref="RollingFileError"/>
         </root>
