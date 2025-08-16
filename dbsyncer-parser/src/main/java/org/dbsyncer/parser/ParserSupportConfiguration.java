@@ -27,10 +27,10 @@ public class ParserSupportConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @DependsOn(value = "serviceFactory")
-    public TableGroupBufferActuatorService tableGroupBufferActuator() {
+    public TableGroupBufferActuator tableGroupBufferActuator() {
         TableGroupBufferActuatorService service = serviceFactory.get(TableGroupBufferActuatorService.class);
-        if (service != null) {
-            return service;
+        if (service instanceof TableGroupBufferActuator) {
+            return (TableGroupBufferActuator) service;
         }
         return new TableGroupBufferActuator();
     }
