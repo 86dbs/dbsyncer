@@ -9,6 +9,7 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
+import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -38,7 +39,7 @@ public final class BufferActuatorRouter implements DisposableBean {
     private ProfileComponent profileComponent;
 
     @Resource
-    private TableGroupBufferActuator tableGroupBufferActuator;
+    private TableGroupBufferActuatorService tableGroupBufferActuatorService;
 
     @Resource
     private GeneralBufferActuator generalBufferActuator;
@@ -81,7 +82,7 @@ public final class BufferActuatorRouter implements DisposableBean {
                 processor.computeIfAbsent(tableName, name -> {
                     TableGroupBufferActuator newBufferActuator = null;
                     try {
-                        newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuator.clone();
+                        newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuatorService.clone();
                         newBufferActuator.setTableName(name);
                         newBufferActuator.buildConfig();
                     } catch (CloneNotSupportedException ex) {
