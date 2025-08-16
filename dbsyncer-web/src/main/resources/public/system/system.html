@@ -33,7 +33,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <label class="col-sm-2 control-label">CDN静态资源</label>
+                <label class="col-sm-2 control-label">CDN静态资源<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="仅限可访问公网环境下，开启cdn可以提高页面加载速度，开启后需刷新页面生效"></i></label>
                 <div class="col-sm-4">
                     <input class="dbsyncer_switch" name="enableCDN" th:checked="${config?.enableCDN}" type="checkbox" />
                 </div>
@@ -65,7 +65,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <label class="col-sm-2 control-label">标准数据解析器</label>
+                <label class="col-sm-2 control-label">标准数据解析器<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="开启可以支持更多异构字段类型转换，主要用于兼容异构数据库同步"></i></label>
                 <div class="col-sm-4">
                     <input class="dbsyncer_switch" id="enableSchemaResolver" name="enableSchemaResolver" th:checked="${config?.enableSchemaResolver}" type="checkbox" />
                 </div>
