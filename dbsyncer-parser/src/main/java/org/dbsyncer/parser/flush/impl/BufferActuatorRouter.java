@@ -39,7 +39,7 @@ public final class BufferActuatorRouter implements DisposableBean {
     private ProfileComponent profileComponent;
 
     @Resource
-    private TableGroupBufferActuatorService tableGroupBufferActuatorService;
+    private TableGroupBufferActuator tableGroupBufferActuator;
 
     @Resource
     private GeneralBufferActuator generalBufferActuator;
@@ -82,7 +82,7 @@ public final class BufferActuatorRouter implements DisposableBean {
                 processor.computeIfAbsent(tableName, name -> {
                     TableGroupBufferActuator newBufferActuator = null;
                     try {
-                        newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuatorService.clone();
+                        newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuator.clone();
                         newBufferActuator.setTableName(name);
                         newBufferActuator.buildConfig();
                     } catch (CloneNotSupportedException ex) {
