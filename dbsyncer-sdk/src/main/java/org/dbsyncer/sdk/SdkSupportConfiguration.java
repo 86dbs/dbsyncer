@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
 import java.io.File;
-import java.util.ServiceLoader;
 
 /**
  * @Author AE86
@@ -26,10 +25,6 @@ public class SdkSupportConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public LicenseService licenseService() {
-        ServiceLoader<LicenseService> services = ServiceLoader.load(LicenseService.class, Thread.currentThread().getContextClassLoader());
-        for (LicenseService s : services) {
-            return s;
-        }
         return new LicenseService() {
             @Override
             public String getLicensePath() {
@@ -53,20 +48,16 @@ public class SdkSupportConfiguration {
         };
     }
 
-//    @Bean
-//    @ConditionalOnMissingBean
-//    @DependsOn(value = "licenseService")
-//    public ServiceFactory serviceFactory() {
-//        ServiceLoader<ServiceFactory> services = ServiceLoader.load(ServiceFactory.class, Thread.currentThread().getContextClassLoader());
-//        for (ServiceFactory s : services) {
-//            return s;
-//        }
-//        return new ServiceFactory() {
-//            @Override
-//            public <T> T get(Class<T> serviceClass) {
-//                return null;
-//            }
-//        };
-//    }
+    @Bean
+    @ConditionalOnMissingBean
+    @DependsOn(value = "licenseService")
+    public ServiceFactory serviceFactory() {
+        return new ServiceFactory() {
+            @Override
+            public <T> T get(Class<T> serviceClass) {
+                return null;
+            }
+        };
+    }
 
 }

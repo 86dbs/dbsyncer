@@ -4,13 +4,14 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
+import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
-import java.util.ServiceLoader;
+import javax.annotation.Resource;
 
 /**
  * @Author AE86
@@ -20,13 +21,16 @@ import java.util.ServiceLoader;
 @Configuration
 public class ParserSupportConfiguration {
 
+    @Resource
+    private ServiceFactory serviceFactory;
+
     @Bean
     @ConditionalOnMissingBean
-    @DependsOn(value = "licenseService")
+    @DependsOn(value = "serviceFactory")
     public TableGroupBufferActuatorService tableGroupBufferActuatorService() {
-        ServiceLoader<TableGroupBufferActuatorService> services = ServiceLoader.load(TableGroupBufferActuatorService.class, Thread.currentThread().getContextClassLoader());
-        for (TableGroupBufferActuatorService s : services) {
-            return s;
+        TableGroupBufferActuatorService service = serviceFactory.get(TableGroupBufferActuatorService.class);
+        if (service != null) {
+            return service;
         }
         return new TableGroupBufferActuator();
     }
