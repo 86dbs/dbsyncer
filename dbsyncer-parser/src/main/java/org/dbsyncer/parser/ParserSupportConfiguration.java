@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
 import javax.annotation.Resource;
+import java.util.ServiceLoader;
 
 /**
  * @Author AE86
@@ -28,9 +29,9 @@ public class ParserSupportConfiguration {
     @ConditionalOnMissingBean
     @DependsOn(value = "serviceFactory")
     public TableGroupBufferActuatorService tableGroupBufferActuatorService() {
-        TableGroupBufferActuatorService service = serviceFactory.get(TableGroupBufferActuatorService.class);
-        if (service instanceof TableGroupBufferActuator) {
-            return service;
+        ServiceLoader<TableGroupBufferActuatorService> services = ServiceLoader.load(TableGroupBufferActuatorService.class, Thread.currentThread().getContextClassLoader());
+        for (TableGroupBufferActuatorService s : services) {
+            return s;
         }
         return new TableGroupBufferActuator();
     }
