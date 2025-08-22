@@ -52,8 +52,7 @@ public class DiskStorageService extends AbstractStorageService {
     /**
      * 相对路径/data/
      */
-    private static final String PATH = new StringBuilder(System.getProperty("user.dir")).append(File.separatorChar).append("data")
-            .append(File.separatorChar).toString();
+    private static final String PATH = System.getProperty("user.dir") + File.separatorChar + "data" + File.separatorChar;
 
     @Override
     public void init(Properties properties) {
