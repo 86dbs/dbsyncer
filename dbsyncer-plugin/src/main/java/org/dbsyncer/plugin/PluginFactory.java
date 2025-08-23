@@ -19,7 +19,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collection;
@@ -151,26 +150,19 @@ public class PluginFactory implements DisposableBean {
             ServiceLoader<PluginService> services = ServiceLoader.load(PluginService.class, loader);
             for (PluginService s : services) {
                 String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
-                // 先释放历史版本
-                if (service.containsKey(pluginId)) {
-                    try {
-                        service.get(pluginId).close();
-                    } catch (Exception e) {
-                        logger.error(e.getMessage(), e);
+                service.compute(pluginId, (k, pluginService) ->{
+                    // 先释放历史版本
+                    if (pluginService != null) {
+                        pluginService.close();
                     }
-                    service.remove(pluginId);
-                }
-                service.putIfAbsent(pluginId, s);
-                plugins.add(new Plugin(s.getName(), s.getClass().getName(), s.getVersion(), fileName, false));
-                logger.info("{}, {}_{} {}", fileName, s.getName(), s.getVersion(), s.getClass().getName());
-                try {
+                    plugins.add(new Plugin(s.getName(), s.getClass().getName(), s.getVersion(), fileName, false));
+                    logger.info("{}, {}_{} {}", fileName, s.getName(), s.getVersion(), s.getClass().getName());
                     s.init();
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
-                }
+                    return s;
+                });
             }
-        } catch (MalformedURLException e) {
-            logger.error(e.getMessage());
+        } catch (Throwable e) {
+            logger.error(e.getMessage(), e);
         }
 
     }
