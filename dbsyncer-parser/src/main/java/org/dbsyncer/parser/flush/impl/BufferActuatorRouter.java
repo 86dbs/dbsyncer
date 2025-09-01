@@ -3,16 +3,17 @@
  */
 package org.dbsyncer.parser.flush.impl;
 
-import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.ChangedOffset;
-import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.common.config.TableGroupBufferConfig;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
+import org.dbsyncer.sdk.listener.Listener;
+import org.dbsyncer.sdk.model.ChangedOffset;
+import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;

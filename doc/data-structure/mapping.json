@@ -1,0 +1,132 @@
+{
+  "batchNum": 1000,
+  "compareData": true,
+  "convert": [],
+  "createTime": 1756715714489,
+  "filter": [],
+  "forceUpdate": true,
+  "id": "1412113585097805824",
+  "listener": {
+    "cron": "*/30 * * * * ?",
+    "delete": "D",
+    "enableDDL": false,
+    "enableDelete": true,
+    "enableInsert": true,
+    "enableUpdate": true,
+    "eventFieldName": "",
+    "insert": "I",
+    "listenerType": "log",
+    "update": "U"
+  },
+  "metaId": "1412113585097805825",
+  "model": "full",
+  "name": "全量同步",
+  "params": {},
+  "readNum": 10000,
+  "recoverData": true,
+  "sourceColumn": [
+    {
+      "columnSize": 10,
+      "name": "id",
+      "pk": true,
+      "ratio": 0,
+      "type": 4,
+      "typeName": "INT"
+    },
+    {
+      "columnSize": 500,
+      "name": "name",
+      "pk": false,
+      "ratio": 0,
+      "type": 12,
+      "typeName": "VARCHAR"
+    }
+  ],
+  "sourceConnectorId": "1412112027324911616",
+  "targetColumn": [
+    {
+      "columnSize": 0,
+      "name": "id",
+      "pk": true,
+      "ratio": 0,
+      "type": 12,
+      "typeName": "String"
+    },
+    {
+      "columnSize": 0,
+      "name": "age",
+      "pk": false,
+      "ratio": 0,
+      "type": 4,
+      "typeName": "Integer"
+    },
+    {
+      "columnSize": 0,
+      "name": "count",
+      "pk": false,
+      "ratio": 0,
+      "type": -5,
+      "typeName": "Long"
+    },
+    {
+      "columnSize": 0,
+      "name": "type",
+      "pk": false,
+      "ratio": 0,
+      "type": 5,
+      "typeName": "Short"
+    },
+    {
+      "columnSize": 0,
+      "name": "money",
+      "pk": false,
+      "ratio": 0,
+      "type": 6,
+      "typeName": "Float"
+    },
+    {
+      "columnSize": 0,
+      "name": "score",
+      "pk": false,
+      "ratio": 0,
+      "type": 8,
+      "typeName": "Double"
+    },
+    {
+      "columnSize": 0,
+      "name": "status",
+      "pk": false,
+      "ratio": 0,
+      "type": -7,
+      "typeName": "Boolean"
+    },
+    {
+      "columnSize": 0,
+      "name": "create_date",
+      "pk": false,
+      "ratio": 0,
+      "type": 91,
+      "typeName": "Date"
+    },
+    {
+      "columnSize": 0,
+      "name": "time",
+      "pk": false,
+      "ratio": 0,
+      "type": 92,
+      "typeName": "Time"
+    },
+    {
+      "columnSize": 0,
+      "name": "update_time",
+      "pk": false,
+      "ratio": 0,
+      "type": 93,
+      "typeName": "Timestamp"
+    }
+  ],
+  "targetConnectorId": "1412112508759707648",
+  "threadNum": 10,
+  "type": "mapping",
+  "updateTime": 1756715795752
+}
