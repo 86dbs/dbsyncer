@@ -130,29 +130,42 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Override
     public void pull(WriterResponse response) {
+        // 从响应对象中获取元数据ID，再通过ID获取对应的Meta对象
         Meta meta = profileComponent.getMeta(response.getChangedOffset().getMetaId());
+        // 如果Meta对象为空，直接返回，不做后续处理
         if (meta == null) {
             return;
         }
+        // 根据Meta对象中的映射ID获取对应的Mapping对象
         final Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        // 根据元数据ID和表名获取对应的TableGroupPicker列表
         List<TableGroupPicker> pickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
-
+    
+        // 根据响应对象中的事件类型进行不同的处理
         switch (response.getTypeEnum()) {
+            // 处理DDL事件
             case DDL:
                 tableGroupContext.update(mapping, pickers.stream().map(picker -> {
+                    // 获取每个Picker对应的TableGroup对象
                     TableGroup tableGroup = profileComponent.getTableGroup(picker.getTableGroup().getId());
+                    // 解析DDL事件
                     parseDDl(response, mapping, tableGroup);
                     return tableGroup;
                 }).collect(Collectors.toList()));
                 break;
+            // 处理扫描事件
             case SCAN:
+                // 对每个Picker调用distributeTableGroup方法进行处理，不启用过滤
                 pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false));
                 break;
+            // 处理行数据事件
             case ROW:
+                // 对每个Picker调用distributeTableGroup方法进行处理，启用过滤
                 pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
                 // 发布刷新增量点事件
                 applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
                 break;
+            // 默认情况不做处理
             default:
                 break;
         }

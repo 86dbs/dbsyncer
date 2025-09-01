@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DBsyncer - 数据库同步工具</title>
+    <!-- 引入外部资源 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 在 head 部分添加 axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- 引入 Element UI -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#409EFF',
+                        secondary: '#1F2937',
+                        success: '#67C23A',
+                        warning: '#E6A23C',
+                        danger: '#F56C6C',
+                        info: '#909399'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                },
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+
+            .transition-height {
+                transition-property: height;
+                transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+                transition-duration: 300ms;
+            }
+
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+
+            /* 添加 v-cloak 样式来防止页面闪烁 */
+            [v-cloak] {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+<!-- 添加 v-cloak 指令防止页面闪烁 -->
+<div id="app" class="flex flex-col h-screen overflow-hidden" v-cloak>
+    <!-- 顶部导航栏 -->
+    <el-header class="bg-white border-b border-gray-200 shadow-sm z-10 px-4">
+        <div class="flex items-center justify-between h-full">
+            <!-- 左侧 Logo 和标题 -->
+            <div class="flex items-center space-x-3">
+                <el-button
+                        v-if="isMobile"
+                        size="mini"
+                        icon="el-icon-menu"
+                        @click="toggleSidebar"
+                        class="md:hidden"
+                ></el-button>
+                <el-avatar shape="circle" class="bg-primary text-white">
+                    <i class="fa fa-database"></i>
+                </el-avatar>
+                <h1 class="text-xl font-bold text-gray-800">DBsyncer</h1>
+            </div>
+
+            <!-- 右侧用户信息和操作 -->
+            <div class="flex items-center space-x-4">
+                <el-badge :value="3" class="item">
+                    <el-button
+                            size="mini"
+                            icon="el-icon-bell"
+                            @click="showNotifications = true"
+                            class="relative"
+                    ></el-button>
+                </el-badge>
+
+                <el-button
+                        size="mini"
+                        icon="el-icon-setting"
+                        @click="activeMenu = 'settings'"
+                ></el-button>
+
+                <el-dropdown @command="handleUserAction">
+            <span class="flex items-center cursor-pointer">
+              <el-avatar shape="circle" size="small" class="bg-gray-200 mr-2">
+                <span class="text-xs">AD</span>
+              </el-avatar>
+              <span class="hidden md:inline">admin</span>
+              <i class="fa fa-chevron-down text-xs ml-1"></i>
+            </span>
+                    <el-dropdown-menu slot="dropdown">
+                        <el-dropdown-item command="profile">个人信息</el-dropdown-item>
+                        <el-dropdown-item command="password">修改密码</el-dropdown-item>
+                        <el-divider></el-divider>
+                        <el-dropdown-item command="logout" type="danger">退出登录</el-dropdown-item>
+                    </el-dropdown-menu>
+                </el-dropdown>
+            </div>
+        </div>
+    </el-header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- 侧边栏 -->
+        <el-aside
+                :width="collapsed ? '64px' : '240px'"
+                class="bg-white border-r border-gray-200 transition-all duration-300"
+        >
+            <el-scrollbar class="h-full">
+                <div class="py-4">
+                    <el-menu
+                            :default-active="activeMenu"
+                            class="el-menu-vertical-demo"
+                            @select="handleMenuChange"
+                            :collapse="collapsed"
+                            background-color="#ffffff"
+                            text-color="#333333"
+                            active-text-color="#409EFF"
+                    >
+                        <el-menu-item index="dashboard">
+                            <i class="fa fa-tachometer"></i>
+                            <span slot="title">仪表盘</span>
+                        </el-menu-item>
+                        <el-menu-item index="connections">
+                            <i class="fa fa-plug"></i>
+                            <span slot="title">数据库连接</span>
+                        </el-menu-item>
+                        <el-menu-item index="tasks">
+                            <i class="fa fa-refresh"></i>
+                            <span slot="title">同步任务</span>
+                        </el-menu-item>
+                        <el-menu-item index="logs">
+                            <i class="fa fa-history"></i>
+                            <span slot="title">同步日志</span>
+                        </el-menu-item>
+                        <el-menu-item index="settings">
+                            <i class="fa fa-cog"></i>
+                            <span slot="title">系统设置</span>
+                        </el-menu-item>
+                    </el-menu>
+                </div>
+            </el-scrollbar>
+        </el-aside>
+
+        <!-- 主内容区域 -->
+        <el-main class="flex-1 overflow-auto bg-gray-50 p-4 md:p-6">
+            <transition name="fade-in" mode="out-in">
+                <!-- 仪表盘视图 -->
+                <div v-if="activeMenu === 'dashboard'">
+                    <dashboard-view></dashboard-view>
+                </div>
+
+                <!-- 连接管理视图 -->
+                <div v-if="activeMenu === 'connections'">
+                    <connections-view></connections-view>
+                </div>
+
+                <!-- 同步任务视图 -->
+                <div v-if="activeMenu === 'tasks'">
+                    <tasks-view></tasks-view>
+                </div>
+
+                <!-- 同步日志视图 -->
+                <div v-if="activeMenu === 'logs'">
+                    <logs-view></logs-view>
+                </div>
+
+                <!-- 系统设置视图 -->
+                <div v-if="activeMenu === 'settings'">
+                    <settings-view></settings-view>
+                </div>
+            </transition>
+        </el-main>
+    </div>
+
+    <!-- 通知抽屉 -->
+    <el-drawer
+            title="通知消息"
+            :visible.sync="showNotifications"
+            placement="right"
+            :size="360"
+    >
+        <div class="p-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-lg">通知消息</h3>
+                <el-button size="small" type="text">全部标为已读</el-button>
+            </div>
+
+            <el-scrollbar style="height: calc(100vh - 120px);">
+                <div class="space-y-2">
+                    <el-card class="border-l-4 border-primary">
+                        <div class="flex items-start">
+                            <el-avatar shape="circle" class="bg-primary/10 text-primary mr-3">
+                                <i class="fa fa-check-circle"></i>
+                            </el-avatar>
+                            <div class="flex-1">
+                                <p class="font-medium">订单数据同步完成</p>
+                                <p class="text-sm text-gray-500 mt-1">任务 "订单数据同步" 已成功完成，共同步 1254
+                                    条记录</p>
+                                <p class="text-xs text-gray-400 mt-2">10分钟前</p>
+                            </div>
+                        </div>
+                    </el-card>
+
+                    <el-card class="border-l-4 border-danger">
+                        <div class="flex items-start">
+                            <el-avatar shape="circle" class="bg-danger/10 text-danger mr-3">
+                                <i class="fa fa-exclamation-circle"></i>
+                            </el-avatar>
+                            <div class="flex-1">
+                                <p class="font-medium">用户数据同步失败</p>
+                                <p class="text-sm text-gray-500 mt-1">任务 "用户数据同步" 执行失败，原因：连接超时</p>
+                                <p class="text-xs text-gray-400 mt-2">30分钟前</p>
+                            </div>
+                        </div>
+                    </el-card>
+
+                    <el-card class="border-l-4 border-warning">
+                        <div class="flex items-start">
+                            <el-avatar shape="circle" class="bg-warning/10 text-warning mr-3">
+                                <i class="fa fa-exclamation-triangle"></i>
+                            </el-avatar>
+                            <div class="flex-1">
+                                <p class="font-medium">数据库连接警告</p>
+                                <p class="text-sm text-gray-500 mt-1">连接 "主数据库" 响应缓慢，请检查数据库性能</p>
+                                <p class="text-xs text-gray-400 mt-2">2小时前</p>
+                            </div>
+                        </div>
+                    </el-card>
+
+                    <el-card>
+                        <div class="flex items-start">
+                            <el-avatar shape="circle" class="bg-gray-100 text-gray-500 mr-3">
+                                <i class="fa fa-info-circle"></i>
+                            </el-avatar>
+                            <div class="flex-1">
+                                <p class="font-medium">系统更新提醒</p>
+                                <p class="text-sm text-gray-500 mt-1">有新版本可用，建议更新到 v2.3.2 版本</p>
+                                <p class="text-xs text-gray-400 mt-2">昨天</p>
+                            </div>
+                        </div>
+                    </el-card>
+                </div>
+            </el-scrollbar>
+        </div>
+    </el-drawer>
+</div>
+
+<script src="js/index.js"></script>
+<script>
+    // 页面加载完成后注册组件
+    document.addEventListener('DOMContentLoaded', registerComponents);
+</script>
+</body>
+</html>

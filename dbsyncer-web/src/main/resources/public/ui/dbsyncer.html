@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DBsyncer - 数据库同步工具</title>
+
+    <!-- 引入外部资源 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <link rel="stylesheet" href="css/public.css">
+
+    <link rel="stylesheet" href="css/public.css">
+
+
+</head>
+<body>
+
+<div id="app" class="app-container">
+    <!-- 侧边栏导航 -->
+    <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+        <div class="sidebar-logo">
+            <img src="https://picsum.photos/36/36" alt="DBsyncer Logo">
+            <span>DBsyncer</span>
+        </div>
+
+        <el-menu default-active="dashboard" class="el-menu-vertical-demo" @select="handleMenuSelect">
+            <el-menu-item index="dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                <span slot="title">仪表盘</span>
+            </el-menu-item>
+            <el-menu-item index="tasks">
+                <i class="fas fa-tasks"></i>
+                <span slot="title">同步任务</span>
+            </el-menu-item>
+            <el-menu-item index="datasources">
+                <i class="fas fa-database"></i>
+                <span slot="title">数据源管理</span>
+            </el-menu-item>
+            <el-menu-item index="logs">
+                <i class="fas fa-history"></i>
+                <span slot="title">同步日志</span>
+            </el-menu-item>
+            <el-menu-item index="settings">
+                <i class="fas fa-cog"></i>
+                <span slot="title">系统设置</span>
+            </el-menu-item>
+            <el-submenu index="help">
+                <template slot="title">
+                    <i class="fas fa-question-circle"></i>
+                    <span>帮助中心</span>
+                </template>
+                <el-menu-item index="docs">文档中心</el-menu-item>
+                <el-menu-item index="about">关于我们</el-menu-item>
+            </el-submenu>
+        </el-menu>
+    </aside>
+
+    <!-- 主内容区域 -->
+    <main class="main-content">
+        <!-- 顶部导航栏 -->
+        <header class="header">
+            <div class="header-left">
+                <div class="header-menu-btn">
+                    <i class="fas fa-bars"></i>
+                </div>
+                <div class="header-title">{{ currentPageTitle }}</div>
+            </div>
+            <div class="header-right">
+                <el-input
+                        placeholder="搜索..."
+                        prefix-icon="el-icon-search"
+                        class="header-search"
+                        size="small"
+                ></el-input>
+                <div class="header-notification">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="user-info" @click="toggleUserMenu">
+                    <div class="user-avatar">{{ userName.charAt(0) }}</div>
+                    <span>{{ userName }}</span>
+                    <i class="fas fa-chevron-down" style="margin-left: 5px; font-size: 12px;"></i>
+
+                    <!-- 用户下拉菜单 -->
+                    <div v-if="showUserMenu" class="user-dropdown"
+                         style="position: absolute; right: 20px; top: 64px; z-index: 1000; background: white; border: 1px solid #ebeef5; border-radius: 4px; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1); min-width: 150px;">
+                        <div class="user-dropdown-item" style="padding: 8px 16px; cursor: pointer; font-size: 14px;"
+                             @click.stop="handleMenuClick('profile')">
+                            <i class="fas fa-user-circle" style="margin-right: 8px;"></i> 个人中心
+                        </div>
+                        <div class="user-dropdown-item" style="padding: 8px 16px; cursor: pointer; font-size: 14px;"
+                             @click.stop="handleMenuClick('settings')">
+                            <i class="fas fa-cog" style="margin-right: 8px;"></i> 账户设置
+                        </div>
+                        <div class="user-dropdown-item"
+                             style="padding: 8px 16px; cursor: pointer; font-size: 14px; border-top: 1px solid #ebeef5;"
+                             @click.stop="handleMenuClick('logout')">
+                            <i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i> 退出登录
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 页面内容 -->
+        <div class="page-content">
+            <!-- 仪表盘页面 -->
+            <div v-if="currentPage === 'dashboard'" class="fade-in">
+                <div class="page-header">
+                    <h1 class="page-title"><i class="fas fa-tachometer-alt"></i> 数据同步仪表盘</h1>
+                    <div class="page-actions">
+                        <el-button type="primary" @click="refreshDashboard">
+                            <i class="fas fa-sync-alt"></i> 刷新数据
+                        </el-button>
+                    </div>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card success">
+                        <div class="stat-title"><i class="fas fa-check-circle"></i> 运行中任务</div>
+                        <div class="stat-value">{{ stats.runningTasks }}</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i> 较昨日 +2
+                        </div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-title"><i class="fas fa-pause-circle"></i> 已停止任务</div>
+                        <div class="stat-value">{{ stats.stoppedTasks }}</div>
+                        <div class="stat-change negative">
+                            <i class="fas fa-arrow-down"></i> 较昨日 -1
+                        </div>
+                    </div>
+                    <div class="stat-card danger">
+                        <div class="stat-title"><i class="fas fa-exclamation-circle"></i> 异常任务</div>
+                        <div class="stat-value">{{ stats.errorTasks }}</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i> 较昨日 +1
+                        </div>
+                    </div>
+                    <div class="stat-card info">
+                        <div class="stat-title"><i class="fas fa-database"></i> 数据源总数</div>
+                        <div class="stat-value">{{ stats.dataSources }}</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i> 较昨日 +1
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 图表区域 -->
+                <div class="charts-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><i class="fas fa-chart-line"></i> 同步数据量趋势</div>
+                            <el-select v-model="timeRange" size="small" @change="updateCharts">
+                                <el-option label="今日" value="day"></el-option>
+                                <el-option label="本周" value="week"></el-option>
+                                <el-option label="本月" value="month"></el-option>
+                            </el-select>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="syncVolumeChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><i class="fas fa-chart-pie"></i> 任务状态分布</div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="taskStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最近同步任务 -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-history"></i> 最近同步活动</div>
+                        <el-button type="text" @click="viewAllLogs">查看全部</el-button>
+                    </div>
+                    <el-table :data="recentActivities" border>
+                        <el-table-column prop="taskName" label="任务名称" width="200"></el-table-column>
+                        <el-table-column prop="source" label="源数据库"></el-table-column>
+                        <el-table-column prop="target" label="目标数据库"></el-table-column>
+                        <el-table-column prop="status" label="状态">
+                            <template slot-scope="scope">
+                                    <span :class="`status-tag status-${scope.row.status}`">
+                                        {{ formatStatus(scope.row.status) }}
+                                    </span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="records" label="同步记录数"></el-table-column>
+                        <el-table-column prop="time" label="时间" width="180"></el-table-column>
+                        <el-table-column label="操作" width="120">
+                            <template slot-scope="scope">
+                                <el-button type="text" size="small" @click="viewDetails(scope.row)">详情</el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+            </div>
+
+            <!-- 同步任务页面 -->
+            <div v-if="currentPage === 'tasks'" class="fade-in">
+                <div class="page-header">
+                    <h1 class="page-title"><i class="fas fa-tasks"></i> 同步任务管理</h1>
+                    <div class="page-actions">
+                        <el-button type="primary" @click="openTaskDialog">
+                            <i class="fas fa-plus"></i> 新建任务
+                        </el-button>
+                        <el-button type="success" @click="batchStartTasks">
+                            <i class="fas fa-play"></i> 批量启动
+                        </el-button>
+                        <el-button type="warning" @click="batchStopTasks">
+                            <i class="fas fa-pause"></i> 批量停止
+                        </el-button>
+                    </div>
+                </div>
+
+                <!-- 任务筛选 -->
+                <div class="card">
+                    <el-row :gutter="20">
+                        <el-col :span="6">
+                            <el-input placeholder="任务名称搜索" v-model="taskFilter.name"></el-input>
+                        </el-col>
+                        <el-col :span="4">
+                            <el-select placeholder="状态筛选" v-model="taskFilter.status" clearable>
+                                <el-option label="运行中" value="running"></el-option>
+                                <el-option label="已停止" value="stopped"></el-option>
+                                <el-option label="异常" value="error"></el-option>
+                            </el-select>
+                        </el-col>
+                        <el-col :span="4">
+                            <el-select placeholder="源数据库" v-model="taskFilter.source" clearable>
+                                <el-option v-for="db in dataSources" :key="db.id" :label="db.name"
+                                           :value="db.id"></el-option>
+                            </el-select>
+                        </el-col>
+                        <el-col :span="4">
+                            <el-select placeholder="目标数据库" v-model="taskFilter.target" clearable>
+                                <el-option v-for="db in dataSources" :key="db.id" :label="db.name"
+                                           :value="db.id"></el-option>
+                            </el-select>
+                        </el-col>
+                        <el-col :span="2">
+                            <el-button type="primary" @click="filterTasks">查询</el-button>
+                        </el-col>
+                        <el-col :span="2">
+                            <el-button type="default" @click="resetTaskFilter">重置</el-button>
+                        </el-col>
+                    </el-row>
+                </div>
+
+                <!-- 任务列表 -->
+                <div class="card">
+                    <el-table
+                            :data="filteredTasks"
+                            border
+                            @selection-change="handleTaskSelectionChange"
+                            v-loading="tasksLoading"
+                    >
+                        <el-table-column type="selection" width="55"></el-table-column>
+                        <el-table-column prop="id" label="ID" width="80"></el-table-column>
+                        <el-table-column prop="name" label="任务名称"></el-table-column>
+                        <el-table-column prop="sourceName" label="源数据库"></el-table-column>
+                        <el-table-column prop="targetName" label="目标数据库"></el-table-column>
+                        <el-table-column prop="syncType" label="同步类型">
+                            <template slot-scope="scope">
+                                {{ scope.row.syncType === 'full' ? '全量同步' : '增量同步' }}
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="interval" label="同步间隔">
+                            <template slot-scope="scope">
+                                {{ scope.row.interval }}分钟
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="status" label="状态">
+                            <template slot-scope="scope">
+                                    <span :class="`status-tag status-${scope.row.status}`">
+                                        {{ formatStatus(scope.row.status) }}
+                                    </span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="lastSyncTime" label="最后同步时间" width="180"></el-table-column>
+                        <el-table-column label="操作" width="200">
+                            <template slot-scope="scope">
+                                <el-button
+                                        type="text"
+                                        size="small"
+                                        @click="startTask(scope.row)"
+                                        v-if="scope.row.status !== 'running'"
+                                >
+                                    <i class="fas fa-play"></i> 启动
+                                </el-button>
+                                <el-button
+                                        type="text"
+                                        size="small"
+                                        @click="stopTask(scope.row)"
+                                        v-if="scope.row.status === 'running'"
+                                >
+                                    <i class="fas fa-pause"></i> 停止
+                                </el-button>
+                                <el-button type="text" size="small" @click="editTask(scope.row)">
+                                    <i class="fas fa-edit"></i> 编辑
+                                </el-button>
+                                <el-button type="text" size="small" @click="deleteTask(scope.row)"
+                                           style="color: #e74c3c;">
+                                    <i class="fas fa-trash"></i> 删除
+                                </el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+
+                    <!-- 分页 -->
+                    <div class="pagination" style="margin-top: 15px; text-align: right;">
+                        <el-pagination
+                                @size-change="handleSizeChange"
+                                @current-change="handleCurrentChange"
+                                :current-page="currentPageNum"
+                                :page-sizes="[10, 20, 50, 100]"
+                                :page-size="pageSize"
+                                layout="total, sizes, prev, pager, next, jumper"
+                                :total="filteredTasks.length"
+                        ></el-pagination>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 其他页面内容（数据源管理、日志、设置） -->
+            <div v-if="currentPage === 'datasources'" class="fade-in">
+                <div class="page-header">
+                    <h1 class="page-title"><i class="fas fa-database"></i> 数据源管理</h1>
+                    <div class="page-actions">
+                        <el-button type="primary" @click="openDataSourceDialog()">
+                            <i class="fas fa-plus"></i> 添加数据源
+                        </el-button>
+                    </div>
+                </div>
+
+                <!-- 数据源列表 -->
+                <div class="card">
+                    <el-table :data="dataSources" border>
+                        <el-table-column prop="id" label="ID" width="80"></el-table-column>
+                        <el-table-column prop="name" label="数据源名称"></el-table-column>
+                        <el-table-column prop="type" label="数据库类型"></el-table-column>
+                        <el-table-column prop="host" label="主机地址"></el-table-column>
+                        <el-table-column prop="port" label="端口" width="80"></el-table-column>
+                        <el-table-column prop="database" label="数据库名"></el-table-column>
+                        <el-table-column prop="username" label="用户名"></el-table-column>
+                        <el-table-column prop="status" label="连接状态">
+                            <template slot-scope="scope">
+                                    <span :class="`status-tag status-${scope.row.status}`">
+                                        {{ scope.row.status === 'connected' ? '已连接' : '未连接' }}
+                                    </span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="操作" width="180">
+                            <template slot-scope="scope">
+                                <el-button type="text" size="small" @click="testConnection(scope.row)">
+                                    <i class="fas fa-plug"></i> 测试连接
+                                </el-button>
+                                <el-button type="text" size="small" @click="editDataSource(scope.row)">
+                                    <i class="fas fa-edit"></i> 编辑
+                                </el-button>
+                                <el-button type="text" size="small" @click="deleteDataSource(scope.row)"
+                                           style="color: #e74c3c;">
+                                    <i class="fas fa-trash"></i> 删除
+                                </el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+            </div>
+
+            <!-- 日志页面 -->
+            <div v-if="currentPage === 'logs'" class="fade-in">
+                <div class="page-header">
+                    <h1 class="page-title"><i class="fas fa-history"></i> 同步日志</h1>
+                    <div class="page-actions">
+                        <el-button type="primary" @click="exportLogs">
+                            <i class="fas fa-download"></i> 导出日志
+                        </el-button>
+                    </div>
+                </div>
+
+                <!-- 日志内容 -->
+                <div class="card">
+                    <el-table :data="syncLogs" border>
+                        <el-table-column prop="id" label="ID" width="80"></el-table-column>
+                        <el-table-column prop="taskName" label="任务名称"></el-table-column>
+                        <el-table-column prop="status" label="状态">
+                            <template slot-scope="scope">
+                                    <span :class="`status-tag status-${scope.row.status}`">
+                                        {{ formatStatus(scope.row.status) }}
+                                    </span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="startTime" label="开始时间" width="180"></el-table-column>
+                        <el-table-column prop="endTime" label="结束时间" width="180"></el-table-column>
+                        <el-table-column prop="duration" label="耗时(秒)" width="100"></el-table-column>
+                        <el-table-column prop="records" label="同步记录数"></el-table-column>
+                        <el-table-column label="操作" width="120">
+                            <template slot-scope="scope">
+                                <el-button type="text" size="small" @click="viewLogDetails(scope.row)">
+                                    <i class="fas fa-search"></i> 详情
+                                </el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+            </div>
+
+            <!-- 设置页面 -->
+            <div v-if="currentPage === 'settings'" class="fade-in">
+                <div class="page-header">
+                    <h1 class="page-title"><i class="fas fa-cog"></i> 系统设置</h1>
+                </div>
+
+                <div class="card">
+                    <el-form :model="systemSettings" label-width="150px">
+                        <el-form-item label="同步线程数">
+                            <el-input-number v-model="systemSettings.threadCount" :min="1" :max="20"
+                                             :step="1"></el-input-number>
+                        </el-form-item>
+                        <el-form-item label="日志保留天数">
+                            <el-input-number v-model="systemSettings.logRetentionDays" :min="1" :max="365"
+                                             :step="1"></el-input-number>
+                        </el-form-item>
+                        <el-form-item label="同步失败重试次数">
+                            <el-input-number v-model="systemSettings.retryCount" :min="0" :max="10"
+                                             :step="1"></el-input-number>
+                        </el-form-item>
+                        <el-form-item label="邮件通知">
+                            <el-switch v-model="systemSettings.enableEmailNotify"></el-switch>
+                        </el-form-item>
+                        <el-form-item label="通知邮箱" v-if="systemSettings.enableEmailNotify">
+                            <el-input v-model="systemSettings.notifyEmail"></el-input>
+                        </el-form-item>
+                        <el-form-item label="任务执行超时时间(分钟)">
+                            <el-input-number v-model="systemSettings.timeout" :min="5" :max="120"
+                                             :step="5"></el-input-number>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="saveSettings">保存设置</el-button>
+                            <el-button @click="resetSettings">重置</el-button>
+                        </el-form-item>
+                    </el-form>
+                </div>
+            </div>
+        </div>
+
+
+<!--         新建/编辑任务对话框 -->
+        <el-dialog title="任务配置" v-model="taskDialogVisible" width="700px">
+            <el-form :model="currentTask" label-width="120px">
+                <el-form-item label="任务名称" prop="name">
+                    <el-input v-model="currentTask.name"></el-input>
+                </el-form-item>
+                <el-form-item label="源数据库" prop="sourceId">
+                    <el-select v-model="currentTask.sourceId" placeholder="请选择源数据库">
+                        <el-option v-for="db in dataSources" :key="db.id" :label="db.name" :value="db.id"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="源表" prop="sourceTable">
+                    <el-input v-model="currentTask.sourceTable" placeholder="例如: public.users"></el-input>
+                </el-form-item>
+                <el-form-item label="目标数据库" prop="targetId">
+                    <el-select v-model="currentTask.targetId" placeholder="请选择目标数据库">
+                        <el-option v-for="db in dataSources" :key="db.id" :label="db.name" :value="db.id"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="目标表" prop="targetTable">
+                    <el-input v-model="currentTask.targetTable" placeholder="例如: public.users_copy"></el-input>
+                </el-form-item>
+                <el-form-item label="同步类型" prop="syncType">
+                    <el-radio-group v-model="currentTask.syncType">
+                        <el-radio label="full">全量同步</el-radio>
+                        <el-radio label="incremental">增量同步</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item label="同步间隔(分钟)" prop="interval">
+                    <el-input-number v-model="currentTask.interval" :min="1" :max="1440" :step="1"></el-input-number>
+                </el-form-item>
+                <el-form-item label="同步条件" prop="condition">
+                    <el-input v-model="currentTask.condition" placeholder="例如: status = 'active'"></el-input>
+                </el-form-item>
+                <el-form-item label="字段映射">
+                    <el-table :data="currentTask.fieldMappings" border>
+                        <el-table-column label="源字段" width="150">
+                            <template slot-scope="scope">
+                                <el-input v-model="scope.row.sourceField"></el-input>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="目标字段" width="150">
+                            <template slot-scope="scope">
+                                <el-input v-model="scope.row.targetField"></el-input>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="操作" width="100">
+                            <template slot-scope="scope">
+                                <el-button
+                                        type="text"
+                                        size="small"
+                                        @click="removeFieldMapping(scope.$index)"
+                                        style="color: #e74c3c;"
+                                >
+                                    <i class="fas fa-trash"></i>
+                                </el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    <el-button type="text" @click="addFieldMapping" style="margin-top: 10px;">
+                        <i class="fas fa-plus"></i> 添加字段映射
+                    </el-button>
+                </el-form-item>
+            </el-form>
+            <div slot="footer">
+                <el-button @click="taskDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="saveTask">保存</el-button>
+            </div>
+        </el-dialog>
+
+    </main>
+</div>
+
+<!-- 在 </body> 标签前添加以下代码 -->
+<script src="js/dbsyncer.js"></script>
+</body>
+</html>
+    

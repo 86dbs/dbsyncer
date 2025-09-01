@@ -18,6 +18,6 @@ public interface DataCorrectionService {
      * @param mappingId 驱动id
      * @return 任务id
      */
-    String correct(String mappingId);
+    String correct(String taskId);
 
 }

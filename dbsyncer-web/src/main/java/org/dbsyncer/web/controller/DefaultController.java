@@ -25,10 +25,15 @@ public class DefaultController implements ErrorPageRegistrar {
         return "index.html";
     }
 
-    @RequestMapping({"/login", "/login.html"})
-    public String index(ModelMap model) {
-        model.put("enableCDN", systemConfigService.getSystemConfig().isEnableCDN());
-        return "login.html";
+//    @RequestMapping({"/login", "/login2.html"})
+//    public String index(ModelMap model) {
+//        model.put("enableCDN", systemConfigService.getSystemConfig().isEnableCDN());
+//        return "login2.html";
+//    }
+
+    @RequestMapping({"/login", "/ui/login2.html"})
+    public String index() {
+        return "/ui/login2.html";
     }
 
     @Override

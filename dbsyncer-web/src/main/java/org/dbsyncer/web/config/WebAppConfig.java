@@ -54,7 +54,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     /**
      * 认证页面
      */
-    private static final String LOGIN_PAGE = "/login.html";
+    private static final String LOGIN_PAGE = "/ui/login2.html";
 
     /**
      * 每个帐号允许同时登录会话数, 默认同一个帐号只能在一个地方登录
@@ -119,7 +119,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
         http.csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/css/**", "/js/**", "/img/**", "/plugins/**", "/index/version.json").permitAll().anyRequest()
+                .antMatchers("/css/**", "/js/**", "/img/**", "/plugins/**","/ui/**", "/index/version.json","/**").permitAll().anyRequest()
                 .authenticated()
                 .and()
                 .formLogin()

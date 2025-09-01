@@ -18,6 +18,6 @@ public interface DataVerificationService {
      * @param mappingId 驱动id
      * @return 任务id
      */
-    String verify(String mappingId);
+    String verify(String taskId);
 
 }

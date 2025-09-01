@@ -43,8 +43,22 @@ public class IndexController {
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);
         }
-        return "index/index.html";
+        return "index2.html";
     }
+
+    @GetMapping("/getConnectList")
+    @ResponseBody
+    public ModelMap getConnectList(String projectGroupId) {
+        ModelMap model = new ModelMap();
+        ProjectGroupVo projectGroup = projectGroupService.getProjectGroup(projectGroupId);
+        model.put("connectorSize", projectGroup.getConnectorSize());
+        model.put("connectors", projectGroup.getConnectors());
+        model.put("mappings", projectGroup.getMappings());
+        model.put("projectGroupId", projectGroupId);
+        model.put("projectGroups", projectGroupService.getProjectGroupAll());
+        return model;
+    }
+
 
     @GetMapping("/version.json")
     @ResponseBody
