@@ -13,7 +13,6 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.consumer.ParserConsumer;
-import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -25,7 +24,6 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -44,7 +42,7 @@ import java.util.stream.Collectors;
  * @Date 2020-04-26 15:28
  */
 @Component
-public final class IncrementPuller extends AbstractPuller implements ApplicationListener<RefreshOffsetEvent>, ScheduledTaskJob {
+public final class IncrementPuller extends AbstractPuller implements ScheduledTaskJob {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -120,20 +118,6 @@ public final class IncrementPuller extends AbstractPuller implements Application
             tableGroupContext.clear(metaId);
             publishClosedEvent(metaId);
             logger.info("关闭成功:{}", metaId);
-        }
-    }
-
-    @Override
-    public void onApplicationEvent(RefreshOffsetEvent event) {
-        ChangedOffset offset = event.getChangedOffset();
-        if (offset != null) {
-            Meta meta = profileComponent.getMeta(offset.getMetaId());
-            if (meta != null) {
-                Listener listener = meta.getListener();
-                if (listener != null) {
-                    listener.refreshEvent(offset);
-                }
-            }
         }
     }
 

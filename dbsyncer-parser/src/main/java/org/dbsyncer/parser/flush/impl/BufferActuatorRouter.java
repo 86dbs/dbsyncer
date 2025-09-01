@@ -3,6 +3,10 @@
  */
 package org.dbsyncer.parser.flush.impl;
 
+import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.sdk.listener.Listener;
+import org.dbsyncer.sdk.model.ChangedOffset;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.common.config.TableGroupBufferConfig;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.TableGroup;
@@ -12,6 +16,7 @@ import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -32,6 +37,9 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public final class BufferActuatorRouter implements DisposableBean {
 
+    @Autowired
+    private ProfileComponent profileComponent;
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
@@ -47,6 +55,27 @@ public final class BufferActuatorRouter implements DisposableBean {
      * 驱动缓存执行路由列表
      */
     private final Map<String, Map<String, TableGroupBufferActuator>> router = new ConcurrentHashMap<>();
+    
+    /**
+     * 刷新监听器偏移量
+     *
+     * @param offset 偏移量
+     */
+    public void refreshOffset(ChangedOffset offset) {
+        if (offset != null) {
+            Meta meta = profileComponent.getMeta(offset.getMetaId());
+            if (meta != null) {
+                Listener listener = meta.getListener();
+                if (listener != null) {
+                    try {
+                        listener.refreshEvent(offset);
+                    } catch (Exception e) {
+                        logger.error("刷新监听器偏移量失败: metaId={}, error={}", offset.getMetaId(), e.getMessage(), e);
+                    }
+                }
+            }
+        }
+    }
 
     public void execute(String metaId, ChangedEvent event) {
         event.getChangedOffset().setMetaId(metaId);

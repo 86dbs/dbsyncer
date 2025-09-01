@@ -22,7 +22,7 @@ Meta 记录了"做得怎么样"，即同步任务的执行状态和进度。对�
 ## 核心类
 
 BufferActuator
-- TableGroupBufferActuator 处理字段映射，具有更好的性能（独立线程池），但有数量限制，每个驱动器 max-buffer-actuator-size 个
+- TableGroupBufferActuator 处理字段映射，每个表对应一个实例，具有更好的性能（独立线程池），但有数量限制，每个驱动器 max-buffer-actuator-size 个
 - GeneralBufferActuator 在没有专用 TableGroupBufferActuator 的情况下发挥作用, 由 BufferActuatorRouter 决定
 - StorageBufferActuator 处理数据持久化任务
 

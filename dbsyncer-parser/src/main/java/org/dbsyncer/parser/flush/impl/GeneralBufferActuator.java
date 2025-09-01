@@ -84,7 +84,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     private FlushStrategy flushStrategy;
 
     @Resource
-    private ApplicationContext applicationContext;
+    private BufferActuatorRouter bufferActuatorRouter;
+
+    // @Resource
+    // private ApplicationContext applicationContext;
 
     @Resource
     private DDLParser ddlParser;
@@ -150,8 +153,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 break;
             case ROW:
                 pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
-                // 发布刷新增量点事件
-                applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
+                // 直接调用 router 刷新偏移量，替代事件发布
+                bufferActuatorRouter.refreshOffset(response.getChangedOffset());
                 break;
             default:
                 break;
@@ -257,8 +260,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             // 6.持久化存储 & 更新缓存配置
             profileComponent.editTableGroup(tableGroup);
 
-            // 7.发布更新事件
-            applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
+            // 7.发布更新事件 -> 直接调用 router 刷新偏移量，替代事件发布
+            bufferActuatorRouter.refreshOffset(response.getChangedOffset());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
