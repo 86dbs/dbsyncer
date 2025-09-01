@@ -115,9 +115,6 @@ public class Picker {
         Object value = null;
         for (Filter f : or) {
             value = row.get(f.getName());
-            if (null == value) {
-                continue;
-            }
             if (compareValueWithFilter(f, value)) {
                 return true;
             }
@@ -127,9 +124,6 @@ public class Picker {
         // 并 关系(成立所有条件)
         for (Filter f : add) {
             value = row.get(f.getName());
-            if (null == value) {
-                continue;
-            }
             if (!compareValueWithFilter(f, value)) {
                 return false;
             }
@@ -147,7 +141,21 @@ public class Picker {
      * @return
      */
     private boolean compareValueWithFilter(Filter filter, Object comparedValue) {
-        CompareFilter compareFilter = FilterEnum.getCompareFilter(filter.getFilter());
+        final FilterEnum filterEnum = FilterEnum.getFilterEnum(filter.getFilter());
+        final CompareFilter compareFilter = filterEnum.getCompareFilter();
+
+        // 支持 NULL 比较
+        switch (filterEnum) {
+            case IS_NULL:
+            case IS_NOT_NULL:
+                // 此处传入 “not null” 表示有值，没必要对原始值进行转换
+                return compareFilter.compare(null == comparedValue ? null : "not null", filter.getValue());
+            default:
+                if (comparedValue == null) {
+                    return false;
+                }
+                break;
+        }
 
         // 支持时间比较
         if (comparedValue instanceof Timestamp) {

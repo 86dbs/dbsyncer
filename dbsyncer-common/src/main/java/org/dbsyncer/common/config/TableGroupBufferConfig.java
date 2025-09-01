@@ -13,10 +13,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "dbsyncer.parser.table.group")
 public class TableGroupBufferConfig extends BufferActuatorConfig {
-    /**
-     * 最多可分配的表执行器个数
-     */
-    private int maxBufferActuatorSize;
 
     /**
      * 工作线程数
@@ -32,14 +28,6 @@ public class TableGroupBufferConfig extends BufferActuatorConfig {
      * 工作线任务队列
      */
     private int threadQueueCapacity = 1000;
-
-    public int getMaxBufferActuatorSize() {
-        return maxBufferActuatorSize;
-    }
-
-    public void setMaxBufferActuatorSize(int maxBufferActuatorSize) {
-        this.maxBufferActuatorSize = maxBufferActuatorSize;
-    }
 
     public int getThreadCoreSize() {
         return threadCoreSize;

@@ -97,7 +97,7 @@ public final class IncrementPuller extends AbstractPuller implements ScheduledTa
             } catch (Exception e) {
                 close(metaId);
                 logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
-                logger.error("运行异常，结束增量同步{}:{}", metaId, e.getMessage());
+                logger.error("运行异常，结束增量同步：{}", metaId, e);
             }
         });
         worker.setName("increment-worker-" + mapping.getId());

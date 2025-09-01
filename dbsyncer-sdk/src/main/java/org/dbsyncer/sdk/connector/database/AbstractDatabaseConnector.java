@@ -110,14 +110,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             String schemaNamePattern = null == schema ? conn.getSchema() : schema;
             DatabaseMetaData metaData = conn.getMetaData();
             List<String> primaryKeys = findTablePrimaryKeys(metaData, catalog, schemaNamePattern, tableNamePattern);
-            ResultSet columnMetadata = metaData.getColumns(catalog, schemaNamePattern, tableNamePattern, null);
-            while (columnMetadata.next()) {
-                String columnName = columnMetadata.getString(4);
-                int columnType = columnMetadata.getInt(5);
-                String typeName = columnMetadata.getString(6);
-                int columnSize = columnMetadata.getInt(7);
-                int ratio = columnMetadata.getInt(9);
-                fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio));
+            try (ResultSet columnMetadata = metaData.getColumns(catalog, schemaNamePattern, tableNamePattern, null)) {
+                while (columnMetadata.next()) {
+                    String columnName = columnMetadata.getString("COLUMN_NAME");
+                    int columnType = columnMetadata.getInt("DATA_TYPE");
+                    String typeName = columnMetadata.getString("TYPE_NAME");
+                    int columnSize = Math.max(0, columnMetadata.getInt("COLUMN_SIZE"));
+                    int ratio = Math.max(0, columnMetadata.getInt("DECIMAL_DIGITS"));
+                    fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio));
+                }
             }
             return fields;
         });
@@ -694,7 +695,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     private boolean isPk(Map<String, List<String>> tables, String tableName, String name) {
         List<String> pk = tables.get(tableName);
-        return !CollectionUtils.isEmpty(pk) && pk.contains(name);
+        if (CollectionUtils.isEmpty(pk)) {
+            return false;
+        }
+        return pk.stream().anyMatch(key -> key.equalsIgnoreCase(name));
     }
 
     private void removeFieldWithPk(List<Field> fields, List<Field> pkFields) {

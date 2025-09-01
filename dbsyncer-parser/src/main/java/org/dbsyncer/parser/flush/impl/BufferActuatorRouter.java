@@ -46,7 +46,7 @@ public final class BufferActuatorRouter implements DisposableBean {
     private TableGroupBufferConfig tableGroupBufferConfig;
 
     @Resource
-    private TableGroupBufferActuator tableGroupBufferActuator;
+    private TableGroupBufferActuatorService tableGroupBufferActuatorService;
 
     @Resource
     private GeneralBufferActuator generalBufferActuator;
@@ -55,7 +55,7 @@ public final class BufferActuatorRouter implements DisposableBean {
      * 驱动缓存执行路由列表
      */
     private final Map<String, Map<String, TableGroupBufferActuator>> router = new ConcurrentHashMap<>();
-    
+
     /**
      * 刷新监听器偏移量
      *
@@ -102,15 +102,15 @@ public final class BufferActuatorRouter implements DisposableBean {
             Map<String, TableGroupBufferActuator> processor = new ConcurrentHashMap<>();
             for (TableGroup tableGroup : tableGroups) {
                 // 超过执行器上限
-                if (processor.size() >= tableGroupBufferConfig.getMaxBufferActuatorSize()) {
-                    logger.warn("Not allowed more than table processor limited size.  maxBufferActuatorSize:{}", tableGroupBufferConfig.getMaxBufferActuatorSize());
+                if (processor.size() >= profileComponent.getSystemConfig().getMaxBufferActuatorSize()) {
+                    logger.warn("Not allowed more than table processor limited size:{}", profileComponent.getSystemConfig().getMaxBufferActuatorSize());
                     break;
                 }
                 final String tableName = tableGroup.getSourceTable().getName();
                 processor.computeIfAbsent(tableName, name -> {
                     TableGroupBufferActuator newBufferActuator = null;
                     try {
-                        newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuator.clone();
+                        newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuatorService.clone();
                         newBufferActuator.setTableName(name);
                         newBufferActuator.buildConfig();
                     } catch (CloneNotSupportedException ex) {

@@ -23,10 +23,8 @@ public abstract class ByteType extends AbstractDataType<Byte> {
 
     @Override
     protected Object convert(Object val, Field field) {
-        if (val instanceof Integer) {
-            ByteBuffer buffer = ByteBuffer.allocate(4);
-            buffer.putInt((Integer) val);
-            return buffer.array();
+        if (val instanceof Number) {
+            return ((Number) val).byteValue();
         }
         if (val instanceof Boolean) {
             Boolean b = (Boolean) val;

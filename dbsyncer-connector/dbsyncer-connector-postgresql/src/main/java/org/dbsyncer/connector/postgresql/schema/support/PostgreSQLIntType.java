@@ -17,7 +17,9 @@ import java.util.stream.Collectors;
  */
 public class PostgreSQLIntType extends IntType {
     private enum TypeEnum {
-        INT4("int4");
+        INT2("int2"),
+        INT4("int4"),
+        SERIAL("serial");
 
         private final String value;
 
