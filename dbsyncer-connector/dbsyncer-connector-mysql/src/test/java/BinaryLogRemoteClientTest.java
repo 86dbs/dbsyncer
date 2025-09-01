@@ -5,6 +5,7 @@ import com.github.shyiko.mysql.binlog.event.*;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.connector.mysql.binlog.BinaryLogClient;
 import org.dbsyncer.connector.mysql.binlog.BinaryLogRemoteClient;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,7 @@ public class BinaryLogRemoteClientTest {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Test
+    @Ignore
     public void testConnect() throws Exception {
         String hostname = "127.0.0.1";
         int port = 3306;

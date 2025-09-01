@@ -1,3 +1,4 @@
+import org.junit.Ignore;
 import org.junit.Test;
 import org.postgresql.PGConnection;
 import org.postgresql.PGProperty;
@@ -22,6 +23,7 @@ public class PGReplicationTest {
     private Connection connection;
 
     @Test
+    @Ignore
     public void testPG() throws SQLException, InterruptedException {
         String url = "jdbc:postgresql://127.0.0.1:5432/postgres";
         String driverClassNam = "org.postgresql.Driver";

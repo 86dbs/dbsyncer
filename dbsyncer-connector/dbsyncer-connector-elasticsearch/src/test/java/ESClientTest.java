@@ -34,6 +34,7 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +78,7 @@ public class ESClientTest {
     }
 
     @Test
+    @Ignore
     public void isExistsIndexTest() {
         try {
             GetIndexRequest request = new GetIndexRequest(indexName);
@@ -88,6 +90,7 @@ public class ESClientTest {
     }
 
     @Test
+    @Ignore
     public void createIndexTest() throws IOException {
         CreateIndexRequest request = new CreateIndexRequest(indexName);
         request.settings(Settings.builder()
@@ -148,6 +151,7 @@ public class ESClientTest {
     }
 
     @Test
+    @Ignore
     public void getIndexTest() throws IOException {
         GetIndexRequest request = new GetIndexRequest(indexName);
         GetIndexResponse indexResponse = client.indices().get(request, RequestOptions.DEFAULT);
@@ -165,6 +169,7 @@ public class ESClientTest {
     }
 
     @Test
+    @Ignore
     public void deleteIndexTest() throws IOException {
         DeleteIndexRequest request = new DeleteIndexRequest(indexName);
         AcknowledgedResponse response = client.indices().delete(request, RequestOptions.DEFAULT);
@@ -172,6 +177,7 @@ public class ESClientTest {
     }
 
     @Test
+    @Ignore
     public void pushTest() throws IOException {
         Map<String, Object> map = new HashMap<>();
         map.put("id", 2);
@@ -188,6 +194,7 @@ public class ESClientTest {
     }
 
     @Test
+    @Ignore
     public void bulkPushTest() throws IOException {
         BulkRequest request = new BulkRequest();
         Map<String, Object> m1 = new HashMap<>();
@@ -219,6 +226,7 @@ public class ESClientTest {
     }
 
     @Test
+    @Ignore
     public void deleteTest() throws IOException {
         DeleteRequest request = new DeleteRequest(indexName, type, "2");
         DeleteResponse delete = client.delete(request, RequestOptions.DEFAULT);
@@ -226,6 +234,7 @@ public class ESClientTest {
     }
 
     @Test
+    @Ignore
     public void bulkDeleteTest() throws IOException {
         BulkRequest request = new BulkRequest();
         request.add(new DeleteRequest(indexName, type, "1"));
@@ -240,6 +249,7 @@ public class ESClientTest {
     }
 
     @Test
+    @Ignore
     public void searchTest() throws IOException {
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         sourceBuilder.query(QueryBuilders.boolQuery().filter(QueryBuilders.termsQuery("tags", Arrays.asList(200L, 300L))));
@@ -260,6 +270,7 @@ public class ESClientTest {
     }
 
     @Test
+    @Ignore
     public void getCountTest() throws IOException {
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         // 取消限制返回查询条数10000

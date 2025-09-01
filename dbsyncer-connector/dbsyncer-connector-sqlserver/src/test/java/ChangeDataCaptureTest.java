@@ -6,6 +6,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.sqlserver.model.SqlServerChangeTable;
 import org.dbsyncer.connector.sqlserver.cdc.Lsn;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +65,7 @@ public class ChangeDataCaptureTest {
      * @throws SQLException
      */
     @Test
+    @Ignore
     public void testConnect() throws SQLException, InterruptedException {
         ChangeDataCaptureTest cdc = new ChangeDataCaptureTest();
         cdc.start();

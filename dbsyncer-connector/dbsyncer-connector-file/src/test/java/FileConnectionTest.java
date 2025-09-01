@@ -1,4 +1,5 @@
 import org.apache.commons.io.IOUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,7 @@ public class FileConnectionTest {
     private CountDownLatch latch;
 
     @Test
+    @Ignore
     public void testConnection() throws InterruptedException, IOException {
         File f = new File("D:\\test\\abc.txt");
         RandomAccessFile file = new RandomAccessFile(f, "rw");

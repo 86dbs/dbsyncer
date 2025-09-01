@@ -13,6 +13,7 @@ import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ public class ConnectionTest {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Test
+    @Ignore
     public void testBatchUpdateContinuesWithTransaction() throws InterruptedException {
         for (int i = 0; i < 100; i++) {
             testBatchUpdateWithTransaction();
@@ -57,6 +59,7 @@ public class ConnectionTest {
     }
 
     @Test
+    @Ignore
     public void testBatchUpdateWithTransaction() throws InterruptedException {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
 
@@ -115,6 +118,7 @@ public class ConnectionTest {
     }
 
     @Test
+    @Ignore
     public void testByte() {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createOracleConfig());
 
@@ -147,6 +151,7 @@ public class ConnectionTest {
     }
 
     @Test
+    @Ignore
     public void testConnection() throws InterruptedException {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createSqlServerConfig());
 
@@ -192,6 +197,7 @@ public class ConnectionTest {
     }
 
     @Test
+    @Ignore
     public void testQuery() {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
         // 3、执行SQL
@@ -203,6 +209,7 @@ public class ConnectionTest {
     }
 
     @Test
+    @Ignore
     public void testBatchInsert() {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
 
@@ -241,6 +248,7 @@ public class ConnectionTest {
     }
 
     @Test
+    @Ignore
     public void testBatchUpdate() {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
 
@@ -279,6 +287,7 @@ public class ConnectionTest {
     }
 
     @Test
+    @Ignore
     public void testBatchDelete() {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
 
@@ -311,6 +320,7 @@ public class ConnectionTest {
     }
 
     @Test
+    @Ignore
     public void testBatchIUD() {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
 
@@ -424,6 +434,7 @@ public class ConnectionTest {
     }
 
     @Test
+    @Ignore
     public void testReadSchema() {
         getTables(createOracleConfig(), "test", "AE86", "MY_ORG");
         getTables(createOracleConfig(), "test", "AE86", null);
@@ -439,6 +450,7 @@ public class ConnectionTest {
     }
 
     @Test
+    @Ignore
     public void testGetColumnsDetails() {
         final String schema = "root";
         final String tableNamePattern = "sw_test";

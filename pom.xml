@@ -229,6 +229,15 @@
                 <artifactId>log4j-jul</artifactId>
                 <version>${log4j2.version}</version>
             </dependency>
+            
+            <!-- 排除logback-classic -->
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.2.11</version>
+                <scope>test</scope>
+                <optional>true</optional>
+            </dependency>
 
             <dependency>
                 <groupId>junit</groupId>

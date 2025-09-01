@@ -14,6 +14,7 @@ import org.dbsyncer.connector.kafka.util.KafkaUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +63,7 @@ public class KafkaClientTest {
         client.close();
     }
 
+    @Ignore("禁用此测试，因为使用本地kafka")
     @Test
     public void testProducerAndConsumer() throws Exception {
         logger.info("test begin");
