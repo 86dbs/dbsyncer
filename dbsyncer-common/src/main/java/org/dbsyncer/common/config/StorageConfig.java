@@ -28,7 +28,7 @@ public class StorageConfig extends BufferActuatorConfig {
     /**
      * 最大工作线程数
      */
-    private int maxThreadSize = 16;
+    private int maxThreadSize = Runtime.getRuntime().availableProcessors();
 
     /**
      * 工作线任务队列
@@ -37,7 +37,9 @@ public class StorageConfig extends BufferActuatorConfig {
 
     @Bean(name = "storageExecutor", destroyMethod = "shutdown")
     public ThreadPoolTaskExecutor storageExecutor() {
-        return ThreadPoolUtil.newThreadPoolTaskExecutor(threadCoreSize, maxThreadSize, threadQueueCapacity, 30, "StorageExecutor-");
+        // 确保核心线程数不超过最大线程数
+        int coreSize = Math.min(threadCoreSize, maxThreadSize);
+        return ThreadPoolUtil.newThreadPoolTaskExecutor(coreSize, maxThreadSize, threadQueueCapacity, 30, "StorageExecutor-");
     }
 
     public int getThreadCoreSize() {
@@ -49,7 +51,8 @@ public class StorageConfig extends BufferActuatorConfig {
     }
 
     public int getMaxThreadSize() {
-        return maxThreadSize;
+        // 确保maxThreadSize不小于threadCoreSize
+        return Math.max(maxThreadSize, threadCoreSize);
     }
 
     public void setMaxThreadSize(int maxThreadSize) {

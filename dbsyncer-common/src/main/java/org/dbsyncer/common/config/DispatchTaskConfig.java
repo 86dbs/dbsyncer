@@ -27,7 +27,7 @@ public class DispatchTaskConfig {
     /**
      * 最大工作线程数
      */
-    private int maxThreadSize = 16;
+    private int maxThreadSize = Runtime.getRuntime().availableProcessors() * 2;
 
     /**
      * 工作线任务队列
@@ -36,7 +36,9 @@ public class DispatchTaskConfig {
 
     @Bean(name = "dispatchTaskExecutor", destroyMethod = "shutdown")
     public ThreadPoolTaskExecutor dispatchTaskExecutor() {
-        return ThreadPoolUtil.newThreadPoolTaskExecutor(threadCoreSize, maxThreadSize, threadQueueCapacity, 30, "DispatchTaskExecutor-");
+        // 确保核心线程数不超过最大线程数
+        int coreSize = Math.min(threadCoreSize, maxThreadSize);
+        return ThreadPoolUtil.newThreadPoolTaskExecutor(coreSize, maxThreadSize, threadQueueCapacity, 30, "DispatchTaskExecutor-");
     }
 
     public int getThreadCoreSize() {

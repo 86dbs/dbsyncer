@@ -22,7 +22,7 @@ public class TableGroupBufferConfig extends BufferActuatorConfig {
     /**
      * 最大工作线程数
      */
-    private int maxThreadSize = 10;
+    private int maxThreadSize = Runtime.getRuntime().availableProcessors() * 2;
 
     /**
      * 工作线任务队列
@@ -38,7 +38,8 @@ public class TableGroupBufferConfig extends BufferActuatorConfig {
     }
 
     public int getMaxThreadSize() {
-        return maxThreadSize;
+        // 确保maxThreadSize不小于threadCoreSize
+        return Math.max(maxThreadSize, threadCoreSize);
     }
 
     public void setMaxThreadSize(int maxThreadSize) {
