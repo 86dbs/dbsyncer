@@ -3,11 +3,11 @@
 ## 2.3.0 (未发布) 
 
 全量+增量
+字段全选
 
 ## 2.2.0 (未发布)
 
-- 移除 kafka 中不必要的配置
-- 将 kafka 的 topic 移植到 meta 中。
+- 将 kafka 的 topic 移植到 meta 中，并简化 kafka 的配置。
 - bug fixed: max 线程数小于 core 线程数，线程池异常问题。（OK）
 
 ## 2.1.1

@@ -24,11 +24,7 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConfig> {
     @Override
     public void modify(KafkaConfig connectorConfig, Map<String, String> params) {
         String bootstrapServers = params.get("bootstrapServers");
-        String topic = params.get("topic");
-        String fields = params.get("fields");
         Assert.hasText(bootstrapServers, "bootstrapServers is empty.");
-        Assert.hasText(topic, "topic is empty.");
-        Assert.hasText(fields, "fields is empty.");
 
         String groupId = params.get("groupId");
         String serializer = params.get("serializer");
@@ -48,8 +44,6 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConfig> {
         int maxRequestSize = NumberUtil.toInt(params.get("maxRequestSize"));
 
         connectorConfig.setBootstrapServers(bootstrapServers);
-        connectorConfig.setTopic(topic);
-        connectorConfig.setFields(fields);
 
         connectorConfig.setGroupId(groupId);
         connectorConfig.setSerializer(serializer);

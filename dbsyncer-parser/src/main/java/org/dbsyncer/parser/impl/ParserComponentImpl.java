@@ -133,6 +133,9 @@ public class ParserComponentImpl implements ParserComponent {
         String sTableName = sourceTable.getName();
         String tTableName = group.getTargetTable().getName();
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
+        // append mapping param to command
+        if (mapping.getParams() != null)
+            command.putAll(mapping.getParams());
         // 获取同步字段
         Picker picker = new Picker(group);
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);

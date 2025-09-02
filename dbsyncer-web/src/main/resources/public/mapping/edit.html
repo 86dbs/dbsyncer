@@ -107,6 +107,9 @@
                             </h4>
                         </div>
                         <div id="mappingSuperConfig" class="panel-body panel-collapse collapse in">
+                            <!-- 通用配置 -->
+                            <div th:replace="mapping/editCommon :: content"></div>
+
                             <!-- 全量配置 -->
                             <div th:id="mappingFullConfig" class="hidden" th:fragment="content">
                                 <div th:replace="mapping/editFull :: content"></div>

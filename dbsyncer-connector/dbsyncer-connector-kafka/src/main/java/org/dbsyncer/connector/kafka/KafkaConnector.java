@@ -6,7 +6,6 @@ package org.dbsyncer.connector.kafka;
 import org.apache.kafka.common.KafkaException;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.validator.KafkaConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
@@ -41,7 +40,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final KafkaConfigValidator configValidator = new KafkaConfigValidator();
-    
+
     private final KafkaConvertor kafkaConvertor = new KafkaConvertor();
 
     @Override
@@ -76,21 +75,17 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public String getConnectorInstanceCacheKey(KafkaConfig config) {
-        return String.format("%s-%s-%s-%s", config.getConnectorType(), config.getBootstrapServers(), config.getTopic(), config.getGroupId());
+        return String.format("%s-%s-%s", config.getConnectorType(), config.getBootstrapServers(), config.getGroupId());
     }
 
     @Override
     public List<Table> getTable(KafkaConnectorInstance connectorInstance) {
-        List<Table> topics = new ArrayList<>();
-        topics.add(new Table(connectorInstance.getConfig().getTopic()));
-        return topics;
+        return new ArrayList<>();
     }
 
     @Override
     public MetaInfo getMetaInfo(KafkaConnectorInstance connectorInstance, String tableName) {
-        KafkaConfig config = connectorInstance.getConfig();
-        List<Field> fields = JsonUtil.jsonToArray(config.getFields(), Field.class);
-        return new MetaInfo().setColumn(fields);
+        return new MetaInfo();
     }
 
     @Override
@@ -112,17 +107,23 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         }
 
         Result result = new Result();
-        final KafkaConfig cfg = connectorInstance.getConfig();
         final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
         try {
-            String topic = cfg.getTopic();
+            // 从 command 中获取 topic 参数，如果没有则使用目标表名作为默认值
+            String topic = context.getCommand().get("topic");
+
+            // 验证 topic 是否为空
+            if (topic == null || topic.isEmpty()) {
+                throw new KafkaException("Topic is required");
+            }
+
             // 默认取第一个主键
             final String pk = pkFields.get(0).getName();
             KafkaClient kafkaClient = connectorInstance.getConnection();
-            
+
             // 格式化消息
             List<Map> formattedData = kafkaConvertor.formatMessages(context, data, pkFields);
-            
+
             formattedData.forEach(row -> kafkaClient.send(topic, String.valueOf(row.get(pk)), row));
             kafkaClient.producer.flush();
             logger.debug("----kafka wrote topic: {}, number: {}", topic, formattedData.size());

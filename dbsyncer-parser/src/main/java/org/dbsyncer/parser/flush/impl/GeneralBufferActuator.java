@@ -202,6 +202,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         context.setPluginExtInfo(tableGroup.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
         context.setEnableSchemaResolver(enableSchemaResolver);
+        // 设置Mapping参数
+        if (mapping.getParams() != null) {
+            context.getCommand().putAll(mapping.getParams());
+        }
         pluginFactory.process(tableGroup.getPlugin(), context, ProcessEnum.CONVERT);
 
         // 4、批量执行同步

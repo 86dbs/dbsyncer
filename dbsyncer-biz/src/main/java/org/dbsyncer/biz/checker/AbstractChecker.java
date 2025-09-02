@@ -73,8 +73,9 @@ public abstract class AbstractChecker implements Checker {
      */
     protected void modifySuperConfigModel(AbstractConfigModel model, Map<String, String> params) {
         // 全局参数
-        String mappingParams = params.get("params");
-        model.setParams(StringUtil.isNotBlank(mappingParams) ? JsonUtil.jsonToObj(mappingParams, Map.class) : new ConcurrentHashMap<>());
+        String mappingParams = params.get("commonParams");
+        Map<String, String> paramMap = StringUtil.isNotBlank(mappingParams) ? JsonUtil.jsonToObj(mappingParams, Map.class) : new ConcurrentHashMap<>();
+        model.setParams(paramMap);
 
         // 过滤条件
         String filterJson = params.get("filter");

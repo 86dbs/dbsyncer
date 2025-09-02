@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <!-- 通用参数配置区域 -->
+    <div class="form-group">
+        <div class="row">
+            <div class="col-sm-12">
+                <label class="col-sm-2 control-label">扩展参数</label>
+                <div class="col-sm-10">
+                    <table class="table table-bordered" id="commonParamsTable">
+                        <thead>
+                            <tr>
+                                <th>键</th>
+                                <th>值</th>
+                                <th width="100">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${mapping?.params != null}" th:each="entry : ${mapping?.params}">
+                                <td>
+                                    <input type="text" class="form-control common-param-key" th:value="${entry.key}">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control common-param-value" th:value="${entry.value}">
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-danger btn-sm remove-param">删除</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3">
+                                    <button type="button" class="btn btn-primary btn-sm" id="addCommonParam">添加参数</button>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <input type="hidden" id="commonParamsInput" name="commonParams" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        $(function() {
+            // 添加扩展参数
+            $('#addCommonParam').click(function() {
+                var newRow = `
+                    <tr>
+                        <td><input type="text" class="form-control common-param-key" placeholder="参数键"></td>
+                        <td><input type="text" class="form-control common-param-value" placeholder="参数值"></td>
+                        <td><button type="button" class="btn btn-danger btn-sm remove-param">删除</button></td>
+                    </tr>
+                `;
+                $('#commonParamsTable tbody').append(newRow);
+            });
+
+            // 删除通用参数
+            $(document).on('click', '.remove-param', function() {
+                $(this).closest('tr').remove();
+            });
+            
+            // 表单提交前处理通用参数
+            $('#mappingSubmitBtn').on('click', function(e) {
+                processCommonParams();
+            });
+            
+            // 处理通用参数的函数
+            function processCommonParams() {
+                var paramMap = {};
+                $('#commonParamsTable tbody tr').each(function(index) {
+                    var keyInput = $(this).find('.common-param-key');
+                    var valueInput = $(this).find('.common-param-value');
+                    
+                    if (keyInput.length > 0 && valueInput.length > 0) {
+                        var key = keyInput.val();
+                        var value = valueInput.val();
+                        
+                        if (key && key.trim() !== '') {
+                            paramMap[key] = value;
+                        }
+                    }
+                });
+                
+                // 将参数Map转换为JSON字符串
+                var commonParamsJson = JSON.stringify(paramMap);
+                $('#commonParamsInput').val(commonParamsJson);
+                
+                // 调试信息
+                return commonParamsJson;
+            }
+            
+            // 初始化时构建commonParams JSON
+            $(document).ready(function() {
+                setTimeout(function() {
+                    processCommonParams();
+                }, 500); // 延迟执行确保Thymeleaf渲染完成
+            });
+        });
+    </script>
+</div>
+
+</html>

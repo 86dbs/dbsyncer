@@ -5,24 +5,8 @@
 <div th:fragment="content">
     <div class="form-group">
         <label class="col-sm-2 control-label">URL<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：192.168.1.100:9092,192.168.1.200:9092"></i><strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="bootstrapServers" type="text" maxlength="1024" dbsyncer-valid="require" th:value="${connector?.config?.bootstrapServers}?:'127.0.0.1:9092'"/>
-        </div>
-        <label class="col-sm-2 control-label">Topic<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="topic" type="text" maxlength="64" dbsyncer-valid="require" th:value="${connector?.config?.topic}"/>
-        </div>
-    </div>
-
-    <div class="form-group">
-        <label class="col-sm-2 control-label">字段<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="支持11种字段类型。name字段名, typeName类型名称, type类型编码, pk是否为主键"></i><strong class="text-primary">*</strong></label>
         <div class="col-sm-10">
-            <textarea id="fields" name="fields" class="form-control dbsyncer_textarea_resize_none" maxlength="4096" dbsyncer-valid="require" rows="20" th:text="${connector?.config?.fields}"></textarea>
-        </div>
-    </div>
-    <div class="form-group">
-        <div class="col-sm-12 text-right">
-            <a href="javascript:format();"><span class="fa fa-magic fa-1x fa-flip-horizontal dbsyncer_pointer" title="美化"></span>美化</a>
+            <input class="form-control" name="bootstrapServers" type="text" maxlength="1024" dbsyncer-valid="require" th:value="${connector?.config?.bootstrapServers}?:'127.0.0.1:9092'"/>
         </div>
     </div>
 
@@ -155,31 +139,7 @@ linger.ms配合batch.size一起来设置，可避免一个Batch迟迟凑不满�
     </div>
 
     <script type="text/javascript">
-        function format(){
-            const $text = $("#fields");
-            if("" == $text.text()){
-                const data = [
-                    {"name":"id","typeName":"String","type":12,"pk":true},
-                    {"name":"age","typeName":"Integer","type":4},
-                    {"name":"count","typeName":"Long","type":-5},
-                    {"name":"type","typeName":"Short","type":5},
-                    {"name":"money","typeName":"Float","type":6},
-                    {"name":"score","typeName":"Double","type":8},
-                    {"name":"status","typeName":"Boolean","type":-7},
-                    // {"name":"photo","typeName":"byte[]","type":-2},
-                    {"name":"create_date","typeName":"Date","type":91},
-                    {"name":"time","typeName":"Time","type":92},
-                    {"name":"update_time","typeName":"Timestamp","type":93}
-                ];
-                $text.val(JSON.stringify(data, null, 4));
-                return;
-            }
-            $text.val(JSON.stringify(JSON.parse($text.text()), null, 4));
-        }
-
         $(function () {
-            format();
-
             // 初始化select插件
             initSelectIndex($(".select-control"), 1);
 
