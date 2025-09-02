@@ -212,7 +212,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         while (!queue.isEmpty() && batchCounter.get() < config.getBufferPullCount()) {
             Request poll = queue.poll();
             String key = getPartitionKey(poll);
-            Response response = map.compute(key, (k,v) -> {
+            Response response = map.compute(key, (k, v) -> {
                 if (v == null) {
                     try {
                         return responseClazz.newInstance();

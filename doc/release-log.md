@@ -1,8 +1,10 @@
 发布日志
 
-## 2.2.0
+## 2.2.0 (未发布)
 
 - 全量加增量
+## 2.1.1
+性能优化：RefreshOffsetEvent，FullRefreshEvent 使用回调机制替代 spring 事件机制
 
 ## 2.1.0 2025年8月5日
 

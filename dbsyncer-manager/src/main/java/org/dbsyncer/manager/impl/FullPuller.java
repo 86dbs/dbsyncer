@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.manager.impl;
 
+import org.dbsyncer.common.ProcessEvent;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.AbstractPuller;
@@ -11,7 +12,6 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.ParserEnum;
-import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -19,7 +19,6 @@ import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -27,7 +26,6 @@ import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,7 +38,7 @@ import java.util.concurrent.Executors;
  * @Date 2020-04-26 15:28
  */
 @Component
-public final class FullPuller extends AbstractPuller implements ApplicationListener<FullRefreshEvent> {
+public final class FullPuller extends AbstractPuller implements org.dbsyncer.manager.Puller, ProcessEvent {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -78,13 +76,13 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
                 } catch (Exception e) {
                     logService.log(LogType.SystemLog.ERROR, e.getMessage());
                 }
-                
+
                 // 清除task引用
                 Meta meta = profileComponent.getMeta(metaId);
                 if (meta != null) {
                     meta.setTask(null);
                 }
-                
+
                 publishClosedEvent(metaId);
                 logger.info("结束全量同步：{}, {}", metaId, mapping.getName());
             }
@@ -104,12 +102,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
                 meta.setTask(null);
             }
         }
-    }
-
-    @Override
-    public void onApplicationEvent(FullRefreshEvent event) {
-        // 异步监听任务刷新事件
-        flush(event.getTask());
     }
 
     private void doTask(Task task, Mapping mapping, List<TableGroup> list, Executor executor) {
@@ -163,6 +155,17 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.getIfBlank(StringUtil.join(task.getCursors(), StringUtil.COMMA), StringUtil.EMPTY));
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(task.getTableGroupIndex()));
         profileComponent.editConfigModel(meta);
+    }
+
+    @Override
+    public void taskFinished(String metaId) {
+        Meta meta = profileComponent.getMeta(metaId);
+        if (meta != null) {
+            Task task = meta.getTask();
+            if (task != null) {
+                flush(task);
+            }
+        }
     }
 
 }

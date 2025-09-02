@@ -3,19 +3,15 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.ProcessEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.event.FullRefreshEvent;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.FieldMapping;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Picker;
-import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.model.Task;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -29,12 +25,10 @@ import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
-import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -69,8 +63,9 @@ public class ParserComponentImpl implements ParserComponent {
     @Resource
     private ProfileComponent profileComponent;
 
+    // 移除ApplicationContext依赖，添加ProcessEvent依赖
     @Resource
-    private ApplicationContext applicationContext;
+    private ProcessEvent fullProcessEvent;
 
     @Override
     public MetaInfo getMetaInfo(String connectorId, String tableName) {
@@ -272,7 +267,8 @@ public class ParserComponentImpl implements ParserComponent {
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(Instant.now().toEpochMilli());
-        applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
+        // 替换事件发布为直接调用ProcessEvent的taskFinished方法
+        fullProcessEvent.taskFinished(task.getId());
     }
 
     /**
