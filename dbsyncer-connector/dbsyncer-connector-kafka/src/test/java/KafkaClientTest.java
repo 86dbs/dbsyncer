@@ -40,7 +40,6 @@ public class KafkaClientTest {
         config = new KafkaConfig();
         config.setBootstrapServers("127.0.0.1:9092");
         config.setTopic("mytopic");
-        config.setFields(getFields());
         config.setDeserializer(JsonToMapDeserializer.class.getName());
         config.setSerializer(MapToJsonSerializer.class.getName());
 

@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-Application<dbsyncer-web>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "org.dbsyncer.web.Application",
+            "projectName": "dbsyncer-web",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

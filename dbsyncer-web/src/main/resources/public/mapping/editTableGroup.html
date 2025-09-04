@@ -81,8 +81,7 @@
                                 <div class="col-md-5">
                                     <label class="col-sm-3 control-label text-right">数据源表字段</label>
                                     <div class="col-sm-9">
-                                        <select id="sourceTableField" class="form-control select-control-default">
-                                            <option value="" selected="selected">无</option>
+                                        <select id="sourceTableField" class="form-control select-control-table" multiple="multiple">
                                             <option th:each="c,s:${tableGroup?.sourceTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
                                         </select>
                                     </div>
@@ -96,8 +95,7 @@
                                     <div class="form-group">
                                         <label class="col-sm-3 control-label text-right">目标源表字段</label>
                                         <div class="col-sm-9">
-                                            <select id="targetTableField" class="form-control select-control-default">
-                                                <option value="" selected="selected">无</option>
+                                            <select id="targetTableField" class="form-control select-control-table" multiple="multiple">
                                                 <option th:each="c,s:${tableGroup?.targetTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
                                             </select>
                                         </div>
@@ -135,12 +133,12 @@
                                     </tr>
                                     </thead>
                                     <tbody id="fieldMappingList">
-                                        <tr th:id="'fieldMapping_'+${s.index + 1}" title='双击设置/取消主键' th:each="f,s:${tableGroup?.fieldMapping}">
-                                            <td>[[${f?.source?.name}]]</td>
-                                            <td>[[${f?.target?.name}]]</td>
-                                            <td><i th:if="${f?.target?.pk}" title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i></td>
-                                            <td><input type="checkbox" class="fieldMappingDeleteCheckbox" /></td>
-                                        </tr>
+                                    <tr th:id="'fieldMapping_'+${s.index + 1}" title='双击设置/取消主键' th:each="f,s:${tableGroup?.fieldMapping}">
+                                        <td>[[${f?.source?.name}]]</td>
+                                        <td>[[${f?.target?.name}]]</td>
+                                        <td><i th:if="${f?.target?.pk}" title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i></td>
+                                        <td><input type="checkbox" class="fieldMappingDeleteCheckbox" /></td>
+                                    </tr>
                                     </tbody>
                                 </table>
                             </div>

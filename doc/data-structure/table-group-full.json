@@ -1,0 +1,164 @@
+{
+  "command": {
+    "QUERY_CURSOR": "SELECT `id`, `name` FROM `test` WHERE `id` > ?  ORDER BY `id` LIMIT ?,?",
+    "QUERY": "SELECT `id`, `name` FROM `test` ORDER BY `id` LIMIT ?,?",
+    "QUERY_COUNT": "SELECT COUNT(1) FROM `test`"
+  },
+  "convert": [],
+  "createTime": 1756715724437,
+  "fieldMapping": [
+    {
+      "source": {
+        "columnSize": 10,
+        "name": "id",
+        "pk": true,
+        "ratio": 0,
+        "type": 4,
+        "typeName": "INT"
+      },
+      "target": {
+        "columnSize": 0,
+        "name": "id",
+        "pk": true,
+        "ratio": 0,
+        "type": 12,
+        "typeName": "String"
+      }
+    },
+    {
+      "source": {
+        "columnSize": 500,
+        "name": "name",
+        "pk": false,
+        "ratio": 0,
+        "type": 12,
+        "typeName": "VARCHAR"
+      },
+      "target": {
+        "columnSize": 500,
+        "name": "name",
+        "pk": false,
+        "ratio": 0,
+        "type": 12,
+        "typeName": "VARCHAR"
+      }
+    }
+  ],
+  "filter": [],
+  "id": "1412113626822742016",
+  "index": 1,
+  "mappingId": "1412113585097805824",
+  "name": "tableGroup",
+  "params": {},
+  "sourceTable": {
+    "column": [
+      {
+        "columnSize": 10,
+        "name": "id",
+        "pk": true,
+        "ratio": 0,
+        "type": 4,
+        "typeName": "INT"
+      },
+      {
+        "columnSize": 500,
+        "name": "name",
+        "pk": false,
+        "ratio": 0,
+        "type": 12,
+        "typeName": "VARCHAR"
+      }
+    ],
+    "count": 72,
+    "name": "test",
+    "type": "TABLE"
+  },
+  "targetTable": {
+    "column": [
+      {
+        "columnSize": 0,
+        "name": "id",
+        "pk": true,
+        "ratio": 0,
+        "type": 12,
+        "typeName": "String"
+      },
+      {
+        "columnSize": 0,
+        "name": "age",
+        "pk": false,
+        "ratio": 0,
+        "type": 4,
+        "typeName": "Integer"
+      },
+      {
+        "columnSize": 0,
+        "name": "count",
+        "pk": false,
+        "ratio": 0,
+        "type": -5,
+        "typeName": "Long"
+      },
+      {
+        "columnSize": 0,
+        "name": "type",
+        "pk": false,
+        "ratio": 0,
+        "type": 5,
+        "typeName": "Short"
+      },
+      {
+        "columnSize": 0,
+        "name": "money",
+        "pk": false,
+        "ratio": 0,
+        "type": 6,
+        "typeName": "Float"
+      },
+      {
+        "columnSize": 0,
+        "name": "score",
+        "pk": false,
+        "ratio": 0,
+        "type": 8,
+        "typeName": "Double"
+      },
+      {
+        "columnSize": 0,
+        "name": "status",
+        "pk": false,
+        "ratio": 0,
+        "type": -7,
+        "typeName": "Boolean"
+      },
+      {
+        "columnSize": 0,
+        "name": "create_date",
+        "pk": false,
+        "ratio": 0,
+        "type": 91,
+        "typeName": "Date"
+      },
+      {
+        "columnSize": 0,
+        "name": "time",
+        "pk": false,
+        "ratio": 0,
+        "type": 92,
+        "typeName": "Time"
+      },
+      {
+        "columnSize": 0,
+        "name": "update_time",
+        "pk": false,
+        "ratio": 0,
+        "type": 93,
+        "typeName": "Timestamp"
+      }
+    ],
+    "count": 0,
+    "name": "test"
+  },
+  "type": "tableGroup",
+  "updateTime": 1756715744934
+}

@@ -116,55 +116,244 @@ function bindTableFieldSelect(){
     $sourceSelect.on('changed.bs.select',function(e){
         $targetSelect.selectpicker('val', $(this).selectpicker('val'));
     });
-    bindFieldMappingAddClick($sourceSelect, $targetSelect)
+    
+    bindFieldMappingAddClick($sourceSelect, $targetSelect);
+}
+
+// 绑定下拉过滤按钮点击事件
+function bindFieldSelectFilterBtnClick() {
+    // 查找操作按钮容器
+    var $sourceActionsBox = findActionsBox('#sourceTableField');
+    var $targetActionsBox = findActionsBox('#targetTableField');
+    
+    // 添加过滤按钮
+    if ($sourceActionsBox && $sourceActionsBox.length > 0) {
+        addFilterButtons($sourceActionsBox, 'source');
+    }
+    
+    if ($targetActionsBox && $targetActionsBox.length > 0) {
+        addFilterButtons($targetActionsBox, 'target');
+    }
+    
+    // 绑定事件（使用事件委托）
+    $(document).off('click', '.bs-show-all-source, .bs-exclude-all-source, .bs-show-all-target, .bs-exclude-all-target');
+    
+    $(document).on('click', '.bs-show-all-source', function (e) {
+        e.preventDefault();
+        refreshFieldsWithFilter('source', false);
+        bootGrowl("取消过滤成功!", "success");
+    });
+    
+    $(document).on('click', '.bs-exclude-all-source', function (e) {
+        e.preventDefault();
+        refreshFieldsWithFilter('source', true);
+        bootGrowl("过滤成功!", "success");
+    });
+    
+    $(document).on('click', '.bs-show-all-target', function (e) {
+        e.preventDefault();
+        refreshFieldsWithFilter('target', false);
+        bootGrowl("取消过滤成功!", "success");
+    });
+    
+    $(document).on('click', '.bs-exclude-all-target', function (e) {
+        e.preventDefault();
+        refreshFieldsWithFilter('target', true);
+        bootGrowl("过滤成功!", "success");
+    });
+}
+
+// 查找操作按钮容器的辅助函数
+function findActionsBox(selectId) {
+    var $element = $(selectId);
+    
+    // 方法1：查找同级的bootstrap-select容器内的bs-actionsbox
+    var $actionsBox = $element.siblings('.bootstrap-select').find('.bs-actionsbox .btn-group');
+    if ($actionsBox.length > 0) {
+        return $actionsBox;
+    }
+    
+    // 方法2：查找父级容器内的bs-actionsbox
+    $actionsBox = $element.parent().find('.bs-actionsbox .btn-group');
+    if ($actionsBox.length > 0) {
+        return $actionsBox;
+    }
+    
+    // 方法3：查找整个文档中对应的bs-actionsbox（通过data-id匹配）
+    var selectElement = $element[0];
+    if (selectElement) {
+        var selectId = selectElement.id;
+        $actionsBox = $('[aria-owns*="' + selectId + '"]').siblings('.dropdown-menu').find('.bs-actionsbox .btn-group');
+        if ($actionsBox.length > 0) {
+            return $actionsBox;
+        }
+    }
+    
+    // 方法4：直接查找页面中的bs-actionsbox（作为最后手段）
+    $actionsBox = $('.bs-actionsbox .btn-group');
+    if ($actionsBox.length > 0) {
+        return $actionsBox.first(); // 只返回第一个
+    }
+    
+    return null;
+}
+
+// 添加过滤按钮的辅助函数
+function addFilterButtons($actionsBox, fieldType) {
+    // 检查是否已经添加过按钮
+    var existingButtons = $actionsBox.find('.bs-show-all-' + fieldType + ', .bs-exclude-all-' + fieldType);
+    if (existingButtons.length > 0) {
+        return;
+    }
+    
+    // 添加过滤按钮（保留双重事件机制：事件委托 + inline onclick）
+    $actionsBox.append(
+        '<button type="button" class="actions-btn bs-show-all-' + fieldType + ' btn btn-default" title="显示所有字段，包含已添加的字段" onclick="refreshFieldsWithFilter(\'' + fieldType + '\', false);">取消过滤</button>' +
+        '<button type="button" class="actions-btn bs-exclude-all-' + fieldType + ' btn btn-default" title="不显示已添加的字段" onclick="refreshFieldsWithFilter(\'' + fieldType + '\', true);">过滤</button>'
+    );
+    
+    // 调整按钮宽度为20%
+    $actionsBox.find('.actions-btn').css('width', '20%');
+}
+
+// 刷新字段并应用过滤
+function refreshFieldsWithFilter(fieldType, excludeAdded) {
+    // 获取已添加的字段映射
+    let addedFields = [];
+    let $fieldMappingList = $("#fieldMappingList");
+    
+    $fieldMappingList.find("tr").each(function(){
+        if (fieldType === 'source') {
+            let sourceField = $(this).find("td:eq(0)").text().trim();
+            if (sourceField) {
+                addedFields.push(sourceField);
+            }
+        } else {
+            let targetField = $(this).find("td:eq(1)").text().trim();
+            if (targetField) {
+                addedFields.push(targetField);
+            }
+        }
+    });
+    
+    // 获取对应的select元素
+    let $select = fieldType === 'source' ? $("#sourceTableField") : $("#targetTableField");
+    
+    // 使用Bootstrap Select的方式过滤选项
+    $select.find('option').each(function() {
+        let $option = $(this);
+        let optionValue = $option.val();
+        let isAdded = addedFields.includes(optionValue);
+        
+        if (excludeAdded && isAdded) {
+            // 禁用并隐藏选项
+            $option.prop('disabled', true);
+            $option.attr('data-hidden', 'true');
+        } else {
+            // 启用并显示选项
+            $option.prop('disabled', false);
+            $option.removeAttr('data-hidden');
+        }
+    });
+    
+    // 重新初始化selectpicker以应用变更
+    $select.selectpicker('destroy').selectpicker({
+        "title": "请选择",
+        "actionsBox": true,
+        "liveSearch": true,
+        "selectAllText": "全选",
+        "deselectAllText": "取消全选",
+        "noneResultsText": "没有找到 {0}",
+        "selectedTextFormat": "count > 10"
+    });
+    
+    // 重新绑定过滤按钮（因为重新初始化后按钮会消失）
+    setTimeout(function() {
+        if (fieldType === 'source') {
+            var $actionsBox = findActionsBox('#sourceTableField');
+            if ($actionsBox && $actionsBox.find('.bs-show-all-source').length === 0) {
+                addFilterButtons($actionsBox, 'source');
+            }
+        } else {
+            var $actionsBox = findActionsBox('#targetTableField');
+            if ($actionsBox && $actionsBox.find('.bs-show-all-target').length === 0) {
+                addFilterButtons($actionsBox, 'target');
+            }
+        }
+    }, 100);
 }
 // 绑定添加字段映射点击事件
 function bindFieldMappingAddClick($sourceSelect, $targetSelect){
     let $btn = $("#fieldMappingAddBtn");
     $btn.bind('click', function(){
-        let sField = $sourceSelect.selectpicker("val");
-        let tField = $targetSelect.selectpicker("val");
-        sField = sField == null ? "" : sField;
-        tField = tField == null ? "" : tField;
+        let sFields = $sourceSelect.selectpicker("val");
+        let tFields = $targetSelect.selectpicker("val");
+        sFields = sFields == null ? [] : (Array.isArray(sFields) ? sFields : [sFields]);
+        tFields = tFields == null ? [] : (Array.isArray(tFields) ? tFields : [tFields]);
+        
         // 非空检查
-        if(sField == "" && tField == ""){
-            bootGrowl("至少有一个表字段.", "danger");
+        if(sFields.length == 0 && tFields.length == 0){
+            bootGrowl("至少选择一个表字段.", "danger");
             return;
         }
-        
+
         // 如果未选择目标字段，则使用源字段作为目标字段
-        if(sField != "" && tField == ""){
-            tField = sField;
-        }
-        
-        // 如果未选择源字段，则使用目标字段作为源字段
-        if(sField == "" && tField != ""){
-            sField = tField;
+        if(sFields.length > 0 && tFields.length == 0){
+            tFields = [...sFields];
         }
 
-        // 检查重复字段
-        let repeated = false;
+        // 如果未选择源字段，则使用目标字段作为源字段
+        if(sFields.length == 0 && tFields.length > 0){
+            sFields = [...tFields];
+        }
+        
+        // 检查数量是否一致
+        if(sFields.length != tFields.length){
+            bootGrowl("源字段和目标字段数量不一致，请检查选择.", "danger");
+            return;
+        }
+
         let $fieldMappingList = $("#fieldMappingList");
         let $tr = $fieldMappingList.find("tr");
-        $tr.each(function(k,v){
-            let sf = $(this).find("td:eq(0)").text();
-            let tf = $(this).find("td:eq(1)").text();
-            if (repeated = (sField == sf && tField == tf)) {
-                bootGrowl("映射关系已存在.", "danger");
-                return false;
+        let addedCount = 0;
+        
+        // 批量添加字段映射
+        for(let i = 0; i < sFields.length; i++){
+            let sField = sFields[i];
+            let tField = tFields[i];
+            
+            // 检查重复字段
+            let repeated = false;
+            $tr.each(function(k,v){
+                let sf = $(this).find("td:eq(0)").text();
+                let tf = $(this).find("td:eq(1)").text();
+                if (repeated = (sField == sf && tField == tf)) {
+                    return false;
+                }
+            });
+            
+            if(!repeated){
+                let index = $tr.size() + addedCount + 1;
+                let trHtml = "<tr id='fieldMapping_"+ index +"' title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td></td><td><input type='checkbox' class='fieldMappingDeleteCheckbox' /></td></tr>";
+                $fieldMappingList.append(trHtml);
+                addedCount++;
             }
-        });
-        if(repeated){ return; }
-
-        let index = $tr.size();
-        let trHtml = "<tr id='fieldMapping_"+ (index + 1) +"' title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td></td><td><input type='checkbox' class='fieldMappingDeleteCheckbox' /></td></tr>";
-        $fieldMappingList.append(trHtml);
-
-        initFieldMappingParams();
-        bindFieldMappingDrop();
-        bindFieldMappingListClick();
-        bindFieldMappingCheckBoxClick();
-        bindFieldMappingDelClick();
+        }
+        
+        if(addedCount > 0){
+            bootGrowl("成功添加 " + addedCount + " 个字段映射关系!", "success");
+            initFieldMappingParams();
+            bindFieldMappingDrop();
+            bindFieldMappingListClick();
+            bindFieldMappingCheckBoxClick();
+            bindFieldMappingDelClick();
+            
+            // 清空选择
+            $sourceSelect.selectpicker('deselectAll');
+            $targetSelect.selectpicker('deselectAll');
+        } else {
+            bootGrowl("没有新的映射关系需要添加.", "info");
+        }
     });
 }
 // 绑定删除字段映射点击事件
@@ -189,12 +378,29 @@ function backMappingPage($this){
 }
 
 $(function() {
+    // 初始化select插件
+    initSelectIndex($(".select-control-table"), -1);
+    
     // 绑定表字段关系点击事件
     initFieldMappingParams();
     // 绑定表格拖拽事件
     bindFieldMappingDrop();
     // 绑定下拉选择事件自动匹配相似字段事件
     bindTableFieldSelect();
+    
+    // 延迟初始化过滤按钮，等待 selectpicker 完全初始化
+    setTimeout(function() {
+        bindFieldSelectFilterBtnClick();
+    }, 1000); // 增加到1秒
+    
+    // 再次尝试，以防万一
+    setTimeout(function() {
+        // 检查按钮是否已经存在，如果不存在则再次添加
+        if ($('.bs-show-all-source').length === 0 || $('.bs-show-all-target').length === 0) {
+            bindFieldSelectFilterBtnClick();
+        }
+    }, 2000); // 2秒后再次尝试
+    
     // 绑定刷新表字段事件
     bindRefreshTableFieldsClick();
     // 绑定删除表字段映射事件

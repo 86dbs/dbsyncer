@@ -131,8 +131,18 @@ public class TableGroupChecker extends AbstractChecker {
 
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
-        List<String> sourceTablePks = sourceTable.getColumn().stream().filter(Field::isPk).map(Field::getName).collect(Collectors.toList());
-        List<String> targetTablePks = targetTable.getColumn().stream().filter(Field::isPk).map(Field::getName).collect(Collectors.toList());
+        
+        // 添加空值检查，防止NullPointerException
+        List<String> sourceTablePks = new ArrayList<>();
+        if (sourceTable.getColumn() != null) {
+            sourceTablePks = sourceTable.getColumn().stream().filter(Field::isPk).map(Field::getName).collect(Collectors.toList());
+        }
+        
+        List<String> targetTablePks = new ArrayList<>();
+        if (targetTable.getColumn() != null) {
+            targetTablePks = targetTable.getColumn().stream().filter(Field::isPk).map(Field::getName).collect(Collectors.toList());
+        }
+        
         tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable.getName(), StringUtil.join(sourceTablePks, ",")));
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable.getName(), StringUtil.join(targetTablePks, ",")));
     }

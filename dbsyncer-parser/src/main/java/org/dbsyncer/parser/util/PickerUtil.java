@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.springframework.beans.BeanUtils;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -43,6 +44,9 @@ public abstract class PickerUtil {
     }
 
     public static Map<String, Field> convert2Map(List<Field> col) {
+        if (CollectionUtils.isEmpty(col)) {
+            return new HashMap<>();
+        }
         return col.stream().collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
     }
 

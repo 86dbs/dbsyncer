@@ -29,7 +29,6 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConfig> {
 
         String groupId = params.get("groupId");
         String serializer = params.get("serializer");
-        Assert.hasText(groupId, "groupId is empty.");
         Assert.hasText(serializer, "serializer is empty.");
         int sessionTimeoutMs = NumberUtil.toInt(params.get("sessionTimeoutMs"));
         int maxPartitionFetchBytes = NumberUtil.toInt(params.get("maxPartitionFetchBytes"));

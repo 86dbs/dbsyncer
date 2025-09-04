@@ -20,8 +20,10 @@
   },
   "metaId": "1412113585097805825",
   "model": "full",
-  "name": "全量同步",
-  "params": {},
+  "name": "全量同步(topic:test)",
+  "params": {
+    "topic": "lxb"
+  },
   "readNum": 10000,
   "recoverData": true,
   "sourceColumn": [
@@ -128,5 +130,5 @@
   "targetConnectorId": "1412112508759707648",
   "threadNum": 10,
   "type": "mapping",
-  "updateTime": 1756715795752
+  "updateTime": 1756955293015
 }

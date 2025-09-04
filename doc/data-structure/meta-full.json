@@ -1,0 +1,19 @@
+{
+  "beginTime": 1756955330226,
+  "createTime": 1756715714489,
+  "endTime": 1756955330384,
+  "fail": 0,
+  "id": "1412113585097805825",
+  "mappingId": "1412113585097805824",
+  "name": "meta",
+  "snapshot": {
+    "cursor": "",
+    "pageIndex": "1",
+    "tableGroupIndex": "0"
+  },
+  "state": 0,
+  "success": 72,
+  "total": 72,
+  "type": "meta",
+  "updateTime": 1756955330400
+}
