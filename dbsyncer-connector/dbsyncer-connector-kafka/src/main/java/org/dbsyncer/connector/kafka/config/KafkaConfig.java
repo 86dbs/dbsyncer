@@ -15,6 +15,7 @@ import org.dbsyncer.sdk.model.ConnectorConfig;
 public class KafkaConfig extends ConnectorConfig {
 
     private String bootstrapServers;
+    private String topic;
 
     // 消费者
     private String deserializer;
@@ -37,6 +38,14 @@ public class KafkaConfig extends ConnectorConfig {
 
     public void setBootstrapServers(String bootstrapServers) {
         this.bootstrapServers = bootstrapServers;
+    }
+
+    public String getTopic() {
+        return topic;
+    }
+
+    public void setTopic(String topic) {
+        this.topic = topic;
     }
 
     public String getDeserializer() {

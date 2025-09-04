@@ -112,6 +112,8 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
             // 从 command 中获取 topic 参数，如果没有则使用目标表名作为默认值
             String topic = context.getCommand().get("topic");
 
+            topic = topic == null ? connectorInstance.getConfig().getTopic(): topic;
+
             // 验证 topic 是否为空
             if (topic == null || topic.isEmpty()) {
                 throw new KafkaException("Topic is required");
@@ -119,14 +121,15 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
             // 默认取第一个主键
             final String pk = pkFields.get(0).getName();
-            KafkaClient kafkaClient = connectorInstance.getConnection();
+            final KafkaClient kafkaClient = connectorInstance.getConnection();
+            final String finalTopic = topic; // 创建final变量供lambda表达式使用
 
             // 格式化消息
             List<Map> formattedData = kafkaConvertor.formatMessages(context, data, pkFields);
 
-            formattedData.forEach(row -> kafkaClient.send(topic, String.valueOf(row.get(pk)), row));
+            formattedData.forEach(row -> kafkaClient.send(finalTopic, String.valueOf(row.get(pk)), row));
             kafkaClient.producer.flush();
-            logger.debug("----kafka wrote topic: {}, number: {}", topic, formattedData.size());
+            logger.debug("----kafka wrote topic: {}, number: {}", finalTopic, formattedData.size());
             result.addSuccessData(formattedData);
         } catch (Exception e) {
             // 记录错误数据

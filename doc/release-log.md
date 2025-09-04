@@ -7,8 +7,10 @@
 
 ## 2.2.0 (未发布)
 
-- 将 kafka 的 topic 移植到 meta 中，并简化 kafka 的配置。
 - bug fixed: max 线程数小于 core 线程数，线程池异常问题。（OK）
+- 新增扩展参数编辑能力。
+- 扩展参数：可覆盖 kafka 的缺省 topic 设置。
+- 移除 kafka 的字段定义设置。
 
 ## 2.1.1
 性能优化：RefreshOffsetEvent，FullRefreshEvent 使用回调机制替代 spring 事件机制

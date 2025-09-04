@@ -5,8 +5,12 @@
 <div th:fragment="content">
     <div class="form-group">
         <label class="col-sm-2 control-label">URL<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：192.168.1.100:9092,192.168.1.200:9092"></i><strong class="text-primary">*</strong></label>
-        <div class="col-sm-10">
+        <div class="col-sm-4">
             <input class="form-control" name="bootstrapServers" type="text" maxlength="1024" dbsyncer-valid="require" th:value="${connector?.config?.bootstrapServers}?:'127.0.0.1:9092'"/>
+        </div>
+        <label class="col-sm-2 control-label">Topic<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="缺省主题，可在驱动配置里覆盖"></i></label>
+        <div class="col-sm-4">
+            <input class="form-control" name="topic" type="text" maxlength="64" th:value="${connector?.config?.topic}"/>
         </div>
     </div>
 
