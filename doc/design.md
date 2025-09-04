@@ -32,3 +32,9 @@ GeneralBufferActuator：处理数据变更和DDL变更，并触发 RefreshOffset
 Listener：
   - 依据连接类型和监听类型（日志|定时）创建监听器
   - 可注册多个 watcher
+
+## 局限性
+
+### mapping.params
+
+因当前架构无法强 mapping.params 直接传递给 writer, 所以将 mapping.params 运行时放到了 context.commands 中。
