@@ -3,7 +3,10 @@
 ## 2.4.0 (未发布) 
 
 全量+增量
-字段全选
+
+## 2.3.1
+
+- bug fixed: pk missed when add mapping
 
 ## 2.3.0
 

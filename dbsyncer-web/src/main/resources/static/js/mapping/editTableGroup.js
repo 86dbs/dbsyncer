@@ -140,25 +140,25 @@ function bindFieldSelectFilterBtnClick() {
     
     $(document).on('click', '.bs-show-all-source', function (e) {
         e.preventDefault();
-        refreshFieldsWithFilter('source', false);
+        window.refreshFieldsWithFilter('source', false);
         bootGrowl("取消过滤成功!", "success");
     });
     
     $(document).on('click', '.bs-exclude-all-source', function (e) {
         e.preventDefault();
-        refreshFieldsWithFilter('source', true);
+        window.refreshFieldsWithFilter('source', true);
         bootGrowl("过滤成功!", "success");
     });
     
     $(document).on('click', '.bs-show-all-target', function (e) {
         e.preventDefault();
-        refreshFieldsWithFilter('target', false);
+        window.refreshFieldsWithFilter('target', false);
         bootGrowl("取消过滤成功!", "success");
     });
     
     $(document).on('click', '.bs-exclude-all-target', function (e) {
         e.preventDefault();
-        refreshFieldsWithFilter('target', true);
+        window.refreshFieldsWithFilter('target', true);
         bootGrowl("过滤成功!", "success");
     });
 }
@@ -206,18 +206,18 @@ function addFilterButtons($actionsBox, fieldType) {
         return;
     }
     
-    // 添加过滤按钮（保留双重事件机制：事件委托 + inline onclick）
+    // 添加过滤按钮（使用双重事件机制：事件委托 + inline onclick 确保可靠性）
     $actionsBox.append(
-        '<button type="button" class="actions-btn bs-show-all-' + fieldType + ' btn btn-default" title="显示所有字段，包含已添加的字段" onclick="refreshFieldsWithFilter(\'' + fieldType + '\', false);">取消过滤</button>' +
-        '<button type="button" class="actions-btn bs-exclude-all-' + fieldType + ' btn btn-default" title="不显示已添加的字段" onclick="refreshFieldsWithFilter(\'' + fieldType + '\', true);">过滤</button>'
+        '<button type="button" class="actions-btn bs-show-all-' + fieldType + ' btn btn-default" title="显示所有字段，包含已添加的字段" onclick="window.refreshFieldsWithFilter(\'' + fieldType + '\', false);">取消过滤</button>' +
+        '<button type="button" class="actions-btn bs-exclude-all-' + fieldType + ' btn btn-default" title="不显示已添加的字段" onclick="window.refreshFieldsWithFilter(\'' + fieldType + '\', true);">过滤</button>'
     );
     
     // 调整按钮宽度为20%
     $actionsBox.find('.actions-btn').css('width', '20%');
 }
 
-// 刷新字段并应用过滤
-function refreshFieldsWithFilter(fieldType, excludeAdded) {
+// 刷新字段并应用过滤（设置为全局函数，供内联事件调用）
+window.refreshFieldsWithFilter = function(fieldType, excludeAdded) {
     // 获取已添加的字段映射
     let addedFields = [];
     let $fieldMappingList = $("#fieldMappingList");
@@ -271,17 +271,26 @@ function refreshFieldsWithFilter(fieldType, excludeAdded) {
     setTimeout(function() {
         if (fieldType === 'source') {
             var $actionsBox = findActionsBox('#sourceTableField');
+            // 只在按钮不存在时才添加，避免重复添加
             if ($actionsBox && $actionsBox.find('.bs-show-all-source').length === 0) {
                 addFilterButtons($actionsBox, 'source');
             }
         } else {
             var $actionsBox = findActionsBox('#targetTableField');
+            // 只在按钮不存在时才添加，避免重复添加
             if ($actionsBox && $actionsBox.find('.bs-show-all-target').length === 0) {
                 addFilterButtons($actionsBox, 'target');
             }
         }
     }, 100);
 }
+// 检查字段是否为主键
+function isSourceFieldPrimaryKey(fieldName) {
+    let $sourceSelect = $("#sourceTableField");
+    let $option = $sourceSelect.find('option[value="' + fieldName + '"]');
+    return $option.length > 0 && $option.attr('data-pk') === 'true';
+}
+
 // 绑定添加字段映射点击事件
 function bindFieldMappingAddClick($sourceSelect, $targetSelect){
     let $btn = $("#fieldMappingAddBtn");
@@ -334,14 +343,32 @@ function bindFieldMappingAddClick($sourceSelect, $targetSelect){
             
             if(!repeated){
                 let index = $tr.size() + addedCount + 1;
-                let trHtml = "<tr id='fieldMapping_"+ index +"' title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td></td><td><input type='checkbox' class='fieldMappingDeleteCheckbox' /></td></tr>";
+                
+                // 检查源字段是否为主键，如果是则自动标记为主键
+                let isPrimaryKey = isSourceFieldPrimaryKey(sField);
+                let pkIcon = isPrimaryKey ? '<i title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i>' : '';
+                
+                let trHtml = "<tr id='fieldMapping_"+ index +"' title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td>" + pkIcon + "</td><td><input type='checkbox' class='fieldMappingDeleteCheckbox' /></td></tr>";
                 $fieldMappingList.append(trHtml);
                 addedCount++;
             }
         }
         
         if(addedCount > 0){
-            bootGrowl("成功添加 " + addedCount + " 个字段映射关系!", "success");
+            // 统计自动标记为主键的字段数量
+            let autoPkCount = 0;
+            for(let i = 0; i < sFields.length; i++){
+                if(isSourceFieldPrimaryKey(sFields[i])){
+                    autoPkCount++;
+                }
+            }
+            
+            let message = "成功添加 " + addedCount + " 个字段映射关系!";
+            if(autoPkCount > 0){
+                message += " 其中 " + autoPkCount + " 个源主键字段已自动标记为主键。";
+            }
+            bootGrowl(message, "success");
+            
             initFieldMappingParams();
             bindFieldMappingDrop();
             bindFieldMappingListClick();
@@ -390,16 +417,11 @@ $(function() {
     
     // 延迟初始化过滤按钮，等待 selectpicker 完全初始化
     setTimeout(function() {
-        bindFieldSelectFilterBtnClick();
-    }, 1000); // 增加到1秒
-    
-    // 再次尝试，以防万一
-    setTimeout(function() {
-        // 检查按钮是否已经存在，如果不存在则再次添加
-        if ($('.bs-show-all-source').length === 0 || $('.bs-show-all-target').length === 0) {
+        // 只在没有按钮时才执行绑定，避免重复绑定
+        if ($('.bs-show-all-source').length === 0 && $('.bs-show-all-target').length === 0) {
             bindFieldSelectFilterBtnClick();
         }
-    }, 2000); // 2秒后再次尝试
+    }, 1000); // 增加到1秒
     
     // 绑定刷新表字段事件
     bindRefreshTableFieldsClick();
