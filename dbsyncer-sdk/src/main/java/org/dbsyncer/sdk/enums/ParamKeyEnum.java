@@ -13,7 +13,7 @@ package org.dbsyncer.sdk.enums;
 public enum ParamKeyEnum {
 
     // 数据表相关参数
-    TABLE_MISS_CREATE("table.missCreate", "缺失自动创建", "boolean", "目标数据表如果缺失则自动创建"),
+    DISABLE_AUTO_CREATE("table.disableAutoCreate", "禁用自动创建", "boolean", "当目标数据表缺失时禁止自动创建"),
 
     // Kafka 相关参数
     TOPIC("topic", "消息主题", "String", "设置Kafka消息主题名称");
