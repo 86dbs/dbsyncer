@@ -164,13 +164,15 @@
                 processCommonParams();
             });
 
-            // 参数值变化时更新数据
+            // 参数值变化时自动更新数据
             $(document).on('input', '.common-param-value', function () {
                 processCommonParams();
             });
 
-            // 将函数注册为全局函数，供 edit.js 调用
-            window.processCommonParams = processCommonParams;
+            // 监听保存按钮点击事件（自动处理参数）
+            $(document).on('click', '#mappingSubmitBtn', function () {
+                processCommonParams();
+            });
 
             // 处理通用参数的函数
             function processCommonParams() {

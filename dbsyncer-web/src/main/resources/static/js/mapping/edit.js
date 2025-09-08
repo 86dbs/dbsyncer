@@ -261,16 +261,7 @@ $(function () {
     $("#mappingSubmitBtn").click(function () {
         let $form = $("#mappingModifyForm");
         if ($form.formValidate() == true) {
-            // 在表单提交前处理通用参数
-            if (typeof window.processCommonParams === 'function') {
-                console.log('edit.js: 调用 processCommonParams 函数...');
-                window.processCommonParams();
-            } else {
-                console.log('edit.js: processCommonParams 函数不可用');
-            }
-
             let data = $form.serializeJson();
-            console.log('edit.js: 表单数据:', data);
             submit(data);
         }
     });
