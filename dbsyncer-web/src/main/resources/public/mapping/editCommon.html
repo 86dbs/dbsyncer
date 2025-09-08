@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
     <p class="text-muted">扩展参数</p>
@@ -11,34 +10,41 @@
             <div class="col-md-1">
             </div>
             <div class="col-sm-11">
+                <!-- 参数选择区域 -->
+                <div class="row" style="margin-bottom: 10px;">
+                    <div class="col-sm-8">
+                        <select class="form-control selectpicker" id="paramSelector" data-live-search="true"
+                            data-size="10" data-title="请选择要添加的参数">
+                            <!-- 动态加载参数选项 -->
+                        </select>
+                    </div>
+                    <div class="col-sm-4">
+                        <button type="button" class="btn btn-primary" id="addCommonParam">添加参数</button>
+                    </div>
+                </div>
+
+                <!-- 参数列表表格 -->
                 <table class="table table-bordered" id="commonParamsTable">
                     <thead>
-                    <tr>
-                        <th>键</th>
-                        <th>值</th>
-                        <th width="100">操作</th>
-                    </tr>
+                        <tr>
+                            <th>参数名称</th>
+                            <th>参数值</th>
+                            <th width="100">操作</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    <tr th:if="${mapping?.params != null}" th:each="entry : ${mapping?.params}">
-                        <td>
-                            <input type="text" class="form-control common-param-key" th:value="${entry.key}">
-                        </td>
-                        <td>
-                            <input type="text" class="form-control common-param-value" th:value="${entry.value}">
-                        </td>
-                        <td>
-                            <button type="button" class="btn btn-danger btn-sm remove-param">删除</button>
-                        </td>
-                    </tr>
+                        <tr th:if="${mapping?.params != null}" th:each="entry : ${mapping?.params}">
+                            <td>
+                                <span class="param-label" th:attr="data-key=${entry.key}" th:text="${entry.key}"></span>
+                            </td>
+                            <td>
+                                <input type="text" class="form-control common-param-value" th:value="${entry.value}">
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-danger btn-sm remove-param">删除</button>
+                            </td>
+                        </tr>
                     </tbody>
-                    <tfoot>
-                    <tr>
-                        <td colspan="3">
-                            <button type="button" class="btn btn-primary btn-sm" id="addCommonParam">添加参数</button>
-                        </td>
-                    </tr>
-                    </tfoot>
                 </table>
                 <input type="hidden" id="commonParamsInput" name="commonParams" />
             </div>
@@ -46,60 +52,156 @@
     </div>
 
     <script type="text/javascript">
-        $(function() {
-            // 添加扩展参数
-            $('#addCommonParam').click(function() {
+        $(function () {
+            // 全局参数选项数据
+            window.globalParamOptions = [];
+            // 参数名称映射
+            window.paramNameMap = {};
+
+            // 页面加载时加载参数选项
+            $(document).ready(function () {
+                loadParamOptions();
+            });
+
+            // 加载参数选项
+            function loadParamOptions() {
+
+                doGetter('/param/getParamOptions.json', {}, function (result) {
+
+                    if (result && result.success && result.resultValue) {
+                        window.globalParamOptions = result.resultValue;
+
+
+                        // 构建参数名称映射
+                        window.globalParamOptions.forEach(function (param) {
+                            window.paramNameMap[param.key] = param.name;
+                        });
+
+                        // 初始化参数选择器
+                        initParamSelector();
+
+                        // 更新已存在的参数标签
+                        updateExistingParamLabels();
+                    }
+
+                });
+            }
+
+            // 初始化参数选择器
+            function initParamSelector() {
+                var $selector = $('#paramSelector');
+                $selector.empty();
+
+                // 直接添加所有参数选项
+                window.globalParamOptions.forEach(function (param) {
+                    $selector.append('<option value="' + param.key + '" title="' + param.description + '">' + param.name + '</option>');
+                });
+
+                // 初始化Bootstrap Select
+                $selector.selectpicker('refresh');
+            }
+
+            // 更新已存在的参数标签
+            function updateExistingParamLabels() {
+                $('.param-label').each(function () {
+                    var key = $(this).attr('data-key');
+                    var name = window.paramNameMap[key] || key;
+                    $(this).text(name);
+                });
+            }
+
+            // 添加参数
+            $('#addCommonParam').click(function () {
+                var selectedKey = $('#paramSelector').val();
+                if (!selectedKey) {
+                    alert('请先选择要添加的参数');
+                    return;
+                }
+
+                // 检查是否已存在
+                var exists = false;
+                $('.param-label').each(function () {
+                    if ($(this).attr('data-key') === selectedKey) {
+                        exists = true;
+                        return false;
+                    }
+                });
+
+                if (exists) {
+                    alert('该参数已存在，请勿重复添加');
+                    return;
+                }
+
+                var paramName = window.paramNameMap[selectedKey] || selectedKey;
+                var selectedParam = window.globalParamOptions.find(p => p.key === selectedKey);
+                var placeholder = selectedParam ? '类型: ' + selectedParam.type + ' - ' + selectedParam.description : '参数值';
+
                 var newRow = `
                     <tr>
-                        <td><input type="text" class="form-control common-param-key" placeholder="参数键"></td>
-                        <td><input type="text" class="form-control common-param-value" placeholder="参数值"></td>
-                        <td><button type="button" class="btn btn-danger btn-sm remove-param">删除</button></td>
+                        <td>
+                            <span class="param-label" data-key="${selectedKey}">${paramName}</span>
+                        </td>
+                        <td>
+                            <input type="text" class="form-control common-param-value" placeholder="${placeholder}">
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm remove-param">删除</button>
+                        </td>
                     </tr>
                 `;
                 $('#commonParamsTable tbody').append(newRow);
-            });
 
-            // 删除通用参数
-            $(document).on('click', '.remove-param', function() {
-                $(this).closest('tr').remove();
-            });
-            
-            // 表单提交前处理通用参数
-            $('#mappingSubmitBtn').on('click', function(e) {
+                // 清空选择器
+                $('#paramSelector').selectpicker('val', '');
+
+                // 更新参数数据
                 processCommonParams();
             });
-            
+
+            // 删除参数
+            $(document).on('click', '.remove-param', function () {
+                $(this).closest('tr').remove();
+                processCommonParams();
+            });
+
+            // 参数值变化时更新数据
+            $(document).on('input', '.common-param-value', function () {
+                processCommonParams();
+            });
+
+            // 将函数注册为全局函数，供 edit.js 调用
+            window.processCommonParams = processCommonParams;
+
             // 处理通用参数的函数
             function processCommonParams() {
                 var paramMap = {};
-                $('#commonParamsTable tbody tr').each(function(index) {
-                    var keyInput = $(this).find('.common-param-key');
-                    var valueInput = $(this).find('.common-param-value');
-                    
-                    if (keyInput.length > 0 && valueInput.length > 0) {
-                        var key = keyInput.val();
-                        var value = valueInput.val();
-                        
+                $('#commonParamsTable tbody tr').each(function (index) {
+                    var $paramLabel = $(this).find('.param-label');
+                    var $valueInput = $(this).find('.common-param-value');
+
+                    if ($paramLabel.length > 0 && $valueInput.length > 0) {
+                        var key = $paramLabel.attr('data-key');
+                        var value = $valueInput.val();
+
                         if (key && key.trim() !== '') {
-                            paramMap[key] = value;
+                            paramMap[key] = value || '';
                         }
                     }
                 });
-                
+
                 // 将参数Map转换为JSON字符串
                 var commonParamsJson = JSON.stringify(paramMap);
                 $('#commonParamsInput').val(commonParamsJson);
-                
-                // 调试信息
+
                 return commonParamsJson;
             }
-            
-            // 初始化时构建commonParams JSON
-            $(document).ready(function() {
-                setTimeout(function() {
+
+            // 初始化时构建 commonParams JSON  
+            setTimeout(function () {
+                if (window.globalParamOptions && window.globalParamOptions.length > 0) {
                     processCommonParams();
-                }, 500); // 延迟执行确保Thymeleaf渲染完成
-            });
+                }
+            }, 1500); // 等待选项加载完成
         });
     </script>
 </div>

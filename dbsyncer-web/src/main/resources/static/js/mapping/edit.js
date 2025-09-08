@@ -11,7 +11,7 @@ function submit(data) {
 }
 //*********************************** 驱动保存 结束位置***********************************//
 // 刷新页面
-function refresh(id){
+function refresh(id) {
     doLoader('/mapping/page/edit?id=' + id);
 }
 
@@ -53,7 +53,7 @@ function bindMappingModelChange() {
 }
 
 // 绑定删除表关系复选框事件
-function bindMappingTableGroupCheckBoxClick(){
+function bindMappingTableGroupCheckBoxClick() {
     var $checkboxAll = $('.tableGroupCheckboxAll');
     var $checkbox = $('.tableGroupCheckbox');
     var $delBtn = $("#tableGroupDelBtn");
@@ -79,10 +79,10 @@ function bindMappingTableGroupCheckBoxClick(){
 }
 
 // 获取选择的CheckBox[value]
-function getCheckedBoxSize($checkbox){
+function getCheckedBoxSize($checkbox) {
     var checked = [];
-    $checkbox.each(function(){
-        if($(this).prop('checked')){
+    $checkbox.each(function () {
+        if ($(this).prop('checked')) {
             checked.push($(this).val());
         }
     });
@@ -99,7 +99,7 @@ function bindMappingTableGroupListClick() {
 
     // 绑定表格拖拽事件
     $tableGroupList.tableDnD({
-        onDrop: function(table, row) {
+        onDrop: function (table, row) {
             var newData = [];
             var $trList = $(table).find("tr");
             $.each($trList, function () {
@@ -111,10 +111,10 @@ function bindMappingTableGroupListClick() {
 }
 
 // 绑定下拉选择事件自动匹配相似表事件
-function bindTableSelect(){
+function bindTableSelect() {
     const $sourceSelect = $("#sourceTable");
     const $targetSelect = $("#targetTable");
-    $sourceSelect.on('changed.bs.select',function(e){
+    $sourceSelect.on('changed.bs.select', function (e) {
         $targetSelect.selectpicker('val', $(this).selectpicker('val'));
     });
     bindMappingTableGroupAddClick($sourceSelect, $targetSelect);
@@ -192,7 +192,7 @@ function bindMappingTableGroupDelClick() {
         var ids = getCheckedBoxSize($(".tableGroupCheckbox"));
         if (ids.length > 0) {
             var $mappingId = $(this).attr("mappingId");
-            doPoster("/tableGroup/remove", {"mappingId": $mappingId, "ids" : ids.join()}, function (data) {
+            doPoster("/tableGroup/remove", { "mappingId": $mappingId, "ids": ids.join() }, function (data) {
                 if (data.success == true) {
                     bootGrowl("删除映射关系成功!", "success");
                     refresh($mappingId);
@@ -205,14 +205,14 @@ function bindMappingTableGroupDelClick() {
 }
 
 // 修改驱动名称
-function mappingModifyName(){
+function mappingModifyName() {
     var $name = $("#mappingModifyName");
     var tmp = $name.text();
     $name.text("");
     $name.append("<input type='text'/>");
     var $input = $name.find("input");
     $input.focus().val(tmp);
-    $input.blur(function(){
+    $input.blur(function () {
         $name.text($(this).val());
         $("#mappingModifyForm input[name='name']").val($(this).val());
         $input.unbind();
@@ -222,9 +222,9 @@ function mappingModifyName(){
 // 绑定刷新表事件
 function bindRefreshTablesClick() {
     let $refreshBtn = $("#refreshTableBtn");
-    $refreshBtn.bind('click', function(){
+    $refreshBtn.bind('click', function () {
         let id = $(this).attr("tableGroupId");
-        doPoster("/mapping/refreshTables", {'id': id}, function (data) {
+        doPoster("/mapping/refreshTables", { 'id': id }, function (data) {
             if (data.success == true) {
                 bootGrowl("刷新表成功!", "success");
                 refresh(id);
@@ -261,7 +261,16 @@ $(function () {
     $("#mappingSubmitBtn").click(function () {
         let $form = $("#mappingModifyForm");
         if ($form.formValidate() == true) {
+            // 在表单提交前处理通用参数
+            if (typeof window.processCommonParams === 'function') {
+                console.log('edit.js: 调用 processCommonParams 函数...');
+                window.processCommonParams();
+            } else {
+                console.log('edit.js: processCommonParams 函数不可用');
+            }
+
             let data = $form.serializeJson();
+            console.log('edit.js: 表单数据:', data);
             submit(data);
         }
     });
