@@ -33,6 +33,15 @@ Listener：
   - 依据连接类型和监听类型（日志|定时）创建监听器
   - 可注册多个 watcher
 
+## 状态
+
+MetaEnum：在 Meta 中记录同步任务的整体状态
+- READY，RUNNING，STOPPING
+
+StateEnum：在 Task 中记录具体执行任务的状态
+- RUNNING，STOP
+
+
 ## 局限性
 
 ### mapping.params

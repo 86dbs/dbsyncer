@@ -26,12 +26,32 @@ DBSyncer目前提供独立的"全量"和"增量"两种数据同步模式，为�
   - 在`Meta.snapshot`中保存偏移量信息
   - 支持近实时数据同步
 
-### 2.2 当前架构限制
+## 现有恢复机制分析与借鉴
 
-1. **模式互斥性**：`ModelEnum`仅支持`FULL`和`INCREMENT`两种独立模式
-2. **组件隔离**：`FullPuller`和`IncrementPuller`完全独立，无协调机制
-3. **状态管理**：`Meta`状态无法同时跟踪全量和增量进度
-4. **调度机制**：`ManagerFactory`按单一模式获取`Puller`，缺乏混合模式调度能力
+### 2.3 现有独立模式的恢复机制
+
+#### 2.3.1 FullPuller恢复特点
+- **断点续传**：利用`Meta.snapshot`中的`pageIndex`、`cursor`、`tableGroupIndex`实现精确断点恢复
+- **零配置恢复**：启动时自动从上次中断位置继续，无需额外配置
+- **状态隔离**：Task状态独立管理，不干扰其他组件
+
+#### 2.3.2 IncrementPuller恢复特点  
+- **Listener状态检查**：通过`meta.getListener() == null`判断是否需要重新创建
+- **偏移量恢复**：Listener从`Meta.snapshot`中恢复数据库特定的偏移量信息
+- **自动重连**：异常时自动清理并重新建立监听连接
+
+#### 2.3.3 ManagerFactory统一恢复
+- **系统启动恢复**：`PreloadTemplate`在系统启动时检查所有`MetaEnum.RUNNING`状态的任务并重新启动
+- **事件驱动清理**：通过`ClosedEvent`机制自动将完成的任务状态重置为`READY`
+- **异常回滚**：启动失败时自动回滚Meta状态
+
+### 2.4 借鉴现有机制的设计原则
+
+**与现有设计保持一致**：
+1. **复用Meta.snapshot机制**：不重新发明轮子，继续使用现有的快照存储
+2. **保持事件驱动模式**：利用现有的`ClosedEvent`和`ApplicationListener`机制  
+3. **延续零配置理念**：启动时自动检查恢复，无需额外配置
+4. **维持状态简单性**：避免复杂的状态机，使用简单的状态判断
 
 ## 3. 全量+增量混合模式需求分析
 
@@ -52,6 +72,7 @@ DBSyncer目前提供独立的"全量"和"增量"两种数据同步模式，为�
 ### 4.1 枚举扩展
 
 #### 4.1.1 ModelEnum 扩展
+
 ```java
 public enum ModelEnum {
     FULL("full", "全量"),
@@ -94,14 +115,11 @@ public final class FullIncrementPuller extends AbstractPuller implements Puller 
     
     private final Map<String, SyncState> syncStates = new ConcurrentHashMap<>();
     
-    // 混合模式状态枚举
+    // 混合模式状态枚举（最简化设计）
     enum SyncState {
         FULL_PENDING,     // 全量待执行
-        FULL_RUNNING,     // 全量执行中
-        FULL_COMPLETED,   // 全量完成
-        INCREMENT_STARTING, // 增量启动中
-        INCREMENT_RUNNING, // 增量执行中
-        ERROR_RECOVERY    // 错误恢复中
+        FULL_RUNNING,     // 全量执行中  
+        INCREMENT_RUNNING // 增量执行中
     }
 }
 ```
@@ -114,20 +132,31 @@ public void start(Mapping mapping) {
     
     Thread coordinator = new Thread(() -> {
         try {
-            // 1. 初始化混合模式状态
-            initFullIncrementState(mapping);
+            // 1. 检查故障恢复（零开销）
+            SyncState recoveryState = checkAndRecover(mapping);
             
-            // 2. 执行全量同步
-            executeFullSync(mapping);
-            
-            // 3. 等待全量完成
-            waitForFullCompletion(mapping);
-            
-            // 4. 启动增量同步
-            startIncrementSync(mapping);
+            // 2. 根据状态直接执行（内联逻辑，简化设计）
+            switch (recoveryState) {
+                case FULL_PENDING:
+                case FULL_RUNNING:
+                    // 记录增量起始点并执行全量同步
+                    recordIncrementStartPoint(mapping);
+                    startFullThenIncrement(mapping);
+                    break;
+                    
+                case INCREMENT_RUNNING:
+                    // 直接启动增量（全量已完成）
+                    startIncrementSync(mapping);
+                    break;
+                    
+                default:
+                    throw new ManagerException("不支持的恢复状态: " + recoveryState);
+            }
             
         } catch (Exception e) {
-            handleError(mapping, e);
+            // 异常驱动：直接发布ClosedEvent，让ManagerFactory自动重置状态
+            publishClosedEvent(metaId);
+            logger.error("混合同步异常，已发布关闭事件: {}", metaId, e);
         }
     });
     
@@ -135,42 +164,146 @@ public void start(Mapping mapping) {
     coordinator.start();
 }
 
-private void executeFullSync(Mapping mapping) {
-    syncStates.put(mapping.getMetaId(), SyncState.FULL_RUNNING);
+// 混合模式核心：先执行全量同步，完成后自动转入增量同步
+private void startFullThenIncrement(Mapping mapping) {
+    String metaId = mapping.getMetaId();
+    syncStates.put(metaId, SyncState.FULL_RUNNING);
     
-    // 创建全量同步的临时Mapping，确保模式为FULL
-    Mapping fullMapping = cloneMapping(mapping);
-    fullMapping.setModel(ModelEnum.FULL.getCode());
+    // 直接使用原始Mapping，通过overridePuller机制控制行为
+    Thread fullSyncThread = new Thread(() -> {
+        try {
+            // 使用现有的FullPuller，但拦截其完成事件
+            runFullSyncAndThen(mapping, () -> {
+                logger.info("全量同步完成，转入增量模式: {}", metaId);
+                startIncrementSync(mapping);
+            });
+            
+        } catch (Exception e) {
+            // 异常时才发布ClosedEvent
+            publishClosedEvent(metaId);
+            logger.error("全量同步异常: {}", metaId, e);
+        }
+    });
     
-    fullPuller.start(fullMapping);
+    fullSyncThread.setName("mixed-full-sync-" + mapping.getId());
+    fullSyncThread.start();
 }
 
-private void waitForFullCompletion(Mapping mapping) {
-    String metaId = mapping.getMetaId();
+// 核心：运行全量同步并在完成后执行回调
+private void runFullSyncAndThen(Mapping mapping, Runnable onComplete) {
+    // 这里需要具体实现：
+    // 1. 使用FullPuller.start(fullMapping)
+    // 2. 监控其完成状态
+    // 3. 拦截其publishClosedEvent调用
+    // 4. 在完成时调用onComplete.run()
     
-    while (true) {
-        Meta meta = profileComponent.getMeta(metaId);
-        if (isFullSyncCompleted(meta)) {
-            syncStates.put(metaId, SyncState.FULL_COMPLETED);
-            break;
+    // 这是技术实现的关键点，需要进一步设计
+    throw new UnsupportedOperationException("需要具体实现拦截机制");
+}
+
+private void recordIncrementStartPoint(Mapping mapping) {
+    String metaId = mapping.getMetaId();
+    Meta meta = profileComponent.getMeta(metaId);
+    
+    // 关键优化：检查是否已经记录，避免重复记录
+    Map<String, String> snapshot = meta.getSnapshot();
+    if (isIncrementStartPointRecorded(snapshot)) {
+        logger.info("增量起始点已记录，跳过: {}", metaId);
+        return;
+    }
+    
+    // 简化设计：委托给连接器获取当前位置
+    ConnectorConfig sourceConfig = getSourceConnectorConfig(mapping);
+    ConnectorService connectorService = connectorFactory.getConnectorService(sourceConfig.getConnectorType());
+    ConnectorInstance connectorInstance = connectorFactory.connect(sourceConfig);
+    
+    try {
+        // 使用现有的getPosition方法，返回当前位置
+        Object currentPosition = connectorService.getPosition(connectorInstance);
+        
+        if (currentPosition != null) {
+            // 保存到受保护的字段
+            snapshot.put(PROTECTED_CURRENT_POSITION, String.valueOf(currentPosition));
+            snapshot.put(PROTECTED_CONNECTOR_TYPE, sourceConfig.getConnectorType());
+            logger.info("已记录增量起始位置: metaId={}, connectorType={}, position={}", 
+                       metaId, sourceConfig.getConnectorType(), currentPosition);
+        } else {
+            // 如果连接器不支持位置获取，使用时间戳
+            snapshot.put(PROTECTED_INCREMENT_START_TIME, String.valueOf(System.currentTimeMillis()));
+            logger.info("连接器不支持位置获取，使用时间戳: {}", metaId);
         }
         
-        Thread.sleep(1000); // 检查间隔
+    } catch (Exception e) {
+        // 异常时使用时间戳备用
+        logger.warn("获取增量起始位置失败，使用时间戳: {}", e.getMessage());
+        snapshot.put(PROTECTED_INCREMENT_START_TIME, String.valueOf(System.currentTimeMillis()));
+    } finally {
+        // 清理连接资源
+        connectorService.disconnect(connectorInstance);
     }
+    
+    // 记录全量同步开始时间
+    snapshot.put("fullSyncStartTime", String.valueOf(System.currentTimeMillis()));
+    snapshot.put(PROTECTED_INCREMENT_RECORDED, "true"); // 标记已记录
+    
+    profileComponent.editConfigModel(meta);
+    logger.info("已记录增量同步起始位置: metaId={}", metaId);
 }
 
+// 检查是否已记录增量起始点
+private boolean isIncrementStartPointRecorded(Map<String, String> snapshot) {
+    return "true".equals(snapshot.get(PROTECTED_INCREMENT_RECORDED));
+}
+
+// 简化的受保护字段名常量
+private static final String PROTECTED_INCREMENT_RECORDED = "_protected_increment_recorded";
+private static final String PROTECTED_CURRENT_POSITION = "_protected_current_position";
+private static final String PROTECTED_CONNECTOR_TYPE = "_protected_connector_type";
+private static final String PROTECTED_INCREMENT_START_TIME = "_protected_increment_start_time";
+
 private void startIncrementSync(Mapping mapping) {
-    syncStates.put(mapping.getMetaId(), SyncState.INCREMENT_STARTING);
+    String metaId = mapping.getMetaId();
+    syncStates.put(metaId, SyncState.INCREMENT_RUNNING);
     
-    // 重置Meta状态，准备增量同步
-    resetMetaForIncrement(mapping);
+    // 关键：恢复受保护的增量起始点
+    restoreProtectedIncrementStartPoint(mapping);
     
-    // 创建增量同步的临时Mapping
-    Mapping incrementMapping = cloneMapping(mapping);
-    incrementMapping.setModel(ModelEnum.INCREMENT.getCode());
+    // 直接使用原始Mapping启动增量同步
+    incrementPuller.start(mapping);
     
-    incrementPuller.start(incrementMapping);
-    syncStates.put(mapping.getMetaId(), SyncState.INCREMENT_RUNNING);
+    logger.info("增量同步已启动，混合模式进入持续运行状态: {}", metaId);
+}
+
+// 恢复受保护的增量起始点到正常字段
+private void restoreProtectedIncrementStartPoint(Mapping mapping) {
+    Meta meta = profileComponent.getMeta(mapping.getMetaId());
+    Map<String, String> snapshot = meta.getSnapshot();
+    
+    // 检查是否有受保护的字段
+    if (!isIncrementStartPointRecorded(snapshot)) {
+        logger.warn("未找到受保护的增量起始点，增量同步可能从当前时间开始: {}", mapping.getMetaId());
+        return;
+    }
+    
+    // 简化设计：直接恢复位置信息，让各连接器自己解析
+    String currentPosition = snapshot.get(PROTECTED_CURRENT_POSITION);
+    String connectorType = snapshot.get(PROTECTED_CONNECTOR_TYPE);
+    String incrementStartTime = snapshot.get(PROTECTED_INCREMENT_START_TIME);
+    
+    if (StringUtil.isNotBlank(currentPosition)) {
+        // 恢复位置信息到标准字段（供IncrementPuller使用）
+        snapshot.put("position", currentPosition);
+        logger.info("恢复增量位置: connectorType={}, position={}", connectorType, currentPosition);
+    } else if (StringUtil.isNotBlank(incrementStartTime)) {
+        // 使用时间戳备用
+        snapshot.put("incrementStartTime", incrementStartTime);
+        logger.info("恢复增量时间戳: {}", incrementStartTime);
+    } else {
+        logger.warn("无可用的增量起始信息: {}", mapping.getMetaId());
+    }
+    
+    profileComponent.editConfigModel(meta);
+    logger.info("已恢复增量起始点: {}", mapping.getMetaId());
 }
 ```
 
@@ -179,7 +312,7 @@ private void startIncrementSync(Mapping mapping) {
 #### 4.3.1 Meta 扩展设计
 在现有`Meta`类的`snapshot`中新增混合模式专用字段：
 
-```java
+```
 // 在Meta.snapshot中新增的字段
 public static final String FULL_INCREMENT_STATE = "fullIncrementState";
 public static final String FULL_START_TIME = "fullStartTime";
@@ -189,7 +322,7 @@ public static final String LAST_SYNC_CHECKPOINT = "lastSyncCheckpoint";
 ```
 
 #### 4.3.2 状态持久化
-```java
+```
 private void persistMixedState(String metaId, SyncState state, Map<String, Object> extraData) {
     Meta meta = profileComponent.getMeta(metaId);
     Map<String, String> snapshot = meta.getSnapshot();
@@ -209,7 +342,7 @@ private void persistMixedState(String metaId, SyncState state, Map<String, Objec
 ### 4.4 ManagerFactory 改造
 
 #### 4.4.1 Puller 获取逻辑扩展
-```java
+```
 private Puller getPuller(Mapping mapping) {
     Assert.notNull(mapping, "驱动不能为空");
     String model = mapping.getModel();
@@ -229,103 +362,112 @@ private Puller getPuller(Mapping mapping) {
 
 ### 4.5 数据一致性保证
 
-#### 4.5.1 切换点同步机制
-```java
+#### 4.5.1 关键原则：先记录位置，再执行全量
+
+**核心策略**：在开始全量同步之前，必须先记录增量同步的起始位置。这是确保数据一致性的关键步骤。
+
+```
 private void ensureDataConsistency(Mapping mapping) {
     String metaId = mapping.getMetaId();
     
-    // 1. 记录全量同步完成时的时间点
-    long fullSyncEndTime = System.currentTimeMillis();
+    // 关键：先记录起始位置，再开始全量同步
+    // 这样可以确保增量同步能够捕获全量同步期间的所有变更
+    recordIncrementStartPoint(mapping);
     
-    // 2. 根据数据源类型设置增量同步起始点
-    setupIncrementStartPoint(mapping, fullSyncEndTime);
+    // 然后执行全量同步
+    executeFullSync(mapping);
     
-    // 3. 确保增量同步能捕获全量同步期间的变更
+    // 验证一致性检查点
     validateConsistencyCheckpoint(mapping);
 }
+```
 
-private void setupIncrementStartPoint(Mapping mapping, long fullSyncEndTime) {
+#### 4.5.2 不同数据源的处理策略
+
+```
+private void setupIncrementStartPoint(Mapping mapping) {
     Meta meta = profileComponent.getMeta(mapping.getMetaId());
     Map<String, String> snapshot = meta.getSnapshot();
     
-    // 根据不同数据源类型设置合适的起始偏移量
+    // 从之前记录的起始位置设置增量同步
     ConnectorConfig sourceConfig = getSourceConnectorConfig(mapping);
     String connectorType = sourceConfig.getConnectorType();
     
     switch (connectorType.toLowerCase()) {
         case "mysql":
-            // 设置 binlog 位置为全量同步开始前的位置
-            setupMySQLIncrementPoint(snapshot, fullSyncEndTime);
+            // 使用之前记录的binlog位置
+            String binlogFile = snapshot.get("binlogFile");
+            String binlogPosition = snapshot.get("binlogPosition");
+            setupMySQLIncrementFromPosition(snapshot, binlogFile, binlogPosition);
             break;
         case "oracle":
-            // 设置 SCN 为全量同步开始前的位置
-            setupOracleIncrementPoint(snapshot, fullSyncEndTime);
+            // 使用之前记录的SCN
+            String startSCN = snapshot.get("startSCN");
+            setupOracleIncrementFromSCN(snapshot, startSCN);
             break;
         case "sqlserver":
-            // 设置 LSN 为全量同步开始前的位置
-            setupSQLServerIncrementPoint(snapshot, fullSyncEndTime);
+            // 使用之前记录的LSN
+            String startLSN = snapshot.get("startLSN");
+            setupSQLServerIncrementFromLSN(snapshot, startLSN);
+            break;
+        case "postgresql":
+            // 使用之前记录的WAL位置
+            String startWAL = snapshot.get("startWAL");
+            setupPostgreSQLIncrementFromWAL(snapshot, startWAL);
             break;
         default:
-            // 对于定时同步类型，设置合适的时间戳
-            setupTimingIncrementPoint(snapshot, fullSyncEndTime);
+            // 对于定时同步类型，使用记录的时间戳
+            String startTime = snapshot.get("incrementStartTime");
+            setupTimingIncrementFromTime(snapshot, startTime);
     }
     
     profileComponent.editConfigModel(meta);
 }
 ```
 
-### 4.6 异常处理和恢复机制
+#### 4.5.3 时序图：确保数据一致性的关键步骤
 
-#### 4.6.1 故障检测
-```java
-private void monitorSyncHealth(Mapping mapping) {
-    String metaId = mapping.getMetaId();
-    
-    ScheduledExecutorService monitor = Executors.newSingleThreadScheduledExecutor();
-    monitor.scheduleAtFixedRate(() -> {
-        try {
-            SyncState currentState = syncStates.get(metaId);
-            Meta meta = profileComponent.getMeta(metaId);
-            
-            // 检查全量同步是否异常超时
-            if (currentState == SyncState.FULL_RUNNING) {
-                checkFullSyncTimeout(mapping, meta);
-            }
-            
-            // 检查增量同步是否异常中断
-            if (currentState == SyncState.INCREMENT_RUNNING) {
-                checkIncrementSyncHealth(mapping, meta);
-            }
-            
-        } catch (Exception e) {
-            logger.error("同步健康检查异常: " + metaId, e);
-        }
-    }, 30, 30, TimeUnit.SECONDS);
-}
-
-private void handleSyncFailure(Mapping mapping, Exception error) {
-    String metaId = mapping.getMetaId();
-    SyncState currentState = syncStates.get(metaId);
-    
-    logger.error("混合同步异常: metaId={}, state={}, error={}", 
-                 metaId, currentState, error.getMessage(), error);
-    
-    // 根据当前状态采取不同的恢复策略
-    switch (currentState) {
-        case FULL_RUNNING:
-            handleFullSyncFailure(mapping, error);
-            break;
-        case INCREMENT_RUNNING:
-            handleIncrementSyncFailure(mapping, error);
-            break;
-        default:
-            // 通用错误处理
-            syncStates.put(metaId, SyncState.ERROR_RECOVERY);
-            logService.log(LogType.SystemLog.ERROR, 
-                          String.format("混合同步异常，进入错误恢复状态: %s", error.getMessage()));
-    }
-}
 ```
+sequenceDiagram
+    participant App as FullIncrementPuller
+    participant DB as 源数据库
+    participant Meta as Meta存储
+    participant Full as FullPuller
+    participant Inc as IncrementPuller
+    
+    Note over App,Inc: 关键：先记录位置，再全量同步
+    
+    App->>DB: 1. 查询当前偏移量位置
+    DB-->>App: 返回binlog/SCN/LSN等位置
+    App->>Meta: 2. 保存起始位置到snapshot
+    
+    Note over App,Full: 全量同步阶段
+    App->>Full: 3. 开始全量同步
+    Note over DB: 业务系统持续写入新数据
+    Full->>DB: 4. 分批读取历史数据
+    Full->>Meta: 5. 更新全量同步进度
+    
+    Note over App,Inc: 增量同步阶段
+    App->>Inc: 6. 全量完成后启动增量
+    App->>Meta: 7. 设置增量从记录位置开始
+    Inc->>DB: 8. 从起始位置开始监听变更
+    Note over Inc: 能够捕获全量期间的所有变更
+```
+
+### 4.6 异常处理机制（纯异常驱动）
+
+#### 4.6.1 异常恢复策略
+
+| 异常类型 | 处理方式 | 恢复机制 |
+|---------|---------|----------|
+| 连接异常 | 发布ClosedEvent | 用户手动重启或系统重启自动恢复 |
+| 数据异常 | 发布ClosedEvent | 从FULL_PENDING重新开始 |
+| 系统异常 | 发布ClosedEvent | ManagerFactory自动重置为READY状态 |
+
+**优势**：
+- ✅ **零额外状态**：完全复用现有的状态管理机制
+- ✅ **零性能开销**：异常时才触发处理，正常情况下无额外检查
+- ✅ **简洁高效**：利用现有的事件驱动机制
 
 ## 5. UI界面改造
 
@@ -334,7 +476,7 @@ private void handleSyncFailure(Mapping mapping, Exception error) {
 - 新增混合模式的配置参数界面
 
 ### 5.2 监控界面增强
-```html
+```
 <!-- 混合模式状态显示 -->
 <div th:if="${mapping.model eq 'fullIncrement'}">
     <div class="sync-phase-indicator">
@@ -362,7 +504,7 @@ private void handleSyncFailure(Mapping mapping, Exception error) {
 ```
 
 ### 5.3 配置参数扩展
-```javascript
+```
 // 混合模式配置项
 var fullIncrementConfig = {
     fullSyncTimeout: 7200,        // 全量同步超时时间（秒）
@@ -376,7 +518,7 @@ var fullIncrementConfig = {
 ## 6. 配置和参数设计
 
 ### 6.1 新增配置参数
-```java
+```
 // 在Mapping类中新增混合模式配置
 public class FullIncrementConfig {
     private int fullSyncTimeoutSeconds = 7200;      // 全量超时时间
@@ -390,7 +532,7 @@ public class FullIncrementConfig {
 ```
 
 ### 6.2 配置验证
-```java
+```
 public class FullIncrementConfigValidator {
     
     public void validate(FullIncrementConfig config, Mapping mapping) {
@@ -421,7 +563,7 @@ public class FullIncrementConfigValidator {
 ## 7. 性能考虑和优化
 
 ### 7.1 资源管理优化
-```java
+```
 public class MixedSyncResourceManager {
     
     // 为混合模式分配独立的线程池
@@ -448,7 +590,7 @@ public class MixedSyncResourceManager {
 ```
 
 ### 7.2 内存使用优化
-```java
+```
 // 在全量到增量切换时清理不必要的缓存
 private void optimizeMemoryUsage(String metaId) {
     // 清理全量同步相关的缓存
@@ -530,6 +672,36 @@ private void optimizeMemoryUsage(String metaId) {
 | M2 | 第4周末 | 完成核心功能，支持完整的全量+增量流程 |
 | M3 | 第5周末 | 完成UI改造，支持混合模式配置和监控 |
 | M4 | 第6周末 | 完成测试验证，达到生产环境部署标准 |
+
+### 10.3 工作流程图
+
+**关键改进**：在全量同步前记录增量同步起始位置是确保数据一致性的核心！
+
+```
+flowchart TD
+    A[开始] --> B[初始化混合模式状态]
+    B --> C["🔑 记录增量同步起始位置"]
+    C --> D["执行全量同步"]
+    D --> E{"全量同步完成?"}
+    E --> |否| D
+    E --> |是| F["切换到增量模式"]
+    F --> G["从记录位置启动增量监听"]
+    G --> H["捕获数据变更事件"]
+    H --> I["处理变更事件"]
+    I --> J["更新偏移量"]
+    J --> H
+    
+    style C fill:#ff9999,stroke:#ff0000,stroke-width:3px
+    style C color:#ffffff
+    
+    classDef keyStep fill:#ffeb3b,stroke:#f57f17,stroke-width:2px
+    class C keyStep
+```
+
+**说明**：
+- 🔑 **步骤3是关键**：在开始全量同步前，必须先记录当前的增量位置（binlog/SCN/LSN等）
+- 这样确保增量同步能够捕获全量同步期间的所有数据变更，避免数据丢失
+- 不同数据库使用不同的位置标识：MySQL用binlog位置，Oracle用SCN，SQL Server用LSN等
 
 ## 11. 总结
 
