@@ -9,6 +9,7 @@
 
 .mappingList .line{margin: 43px -30px;width: 188px;border-top: 1px solid #8c7c7c;}
 .mappingList .line .running-through-rate{position: absolute;left: calc(50% - 11px);top: 13px;font-size: 26px;font-weight: bold;}
+.mappingList .line .mapping-error-sign {position: absolute;left: calc(50% - 11px);top: 13px;font-size: 26px;color: #ff0000;animation: blink 3s infinite;cursor: pointer;}
 .mappingList .line .running-state{position: absolute;left: calc(50% - 22px);;top: 45px;font-weight: bold;}
 .mappingList .well-sign-left{position: absolute;top: -10px;left: 3px;}
 .mappingList .well-sign-right{position: absolute;top: -31px;left: -7px;}
@@ -23,6 +24,9 @@
 .mappingList .dropdown-menu {right: 12px;left: auto; top: 28px;}
 .mappingList .dropdown-menu i{font-size: 20px;}
 .mappingList .text-right {margin-right: -10px;}
+
+/* 闪烁动画 */
+@keyframes blink {0% {opacity: 1;}50% {opacity: 0.3;}100% {opacity: 1;}}
 
 .dbsyncer_driver_name { margin-bottom: 5px;}
 .dbsyncer_block_increment { background: -webkit-linear-gradient(left, #ffffff, #dffbdc);}

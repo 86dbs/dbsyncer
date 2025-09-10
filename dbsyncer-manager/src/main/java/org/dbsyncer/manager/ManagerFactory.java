@@ -1,16 +1,13 @@
 package org.dbsyncer.manager;
 
-import org.dbsyncer.manager.event.ClosedEvent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -19,7 +16,7 @@ import java.util.Map;
  * @date 2019/9/16 23:59
  */
 @Component
-public class ManagerFactory implements ApplicationListener<ClosedEvent> {
+public class ManagerFactory {
 
     @Resource
     private ProfileComponent profileComponent;
@@ -27,22 +24,18 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     @Resource
     private Map<String, Puller> map;
 
-    @Override
-    public void onApplicationEvent(ClosedEvent event) {
-        changeMetaState(event.getMetaId(), MetaEnum.READY);
-    }
-
     public void start(Mapping mapping) {
         Puller puller = getPuller(mapping);
 
-        // 标记运行中
-        changeMetaState(mapping.getMetaId(), MetaEnum.RUNNING);
+        // 标记运行中，使用Meta类的统一方法
+        Meta meta = profileComponent.getMeta(mapping.getMetaId());
+        meta.saveState(MetaEnum.RUNNING);
 
         try {
             puller.start(mapping);
         } catch (Exception e) {
-            // rollback
-            changeMetaState(mapping.getMetaId(), MetaEnum.READY);
+            // 记录异常状态和异常信息到Meta对象，使用统一方法
+            meta.saveState(MetaEnum.ERROR, e.getMessage());
             throw new ManagerException(e.getMessage());
         }
     }
@@ -50,21 +43,12 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     public void close(Mapping mapping) {
         Puller puller = getPuller(mapping);
 
-        // 标记停止中
+        // 标记停止中，使用Meta类的统一方法
         String metaId = mapping.getMetaId();
-        changeMetaState(metaId, MetaEnum.STOPPING);
+        Meta meta = profileComponent.getMeta(metaId);
+        meta.saveState(MetaEnum.STOPPING);
 
         puller.close(metaId);
-    }
-
-    public void changeMetaState(String metaId, MetaEnum metaEnum) {
-        Meta meta = profileComponent.getMeta(metaId);
-        int code = metaEnum.getCode();
-        if (null != meta && meta.getState() != code) {
-            meta.setState(code);
-            meta.setUpdateTime(Instant.now().toEpochMilli());
-            profileComponent.editConfigModel(meta);
-        }
     }
 
     private Puller getPuller(Mapping mapping) {

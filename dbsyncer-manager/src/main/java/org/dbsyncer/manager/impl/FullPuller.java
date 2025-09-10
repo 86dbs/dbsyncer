@@ -6,11 +6,11 @@ package org.dbsyncer.manager.impl;
 import org.dbsyncer.common.ProcessEvent;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -38,7 +38,7 @@ import java.util.concurrent.Executors;
  * @Date 2020-04-26 15:28
  */
 @Component
-public final class FullPuller extends AbstractPuller implements org.dbsyncer.manager.Puller, ProcessEvent {
+public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEvent {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -58,8 +58,9 @@ public final class FullPuller extends AbstractPuller implements org.dbsyncer.man
         Thread worker = new Thread(() -> {
             final String metaId = mapping.getMetaId();
             ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());
+            Meta meta = profileComponent.getMeta(metaId);
+            assert meta != null;
             try {
-                Meta meta = profileComponent.getMeta(metaId);
                 Task task = meta.getTask();
                 if (task == null) {
                     task = new Task(metaId);
@@ -68,6 +69,8 @@ public final class FullPuller extends AbstractPuller implements org.dbsyncer.man
                 logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
                 doTask(task, mapping, list, executor);
             } catch (Exception e) {
+                // 记录运行时异常状态和异常信息
+                meta.saveState(MetaEnum.ERROR, e.getMessage());
                 logger.error(e.getMessage(), e);
                 logService.log(LogType.SystemLog.ERROR, e.getMessage());
             } finally {
@@ -78,12 +81,10 @@ public final class FullPuller extends AbstractPuller implements org.dbsyncer.man
                 }
 
                 // 清除task引用
-                Meta meta = profileComponent.getMeta(metaId);
-                if (meta != null) {
-                    meta.setTask(null);
+                meta.setTask(null);
+                if (!meta.isError()) {
+                    meta.resetState();
                 }
-
-                publishClosedEvent(metaId);
                 logger.info("结束全量同步：{}, {}", metaId, mapping.getName());
             }
         });
@@ -113,10 +114,12 @@ public final class FullPuller extends AbstractPuller implements org.dbsyncer.man
         // 获取上次同步点
         Meta meta = profileComponent.getMeta(task.getId());
         Map<String, String> snapshot = meta.getSnapshot();
-        task.setPageIndex(NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()), ParserEnum.PAGE_INDEX.getDefaultValue()));
+        task.setPageIndex(NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()),
+                ParserEnum.PAGE_INDEX.getDefaultValue()));
         // 反序列化游标值类型(通常为数字或字符串类型)
         task.setCursors(PrimaryKeyUtil.getLastCursors(snapshot.get(ParserEnum.CURSOR.getCode())));
-        task.setTableGroupIndex(NumberUtil.toInt(snapshot.get(ParserEnum.TABLE_GROUP_INDEX.getCode()), ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
+        task.setTableGroupIndex(NumberUtil.toInt(snapshot.get(ParserEnum.TABLE_GROUP_INDEX.getCode()),
+                ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
         flush(task);
 
         int i = task.getTableGroupIndex();
@@ -152,7 +155,8 @@ public final class FullPuller extends AbstractPuller implements org.dbsyncer.man
         meta.setUpdateTime(Instant.now().toEpochMilli());
         Map<String, String> snapshot = meta.getSnapshot();
         snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(task.getPageIndex()));
-        snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.getIfBlank(StringUtil.join(task.getCursors(), StringUtil.COMMA), StringUtil.EMPTY));
+        snapshot.put(ParserEnum.CURSOR.getCode(),
+                StringUtil.getIfBlank(StringUtil.join(task.getCursors(), StringUtil.COMMA), StringUtil.EMPTY));
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(task.getTableGroupIndex()));
         profileComponent.editConfigModel(meta);
     }
@@ -167,5 +171,4 @@ public final class FullPuller extends AbstractPuller implements org.dbsyncer.man
             }
         }
     }
-
 }

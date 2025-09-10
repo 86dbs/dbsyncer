@@ -134,6 +134,9 @@
                                                         <span th:if="${m?.meta?.state eq 0}" class="running-state label label-info">未运行</span>
                                                         <span th:if="${m?.meta?.state eq 1}" class="running-state label label-success">运行中</span>
                                                         <span th:if="${m?.meta?.state eq 2}" class="running-state label label-warning">停止中</span>
+                                                        <span th:if="${m?.meta?.state eq 3}" class="running-state label label-danger">异常</span>
+                                                        <!-- 驱动异常提示，使用tooltip显示异常信息 -->
+                                                        <span th:if="${m?.meta?.state eq 3}" th:title="${m?.meta?.errorMessage}" class="mapping-error-sign" data-toggle="tooltip" data-placement="top"><i class="fa fa-exclamation-triangle"></i></span>
                                                     </div>
                                                 </div>
 

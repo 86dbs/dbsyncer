@@ -20,7 +20,11 @@ public enum MetaEnum {
     /**
      * 停止中
      */
-    STOPPING(2, "停止中");
+    STOPPING(2, "停止中"),
+    /**
+     * 异常
+     */
+    ERROR(3, "异常");
 
     private final int code;
     private final String message;

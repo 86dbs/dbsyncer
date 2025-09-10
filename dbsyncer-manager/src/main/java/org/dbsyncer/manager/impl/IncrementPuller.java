@@ -6,13 +6,14 @@ package org.dbsyncer.manager.impl;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.manager.ManagerException;
+import org.dbsyncer.manager.Puller;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.consumer.ParserConsumer;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -21,7 +22,10 @@ import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.AbstractListener;
 import org.dbsyncer.sdk.listener.AbstractQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.*;
+import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -30,8 +34,10 @@ import org.springframework.util.Assert;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -42,7 +48,7 @@ import java.util.stream.Collectors;
  * @Date 2020-04-26 15:28
  */
 @Component
-public final class IncrementPuller extends AbstractPuller implements ScheduledTaskJob {
+public final class IncrementPuller implements ScheduledTaskJob, Puller {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -95,6 +101,8 @@ public final class IncrementPuller extends AbstractPuller implements ScheduledTa
                 }
                 listener.start();
             } catch (Exception e) {
+                // 记录运行时异常状态和异常信息
+                meta.saveState(MetaEnum.ERROR, e.getMessage());
                 close(metaId);
                 logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
                 logger.error("运行异常，结束增量同步：{}", metaId, e);
@@ -116,7 +124,9 @@ public final class IncrementPuller extends AbstractPuller implements ScheduledTa
             }
             bufferActuatorRouter.unbind(metaId);
             tableGroupContext.clear(metaId);
-            publishClosedEvent(metaId);
+            if (!meta.isError()) {
+                meta.resetState();
+            }
             logger.info("关闭成功:{}", metaId);
         }
     }
@@ -138,7 +148,8 @@ public final class IncrementPuller extends AbstractPuller implements ScheduledTa
 
         Listener listener = connectorFactory.getListener(connectorConfig.getConnectorType(), listenerType);
         if (null == listener) {
-            throw new ManagerException(String.format("Unsupported listener type \"%s\".", connectorConfig.getConnectorType()));
+            throw new ManagerException(
+                    String.format("Unsupported listener type \"%s\".", connectorConfig.getConnectorType()));
         }
         listener.register(new ParserConsumer(bufferActuatorRouter, profileComponent, logService, meta.getId(), list));
 
@@ -149,7 +160,8 @@ public final class IncrementPuller extends AbstractPuller implements ScheduledTa
                 final TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, t);
                 final Picker picker = new Picker(group);
                 List<Field> fields = picker.getSourceFields();
-                Assert.notEmpty(fields, "表字段映射关系不能为空：" + group.getSourceTable().getName() + " > " + group.getTargetTable().getName());
+                Assert.notEmpty(fields,
+                        "表字段映射关系不能为空：" + group.getSourceTable().getName() + " > " + group.getTargetTable().getName());
                 return new TableGroupQuartzCommand(t.getSourceTable(), fields, t.getCommand());
             }).collect(Collectors.toList());
             quartzListener.setCommands(quartzCommands);
@@ -167,7 +179,8 @@ public final class IncrementPuller extends AbstractPuller implements ScheduledTa
                 filterTable.add(table.getName());
             });
 
-            abstractListener.setConnectorService(connectorFactory.getConnectorService(connectorConfig.getConnectorType()));
+            abstractListener
+                    .setConnectorService(connectorFactory.getConnectorService(connectorConfig.getConnectorType()));
             abstractListener.setConnectorInstance(connectorFactory.connect(connectorConfig));
             abstractListener.setScheduledTaskService(scheduledTaskService);
             abstractListener.setConnectorConfig(connectorConfig);
@@ -181,5 +194,4 @@ public final class IncrementPuller extends AbstractPuller implements ScheduledTa
         listener.init();
         return listener;
     }
-
 }

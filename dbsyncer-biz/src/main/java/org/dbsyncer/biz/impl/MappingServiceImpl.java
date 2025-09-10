@@ -24,6 +24,7 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -223,8 +224,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 sTables.add(tableGroup.getSourceTable().getName());
                 tTables.add(tableGroup.getTargetTable().getName());
             });
-            vo.getSourceConnector().setTable(vo.getSourceConnector().getTable().stream().filter(t -> !sTables.contains(t.getName())).collect(Collectors.toList()));
-            vo.getTargetConnector().setTable(vo.getTargetConnector().getTable().stream().filter(t -> !tTables.contains(t.getName())).collect(Collectors.toList()));
+            vo.getSourceConnector().setTable(vo.getSourceConnector().getTable().stream()
+                    .filter(t -> !sTables.contains(t.getName())).collect(Collectors.toList()));
+            vo.getTargetConnector().setTable(vo.getTargetConnector().getTable().stream()
+                    .filter(t -> !tTables.contains(t.getName())).collect(Collectors.toList()));
             sTables.clear();
             tTables.clear();
         }
@@ -249,6 +252,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         synchronized (LOCK) {
             assertRunning(metaId);
+
+            // 启动前清除异常状态和异常信息，恢复到就绪状态
+            Meta meta = profileComponent.getMeta(metaId);
+            if (meta != null) {
+                meta.saveState(MetaEnum.RUNNING);
+            }
 
             // 启动
             managerFactory.start(mapping);
@@ -394,7 +403,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             String[] tableGroup = StringUtil.split(line, StringUtil.EQUAL);
             String[] tableGroupNames = StringUtil.split(tableGroup[0], StringUtil.VERTICAL_LINE);
             if (tableGroupNames.length == 2) {
-                addTableGroup(mapping.getId(), tableGroupNames[0], tableGroupNames[1], tableGroup.length == 2 ? tableGroup[1] : StringUtil.EMPTY);
+                addTableGroup(mapping.getId(), tableGroupNames[0], tableGroupNames[1],
+                        tableGroup.length == 2 ? tableGroup[1] : StringUtil.EMPTY);
             }
         }
     }
@@ -419,7 +429,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                     }
                     // |C2,C3|
                     if (m.length == 1) {
-                        String name = replaceStar(m[0], tPk);;
+                        String name = replaceStar(m[0], tPk);
+                        ;
                         if (StringUtil.startsWith(mapping, StringUtil.VERTICAL_LINE)) {
                             fms.add(StringUtil.VERTICAL_LINE + name);
                             continue;
@@ -459,5 +470,4 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             profileComponent.editConfigModel(meta);
         }
     }
-
 }

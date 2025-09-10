@@ -16,12 +16,7 @@ import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.GroupStrategyEnum;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.impl.OperationTemplate;
-import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Group;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.OperationConfig;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -126,12 +121,13 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         List<Meta> metas = profileComponent.getMetaAll();
         if (!CollectionUtils.isEmpty(metas)) {
             metas.forEach(m -> {
+                m.setProfileComponent(profileComponent);
                 // 恢复驱动状态
                 if (MetaEnum.RUNNING.getCode() == m.getState()) {
                     Mapping mapping = profileComponent.getMapping(m.getMappingId());
                     managerFactory.start(mapping);
                 } else if (MetaEnum.STOPPING.getCode() == m.getState()) {
-                    managerFactory.changeMetaState(m.getId(), MetaEnum.READY);
+                    m.resetState();
                 }
             });
         }

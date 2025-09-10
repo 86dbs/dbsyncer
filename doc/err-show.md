@@ -14,11 +14,11 @@
 
 ## 设计方案
 
-根据业务架构角度的考虑，我们将异常状态作为[MetaEnum](file:///e:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/enums/MetaEnum.java)中的一个枚举值来处理，并在Meta对象上补充异常信息属性。
+根据业务架构角度的考虑，我们将异常状态作为[MetaEnum](file:///e:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/enums/MetaEnum.java)中的一个枚举值来处理，并在Meta对象上补充异常信息属性。同时，为了提高代码的一致性和可维护性，我们在Meta类中提供了统一的状态变更方法。
 
 ### 1. 扩展Meta类
 
-在[Meta](file:///e:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/model/Meta.java)类中添加异常信息属性：
+在[Meta](file:///e:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/model/Meta.java)类中添加异常信息属性，并提供统一的状态变更方法。为了简化方法调用，ProfileComponent通过构造函数注入：
 
 ```java
 public class Meta extends ConfigModel {
@@ -26,6 +26,20 @@ public class Meta extends ConfigModel {
     
     // 驱动异常信息
     private String errorMessage = "";
+    
+    // ProfileComponent实例，用于保存Meta对象
+    private transient ProfileComponent profileComponent;
+    
+    public Meta() {
+        super.setType(ConfigConstant.META);
+        super.setName(ConfigConstant.META);
+        init();
+    }
+    
+    public Meta(ProfileComponent profileComponent) {
+        this();
+        this.profileComponent = profileComponent;
+    }
     
     // ... 现有代码 ...
     
@@ -47,6 +61,64 @@ public class Meta extends ConfigModel {
         this.endTime = 0L;
         // 初始化异常信息
         this.errorMessage = "";
+    }
+    
+    /**
+     * 设置异常状态和异常信息
+     *
+     * @param errorMessage 异常信息
+     */
+    public void setError(String errorMessage) {
+        this.errorMessage = errorMessage;
+        this.state = MetaEnum.ERROR.getCode();
+        saveState();
+    }
+
+    /**
+     * 清除异常状态，恢复到就绪状态
+     */
+    public void clearError() {
+        this.errorMessage = "";
+        this.state = MetaEnum.READY.getCode();
+        saveState();
+    }
+    
+    /**
+     * 变更状态并保存到持久化存储
+     *
+     * @param metaEnum 新的状态
+     */
+    public void changeState(MetaEnum metaEnum) {
+        int code = metaEnum.getCode();
+        if (this.state != code) {
+            this.state = code;
+            saveState();
+        }
+    }
+    
+    /**
+     * 保存状态到持久化存储
+     */
+    private void saveState() {
+        this.setUpdateTime(Instant.now().toEpochMilli());
+        if (this.profileComponent != null) {
+            this.profileComponent.editConfigModel(this);
+        }
+    }
+    
+    /**
+     * 重置状态到初始状态
+     */
+    public void resetState() {
+        this.state = MetaEnum.READY.getCode();
+        this.errorMessage = "";
+        this.total = new AtomicLong(0);
+        this.success = new AtomicLong(0);
+        this.fail = new AtomicLong(0);
+        this.snapshot = new HashMap<>();
+        this.beginTime = 0L;
+        this.endTime = 0L;
+        saveState();
     }
 }
 ```
@@ -102,37 +174,39 @@ public enum MetaEnum {
 
 ### 3. 在驱动状态管理中增加异常处理
 
-根据驱动的生命周期和状态管理机制，我们需要在关键节点处理异常：
+根据驱动的生命周期和状态管理机制，我们需要在关键节点处理异常。通过使用Meta类中统一的状态变更方法，可以简化代码并提高一致性：
 
 1. **启动异常**：当驱动启动时发生异常
 2. **运行异常**：当驱动在运行过程中发生异常
 3. **停止异常**：当驱动停止时发生异常
 
-```java
-// 在ManagerFactory.java中增加异常处理逻辑
+``java
+// 在ManagerFactory.java中使用统一的状态变更方法
 public void start(Mapping mapping) {
     Puller puller = getPuller(mapping);
 
-    // 标记运行中
-    changeMetaState(mapping.getMetaId(), MetaEnum.RUNNING);
+    // 标记运行中，使用Meta类的统一方法
+    Meta meta = profileComponent.getMeta(mapping.getMetaId());
+    meta.changeState(MetaEnum.RUNNING);
 
     try {
         puller.start(mapping);
     } catch (Exception e) {
-        // 记录异常状态和异常信息到Meta对象
-        recordMappingError(mapping.getMetaId(), e.getMessage());
+        // 记录异常状态和异常信息到Meta对象，使用统一方法
+        meta.setError(e.getMessage());
         throw new ManagerException(e.getMessage());
     }
 }
 
-// 在IncrementPuller中增加运行时异常处理
+// 在IncrementPuller中使用统一的状态变更方法
 public void start(Mapping mapping) {
     Thread worker = new Thread(() -> {
         try {
             // ... 现有逻辑 ...
         } catch (Exception e) {
-            // 记录运行时异常状态和异常信息
-            recordMappingError(metaId, e.getMessage());
+            // 记录运行时异常状态和异常信息，使用统一方法
+            Meta meta = profileComponent.getMeta(metaId);
+            meta.setError(e.getMessage());
             close(metaId);
             logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
             logger.error("运行异常，结束增量同步：{}", metaId, e);
@@ -141,15 +215,16 @@ public void start(Mapping mapping) {
     worker.start();
 }
 
-// 在FullPuller中增加运行时异常处理
+// 在FullPuller中使用统一的状态变更方法
 public void start(Mapping mapping) {
     Thread worker = new Thread(() -> {
         // ... 现有逻辑 ...
         try {
             // ... 现有逻辑 ...
         } catch (Exception e) {
-            // 记录运行时异常状态和异常信息
-            recordMappingError(metaId, e.getMessage());
+            // 记录运行时异常状态和异常信息，使用统一方法
+            Meta meta = profileComponent.getMeta(metaId);
+            meta.setError(e.getMessage());
             logger.error(e.getMessage(), e);
             logService.log(LogType.SystemLog.ERROR, e.getMessage());
         } finally {
@@ -162,12 +237,11 @@ public void start(Mapping mapping) {
 private void recordMappingError(String metaId, String errorMessage) {
     Meta meta = profileComponent.getMeta(metaId);
     if (meta != null) {
-        meta.setErrorMessage(errorMessage);
-        changeMetaState(metaId, MetaEnum.ERROR);
+        meta.setError(errorMessage);
     }
 }
 
-// 在MappingServiceImpl中增加清除异常状态的逻辑
+// 在MappingServiceImpl中使用统一的状态变更方法
 public String start(String id) {
     Mapping mapping = assertMappingExist(id);
     final String metaId = mapping.getMetaId();
@@ -177,8 +251,9 @@ public String start(String id) {
     synchronized (LOCK) {
         assertRunning(metaId);
         
-        // 启动前清除异常状态和异常信息，恢复到就绪状态
-        clearMappingError(metaId);
+        // 启动前清除异常状态和异常信息，恢复到就绪状态，使用统一方法
+        Meta meta = profileComponent.getMeta(metaId);
+        meta.clearError();
 
         // 启动
         managerFactory.start(mapping);
@@ -191,8 +266,7 @@ public String start(String id) {
 private void clearMappingError(String metaId) {
     Meta meta = profileComponent.getMeta(metaId);
     if (meta != null) {
-        meta.setErrorMessage("");
-        changeMetaState(metaId, MetaEnum.READY);
+        meta.clearError();
     }
 }
 ```
@@ -201,7 +275,7 @@ private void clearMappingError(String metaId) {
 
 在[index.html](file:///e%3A/github/dbsyncer/dbsyncer-web/src/main/resources/public/index/index.html)中增加驱动异常提示显示，并以tooltip形式展示异常信息：
 
-```html
+```
 <!-- 在驱动信息显示区域增加异常提示 -->
 <div class="row">
     <!--左边驱动信息 -->
@@ -253,7 +327,7 @@ private void clearMappingError(String metaId) {
 
 在[index.css](file:///e%3A/github/dbsyncer/dbsyncer-web/src/main/resources/static/css/index/index.css)中添加驱动异常提示样式：
 
-```css
+```
 /* 驱动异常提示样式 */
 .mappingList .line .mapping-error-sign {
     position: absolute;
@@ -275,12 +349,12 @@ private void clearMappingError(String metaId) {
 
 ## 实现步骤
 
-1. 修改[Meta](file:///e%3A/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/model/Meta.java)类，添加[errorMessage](file:///e%3A/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/model/Meta.java#L107-L107)属性及相关getter/setter方法
-2. 修改[MetaEnum](file:///e%3A/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/enums/MetaEnum.java)枚举，添加ERROR枚举值
-3. 修改[ManagerFactory](file:///e%3A/github/dbsyncer/dbsyncer-manager/src/main/java/org/dbsyncer/manager/ManagerFactory.java#L30-L30)、[IncrementPuller](file:///e%3A/github/dbsyncer/dbsyncer-manager/src/main/java/org/dbsyncer/manager/impl/IncrementPuller.java#L32-L32)和[FullPuller](file:///e%3A/github/dbsyncer/dbsyncer-manager/src/main/java/org/dbsyncer/manager/impl/FullPuller.java#L39-L170)，增加异常处理逻辑，当驱动出现异常时更新[Meta](file:///e%3A/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/model/Meta.java)对象状态为ERROR并记录异常信息
-4. 修改[MappingServiceImpl](file:///e%3A/github/dbsyncer/dbsyncer-biz/src/main/java/org/dbsyncer/biz/impl/MappingServiceImpl.java#L43-L43)，在启动驱动时清除之前的异常状态和异常信息
-5. 更新[index.html](file:///e%3A/github/dbsyncer/dbsyncer-web/src/main/resources/public/index/index.html)页面，添加异常状态显示和tooltip提示
-6. 在[index.css](file:///e%3A/github/dbsyncer/dbsyncer-web/src/main/resources/static/css/index/index.css)中添加相关样式
+1. 修改[Meta](file:///e%3A/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/model/Meta.java)类，添加统一的状态变更方法（setError、clearError、changeState），这些方法可以接受ProfileComponent参数来自动保存状态变更
+2. 修改[MetaEnum](file:///e%3A/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/enums/MetaEnum.java)枚举，添加ERROR枚举值（已完成）
+3. 修改[ManagerFactory](file:///e%3A/github/dbsyncer/dbsyncer-manager/src/main/java/org/dbsyncer/manager/ManagerFactory.java#L30-L30)、[IncrementPuller](file:///e%3A/github/dbsyncer/dbsyncer-manager/src/main/java/org/dbsyncer/manager/impl/IncrementPuller.java#L32-L32)和[FullPuller](file:///e%3A/github/dbsyncer/dbsyncer-manager/src/main/java/org/dbsyncer/manager/impl/FullPuller.java#L39-L170)，使用Meta类中统一的状态变更方法
+4. 修改[MappingServiceImpl](file:///e%3A/github/dbsyncer/dbsyncer-biz/src/main/java/org/dbsyncer/biz/impl/MappingServiceImpl.java#L43-L43)，使用Meta类中统一的状态变更方法
+5. 更新[index.html](file:///e%3A/github/dbsyncer/dbsyncer-web/src/main/resources/public/index/index.html)页面，添加异常状态显示和tooltip提示（已完成）
+6. 在[index.css](file:///e%3A/github/dbsyncer/dbsyncer-web/src/main/resources/static/css/index/index.css)中添加相关样式（已完成）
 7. 测试功能并验证效果
 
 ## 业务规则考虑
@@ -288,13 +362,14 @@ private void clearMappingError(String metaId) {
 1. **异常驱动模式设计**：遵循用户偏好的异常驱动模式设计，强调零性能开销，在正常情况下不增加任何检查开销，仅在需要时触发异常记录逻辑
 2. **状态一致性**：确保[Meta](file:///e%3A/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/model/Meta.java)对象中的异常状态与驱动实际状态保持一致
 3. **错误恢复**：当用户手动启动驱动时，应清除之前的异常状态和异常信息
+4. **统一状态管理**：通过在Meta类中提供统一的状态变更方法，确保所有状态变更都经过一致的处理流程
 
 ## 设计原则遵循
 
-1. **奥卡姆剃刀原则**：最小化变更，复用现有全量和增量组件，仅增加协调逻辑，确保设计的简洁性和可维护性
-2. **业务架构理解**：从业务架构角度关注核心业务实体及其领域属性的直接表达
+1. **奥卡姆剃刀原则**：最小化变更，复用现有全量和增量组件，仅增加协调逻辑，确保设计的简洁性和可维护性。通过将状态变更逻辑统一到Meta类中，减少了代码重复，符合这一原则。
+2. **业务架构理解**：从业务架构角度关注核心业务实体及其领域属性的直接表达。将状态变更逻辑放在Meta类中，更符合领域驱动设计的思想。
 3. **异常驱动模式**：强调零性能开销，在正常情况下不增加任何检查开销，仅在需要时触发异常记录逻辑
-4. **简洁高效设计**：采用简洁高效的实现方式，反对冗余代码，倾向于简化逻辑
+4. **简洁高效设计**：采用简洁高效的实现方式，反对冗余代码，倾向于简化逻辑。统一的状态变更方法使代码更加简洁和易于维护。
 
 ## 后续优化建议
 
