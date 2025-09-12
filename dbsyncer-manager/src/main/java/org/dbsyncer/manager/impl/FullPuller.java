@@ -133,11 +133,18 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
             task.setTableGroupIndex(++i);
             flush(task);
         }
-
         // 记录结束时间
         task.setEndTime(Instant.now().toEpochMilli());
         task.setTableGroupIndex(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
         flush(task);
+
+        // 检查并执行 Meta 中的阶段处理方法
+        Runnable phaseHandler = meta.getPhaseHandler();
+        if (phaseHandler != null) {
+            phaseHandler.run();
+        }else {
+            meta.resetState();
+        }
     }
 
     private void flush(Task task) {

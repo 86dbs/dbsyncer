@@ -390,8 +390,6 @@ public void recordIncrementStartPoint(String connectorType, Object currentPositi
         logger.info("连接器不支持位置获取，使用数据库服务器时间戳: {}", this.getMetaId());
     }
 
-    // 记录全量同步开始时间
-    this.snapshot.put("fullSyncStartTime", String.valueOf(System.currentTimeMillis()));
     this.snapshot.put(PROTECTED_INCREMENT_RECORDED, "true"); // 标记已记录
 
     // 保存到持久化存储

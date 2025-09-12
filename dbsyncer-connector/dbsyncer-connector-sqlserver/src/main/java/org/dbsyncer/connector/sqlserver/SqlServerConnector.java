@@ -4,7 +4,6 @@
 package org.dbsyncer.connector.sqlserver;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlserver.cdc.Lsn;
 import org.dbsyncer.connector.sqlserver.cdc.SqlServerListener;
@@ -25,8 +24,8 @@ import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -137,22 +136,18 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Object getPosition(DatabaseConnectorInstance connectorInstance) {
-        String sql = "SELECT * from cdc.lsn_time_mapping order by tran_begin_time desc";
-        List<Map<String, Object>> result = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql));
-        if (!CollectionUtils.isEmpty(result)) {
-            List<Object> list = new ArrayList<>();
-            result.forEach(r -> {
-                r.computeIfPresent("start_lsn", (k, lsn)-> new Lsn((byte[]) lsn).toString());
-                r.computeIfPresent("tran_begin_lsn", (k, lsn)-> new Lsn((byte[]) lsn).toString());
-                r.computeIfPresent("tran_id", (k, lsn)-> new Lsn((byte[]) lsn).toString());
-                r.computeIfPresent("tran_begin_time", (k, tranBeginTime)-> DateFormatUtil.timestampToString((Timestamp) tranBeginTime));
-                r.computeIfPresent("tran_end_time", (k, tranEndTime)-> DateFormatUtil.timestampToString((Timestamp) tranEndTime));
-                list.add(r);
-            });
-            return list;
+    public Map<String, String> getPosition(DatabaseConnectorInstance connectorInstance) {
+        // 查询当前LSN位置
+        String currentLsn = connectorInstance.execute(databaseTemplate ->
+                databaseTemplate.queryForObject("SELECT sys.fn_cdc_get_max_lsn()", byte[].class));
+
+        if (currentLsn == null) {
+            throw new RuntimeException("获取SqlServer当前LSN失败");
         }
-        return result;
+        // 创建与snapshot中存储格式一致的position信息
+        Map<String, String> position = new HashMap<>();
+        position.put("position", new Lsn(currentLsn.getBytes()).toString());
+        return position;
     }
 
     private String convertKey(String key) {

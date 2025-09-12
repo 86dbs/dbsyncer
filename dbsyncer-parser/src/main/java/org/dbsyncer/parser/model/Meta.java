@@ -1,8 +1,13 @@
 package org.dbsyncer.parser.model;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.TypeReference;
 import com.alibaba.fastjson2.annotation.JSONField;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.parser.enums.SyncPhaseEnum;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.listener.Listener;
 
@@ -50,6 +55,17 @@ public class Meta extends ConfigModel {
     @JSONField(serialize = false)
     private transient ProfileComponent profileComponent;
 
+    // 混合同步阶段
+    private SyncPhaseEnum syncPhase = SyncPhaseEnum.FULL;
+
+    // 简化的受保护字段名常量
+    @JSONField(serialize = false)
+    private static final String PROTECTED_INCREMENT_INFO = "_protected_increment_info";
+
+    // 回调函数支持
+    @JSONField(serialize = false)
+    private transient Runnable phaseHandler;
+
     public Meta() {
         super.setType(ConfigConstant.META);
         super.setName(ConfigConstant.META);
@@ -79,6 +95,8 @@ public class Meta extends ConfigModel {
         this.endTime = 0L;
         // 初始化异常信息
         this.errorMessage = "";
+        // 初始化混合同步阶段
+        this.syncPhase = SyncPhaseEnum.FULL;
     }
 
     public void setProfileComponent(ProfileComponent profileComponent) {
@@ -176,6 +194,67 @@ public class Meta extends ConfigModel {
         this.errorMessage = errorMessage;
     }
 
+    // 新增的实例方法
+    public SyncPhaseEnum getSyncPhase() {
+        return syncPhase;
+    }
+
+    public void setSyncPhase(SyncPhaseEnum syncPhase) {
+        this.syncPhase = syncPhase;
+    }
+
+    public void updateSyncPhase(SyncPhaseEnum phase) {
+        this.syncPhase = phase;
+        // 假设 Meta 类提供了 save 或类似方法来持久化自身
+        if (this.profileComponent != null) {
+            this.profileComponent.editConfigModel(this);
+        }
+    }
+
+    // 回调函数支持
+    public void setPhaseHandler(Runnable handler) {
+        this.phaseHandler = handler;
+    }
+
+    public Runnable getPhaseHandler() {
+        return this.phaseHandler;
+    }
+
+    // 检查是否已记录增量起始点
+    public boolean isIncrementStartPointRecorded() {
+        return this.snapshot.containsKey(PROTECTED_INCREMENT_INFO);
+    }
+
+    // 记录增量起始点到受保护字段
+    public void recordIncrementStartPoint(Map<String, String> position) {
+        JSONObject incrementInfo = new JSONObject();
+        // 将position中的所有信息添加到incrementInfo中
+        for (Map.Entry<String, String> entry : position.entrySet()) {
+            incrementInfo.put(entry.getKey(), entry.getValue());
+        }
+
+        this.snapshot.put(PROTECTED_INCREMENT_INFO, incrementInfo.toJSONString());
+
+        // 保存到持久化存储
+        this.profileComponent.editConfigModel(this);
+    }
+
+    // 恢复受保护的增量起始点到正常字段
+    public void restoreProtectedIncrementStartPoint() {
+        String incrementInfoJson = this.snapshot.get(PROTECTED_INCREMENT_INFO);
+        if (StringUtil.isBlank(incrementInfoJson)) {
+            throw new RuntimeException("增量起点信息不应该不存下！");
+        }
+        this.snapshot.remove(PROTECTED_INCREMENT_INFO);
+
+        // 将 incrementInfoJson 反序列化为 Map<String, String>
+        Map<String, String> incrementInfo = JSON.parseObject(incrementInfoJson, new TypeReference<Map<String, String>>() {
+        });
+        this.snapshot.putAll(incrementInfo);
+
+        this.profileComponent.editConfigModel(this);
+    }
+
     /**
      * 保存状态到持久化存储
      *
@@ -197,7 +276,6 @@ public class Meta extends ConfigModel {
     public void saveState(MetaEnum state) {
         saveState(state, "");
     }
-
 
     /**
      * 重置状态到初始状态（不重置计数数据）

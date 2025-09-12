@@ -23,7 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * PostgreSQL连接器实现
@@ -53,6 +55,22 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     @Override
     public ConfigValidator getConfigValidator() {
         return configValidator;
+    }
+
+    @Override
+    public Map<String, String> getPosition(org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance connectorInstance) {
+        // 查询当前WAL位置
+        String currentLSN = connectorInstance.execute(databaseTemplate ->
+                databaseTemplate.queryForObject("SELECT pg_current_wal_lsn()", String.class));
+
+        if (currentLSN != null) {
+            // 创建与snapshot中存储格式一致的position信息
+            Map<String, String> position = new HashMap<>();
+            position.put("position", currentLSN);
+            return position;
+        }
+        // 如果无法获取位置信息，返回空Map
+        return new HashMap<>();
     }
 
     @Override

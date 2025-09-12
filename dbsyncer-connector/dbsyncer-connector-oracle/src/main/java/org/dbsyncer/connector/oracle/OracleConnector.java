@@ -21,7 +21,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Oracle连接器实现
@@ -49,6 +51,22 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     @Override
     public ConfigValidator getConfigValidator() {
         return configValidator;
+    }
+
+    @Override
+    public Map<String, String> getPosition(org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance connectorInstance) {
+        // 查询当前SCN号
+        String currentSCN = connectorInstance.execute(databaseTemplate ->
+                databaseTemplate.queryForObject("SELECT CURRENT_SCN FROM V$DATABASE", String.class));
+
+        if (currentSCN != null) {
+            // 创建与snapshot中存储格式一致的position信息
+            Map<String, String> position = new HashMap<>();
+            position.put("position", currentSCN);
+            logger.debug("成功获取Oracle当前SCN: {}", currentSCN);
+            return position;
+        }
+        return null;
     }
 
     @Override

@@ -24,7 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * MySQL连接器实现
@@ -136,6 +138,21 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         newCursors[cursorsLen] = 0;
         newCursors[cursorsLen + 1] = pageSize;
         return newCursors;
+    }
+
+    @Override
+    public Map<String, String> getPosition(org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance connectorInstance) {
+        // 执行SHOW MASTER STATUS命令获取当前binlog位置
+        Map<String, Object> result = connectorInstance.execute(databaseTemplate ->
+                databaseTemplate.queryForMap("SHOW MASTER STATUS"));
+
+        if (result == null || !result.isEmpty()) {
+            throw new RuntimeException("获取MySQL当前binlog位置失败");
+        }
+        Map<String, String> position = new HashMap<>();
+        position.put("fileName", (String) result.get("File"));
+        position.put("position", String.valueOf(result.get("Position")));
+        return position;
     }
 
     @Override

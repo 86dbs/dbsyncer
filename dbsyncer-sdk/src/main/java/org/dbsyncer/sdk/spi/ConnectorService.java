@@ -3,8 +3,8 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
@@ -20,6 +20,7 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -187,7 +188,7 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @param connectorInstance
      * @return
      */
-    default Object getPosition(I connectorInstance) {
-        return StringUtil.EMPTY;
+    default Map<String, String> getPosition(I connectorInstance) {
+        throw new NotImplementedException();
     }
 }

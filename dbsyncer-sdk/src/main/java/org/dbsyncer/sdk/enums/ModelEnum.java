@@ -22,7 +22,11 @@ public enum ModelEnum {
     /**
      * 增量
      */
-    INCREMENT("increment", "增量");
+    INCREMENT("increment", "增量"),
+    /**
+     * 全量+增量
+     */
+    FULL_INCREMENT("fullIncrement", "全量+增量");  // 新增混合模式
 
     private final String code;
     private final String name;
@@ -44,7 +48,7 @@ public enum ModelEnum {
     public static boolean isFull(String model) {
         return StringUtil.equals(FULL.getCode(), model);
     }
-
+    
     public String getCode() {
         return code;
     }
