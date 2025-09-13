@@ -39,10 +39,30 @@ public class ConfigConstant {
     public static final String DATA_TARGET_TABLE_NAME = "targetTableName";
     public static final String DATA_EVENT = "event";
     public static final String DATA_ERROR = "error";
-
     /**
      * Binlog
      */
     public static final String BINLOG_DATA = "data";
+
+    /**
+     * Task status
+     */
+    public static final String TASK_STATUS = "status";
+    /**
+     * Task id
+     */
+    public static final String TASK_ID = "task_id";
+
+    /**
+     * Source table name
+     */
+    public static final String SOURCE_TABLE_NAME = "source_table_name";
+
+    /**
+     * Target table name
+     */
+    public static final String TARGET_TABLE_NAME = "target_table_name";
+
+    public static final String CONTENT = "content";
 
 }

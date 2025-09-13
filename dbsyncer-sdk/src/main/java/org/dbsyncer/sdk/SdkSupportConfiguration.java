@@ -5,6 +5,7 @@ package org.dbsyncer.sdk;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.ProductInfo;
+import org.dbsyncer.sdk.spi.DataCorrectionService;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -67,6 +68,16 @@ public class SdkSupportConfiguration {
                 return null;
             }
         };
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public DataCorrectionService dataCorrectionService() {
+        ServiceLoader<DataCorrectionService> dataCorrectionServices = ServiceLoader.load(DataCorrectionService.class, Thread.currentThread().getContextClassLoader());
+        for (DataCorrectionService s : dataCorrectionServices) {
+            return s;
+        }
+        return  null;
     }
 
 }

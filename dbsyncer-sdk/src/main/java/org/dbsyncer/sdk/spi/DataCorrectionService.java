@@ -3,6 +3,11 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import org.dbsyncer.sdk.model.CommonTask;
+
+import java.util.List;
+import java.util.Map;
+
 /**
  * 数据订正服务
  *
@@ -13,11 +18,66 @@ package org.dbsyncer.sdk.spi;
 public interface DataCorrectionService {
 
     /**
-     * 数据订正
+     * 新增任务
      *
-     * @param mappingId 驱动id
-     * @return 任务id
+     * @param params
      */
-    String correct(String mappingId);
+    boolean add(Map<String, String> params);
+
+    /**
+     * 任务状态
+     *
+     * @param taskId
+     * @return
+     */
+    boolean start(String taskId);
+
+    /**
+     * 停止任务
+     *
+     * @param taskId
+     * @return
+     */
+    boolean stop(String taskId);
+
+    /**
+     * 重启任务
+     *
+     * @param taskId
+     * @return
+     */
+    boolean restart(String taskId);
+
+    /**
+     * 暂停任务
+     *
+     * @param taskId
+     * @return
+     */
+    boolean pause(String taskId);
+
+    /**
+     * 继续任务
+     *
+     * @param taskId
+     * @return
+     */
+    boolean resume(String taskId);
+
+    /**
+     * 任务详情
+     *
+     * @param taskId
+     * @return
+     */
+    CommonTask detail(String taskId);
+
+    /**
+     * 任务列表
+     *
+     * @param type
+     * @return
+     */
+    List<CommonTask> list(String type);
 
 }
