@@ -95,10 +95,10 @@ public final class FullIncrementPuller implements Puller {
     }
 
     @Override
-    public void close(String metaId) {
+    public void close(Meta meta) {
         // 关闭全量和增量同步
-        fullPuller.close(metaId);
-        incrementPuller.close(metaId);
+        fullPuller.close(meta);
+        incrementPuller.close(meta);
     }
 
     // 核心：运行全量同步并在完成后执行回调

@@ -48,7 +48,7 @@ public class ManagerFactory {
         Meta meta = profileComponent.getMeta(metaId);
         meta.saveState(MetaEnum.STOPPING);
 
-        puller.close(metaId);
+        puller.close(meta);
     }
 
     private Puller getPuller(Mapping mapping) {

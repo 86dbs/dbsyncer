@@ -94,8 +94,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
     }
 
     @Override
-    public void close(String metaId) {
-        Meta meta = profileComponent.getMeta(metaId);
+    public void close(Meta meta) {
         if (meta != null) {
             Task task = meta.getTask();
             if (task != null) {

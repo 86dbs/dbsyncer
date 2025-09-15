@@ -9,16 +9,14 @@
 - 优化：取消 closeEvent 事件的使用（OK）
 - 优化：移除 AbstractPuller 类（OK）
 - 优化: Meta 集成持久化逻辑，以简化维护。（OK）
+- 优化：puller 接口 移除 stop 方法。 
 
 ## 2.3.1
-
-- bug fixed: pk missed when add mapping
-
-## 2.3.0
 
 - 新功能：字段全选既过滤功能
 - disable kafka group.id check
 - bug fixed: 以 kafka 为目标的新同步任务，配置时无法保存。
+- bug fixed: pk missed when add mapping
 
 ## 2.2.0
 

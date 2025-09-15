@@ -103,7 +103,7 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
             } catch (Exception e) {
                 // 记录运行时异常状态和异常信息
                 meta.saveState(MetaEnum.ERROR, e.getMessage());
-                close(metaId);
+                close(meta);
                 logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
                 logger.error("运行异常，结束增量同步：{}", metaId, e);
             }
@@ -114,20 +114,19 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
     }
 
     @Override
-    public void close(String metaId) {
-        Meta meta = profileComponent.getMeta(metaId);
+    public void close(Meta meta) {
         if (meta != null) {
             Listener listener = meta.getListener();
             if (listener != null) {
                 listener.close();
                 meta.setListener(null);
             }
-            bufferActuatorRouter.unbind(metaId);
-            tableGroupContext.clear(metaId);
+            bufferActuatorRouter.unbind(meta.getId());
+            tableGroupContext.clear(meta.getId());
             if (!meta.isError()) {
                 meta.resetState();
             }
-            logger.info("关闭成功:{}", metaId);
+            logger.info("关闭成功:{}", meta.getId());
         }
     }
 
