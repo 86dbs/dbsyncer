@@ -8,8 +8,9 @@
 - 优化：对异常处理机制进行了优化，状态中增加了异常状态。（OK）
 - 优化：取消 closeEvent 事件的使用（OK）
 - 优化：移除 AbstractPuller 类（OK）
+- 优化：提升 sql 解析性能。(OK)
 - 优化: Meta 集成持久化逻辑，以简化维护。（OK）
-- 优化：puller 接口 移除 stop 方法。 
+- 优化：puller 接口 优化。(OK)
 
 ## 2.3.1
 

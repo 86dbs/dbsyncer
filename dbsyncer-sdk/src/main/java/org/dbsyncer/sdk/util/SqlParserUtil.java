@@ -3,31 +3,22 @@
  */
 package org.dbsyncer.sdk.util;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.util.Stack;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
-
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.parser.CCJSqlParserConstants;
-import net.sf.jsqlparser.parser.Node;
-import net.sf.jsqlparser.parser.ParseException;
-import net.sf.jsqlparser.parser.StatementListener;
-import net.sf.jsqlparser.parser.StreamProvider;
-import net.sf.jsqlparser.parser.StringProvider;
+import net.sf.jsqlparser.parser.*;
 import net.sf.jsqlparser.parser.feature.Feature;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.Statements;
 import org.dbsyncer.sdk.sqlparser.SimpleSqlParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.util.Stack;
+import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 /**
  * @Author 穿云
@@ -39,16 +30,17 @@ public abstract class SqlParserUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlParserUtil.class);
     private static final int ALLOWED_NESTING_DEPTH = 10;
 
+    // 创建一个共享的线程池用于SQL解析
+    private static final ExecutorService SHARED_EXECUTOR_SERVICE = new ThreadPoolExecutor(
+            1, 10, 60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(1000),
+            Executors.defaultThreadFactory(),
+            new ThreadPoolExecutor.CallerRunsPolicy());
+
     public static Statement parse(Reader statementReader) throws JSQLParserException {
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
         Statement statement = null;
         SimpleSqlParser parser = new SimpleSqlParser(new StreamProvider(statementReader));
-        try {
-            statement = parseStatement(parser, executorService);
-        } finally {
-            executorService.shutdown();
-        }
-        return statement;
+        return parseStatement(parser, SHARED_EXECUTOR_SERVICE);
     }
 
     public static Statement parse(String sql) throws JSQLParserException {
@@ -62,12 +54,10 @@ public abstract class SqlParserUtil {
             return null;
         }
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
         Statement statement = null;
         try {
-            statement = parse(sql, executorService, consumer);
+            statement = parse(sql, SHARED_EXECUTOR_SERVICE, consumer);
         } finally {
-            executorService.shutdown();
         }
         return statement;
     }
@@ -300,11 +290,11 @@ public abstract class SqlParserUtil {
     }
 
     /**
-     * @param parser the Parser armed with a Statement text
+     * @param parser          the Parser armed with a Statement text
      * @param executorService the Executor Service for parsing within a Thread
      * @return the parsed Statement
      * @throws JSQLParserException when either the Statement can't be parsed or the configured
-     *         timeout is reached
+     *                             timeout is reached
      */
 
     public static Statement parseStatement(SimpleSqlParser parser, ExecutorService executorService)
@@ -343,10 +333,7 @@ public abstract class SqlParserUtil {
             return null;
         }
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        final Statements statements = parseStatements(sqls, executorService, consumer);
-        executorService.shutdown();
-
+        final Statements statements = parseStatements(sqls, SHARED_EXECUTOR_SERVICE, consumer);
         return statements;
     }
 
@@ -388,11 +375,11 @@ public abstract class SqlParserUtil {
     }
 
     /**
-     * @param parser the Parser armed with a Statement text
+     * @param parser          the Parser armed with a Statement text
      * @param executorService the Executor Service for parsing within a Thread
      * @return the Statements (representing a List of single statements)
      * @throws JSQLParserException when either the Statement can't be parsed or the configured
-     *         timeout is reached
+     *                             timeout is reached
      */
     public static Statements parseStatements(SimpleSqlParser parser, ExecutorService executorService)
             throws JSQLParserException {
