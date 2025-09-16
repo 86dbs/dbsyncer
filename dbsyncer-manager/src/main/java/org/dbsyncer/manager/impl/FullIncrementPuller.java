@@ -105,8 +105,6 @@ public final class FullIncrementPuller implements Puller {
     private void startFullThenIncrement(Mapping mapping, Meta meta) {
         // 设置阶段回调：全量完成后启动增量同步
         meta.setPhaseHandler(() -> {
-            // 更新混合同步阶段为增量阶段
-            meta.updateSyncPhase(SyncPhaseEnum.INCREMENTAL);
             // 启动增量同步
             startIncrementSync(mapping, meta);
         });

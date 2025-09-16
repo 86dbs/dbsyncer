@@ -29,6 +29,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @Version 1.0.0
@@ -75,6 +76,12 @@ public final class FlushStrategyImpl implements FlushStrategy {
 
     @Override
     public void flushIncrementData(String metaId, Result result, String event) {
+        // 为增量设置总数
+        Meta meta = cacheService.get(metaId, Meta.class);
+        AtomicLong total = meta.getTotal();
+        total.getAndAdd(result.getFailData().size());
+        total.getAndAdd(result.getSuccessData().size());
+
         flush(metaId, result, event);
     }
 

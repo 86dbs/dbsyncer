@@ -14,6 +14,7 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.consumer.ParserConsumer;
 import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.parser.enums.SyncPhaseEnum;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -85,6 +86,7 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
         Assert.notEmpty(list, "表映射关系不能为空，请先添加源表到目标表关系.");
         Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "Meta不能为空.");
+        meta.setSyncPhase(SyncPhaseEnum.INCREMENTAL);
 
         Thread worker = new Thread(() -> {
             try {

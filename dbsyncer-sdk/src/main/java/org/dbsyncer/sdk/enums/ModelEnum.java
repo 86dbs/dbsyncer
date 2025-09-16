@@ -26,7 +26,7 @@ public enum ModelEnum {
     /**
      * 全量+增量
      */
-    FULL_INCREMENT("fullIncrement", "全量+增量");  // 新增混合模式
+    FULL_INCREMENT("fullIncrement", "混合");  // 新增混合模式
 
     private final String code;
     private final String name;
