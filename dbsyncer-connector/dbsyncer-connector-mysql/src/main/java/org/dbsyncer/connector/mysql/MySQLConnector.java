@@ -146,7 +146,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         Map<String, Object> result = connectorInstance.execute(databaseTemplate ->
                 databaseTemplate.queryForMap("SHOW MASTER STATUS"));
 
-        if (result == null || !result.isEmpty()) {
+        if (result == null || result.isEmpty()) {
             throw new RuntimeException("获取MySQL当前binlog位置失败");
         }
         Map<String, String> position = new HashMap<>();

@@ -16,6 +16,7 @@ import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
 import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 import com.github.shyiko.mysql.binlog.network.ServerException;
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.QueueOverflowException;
@@ -327,7 +328,8 @@ public class MySQLListener extends AbstractDatabaseListener {
             try {
                 // skip BEGIN
                 if (!StringUtil.equalsIgnoreCase("BEGIN", sql)) {
-                    return SqlParserUtil.parse(sql);
+                    return CCJSqlParserUtil.parse( sql);
+//                    return SqlParserUtil.parse(sql); 太过于复杂，能能差
                 }
             } catch (JSQLParserException e) {
                 logger.warn("不支持的ddl:{}", sql);

@@ -243,7 +243,8 @@ public class Meta extends ConfigModel {
     public void restoreProtectedIncrementStartPoint() {
         String incrementInfoJson = this.snapshot.get(PROTECTED_INCREMENT_INFO);
         if (StringUtil.isBlank(incrementInfoJson)) {
-            throw new RuntimeException("增量起点信息不应该不存下！");
+            // 已经开始了增量同步
+            return;
         }
         this.snapshot.remove(PROTECTED_INCREMENT_INFO);
 

@@ -253,12 +253,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         synchronized (LOCK) {
             assertRunning(metaId);
 
-            // 启动前清除异常状态和异常信息，恢复到就绪状态
-            Meta meta = profileComponent.getMeta(metaId);
-            if (meta != null) {
-                meta.saveState(MetaEnum.RUNNING);
-            }
-
             // 启动
             managerFactory.start(mapping);
 

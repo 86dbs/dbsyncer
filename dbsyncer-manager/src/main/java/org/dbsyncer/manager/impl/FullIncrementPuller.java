@@ -86,7 +86,7 @@ public final class FullIncrementPuller implements Puller {
                 meta.saveState(MetaEnum.ERROR, e.getMessage());
                 logger.error("混合同步异常，已更新Meta状态为ERROR: {}", metaId, e);
                 // 在logService中记录异常信息
-                logService.log(LogType.TableGroupLog.FULL_FAILED, "混合同步异常: {}，错误信息: {}", metaId, e.getMessage());
+                logService.log(LogType.TableGroupLog.FULL_FAILED, "混合同步异常: %s，错误信息: %s", metaId, e.getMessage());
             }
         });
 
