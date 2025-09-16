@@ -126,8 +126,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 if (MetaEnum.RUNNING.getCode() == m.getState()) {
                     Mapping mapping = profileComponent.getMapping(m.getMappingId());
                     managerFactory.start(mapping);
-                } else if (MetaEnum.STOPPING.getCode() == m.getState()) {
-                    m.resetState();
                 }
             });
         }

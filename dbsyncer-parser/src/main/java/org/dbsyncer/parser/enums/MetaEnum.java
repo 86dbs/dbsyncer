@@ -20,7 +20,7 @@ public enum MetaEnum {
     /**
      * 停止中
      */
-    STOPPING(2, "停止中"),
+    PAUSE(2, "停止中"),
     /**
      * 异常
      */
@@ -35,7 +35,7 @@ public enum MetaEnum {
     }
 
     public static boolean isRunning(int state) {
-        return RUNNING.getCode() == state || STOPPING.getCode() == state;
+        return RUNNING.getCode() == state;
     }
 
     public int getCode() {

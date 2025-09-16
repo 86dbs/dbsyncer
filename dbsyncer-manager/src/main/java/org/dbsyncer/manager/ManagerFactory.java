@@ -46,8 +46,6 @@ public class ManagerFactory {
         // 标记停止中，使用Meta类的统一方法
         String metaId = mapping.getMetaId();
         Meta meta = profileComponent.getMeta(metaId);
-        meta.saveState(MetaEnum.STOPPING);
-
         puller.close(meta);
     }
 

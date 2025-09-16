@@ -102,6 +102,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
                 meta.setTask(null);
             }
         }
+        meta.resetState();
     }
 
     private void doTask(Task task, Mapping mapping, List<TableGroup> list, Executor executor) {
