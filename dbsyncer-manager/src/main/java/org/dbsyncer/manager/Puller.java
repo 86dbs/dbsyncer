@@ -9,4 +9,6 @@ public interface Puller {
 
     void close(Meta meta);
 
+    void reset(Meta meta);
+
 }

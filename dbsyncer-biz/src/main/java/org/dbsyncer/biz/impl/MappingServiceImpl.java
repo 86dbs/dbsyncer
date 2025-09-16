@@ -24,7 +24,6 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
-import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -452,6 +451,22 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             joiner.add(name);
         }
         return name;
+    }
+
+    @Override
+    public String reset(String id) {
+        Mapping mapping = profileComponent.getMapping(id);
+        Assert.notNull(mapping, "驱动不存在");
+        
+        synchronized (LOCK){
+            managerFactory.reset(mapping);
+            log(LogType.MappingLog.RESET, mapping);
+
+            // 发送关闭驱动通知消息
+            String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
+            sendNotifyMessage("重置驱动", String.format("手动重置驱动：%s(%s)", mapping.getName(), model));
+        }
+        return "重置成功";
     }
 
     private void clearMetaIfFinished(String metaId) {

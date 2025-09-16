@@ -18,10 +18,6 @@ public enum MetaEnum {
      */
     RUNNING(1, "运行中"),
     /**
-     * 停止中
-     */
-    PAUSE(2, "停止中"),
-    /**
      * 异常
      */
     ERROR(3, "异常");

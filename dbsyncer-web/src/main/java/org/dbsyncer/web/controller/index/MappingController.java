@@ -117,6 +117,17 @@ public class MappingController extends BaseController {
         }
     }
 
+    @PostMapping("/reset")
+    @ResponseBody
+    public RestResult reset(@RequestParam(value = "id") String id) {
+        try {
+            return RestResult.restSuccess(mappingService.reset(id));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
     @PostMapping(value = "/refreshTables")
     @ResponseBody
     public RestResult refreshTables(@RequestParam(value = "id") String id) {
