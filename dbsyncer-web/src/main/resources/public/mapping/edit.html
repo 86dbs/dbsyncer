@@ -68,7 +68,10 @@
                     <div class="col-sm-2">
                         <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" /> 增量同步
                     </div>
-                    <div class="col-sm-6"></div>
+                    <div class="col-sm-2">
+                        <input type="radio" name="model" value="fullIncrement" th:checked="${'fullIncrement' eq mapping?.model}" /> 全量+增量
+                    </div>
+                    <div class="col-sm-4"></div>
                     <div class="col-md-2 text-right">
                         <button id="mappingBackBtn" type="button" class="btn btn-default">
                             <span class="fa fa-reply"></span>返回

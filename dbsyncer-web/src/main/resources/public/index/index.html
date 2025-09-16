@@ -107,9 +107,11 @@
                                 <div class="row mappingList">
                                     <!-- 驱动__开始 -->
                                     <div class="col-md-4" th:each="m,state : ${mappings}">
-                                        <div th:id="${m?.id}" th:class="${m?.model eq 'full'} ? 'dbsyncer_block dbsyncer_block_full' : 'dbsyncer_block dbsyncer_block_increment'">
+                                        <div th:id="${m?.id}"
+                                            th:class="${m?.model eq 'full'} ? 'dbsyncer_block dbsyncer_block_full' : (${m?.model eq 'fullIncrement'} ? 'dbsyncer_block dbsyncer_block_fullIncrement' : 'dbsyncer_block dbsyncer_block_increment')">
                                             <!--驱动标题信息 -->
-                                            <div class="row text-center dbsyncer_driver_name" th:text="${m?.name}" th:title="${m?.name}"></div>
+                                            <div class="row text-center dbsyncer_driver_name" th:text="${m?.name}"
+                                                th:title="${m?.name}"></div>
 
                                             <div class="row">
                                                 <!--左边驱动信息 -->

@@ -46,8 +46,12 @@ function bindMappingModelChange() {
     if ('full' == $value) {
         $increment.addClass("hidden");
         $full.removeClass("hidden");
-    } else {
+    } else if ('increment' == $value) {
         $full.addClass("hidden");
+        $increment.removeClass("hidden");
+    } else {
+        // 对于混合同步模式，显示所有配置选项
+        $full.removeClass("hidden");
         $increment.removeClass("hidden");
     }
 }
