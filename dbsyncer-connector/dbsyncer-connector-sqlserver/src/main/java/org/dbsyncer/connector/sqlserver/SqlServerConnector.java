@@ -138,15 +138,19 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public Map<String, String> getPosition(DatabaseConnectorInstance connectorInstance) {
         // 查询当前LSN位置
-        String currentLsn = connectorInstance.execute(databaseTemplate ->
+        byte[] currentLsnBytes = connectorInstance.execute(databaseTemplate ->
                 databaseTemplate.queryForObject("SELECT sys.fn_cdc_get_max_lsn()", byte[].class));
 
-        if (currentLsn == null) {
+        if (currentLsnBytes == null) {
             throw new RuntimeException("获取SqlServer当前LSN失败");
         }
+        
+        // 将 byte[] 转换为 LSN 字符串表示
+        String currentLsn = new Lsn(currentLsnBytes).toString();
+        
         // 创建与snapshot中存储格式一致的position信息
         Map<String, String> position = new HashMap<>();
-        position.put("position", new Lsn(currentLsn.getBytes()).toString());
+        position.put("position", currentLsn);
         return position;
     }
 
