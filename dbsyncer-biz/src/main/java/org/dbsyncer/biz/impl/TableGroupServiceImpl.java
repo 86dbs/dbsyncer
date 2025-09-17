@@ -13,6 +13,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.enums.SyncPhaseEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -149,12 +150,16 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     @Override
-    public Meta updateMeta(Mapping mapping, String metaSnapshot) {
+    public Meta resetMeta(Mapping mapping, String metaSnapshot) {
         Meta meta = profileComponent.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "驱动meta不存在.");
 
         // 清空状态
         meta.clear();
+        // 为计数设置阶段
+        if (mapping.getModel().equals(ModelEnum.INCREMENT.getCode())){
+            meta.setSyncPhase(SyncPhaseEnum.INCREMENTAL);
+        }
 
         // 手动配置增量点
         if (StringUtil.isNotBlank(metaSnapshot)) {
@@ -173,7 +178,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     private void getMetaTotal(Meta meta, String model) {
         // 全量同步
-        if (ModelEnum.isFull(model)) {
+        if (SyncPhaseEnum.FULL == meta.getSyncPhase()) {
             // 统计tableGroup总条数
             AtomicLong count = new AtomicLong(0);
             List<TableGroup> groupAll = profileComponent.getTableGroupAll(meta.getMappingId());

@@ -49,15 +49,6 @@ public class ManagerFactory {
         puller.close(meta);
     }
 
-    /**
-     * 重置指定的混合同步任务
-     */
-    public void reset(Mapping mapping) {
-        // 获取混合同步处理器
-        Puller puller = getPuller(mapping);
-        puller.reset(profileComponent.getMeta(mapping.getMetaId()));
-    }
-
     private Puller getPuller(Mapping mapping) {
         Assert.notNull(mapping, "驱动不能为空");
         String model = mapping.getModel();

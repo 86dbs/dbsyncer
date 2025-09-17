@@ -133,12 +133,6 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
     }
 
     @Override
-    public void reset(Meta meta) {
-        meta.clear();
-        close(meta);
-    }
-
-    @Override
     public void run() {
         profileComponent.getMetaAll().forEach(meta -> {
             Listener listener = meta.getListener();

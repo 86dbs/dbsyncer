@@ -8,7 +8,4 @@ public interface Puller {
     void start(Mapping mapping);
 
     void close(Meta meta);
-
-    void reset(Meta meta);
-
 }

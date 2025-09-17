@@ -68,6 +68,6 @@ public interface TableGroupService {
      * @param mapping
      * @param metaSnapshot
      */
-    Meta updateMeta(Mapping mapping, String metaSnapshot);
+    Meta resetMeta(Mapping mapping, String metaSnapshot);
 
 }

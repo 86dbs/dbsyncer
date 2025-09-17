@@ -105,12 +105,6 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
         meta.resetState();
     }
 
-    @Override
-    public void reset(Meta meta) {
-        meta.clear();
-        close(meta);
-    }
-
     private void doTask(Task task, Mapping mapping, List<TableGroup> list, Executor executor) {
         // 记录开始时间
         long now = Instant.now().toEpochMilli();

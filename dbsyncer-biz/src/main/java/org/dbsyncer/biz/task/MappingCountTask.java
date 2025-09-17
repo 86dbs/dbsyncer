@@ -55,7 +55,7 @@ public class MappingCountTask extends AbstractCountTask {
                 updateTableGroupCount(mapping, tableGroup);
             }
             // 更新驱动meta
-            Meta meta = tableGroupService.updateMeta(mapping, metaSnapshot);
+            Meta meta = tableGroupService.resetMeta(mapping, metaSnapshot);
             logger.info("完成统计:{}, {}张表, 总数:{}", mapping.getName(), groupAll.size(), meta.getTotal());
         }
     }

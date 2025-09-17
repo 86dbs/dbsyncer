@@ -159,7 +159,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             log(LogType.MappingLog.UPDATE, model);
 
             // 更新meta
-            tableGroupService.updateMeta(mapping, metaSnapshot);
+            tableGroupService.resetMeta(mapping, metaSnapshot);
             profileComponent.editConfigModel(model);
         }
         // 统计总数
@@ -459,7 +459,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Assert.notNull(mapping, "驱动不存在");
         
         synchronized (LOCK){
-            managerFactory.reset(mapping);
+            tableGroupService.resetMeta(mapping, StringUtil.EMPTY);
+            managerFactory.close(mapping);
             log(LogType.MappingLog.RESET, mapping);
 
             // 发送关闭驱动通知消息

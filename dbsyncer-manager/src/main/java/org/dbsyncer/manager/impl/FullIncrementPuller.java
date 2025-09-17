@@ -153,17 +153,4 @@ public final class FullIncrementPuller implements Puller {
 
         logger.info("增量同步已启动，混合模式进入持续运行状态: {}", mapping.getMetaId());
     }
-
-    /**
-     * 重置混合同步任务
-     * 
-     * @param meta 混合同步任务元数据
-     */
-    public void reset(Meta meta) {
-        meta.setSyncPhase(SyncPhaseEnum.FULL);
-        // 关闭当前正在运行的任务
-        fullPuller.reset(meta);
-        incrementPuller.reset(meta);
-        logger.info("混合同步任务已重置: {}", meta.getId());
-    }
 }
