@@ -33,7 +33,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <label class="col-sm-2 control-label">CDN静态资源</label>
+                <label class="col-sm-2 control-label">CDN静态资源<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="仅限可访问公网环境下，开启cdn可以提高页面加载速度，开启后需刷新页面生效"></i></label>
                 <div class="col-sm-4">
                     <input class="dbsyncer_switch" name="enableCDN" th:checked="${config?.enableCDN}" type="checkbox" />
                 </div>
@@ -65,6 +65,16 @@
                 </div>
             </div>
             <div class="form-group">
+                <label class="col-sm-2 control-label">标准数据解析器<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="开启可以支持更多异构字段类型转换，主要用于兼容异构数据库同步"></i></label>
+                <div class="col-sm-4">
+                    <input class="dbsyncer_switch" id="enableSchemaResolver" name="enableSchemaResolver" th:checked="${config?.enableSchemaResolver}" type="checkbox" />
+                </div>
+                <label class="col-sm-2 control-label">表执行器上限数<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="每新增一张驱动表的映射关系，就会单独新开一个表执行器处理，超过此限制后，则使用通用执行器"></i><strong class="text-primary">*</strong></label>
+                <div class="col-sm-4">
+                    <input type="number" class="form-control" min="1" max="200" dbsyncer-valid="require" name="maxBufferActuatorSize" th:value="${config?.maxBufferActuatorSize}"/>
+                </div>
+            </div>
+            <div class="form-group">
                 <label class="col-sm-2 control-label">水印<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="刷新页面生效"></i></label>
                 <div class="col-sm-4">
                     <input id="enableWatermark" name="enableWatermark" th:checked="${config?.enableWatermark}" type="checkbox" />
@@ -74,12 +84,6 @@
                     <div class="col-sm-4">
                         <input type="text" class="form-control" maxlength="64" name="watermark" placeholder="请输入水印(最多64个字)." th:value="${config?.watermark}"/>
                     </div>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="col-sm-2 control-label">标准数据解析器</label>
-                <div class="col-sm-4">
-                    <input class="dbsyncer_switch" id="enableSchemaResolver" name="enableSchemaResolver" th:checked="${config?.enableSchemaResolver}" type="checkbox" />
                 </div>
             </div>
         </div>

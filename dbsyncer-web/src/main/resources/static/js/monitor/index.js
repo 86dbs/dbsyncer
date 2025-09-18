@@ -137,10 +137,10 @@ function bindQueryDataEvent() {
     $("#queryDataBtn").click(function () {
         var keyword = $("#searchDataKeyword").val();
         var id = $("#searchMetaData").selectpicker("val");
-        var success = $("#searchDataSuccess").selectpicker("val");
+        var dataStatus = $("#searchDataStatus").selectpicker("val");
         doGetter('/monitor/queryData', {
             "error": keyword,
-            "success": success,
+            "dataStatus": dataStatus,
             "id": id,
             "pageNum": 1,
             "pageSize": 10
@@ -158,10 +158,10 @@ function bindQueryDataMoreEvent() {
     $("#queryDataMore").click(function () {
         var keyword = $("#searchDataKeyword").val();
         var id = $("#searchMetaData").selectpicker("val");
-        var success = $("#searchDataSuccess").selectpicker("val");
+        var dataStatus = $("#searchDataStatus").selectpicker("val");
         showMore($(this), '/monitor/queryData', {
             "error": keyword,
-            "success": success,
+            "dataStatus": dataStatus,
             "id": id
         }, function (resultValue) {
             refreshDataList(resultValue, true)
@@ -520,7 +520,7 @@ $(function () {
         $("#queryDataBtn").click();
     });
     // 数据状态切换事件
-    $("#searchDataSuccess").change(function () {
+    $("#searchDataStatus").change(function () {
         $("#queryDataBtn").click();
     });
 

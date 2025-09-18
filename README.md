@@ -50,21 +50,16 @@
 5. 账号和密码：admin/admin
 
 #### 方式二 🐳 docker
-* 阿里云镜像（推荐）
+* 阿里云镜像
 ```shell
 docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
 docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer-enterprise:latest
 docker pull registry.cn-hangzhou.aliyuncs.com/lifewang/dbsyncer:latest
 ```
-* docker镜像
-```shell
-docker pull crazylife/dbsyncer-web:latest
-```
-* [dockerhub镜像](https://hub.docker.com/repository/docker/crazylife/dbsyncer-web/general)
 
 * 运行命令
 ```shell
-docker run -d -p 18686:18686 -v ./your_path/data:/app/dbsyncer/data -v ./your_path/plugins:/app/dbsyncer/plugins --restart=unless-stopped -e TZ="Asia/Shanghai" --name=db-syncer registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
+docker run -d -p 18686:18686 -v ./your_path/data:/app/dbsyncer/data -v ./your_path/plugins:/app/dbsyncer/plugins --restart=unless-stopped -e TZ="Asia/Shanghai" --name=dbsyncer registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
 ```
 
 ## ⚙️手动编译

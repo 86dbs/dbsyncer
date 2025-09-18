@@ -71,7 +71,7 @@ public class LicenseController extends BaseController {
     public static final String STATUS = "status";
     public static final String DATA = "data";
     public static final String MSG = "msg";
-    public static final String SERVER_ADDRESS = "http://117.72.11.38:8989/api/license/create";
+    public static final String SERVER_ADDRESS = "http://101.132.145.213:8989/api/license/create";
 
     @RequestMapping("")
     public String index(ModelMap model) {

@@ -3,12 +3,13 @@
  */
 package org.dbsyncer.parser.flush.impl;
 
-import org.dbsyncer.common.config.TableGroupBufferConfig;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
+import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -35,10 +36,10 @@ public final class BufferActuatorRouter implements DisposableBean {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private TableGroupBufferConfig tableGroupBufferConfig;
+    private ProfileComponent profileComponent;
 
     @Resource
-    private TableGroupBufferActuator tableGroupBufferActuator;
+    private TableGroupBufferActuatorService tableGroupBufferActuatorService;
 
     @Resource
     private GeneralBufferActuator generalBufferActuator;
@@ -73,15 +74,15 @@ public final class BufferActuatorRouter implements DisposableBean {
             Map<String, TableGroupBufferActuator> processor = new ConcurrentHashMap<>();
             for (TableGroup tableGroup : tableGroups) {
                 // 超过执行器上限
-                if (processor.size() >= tableGroupBufferConfig.getMaxBufferActuatorSize()) {
-                    logger.warn("Not allowed more than table processor limited size.  maxBufferActuatorSize:{}", tableGroupBufferConfig.getMaxBufferActuatorSize());
+                if (processor.size() >= profileComponent.getSystemConfig().getMaxBufferActuatorSize()) {
+                    logger.warn("Not allowed more than table processor limited size:{}", profileComponent.getSystemConfig().getMaxBufferActuatorSize());
                     break;
                 }
                 final String tableName = tableGroup.getSourceTable().getName();
                 processor.computeIfAbsent(tableName, name -> {
                     TableGroupBufferActuator newBufferActuator = null;
                     try {
-                        newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuator.clone();
+                        newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuatorService.clone();
                         newBufferActuator.setTableName(name);
                         newBufferActuator.buildConfig();
                     } catch (CloneNotSupportedException ex) {

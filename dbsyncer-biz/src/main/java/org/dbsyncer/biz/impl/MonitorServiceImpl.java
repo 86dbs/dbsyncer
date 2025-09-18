@@ -150,9 +150,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String error = params.get(ConfigConstant.DATA_ERROR);
-        String success = params.get(ConfigConstant.DATA_SUCCESS);
+        String dataStatus = params.get("dataStatus");
 
-        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, success);
+        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, dataStatus);
         List<Map> data = (List<Map>) paging.getData();
         List<DataVo> list = new ArrayList<>();
         for (Map row : data) {
@@ -259,7 +259,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }
     }
 
-    private Paging queryData(String metaId, int pageNum, int pageSize, String error, String success) {
+    private Paging queryData(String metaId, int pageNum, int pageSize, String error, String dataStatus) {
         // 没有驱动
         if (StringUtil.isBlank(metaId)) {
             return new Paging(pageNum, pageSize);
@@ -273,8 +273,10 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         if (StringUtil.isNotBlank(error)) {
             query.addFilter(ConfigConstant.DATA_ERROR, error, true);
         }
-        // 查询是否成功, 默认查询失败
-        query.addFilter(ConfigConstant.DATA_SUCCESS, StringUtil.isNotBlank(success) ? NumberUtil.toInt(success) : StorageDataStatusEnum.FAIL.getValue());
+        // 查询数据状态
+        if (StringUtil.isNotBlank(dataStatus)) {
+            query.addFilter(ConfigConstant.DATA_SUCCESS, NumberUtil.toInt(dataStatus));
+        }
         query.setMetaId(metaId);
         query.setType(StorageEnum.DATA);
         return storageService.query(query);
@@ -308,7 +310,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     private MetaVo convertMeta2Vo(Meta meta) {
         Mapping mapping = profileComponent.getMapping(meta.getMappingId());
-        Assert.notNull(mapping, "驱动不存在.");
+        Assert.notNull(mapping, String.format("驱动不存在. metaId:%s, mappingId:%s", meta.getId(), meta.getMappingId()));
         ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
         MetaVo metaVo = new MetaVo(modelEnum.getName(), mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
