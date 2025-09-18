@@ -4,6 +4,8 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.TypeReference;
 import com.alibaba.fastjson2.annotation.JSONField;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
@@ -13,6 +15,7 @@ import org.dbsyncer.sdk.listener.Listener;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -83,6 +86,7 @@ public class Meta extends ConfigModel {
      */
     public void clear() {
         init();
+        profileComponent.editConfigModel(this);
     }
 
     private void init() {
@@ -130,6 +134,26 @@ public class Meta extends ConfigModel {
         this.total = total;
     }
 
+    public void updateTotal() {
+        // 全量同步
+        if (SyncPhaseEnum.FULL == getSyncPhase()) {
+            // 统计tableGroup总条数
+            AtomicLong count = new AtomicLong(0);
+            List<TableGroup> groupAll = profileComponent.getTableGroupAll(this.getMappingId());
+            if (!CollectionUtils.isEmpty(groupAll)) {
+                for (TableGroup g : groupAll) {
+                    count.getAndAdd(g.getSourceTable().getCount());
+                }
+            }
+            if (total.get() < count.get()) {
+                total = count;
+                setUpdateTime(Instant.now().toEpochMilli());
+                profileComponent.editConfigModel(this);
+            }
+        }
+    }
+
+
     public AtomicLong getSuccess() {
         return success;
     }
@@ -153,6 +177,18 @@ public class Meta extends ConfigModel {
     public void setSnapshot(Map<String, String> snapshot) {
         this.snapshot = snapshot;
     }
+
+    public void updateSnapshot(String metaSnapshot) {
+        if (StringUtil.isNotBlank(metaSnapshot)) {
+            Map<String, String> snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
+            if (!CollectionUtils.isEmpty(snapshot)) {
+                this.snapshot = snapshot;
+                setUpdateTime(Instant.now().toEpochMilli());
+                profileComponent.editConfigModel(this);
+            }
+        }
+    }
+
 
     public long getBeginTime() {
         return beginTime;

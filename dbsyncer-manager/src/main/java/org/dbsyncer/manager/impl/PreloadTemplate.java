@@ -121,7 +121,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         List<Meta> metas = profileComponent.getMetaAll();
         if (!CollectionUtils.isEmpty(metas)) {
             metas.forEach(m -> {
-                m.setProfileComponent(profileComponent);
                 // 恢复驱动状态
                 if (MetaEnum.RUNNING.getCode() == m.getState()) {
                     Mapping mapping = profileComponent.getMapping(m.getMappingId());

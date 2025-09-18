@@ -7,10 +7,11 @@ import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.common.dispatch.AbstractDispatchTask;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.enums.SyncPhaseEnum;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
-import org.dbsyncer.sdk.enums.ModelEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +64,7 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
     }
 
     protected boolean shouldStop(Mapping mapping) {
-        return !isRunning() || !ModelEnum.isFull(mapping.getModel());
+        Meta meta = profileComponent.getMeta(mapping.getMetaId());
+        return SyncPhaseEnum.FULL != meta.getSyncPhase();
     }
 }

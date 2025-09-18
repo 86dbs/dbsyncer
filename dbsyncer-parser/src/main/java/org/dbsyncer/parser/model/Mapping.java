@@ -1,5 +1,8 @@
 package org.dbsyncer.parser.model;
 
+import com.alibaba.fastjson2.annotation.JSONField;
+import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.enums.SyncPhaseEnum;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
@@ -62,6 +65,9 @@ public class Mapping extends AbstractConfigModel {
 
     // 数据订正
     private boolean recoverData = true;
+
+    @JSONField(serialize = false)
+    public ProfileComponent profileComponent;
 
     public String getSourceConnectorId() {
         return sourceConnectorId;
@@ -167,5 +173,22 @@ public class Mapping extends AbstractConfigModel {
 
     public void setRecoverData(boolean recoverData) {
         this.recoverData = recoverData;
+    }
+
+    public void resetMeta() {
+        Meta meta = profileComponent.getMeta(this.metaId);
+        // 清空状态
+        meta.clear();
+        // 为计数设置阶段
+        if (model.equals(ModelEnum.INCREMENT.getCode())) {
+            meta.setSyncPhase(SyncPhaseEnum.INCREMENTAL);
+        }
+    }
+
+    public void updateMata(String metaSnapshot) {
+        Meta meta = profileComponent.getMeta(getMetaId());
+        meta.updateSnapshot(metaSnapshot);
+        profileComponent.editConfigModel(this);
+
     }
 }

@@ -3,18 +3,14 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.biz.BizException;
-import org.dbsyncer.biz.ConnectorService;
-import org.dbsyncer.common.dispatch.DispatchTaskService;
-import org.dbsyncer.biz.MappingService;
-import org.dbsyncer.biz.MonitorService;
-import org.dbsyncer.biz.RepeatedTableGroupException;
-import org.dbsyncer.biz.TableGroupService;
+import joptsimple.internal.Strings;
+import org.dbsyncer.biz.*;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.task.MappingCountTask;
 import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
+import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -24,11 +20,7 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
-import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
@@ -43,13 +35,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -159,8 +145,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             log(LogType.MappingLog.UPDATE, model);
 
             // 更新meta
-            tableGroupService.resetMeta(mapping, metaSnapshot);
-            profileComponent.editConfigModel(model);
+            mapping.updateMata(metaSnapshot);
         }
         // 统计总数
         submitMappingCountTask(mapping, metaSnapshot);
@@ -457,9 +442,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String reset(String id) {
         Mapping mapping = profileComponent.getMapping(id);
         Assert.notNull(mapping, "驱动不存在");
-        
-        synchronized (LOCK){
-            tableGroupService.resetMeta(mapping, StringUtil.EMPTY);
+
+        synchronized (LOCK) {
+            Meta meta = profileComponent.getMeta(mapping.getMetaId());
+            meta.clear();
             managerFactory.close(mapping);
             log(LogType.MappingLog.RESET, mapping);
 
@@ -467,6 +453,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
             sendNotifyMessage("重置驱动", String.format("手动重置驱动：%s(%s)", mapping.getName(), model));
         }
+        submitMappingCountTask(mapping, Strings.EMPTY);
+
         return "重置成功";
     }
 

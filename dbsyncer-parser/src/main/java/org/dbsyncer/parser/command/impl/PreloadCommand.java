@@ -48,7 +48,9 @@ public final class PreloadCommand implements Command {
 
     @Override
     public Mapping parseMapping() {
-        return profileComponent.parseObject(json, Mapping.class);
+        Mapping mapping = profileComponent.parseObject(json, Mapping.class);
+        mapping.profileComponent = profileComponent;
+        return mapping;
     }
 
     @Override
@@ -58,7 +60,9 @@ public final class PreloadCommand implements Command {
 
     @Override
     public Meta parseMeta() {
-        return profileComponent.parseObject(json, Meta.class);
+        Meta meta = profileComponent.parseObject(json, Meta.class);
+        meta.setProfileComponent(profileComponent);
+        return meta;
     }
 
     @Override

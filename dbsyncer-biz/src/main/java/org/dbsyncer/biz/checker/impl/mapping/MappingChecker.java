@@ -59,6 +59,7 @@ public class MappingChecker extends AbstractChecker {
         Assert.hasText(targetConnectorId, "目标源不能为空.");
 
         Mapping mapping = new Mapping();
+        mapping.profileComponent = profileComponent;
         mapping.setName(name);
         mapping.setSourceConnectorId(sourceConnectorId);
         mapping.setTargetConnectorId(targetConnectorId);

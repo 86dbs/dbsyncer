@@ -3,36 +3,24 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.biz.task.TableGroupCountTask;
+import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.SyncPhaseEnum;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -147,48 +135,6 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
         return profileComponent.getSortedTableGroupAll(mappingId);
-    }
-
-    @Override
-    public Meta resetMeta(Mapping mapping, String metaSnapshot) {
-        Meta meta = profileComponent.getMeta(mapping.getMetaId());
-        Assert.notNull(meta, "驱动meta不存在.");
-
-        // 清空状态
-        meta.clear();
-        // 为计数设置阶段
-        if (mapping.getModel().equals(ModelEnum.INCREMENT.getCode())){
-            meta.setSyncPhase(SyncPhaseEnum.INCREMENTAL);
-        }
-
-        // 手动配置增量点
-        if (StringUtil.isNotBlank(metaSnapshot)) {
-            Map snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
-            if (!CollectionUtils.isEmpty(snapshot)) {
-                meta.setSnapshot(snapshot);
-            }
-        }
-
-        getMetaTotal(meta, mapping.getModel());
-
-        meta.setUpdateTime(Instant.now().toEpochMilli());
-        profileComponent.editConfigModel(meta);
-        return meta;
-    }
-
-    private void getMetaTotal(Meta meta, String model) {
-        // 全量同步
-        if (SyncPhaseEnum.FULL == meta.getSyncPhase()) {
-            // 统计tableGroup总条数
-            AtomicLong count = new AtomicLong(0);
-            List<TableGroup> groupAll = profileComponent.getTableGroupAll(meta.getMappingId());
-            if (!CollectionUtils.isEmpty(groupAll)) {
-                for (TableGroup g : groupAll) {
-                    count.getAndAdd(g.getSourceTable().getCount());
-                }
-            }
-            meta.setTotal(count);
-        }
     }
 
     private void resetTableGroupAllIndex(String mappingId) {
