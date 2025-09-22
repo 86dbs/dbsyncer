@@ -2,14 +2,12 @@
 
 - bug fixed: UI 显示未开始，但已经在运行的状态不同步问题。
 - 优化：统计，UI 显示输入成功数，失败数，阶段
-- 结构优化：将 meta 中的 task 监听器等移植到 mapping 中
 
 ## 2.5.0
 
 - 性能优化：mysql, sql server 使用流式读取数据。
-- bug fixed: 编辑状态重置问题。
-- 性能优化：提升 sel server 源端解析性能
-- bug fixed：重置计数为历史数量问题。
+- bug fixed: 编辑状态重置问题。(OK)
+- bug fixed：重置计数为历史数量问题。(OK)
 
 ## 2.4.0
 
