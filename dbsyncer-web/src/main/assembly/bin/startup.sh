@@ -24,13 +24,16 @@ SERVER_OPTS='-Xms3800m -Xmx3800m -Xmn1500m -Xss512k -XX:MetaspaceSize=192m -XX:+
 # set IPv4
 #SERVER_OPTS="$SERVER_OPTS -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses"
 
-ENCRYPT_FILE='libDBSyncer.so'
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+ENCRYPT_FILE=''
+if [[ $(uname -m) == "aarch64"* ]]; then
+   ENCRYPT_FILE='libDBSyncer_aarch64.so'
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
    ENCRYPT_FILE='libDBSyncer.so'
 elif [[ "$OSTYPE" == "darwin"* ]]; then
    ENCRYPT_FILE='libDBSyncer.dylib'
 else
-    echo "Unsupported OS."
+  echo "Unsupported OS."
+  exit 1
 fi
 
 if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
