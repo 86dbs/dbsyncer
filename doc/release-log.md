@@ -1,11 +1,9 @@
 发布日志
 
-- bug fixed: UI 显示未开始，但已经在运行的状态不同步问题。
-- 优化：统计，UI 显示输入成功数，失败数，阶段
-
 ## 2.5.0
 
 - 性能优化：mysql, sql server 使用流式读取数据。
+- 结构优化：简化 sql 生成的层次结构。
 - bug fixed: 编辑导致状态重置问题。(OK)
 - bug fixed：重置计数为历史数量问题。(OK)
 - 优化: tableGroup 不需要持久化 sql（OK）

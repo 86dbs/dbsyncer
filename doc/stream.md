@@ -18,7 +18,7 @@
 ### 2.1 核心思路
 - 使用JDBC流式结果集（Streaming ResultSet）实现真正的流式处理
 - 通过游标方式实现流式模式下的断点续传能力
-- 提供DISABLE_STREAM控制参数，支持向后兼容
+- 默认使用流式处理模式
 - 区分流式处理和分页处理的SQL生成逻辑
 
 ### 2.2 技术实现要点
@@ -146,23 +146,11 @@ SELECT "ID","NAME","AGE" FROM "SCHEMA"."USER" WHERE "AGE" > 18 AND "ID" > ? ORDE
 ```java
 @Override
 public Result reader(DatabaseConnectorInstance connectorInstance, ReaderContext context) {
-    boolean disableStream = isDisableStream(context);
-    
-    if (disableStream) {
-        // 现有分页查询逻辑保持不变
-        // ... 现有代码 ...
-    } else {
-        // 新增：流式处理逻辑 - 返回空Result，实际处理在ParserComponentImpl中
-        final Result result = new Result();
-        return result;
-    }
+    // 流式处理逻辑 - 返回空Result，实际处理在ParserComponentImpl中
+    final Result result = new Result();
+    return result;
 }
 
-// 新增：检查是否禁用流式处理的方法
-private boolean isDisableStream(ReaderContext context) {
-    String value = context.getCommand().get(ParamKeyEnum.DISABLE_STREAM.getKey());
-        return "true".equalsIgnoreCase(value);
-}
 ```
 
 
@@ -176,16 +164,8 @@ public void execute(Task task, Mapping mapping, TableGroup tableGroup, Executor 
     // 现有初始化代码保持不变
     // ... 现有代码 ...
     
-    // 检查是否为流式处理模式
-    boolean disableStream = isDisableStream(mapping);
-    
-    if (disableStream) {
-        // 分页处理模式
-        executeWithPagination(task, context, tableGroup, executor, primaryKeys);
-    } else {
-        // 流式处理模式
-        executeWithStreaming(task, context, tableGroup, executor, primaryKeys);
-    }
+    // 使用流式处理模式（缺省行为）
+    executeWithStreaming(task, context, tableGroup, executor, primaryKeys);
 }
 
 // 分页处理模式
@@ -383,7 +363,6 @@ SELECT TOP 1000 * FROM (
 
 ```java
 // 流式处理相关参数
-DISABLE_STREAM("stream.disableStream", "禁用流式处理", "boolean", "禁用流式结果集处理，使用分页查询方式"),
 STREAMING_FETCH_SIZE("stream.fetchSize", "流式处理批次大小", "int", "流式处理时的fetchSize值，-1表示使用默认值");
 ```
 

@@ -6,7 +6,6 @@ package org.dbsyncer.sdk.connector.database;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
 import java.util.List;
@@ -27,7 +26,7 @@ public interface Database {
      *
      * @return
      */
-    default String buildSqlWithQuotation() {
+    default String getQuotation() {
         return StringUtil.EMPTY;
     }
 
@@ -62,24 +61,6 @@ public interface Database {
     }
 
     /**
-     * 获取分页SQL
-     *
-     * @param config
-     * @return
-     */
-    String getPageSql(PageSql config);
-
-    /**
-     * 获取分页游标SQL
-     *
-     * @param pageSql
-     * @return
-     */
-    default String getPageCursorSql(PageSql pageSql) {
-        return "";
-    }
-
-    /**
      * 获取分页参数
      *
      * @param context
@@ -96,6 +77,15 @@ public interface Database {
     default Object[] getPageCursorArgs(ReaderContext context) {
         throw new SdkException("Unsupported override method getPageCursorArgs:" + getClass().getName());
     }
+
+        /**
+     * 获取流式处理的 fetchSize 值
+     * 
+     * @param context 读取上下文
+     * @return fetchSize 值
+     */
+    Integer getStreamingFetchSize(ReaderContext context);
+
 
     /**
      * 健康检查

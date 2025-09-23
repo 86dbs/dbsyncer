@@ -41,6 +41,9 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Resource
     private ConnectorFactory connectorFactory;
 
+    @Resource
+    private org.dbsyncer.parser.ParserComponent parserComponent;
+
     @Override
     public Connector parseConnector(String json) {
         Map conn = JsonUtil.parseMap(json);
@@ -134,13 +137,22 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public TableGroup getTableGroup(String tableGroupId) {
-        return operationTemplate.queryObject(TableGroup.class, tableGroupId);
+        TableGroup tableGroup = operationTemplate.queryObject(TableGroup.class, tableGroupId);
+        Mapping mapping = getMapping(tableGroup.getMappingId());
+        tableGroup.initTableGroup(parserComponent, this);
+        return tableGroup;
     }
 
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
-        TableGroup tableGroup = new TableGroup().setMappingId(mappingId);
-        return operationTemplate.queryAll(new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE));
+        TableGroup temp = new TableGroup().setMappingId(mappingId);
+        Mapping mapping = getMapping(mappingId);
+
+        List<TableGroup> tableGroups = operationTemplate.queryAll(new QueryConfig<>(temp, GroupStrategyEnum.TABLE));
+        for (TableGroup tableGroup : tableGroups) {
+            tableGroup.initTableGroup(parserComponent, this);
+        }
+        return tableGroups;
     }
 
     @Override

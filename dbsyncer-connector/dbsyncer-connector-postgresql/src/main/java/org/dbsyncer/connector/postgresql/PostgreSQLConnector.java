@@ -11,11 +11,14 @@ import org.dbsyncer.connector.postgresql.schema.PostgreSQLSchemaResolver;
 import org.dbsyncer.connector.postgresql.validator.PostgreSQLConfigValidator;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
-import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
@@ -35,6 +38,11 @@ import java.util.Map;
  * @Date 2022-05-22 22:56
  */
 public final class PostgreSQLConnector extends AbstractDatabaseConnector {
+
+    /**
+     * PostgreSQL引号字符
+     */
+    private static final String QUOTATION = "\"";
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -86,43 +94,19 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildSqlWithQuotation() {
-        return "\"";
+    public String getQuotation() {
+        return QUOTATION;
     }
 
-    @Override
-    public String getPageSql(PageSql config) {
-        // select * from test."my_user" where "id" > ? and "uid" > ? order by "id","uid" limit ? OFFSET ?
-        StringBuilder sql = new StringBuilder(config.getQuerySql());
-        if (PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
-            appendOrderByPk(config, sql);
+    /**
+     * 获取带引号的架构名
+     */
+    private String getSchemaWithQuotation(DatabaseConfig config) {
+        StringBuilder schema = new StringBuilder();
+        if (StringUtil.isNotBlank(config.getSchema())) {
+            schema.append(QUOTATION).append(config.getSchema()).append(QUOTATION).append(".");
         }
-        sql.append(DatabaseConstant.POSTGRESQL_PAGE_SQL);
-        return sql.toString();
-    }
-
-    @Override
-    public String getPageCursorSql(PageSql config) {
-        // 不支持游标查询
-        if (!PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
-            logger.debug("不支持游标查询，主键包含非数字类型");
-            return StringUtil.EMPTY;
-        }
-
-        // select * from test."my_user" where "id" > ? and "uid" > ? order by "id","uid" limit ? OFFSET ?
-        StringBuilder sql = new StringBuilder(config.getQuerySql());
-        boolean skipFirst = false;
-        // 没有过滤条件
-        if (StringUtil.isBlank(config.getQueryFilter())) {
-            skipFirst = true;
-            sql.append(" WHERE ");
-        }
-        final List<String> primaryKeys = config.getPrimaryKeys();
-        final String quotation = buildSqlWithQuotation();
-        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, " AND ", " > ? ", skipFirst);
-        appendOrderByPk(config, sql);
-        sql.append(DatabaseConstant.POSTGRESQL_PAGE_SQL);
-        return sql.toString();
+        return schema.toString();
     }
 
     @Override
@@ -161,4 +145,66 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
     }
+
+    @Override
+    protected Map<String, String> buildSourceCommands(CommandConfig commandConfig) {
+        Map<String, String> map = new HashMap<>();
+        
+        // 获取基础信息
+        Table table = commandConfig.getTable();
+        String tableName = table.getName();
+        String schema = getSchemaWithQuotation((DatabaseConfig) commandConfig.getConnectorConfig());
+        List<Field> column = table.getColumn();
+        final String queryFilterSql = getQueryFilterSql(commandConfig);
+        
+        // 获取缓存的字段列表和基础信息
+        String fieldListSql = commandConfig.getCachedFieldListSql();
+        String quotedTableName = QUOTATION + buildTableName(tableName) + QUOTATION;
+        String cursorCondition = buildCursorConditionFromCached(commandConfig.getCachedPrimaryKeys());
+        
+        // 流式查询SQL（直接使用基础查询，PostgreSQL通过fetchSize控制）
+        String filterClause = StringUtil.isNotBlank(queryFilterSql) ? " WHERE " + queryFilterSql : "";
+        String streamingSql = String.format("SELECT %s FROM %s%s%s",
+            fieldListSql, schema, quotedTableName, filterClause);
+        map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
+
+        // 游标查询SQL
+        if (enableCursor() && PrimaryKeyUtil.isSupportedCursor(column)) {
+            // 构建完整的WHERE条件：原有过滤条件 + 游标条件
+            String whereCondition = "";
+            if (StringUtil.isNotBlank(queryFilterSql) && StringUtil.isNotBlank(cursorCondition)) {
+                whereCondition = " WHERE " + queryFilterSql + " AND " + cursorCondition;
+            } else if (StringUtil.isNotBlank(queryFilterSql)) {
+                whereCondition = " WHERE " + queryFilterSql;
+            } else if (StringUtil.isNotBlank(cursorCondition)) {
+                whereCondition = " WHERE " + cursorCondition;
+            }
+            
+            String cursorSql = String.format("SELECT %s FROM %s%s%s ORDER BY %s LIMIT ? OFFSET ?",
+                fieldListSql, schema, quotedTableName, whereCondition, commandConfig.getCachedPrimaryKeys());
+            map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);
+        }
+
+        // 计数SQL
+        String countSql = String.format("SELECT COUNT(1) FROM %s%s%s",
+            schema, quotedTableName, filterClause);
+        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, countSql);
+        
+        return map;
+    }
+
+
+    /**
+     * 基于缓存的主键列表构建游标条件内容（不包含WHERE关键字）
+     */
+    private String buildCursorConditionFromCached(String cachedPrimaryKeys) {
+        if (StringUtil.isBlank(cachedPrimaryKeys)) {
+            return "";
+        }
+        
+        // 将 ""id", "name", "create_time"" 转换为 ""id" > ? AND "name" > ? AND "create_time" > ?"
+        return cachedPrimaryKeys.replaceAll(",", " > ? AND") + " > ?";
+    }
+
+
 }

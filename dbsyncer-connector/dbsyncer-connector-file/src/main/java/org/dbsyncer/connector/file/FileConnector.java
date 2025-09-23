@@ -66,6 +66,11 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     }
 
     @Override
+    public String getQuotation() {
+        return ""; // File不需要引号
+    }
+
+    @Override
     public Class<FileConfig> getConfigClass() {
         return FileConfig.class;
     }

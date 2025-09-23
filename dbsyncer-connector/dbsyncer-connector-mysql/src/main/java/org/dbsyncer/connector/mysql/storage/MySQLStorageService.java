@@ -277,7 +277,7 @@ public class MySQLStorageService extends AbstractStorageService {
         // 过滤值
         int size = filters.size();
 
-        String quotation = connector.buildSqlWithQuotation();
+        String quotation = connector.getQuotation();
         for (int i = 0; i < size; i++) {
             AbstractFilter p = filters.get(i);
 

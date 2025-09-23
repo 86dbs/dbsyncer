@@ -75,6 +75,9 @@ public class TableGroupChecker extends AbstractChecker {
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
+        tableGroup.currentVersion = TableGroup.Version;
+        tableGroup.parserComponent = parserComponent;
+        tableGroup.profileComponent = profileComponent;
         tableGroup.setMappingId(mappingId);
         tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable, sourceTablePK));
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable, targetTablePK));

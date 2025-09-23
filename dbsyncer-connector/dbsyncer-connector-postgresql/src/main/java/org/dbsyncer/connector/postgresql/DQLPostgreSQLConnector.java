@@ -7,12 +7,12 @@ import org.dbsyncer.connector.postgresql.cdc.DqlPostgreSQLListener;
 import org.dbsyncer.connector.postgresql.validator.DqlPostgreSQLConfigValidator;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
-import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.common.util.StringUtil;
 
 /**
  * DQLSqlServer连接器实现
@@ -23,7 +23,23 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
  */
 public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
 
+    /**
+     * PostgreSQL引号字符
+     */
+    private static final String QUOTATION = "\"";
+
     private final DqlPostgreSQLConfigValidator configValidator = new DqlPostgreSQLConfigValidator();
+
+    /**
+     * 获取带引号的架构名
+     */
+    private String getSchemaWithQuotation(DatabaseConfig config) {
+        StringBuilder schema = new StringBuilder();
+        if (StringUtil.isNotBlank(config.getSchema())) {
+            schema.append(QUOTATION).append(config.getSchema()).append(QUOTATION).append(".");
+        }
+        return schema.toString();
+    }
 
     @Override
     public String getConnectorType() {
@@ -47,10 +63,6 @@ public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
         return null;
     }
 
-    @Override
-    public String getPageSql(PageSql config) {
-        return config.getQuerySql() + DatabaseConstant.POSTGRESQL_PAGE_SQL;
-    }
 
     @Override
     public Object[] getPageArgs(ReaderContext context) {
@@ -60,12 +72,14 @@ public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
     }
 
     @Override
-    public String buildSqlWithQuotation() {
-        return "\"";
+    public String getQuotation() {
+        return QUOTATION;
     }
 
     @Override
     public Integer getStreamingFetchSize(ReaderContext context) {
         return context.getPageSize(); // 使用页面大小作为fetchSize
     }
+
+
 }

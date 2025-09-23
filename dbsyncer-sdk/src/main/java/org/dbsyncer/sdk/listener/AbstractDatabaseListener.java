@@ -88,7 +88,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
     protected void postProcessDqlBeforeInitialization() {
         DatabaseConnectorInstance instance = (DatabaseConnectorInstance) connectorInstance;
         AbstractDQLConnector service = (AbstractDQLConnector) connectorService;
-        String quotation = service.buildSqlWithQuotation();
+        String quotation = service.getQuotation();
 
         // <用户表, MY_USER>
         Map<String, String> tableMap = new HashMap<>();

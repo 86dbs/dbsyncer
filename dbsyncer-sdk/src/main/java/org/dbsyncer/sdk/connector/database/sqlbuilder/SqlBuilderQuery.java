@@ -8,7 +8,6 @@ import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.database.AbstractSqlBuilder;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.model.PageSql;
 
 import java.util.List;
 
@@ -21,18 +20,14 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
 
     @Override
     public String buildSql(SqlBuilderConfig config) {
-        // 分页语句
-        List<String> primaryKeys = config.getPrimaryKeys();
-        String queryFilter = config.getQueryFilter();
-        List<Field> fields = config.getFields();
-        PageSql pageSql = new PageSql(buildQuerySql(config), queryFilter, primaryKeys, fields);
-        return config.getDatabase().getPageSql(pageSql);
+        // 直接返回基础查询SQL，分页逻辑由连接器处理
+        return buildQuerySql(config);
     }
 
     @Override
     public String buildQuerySql(SqlBuilderConfig config) {
         Database database = config.getDatabase();
-        String quotation = database.buildSqlWithQuotation();
+        String quotation = database.getQuotation();
         List<Field> fields = config.getFields();
         String queryFilter = config.getQueryFilter();
 

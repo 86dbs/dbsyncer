@@ -41,6 +41,13 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
     String getConnectorType();
 
     /**
+     * 获取引号字符
+     * 
+     * @return 引号字符
+     */
+    String getQuotation();
+
+    /**
      * 获取配置对象
      *
      * @return

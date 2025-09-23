@@ -7,10 +7,9 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.enums.SqlBuilderEnum;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.MetaInfo;
-import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.SqlTable;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
@@ -59,7 +58,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
+    protected Map<String, String> buildSourceCommands(CommandConfig commandConfig) {
         // 获取过滤SQL
         String queryFilterSql = getQueryFilterSql(commandConfig);
         Table table = commandConfig.getTable();
@@ -76,11 +75,12 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         if (StringUtil.isNotBlank(queryFilterSql)) {
             querySql += queryFilterSql;
         }
-        PageSql pageSql = new PageSql(querySql, StringUtil.EMPTY, primaryKeys, table.getColumn());
-        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(pageSql));
+        
+        // 流式查询SQL（DQL直接使用用户自定义的SQL）
+        map.put(ConnectorConstant.OPERTION_QUERY_STREAM, querySql);
 
         // 获取查询总数SQL
-        map.put(SqlBuilderEnum.QUERY_COUNT.getName(), "SELECT COUNT(1) FROM (" + querySql + ") DBS_T");
+        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, "SELECT COUNT(1) FROM (" + querySql + ") DBS_T");
         return map;
     }
 

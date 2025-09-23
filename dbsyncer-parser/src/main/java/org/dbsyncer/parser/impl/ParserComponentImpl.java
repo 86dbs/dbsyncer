@@ -6,7 +6,6 @@ package org.dbsyncer.parser.impl;
 import org.dbsyncer.common.ProcessEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
@@ -20,10 +19,14 @@ import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.FullPluginContext;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.database.Database;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.AbstractPluginContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
@@ -35,11 +38,13 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author AE86
@@ -103,10 +108,59 @@ public class ParserComponentImpl implements ParserComponent {
                 }
             });
         }
-        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable, connectorFactory.connect(sConnConfig), tableGroup.getFilter());
-        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), tTable, connectorFactory.connect(tConnConfig), null);
+        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable,
+                connectorFactory.connect(sConnConfig), tableGroup.getFilter());
+        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), tTable,
+                connectorFactory.connect(tConnConfig), null);
+
+        // 预构建字段列表SQL片段并缓存
+        String fieldListSql = tableGroup.getCachedFieldListSql();
+        if (StringUtil.isBlank(fieldListSql)) {
+            ConnectorService connectorService = connectorFactory.getConnectorService(sConnConfig);
+            String quotation = connectorService.getQuotation();
+            List<String> fieldList = sTable.getColumn().stream().map(Field::getName).collect(Collectors.toList());
+            fieldListSql = buildQuotedStringList(fieldList, quotation);
+            tableGroup.setCachedFieldListSql(fieldListSql);
+            List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sTable);
+            tableGroup.setCachedPrimaryKeys(buildQuotedStringList(primaryKeys, quotation));
+        }
+        // 将缓存的字段列表设置到CommandConfig中
+        sourceConfig.setCachedFieldListSql(fieldListSql);
+
+        // 将缓存的主键列表设置到CommandConfig中
+        sourceConfig.setCachedPrimaryKeys(tableGroup.getCachedPrimaryKeys());
+
         // 获取连接器同步参数
         return connectorFactory.getCommand(sourceConfig, targetConfig);
+    }
+
+    /**
+     * 构建带引号的字符串列表（通用方法）
+     *
+     * @param items     字符串列表
+     * @param quotation 引号字符
+     * @return 带引号的字符串，用逗号分隔
+     */
+    private String buildQuotedStringList(List<String> items, String quotation) {
+        if (CollectionUtils.isEmpty(items)) {
+            return "";
+        }
+
+        StringBuilder sql = new StringBuilder();
+        int size = items.size();
+        int end = size - 1;
+
+        for (int i = 0; i < size; i++) {
+            sql.append(quotation);
+            sql.append(items.get(i));
+            sql.append(quotation);
+
+            if (i < end) {
+                sql.append(", ");
+            }
+        }
+
+        return sql.toString();
     }
 
     @Override
@@ -117,7 +171,6 @@ public class ParserComponentImpl implements ParserComponent {
 
     @Override
     public void execute(Task task, Mapping mapping, TableGroup tableGroup, Executor executor) {
-        final String metaId = task.getId();
         final String sourceConnectorId = mapping.getSourceConnectorId();
         final String targetConnectorId = mapping.getTargetConnectorId();
 
@@ -154,58 +207,104 @@ public class ParserComponentImpl implements ParserComponent {
         context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
         context.setPageSize(mapping.getReadNum());
         context.setEnableSchemaResolver(profileComponent.getSystemConfig().isEnableSchemaResolver());
-        ConnectorService sourceConnector = connectorFactory.getConnectorService(context.getSourceConnectorInstance().getConfig());
+        ConnectorService sourceConnector = connectorFactory
+                .getConnectorService(context.getSourceConnectorInstance().getConfig());
         picker.setSourceResolver(context.isEnableSchemaResolver() ? sourceConnector.getSchemaResolver() : null);
         // 0、插件前置处理
         pluginFactory.process(group.getPlugin(), context, ProcessEnum.BEFORE);
 
-        for (; ; ) {
-            if (!task.isRunning()) {
-                logger.warn("任务被中止:{}", metaId);
-                break;
-            }
+        // 流式处理模式
+        Database db = (Database) connectorFactory
+                .getConnectorService(context.getSourceConnectorInstance().getConfig());
+        executeWithStreaming(task, context, db, tableGroup, executor, primaryKeys);
+    }
 
-            // 1、获取数据源数据
-            context.setArgs(new ArrayList<>());
-            context.setCursors(task.getCursors());
-            context.setPageIndex(task.getPageIndex());
-            Result reader = connectorFactory.reader(context);
-            List<Map> source = reader.getSuccessData();
-            if (CollectionUtils.isEmpty(source)) {
-                logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
-                break;
-            }
+    /**
+     * 流式处理模式
+     */
+    private void executeWithStreaming(Task task, AbstractPluginContext context, Database db, TableGroup tableGroup,
+                                      Executor executor, List<String> primaryKeys) {
+        final String metaId = task.getId();
 
-            // 2、映射字段
-            List<Map> target = picker.pickTargetData(source);
+        // 设置参数 - 参考 AbstractDatabaseConnector.reader 方法的逻辑
+        boolean supportedCursor = db.enableCursor()
+                && context.isSupportedCursor() && null != context.getCursors();
 
-            // 3、参数转换
-            ConvertUtil.convert(group.getConvert(), target);
-
-            // 4、插件转换
-            context.setSourceList(source);
-            context.setTargetList(target);
-            pluginFactory.process(group.getPlugin(), context, ProcessEnum.CONVERT);
-
-            // 5、写入目标源
-            Result result = writeBatch(context, executor);
-
-            // 6、更新结果
-            task.setPageIndex(task.getPageIndex() + 1);
-            task.setCursors(PrimaryKeyUtil.getLastCursors(source, primaryKeys));
-            result.setTableGroupId(tableGroup.getId());
-            result.setTargetTableGroupName(tTableName);
-            flush(task, result);
-
-            // 7、同步完成后通知插件做后置处理
-            pluginFactory.process(group.getPlugin(), context, ProcessEnum.AFTER);
-
-            // 8、判断尾页
-            if (source.size() < context.getPageSize()) {
-                logger.info("完成全量:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
-                break;
-            }
+        // 根据是否支持游标查询来设置不同的参数
+        Object[] args;
+        if (supportedCursor) {
+            args = db.getPageCursorArgs(context);
+        } else {
+            args = db.getPageArgs(context);
         }
+
+        String querySql = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_STREAM);
+        ((DatabaseConnectorInstance) context.getSourceConnectorInstance()).execute(databaseTemplate -> {
+            // 获取流式处理的fetchSize
+            Integer fetchSize = db.getStreamingFetchSize(context);
+            databaseTemplate.setFetchSize(fetchSize);
+
+            try (Stream<Map<String, Object>> stream = databaseTemplate.queryForStream(querySql,
+                    new org.springframework.jdbc.core.ArgumentPreparedStatementSetter(args),
+                    new org.springframework.jdbc.core.ColumnMapRowMapper())) {
+                List<Map<String, Object>> batch = new ArrayList<>();
+                Iterator<Map<String, Object>> iterator = stream.iterator();
+
+                while (iterator.hasNext()) {
+                    if (!task.isRunning()) {
+                        logger.warn("任务被中止:{}", metaId);
+                        break;
+                    }
+
+                    batch.add(iterator.next());
+
+                    // 达到批次大小时处理数据
+                    if (batch.size() >= context.getBatchSize()) {
+                        processDataBatch(batch, task, context, tableGroup, executor, primaryKeys);
+                        batch = new ArrayList<>();
+                    }
+                }
+
+                // 处理最后一批数据
+                if (!batch.isEmpty()) {
+                    processDataBatch(batch, task, context, tableGroup, executor, primaryKeys);
+                }
+            }
+            return null;
+        });
+    }
+
+    /**
+     * 抽离：数据处理逻辑（从现有代码中提取）
+     */
+    private void processDataBatch(List<Map<String, Object>> source, Task task, AbstractPluginContext context,
+                                  TableGroup tableGroup, Executor executor, List<String> primaryKeys) {
+        final String tTableName = context.getTargetTableName();
+
+        // 1、映射字段
+        Picker picker = new Picker(tableGroup);
+        List<Map> target = picker.pickTargetData((List<Map>) (List<?>) source);
+
+        // 2、参数转换
+        ConvertUtil.convert(tableGroup.getConvert(), target);
+
+        // 3、插件转换
+        context.setSourceList((List<Map>) (List<?>) source);
+        context.setTargetList(target);
+        pluginFactory.process(tableGroup.getPlugin(), context, ProcessEnum.CONVERT);
+
+        // 4、写入目标源
+        Result result = writeBatch(context, executor);
+
+        // 5、更新结果和断点
+        task.setPageIndex(task.getPageIndex() + 1);
+        task.setCursors(PrimaryKeyUtil.getLastCursors((List<Map>) (List<?>) source, primaryKeys));
+        result.setTableGroupId(tableGroup.getId());
+        result.setTargetTableGroupName(tTableName);
+        flush(task, result);
+
+        // 6、同步完成后通知插件做后置处理
+        pluginFactory.process(tableGroup.getPlugin(), context, ProcessEnum.AFTER);
     }
 
     @Override
@@ -232,7 +331,8 @@ public class ParserComponentImpl implements ParserComponent {
         for (int i = 0; i < taskSize; i++) {
             try {
                 PluginContext tmpContext = (PluginContext) context.clone();
-                tmpContext.setTargetList(context.getTargetList().stream().skip(offset).limit(batchSize).collect(Collectors.toList()));
+                tmpContext.setTargetList(
+                        context.getTargetList().stream().skip(offset).limit(batchSize).collect(Collectors.toList()));
                 offset += batchSize;
                 executor.execute(() -> {
                     try {

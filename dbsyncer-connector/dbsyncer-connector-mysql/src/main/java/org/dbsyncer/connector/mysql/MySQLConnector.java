@@ -9,13 +9,17 @@ import org.dbsyncer.connector.mysql.schema.MySQLDateValueMapper;
 import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
 import org.dbsyncer.connector.mysql.storage.MySQLStorageService;
 import org.dbsyncer.connector.mysql.validator.MySQLConfigValidator;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -36,6 +40,11 @@ import java.util.Map;
  * @Date 2021-11-22 23:55
  */
 public final class MySQLConnector extends AbstractDatabaseConnector {
+
+    /**
+     * MySQL引号字符
+     */
+    private static final String QUOTATION = "`";
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -79,44 +88,21 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildSqlWithQuotation() {
-        return "`";
+    public String getQuotation() {
+        return QUOTATION;
     }
 
-    @Override
-    public String getPageSql(PageSql config) {
-        // select * from test.`my_user` where `id` > ? and `uid` > ? order by `id`,`uid` limit ?,?
-        StringBuilder sql = new StringBuilder(config.getQuerySql());
-        if (PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
-            appendOrderByPk(config, sql);
+    /**
+     * 获取带引号的架构名
+     */
+    private String getSchemaWithQuotation(DatabaseConfig config) {
+        StringBuilder schema = new StringBuilder();
+        if (StringUtil.isNotBlank(config.getSchema())) {
+            schema.append(QUOTATION).append(config.getSchema()).append(QUOTATION).append(".");
         }
-        sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
-        return sql.toString();
+        return schema.toString();
     }
 
-    @Override
-    public String getPageCursorSql(PageSql config) {
-        // 不支持游标查询
-        if (!PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
-            logger.debug("不支持游标查询，主键包含非数字类型");
-            return StringUtil.EMPTY;
-        }
-
-        // select * from test.`my_user` where `id` > ? and `uid` > ? order by `id`,`uid` limit ?,?
-        StringBuilder sql = new StringBuilder(config.getQuerySql());
-        boolean skipFirst = false;
-        // 没有过滤条件
-        if (StringUtil.isBlank(config.getQueryFilter())) {
-            skipFirst = true;
-            sql.append(" WHERE ");
-        }
-        final String quotation = buildSqlWithQuotation();
-        final List<String> primaryKeys = config.getPrimaryKeys();
-        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, " AND ", " > ? ", skipFirst);
-        appendOrderByPk(config, sql);
-        sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
-        return sql.toString();
-    }
 
     @Override
     public Object[] getPageArgs(ReaderContext context) {
@@ -141,10 +127,11 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Map<String, String> getPosition(org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance connectorInstance) {
+    public Map<String, String> getPosition(
+            org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance connectorInstance) {
         // 执行SHOW MASTER STATUS命令获取当前binlog位置
-        Map<String, Object> result = connectorInstance.execute(databaseTemplate ->
-                databaseTemplate.queryForMap("SHOW MASTER STATUS"));
+        Map<String, Object> result = connectorInstance
+                .execute(databaseTemplate -> databaseTemplate.queryForMap("SHOW MASTER STATUS"));
 
         if (result == null || result.isEmpty()) {
             throw new RuntimeException("获取MySQL当前binlog位置失败");
@@ -169,4 +156,64 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
     }
+
+    @Override
+    protected Map<String, String> buildSourceCommands(CommandConfig commandConfig) {
+        Map<String, String> map = new HashMap<>();
+
+        // 获取基础信息
+        Table table = commandConfig.getTable();
+        String tableName = table.getName();
+        String schema = getSchemaWithQuotation((DatabaseConfig) commandConfig.getConnectorConfig());
+        List<Field> column = table.getColumn();
+        final String queryFilterSql = getQueryFilterSql(commandConfig);
+
+        // 获取缓存的字段列表和基础信息
+        String fieldListSql = commandConfig.getCachedFieldListSql();
+        String quotedTableName = QUOTATION + buildTableName(tableName) + QUOTATION;
+        String cursorCondition = buildCursorConditionFromCached(commandConfig.getCachedPrimaryKeys());
+        String filterClause = StringUtil.isNotBlank(queryFilterSql) ? " WHERE " + queryFilterSql : "";
+        // 流式查询SQL（直接使用基础查询，MySQL通过fetchSize控制）
+        String streamingSql = String.format("SELECT %s FROM %s%s%s",
+                fieldListSql, schema, quotedTableName, filterClause);
+        map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
+
+        // 游标查询SQL
+        if (enableCursor() && PrimaryKeyUtil.isSupportedCursor(column)) {
+            // 构建完整的WHERE条件：原有过滤条件 + 游标条件
+            String whereCondition = "";
+            if (StringUtil.isNotBlank(filterClause) && StringUtil.isNotBlank(cursorCondition)) {
+                whereCondition = filterClause + " AND " + cursorCondition;
+            } else if (StringUtil.isNotBlank(filterClause)) {
+                whereCondition = filterClause;
+            } else if (StringUtil.isNotBlank(cursorCondition)) {
+                whereCondition = " WHERE " + cursorCondition;
+            }
+
+            String cursorSql = String.format("SELECT %s FROM %s%s%s ORDER BY %s LIMIT ?, ?",
+                    fieldListSql, schema, quotedTableName, whereCondition, commandConfig.getCachedPrimaryKeys());
+            map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);
+        }
+
+        // 计数SQL
+        String countSql = String.format("SELECT COUNT(1) FROM %s%s%s",
+                schema, quotedTableName, filterClause);
+        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, countSql);
+
+        return map;
+    }
+
+    /**
+     * 基于缓存的主键列表构建游标条件内容（不包含WHERE关键字）
+     */
+    private String buildCursorConditionFromCached(String cachedPrimaryKeys) {
+        if (StringUtil.isBlank(cachedPrimaryKeys)) {
+            return "";
+        }
+
+        // 将 "`id`, `name`, `create_time`" 转换为 "`id` > ? AND `name` > ? AND
+        // `create_time` > ?"
+        return cachedPrimaryKeys.replaceAll(",", " > ? AND") + " > ?";
+    }
+
 }

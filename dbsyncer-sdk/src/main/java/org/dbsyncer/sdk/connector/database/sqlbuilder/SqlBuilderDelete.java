@@ -20,7 +20,7 @@ public class SqlBuilderDelete extends AbstractSqlBuilder {
     @Override
     public String buildSql(SqlBuilderConfig config) {
         Database database = config.getDatabase();
-        String quotation = database.buildSqlWithQuotation();
+        String quotation = database.getQuotation();
         String tableName = config.getTableName();
         List<String> primaryKeys = database.buildPrimaryKeys(config.getPrimaryKeys());
         // DELETE FROM "USER" WHERE "ID"=? AND "UID" = ?

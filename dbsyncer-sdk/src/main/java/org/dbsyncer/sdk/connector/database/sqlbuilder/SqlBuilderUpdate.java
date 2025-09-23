@@ -22,7 +22,7 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
     @Override
     public String buildSql(SqlBuilderConfig config) {
         Database database = config.getDatabase();
-        String quotation = database.buildSqlWithQuotation();
+        String quotation = database.getQuotation();
         List<Field> fields = config.getFields();
 
         StringBuilder sql = new StringBuilder(database.generateUniqueCode());

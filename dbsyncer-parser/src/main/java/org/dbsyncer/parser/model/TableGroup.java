@@ -4,8 +4,10 @@
 package org.dbsyncer.parser.model;
 
 import com.alibaba.fastjson2.annotation.JSONField;
-import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.parser.ParserComponent;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.Table;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,6 +25,18 @@ public class TableGroup extends AbstractConfigModel {
         super.setType(ConfigConstant.TABLE_GROUP);
         super.setName(ConfigConstant.TABLE_GROUP);
     }
+
+    @JSONField(serialize = false)
+    public static final int Version = 1;
+    public int currentVersion;
+    @JSONField(serialize = false)
+    public boolean isInit = false;
+
+    @JSONField(serialize = false)
+    public ParserComponent parserComponent;
+    @JSONField(serialize = false)
+    public ProfileComponent profileComponent;
+
 
     // 排序索引
     private int index;
@@ -42,6 +56,14 @@ public class TableGroup extends AbstractConfigModel {
     // 执行命令，例SQL等
     @JSONField(serialize = false)
     private Map<String, String> command = new HashMap<>();
+
+    // 缓存的字段列表SQL片段（避免重复构建）
+    @JSONField(serialize = false)
+    private String cachedFieldListSql;
+
+    // 缓存的主键列表字符串（避免重复构建）
+    @JSONField(serialize = false)
+    private String cachedPrimaryKeys;
 
     public int getIndex() {
         return index;
@@ -93,6 +115,37 @@ public class TableGroup extends AbstractConfigModel {
     public TableGroup setCommand(Map<String, String> command) {
         this.command = command;
         return this;
+    }
+
+    public String getCachedFieldListSql() {
+        return cachedFieldListSql;
+    }
+
+    public TableGroup setCachedFieldListSql(String cachedFieldListSql) {
+        this.cachedFieldListSql = cachedFieldListSql;
+        return this;
+    }
+
+    public String getCachedPrimaryKeys() {
+        return cachedPrimaryKeys;
+    }
+
+    public TableGroup setCachedPrimaryKeys(String cachedPrimaryKeys) {
+        this.cachedPrimaryKeys = cachedPrimaryKeys;
+        return this;
+    }
+
+    public void initTableGroup(ParserComponent parserComponent, ProfileComponent profileComponent) {
+        if (isInit) return;
+        this.parserComponent = parserComponent;
+        this.profileComponent = profileComponent;
+        if (currentVersion != TableGroup.Version) {
+            currentVersion = TableGroup.Version;
+            profileComponent.editConfigModel(this);
+        }
+        Mapping mapping = profileComponent.getMapping(mappingId);
+        setCommand(parserComponent.getCommand(mapping, this));
+        isInit = true;
     }
 
 }

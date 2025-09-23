@@ -4,39 +4,59 @@
 package org.dbsyncer.connector.sqlite;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlite.validator.SQLiteConfigValidator;
+import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
-import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
 /**
  * SQLite连接器实现
+ *
  * @Author bble
  * @Version 1.0.0
  * @Date 2023-11-28 16:22
  */
 public final class SQLiteConnector extends AbstractDatabaseConnector {
 
+    /**
+     * SQLite引号字符
+     */
+    private static final String QUOTATION = "\"";
+
     private final String QUERY_VIEW = "SELECT name FROM sqlite_master WHERE type = 'view'";
     private final String QUERY_TABLE = "SELECT name FROM sqlite_master WHERE type='table'";
 
     private final SQLiteConfigValidator configValidator = new SQLiteConfigValidator();
+
+    /**
+     * 获取带引号的架构名
+     */
+    private String getSchemaWithQuotation(DatabaseConfig config) {
+        StringBuilder schema = new StringBuilder();
+        if (StringUtil.isNotBlank(config.getSchema())) {
+            schema.append(QUOTATION).append(config.getSchema()).append(QUOTATION).append(".");
+        }
+        return schema.toString();
+    }
 
     @Override
     public String getConnectorType() {
@@ -64,16 +84,6 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
         return null;
     }
 
-    @Override
-    public String getPageSql(PageSql config) {
-        // select * from "my_user" where "id" > ? and "uid" > ? order by "id","uid" limit ? OFFSET ?
-        StringBuilder sql = new StringBuilder(config.getQuerySql());
-        if (PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
-            appendOrderByPk(config, sql);
-        }
-        sql.append(DatabaseConstant.SQLITE_PAGE_SQL);
-        return sql.toString();
-    }
 
     @Override
     public Object[] getPageArgs(ReaderContext context) {
@@ -116,5 +126,65 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     public Integer getStreamingFetchSize(ReaderContext context) {
         return context.getPageSize(); // 使用页面大小作为fetchSize
     }
+
+    @Override
+    protected Map<String, String> buildSourceCommands(CommandConfig commandConfig) {
+        Map<String, String> map = new HashMap<>();
+
+        // 获取基础信息
+        Table table = commandConfig.getTable();
+        String tableName = table.getName();
+        String schema = getSchemaWithQuotation((DatabaseConfig) commandConfig.getConnectorConfig());
+        List<Field> column = table.getColumn();
+        final String queryFilterSql = getQueryFilterSql(commandConfig);
+
+        // 获取缓存的字段列表和基础信息
+        String fieldListSql = commandConfig.getCachedFieldListSql();
+        String quotedTableName = QUOTATION + buildTableName(tableName) + QUOTATION;
+        String cursorCondition = buildCursorConditionFromCached(commandConfig.getCachedPrimaryKeys());
+        String filterClause = StringUtil.isNotBlank(queryFilterSql) ? " WHERE " + queryFilterSql : "";
+
+        // 流式查询SQL（直接使用基础查询，SQLite通过fetchSize控制）
+        String streamingSql = String.format("SELECT %s FROM %s%s%s",
+                fieldListSql, schema, quotedTableName, filterClause);
+        map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
+
+        // 游标查询SQL
+        if (enableCursor() && PrimaryKeyUtil.isSupportedCursor(column)) {
+            // 构建完整的WHERE条件：原有过滤条件 + 游标条件
+            String whereCondition = "";
+            if (StringUtil.isNotBlank(filterClause) && StringUtil.isNotBlank(cursorCondition)) {
+                whereCondition = filterClause + " AND " + cursorCondition;
+            } else if (StringUtil.isNotBlank(filterClause)) {
+                whereCondition = filterClause;
+            } else if (StringUtil.isNotBlank(cursorCondition)) {
+                whereCondition = " WHERE " + cursorCondition;
+            }
+
+            String cursorSql = String.format("SELECT %s FROM %s%s%s ORDER BY %s LIMIT ?, ?",
+                    fieldListSql, schema, quotedTableName, whereCondition, commandConfig.getCachedPrimaryKeys());
+            map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);
+        }
+
+        // 计数SQL
+        String countSql = String.format("SELECT COUNT(1) FROM %s%s%s",
+                schema, quotedTableName, filterClause);
+        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, countSql);
+
+        return map;
+    }
+
+    /**
+     * 基于缓存的主键列表构建游标条件内容（不包含WHERE关键字）
+     */
+    private String buildCursorConditionFromCached(String cachedPrimaryKeys) {
+        if (StringUtil.isBlank(cachedPrimaryKeys)) {
+            return "";
+        }
+
+        // 将 ""id", "name", "create_time"" 转换为 ""id" > ? AND "name" > ? AND "create_time" > ?"
+        return cachedPrimaryKeys.replaceAll(",", " > ? AND") + " > ?";
+    }
+
 
 }

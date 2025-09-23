@@ -33,6 +33,19 @@ Listener：
   - 依据连接类型和监听类型（日志|定时）创建监听器
   - 可注册多个 watcher
 
+## 连接器
+
+**DQL连接器（Data Query Language）**：
+用途：专门用于执行自定义SQL查询语句
+特点：支持用户自定义复杂的SQL查询，不局限于单表操作
+适用场景：需要执行复杂查询、多表关联、聚合统计等场景
+
+**非DQL连接器**：
+用途：用于标准的数据库表操作或特定数据源操作
+特点：基于表结构进行标准的增删改查操作
+适用场景：常规的表同步、数据迁移等场景
+
+
 ## 状态
 
 MetaEnum：在 Meta 中记录同步任务的整体状态
@@ -40,6 +53,28 @@ MetaEnum：在 Meta 中记录同步任务的整体状态
 
 StateEnum：在 Task 中记录具体执行任务的状态
 - RUNNING，STOP
+
+## 包依赖关系
+
+dbsyncer-common (最底层)
+    ↑
+dbsyncer-sdk (依赖common)
+    ↑
+dbsyncer-connector-* (各连接器依赖sdk)
+    ↑
+dbsyncer-connector-base (聚合所有连接器)
+    ↑
+dbsyncer-storage (依赖connector-base)
+    ↑
+dbsyncer-plugin (依赖sdk + connector)
+    ↑
+dbsyncer-parser (依赖plugin + storage)
+    ↑
+dbsyncer-manager (依赖parser)
+    ↑
+dbsyncer-biz (依赖manager)
+    ↑
+dbsyncer-web (依赖biz，最顶层)
 
 
 ## 局限性

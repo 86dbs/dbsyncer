@@ -14,15 +14,14 @@ import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,6 +38,11 @@ import java.util.stream.Collectors;
  */
 public final class SqlServerConnector extends AbstractDatabaseConnector {
 
+    /**
+     * SQL Server引号字符
+     */
+    private static final String QUOTATION = "[";
+
     private final String QUERY_VIEW = "select name from sysobjects where xtype in('v')";
     private final String QUERY_TABLE = "select name from sys.tables where schema_id = schema_id('%s') and is_ms_shipped = 0";
     private final String QUERY_TABLE_IDENTITY = "select is_identity from sys.columns where object_id = object_id('%s') and is_identity > 0";
@@ -46,6 +50,17 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
 
     private final SqlServerConfigValidator configValidator = new SqlServerConfigValidator();
+
+    /**
+     * 获取带引号的架构名
+     */
+    private String getSchemaWithQuotation(DatabaseConfig config) {
+        StringBuilder schema = new StringBuilder();
+        if (StringUtil.isNotBlank(config.getSchema())) {
+            schema.append(QUOTATION).append(config.getSchema()).append("].");
+        }
+        return schema.toString();
+    }
 
     @Override
     public String getConnectorType() {
@@ -77,12 +92,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         return null;
     }
 
-    @Override
-    public String getPageSql(PageSql config) {
-        List<String> primaryKeys = buildPrimaryKeys(config.getPrimaryKeys());
-        String orderBy = StringUtil.join(primaryKeys, StringUtil.COMMA);
-        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, orderBy, config.getQuerySql());
-    }
 
     @Override
     public Object[] getPageArgs(ReaderContext context) {
@@ -144,10 +153,10 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         if (currentLsnBytes == null) {
             throw new RuntimeException("获取SqlServer当前LSN失败");
         }
-        
+
         // 将 byte[] 转换为 LSN 字符串表示
         String currentLsn = new Lsn(currentLsnBytes).toString();
-        
+
         // 创建与snapshot中存储格式一致的position信息
         Map<String, String> position = new HashMap<>();
         position.put("position", currentLsn);
@@ -157,5 +166,90 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     private String convertKey(String key) {
         return new StringBuilder("[").append(key).append("]").toString();
     }
+
+    @Override
+    public boolean enableCursor() {
+        return true;
+    }
+
+    @Override
+    public Integer getStreamingFetchSize(ReaderContext context) {
+        return context.getPageSize(); // 使用页面大小作为fetchSize
+    }
+
+
+    @Override
+    public Object[] getPageCursorArgs(ReaderContext context) {
+        int pageSize = context.getPageSize();
+        Object[] cursors = context.getCursors();
+        if (null == cursors) {
+            return new Object[]{pageSize}; // 只有 TOP 参数
+        }
+        int cursorsLen = cursors.length;
+        Object[] newCursors = new Object[cursorsLen + 1];
+        newCursors[0] = pageSize; // TOP 参数在前
+        System.arraycopy(cursors, 0, newCursors, 1, cursorsLen); // 游标参数在后
+        return newCursors;
+    }
+
+    @Override
+    protected Map<String, String> buildSourceCommands(CommandConfig commandConfig) {
+        Map<String, String> map = new HashMap<>();
+
+        // 获取基础信息
+        Table table = commandConfig.getTable();
+        String tableName = table.getName();
+        String schema = getSchemaWithQuotation((DatabaseConfig) commandConfig.getConnectorConfig());
+        List<Field> column = table.getColumn();
+        final String queryFilterSql = getQueryFilterSql(commandConfig);
+
+        // 获取缓存的字段列表和基础信息
+        String fieldListSql = commandConfig.getCachedFieldListSql();
+        String quotedTableName = QUOTATION + buildTableName(tableName) + "]";
+        String cursorCondition = buildCursorConditionFromCached(commandConfig.getCachedPrimaryKeys());
+        String filterClause = StringUtil.isNotBlank(queryFilterSql) ? " WHERE " + queryFilterSql : "";
+
+        // 流式查询SQL（直接使用基础查询，SQL Server通过fetchSize控制）
+        String streamingSql = String.format("SELECT %s FROM %s%s%s",
+                fieldListSql, schema, quotedTableName, filterClause);
+        map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
+
+        // 游标查询SQL
+        if (enableCursor() && PrimaryKeyUtil.isSupportedCursor(column)) {
+            // 构建完整的WHERE条件：原有过滤条件 + 游标条件
+            String whereCondition = "";
+            if (StringUtil.isNotBlank(filterClause) && StringUtil.isNotBlank(cursorCondition)) {
+                whereCondition = filterClause + " AND " + cursorCondition;
+            } else if (StringUtil.isNotBlank(filterClause)) {
+                whereCondition = filterClause;
+            } else if (StringUtil.isNotBlank(cursorCondition)) {
+                whereCondition = " WHERE " + cursorCondition;
+            }
+
+            String cursorSql = String.format("SELECT %s FROM %s%s%s ORDER BY %s OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
+                    fieldListSql, schema, quotedTableName, whereCondition, commandConfig.getCachedPrimaryKeys());
+            map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);
+        }
+
+        // 计数SQL
+        String countSql = String.format("SELECT COUNT(1) FROM %s%s%s",
+                schema, quotedTableName, filterClause);
+        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, countSql);
+
+        return map;
+    }
+
+    /**
+     * 基于缓存的主键列表构建游标条件内容（不包含WHERE关键字）
+     */
+    private String buildCursorConditionFromCached(String cachedPrimaryKeys) {
+        if (StringUtil.isBlank(cachedPrimaryKeys)) {
+            return "";
+        }
+
+        // 将 "[id], [name], [create_time]" 转换为 "[id] > ? AND [name] > ? AND [create_time] > ?"
+        return cachedPrimaryKeys.replaceAll(",", " > ? AND") + " > ?";
+    }
+
 
 }

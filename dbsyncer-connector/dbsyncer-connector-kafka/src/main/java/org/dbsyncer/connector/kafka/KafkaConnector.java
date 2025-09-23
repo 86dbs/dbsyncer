@@ -49,6 +49,11 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     }
 
     @Override
+    public String getQuotation() {
+        return ""; // Kafka不需要引号
+    }
+
+    @Override
     public Class<KafkaConfig> getConfigClass() {
         return KafkaConfig.class;
     }

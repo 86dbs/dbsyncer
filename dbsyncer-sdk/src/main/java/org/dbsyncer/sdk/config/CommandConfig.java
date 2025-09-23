@@ -27,6 +27,12 @@ public class CommandConfig {
 
     private ConnectorInstance connectorInstance;
 
+    // 缓存的字段列表SQL片段（避免重复构建）
+    private String cachedFieldListSql;
+
+    // 缓存的主键列表字符串（避免重复构建）
+    private String cachedPrimaryKeys;
+
     public CommandConfig(String connectorType, Table table, ConnectorInstance connectorInstance, List<Filter> filter) {
         this.connectorType = connectorType;
         this.table = table;
@@ -52,5 +58,21 @@ public class CommandConfig {
 
     public ConnectorInstance getConnectorInstance() {
         return connectorInstance;
+    }
+
+    public String getCachedFieldListSql() {
+        return cachedFieldListSql;
+    }
+
+    public void setCachedFieldListSql(String cachedFieldListSql) {
+        this.cachedFieldListSql = cachedFieldListSql;
+    }
+
+    public String getCachedPrimaryKeys() {
+        return cachedPrimaryKeys;
+    }
+
+    public void setCachedPrimaryKeys(String cachedPrimaryKeys) {
+        this.cachedPrimaryKeys = cachedPrimaryKeys;
     }
 }
