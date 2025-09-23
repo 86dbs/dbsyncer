@@ -42,11 +42,7 @@ public class ManagerFactory {
 
     public void close(Mapping mapping) {
         Puller puller = getPuller(mapping);
-
-        // 标记停止中，使用Meta类的统一方法
-        String metaId = mapping.getMetaId();
-        Meta meta = profileComponent.getMeta(metaId);
-        puller.close(meta);
+        puller.close(mapping);
     }
 
     private Puller getPuller(Mapping mapping) {

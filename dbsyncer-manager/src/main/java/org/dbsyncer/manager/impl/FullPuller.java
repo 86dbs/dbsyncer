@@ -61,10 +61,10 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
             Meta meta = profileComponent.getMeta(metaId);
             assert meta != null;
             try {
-                Task task = meta.getTask();
+                Task task = mapping.getTask();
                 if (task == null) {
                     task = new Task(metaId);
-                    meta.setTask(task);
+                    mapping.setTask(task);
                 }
                 logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
                 doTask(task, mapping, list, executor);
@@ -81,7 +81,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
                 }
 
                 // 清除task引用
-                meta.setTask(null);
+                mapping.setTask(null);
                 if (meta.getPhaseHandler() == null && !meta.isError()) {
                     meta.resetState();
                 }
@@ -94,15 +94,15 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
     }
 
     @Override
-    public void close(Meta meta) {
-        if (meta != null) {
-            Task task = meta.getTask();
+    public void close(Mapping mapping) {
+        if (mapping != null) {
+            Task task = mapping.getTask();
             if (task != null) {
                 task.stop();
-                meta.setTask(null);
+                mapping.setTask(null);
             }
         }
-        meta.resetState();
+        mapping.resetMetaState();
     }
 
     private void doTask(Task task, Mapping mapping, List<TableGroup> list, Executor executor) {
@@ -171,8 +171,9 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
     @Override
     public void taskFinished(String metaId) {
         Meta meta = profileComponent.getMeta(metaId);
-        if (meta != null) {
-            Task task = meta.getTask();
+        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        if (mapping != null) {
+            Task task = mapping.getTask();
             if (task != null) {
                 flush(task);
             }

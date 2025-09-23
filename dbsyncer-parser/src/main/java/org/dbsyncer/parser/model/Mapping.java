@@ -70,6 +70,9 @@ public class Mapping extends AbstractConfigModel {
     @JSONField(serialize = false)
     public ProfileComponent profileComponent;
 
+    @JSONField(serialize = false)
+    private Task task;
+
     public String getSourceConnectorId() {
         return sourceConnectorId;
     }
@@ -186,6 +189,11 @@ public class Mapping extends AbstractConfigModel {
         }
     }
 
+    public void resetMetaState(){
+        Meta meta = profileComponent.getMeta(getMetaId());
+        meta.resetState();
+    }
+
     public void updateMata(String metaSnapshot) {
         Meta meta = profileComponent.getMeta(getMetaId());
         meta.updateSnapshot(metaSnapshot);
@@ -200,5 +208,13 @@ public class Mapping extends AbstractConfigModel {
     public boolean isDisableStream() {
         String value = getParams().get(ParamKeyEnum.DISABLE_STREAM.getKey());
         return "true".equalsIgnoreCase(value);
+    }
+
+    public Task getTask() {
+        return task;
+    }
+
+    public void setTask(Task task) {
+        this.task = task;
     }
 }

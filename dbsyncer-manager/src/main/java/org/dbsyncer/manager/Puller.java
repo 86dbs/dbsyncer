@@ -7,5 +7,5 @@ public interface Puller {
 
     void start(Mapping mapping);
 
-    void close(Meta meta);
+    void close(Mapping mapping);
 }

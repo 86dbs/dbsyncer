@@ -29,6 +29,7 @@ public class Task {
         return StateEnum.RUNNING == state;
     }
 
+    // 存储的是 metaId
     public String getId() {
         return id;
     }

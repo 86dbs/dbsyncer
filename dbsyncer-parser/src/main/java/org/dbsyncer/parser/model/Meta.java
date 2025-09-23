@@ -47,8 +47,6 @@ public class Meta extends ConfigModel {
     private long beginTime;
     private long endTime;
     @JSONField(serialize = false)
-    private Task task;
-    @JSONField(serialize = false)
     private transient Listener listener;
 
     // 驱动异常信息
@@ -204,14 +202,6 @@ public class Meta extends ConfigModel {
 
     public void setEndTime(long endTime) {
         this.endTime = endTime;
-    }
-
-    public Task getTask() {
-        return task;
-    }
-
-    public void setTask(Task task) {
-        this.task = task;
     }
 
     public Listener getListener() {
