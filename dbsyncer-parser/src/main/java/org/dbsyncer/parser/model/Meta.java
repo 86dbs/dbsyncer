@@ -257,6 +257,7 @@ public class Meta extends ConfigModel {
     }
 
     // 检查是否已记录增量起始点
+    @JSONField(serialize = false)
     public boolean isIncrementStartPointRecorded() {
         return this.snapshot.containsKey(PROTECTED_INCREMENT_INFO);
     }

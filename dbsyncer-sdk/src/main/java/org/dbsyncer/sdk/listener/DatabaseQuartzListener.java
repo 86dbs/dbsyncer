@@ -31,7 +31,7 @@ public final class DatabaseQuartzListener extends AbstractQuartzListener {
     @Override
     protected Point checkLastPoint(Map<String, String> command, int index) {
         // 检查是否存在系统参数
-        final String query = command.get(ConnectorConstant.OPERTION_QUERY);
+        final String query = command.get(ConnectorConstant.OPERTION_QUERY_STREAM);
 
         /**
          * 排序开始/结束时间，防止系统生成的开始时间大于结束时间，导致无法查询有效范围结果集
@@ -93,7 +93,7 @@ public final class DatabaseQuartzListener extends AbstractQuartzListener {
             point.addArg(val);
             point.setBeginValue(f.toString(val));
         }
-        point.setCommand(ConnectorConstant.OPERTION_QUERY, replaceQuery);
+        point.setCommand(ConnectorConstant.OPERTION_QUERY_STREAM, replaceQuery);
         if (StringUtil.isNotBlank(replaceQueryCursor)) {
             point.setCommand(ConnectorConstant.OPERTION_QUERY_CURSOR, replaceQueryCursor);
         }

@@ -153,6 +153,11 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public Integer getStreamingFetchSize(ReaderContext context) {
+        return context.getPageSize(); // 使用页面大小作为fetchSize
+    }
+
+    @Override
     public String getValidationQuery() {
         return "select 1 from dual";
     }

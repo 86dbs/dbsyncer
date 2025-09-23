@@ -63,4 +63,9 @@ public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
     public String buildSqlWithQuotation() {
         return "\"";
     }
+
+    @Override
+    public Integer getStreamingFetchSize(ReaderContext context) {
+        return context.getPageSize(); // 使用页面大小作为fetchSize
+    }
 }

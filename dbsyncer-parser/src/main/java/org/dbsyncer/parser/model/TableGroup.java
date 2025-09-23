@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.parser.model;
 
+import com.alibaba.fastjson2.annotation.JSONField;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
@@ -39,6 +40,7 @@ public class TableGroup extends AbstractConfigModel {
     private List<FieldMapping> fieldMapping = new ArrayList<>();
 
     // 执行命令，例SQL等
+    @JSONField(serialize = false)
     private Map<String, String> command = new HashMap<>();
 
     public int getIndex() {

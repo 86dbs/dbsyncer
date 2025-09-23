@@ -69,4 +69,9 @@ public final class DQLOracleConnector extends AbstractDQLConnector {
         return "select 1 from dual";
     }
 
+    @Override
+    public Integer getStreamingFetchSize(ReaderContext context) {
+        return context.getPageSize(); // 使用页面大小作为fetchSize
+    }
+
 }

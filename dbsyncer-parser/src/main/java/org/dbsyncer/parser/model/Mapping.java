@@ -6,6 +6,7 @@ import org.dbsyncer.parser.enums.SyncPhaseEnum;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.enums.ParamKeyEnum;
 import org.dbsyncer.sdk.model.Field;
 
 import java.util.List;
@@ -190,5 +191,14 @@ public class Mapping extends AbstractConfigModel {
         meta.updateSnapshot(metaSnapshot);
         profileComponent.editConfigModel(this);
 
+    }
+
+    /**
+     * 检查是否禁用流式处理
+     */
+    @JSONField(serialize = false)
+    public boolean isDisableStream() {
+        String value = getParams().get(ParamKeyEnum.DISABLE_STREAM.getKey());
+        return "true".equalsIgnoreCase(value);
     }
 }

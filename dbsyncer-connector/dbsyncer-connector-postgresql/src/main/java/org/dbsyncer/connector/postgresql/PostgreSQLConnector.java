@@ -153,6 +153,11 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public Integer getStreamingFetchSize(ReaderContext context) {
+        return context.getPageSize(); // 使用页面大小作为fetchSize
+    }
+
+    @Override
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
     }

@@ -35,7 +35,7 @@ public enum SqlBuilderEnum {
     /**
      * 查询SQL生成器
      */
-    QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery()),
+    QUERY(ConnectorConstant.OPERTION_QUERY_STREAM, new SqlBuilderQuery()),
     /**
      * 查询游标SQL生成器
      */

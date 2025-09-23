@@ -112,4 +112,9 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
         return new StringBuilder("\"").append(key).append("\"").toString();
     }
 
+    @Override
+    public Integer getStreamingFetchSize(ReaderContext context) {
+        return context.getPageSize(); // 使用页面大小作为fetchSize
+    }
+
 }

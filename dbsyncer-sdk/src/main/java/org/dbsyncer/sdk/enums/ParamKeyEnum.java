@@ -15,6 +15,9 @@ public enum ParamKeyEnum {
     // 数据表相关参数
     DISABLE_AUTO_CREATE("table.disableAutoCreate", "禁用自动创建", "boolean", "当目标数据表缺失时禁止自动创建"),
 
+    // 流式处理相关参数
+    DISABLE_STREAM("stream.disableStream", "禁用流式处理", "boolean", "禁用流式结果集处理，使用分页查询方式"),
+
     // Kafka 相关参数
     TOPIC("topic", "消息主题", "String", "设置Kafka消息主题名称");
 

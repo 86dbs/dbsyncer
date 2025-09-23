@@ -59,4 +59,9 @@ public final class DqlSQLiteConnector extends AbstractDQLConnector {
         int pageIndex = context.getPageIndex();
         return new Object[] {(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
     }
+
+    @Override
+    public Integer getStreamingFetchSize(ReaderContext context) {
+        return context.getPageSize(); // 使用页面大小作为fetchSize
+    }
 }

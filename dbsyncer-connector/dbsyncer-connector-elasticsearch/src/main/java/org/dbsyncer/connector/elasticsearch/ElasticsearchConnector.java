@@ -306,7 +306,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         List<Field> column = table.getColumn();
         if (!CollectionUtils.isEmpty(column)) {
             List<String> fieldNames = column.stream().map(c -> c.getName()).collect(Collectors.toList());
-            command.put(ConnectorConstant.OPERTION_QUERY, StringUtil.join(fieldNames, ","));
+            command.put(ConnectorConstant.OPERTION_QUERY_STREAM, StringUtil.join(fieldNames, ","));
         }
 
         // 过滤条件
@@ -359,7 +359,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
 
     private void genSearchSourceBuilder(SearchSourceBuilder builder, Map<String, String> command) {
         // 查询字段
-        String fieldNamesJson = command.get(ConnectorConstant.OPERTION_QUERY);
+        String fieldNamesJson = command.get(ConnectorConstant.OPERTION_QUERY_STREAM);
         if (!StringUtil.isBlank(fieldNamesJson)) {
             builder.fetchSource(StringUtil.split(fieldNamesJson, ","), null);
         }

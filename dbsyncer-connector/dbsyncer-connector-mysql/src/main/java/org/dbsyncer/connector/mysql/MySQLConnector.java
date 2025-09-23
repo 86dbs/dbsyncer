@@ -161,6 +161,11 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public Integer getStreamingFetchSize(ReaderContext context) {
+        return Integer.MIN_VALUE; // MySQL流式处理特殊值
+    }
+
+    @Override
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
     }

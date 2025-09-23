@@ -6,8 +6,9 @@
 ## 2.5.0
 
 - 性能优化：mysql, sql server 使用流式读取数据。
-- bug fixed: 编辑状态重置问题。(OK)
+- bug fixed: 编辑导致状态重置问题。(OK)
 - bug fixed：重置计数为历史数量问题。(OK)
+- 优化: tableGroup 不需要持久化 sql（OK）
 
 ## 2.4.0
 

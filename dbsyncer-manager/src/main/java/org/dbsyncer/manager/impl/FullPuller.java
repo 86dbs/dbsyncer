@@ -82,7 +82,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
 
                 // 清除task引用
                 meta.setTask(null);
-                if (meta.getPhaseHandler() == null) {
+                if (meta.getPhaseHandler() == null && !meta.isError()) {
                     meta.resetState();
                 }
                 logger.info("结束全量同步：{}, {}", metaId, mapping.getName());

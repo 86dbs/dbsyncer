@@ -30,7 +30,12 @@ public class ConnectorConstant {
     /**
      * 查询
      */
-    public static final String OPERTION_QUERY = "QUERY";
+    public static final String OPERTION_QUERY_STREAM = "QUERY_STREAM";
+
+    /**
+     * 分页查询
+     */
+    public static final String OPERTION_QUERY_PAGE = "QUERY_PAGE";
 
     /**
      * 查询游标

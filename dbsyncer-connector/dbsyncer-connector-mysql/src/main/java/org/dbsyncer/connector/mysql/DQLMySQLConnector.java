@@ -63,4 +63,9 @@ public final class DQLMySQLConnector extends AbstractDQLConnector {
     public String generateUniqueCode() {
         return DatabaseConstant.DBS_UNIQUE_CODE;
     }
+
+    @Override
+    public Integer getStreamingFetchSize(ReaderContext context) {
+        return Integer.MIN_VALUE; // MySQL流式处理特殊值
+    }
 }
