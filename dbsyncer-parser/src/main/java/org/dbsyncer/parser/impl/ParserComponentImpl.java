@@ -227,8 +227,7 @@ public class ParserComponentImpl implements ParserComponent {
         final String metaId = task.getId();
 
         // 设置参数 - 参考 AbstractDatabaseConnector.reader 方法的逻辑
-        boolean supportedCursor = db.enableCursor()
-                && context.isSupportedCursor() && null != context.getCursors();
+        boolean supportedCursor = context.isSupportedCursor() && null != context.getCursors();
 
         // 根据是否支持游标查询来设置不同的参数
         Object[] args;

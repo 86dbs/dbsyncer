@@ -114,7 +114,7 @@ public final class DQLOracleConnector extends AbstractDQLConnector {
         map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
 
         // 游标查询SQL
-        if (enableCursor() && PrimaryKeyUtil.isSupportedCursor(column)) {
+        if (PrimaryKeyUtil.isSupportedCursor(column)) {
             String cursorSql = String.format("SELECT * FROM (SELECT A.*, ROWNUM RN FROM (SELECT %s FROM %s%s%s%s%s)A WHERE ROWNUM <= ?) WHERE RN > ?",
                 fieldListSql, schema, quotedTableName, queryFilterSql, cursorCondition, orderByClause);
             map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);

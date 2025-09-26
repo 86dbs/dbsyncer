@@ -95,14 +95,4 @@ public interface Database {
     default String getValidationQuery() {
         return "select 1";
     }
-
-    /**
-     * 是否使用游标查询
-     *
-     * @return
-     */
-    default boolean enableCursor() {
-        return false;
-    }
-
 }

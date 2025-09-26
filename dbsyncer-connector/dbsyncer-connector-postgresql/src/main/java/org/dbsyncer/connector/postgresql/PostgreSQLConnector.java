@@ -9,14 +9,14 @@ import org.dbsyncer.connector.postgresql.schema.PostgreSQLBitValueMapper;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLOtherValueMapper;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLSchemaResolver;
 import org.dbsyncer.connector.postgresql.validator.PostgreSQLConfigValidator;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
@@ -132,11 +132,6 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public boolean enableCursor() {
-        return true;
-    }
-
-    @Override
     public Integer getStreamingFetchSize(ReaderContext context) {
         return context.getPageSize(); // 使用页面大小作为fetchSize
     }
@@ -149,27 +144,27 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     @Override
     protected Map<String, String> buildSourceCommands(CommandConfig commandConfig) {
         Map<String, String> map = new HashMap<>();
-        
+
         // 获取基础信息
         Table table = commandConfig.getTable();
         String tableName = table.getName();
         String schema = getSchemaWithQuotation((DatabaseConfig) commandConfig.getConnectorConfig());
         List<Field> column = table.getColumn();
         final String queryFilterSql = getQueryFilterSql(commandConfig);
-        
+
         // 获取缓存的字段列表和基础信息
         String fieldListSql = commandConfig.getCachedFieldListSql();
         String quotedTableName = QUOTATION + buildTableName(tableName) + QUOTATION;
         String cursorCondition = buildCursorConditionFromCached(commandConfig.getCachedPrimaryKeys());
-        
+
         // 流式查询SQL（直接使用基础查询，PostgreSQL通过fetchSize控制）
         String filterClause = StringUtil.isNotBlank(queryFilterSql) ? " WHERE " + queryFilterSql : "";
         String streamingSql = String.format("SELECT %s FROM %s%s%s",
-            fieldListSql, schema, quotedTableName, filterClause);
+                fieldListSql, schema, quotedTableName, filterClause);
         map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
 
         // 游标查询SQL
-        if (enableCursor() && PrimaryKeyUtil.isSupportedCursor(column)) {
+        if (PrimaryKeyUtil.isSupportedCursor(column)) {
             // 构建完整的WHERE条件：原有过滤条件 + 游标条件
             String whereCondition = "";
             if (StringUtil.isNotBlank(queryFilterSql) && StringUtil.isNotBlank(cursorCondition)) {
@@ -179,17 +174,17 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
             } else if (StringUtil.isNotBlank(cursorCondition)) {
                 whereCondition = " WHERE " + cursorCondition;
             }
-            
+
             String cursorSql = String.format("SELECT %s FROM %s%s%s ORDER BY %s LIMIT ? OFFSET ?",
-                fieldListSql, schema, quotedTableName, whereCondition, commandConfig.getCachedPrimaryKeys());
+                    fieldListSql, schema, quotedTableName, whereCondition, commandConfig.getCachedPrimaryKeys());
             map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);
         }
 
         // 计数SQL
         String countSql = String.format("SELECT COUNT(1) FROM %s%s%s",
-            schema, quotedTableName, filterClause);
+                schema, quotedTableName, filterClause);
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, countSql);
-        
+
         return map;
     }
 
@@ -201,7 +196,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
         if (StringUtil.isBlank(cachedPrimaryKeys)) {
             return "";
         }
-        
+
         // 将 ""id", "name", "create_time"" 转换为 ""id" > ? AND "name" > ? AND "create_time" > ?"
         return cachedPrimaryKeys.replaceAll(",", " > ? AND") + " > ?";
     }

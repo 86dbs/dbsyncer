@@ -150,7 +150,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
         map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
 
         // 游标查询SQL
-        if (enableCursor() && PrimaryKeyUtil.isSupportedCursor(column)) {
+        if (PrimaryKeyUtil.isSupportedCursor(column)) {
             // 构建完整的WHERE条件：原有过滤条件 + 游标条件
             String whereCondition = "";
             if (StringUtil.isNotBlank(filterClause) && StringUtil.isNotBlank(cursorCondition)) {

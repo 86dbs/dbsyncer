@@ -8,14 +8,14 @@ import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleClobValueMapper;
 import org.dbsyncer.connector.oracle.schema.OracleOtherValueMapper;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
+import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
@@ -128,11 +128,6 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public boolean enableCursor() {
-        return true;
-    }
-
-    @Override
     public Integer getStreamingFetchSize(ReaderContext context) {
         return context.getPageSize(); // 使用页面大小作为fetchSize
     }
@@ -165,7 +160,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
 
         // 游标查询SQL
-        if (enableCursor() && PrimaryKeyUtil.isSupportedCursor(column)) {
+        if (PrimaryKeyUtil.isSupportedCursor(column)) {
             // 构建完整的WHERE条件：原有过滤条件 + 游标条件
             String whereCondition = "";
             if (StringUtil.isNotBlank(filterClause) && StringUtil.isNotBlank(cursorCondition)) {

@@ -168,11 +168,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public boolean enableCursor() {
-        return true;
-    }
-
-    @Override
     public Integer getStreamingFetchSize(ReaderContext context) {
         return context.getPageSize(); // 使用页面大小作为fetchSize
     }
@@ -215,7 +210,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
 
         // 游标查询SQL
-        if (enableCursor() && PrimaryKeyUtil.isSupportedCursor(column)) {
+        if (PrimaryKeyUtil.isSupportedCursor(column)) {
             // 构建完整的WHERE条件：原有过滤条件 + 游标条件
             String whereCondition = "";
             if (StringUtil.isNotBlank(filterClause) && StringUtil.isNotBlank(cursorCondition)) {

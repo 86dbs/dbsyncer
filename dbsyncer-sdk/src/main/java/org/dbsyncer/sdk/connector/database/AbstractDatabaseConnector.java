@@ -158,7 +158,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     @Override
     public Result reader(DatabaseConnectorInstance connectorInstance, ReaderContext context) {
         // 1、获取select SQL
-        boolean supportedCursor = enableCursor() && context.isSupportedCursor() && null != context.getCursors();
+        boolean supportedCursor = context.isSupportedCursor() && null != context.getCursors();
         String queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY_STREAM;
         final String querySql = context.getCommand().get(queryKey);
         Assert.hasText(querySql, "查询语句不能为空.");
