@@ -13,12 +13,15 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
+import org.dbsyncer.sdk.connector.database.sql.impl.MySQLTemplate;
+import org.dbsyncer.sdk.connector.database.sql.SqlTemplateType;
+import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
@@ -29,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -50,6 +52,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
     private final MySQLConfigValidator configValidator = new MySQLConfigValidator();
     private final MySQLSchemaResolver schemaResolver = new MySQLSchemaResolver();
+    private final SqlTemplate sqlTemplate = new MySQLTemplate();
 
     public MySQLConnector() {
         VALUE_MAPPERS.put(Types.DATE, new MySQLDateValueMapper());
@@ -156,46 +159,39 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     protected Map<String, String> buildSourceCommands(CommandConfig commandConfig) {
         Map<String, String> map = new HashMap<>();
 
-        // 获取基础信息
-        Table table = commandConfig.getTable();
-        String tableName = table.getName();
-        String schema = getSchemaWithQuotation((DatabaseConfig) commandConfig.getConnectorConfig());
-        List<Field> column = table.getColumn();
-        final String queryFilterSql = getQueryFilterSql(commandConfig);
-
-        // 获取缓存的字段列表和基础信息
-        String fieldListSql = commandConfig.getCachedFieldListSql();
-        String quotedTableName = QUOTATION + buildTableName(tableName) + QUOTATION;
-        String cursorCondition = buildCursorConditionFromCached(commandConfig.getCachedPrimaryKeys());
-        String filterClause = StringUtil.isNotBlank(queryFilterSql) ? " WHERE " + queryFilterSql : "";
-        // 流式查询SQL（直接使用基础查询，MySQL通过fetchSize控制）
-        String streamingSql = String.format("SELECT %s FROM %s%s%s",
-                fieldListSql, schema, quotedTableName, filterClause);
+        // 创建构建上下文
+        SqlBuildContext buildContext = createBuildContext(commandConfig);
+        
+        // 构建流式查询SQL
+        String streamingSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_STREAM, buildContext);
         map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
-
-        // 游标查询SQL
-        if (PrimaryKeyUtil.isSupportedCursor(column)) {
-            // 构建完整的WHERE条件：原有过滤条件 + 游标条件
-            String whereCondition = "";
-            if (StringUtil.isNotBlank(filterClause) && StringUtil.isNotBlank(cursorCondition)) {
-                whereCondition = filterClause + " AND " + cursorCondition;
-            } else if (StringUtil.isNotBlank(filterClause)) {
-                whereCondition = filterClause;
-            } else if (StringUtil.isNotBlank(cursorCondition)) {
-                whereCondition = " WHERE " + cursorCondition;
-            }
-
-            String cursorSql = String.format("SELECT %s FROM %s%s%s ORDER BY %s LIMIT ?, ?",
-                    fieldListSql, schema, quotedTableName, whereCondition, commandConfig.getCachedPrimaryKeys());
+        
+        // 构建游标查询SQL
+        if (PrimaryKeyUtil.isSupportedCursor(commandConfig.getTable().getColumn())) {
+            String cursorSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_CURSOR, buildContext);
             map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);
         }
-
-        // 计数SQL
-        String countSql = String.format("SELECT COUNT(1) FROM %s%s%s",
-                schema, quotedTableName, filterClause);
+        
+        // 构建计数SQL
+        String countSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_COUNT, buildContext);
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, countSql);
-
+        
         return map;
+    }
+    
+    private SqlBuildContext createBuildContext(CommandConfig commandConfig) {
+        Table table = commandConfig.getTable();
+        DatabaseConfig dbConfig = (DatabaseConfig) commandConfig.getConnectorConfig();
+        
+        SqlBuildContext buildContext = new SqlBuildContext();
+        buildContext.setSchema(getSchemaWithQuotation(dbConfig));
+        buildContext.setTableName(QUOTATION + buildTableName(table.getName()) + QUOTATION);
+        buildContext.setFields(table.getColumn());
+        buildContext.setPrimaryKeys(PrimaryKeyUtil.findTablePrimaryKeys(table));
+        buildContext.setQueryFilter(getQueryFilterSql(commandConfig));
+        buildContext.setCursorCondition(buildCursorConditionFromCached(commandConfig.getCachedPrimaryKeys()));
+        
+        return buildContext;
     }
 
     /**
