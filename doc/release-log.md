@@ -3,7 +3,8 @@
 ## 2.5.0
 
 - 性能优化：mysql, sql server 使用流式读取数据。
-- 结构优化：使用 template 技术，简化 sql 生成的层次结构。
+- 结构优化：将 DQL 类连接器重构，简化代码。
+- 结构优化：使用 template 技术，简化 sql 生成的层次结构。(OK)
 - bug fixed: 编辑导致状态重置问题。(OK)
 - bug fixed：重置计数为历史数量问题。(OK)
 - 优化: tableGroup 不需要持久化 sql（OK）
