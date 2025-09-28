@@ -77,14 +77,6 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
         return null;
     }
 
-
-    @Override
-    public Object[] getPageArgs(ReaderContext context) {
-        int pageSize = context.getPageSize();
-        int pageIndex = context.getPageIndex();
-        return new Object[]{(pageIndex - 1) * pageSize + 1, pageIndex * pageSize};
-    }
-
     @Override
     public String buildTableName(String tableName) {
         return convertKey(tableName);

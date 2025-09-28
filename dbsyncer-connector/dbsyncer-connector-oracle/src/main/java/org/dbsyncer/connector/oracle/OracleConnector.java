@@ -85,13 +85,6 @@ public class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Object[] getPageArgs(ReaderContext context) {
-        int pageSize = context.getPageSize();
-        int pageIndex = context.getPageIndex();
-        return new Object[]{pageIndex * pageSize, (pageIndex - 1) * pageSize};
-    }
-
-    @Override
     public Object[] getPageCursorArgs(ReaderContext context) {
         int pageSize = context.getPageSize();
         Object[] cursors = context.getCursors();

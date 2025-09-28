@@ -69,14 +69,6 @@ public class SQLiteConnector extends AbstractDatabaseConnector {
         return null;
     }
 
-
-    @Override
-    public Object[] getPageArgs(ReaderContext context) {
-        int pageIndex = context.getPageIndex();
-        int pageSize = context.getPageSize();
-        return new Object[]{pageSize, (pageIndex - 1) * pageSize};
-    }
-
     @Override
     public String buildTableName(String tableName) {
         return convertKey(tableName);

@@ -22,6 +22,7 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.DatabaseTemplate;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
@@ -33,6 +34,8 @@ import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.ArgumentPreparedStatementSetter;
+import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -210,43 +213,45 @@ public class ParserComponentImpl implements ParserComponent {
         if (supportedCursor) {
             args = db.getPageCursorArgs(context);
         } else {
-            args = db.getPageArgs(context);
+            args = new Object[0];
         }
 
         String querySql = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_STREAM);
-        ((DatabaseConnectorInstance) context.getSourceConnectorInstance()).execute(databaseTemplate -> {
-            // 获取流式处理的fetchSize
-            Integer fetchSize = db.getStreamingFetchSize(context);
-            databaseTemplate.setFetchSize(fetchSize);
+        ((DatabaseConnectorInstance) context.getSourceConnectorInstance()).execute(databaseTemplate -> executeWithStreamingInternal(task, context, db, tableGroup, executor, primaryKeys, metaId, args, querySql, databaseTemplate));
+    }
 
-            try (Stream<Map<String, Object>> stream = databaseTemplate.queryForStream(querySql,
-                    new org.springframework.jdbc.core.ArgumentPreparedStatementSetter(args),
-                    new org.springframework.jdbc.core.ColumnMapRowMapper())) {
-                List<Map<String, Object>> batch = new ArrayList<>();
-                Iterator<Map<String, Object>> iterator = stream.iterator();
+    private Object executeWithStreamingInternal(Task task, AbstractPluginContext context, Database db, TableGroup tableGroup, Executor executor, List<String> primaryKeys, String metaId, Object[] args, String querySql, DatabaseTemplate databaseTemplate) {
+        // 获取流式处理的fetchSize
+        Integer fetchSize = db.getStreamingFetchSize(context);
+        databaseTemplate.setFetchSize(fetchSize);
 
-                while (iterator.hasNext()) {
-                    if (!task.isRunning()) {
-                        logger.warn("任务被中止:{}", metaId);
-                        break;
-                    }
+        try (Stream<Map<String, Object>> stream = databaseTemplate.queryForStream(querySql,
+                new ArgumentPreparedStatementSetter(args),
+                new ColumnMapRowMapper())) {
+            List<Map<String, Object>> batch = new ArrayList<>();
+            Iterator<Map<String, Object>> iterator = stream.iterator();
 
-                    batch.add(iterator.next());
-
-                    // 达到批次大小时处理数据
-                    if (batch.size() >= context.getBatchSize()) {
-                        processDataBatch(batch, task, context, tableGroup, executor, primaryKeys);
-                        batch = new ArrayList<>();
-                    }
+            while (iterator.hasNext()) {
+                if (!task.isRunning()) {
+                    logger.warn("任务被中止:{}", metaId);
+                    break;
                 }
 
-                // 处理最后一批数据
-                if (!batch.isEmpty()) {
+                batch.add(iterator.next());
+
+                // 达到批次大小时处理数据
+                if (batch.size() >= context.getBatchSize()) {
                     processDataBatch(batch, task, context, tableGroup, executor, primaryKeys);
+                    batch = new ArrayList<>();
                 }
             }
-            return null;
-        });
+
+            // 处理最后一批数据
+            if (!batch.isEmpty()) {
+                processDataBatch(batch, task, context, tableGroup, executor, primaryKeys);
+            }
+        }
+        return null;
     }
 
     /**

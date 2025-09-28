@@ -205,7 +205,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         Assert.hasText(querySql, "查询语句不能为空.");
 
         // 2、设置参数
-        Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
+        Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : new Object[]{});
 
         // 3、执行SQL
         List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, context.getArgs().toArray()));

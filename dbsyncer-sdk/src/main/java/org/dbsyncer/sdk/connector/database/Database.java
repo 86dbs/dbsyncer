@@ -53,14 +53,6 @@ public interface Database {
     }
 
     /**
-     * 获取分页参数
-     *
-     * @param context
-     * @return
-     */
-    Object[] getPageArgs(ReaderContext context);
-
-    /**
      * 获取游标分页参数
      *
      * @param context

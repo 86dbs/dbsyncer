@@ -78,13 +78,6 @@ public class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Object[] getPageArgs(ReaderContext context) {
-        int pageSize = context.getPageSize();
-        int pageIndex = context.getPageIndex();
-        return new Object[]{(pageIndex - 1) * pageSize, pageSize};
-    }
-
-    @Override
     public Object[] getPageCursorArgs(ReaderContext context) {
         int pageSize = context.getPageSize();
         Object[] cursors = context.getCursors();

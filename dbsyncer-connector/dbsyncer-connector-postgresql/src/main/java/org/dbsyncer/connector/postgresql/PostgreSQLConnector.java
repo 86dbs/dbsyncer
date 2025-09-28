@@ -90,13 +90,6 @@ public class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Object[] getPageArgs(ReaderContext context) {
-        int pageIndex = context.getPageIndex();
-        int pageSize = context.getPageSize();
-        return new Object[]{pageSize, (pageIndex - 1) * pageSize};
-    }
-
-    @Override
     public Object[] getPageCursorArgs(ReaderContext context) {
         int pageSize = context.getPageSize();
         Object[] cursors = context.getCursors();
