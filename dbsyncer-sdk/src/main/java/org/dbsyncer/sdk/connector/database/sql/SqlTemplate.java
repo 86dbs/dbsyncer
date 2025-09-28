@@ -21,68 +21,107 @@ public interface SqlTemplate {
 
     /**
      * 获取左引号字符
+     *
      * @return 左引号字符
      */
     String getLeftQuotation();
 
     /**
      * 获取右引号字符
+     *
      * @return 右引号字符
      */
     String getRightQuotation();
 
     /**
      * 构建流式查询SQL
+     *
      * @param buildContext 构建上下文
      * @return 构建后的SQL（包含?占位符）
      */
-    String buildQueryStreamSql(SqlBuildContext buildContext);
+    default String buildQueryStreamSql(SqlBuildContext buildContext) {
+        String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
+        String fieldList = buildFieldList(buildContext.getFields());
+        String queryFilter = buildContext.getQueryFilter();
+        return buildQueryStreamSql(schemaTable, fieldList, queryFilter);
+    }
 
     /**
      * 构建游标查询SQL
+     *
      * @param buildContext 构建上下文
      * @return 构建后的SQL（包含?占位符）
      */
-    String buildQueryCursorSql(SqlBuildContext buildContext);
+    default String buildQueryCursorSql(SqlBuildContext buildContext) {
+        String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
+        String fieldList = buildFieldList(buildContext.getFields());
+        String queryFilter = buildContext.getQueryFilter();
+        String cursorCondition = buildContext.getCursorCondition();
+        List<String> primaryKeys = buildContext.getPrimaryKeys();
+        return buildQueryCursorSql(schemaTable, fieldList, queryFilter, cursorCondition, primaryKeys);
+    }
 
     /**
      * 构建计数查询SQL
+     *
      * @param buildContext 构建上下文
      * @return 构建后的SQL（包含?占位符）
      */
-    String buildQueryCountSql(SqlBuildContext buildContext);
+    default String buildQueryCountSql(SqlBuildContext buildContext) {
+        String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
+        String queryFilter = buildContext.getQueryFilter();
+        return buildQueryCountSql(schemaTable, queryFilter);
+    }
 
     /**
      * 构建存在性检查SQL
+     *
      * @param buildContext 构建上下文
      * @return 构建后的SQL（包含?占位符）
      */
-    String buildQueryExistSql(SqlBuildContext buildContext);
+    default String buildQueryExistSql(SqlBuildContext buildContext) {
+        String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
+        String queryFilter = buildContext.getQueryFilter();
+        return buildQueryExistSql(schemaTable, queryFilter);
+    }
 
     /**
      * 构建插入SQL
+     *
      * @param buildContext 构建上下文
      * @return 构建后的SQL（包含?占位符）
      */
-    String buildInsertSql(SqlBuildContext buildContext);
+    default String buildInsertSql(SqlBuildContext buildContext) {
+        String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
+        return buildInsertSql(schemaTable, buildContext.getFields());
+    }
 
     /**
      * 构建更新SQL
+     *
      * @param buildContext 构建上下文
      * @return 构建后的SQL（包含?占位符）
      */
-    String buildUpdateSql(SqlBuildContext buildContext);
+    default String buildUpdateSql(SqlBuildContext buildContext) {
+        String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
+        return buildUpdateSql(schemaTable, buildContext.getFields(), buildContext.getPrimaryKeys());
+    }
 
     /**
      * 构建删除SQL
+     *
      * @param buildContext 构建上下文
      * @return 构建后的SQL（包含?占位符）
      */
-    String buildDeleteSql(SqlBuildContext buildContext);
+    default String buildDeleteSql(SqlBuildContext buildContext) {
+        String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
+        return buildDeleteSql(schemaTable, buildContext.getPrimaryKeys());
+    }
 
     /**
      * 构建DQL查询SQL（在用户SQL基础上添加主键条件）
-     * @param userSql 用户原始SQL
+     *
+     * @param userSql     用户原始SQL
      * @param primaryKeys 主键列表
      * @return 构建后的SQL（包含?占位符）
      */
@@ -97,13 +136,13 @@ public interface SqlTemplate {
         // 清理SQL格式
         String cleanSql = userSql.replace("\t", " ").replace("\r", " ").replace("\n", " ").trim();
         String upperSql = cleanSql.toUpperCase();
-        
+
         // 检查是否已有WHERE子句
         boolean hasWhere = upperSql.contains(" WHERE ");
-        
+
         // 构建主键条件
         String pkCondition = buildPrimaryKeyCondition(primaryKeys);
-        
+
         if (hasWhere) {
             return cleanSql + " AND " + pkCondition;
         } else {
@@ -113,6 +152,7 @@ public interface SqlTemplate {
 
     /**
      * 构建主键条件
+     *
      * @param primaryKeys 主键列表
      * @return 主键条件字符串
      */
@@ -120,7 +160,7 @@ public interface SqlTemplate {
         if (primaryKeys == null || primaryKeys.isEmpty()) {
             return "";
         }
-        
+
         return primaryKeys.stream()
                 .map(pk -> buildColumn(pk) + " = ?")
                 .collect(java.util.stream.Collectors.joining(" AND "));
@@ -128,6 +168,7 @@ public interface SqlTemplate {
 
     /**
      * 构建带引号的表名（用于DDL语句）
+     *
      * @param tableName 表名
      * @return 带引号的表名
      */
@@ -139,46 +180,28 @@ public interface SqlTemplate {
     }
 
     /**
-     * 构建带引号的完整表名（包含schema）
-     * @param schema 架构名
-     * @param tableName 表名
-     * @return 带引号的完整表名
-     */
-    default String buildQuotedFullTableName(String schema, String tableName) {
-        if (tableName == null || tableName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Table name cannot be null or empty");
-        }
-        
-        if (schema != null && !schema.trim().isEmpty()) {
-            return getLeftQuotation() + schema.trim() + getRightQuotation() + "." + 
-                   getLeftQuotation() + tableName.trim() + getRightQuotation();
-        }
-        return getLeftQuotation() + tableName.trim() + getRightQuotation();
-    }
-
-    /**
      * 创建SQL构建上下文
      * 统一的上下文构建逻辑，所有连接器都可以复用
      *
-     * @param commandConfig 命令配置
-     * @param buildTableName 构建表名的方法引用
+     * @param commandConfig     命令配置
+     * @param buildTableName    构建表名的方法引用
      * @param getQueryFilterSql 获取查询过滤条件的方法引用
      * @return SQL构建上下文
      */
-    default SqlBuildContext createBuildContext(CommandConfig commandConfig, 
-                                            java.util.function.Function<String, String> buildTableName,
-                                            java.util.function.Function<CommandConfig, String> getQueryFilterSql) {
+    default SqlBuildContext createBuildContext(CommandConfig commandConfig,
+                                               java.util.function.Function<String, String> buildTableName,
+                                               java.util.function.Function<CommandConfig, String> getQueryFilterSql) {
         Table table = commandConfig.getTable();
         DatabaseConfig dbConfig = (DatabaseConfig) commandConfig.getConnectorConfig();
-        
+
         SqlBuildContext buildContext = new SqlBuildContext();
-        buildContext.setSchema(buildSchemaWithDot(dbConfig.getSchema()));
+        buildContext.setSchema(buildSchema(dbConfig.getSchema()));
         buildContext.setTableName(buildColumn(buildTableName.apply(table.getName())));
         buildContext.setFields(table.getColumn());
         buildContext.setPrimaryKeys(PrimaryKeyUtil.findTablePrimaryKeys(table));
         buildContext.setQueryFilter(getQueryFilterSql.apply(commandConfig));
         buildContext.setCursorCondition(buildCursorConditionFromCached(commandConfig.getCachedPrimaryKeys()));
-        
+
         return buildContext;
     }
 
@@ -213,6 +236,70 @@ public interface SqlTemplate {
         return items.stream()
                 .map(this::buildColumn)
                 .collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    // Helper methods for building SQL parts (from DefaultSqlTemplate)
+    default String buildQueryStreamSql(String schemaTable, String fieldList, String queryFilter) {
+        if (StringUtil.isNotBlank(queryFilter)) {
+            return String.format("SELECT %s FROM %s %s", fieldList, schemaTable, queryFilter);
+        }
+        return String.format("SELECT %s FROM %s", fieldList, schemaTable);
+    }
+
+    default String buildQueryCursorSql(String schemaTable, String fieldList, String queryFilter, String cursorCondition, List<String> primaryKeys) {
+        String whereClause = "";
+        if (StringUtil.isNotBlank(queryFilter) && StringUtil.isNotBlank(cursorCondition)) {
+            whereClause = String.format(" %s AND %s", queryFilter, cursorCondition);
+        } else if (StringUtil.isNotBlank(queryFilter)) {
+            whereClause = " " + queryFilter;
+        } else if (StringUtil.isNotBlank(cursorCondition)) {
+            whereClause = " WHERE " + cursorCondition;
+        }
+
+        String orderByClause = buildOrderByClause(primaryKeys);
+        return String.format("SELECT %s FROM %s%s%s", fieldList, schemaTable, whereClause, orderByClause);
+    }
+
+    default String buildQueryCountSql(String schemaTable, String queryFilter) {
+        if (StringUtil.isNotBlank(queryFilter)) {
+            return String.format("SELECT COUNT(1) FROM %s %s", schemaTable, queryFilter);
+        }
+        return String.format("SELECT COUNT(1) FROM %s", schemaTable);
+    }
+
+    default String buildQueryExistSql(String schemaTable, String queryFilter) {
+        if (StringUtil.isNotBlank(queryFilter)) {
+            return String.format("SELECT 1 FROM %s %s LIMIT 1", schemaTable, queryFilter);
+        }
+        return String.format("SELECT 1 FROM %s LIMIT 1", schemaTable);
+    }
+
+    default String buildInsertSql(String schemaTable, List<Field> fields) {
+        String fieldNames = fields.stream()
+                .map(field -> buildColumn(field.getName()))
+                .collect(java.util.stream.Collectors.joining(", "));
+        String placeholders = fields.stream()
+                .map(field -> "?")
+                .collect(java.util.stream.Collectors.joining(", "));
+        return String.format("INSERT INTO %s (%s) VALUES (%s)", schemaTable, fieldNames, placeholders);
+    }
+
+    default String buildUpdateSql(String schemaTable, List<Field> fields, List<String> primaryKeys) {
+        String setClause = fields.stream()
+                .filter(field -> !primaryKeys.contains(field.getName()))
+                .map(field -> buildColumn(field.getName()) + " = ?")
+                .collect(java.util.stream.Collectors.joining(", "));
+        String whereClause = primaryKeys.stream()
+                .map(pk -> buildColumn(pk) + " = ?")
+                .collect(java.util.stream.Collectors.joining(" AND "));
+        return String.format("UPDATE %s SET %s WHERE %s", schemaTable, setClause, whereClause);
+    }
+
+    default String buildDeleteSql(String schemaTable, List<String> primaryKeys) {
+        String whereClause = primaryKeys.stream()
+                .map(pk -> buildColumn(pk) + " = ?")
+                .collect(java.util.stream.Collectors.joining(" AND "));
+        return String.format("DELETE FROM %s WHERE %s", schemaTable, whereClause);
     }
 
     // Helper methods for building common SQL parts
@@ -257,6 +344,7 @@ public interface SqlTemplate {
 
     /**
      * 构建带引号的schema名称
+     *
      * @param schema schema名称
      * @return 带引号的schema名称，如果schema为空则返回空字符串
      */
@@ -268,21 +356,10 @@ public interface SqlTemplate {
     }
 
     /**
-     * 构建带引号的schema名称（带点号）
-     * @param schema schema名称
-     * @return 带引号的schema名称加"."，如果schema为空则返回空字符串
-     */
-    default String buildSchemaWithDot(String schema) {
-        if (schema == null || schema.isEmpty()) {
-            return "";
-        }
-        return buildSchema(schema) + ".";
-    }
-
-    /**
      * 构建带引号的字段名称列表
+     *
      * @param fieldNames 字段名称列表
-     * @param separator 分隔符
+     * @param separator  分隔符
      * @return 带引号的字段名称列表
      */
     default String buildQuotedFieldList(List<String> fieldNames, String separator) {
@@ -296,6 +373,7 @@ public interface SqlTemplate {
 
     /**
      * 构建带引号的字段名称列表（默认用逗号分隔）
+     *
      * @param fieldNames 字段名称列表
      * @return 带引号的字段名称列表
      */

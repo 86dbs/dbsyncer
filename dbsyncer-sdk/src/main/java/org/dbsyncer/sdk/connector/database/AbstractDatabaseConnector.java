@@ -10,10 +10,12 @@ import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.AbstractConnector;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
+import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
+import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -21,20 +23,12 @@ import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
-import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
-import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.model.Filter;
-import org.dbsyncer.sdk.model.MetaInfo;
-import org.dbsyncer.sdk.model.PageSql;
-import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.model.SqlTable;
+import org.dbsyncer.sdk.model.*;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
-import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
-import org.dbsyncer.sdk.connector.database.sql.impl.DefaultSqlTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -47,15 +41,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -70,14 +56,24 @@ import java.util.stream.Collectors;
 public abstract class AbstractDatabaseConnector extends AbstractConnector implements ConnectorService<DatabaseConnectorInstance, DatabaseConfig>, Database {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
-    public final SqlTemplate sqlTemplate = new DefaultSqlTemplate();
-    
+    public final SqlTemplate sqlTemplate = new SqlTemplate() {
+        @Override
+        public String getLeftQuotation() {
+            return "";
+        }
+
+        @Override
+        public String getRightQuotation() {
+            return "";
+        }
+    };
+
     /**
      * 是否为DQL连接器
      * 默认为false，DQL连接器在初始化时设置为true
      */
     protected boolean isDql = false;
-    
+
     /**
      * 配置验证器
      * 子类可以覆盖此字段来提供特定的验证器
@@ -116,7 +112,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
 
-
     @Override
     public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
         // DQL模式：从配置中获取用户定义的SQL表
@@ -126,7 +121,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             List<Table> tables = new ArrayList<>();
             if (!CollectionUtils.isEmpty(sqlTables)) {
                 sqlTables.forEach(s ->
-                    tables.add(new Table(s.getSqlName(), TableTypeEnum.TABLE.getCode(), Collections.EMPTY_LIST, s.getSql(), null))
+                        tables.add(new Table(s.getSqlName(), TableTypeEnum.TABLE.getCode(), Collections.EMPTY_LIST, s.getSql(), null))
                 );
             }
             return tables;
@@ -317,7 +312,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             if (StringUtil.isNotBlank(queryFilterSql)) {
                 querySql += queryFilterSql;
             }
-            
+
             // 流式查询SQL（DQL直接使用用户自定义的SQL）
             map.put(ConnectorConstant.OPERTION_QUERY_STREAM, querySql);
 
@@ -341,17 +336,17 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 创建构建上下文
         SqlBuildContext buildContext = sqlTemplate.createBuildContext(commandConfig, this::buildTableName, this::getQueryFilterSql);
-        
+
         // 构建流式查询SQL
         String streamingSql = sqlTemplate.buildQueryStreamSql(buildContext);
         map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
-        
+
         // 构建游标查询SQL
         if (PrimaryKeyUtil.isSupportedCursor(commandConfig.getTable().getColumn())) {
             String cursorSql = sqlTemplate.buildQueryCursorSql(buildContext);
             map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);
         }
-        
+
         // 构建计数SQL
         String countSql = sqlTemplate.buildQueryCountSql(buildContext);
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, countSql);
@@ -376,10 +371,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 架构名
         DatabaseConfig databaseConfig = (DatabaseConfig) commandConfig.getConnectorConfig();
-        String schema = sqlTemplate.buildSchemaWithDot(databaseConfig.getSchema());
+        String schema = sqlTemplate.buildSchema(databaseConfig.getSchema());
         // 同步字段
         List<Field> column = filterColumn(table.getColumn());
-        
+
         // 构建SqlBuildContext
         SqlBuildContext buildContext = new SqlBuildContext();
         buildContext.setSchema(schema);
