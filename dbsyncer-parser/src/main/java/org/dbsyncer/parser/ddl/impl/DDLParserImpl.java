@@ -19,6 +19,7 @@ import org.dbsyncer.parser.ddl.alter.ModifyStrategy;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.Field;
@@ -64,10 +65,14 @@ public class DDLParserImpl implements DDLParser {
         Statement statement = SqlParserUtil.parse(sql);
         if (statement instanceof Alter && connectorService instanceof Database) {
             Alter alter = (Alter) statement;
-            Database database = (Database) connectorService;
-            String quotation = database.getQuotation();
+            // 使用SQL模板构建带引号的表名
+            String quotedTableName = tableGroup.getTargetTable().getName();
+            if (connectorService instanceof AbstractDatabaseConnector) {
+                AbstractDatabaseConnector dbConnector = (AbstractDatabaseConnector) connectorService;
+                quotedTableName = dbConnector.sqlTemplate.buildQuotedTableName(tableGroup.getTargetTable().getName());
+            }
             // 替换成目标表名
-            alter.getTable().setName(quotation + tableGroup.getTargetTable().getName() + quotation);
+            alter.getTable().setName(quotedTableName);
             ddlConfig.setSql(alter.toString());
             for (AlterExpression expression : alter.getAlterExpressions()) {
                 STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy) -> {

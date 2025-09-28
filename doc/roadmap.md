@@ -8,6 +8,8 @@
 
 ## 问题池
 
+- 使用 sql 模板移除 MySQLStorageService 中零散的 sql 拼接方式。 
+- AbstractDatabaseConnector.filterColumn 这个应该在编辑时处理，而不是在运行时处理
 - 增量-定时 重构
 - 优化：统计，UI 显示输入成功数，失败数，阶段
 - 状态错乱：在全量同步大表时，同步过程中出现“进行中”变为“未开始”状态，但数据仍然同步问题，不影响二次开启。

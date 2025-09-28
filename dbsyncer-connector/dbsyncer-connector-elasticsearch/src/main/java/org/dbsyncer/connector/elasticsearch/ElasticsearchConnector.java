@@ -110,10 +110,6 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         return "Elasticsearch";
     }
 
-    @Override
-    public String getQuotation() {
-        return ""; // Elasticsearch不需要引号
-    }
 
     @Override
     public Class<ESConfig> getConfigClass() {

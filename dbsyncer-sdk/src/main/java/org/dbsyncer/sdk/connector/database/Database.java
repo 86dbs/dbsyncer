@@ -21,14 +21,6 @@ public interface Database {
         return StringUtil.EMPTY;
     }
 
-    /**
-     * 查询语句表名和字段带上引号（默认不加）
-     *
-     * @return
-     */
-    default String getQuotation() {
-        return StringUtil.EMPTY;
-    }
 
     /**
      * 获取表名称(可自定义处理系统关键字，函数名)

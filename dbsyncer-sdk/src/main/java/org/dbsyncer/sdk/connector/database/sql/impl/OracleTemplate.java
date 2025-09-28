@@ -3,6 +3,11 @@
  */
 package org.dbsyncer.sdk.connector.database.sql.impl;
 
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
+
+import java.util.List;
+
 /**
  * Oracle特定SQL模板实现
  * 
@@ -13,7 +18,34 @@ package org.dbsyncer.sdk.connector.database.sql.impl;
 public class OracleTemplate extends DefaultSqlTemplate {
     
     @Override
-    public String getCursorTemplate() {
-        return "SELECT * FROM (SELECT ROWNUM rn, t.* FROM ({baseQuery} {where} ORDER BY {orderBy}) t WHERE ROWNUM <= ?) WHERE rn > ?";
+    public String getLeftQuotation() {
+        return "\"";
+    }
+    
+    @Override
+    public String getRightQuotation() {
+        return "\"";
+    }
+    
+    @Override
+    public String buildQueryCursorSql(SqlBuildContext buildContext) {
+        String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
+        String fieldList = buildFieldList(buildContext.getFields());
+        String queryFilter = buildContext.getQueryFilter();
+        String cursorCondition = buildContext.getCursorCondition();
+        List<String> primaryKeys = buildContext.getPrimaryKeys();
+        
+        String whereClause = "";
+        if (StringUtil.isNotBlank(queryFilter) && StringUtil.isNotBlank(cursorCondition)) {
+            whereClause = String.format(" %s AND %s", queryFilter, cursorCondition);
+        } else if (StringUtil.isNotBlank(queryFilter)) {
+            whereClause = " " + queryFilter;
+        } else if (StringUtil.isNotBlank(cursorCondition)) {
+            whereClause = " WHERE " + cursorCondition;
+        }
+        
+        String orderByClause = buildOrderByClause(primaryKeys);
+        String innerQuery = String.format("SELECT %s FROM %s%s%s", fieldList, schemaTable, whereClause, orderByClause);
+        return String.format("SELECT * FROM (SELECT A.*, ROWNUM RN FROM (%s)A WHERE ROWNUM <= ?) WHERE RN > ?", innerQuery);
     }
 }

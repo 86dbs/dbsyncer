@@ -4,8 +4,7 @@
 package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.Field;
@@ -87,8 +86,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
      */
     protected void postProcessDqlBeforeInitialization() {
         DatabaseConnectorInstance instance = (DatabaseConnectorInstance) connectorInstance;
-        AbstractDQLConnector service = (AbstractDQLConnector) connectorService;
-        String quotation = service.getQuotation();
+        AbstractDatabaseConnector service = (AbstractDatabaseConnector) connectorService;
 
         // <用户表, MY_USER>
         Map<String, String> tableMap = new HashMap<>();
@@ -102,7 +100,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             Assert.hasText(sql, "The sql is null.");
             Assert.hasText(tableName, "The tableName is null.");
 
-            MetaInfo tableMetaInfo = service.getTableMetaInfo(instance, tableName);
+            MetaInfo tableMetaInfo = service.getMetaInfo(instance, tableName);
             List<Field> tableColumns = tableMetaInfo.getColumn();
             Assert.notEmpty(tableColumns, String.format("The column of table name '%s' is empty.", tableName));
             List<Field> primaryFields = PrimaryKeyUtil.findPrimaryKeyFields(tableColumns);
@@ -117,16 +115,9 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             Map<Integer, Integer> sqlPKIndexMap = getPKIndexMap(sqlColumns, tablePKIndexMap);
             Assert.notEmpty(sqlPKIndexMap, String.format("表 %s 缺少主键.", sqlName));
 
-            sql = sql.replace("\t", " ");
-            sql = sql.replace("\r", " ");
-            sql = sql.replace("\n", " ");
-
-            StringBuilder querySql = new StringBuilder(sql);
-            String temp = sql.toUpperCase();
-            boolean notContainsWhere = !StringUtil.contains(temp, " WHERE ");
-            querySql.append(notContainsWhere ? " WHERE " : StringUtil.EMPTY);
-            PrimaryKeyUtil.buildSql(querySql, primaryKeys, quotation, " AND ", " = ? ", notContainsWhere);
-            DqlMapper dqlMapper = new DqlMapper(instance, sqlName, querySql.toString(), sqlColumns, tablePKIndex, sqlPKIndexMap);
+            // 使用SQL模板构建DQL查询
+            String querySql = service.sqlTemplate.buildDqlQuerySql(sql, primaryKeys);
+            DqlMapper dqlMapper = new DqlMapper(instance, sqlName, querySql, sqlColumns, tablePKIndex, sqlPKIndexMap);
             dqlMap.compute(tableName, (k, v)-> {
                 if(v == null) {
                     return new ArrayList<>();

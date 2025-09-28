@@ -10,7 +10,7 @@ import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.config.SqlBuilderConfig;
+import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
@@ -20,19 +20,21 @@ import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
-import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
-import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderQuery;
+import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.model.SqlTable;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
+import org.dbsyncer.sdk.connector.database.sql.impl.DefaultSqlTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -68,6 +70,19 @@ import java.util.stream.Collectors;
 public abstract class AbstractDatabaseConnector extends AbstractConnector implements ConnectorService<DatabaseConnectorInstance, DatabaseConfig>, Database {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
+    public final SqlTemplate sqlTemplate = new DefaultSqlTemplate();
+    
+    /**
+     * 是否为DQL连接器
+     * 默认为false，DQL连接器在初始化时设置为true
+     */
+    protected boolean isDql = false;
+    
+    /**
+     * 配置验证器
+     * 子类可以覆盖此字段来提供特定的验证器
+     */
+    protected ConfigValidator<?> configValidator = null;
 
     @Override
     public Class<DatabaseConfig> getConfigClass() {
@@ -96,18 +111,49 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public String getQuotation() {
-        return "";
+    public ConfigValidator<?> getConfigValidator() {
+        return configValidator;
     }
+
 
 
     @Override
     public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
+        // DQL模式：从配置中获取用户定义的SQL表
+        if (isDql) {
+            DatabaseConfig cfg = connectorInstance.getConfig();
+            List<SqlTable> sqlTables = cfg.getSqlTables();
+            List<Table> tables = new ArrayList<>();
+            if (!CollectionUtils.isEmpty(sqlTables)) {
+                sqlTables.forEach(s ->
+                    tables.add(new Table(s.getSqlName(), TableTypeEnum.TABLE.getCode(), Collections.EMPTY_LIST, s.getSql(), null))
+                );
+            }
+            return tables;
+        }
+        // 非DQL模式：查询数据库元数据获取表列表
         return getTable(connectorInstance, null, getSchema(connectorInstance.getConfig()), null);
     }
 
     @Override
     public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorInstance, String tableNamePattern) {
+        // DQL模式：通过执行SQL获取元数据
+        if (isDql) {
+            DatabaseConfig cfg = connectorInstance.getConfig();
+            List<SqlTable> sqlTables = cfg.getSqlTables();
+            for (SqlTable s : sqlTables) {
+                if (StringUtil.equals(s.getSqlName(), tableNamePattern)) {
+                    String sql = s.getSql().toUpperCase();
+                    sql = sql.replace("\t", " ");
+                    sql = sql.replace("\r", " ");
+                    sql = sql.replace("\n", " ");
+                    String queryMetaSql = StringUtil.contains(sql, " WHERE ") ? s.getSql() + " AND 1!=1 " : s.getSql() + " WHERE 1!=1 ";
+                    return connectorInstance.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql, getSchema(cfg), s.getTable()));
+                }
+            }
+            return null;
+        }
+        // 非DQL模式：直接查询表结构元数据
         List<Field> fields = new ArrayList<>();
         final String schema = getSchema(connectorInstance.getConfig());
         connectorInstance.execute(databaseTemplate -> {
@@ -253,7 +299,66 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * @param commandConfig 命令配置
      * @return SQL命令映射
      */
-    protected abstract Map<String, String> buildSourceCommands(CommandConfig commandConfig);
+    protected Map<String, String> buildSourceCommands(CommandConfig commandConfig) {
+        // DQL模式：直接使用用户自定义的SQL
+        if (isDql) {
+            String queryFilterSql = getQueryFilterSql(commandConfig);
+            Table table = commandConfig.getTable();
+            Map<String, String> map = new HashMap<>();
+            List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(table);
+            if (CollectionUtils.isEmpty(primaryKeys)) {
+                return map;
+            }
+
+            // 获取查询SQL
+            String querySql = table.getSql();
+
+            // 存在条件
+            if (StringUtil.isNotBlank(queryFilterSql)) {
+                querySql += queryFilterSql;
+            }
+            
+            // 流式查询SQL（DQL直接使用用户自定义的SQL）
+            map.put(ConnectorConstant.OPERTION_QUERY_STREAM, querySql);
+
+            // 获取查询总数SQL
+            map.put(ConnectorConstant.OPERTION_QUERY_COUNT, "SELECT COUNT(1) FROM (" + querySql + ") DBS_T");
+            return map;
+        }
+        // 非DQL模式：子类实现具体的SQL生成逻辑
+        return buildNonDqlSourceCommands(commandConfig);
+    }
+
+    /**
+     * 构建非DQL模式的源端命令SQL
+     * 各连接器实现具体的SQL生成逻辑
+     *
+     * @param commandConfig 命令配置
+     * @return SQL命令映射
+     */
+    protected Map<String, String> buildNonDqlSourceCommands(CommandConfig commandConfig) {
+        Map<String, String> map = new HashMap<>();
+
+        // 创建构建上下文
+        SqlBuildContext buildContext = sqlTemplate.createBuildContext(commandConfig, this::buildTableName, this::getQueryFilterSql);
+        
+        // 构建流式查询SQL
+        String streamingSql = sqlTemplate.buildQueryStreamSql(buildContext);
+        map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
+        
+        // 构建游标查询SQL
+        if (PrimaryKeyUtil.isSupportedCursor(commandConfig.getTable().getColumn())) {
+            String cursorSql = sqlTemplate.buildQueryCursorSql(buildContext);
+            map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);
+        }
+        
+        // 构建计数SQL
+        String countSql = sqlTemplate.buildQueryCountSql(buildContext);
+        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, countSql);
+
+        return map;
+    }
+
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
@@ -270,22 +375,24 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         // 架构名
-        String schema = "";
         DatabaseConfig databaseConfig = (DatabaseConfig) commandConfig.getConnectorConfig();
-        if (StringUtil.isNotBlank(databaseConfig.getSchema())) {
-            String quotation = getQuotation();
-            schema = quotation + databaseConfig.getSchema() + quotation + ".";
-        }
+        String schema = sqlTemplate.buildSchemaWithDot(databaseConfig.getSchema());
         // 同步字段
         List<Field> column = filterColumn(table.getColumn());
-        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, column, null);
+        
+        // 构建SqlBuildContext
+        SqlBuildContext buildContext = new SqlBuildContext();
+        buildContext.setSchema(schema);
+        buildContext.setTableName(tableName);
+        buildContext.setFields(column);
+        buildContext.setPrimaryKeys(primaryKeys);
 
-        // 获取增删改SQL
+        // 使用SqlTemplate直接生成SQL
         Map<String, String> map = new HashMap<>();
-        buildSql(map, SqlBuilderEnum.INSERT, config);
-        buildSql(map, SqlBuilderEnum.UPDATE, config);
-        buildSql(map, SqlBuilderEnum.DELETE, config);
-        buildSql(map, SqlBuilderEnum.QUERY_EXIST, config);
+        map.put(ConnectorConstant.OPERTION_INSERT, sqlTemplate.buildInsertSql(buildContext));
+        map.put(ConnectorConstant.OPERTION_UPDATE, sqlTemplate.buildUpdateSql(buildContext));
+        map.put(ConnectorConstant.OPERTION_DELETE, sqlTemplate.buildDeleteSql(buildContext));
+        map.put(ConnectorConstant.OPERTION_QUERY_EXIST, sqlTemplate.buildQueryExistSql(buildContext));
         return map;
     }
 
@@ -297,21 +404,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getSchema(DatabaseConfig config) {
         return config.getSchema();
-    }
-
-
-    /**
-     * 满足游标查询条件，追加主键排序（单个主键才做排序）
-     *
-     * @param config
-     * @param sql
-     */
-    protected void appendOrderByPk(PageSql config, StringBuilder sql) {
-        if (!CollectionUtils.isEmpty(config.getPrimaryKeys()) && config.getPrimaryKeys().size() == 1) {
-            sql.append(" ORDER BY ");
-            final String quotation = getQuotation();
-            PrimaryKeyUtil.buildSql(sql, config.getPrimaryKeys(), quotation, ",", "", true);
-        }
     }
 
     /**
@@ -499,15 +591,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         StringBuilder sql = new StringBuilder();
         sql.append("(");
         Filter c = null;
-        String quotation = getQuotation();
         for (int i = 0; i < size; i++) {
             c = list.get(i);
             Field field = fieldMap.get(c.getName());
             Assert.notNull(field, "条件字段无效.");
-            // "USER" = 'zhangsan'
-            sql.append(quotation);
-            sql.append(buildFieldName(field));
-            sql.append(quotation);
+            // 使用模板系统的统一方法构建带引号的字段名
+            sql.append(sqlTemplate.buildColumn(buildFieldName(field)));
             // 如果使用了函数则不加引号
             FilterEnum filterEnum = FilterEnum.getFilterEnum(c.getFilter());
             switch (filterEnum) {
@@ -554,16 +643,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return StringUtil.SINGLE_QUOTATION + value + StringUtil.SINGLE_QUOTATION;
     }
 
-    /**
-     * 生成SQL
-     *
-     * @param map
-     * @param builderType
-     * @param config
-     */
-    private void buildSql(Map<String, String> map, SqlBuilderEnum builderType, SqlBuilderConfig config) {
-        map.put(builderType.getName(), builderType.getSqlBuilder().buildSql(config));
-    }
 
     /**
      * 返回表主键
@@ -706,4 +785,5 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
         return result;
     }
+
 }

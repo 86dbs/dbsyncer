@@ -19,6 +19,7 @@ import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.FullPluginContext;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -117,12 +118,15 @@ public class ParserComponentImpl implements ParserComponent {
         String fieldListSql = tableGroup.getCachedFieldListSql();
         if (StringUtil.isBlank(fieldListSql)) {
             ConnectorService connectorService = connectorFactory.getConnectorService(sConnConfig);
-            String quotation = connectorService.getQuotation();
-            List<String> fieldList = sTable.getColumn().stream().map(Field::getName).collect(Collectors.toList());
-            fieldListSql = buildQuotedStringList(fieldList, quotation);
-            tableGroup.setCachedFieldListSql(fieldListSql);
-            List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sTable);
-            tableGroup.setCachedPrimaryKeys(buildQuotedStringList(primaryKeys, quotation));
+            // 使用SQL模板的引号方法
+            if (connectorService instanceof AbstractDatabaseConnector) {
+                AbstractDatabaseConnector dbConnector = (AbstractDatabaseConnector) connectorService;
+                List<String> fieldList = sTable.getColumn().stream().map(Field::getName).collect(Collectors.toList());
+                fieldListSql = dbConnector.sqlTemplate.buildQuotedStringList(fieldList);
+                tableGroup.setCachedFieldListSql(fieldListSql);
+                List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sTable);
+                tableGroup.setCachedPrimaryKeys(dbConnector.sqlTemplate.buildQuotedStringList(primaryKeys));
+            }
         }
         // 将缓存的字段列表设置到CommandConfig中
         sourceConfig.setCachedFieldListSql(fieldListSql);
@@ -134,34 +138,6 @@ public class ParserComponentImpl implements ParserComponent {
         return connectorFactory.getCommand(sourceConfig, targetConfig);
     }
 
-    /**
-     * 构建带引号的字符串列表（通用方法）
-     *
-     * @param items     字符串列表
-     * @param quotation 引号字符
-     * @return 带引号的字符串，用逗号分隔
-     */
-    private String buildQuotedStringList(List<String> items, String quotation) {
-        if (CollectionUtils.isEmpty(items)) {
-            return "";
-        }
-
-        StringBuilder sql = new StringBuilder();
-        int size = items.size();
-        int end = size - 1;
-
-        for (int i = 0; i < size; i++) {
-            sql.append(quotation);
-            sql.append(items.get(i));
-            sql.append(quotation);
-
-            if (i < end) {
-                sql.append(", ");
-            }
-        }
-
-        return sql.toString();
-    }
 
     @Override
     public long getCount(String connectorId, Map<String, String> command) {

@@ -3,26 +3,22 @@
  */
 package org.dbsyncer.connector.mysql;
 
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.cdc.MySQLListener;
 import org.dbsyncer.connector.mysql.schema.MySQLDateValueMapper;
 import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
 import org.dbsyncer.connector.mysql.storage.MySQLStorageService;
 import org.dbsyncer.connector.mysql.validator.MySQLConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
-import org.dbsyncer.sdk.connector.database.sql.impl.MySQLTemplate;
-import org.dbsyncer.sdk.connector.database.sql.SqlTemplateType;
 import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
+import org.dbsyncer.sdk.connector.database.sql.impl.MySQLTemplate;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -41,18 +37,14 @@ import java.util.Map;
  * @Version 1.0.0
  * @Date 2021-11-22 23:55
  */
-public final class MySQLConnector extends AbstractDatabaseConnector {
+public class MySQLConnector extends AbstractDatabaseConnector {
 
-    /**
-     * MySQL引号字符
-     */
-    private static final String QUOTATION = "`";
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final MySQLConfigValidator configValidator = new MySQLConfigValidator();
+    protected final ConfigValidator<?> configValidator = new MySQLConfigValidator();
     private final MySQLSchemaResolver schemaResolver = new MySQLSchemaResolver();
-    private final SqlTemplate sqlTemplate = new MySQLTemplate();
+    public final SqlTemplate sqlTemplate = new MySQLTemplate();
 
     public MySQLConnector() {
         VALUE_MAPPERS.put(Types.DATE, new MySQLDateValueMapper());
@@ -61,11 +53,6 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     @Override
     public String getConnectorType() {
         return "MySQL";
-    }
-
-    @Override
-    public ConfigValidator getConfigValidator() {
-        return configValidator;
     }
 
     @Override
@@ -89,23 +76,6 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     public String generateUniqueCode() {
         return DatabaseConstant.DBS_UNIQUE_CODE;
     }
-
-    @Override
-    public String getQuotation() {
-        return QUOTATION;
-    }
-
-    /**
-     * 获取带引号的架构名
-     */
-    private String getSchemaWithQuotation(DatabaseConfig config) {
-        StringBuilder schema = new StringBuilder();
-        if (StringUtil.isNotBlank(config.getSchema())) {
-            schema.append(QUOTATION).append(config.getSchema()).append(QUOTATION).append(".");
-        }
-        return schema.toString();
-    }
-
 
     @Override
     public Object[] getPageArgs(ReaderContext context) {
@@ -155,56 +125,6 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         return schemaResolver;
     }
 
-    @Override
-    protected Map<String, String> buildSourceCommands(CommandConfig commandConfig) {
-        Map<String, String> map = new HashMap<>();
 
-        // 创建构建上下文
-        SqlBuildContext buildContext = createBuildContext(commandConfig);
-        
-        // 构建流式查询SQL
-        String streamingSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_STREAM, buildContext);
-        map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
-        
-        // 构建游标查询SQL
-        if (PrimaryKeyUtil.isSupportedCursor(commandConfig.getTable().getColumn())) {
-            String cursorSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_CURSOR, buildContext);
-            map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);
-        }
-        
-        // 构建计数SQL
-        String countSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_COUNT, buildContext);
-        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, countSql);
-        
-        return map;
-    }
-    
-    private SqlBuildContext createBuildContext(CommandConfig commandConfig) {
-        Table table = commandConfig.getTable();
-        DatabaseConfig dbConfig = (DatabaseConfig) commandConfig.getConnectorConfig();
-        
-        SqlBuildContext buildContext = new SqlBuildContext();
-        buildContext.setSchema(getSchemaWithQuotation(dbConfig));
-        buildContext.setTableName(QUOTATION + buildTableName(table.getName()) + QUOTATION);
-        buildContext.setFields(table.getColumn());
-        buildContext.setPrimaryKeys(PrimaryKeyUtil.findTablePrimaryKeys(table));
-        buildContext.setQueryFilter(getQueryFilterSql(commandConfig));
-        buildContext.setCursorCondition(buildCursorConditionFromCached(commandConfig.getCachedPrimaryKeys()));
-        
-        return buildContext;
-    }
-
-    /**
-     * 基于缓存的主键列表构建游标条件内容（不包含WHERE关键字）
-     */
-    private String buildCursorConditionFromCached(String cachedPrimaryKeys) {
-        if (StringUtil.isBlank(cachedPrimaryKeys)) {
-            return "";
-        }
-
-        // 将 "`id`, `name`, `create_time`" 转换为 "`id` > ? AND `name` > ? AND
-        // `create_time` > ?"
-        return cachedPrimaryKeys.replaceAll(",", " > ? AND") + " > ?";
-    }
 
 }

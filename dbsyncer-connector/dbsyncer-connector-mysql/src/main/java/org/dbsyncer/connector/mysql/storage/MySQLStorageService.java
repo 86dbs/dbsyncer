@@ -12,12 +12,11 @@ import org.dbsyncer.connector.mysql.MySQLConnector;
 import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.sdk.NullExecutorException;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
-import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.AbstractFilter;
 import org.dbsyncer.sdk.filter.BooleanFilter;
@@ -41,7 +40,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -277,7 +275,6 @@ public class MySQLStorageService extends AbstractStorageService {
         // 过滤值
         int size = filters.size();
 
-        String quotation = connector.getQuotation();
         for (int i = 0; i < size; i++) {
             AbstractFilter p = filters.get(i);
 
@@ -294,20 +291,20 @@ public class MySQLStorageService extends AbstractStorageService {
                 case LT_AND_EQUAL:
                 case GT:
                 case GT_AND_EQUAL:
-                    sql.append(quotation).append(name).append(quotation).append(String.format(" %s ?", filterEnum.getName()));
+                    sql.append(connector.sqlTemplate.buildColumn(name)).append(String.format(" %s ?", filterEnum.getName()));
                     args.add(p.getValue());
                     break;
                 case LIKE:
-                    sql.append(quotation).append(name).append(quotation).append(String.format(" %s ?", filterEnum.getName()));
+                    sql.append(connector.sqlTemplate.buildColumn(name)).append(String.format(" %s ?", filterEnum.getName()));
                     args.add(new StringBuilder("%").append(p.getValue()).append("%"));
                     break;
                 case IN:
-                    sql.append(quotation).append(name).append(quotation).append(String.format(" %s ?", filterEnum.getName()));
+                    sql.append(connector.sqlTemplate.buildColumn(name)).append(String.format(" %s ?", filterEnum.getName()));
                     args.add(new StringBuilder("(").append(p.getValue()).append(")"));
                     break;
                 case IS_NULL:
                 case IS_NOT_NULL:
-                    sql.append(quotation).append(name).append(quotation).append(String.format(" %s ", filterEnum.getName()));
+                    sql.append(connector.sqlTemplate.buildColumn(name)).append(String.format(" %s ", filterEnum.getName()));
                     break;
                 default:
                     throw new MySQLException("Unsupported filter type: " + filterEnum.getName());
@@ -392,12 +389,19 @@ public class MySQLStorageService extends AbstractStorageService {
         List<Field> fields = executor.getFields();
         List<String> primaryKeys = new ArrayList<>();
         primaryKeys.add(ConfigConstant.CONFIG_MODEL_ID);
-        final SqlBuilderConfig config = new SqlBuilderConfig(connector, "", table, primaryKeys, fields, "");
 
-        String query = SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config);
-        String insert = SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(config);
-        String update = SqlBuilderEnum.UPDATE.getSqlBuilder().buildSql(config);
-        String delete = SqlBuilderEnum.DELETE.getSqlBuilder().buildSql(config);
+        // 构建SqlBuildContext
+        SqlBuildContext buildContext = new SqlBuildContext();
+        buildContext.setSchema("");
+        buildContext.setTableName(table);
+        buildContext.setFields(fields);
+        buildContext.setPrimaryKeys(primaryKeys);
+
+        // 使用SqlTemplate直接生成SQL
+        String query = connector.sqlTemplate.buildQueryStreamSql(buildContext);
+        String insert = connector.sqlTemplate.buildInsertSql(buildContext);
+        String update = connector.sqlTemplate.buildUpdateSql(buildContext);
+        String delete = connector.sqlTemplate.buildDeleteSql(buildContext);
         executor.setTable(table).setQuery(query).setInsert(insert).setUpdate(update).setDelete(delete);
         return executor;
     }
@@ -454,11 +458,11 @@ public class MySQLStorageService extends AbstractStorageService {
         // 开启高亮
         if (!CollectionUtils.isEmpty(list) && !CollectionUtils.isEmpty(highLightKeys)) {
             list.forEach(row ->
-                highLightKeys.forEach(paramFilter -> {
-                    String text = String.valueOf(row.get(paramFilter.getName()));
-                    String replacement = "<span style='color:red'>" + paramFilter.getValue() + "</span>";
-                    row.put(paramFilter.getName(), StringUtil.replace(text, paramFilter.getValue(), replacement));
-                })
+                    highLightKeys.forEach(paramFilter -> {
+                        String text = String.valueOf(row.get(paramFilter.getName()));
+                        String replacement = "<span style='color:red'>" + paramFilter.getValue() + "</span>";
+                        row.put(paramFilter.getName(), StringUtil.replace(text, paramFilter.getValue(), replacement));
+                    })
             );
         }
     }

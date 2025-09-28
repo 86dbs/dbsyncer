@@ -12,6 +12,9 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
+import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
+import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -36,12 +39,8 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2022-05-22 22:56
  */
-public final class SqlServerConnector extends AbstractDatabaseConnector {
+public class SqlServerConnector extends AbstractDatabaseConnector {
 
-    /**
-     * SQL Server引号字符
-     */
-    private static final String QUOTATION = "[";
 
     private final String QUERY_VIEW = "select name from sysobjects where xtype in('v')";
     private final String QUERY_TABLE = "select name from sys.tables where schema_id = schema_id('%s') and is_ms_shipped = 0";
@@ -49,28 +48,14 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     private final String SET_TABLE_IDENTITY_ON = "set identity_insert %s.[%s] on;";
     private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
 
-    private final SqlServerConfigValidator configValidator = new SqlServerConfigValidator();
-
-    /**
-     * 获取带引号的架构名
-     */
-    private String getSchemaWithQuotation(DatabaseConfig config) {
-        StringBuilder schema = new StringBuilder();
-        if (StringUtil.isNotBlank(config.getSchema())) {
-            schema.append(QUOTATION).append(config.getSchema()).append("].");
-        }
-        return schema.toString();
-    }
+    protected final ConfigValidator<?> configValidator = new SqlServerConfigValidator();
+    public final SqlTemplate sqlTemplate = new SqlServerTemplate();
 
     @Override
     public String getConnectorType() {
         return "SqlServer";
     }
 
-    @Override
-    public ConfigValidator getConfigValidator() {
-        return configValidator;
-    }
 
     @Override
     public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
@@ -187,64 +172,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         return newCursors;
     }
 
-    @Override
-    protected Map<String, String> buildSourceCommands(CommandConfig commandConfig) {
-        Map<String, String> map = new HashMap<>();
 
-        // 获取基础信息
-        Table table = commandConfig.getTable();
-        String tableName = table.getName();
-        String schema = getSchemaWithQuotation((DatabaseConfig) commandConfig.getConnectorConfig());
-        List<Field> column = table.getColumn();
-        final String queryFilterSql = getQueryFilterSql(commandConfig);
-
-        // 获取缓存的字段列表和基础信息
-        String fieldListSql = commandConfig.getCachedFieldListSql();
-        String quotedTableName = QUOTATION + buildTableName(tableName) + "]";
-        String cursorCondition = buildCursorConditionFromCached(commandConfig.getCachedPrimaryKeys());
-        String filterClause = StringUtil.isNotBlank(queryFilterSql) ? " WHERE " + queryFilterSql : "";
-
-        // 流式查询SQL（直接使用基础查询，SQL Server通过fetchSize控制）
-        String streamingSql = String.format("SELECT %s FROM %s%s%s",
-                fieldListSql, schema, quotedTableName, filterClause);
-        map.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
-
-        // 游标查询SQL
-        if (PrimaryKeyUtil.isSupportedCursor(column)) {
-            // 构建完整的WHERE条件：原有过滤条件 + 游标条件
-            String whereCondition = "";
-            if (StringUtil.isNotBlank(filterClause) && StringUtil.isNotBlank(cursorCondition)) {
-                whereCondition = filterClause + " AND " + cursorCondition;
-            } else if (StringUtil.isNotBlank(filterClause)) {
-                whereCondition = filterClause;
-            } else if (StringUtil.isNotBlank(cursorCondition)) {
-                whereCondition = " WHERE " + cursorCondition;
-            }
-
-            String cursorSql = String.format("SELECT %s FROM %s%s%s ORDER BY %s OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
-                    fieldListSql, schema, quotedTableName, whereCondition, commandConfig.getCachedPrimaryKeys());
-            map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);
-        }
-
-        // 计数SQL
-        String countSql = String.format("SELECT COUNT(1) FROM %s%s%s",
-                schema, quotedTableName, filterClause);
-        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, countSql);
-
-        return map;
-    }
-
-    /**
-     * 基于缓存的主键列表构建游标条件内容（不包含WHERE关键字）
-     */
-    private String buildCursorConditionFromCached(String cachedPrimaryKeys) {
-        if (StringUtil.isBlank(cachedPrimaryKeys)) {
-            return "";
-        }
-
-        // 将 "[id], [name], [create_time]" 转换为 "[id] > ? AND [name] > ? AND [create_time] > ?"
-        return cachedPrimaryKeys.replaceAll(",", " > ? AND") + " > ?";
-    }
 
 
 }

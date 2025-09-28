@@ -11,15 +11,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class PrimaryKeyUtil {
@@ -77,23 +69,6 @@ public abstract class PrimaryKeyUtil {
             });
         }
         return Collections.unmodifiableList(list);
-    }
-
-    public static void buildSql(StringBuilder sql, List<String> primaryKeys, String quotation, String join, String value, boolean skipFirst) {
-        AtomicBoolean added = new AtomicBoolean();
-        primaryKeys.forEach(pk -> {
-            // skip first pk
-            if (!skipFirst || added.get()) {
-                if (StringUtil.isNotBlank(join)) {
-                    sql.append(join);
-                }
-            }
-            sql.append(quotation).append(pk).append(quotation);
-            if (StringUtil.isNotBlank(value)) {
-                sql.append(value);
-            }
-            added.set(true);
-        });
     }
 
     /**

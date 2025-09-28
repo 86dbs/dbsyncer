@@ -173,12 +173,53 @@ public interface SqlTemplate {
     String getExistTemplate();
     
     /**
-     * 构建SQL（仅构建SQL结构，包含参数占位符）
-     * @param templateType 模板类型
+     * 构建流式查询SQL
      * @param buildContext 构建上下文
      * @return 构建后的SQL（包含?占位符）
      */
-    String buildSql(SqlTemplateType templateType, SqlBuildContext buildContext);
+    String buildQueryStreamSql(SqlBuildContext buildContext);
+
+    /**
+     * 构建游标查询SQL
+     * @param buildContext 构建上下文
+     * @return 构建后的SQL（包含?占位符）
+     */
+    String buildQueryCursorSql(SqlBuildContext buildContext);
+
+    /**
+     * 构建计数查询SQL
+     * @param buildContext 构建上下文
+     * @return 构建后的SQL（包含?占位符）
+     */
+    String buildQueryCountSql(SqlBuildContext buildContext);
+
+    /**
+     * 构建存在性检查SQL
+     * @param buildContext 构建上下文
+     * @return 构建后的SQL（包含?占位符）
+     */
+    String buildQueryExistSql(SqlBuildContext buildContext);
+
+    /**
+     * 构建插入SQL
+     * @param buildContext 构建上下文
+     * @return 构建后的SQL（包含?占位符）
+     */
+    String buildInsertSql(SqlBuildContext buildContext);
+
+    /**
+     * 构建更新SQL
+     * @param buildContext 构建上下文
+     * @return 构建后的SQL（包含?占位符）
+     */
+    String buildUpdateSql(SqlBuildContext buildContext);
+
+    /**
+     * 构建删除SQL
+     * @param buildContext 构建上下文
+     * @return 构建后的SQL（包含?占位符）
+     */
+    String buildDeleteSql(SqlBuildContext buildContext);
 }
 ```
 
@@ -209,25 +250,6 @@ public class SqlBuildContext {
 - 参数在SQL执行时通过`PreparedStatement`处理
 - 保持与现有架构的一致性
 
-#### 3.2.6 SqlTemplateType枚举
-
-```java
-/**
- * SQL模板类型枚举
- */
-public enum SqlTemplateType {
-    QUERY_STREAM("query_stream", "流式查询"),
-    QUERY_CURSOR("query_cursor", "游标查询"),
-    QUERY_COUNT("query_count", "计数查询"),
-    QUERY_EXIST("query_exist", "存在性检查"),
-    INSERT("insert", "插入"),
-    UPDATE("update", "更新"),
-    DELETE("delete", "删除");
-    
-    private final String code;
-    private final String description;
-}
-```
 
 ### 3.3 默认模板实现
 
@@ -292,8 +314,44 @@ public class DefaultSqlTemplate implements SqlTemplate {
     }
     
     @Override
-    public String buildSql(SqlTemplateType templateType, SqlBuildContext buildContext) {
-        String template = getTemplateByType(templateType);
+    public String buildQueryStreamSql(SqlBuildContext buildContext) {
+        String template = getQueryStreamTemplate();
+        return processTemplate(template, buildContext);
+    }
+
+    @Override
+    public String buildQueryCursorSql(SqlBuildContext buildContext) {
+        String template = getQueryCursorTemplate();
+        return processTemplate(template, buildContext);
+    }
+
+    @Override
+    public String buildQueryCountSql(SqlBuildContext buildContext) {
+        String template = getQueryCountTemplate();
+        return processTemplate(template, buildContext);
+    }
+
+    @Override
+    public String buildQueryExistSql(SqlBuildContext buildContext) {
+        String template = getQueryExistTemplate();
+        return processTemplate(template, buildContext);
+    }
+
+    @Override
+    public String buildInsertSql(SqlBuildContext buildContext) {
+        String template = getInsertTemplate();
+        return processTemplate(template, buildContext);
+    }
+
+    @Override
+    public String buildUpdateSql(SqlBuildContext buildContext) {
+        String template = getUpdateTemplate();
+        return processTemplate(template, buildContext);
+    }
+
+    @Override
+    public String buildDeleteSql(SqlBuildContext buildContext) {
+        String template = getDeleteTemplate();
         return processTemplate(template, buildContext);
     }
     
@@ -330,7 +388,7 @@ public class SqlTemplateUsageExample {
         buildContext.setQueryFilter("WHERE status = ?");  // 过滤条件
         
         SqlTemplate template = new MySQLTemplate();
-        String sql = template.buildSql(SqlTemplateType.QUERY_STREAM, buildContext);
+        String sql = template.buildQueryStreamSql(buildContext);
         // 结果：SQL = "SELECT id, name FROM public.users WHERE status = ?"
         
         // 参数在SQL执行时通过PreparedStatement处理
@@ -347,7 +405,7 @@ public class SqlTemplateUsageExample {
         buildContext.setPrimaryKeys(Arrays.asList("id"));
         
         SqlTemplate template = new MySQLTemplate();
-        String sql = template.buildSql(SqlTemplateType.QUERY_CURSOR, buildContext);
+        String sql = template.buildQueryCursorSql(buildContext);
         // 结果：SQL = "SELECT id, name FROM public.users WHERE id > ? ORDER BY id LIMIT ?"
         
         // 参数在SQL执行时通过PreparedStatement处理
@@ -489,17 +547,17 @@ public class MySQLConnector extends AbstractDatabaseConnector {
         SqlBuildContext context = createBuildContext(commandConfig);
         
         // 构建流式查询SQL
-        String streamingSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_STREAM, context);
+        String streamingSql = sqlTemplate.buildQueryStreamSql(context);
         commands.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
         
         // 构建游标查询SQL
         if (PrimaryKeyUtil.isSupportedCursor(commandConfig.getTable().getColumn())) {
-            String cursorSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_CURSOR, context);
+            String cursorSql = sqlTemplate.buildQueryCursorSql(context);
             commands.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);
         }
         
         // 构建计数SQL
-        String countSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_COUNT, context);
+        String countSql = sqlTemplate.buildQueryCountSql(context);
         commands.put(ConnectorConstant.OPERTION_QUERY_COUNT, countSql);
         
         return commands;
@@ -543,17 +601,17 @@ public class OracleConnector extends AbstractDatabaseConnector {
         SqlBuildContext context = createBuildContext(commandConfig);
         
         // 构建流式查询SQL
-        String streamingSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_STREAM, context);
+        String streamingSql = sqlTemplate.buildQueryStreamSql(context);
         commands.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
         
         // 构建游标查询SQL
         if (PrimaryKeyUtil.isSupportedCursor(commandConfig.getTable().getColumn())) {
-            String cursorSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_CURSOR, context);
+            String cursorSql = sqlTemplate.buildQueryCursorSql(context);
             commands.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);
         }
         
         // 构建计数SQL
-        String countSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_COUNT, context);
+        String countSql = sqlTemplate.buildQueryCountSql(context);
         commands.put(ConnectorConstant.OPERTION_QUERY_COUNT, countSql);
         
         return commands;
@@ -598,17 +656,17 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
         SqlBuildContext context = createBuildContext(commandConfig);
         
         // 构建流式查询SQL
-        String streamingSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_STREAM, context);
+        String streamingSql = sqlTemplate.buildQueryStreamSql(context);
         commands.put(ConnectorConstant.OPERTION_QUERY_STREAM, streamingSql);
         
         // 构建游标查询SQL
         if (PrimaryKeyUtil.isSupportedCursor(commandConfig.getTable().getColumn())) {
-            String cursorSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_CURSOR, context);
+            String cursorSql = sqlTemplate.buildQueryCursorSql(context);
             commands.put(ConnectorConstant.OPERTION_QUERY_CURSOR, cursorSql);
         }
         
         // 构建计数SQL
-        String countSql = sqlTemplate.buildSql(SqlTemplateType.QUERY_COUNT, context);
+        String countSql = sqlTemplate.buildQueryCountSql(context);
         commands.put(ConnectorConstant.OPERTION_QUERY_COUNT, countSql);
         
         return commands;
@@ -650,11 +708,117 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
 1. 修改现有连接器继承新的基类
 2. 为每个连接器实现`createSqlTemplate()`方法
 3. 重构`buildSourceCommands`方法使用模板系统
-4. 保持向后兼容性
+4. **废弃QUOTATION常量**：移除各连接器中的QUOTATION常量，统一使用模板系统的引号方法
+5. 保持向后兼容性
+
+##### 3.1 废弃QUOTATION常量迁移
+**现状分析：**
+- MySQL连接器：`private static final String QUOTATION = "`";`
+- Oracle连接器：`private static final String QUOTATION = "\"";`
+- SQL Server连接器：`private static final String QUOTATION = "[";`
+- PostgreSQL连接器：`private static final String QUOTATION = "\"";`
+- SQLite连接器：`private static final String QUOTATION = "\"";`
+
+**迁移策略：**
+1. **保留向后兼容**：暂时保留QUOTATION常量，但标记为`@Deprecated`
+2. **逐步迁移**：在模板系统中使用`getLeftQuotation()`和`getRightQuotation()`
+3. **最终移除**：在完全迁移后移除所有QUOTATION常量
+
+**迁移示例：**
+```java
+// 旧方式（将被废弃）
+private static final String QUOTATION = "`";
+String tableName = QUOTATION + buildTableName(name) + QUOTATION;
+
+// 新方式（推荐）
+String tableName = sqlTemplate.getLeftQuotation() + buildTableName(name) + sqlTemplate.getRightQuotation();
+```
+
+##### 3.2 废弃getQuotation()方法
+**问题分析：**
+- `getQuotation()`方法只返回左引号，会造成不一致
+- 不同数据库的引号字符不同，需要左右引号分别处理
+- 模板系统提供了更精确的引号管理
+
+**解决方案：**
+```java
+// 旧方式（有问题）
+String quotation = getQuotation(); // 只返回左引号
+String tableName = quotation + name + quotation; // 可能不正确
+
+// 新方式（推荐）
+String leftQuote = sqlTemplate.getLeftQuotation();
+String rightQuote = sqlTemplate.getRightQuotation();
+String tableName = leftQuote + name + rightQuote; // 正确
+```
+
+**迁移策略：**
+1. **标记废弃**：将`getQuotation()`方法标记为`@Deprecated`
+2. **逐步迁移**：在SQL构建器中使用模板系统的引号方法
+3. **最终移除**：在完全迁移后移除`getQuotation()`方法
 
 #### 阶段四：测试和优化（1-2周）
 1. 全面测试所有连接器的SQL生成
 2. 性能测试和优化
 3. 文档完善
 4. 代码审查和重构
+
+## 4. SQL Server WITH (NOLOCK) 设计说明
+
+### 4.1 设计理念
+
+SQL Server模板默认使用`WITH (NOLOCK)`提示，基于以下设计理念：
+
+- **性能优先**：在流式同步场景下，性能是关键因素
+- **增量同步补偿**：通过增量同步机制可以弥补数据不一致问题
+- **减少阻塞**：避免长时间等待其他事务释放锁
+- **提高吞吐量**：特别是在高并发写入场景下
+
+### 4.2 技术优势
+
+#### ✅ **性能优势：**
+- **避免锁等待**：不会等待其他事务释放锁
+- **提高查询速度**：减少阻塞时间
+- **支持高并发**：在高并发写入环境下表现优异
+- **减少死锁**：降低死锁概率
+
+#### ✅ **架构优势：**
+- **增量同步补偿**：通过后续的增量同步可以修正数据不一致
+- **流式处理**：适合流式数据处理场景
+- **简化配置**：无需复杂的配置选项
+
+### 4.3 生成的SQL示例
+
+```sql
+-- 流式查询
+SELECT id, name, status FROM [dbo].[users] WITH (NOLOCK) WHERE status = ?
+
+-- 游标查询
+SELECT id, name, status FROM [dbo].[users] WITH (NOLOCK) WHERE id > ? ORDER BY id OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+
+-- 计数查询
+SELECT COUNT(*) FROM [dbo].[users] WITH (NOLOCK) WHERE status = ?
+
+-- 存在性检查
+SELECT 1 FROM [dbo].[users] WITH (NOLOCK) WHERE id = ?
+```
+
+### 4.4 数据一致性保障
+
+虽然`WITH (NOLOCK)`可能读取到不一致的数据，但通过以下机制保障最终一致性：
+
+1. **增量同步**：通过CDC或时间戳机制捕获后续变更
+2. **重试机制**：对关键数据进行重试验证
+3. **监控告警**：监控数据同步的准确性
+4. **业务补偿**：在业务层面进行数据校验和修正
+
+### 4.5 适用场景
+
+| 场景类型 | 适用性 | 原因 |
+|---------|--------|------|
+| **流式同步** | ✅ 高度适用 | 性能优先，增量补偿 |
+| **批量同步** | ✅ 高度适用 | 提高处理速度 |
+| **高并发环境** | ✅ 高度适用 | 减少阻塞和死锁 |
+| **实时同步** | ⚠️ 需谨慎 | 可能读取到不一致数据 |
+| **金融数据** | ⚠️ 需评估 | 根据业务容忍度决定 |
 

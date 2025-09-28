@@ -41,8 +41,6 @@ AbstractDatabaseConnector (基础，包含DQL和非DQL功能)
 
 1. **增强 AbstractDatabaseConnector**
    - 将 AbstractDQLConnector 中的方法（getTable、getMetaInfo、buildSourceCommands）移到 AbstractDatabaseConnector 中
-   - 添加一个 isDqlMode() 方法，用于判断当前是否为 DQL 模式
-   - 在适当的地方使用 isDqlMode() 来决定执行哪种逻辑
 
 2. **重构具体连接器**
    - 具体连接器只需继承 AbstractDatabaseConnector，即可自动获得 DQL 和非 DQL 的双重支持
