@@ -4,6 +4,7 @@
 package org.dbsyncer.parser.model;
 
 import com.alibaba.fastjson2.annotation.JSONField;
+import org.apache.logging.log4j.util.Strings;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -148,4 +149,44 @@ public class TableGroup extends AbstractConfigModel {
         isInit = true;
     }
 
+    // 新增字段 - 流式处理状态管理
+    private Object[] cursors; // 当前TableGroup的cursor
+    private boolean streamingCompleted; // 流式处理是否完成
+    private String errorMessage; // 错误信息
+
+    public Object[] getCursors() {
+        return cursors;
+    }
+
+    public void setCursors(Object[] cursors) {
+        this.cursors = cursors;
+    }
+
+    public boolean isStreamingCompleted() {
+        return streamingCompleted;
+    }
+
+    public void setStreamingCompleted(boolean streamingCompleted) {
+        this.streamingCompleted = streamingCompleted;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+
+    @JSONField(serialize = false)
+    public boolean hasError() {
+        return Strings.isNotBlank(errorMessage);
+    }
+
+    /**
+     * 清理错误状态
+     */
+    public void clearError() {
+        this.errorMessage = null;
+    }
 }

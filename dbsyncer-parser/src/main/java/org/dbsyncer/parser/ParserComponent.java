@@ -3,7 +3,6 @@ package org.dbsyncer.parser;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.plugin.PluginContext;
 
@@ -49,14 +48,13 @@ public interface ParserComponent {
     long getCount(String connectorId, Map<String, String> command);
 
     /**
-     * 全量同步
+     * TableGroup流式处理
      *
-     * @param task
-     * @param mapping
      * @param tableGroup
+     * @param mapping
      * @param executor
      */
-    void execute(Task task, Mapping mapping, TableGroup tableGroup, Executor executor);
+    void executeTableGroup(TableGroup tableGroup, Mapping mapping, Executor executor);
 
     /**
      * 批执行

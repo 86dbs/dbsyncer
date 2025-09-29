@@ -26,6 +26,7 @@ public class TableGroup extends AbstractConfigModel {
     // 新增字段 - 流式处理状态管理
     private Object[] cursors; // 当前TableGroup的cursor
     private boolean streamingCompleted; // 流式处理是否完成
+    private String errorMessage; // 错误信息
     
     // getter/setter方法
     public Object[] getCursors() {
@@ -43,6 +44,41 @@ public class TableGroup extends AbstractConfigModel {
     public void setStreamingCompleted(boolean streamingCompleted) {
         this.streamingCompleted = streamingCompleted;
     }
+    
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+    
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+    
+    public boolean HasError() {
+        return Strings.;
+    }
+    
+    /**
+     * 记录错误信息
+     */
+    public void recordError(String errorMessage) {
+        this.errorMessage = errorMessage;
+        this.streamingCompleted = false;
+    }
+    
+    /**
+     * 清理错误状态
+     */
+    public void clearError() {
+        this.hasError = false;
+        this.errorMessage = null;
+    }
+    
+    /**
+     * 检查是否有错误
+     */
+    public boolean hasError() {
+        return hasError;
+    }
 }
 ```
 
@@ -57,6 +93,12 @@ private void doTask(Task task, Mapping mapping, List<TableGroup> list, Executor 
 
     // 获取上次同步点 - 不再从Meta.snapshot获取cursor
     Meta meta = profileComponent.getMeta(task.getId());
+    
+    // 启动时清理所有TableGroup的错误状态
+    for (TableGroup tableGroup : list) {
+        tableGroup.clearError();
+        profileComponent.editConfigModel(tableGroup);
+    }
     
     // 并发处理所有TableGroup
     List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -76,6 +118,14 @@ private void doTask(Task task, Mapping mapping, List<TableGroup> list, Executor 
                 
             } catch (Exception e) {
                 logger.error("TableGroup {} 处理失败", tableGroup.getIndex(), e);
+                
+                // 记录TableGroup的错误状态
+                tableGroup.recordError(e.getMessage());
+                profileComponent.editConfigModel(tableGroup);
+                
+                // 记录系统级错误
+                meta.saveState(MetaEnum.ERROR, e.getMessage());
+                logService.log(LogType.SystemLog.ERROR, e.getMessage());
             }
         }, executor);
         
@@ -122,7 +172,49 @@ private void flush(Task task) {
 }
 ```
 
-##### 1.2.4 修改流式处理逻辑
+##### 1.2.4 实现executeTableGroup方法
+```java
+@Override
+public void executeTableGroup(TableGroup tableGroup, Mapping mapping, Executor executor) {
+    try {
+        // 创建TableGroup专用的上下文
+        AbstractPluginContext context = createTableGroupContext(tableGroup, mapping);
+
+        // 获取数据库连接器
+        Connector sourceConnector = profileComponent.getConnector(mapping.getSourceConnectorId());
+        Database db = (Database) connectorFactory.getConnectorService(sourceConnector.getType());
+        DatabaseConnectorInstance sourceConnectorInstance = (DatabaseConnectorInstance) connectorFactory.connect(sourceConnector.getConfig());
+        context.setSourceConnectorInstance(sourceConnectorInstance);
+
+        // 获取主键列表
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
+
+        // 根据是否支持cursor选择不同的SQL
+        boolean supportedCursor = null != tableGroup.getCursors();
+        String querySql;
+        if (supportedCursor) {
+            querySql = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_CURSOR);
+        } else {
+            querySql = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_STREAM);
+        }
+
+        // 执行流式处理
+        ((DatabaseConnectorInstance) context.getSourceConnectorInstance()).execute(databaseTemplate ->
+                executeTableGroupWithStreaming(tableGroup, context, db, executor, primaryKeys, querySql, databaseTemplate));
+
+    } catch (Exception e) {
+        logger.error("TableGroup {} 流式处理失败", tableGroup.getIndex(), e);
+        
+        // 记录TableGroup的错误状态
+        tableGroup.setErrorMessage(e.getMessage());
+        profileComponent.editConfigModel(tableGroup);
+        
+        throw e;
+    }
+}
+```
+
+##### 1.2.5 修改流式处理逻辑
 ```java
 // 新的TableGroup流式处理方法
 private void executeTableGroupWithStreaming(TableGroup tableGroup, AbstractPluginContext pluginContext, 
@@ -144,29 +236,17 @@ private void executeTableGroupWithStreaming(TableGroup tableGroup, AbstractPlugi
 
             // 达到批次大小时处理数据
             if (batch.size() >= pluginContext.getBatchSize()) {
-                processDataBatch(batch, pluginContext, tableGroup, executor, primaryKeys);
-                
-                // 直接更新TableGroup的cursor并持久化
-                Object[] newCursors = PrimaryKeyUtil.getLastCursors(batch, primaryKeys);
-                tableGroup.setCursors(newCursors);
-                
-                // 关键：立即持久化TableGroup状态
-                profileComponent.editConfigModel(tableGroup);
-                
+                processTableGroupDataBatch(batch, tableGroup, pluginContext, executor, primaryKeys);
                 batch = new ArrayList<>();
             }
         }
 
         // 处理最后一批数据
         if (!batch.isEmpty()) {
-            processDataBatch(batch, pluginContext, tableGroup, executor, primaryKeys);
+            processTableGroupDataBatch(batch, tableGroup, pluginContext, executor, primaryKeys);
             
-            // 更新最终的cursor并持久化
-            Object[] finalCursors = PrimaryKeyUtil.getLastCursors(batch, primaryKeys);
-            tableGroup.setCursors(finalCursors);
+            // 标记流式处理完成
             tableGroup.setStreamingCompleted(true);
-            
-            // 最终持久化
             profileComponent.editConfigModel(tableGroup);
         }
     }
@@ -193,12 +273,19 @@ private void executeTableGroupWithStreaming(TableGroup tableGroup, AbstractPlugi
 - **向后兼容**：不影响现有的分页处理逻辑
 - **易于维护**：状态管理逻辑清晰，职责明确
 
+### 4. 错误处理机制
+- **独立错误记录**：每个TableGroup可以记录自己的错误状态
+- **启动时清理错误**：每次启动时自动清理所有TableGroup的错误状态
+- **错误隔离**：某个TableGroup的错误不会影响其他TableGroup的处理
+- **错误恢复**：可以针对特定TableGroup进行错误恢复和重试
+
 ## 实施步骤
 
-1. **扩展TableGroup模型**：添加cursor和streamingCompleted字段
-2. **修改FullPuller**：移除Meta.snapshot中的cursor管理逻辑
+1. **扩展TableGroup模型**：添加cursor、streamingCompleted和错误处理字段
+2. **修改FullPuller**：移除Meta.snapshot中的cursor管理逻辑，添加错误处理
 3. **更新流式处理**：在流式处理过程中直接更新TableGroup的cursor
-4. **测试验证**：重点测试并发场景和断点续传功能
+4. **添加错误处理**：实现TableGroup级别的错误记录和清理机制
+5. **测试验证**：重点测试并发场景、断点续传功能和错误处理
 
 ## 注意事项
 
@@ -208,3 +295,6 @@ private void executeTableGroupWithStreaming(TableGroup tableGroup, AbstractPlugi
 4. **性能考虑**：频繁更新TableGroup状态可能影响性能，需要合理控制更新频率
 5. **持久化时机**：每次cursor更新后立即调用`profileComponent.editConfigModel(tableGroup)`进行持久化
 6. **断点续传**：系统重启后，TableGroup可以从持久化的cursor状态恢复处理
+7. **错误清理**：每次启动时自动清理所有TableGroup的错误状态
+8. **错误隔离**：TableGroup级别的错误记录，避免全局错误影响
+9. **错误恢复**：可以针对特定TableGroup进行错误恢复和重试

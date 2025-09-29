@@ -4,19 +4,15 @@
 package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.ProcessEvent;
-import org.dbsyncer.common.util.NumberUtil;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
-import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
-import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -24,8 +20,9 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -111,31 +108,47 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
         task.setBeginTime(now);
         task.setEndTime(now);
 
-        // 获取上次同步点
+        // 获取Meta对象 - 不再从Meta.snapshot获取cursor
         Meta meta = profileComponent.getMeta(task.getId());
-        Map<String, String> snapshot = meta.getSnapshot();
-        task.setPageIndex(NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()),
-                ParserEnum.PAGE_INDEX.getDefaultValue()));
-        // 反序列化游标值类型(通常为数字或字符串类型)
-        task.setCursors(PrimaryKeyUtil.getLastCursors(snapshot.get(ParserEnum.CURSOR.getCode())));
-        task.setTableGroupIndex(NumberUtil.toInt(snapshot.get(ParserEnum.TABLE_GROUP_INDEX.getCode()),
-                ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
-        flush(task);
 
-        int i = task.getTableGroupIndex();
-        while (i < list.size()) {
-            parserComponent.execute(task, mapping, list.get(i), executor);
-            if (!task.isRunning()) {
-                break;
-            }
-            task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
-            task.setCursors(null);
-            task.setTableGroupIndex(++i);
-            flush(task);
+        // 并发处理所有TableGroup
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (TableGroup tableGroup : list) {
+            tableGroup.clearError();
+            profileComponent.editConfigModel(tableGroup);
+
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                try {
+                    // 直接使用TableGroup的cursor进行流式处理
+                    parserComponent.executeTableGroup(tableGroup, mapping, executor);
+
+                    // 处理完成后标记完成状态
+                    tableGroup.setStreamingCompleted(true);
+
+                    // 保存TableGroup状态
+                    profileComponent.editConfigModel(tableGroup);
+
+                } catch (Exception e) {
+                    logger.error("TableGroup {} 处理失败", tableGroup.getIndex(), e);
+
+                    // 记录TableGroup的错误状态
+                    tableGroup.setErrorMessage(e.getMessage());
+                    profileComponent.editConfigModel(tableGroup);
+
+                    // 记录系统级错误
+                    meta.saveState(MetaEnum.ERROR, e.getMessage());
+                    logService.log(LogType.SystemLog.ERROR, e.getMessage());
+                }
+            }, executor);
+
+            futures.add(future);
         }
+
+        // 等待所有TableGroup完成
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
         // 记录结束时间
         task.setEndTime(Instant.now().toEpochMilli());
-        task.setTableGroupIndex(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
         flush(task);
 
         // 检查并执行 Meta 中的阶段处理方法
@@ -157,14 +170,9 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
             meta.getTotal().set(finished);
         }
 
-        meta.setBeginTime(task.getBeginTime());
-        meta.setEndTime(task.getEndTime());
-        meta.setUpdateTime(Instant.now().toEpochMilli());
-        Map<String, String> snapshot = meta.getSnapshot();
-        snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(task.getPageIndex()));
-        snapshot.put(ParserEnum.CURSOR.getCode(),
-                StringUtil.getIfBlank(StringUtil.join(task.getCursors(), StringUtil.COMMA), StringUtil.EMPTY));
-        snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(task.getTableGroupIndex()));
+        long epochMilli = Instant.now().toEpochMilli();
+        meta.setEndTime(epochMilli);
+        meta.setUpdateTime(epochMilli);
         profileComponent.editConfigModel(meta);
     }
 
