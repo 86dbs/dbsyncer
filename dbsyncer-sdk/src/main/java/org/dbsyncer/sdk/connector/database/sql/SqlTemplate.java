@@ -286,7 +286,7 @@ public interface SqlTemplate {
 
     default String buildUpdateSql(String schemaTable, List<Field> fields, List<String> primaryKeys) {
         String setClause = fields.stream()
-                .filter(field -> !primaryKeys.contains(field.getName()))
+                .filter(field -> !field.isPk())
                 .map(field -> buildColumn(field.getName()) + " = ?")
                 .collect(java.util.stream.Collectors.joining(", "));
         String whereClause = primaryKeys.stream()
