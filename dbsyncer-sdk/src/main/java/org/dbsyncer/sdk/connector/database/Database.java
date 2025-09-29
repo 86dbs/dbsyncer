@@ -4,7 +4,6 @@
 package org.dbsyncer.sdk.connector.database;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
@@ -52,19 +51,10 @@ public interface Database {
         return primaryKeys;
     }
 
-    /**
-     * 获取游标分页参数
-     *
-     * @param context
-     * @return
-     */
-    default Object[] getPageCursorArgs(ReaderContext context) {
-        throw new SdkException("Unsupported override method getPageCursorArgs:" + getClass().getName());
-    }
 
-        /**
+    /**
      * 获取流式处理的 fetchSize 值
-     * 
+     *
      * @param context 读取上下文
      * @return fetchSize 值
      */

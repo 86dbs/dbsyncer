@@ -2,7 +2,7 @@
 
 ## 2.5.0
 
-- 性能优化：mysql, sql server 使用流式读取数据。
+- 性能优化：mysql, sql server 使用流式读取数据，大表性能提升数倍，支持断点续传。
 - 结构优化：将 DQL 类连接器重构，简化代码。
 - 结构优化：使用 sql template 技术 替代 sql builder 技术，简化 sql 生成的层次结构。(OK)；
 - 优化：使用左右引号而非单一引号，解决 SQL server 引入的双重复杂度。

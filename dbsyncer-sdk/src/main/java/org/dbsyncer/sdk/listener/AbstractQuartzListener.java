@@ -122,7 +122,6 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         final QuartzListenerContext context = new QuartzListenerContext();
         context.setSourceTable(table);
         context.setCommand(point.getCommand());
-        context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
         context.setPageSize(READ_NUM);
         while (running) {
             context.setArgs(point.getArgs());
@@ -168,10 +167,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         if (point.refreshed()) {
             snapshot.putAll(point.getPosition());
         }
-        if (context.isSupportedCursor()) {
-            snapshot.put(index + CURSOR, StringUtil.join(cursors, ","));
-        }
-
+        snapshot.put(index + CURSOR, StringUtil.join(cursors, ","));
     }
 
     private void trySendEvent(ChangedEvent event) {

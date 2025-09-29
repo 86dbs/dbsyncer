@@ -78,21 +78,6 @@ public class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Object[] getPageCursorArgs(ReaderContext context) {
-        int pageSize = context.getPageSize();
-        Object[] cursors = context.getCursors();
-        if (null == cursors) {
-            return new Object[]{0, pageSize};
-        }
-        int cursorsLen = cursors.length;
-        Object[] newCursors = new Object[cursorsLen + 2];
-        System.arraycopy(cursors, 0, newCursors, 0, cursorsLen);
-        newCursors[cursorsLen] = 0;
-        newCursors[cursorsLen + 1] = pageSize;
-        return newCursors;
-    }
-
-    @Override
     public Map<String, String> getPosition(
             org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance connectorInstance) {
         // 执行SHOW MASTER STATUS命令获取当前binlog位置

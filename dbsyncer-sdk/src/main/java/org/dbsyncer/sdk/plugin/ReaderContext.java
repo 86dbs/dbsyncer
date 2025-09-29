@@ -16,8 +16,6 @@ public interface ReaderContext extends BaseContext {
 
     Table getSourceTable();
 
-    boolean isSupportedCursor();
-
     List<Object> getArgs();
 
     Object[] getCursors();

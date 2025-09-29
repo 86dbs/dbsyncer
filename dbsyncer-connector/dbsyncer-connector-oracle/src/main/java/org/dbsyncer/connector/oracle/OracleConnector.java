@@ -3,32 +3,23 @@
  */
 package org.dbsyncer.connector.oracle;
 
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleClobValueMapper;
 import org.dbsyncer.connector.oracle.schema.OracleOtherValueMapper;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
-import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
-import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
 import org.dbsyncer.sdk.connector.database.sql.impl.OracleTemplate;
-import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
-import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -85,21 +76,6 @@ public class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Object[] getPageCursorArgs(ReaderContext context) {
-        int pageSize = context.getPageSize();
-        Object[] cursors = context.getCursors();
-        if (null == cursors) {
-            return new Object[]{pageSize, 0};
-        }
-        int cursorsLen = cursors.length;
-        Object[] newCursors = new Object[cursorsLen + 2];
-        System.arraycopy(cursors, 0, newCursors, 0, cursorsLen);
-        newCursors[cursorsLen] = pageSize;
-        newCursors[cursorsLen + 1] = 0;
-        return newCursors;
-    }
-
-    @Override
     public Integer getStreamingFetchSize(ReaderContext context) {
         return context.getPageSize(); // 使用页面大小作为fetchSize
     }
@@ -108,8 +84,4 @@ public class OracleConnector extends AbstractDatabaseConnector {
     public String getValidationQuery() {
         return "select 1 from dual";
     }
-
-
-
-
 }

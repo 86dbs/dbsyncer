@@ -4,7 +4,6 @@
 package org.dbsyncer.connector.sqlserver;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlserver.cdc.Lsn;
 import org.dbsyncer.connector.sqlserver.cdc.SqlServerListener;
 import org.dbsyncer.connector.sqlserver.validator.SqlServerConfigValidator;
@@ -12,10 +11,9 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
-import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
-import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
-import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
+import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
@@ -24,7 +22,6 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
-import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -148,23 +145,4 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     public Integer getStreamingFetchSize(ReaderContext context) {
         return context.getPageSize(); // 使用页面大小作为fetchSize
     }
-
-
-    @Override
-    public Object[] getPageCursorArgs(ReaderContext context) {
-        int pageSize = context.getPageSize();
-        Object[] cursors = context.getCursors();
-        if (null == cursors) {
-            return new Object[]{pageSize}; // 只有 TOP 参数
-        }
-        int cursorsLen = cursors.length;
-        Object[] newCursors = new Object[cursorsLen + 1];
-        newCursors[0] = pageSize; // TOP 参数在前
-        System.arraycopy(cursors, 0, newCursors, 1, cursorsLen); // 游标参数在后
-        return newCursors;
-    }
-
-
-
-
 }

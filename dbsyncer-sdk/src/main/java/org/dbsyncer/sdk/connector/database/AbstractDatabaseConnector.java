@@ -198,20 +198,21 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public Result reader(DatabaseConnectorInstance connectorInstance, ReaderContext context) {
-        // 1、获取select SQL
-        boolean supportedCursor = context.isSupportedCursor() && null != context.getCursors();
-        String queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY_STREAM;
-        final String querySql = context.getCommand().get(queryKey);
-        Assert.hasText(querySql, "查询语句不能为空.");
-
-        // 2、设置参数
-        Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : new Object[]{});
-
-        // 3、执行SQL
-        List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, context.getArgs().toArray()));
-
-        // 4、返回结果集
-        return new Result(list);
+        throw new RuntimeException("AbstractDatabaseConnector.reader 需要重构.");
+//        // 1、获取select SQL
+//        boolean supportedCursor = null != context.getCursors();
+//        String queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY_STREAM;
+//        final String querySql = context.getCommand().get(queryKey);
+//        Assert.hasText(querySql, "查询语句不能为空.");
+//
+//        // 2、设置参数
+//        Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : new Object[]{});
+//
+//        // 3、执行SQL
+//        List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, context.getArgs().toArray()));
+//
+//        // 4、返回结果集
+//        return new Result(list);
     }
 
     @Override

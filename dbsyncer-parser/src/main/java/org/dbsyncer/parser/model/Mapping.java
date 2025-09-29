@@ -178,6 +178,10 @@ public class Mapping extends AbstractConfigModel {
         this.recoverData = recoverData;
     }
 
+    public Meta getMeta() {
+        return profileComponent.getMeta(this.metaId);
+    }
+
     public void resetMeta() {
         Meta meta = profileComponent.getMeta(this.metaId);
         // 清空状态

@@ -28,8 +28,6 @@ public abstract class AbstractBaseContext implements BaseContext, ReaderContext 
 
     private Table sourceTable;
 
-    private boolean supportedCursor;
-
     private List<Object> args;
 
     private Object[] cursors;
@@ -65,15 +63,6 @@ public abstract class AbstractBaseContext implements BaseContext, ReaderContext 
 
     public void setSourceTable(Table sourceTable) {
         this.sourceTable = sourceTable;
-    }
-
-    @Override
-    public boolean isSupportedCursor() {
-        return supportedCursor;
-    }
-
-    public void setSupportedCursor(boolean supportedCursor) {
-        this.supportedCursor = supportedCursor;
     }
 
     @Override

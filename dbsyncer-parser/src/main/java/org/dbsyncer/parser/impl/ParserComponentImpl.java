@@ -171,6 +171,10 @@ public class ParserComponentImpl implements ParserComponent {
         // 获取同步字段
         Picker picker = new Picker(group);
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
+
+        Map<String, String> snapshot = mapping.getMeta().getSnapshot();
+        Object[] cursors = PrimaryKeyUtil.getLastCursors(snapshot.get("cursor"));
+
         final FullPluginContext context = new FullPluginContext();
         context.setSourceConnectorInstance(connectorFactory.connect(sConfig));
         context.setTargetConnectorInstance(connectorFactory.connect(tConfig));
@@ -183,9 +187,9 @@ public class ParserComponentImpl implements ParserComponent {
         context.setForceUpdate(mapping.isForceUpdate());
         context.setSourceTable(sourceTable);
         context.setTargetFields(picker.getTargetFields());
-        context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
         context.setPageSize(mapping.getReadNum());
         context.setEnableSchemaResolver(profileComponent.getSystemConfig().isEnableSchemaResolver());
+        context.setCursors(cursors);
         ConnectorService sourceConnector = connectorFactory
                 .getConnectorService(context.getSourceConnectorInstance().getConfig());
         picker.setSourceResolver(context.isEnableSchemaResolver() ? sourceConnector.getSchemaResolver() : null);
@@ -206,27 +210,26 @@ public class ParserComponentImpl implements ParserComponent {
         final String metaId = task.getId();
 
         // 设置参数 - 参考 AbstractDatabaseConnector.reader 方法的逻辑
-        boolean supportedCursor = context.isSupportedCursor() && null != context.getCursors();
+        boolean supportedCursor = null != context.getCursors();
 
         // 根据是否支持游标查询来设置不同的参数
-        Object[] args;
+        String querySql = null;
         if (supportedCursor) {
-            args = db.getPageCursorArgs(context);
+            querySql = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_CURSOR);
         } else {
-            args = new Object[0];
+            querySql = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_STREAM);
         }
-
-        String querySql = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_STREAM);
-        ((DatabaseConnectorInstance) context.getSourceConnectorInstance()).execute(databaseTemplate -> executeWithStreamingInternal(task, context, db, tableGroup, executor, primaryKeys, metaId, args, querySql, databaseTemplate));
+        final String querySqlFinal = querySql;
+        ((DatabaseConnectorInstance) context.getSourceConnectorInstance()).execute(databaseTemplate -> executeWithStreamingInternal(task, context, db, tableGroup, executor, primaryKeys, metaId, querySqlFinal, databaseTemplate));
     }
 
-    private Object executeWithStreamingInternal(Task task, AbstractPluginContext context, Database db, TableGroup tableGroup, Executor executor, List<String> primaryKeys, String metaId, Object[] args, String querySql, DatabaseTemplate databaseTemplate) {
+    private Object executeWithStreamingInternal(Task task, AbstractPluginContext context, Database db, TableGroup tableGroup, Executor executor, List<String> primaryKeys, String metaId, String querySql, DatabaseTemplate databaseTemplate) {
         // 获取流式处理的fetchSize
         Integer fetchSize = db.getStreamingFetchSize(context);
         databaseTemplate.setFetchSize(fetchSize);
 
         try (Stream<Map<String, Object>> stream = databaseTemplate.queryForStream(querySql,
-                new ArgumentPreparedStatementSetter(args),
+                new ArgumentPreparedStatementSetter(context.getCursors()),
                 new ColumnMapRowMapper())) {
             List<Map<String, Object>> batch = new ArrayList<>();
             Iterator<Map<String, Object>> iterator = stream.iterator();
