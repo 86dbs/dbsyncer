@@ -320,7 +320,12 @@ public interface SqlTemplate {
         }
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < fields.size(); i++) {
-            sb.append(buildColumn(fields.get(i).getName()));
+            // "USER_NAME" as "myName"
+            Field field = fields.get(i);
+            sb.append(buildColumn(field.getName()));
+            if (StringUtil.isNotBlank(field.getLabelName())) {
+                sb.append(" as ").append(getLeftQuotation()).append(field.getLabelName()).append(getRightQuotation());
+            }
             if (i < fields.size() - 1) {
                 sb.append(", ");
             }

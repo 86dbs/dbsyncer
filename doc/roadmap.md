@@ -8,6 +8,9 @@
 
 ## 问题池
 
+- 增量定时-移除 AbstractDatabaseConnector.reader
+- DLParserImpl  68 需要优化
+- MetaInfo 是否多余？
 - 使用 sql 模板移除 MySQLStorageService 中零散的 sql 拼接方式。 
 - AbstractDatabaseConnector.filterColumn 这个应该在编辑时处理，而不是在运行时处理
 - 增量-定时 重构
