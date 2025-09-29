@@ -395,11 +395,11 @@ public class MySQLStorageService extends AbstractStorageService {
         buildContext.setSchema("");
         buildContext.setTableName(table);
         buildContext.setFields(fields);
-        buildContext.setPrimaryKeys(primaryKeys);
 
         // 使用SqlTemplate直接生成SQL
         String query = connector.sqlTemplate.buildQueryStreamSql(buildContext);
         String insert = connector.sqlTemplate.buildInsertSql(buildContext);
+        buildContext.setPrimaryKeys(primaryKeys);
         String update = connector.sqlTemplate.buildUpdateSql(buildContext);
         String delete = connector.sqlTemplate.buildDeleteSql(buildContext);
         executor.setTable(table).setQuery(query).setInsert(insert).setUpdate(update).setDelete(delete);

@@ -43,7 +43,8 @@ public interface SqlTemplate {
         String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
         String fieldList = buildFieldList(buildContext.getFields());
         String queryFilter = buildContext.getQueryFilter();
-        return buildQueryStreamSql(schemaTable, fieldList, queryFilter);
+        List<String> primaryKeys = buildContext.getPrimaryKeys();
+        return buildQueryStreamSql(schemaTable, fieldList, queryFilter, primaryKeys);
     }
 
     /**
@@ -239,11 +240,12 @@ public interface SqlTemplate {
     }
 
     // Helper methods for building SQL parts (from DefaultSqlTemplate)
-    default String buildQueryStreamSql(String schemaTable, String fieldList, String queryFilter) {
+    default String buildQueryStreamSql(String schemaTable, String fieldList, String queryFilter, List<String> primaryKeys) {
+        String orderByClause = buildOrderByClause(primaryKeys);
         if (StringUtil.isNotBlank(queryFilter)) {
-            return String.format("SELECT %s FROM %s %s", fieldList, schemaTable, queryFilter);
+            return String.format("SELECT %s FROM %s %s%s", fieldList, schemaTable, queryFilter, orderByClause);
         }
-        return String.format("SELECT %s FROM %s", fieldList, schemaTable);
+        return String.format("SELECT %s FROM %s%s", fieldList, schemaTable, orderByClause);
     }
 
     default String buildQueryCursorSql(String schemaTable, String fieldList, String queryFilter, String cursorCondition, List<String> primaryKeys) {
