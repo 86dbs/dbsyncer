@@ -114,16 +114,13 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
         // 并发处理所有TableGroup
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (TableGroup tableGroup : list) {
-            tableGroup.clearError();
-            profileComponent.editConfigModel(tableGroup);
-
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 try {
                     // 直接使用TableGroup的cursor进行流式处理
-                    parserComponent.executeTableGroup(tableGroup, mapping, executor);
+                    parserComponent.executeTableGroup(task, tableGroup, mapping, executor);
 
                     // 处理完成后标记完成状态
-                    tableGroup.setStreamingCompleted(true);
+                    tableGroup.setFullCompleted(true);
 
                     // 保存TableGroup状态
                     profileComponent.editConfigModel(tableGroup);

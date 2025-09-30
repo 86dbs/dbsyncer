@@ -13,6 +13,7 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConvertUtil;
+import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.FullPluginContext;
@@ -36,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.ArgumentPreparedStatementSetter;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -150,45 +152,67 @@ public class ParserComponentImpl implements ParserComponent {
      * 新的TableGroup流式处理方法
      */
     @Override
-    public void executeTableGroup(TableGroup tableGroup, Mapping mapping, Executor executor) {
-        try {
-            // 创建TableGroup专用的上下文
-            AbstractPluginContext context = createTableGroupContext(tableGroup, mapping);
+    public void executeTableGroup(Task task, TableGroup tableGroup, Mapping mapping, Executor executor) {
+        // 状态清理
+        tableGroup.clear();
+        profileComponent.editConfigModel(tableGroup);
 
-            // 获取数据库连接器
-            Connector sourceConnector = profileComponent.getConnector(mapping.getSourceConnectorId());
-            Database db = (Database) connectorFactory.getConnectorService(sourceConnector.getType());
-            DatabaseConnectorInstance sourceConnectorInstance = (DatabaseConnectorInstance) connectorFactory.connect(sourceConnector.getConfig());
-            context.setSourceConnectorInstance(sourceConnectorInstance);
+        // 上下文初始化
+        final String sourceConnectorId = mapping.getSourceConnectorId();
+        final String targetConnectorId = mapping.getTargetConnectorId();
+        ConnectorConfig sConfig = getConnectorConfig(sourceConnectorId);
+        ConnectorConfig tConfig = getConnectorConfig(targetConnectorId);
+        TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
+        Map<String, String> command = group.getCommand();
+        Table sourceTable = group.getSourceTable();
+        // append mapping param to command
+        if (mapping.getParams() != null)
+            command.putAll(mapping.getParams());
+        // 获取同步字段
+        Picker picker = new Picker(group);
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
 
-            // 获取主键列表
-            List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
+        final FullPluginContext context = new FullPluginContext();
+        context.setSourceConnectorInstance(connectorFactory.connect(sConfig));
+        context.setTargetConnectorInstance(connectorFactory.connect(tConfig));
+        context.setSourceTableName(group.getSourceTable().getName());
+        context.setSourceTable(sourceTable);
+        context.setTargetTableName(group.getTargetTable().getName());
+        context.setEvent(ConnectorConstant.OPERTION_INSERT);
+        context.setCommand(command);
+        context.setBatchSize(mapping.getBatchNum());
+        context.setPluginExtInfo(group.getPluginExtInfo());
+        context.setForceUpdate(mapping.isForceUpdate());
+        context.setTargetFields(picker.getTargetFields());
+        context.setPageSize(mapping.getReadNum());
+        context.setEnableSchemaResolver(profileComponent.getSystemConfig().isEnableSchemaResolver());
+        context.setCursors(tableGroup.getCursors());
+        ConnectorService sourceConnector = connectorFactory
+                .getConnectorService(context.getSourceConnectorInstance().getConfig());
+        picker.setSourceResolver(context.isEnableSchemaResolver() ? sourceConnector.getSchemaResolver() : null);
 
-            // 根据是否支持cursor选择不同的SQL
-            boolean supportedCursor = null != tableGroup.getCursors();
-            String querySql;
-            if (supportedCursor) {
-                querySql = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_CURSOR);
-            } else {
-                querySql = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_STREAM);
-            }
+        // 0、插件前置处理
+        pluginFactory.process(group.getPlugin(), context, ProcessEnum.BEFORE);
 
-            // 执行流式处理
-            ((DatabaseConnectorInstance) context.getSourceConnectorInstance()).execute(databaseTemplate ->
-                    executeTableGroupWithStreaming(tableGroup, context, db, executor, primaryKeys, querySql, databaseTemplate));
-
-        } catch (Exception e) {
-            logger.error("TableGroup {} 流式处理失败", tableGroup.getIndex(), e);
-            
-            // 记录TableGroup的错误状态
-            tableGroup.setErrorMessage(e.getMessage());
-            profileComponent.editConfigModel(tableGroup);
-            
-            throw e;
+        // 根据是否支持cursor选择不同的SQL
+        boolean supportedCursor = null != tableGroup.getCursors();
+        String querySql;
+        if (supportedCursor) {
+            querySql = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_CURSOR);
+        } else {
+            querySql = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_STREAM);
         }
+
+        // 流式处理模式
+        Database db = (Database) connectorFactory
+                .getConnectorService(context.getSourceConnectorInstance().getConfig());
+
+        // 执行流式处理
+        ((DatabaseConnectorInstance) context.getSourceConnectorInstance()).execute(databaseTemplate ->
+                executeTableGroupWithStreaming(task, tableGroup, context, db, executor, primaryKeys, querySql, databaseTemplate));
     }
 
-    private Object executeTableGroupWithStreaming(TableGroup tableGroup, AbstractPluginContext context,
+    private Object executeTableGroupWithStreaming(Task task, TableGroup tableGroup, AbstractPluginContext context,
                                                   Database db, Executor executor, List<String> primaryKeys,
                                                   String querySql, DatabaseTemplate databaseTemplate) {
         // 获取流式处理的fetchSize
@@ -202,6 +226,11 @@ public class ParserComponentImpl implements ParserComponent {
             Iterator<Map<String, Object>> iterator = stream.iterator();
 
             while (iterator.hasNext()) {
+                if (!task.isRunning()) {
+                    logger.warn("任务被中止:{}", task.getId());
+                    break;
+                }
+
                 batch.add(iterator.next());
 
                 // 达到批次大小时处理数据
@@ -214,28 +243,15 @@ public class ParserComponentImpl implements ParserComponent {
             // 处理最后一批数据
             if (!batch.isEmpty()) {
                 processTableGroupDataBatch(batch, tableGroup, context, executor, primaryKeys);
-                
+
                 // 标记流式处理完成
-                tableGroup.setStreamingCompleted(true);
+                tableGroup.setFullCompleted(true);
                 profileComponent.editConfigModel(tableGroup);
             }
         } catch (Exception e) {
             throw e;
         }
         return null;
-    }
-
-    /**
-     * 创建TableGroup专用的上下文
-     */
-    private AbstractPluginContext createTableGroupContext(TableGroup tableGroup, Mapping mapping) {
-        AbstractPluginContext context = new FullPluginContext();
-        context.setSourceTableName(tableGroup.getSourceTable().getName());
-        context.setTargetTableName(tableGroup.getTargetTable().getName());
-        context.setCommand(tableGroup.getCommand());
-        context.setBatchSize(mapping.getBatchNum());
-        context.setCursors(tableGroup.getCursors());
-        return context;
     }
 
     /**
@@ -259,7 +275,7 @@ public class ParserComponentImpl implements ParserComponent {
         // 4、写入目标源
         if (!CollectionUtils.isEmpty(target)) {
             Result result = writeBatch(context, executor);
-            
+
             // 5、更新Meta统计信息
             if (result != null) {
                 // 通过TableGroup获取mappingId，然后获取Meta对象并更新统计
@@ -272,7 +288,7 @@ public class ParserComponentImpl implements ParserComponent {
                 flushStrategy.flushFullData(meta.getId(), result, ConnectorConstant.OPERTION_INSERT);
 
                 logger.info("处理TableGroup数据批次，源表：{}，目标表：{}，成功：{}，失败：{}",
-                        context.getSourceTableName(), context.getTargetTableName(), 
+                        context.getSourceTableName(), context.getTargetTableName(),
                         result.getSuccessData().size(), result.getFailData().size());
             }
         }

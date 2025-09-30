@@ -151,7 +151,7 @@ public class TableGroup extends AbstractConfigModel {
 
     // 新增字段 - 流式处理状态管理
     private Object[] cursors; // 当前TableGroup的cursor
-    private boolean streamingCompleted; // 流式处理是否完成
+    private boolean fullCompleted; // 流式处理是否完成
     private String errorMessage; // 错误信息
 
     public Object[] getCursors() {
@@ -162,12 +162,12 @@ public class TableGroup extends AbstractConfigModel {
         this.cursors = cursors;
     }
 
-    public boolean isStreamingCompleted() {
-        return streamingCompleted;
+    public boolean isFullCompleted() {
+        return fullCompleted;
     }
 
-    public void setStreamingCompleted(boolean streamingCompleted) {
-        this.streamingCompleted = streamingCompleted;
+    public void setFullCompleted(boolean fullCompleted) {
+        this.fullCompleted = fullCompleted;
     }
 
     public String getErrorMessage() {
@@ -186,7 +186,8 @@ public class TableGroup extends AbstractConfigModel {
     /**
      * 清理错误状态
      */
-    public void clearError() {
+    public void clear() {
+        fullCompleted = false;
         this.errorMessage = null;
     }
 }
