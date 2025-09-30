@@ -233,13 +233,13 @@ public class ParserComponentImpl implements ParserComponent {
 
                 // 达到批次大小时处理数据
                 if (batch.size() >= context.getBatchSize()) {
-                    processTableGroupDataBatch(batch, tableGroup, context, executor, primaryKeys);
+                    processTableGroupDataBatch(task.getId(), batch, tableGroup, context, executor, primaryKeys);
                     batch = new ArrayList<>();
                 }
             }
             // 处理最后一批数据
             if (!batch.isEmpty()) {
-                processTableGroupDataBatch(batch, tableGroup, context, executor, primaryKeys);
+                processTableGroupDataBatch(task.getId(), batch, tableGroup, context, executor, primaryKeys);
             }
             // 标记流式处理完成
             tableGroup.setFullCompleted(true);
@@ -251,7 +251,7 @@ public class ParserComponentImpl implements ParserComponent {
     /**
      * TableGroup专用的数据处理逻辑
      */
-    private void processTableGroupDataBatch(List<Map<String, Object>> source, TableGroup tableGroup,
+    private void processTableGroupDataBatch(String metaId, List<Map<String, Object>> source, TableGroup tableGroup,
                                             AbstractPluginContext context, Executor executor,
                                             List<String> primaryKeys) {
         // 1、映射字段
@@ -272,18 +272,7 @@ public class ParserComponentImpl implements ParserComponent {
 
             // 5、更新Meta统计信息
             if (result != null) {
-                // 通过TableGroup获取mappingId，然后获取Meta对象并更新统计
-                String mappingId = tableGroup.getMappingId();
-                Mapping mapping = profileComponent.getMapping(mappingId);
-                Meta meta = mapping.getMeta();
-                meta.getSuccess().addAndGet(result.getSuccessData().size());
-                meta.getFail().addAndGet(result.getFailData().size());
-                profileComponent.editConfigModel(meta);
-                flushStrategy.flushFullData(meta.getId(), result, ConnectorConstant.OPERTION_INSERT);
-
-                logger.info("处理TableGroup数据批次，源表：{}，目标表：{}，成功：{}，失败：{}",
-                        context.getSourceTableName(), context.getTargetTableName(),
-                        result.getSuccessData().size(), result.getFailData().size());
+                flushStrategy.flushFullData(metaId, result, ConnectorConstant.OPERTION_INSERT);
             }
         }
 
