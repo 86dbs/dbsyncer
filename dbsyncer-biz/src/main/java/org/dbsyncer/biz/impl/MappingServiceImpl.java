@@ -444,9 +444,15 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Assert.notNull(mapping, "驱动不存在");
 
         synchronized (LOCK) {
+            logger.info("重置驱动：{}", mapping.getName());
             Meta meta = profileComponent.getMeta(mapping.getMetaId());
             meta.clear();
             managerFactory.close(mapping);
+            List<TableGroup> tableGroupAll = profileComponent.getTableGroupAll(mapping.getId());
+            for (TableGroup tableGroup : tableGroupAll) {
+                tableGroup.clear();
+                profileComponent.editConfigModel(tableGroup);
+            }
             log(LogType.MappingLog.RESET, mapping);
 
             // 发送关闭驱动通知消息

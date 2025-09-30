@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.ArgumentPreparedStatementSetter;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -153,9 +152,8 @@ public class ParserComponentImpl implements ParserComponent {
      */
     @Override
     public void executeTableGroup(Task task, TableGroup tableGroup, Mapping mapping, Executor executor) {
-        // 状态清理
-        tableGroup.clear();
-        profileComponent.editConfigModel(tableGroup);
+        // 状态清理， 无须保存，因为第一个批次处理完后会保存。
+        tableGroup.setErrorMessage("");
 
         // 上下文初始化
         final String sourceConnectorId = mapping.getSourceConnectorId();
@@ -228,7 +226,7 @@ public class ParserComponentImpl implements ParserComponent {
             while (iterator.hasNext()) {
                 if (!task.isRunning()) {
                     logger.warn("任务被中止:{}", task.getId());
-                    break;
+                    return null;
                 }
 
                 batch.add(iterator.next());
@@ -239,17 +237,13 @@ public class ParserComponentImpl implements ParserComponent {
                     batch = new ArrayList<>();
                 }
             }
-
             // 处理最后一批数据
             if (!batch.isEmpty()) {
                 processTableGroupDataBatch(batch, tableGroup, context, executor, primaryKeys);
-
-                // 标记流式处理完成
-                tableGroup.setFullCompleted(true);
-                profileComponent.editConfigModel(tableGroup);
             }
-        } catch (Exception e) {
-            throw e;
+            // 标记流式处理完成
+            tableGroup.setFullCompleted(true);
+            profileComponent.editConfigModel(tableGroup);
         }
         return null;
     }

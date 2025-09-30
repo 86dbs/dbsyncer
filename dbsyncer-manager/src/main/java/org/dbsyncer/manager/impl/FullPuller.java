@@ -103,28 +103,19 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
     }
 
     private void doTask(Task task, Mapping mapping, List<TableGroup> list, Executor executor) {
-        // 记录开始时间
-        long now = Instant.now().toEpochMilli();
-        task.setBeginTime(now);
-        task.setEndTime(now);
-
         // 获取Meta对象 - 不再从Meta.snapshot获取cursor
         Meta meta = profileComponent.getMeta(task.getId());
 
         // 并发处理所有TableGroup
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (TableGroup tableGroup : list) {
+            if (tableGroup.isFullCompleted()) {
+                continue;
+            }
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 try {
                     // 直接使用TableGroup的cursor进行流式处理
                     parserComponent.executeTableGroup(task, tableGroup, mapping, executor);
-
-                    // 处理完成后标记完成状态
-                    tableGroup.setFullCompleted(true);
-
-                    // 保存TableGroup状态
-                    profileComponent.editConfigModel(tableGroup);
-
                 } catch (Exception e) {
                     logger.error("TableGroup {} 处理失败", tableGroup.getIndex(), e);
 
@@ -145,7 +136,6 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         // 记录结束时间
-        task.setEndTime(Instant.now().toEpochMilli());
         flush(task);
 
         // 检查并执行 Meta 中的阶段处理方法

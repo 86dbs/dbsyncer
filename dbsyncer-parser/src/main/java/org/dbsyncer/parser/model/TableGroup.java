@@ -188,6 +188,7 @@ public class TableGroup extends AbstractConfigModel {
      */
     public void clear() {
         fullCompleted = false;
+        cursors = null;
         this.errorMessage = null;
     }
 }
