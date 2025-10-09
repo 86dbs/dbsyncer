@@ -196,7 +196,7 @@ public interface SqlTemplate {
         DatabaseConfig dbConfig = (DatabaseConfig) commandConfig.getConnectorConfig();
 
         SqlBuildContext buildContext = new SqlBuildContext();
-        buildContext.setSchema(buildSchema(dbConfig.getSchema()));
+        buildContext.setSchema(dbConfig.getSchema());
         buildContext.setTableName(buildTableName.apply(table.getName()));
         buildContext.setFields(table.getColumn());
         buildContext.setPrimaryKeys(PrimaryKeyUtil.findTablePrimaryKeys(table));

@@ -18,7 +18,6 @@ import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
@@ -760,7 +759,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             Assert.hasText(config.getSql(), "执行SQL语句不能为空.");
             connectorInstance.execute(databaseTemplate -> {
                 // 执行ddl时, 带上dbs唯一标识码，防止双向同步导致死循环
-                databaseTemplate.execute(DatabaseConstant.DBS_UNIQUE_CODE.concat(config.getSql()));
+                databaseTemplate.execute("/*dbs*/".concat(config.getSql()));
                 return true;
             });
             Map<String, String> successMap = new HashMap<>();

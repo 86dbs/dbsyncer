@@ -3,17 +3,7 @@
  */
 package org.dbsyncer.connector.mysql.cdc;
 
-import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
-import com.github.shyiko.mysql.binlog.event.Event;
-import com.github.shyiko.mysql.binlog.event.EventHeader;
-import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
-import com.github.shyiko.mysql.binlog.event.EventType;
-import com.github.shyiko.mysql.binlog.event.QueryEventData;
-import com.github.shyiko.mysql.binlog.event.RotateEventData;
-import com.github.shyiko.mysql.binlog.event.RowsQueryEventData;
-import com.github.shyiko.mysql.binlog.event.TableMapEventData;
-import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
-import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
+import com.github.shyiko.mysql.binlog.event.*;
 import com.github.shyiko.mysql.binlog.network.ServerException;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -26,14 +16,12 @@ import org.dbsyncer.connector.mysql.binlog.BinaryLogClient;
 import org.dbsyncer.connector.mysql.binlog.BinaryLogRemoteClient;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.util.DatabaseUtil;
-import org.dbsyncer.sdk.util.SqlParserUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -328,7 +316,7 @@ public class MySQLListener extends AbstractDatabaseListener {
             try {
                 // skip BEGIN
                 if (!StringUtil.equalsIgnoreCase("BEGIN", sql)) {
-                    return CCJSqlParserUtil.parse( sql);
+                    return CCJSqlParserUtil.parse(sql);
 //                    return SqlParserUtil.parse(sql); 太过于复杂，能能差
                 }
             } catch (JSQLParserException e) {
@@ -370,7 +358,7 @@ public class MySQLListener extends AbstractDatabaseListener {
         }
 
         private boolean isNotUniqueCodeEvent(String sql) {
-            return !StringUtil.startsWith(sql, DatabaseConstant.DBS_UNIQUE_CODE);
+            return !StringUtil.startsWith(sql, "/*dbs*/");
         }
 
     }

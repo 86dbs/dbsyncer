@@ -242,7 +242,7 @@ public class MySQLStorageService extends AbstractStorageService {
         }
         sql.append(UnderlineToCamelUtils.camelToUnderline(ConfigConstant.CONFIG_MODEL_CREATE_TIME));
         sql.append(" ").append(query.getSort().getCode());
-        sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
+        sql.append(" LIMIT ?,?");
         args.add((query.getPageNum() - 1) * query.getPageSize());
         args.add(query.getPageSize());
         return sql.toString();
