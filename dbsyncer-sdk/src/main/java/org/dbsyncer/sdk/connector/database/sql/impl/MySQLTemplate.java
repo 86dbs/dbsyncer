@@ -46,6 +46,6 @@ public class MySQLTemplate implements SqlTemplate {
         }
 
         String orderByClause = buildOrderByClause(primaryKeys);
-        return String.format("SELECT %s FROM %s%s%s LIMIT ?", fieldList, schemaTable, whereClause, orderByClause);
+        return String.format("SELECT %s FROM %s%s%s", fieldList, schemaTable, whereClause, orderByClause);
     }
 }
