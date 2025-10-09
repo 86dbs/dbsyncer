@@ -119,6 +119,7 @@ public class MappingChecker extends AbstractChecker {
 
     public void addMeta(Mapping mapping) {
         Meta meta = new Meta(profileComponent);
+        meta.setName(mapping.getId());
         meta.setMappingId(mapping.getId());
 
         // 修改基本配置

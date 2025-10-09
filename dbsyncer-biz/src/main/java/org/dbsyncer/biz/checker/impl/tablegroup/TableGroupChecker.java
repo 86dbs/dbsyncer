@@ -12,7 +12,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
@@ -28,14 +27,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -75,6 +67,7 @@ public class TableGroupChecker extends AbstractChecker {
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
+        tableGroup.setName(mapping.getId() + ":" + sourceTable);
         tableGroup.currentVersion = TableGroup.Version;
         tableGroup.parserComponent = parserComponent;
         tableGroup.profileComponent = profileComponent;
@@ -134,18 +127,18 @@ public class TableGroupChecker extends AbstractChecker {
 
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
-        
+
         // 添加空值检查，防止NullPointerException
         List<String> sourceTablePks = new ArrayList<>();
         if (sourceTable.getColumn() != null) {
             sourceTablePks = sourceTable.getColumn().stream().filter(Field::isPk).map(Field::getName).collect(Collectors.toList());
         }
-        
+
         List<String> targetTablePks = new ArrayList<>();
         if (targetTable.getColumn() != null) {
             targetTablePks = targetTable.getColumn().stream().filter(Field::isPk).map(Field::getName).collect(Collectors.toList());
         }
-        
+
         tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable.getName(), StringUtil.join(sourceTablePks, ",")));
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable.getName(), StringUtil.join(targetTablePks, ",")));
     }
@@ -321,7 +314,7 @@ public class TableGroupChecker extends AbstractChecker {
                 continue;
             }
             // 用源字段信息作为目标字段信息
-            if (null == t){
+            if (null == t) {
                 t = new Field(s.getName(), s.getTypeName(), s.getType(), s.isPk(), s.getColumnSize(), s.getRatio());
             }
 
