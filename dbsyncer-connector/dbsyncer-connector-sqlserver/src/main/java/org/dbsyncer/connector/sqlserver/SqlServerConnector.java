@@ -76,24 +76,6 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
         return null;
     }
 
-    @Override
-    public String buildTableName(String tableName) {
-        return convertKey(tableName);
-    }
-
-    @Override
-    public String buildFieldName(Field field) {
-        return convertKey(field.getName());
-    }
-
-    @Override
-    public List<String> buildPrimaryKeys(List<String> primaryKeys) {
-        if (CollectionUtils.isEmpty(primaryKeys)) {
-            return primaryKeys;
-        }
-        return primaryKeys.stream().map(pk -> convertKey(pk)).collect(Collectors.toList());
-    }
-
     private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {
         List<String> tableNames = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
         if (!CollectionUtils.isEmpty(tableNames)) {
@@ -137,10 +119,6 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
         Map<String, String> position = new HashMap<>();
         position.put("position", currentLsn);
         return position;
-    }
-
-    private String convertKey(String key) {
-        return new StringBuilder("[").append(key).append("]").toString();
     }
 
     @Override

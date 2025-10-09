@@ -33,11 +33,13 @@ public class SqlServerTemplate implements SqlTemplate {
         String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
         String fieldList = buildFieldList(buildContext.getFields());
         String queryFilter = buildContext.getQueryFilter();
+        String orderByClause = buildOrderByClause(buildContext.getPrimaryKeys());
+
 
         if (StringUtil.isNotBlank(queryFilter)) {
-            return String.format("SELECT %s FROM %s WITH (NOLOCK) %s", fieldList, schemaTable, queryFilter);
+            return String.format("SELECT %s FROM %s WITH (NOLOCK) %s%s", fieldList, schemaTable, queryFilter,orderByClause);
         }
-        return String.format("SELECT %s FROM %s WITH (NOLOCK)", fieldList, schemaTable);
+        return String.format("SELECT %s FROM %s WITH (NOLOCK)%s", fieldList, schemaTable, orderByClause);
     }
 
     @Override
