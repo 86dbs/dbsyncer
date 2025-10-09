@@ -37,13 +37,13 @@ public class PostgreSQLConnector extends AbstractDatabaseConnector {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected final ConfigValidator<?> configValidator = new PostgreSQLConfigValidator();
-    public final SqlTemplate sqlTemplate = new PostgreSQLTemplate();
 
     private final PostgreSQLSchemaResolver schemaResolver = new PostgreSQLSchemaResolver();
 
     public PostgreSQLConnector() {
         VALUE_MAPPERS.put(Types.BIT, new PostgreSQLBitValueMapper());
         VALUE_MAPPERS.put(Types.OTHER, new PostgreSQLOtherValueMapper());
+        sqlTemplate = new PostgreSQLTemplate();
     }
 
     @Override

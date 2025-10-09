@@ -12,7 +12,6 @@ import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
-import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -46,7 +45,10 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
 
     protected final ConfigValidator<?> configValidator = new SqlServerConfigValidator();
-    public final SqlTemplate sqlTemplate = new SqlServerTemplate();
+
+    public SqlServerConnector() {
+        sqlTemplate = new SqlServerTemplate();
+    }
 
     @Override
     public String getConnectorType() {

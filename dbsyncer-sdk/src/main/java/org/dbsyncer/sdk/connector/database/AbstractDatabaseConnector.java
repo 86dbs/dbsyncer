@@ -56,17 +56,7 @@ import java.util.stream.Collectors;
 public abstract class AbstractDatabaseConnector extends AbstractConnector implements ConnectorService<DatabaseConnectorInstance, DatabaseConfig>, Database {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
-    public final SqlTemplate sqlTemplate = new SqlTemplate() {
-        @Override
-        public String getLeftQuotation() {
-            return "";
-        }
-
-        @Override
-        public String getRightQuotation() {
-            return "";
-        }
-    };
+    public SqlTemplate sqlTemplate;
 
     /**
      * 是否为DQL连接器

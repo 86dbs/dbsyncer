@@ -44,9 +44,9 @@ public class MySQLConnector extends AbstractDatabaseConnector {
 
     protected final ConfigValidator<?> configValidator = new MySQLConfigValidator();
     private final MySQLSchemaResolver schemaResolver = new MySQLSchemaResolver();
-    public final SqlTemplate sqlTemplate = new MySQLTemplate();
 
     public MySQLConnector() {
+        sqlTemplate = new MySQLTemplate();
         VALUE_MAPPERS.put(Types.DATE, new MySQLDateValueMapper());
     }
 

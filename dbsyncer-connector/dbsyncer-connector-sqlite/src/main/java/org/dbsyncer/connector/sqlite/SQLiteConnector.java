@@ -45,7 +45,10 @@ public class SQLiteConnector extends AbstractDatabaseConnector {
     private final String QUERY_TABLE = "SELECT name FROM sqlite_master WHERE type='table'";
 
     protected final ConfigValidator<?> configValidator = new SQLiteConfigValidator();
-    public final SqlTemplate sqlTemplate = new SQLiteTemplate();
+
+    public SQLiteConnector() {
+        sqlTemplate = new SQLiteTemplate();
+    }
 
     @Override
     public String getConnectorType() {

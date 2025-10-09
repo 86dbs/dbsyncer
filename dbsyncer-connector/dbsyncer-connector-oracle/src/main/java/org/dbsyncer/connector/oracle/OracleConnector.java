@@ -35,11 +35,11 @@ public class OracleConnector extends AbstractDatabaseConnector {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected final ConfigValidator<?> configValidator = new OracleConfigValidator();
-    public final SqlTemplate sqlTemplate = new OracleTemplate();
 
     public OracleConnector() {
         VALUE_MAPPERS.put(Types.OTHER, new OracleOtherValueMapper());
         VALUE_MAPPERS.put(Types.CLOB, new OracleClobValueMapper());
+        sqlTemplate = new OracleTemplate();
     }
 
     @Override
