@@ -197,7 +197,7 @@ public interface SqlTemplate {
 
         SqlBuildContext buildContext = new SqlBuildContext();
         buildContext.setSchema(buildSchema(dbConfig.getSchema()));
-        buildContext.setTableName(buildColumn(buildTableName.apply(table.getName())));
+        buildContext.setTableName(buildTableName.apply(table.getName()));
         buildContext.setFields(table.getColumn());
         buildContext.setPrimaryKeys(PrimaryKeyUtil.findTablePrimaryKeys(table));
         buildContext.setQueryFilter(getQueryFilterSql.apply(commandConfig));
