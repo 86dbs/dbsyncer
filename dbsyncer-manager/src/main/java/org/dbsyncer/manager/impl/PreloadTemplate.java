@@ -152,6 +152,12 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(profileComponent, json));
                 if (null != model) {
                     operationTemplate.cache(model, commandEnum.getGroupStrategyEnum());
+                    // 如果 model 是 Meta 或 Mapping 则需要设置其 profileComponent 属性
+                    if (model instanceof Meta) {
+                        ((Meta) model).setProfileComponent(profileComponent);
+                    } else if (model instanceof Mapping) {
+                        ((Mapping) model).profileComponent = profileComponent;
+                    }
                 }
             });
             total += paging.getTotal();
