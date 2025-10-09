@@ -88,13 +88,15 @@ public class Meta extends ConfigModel {
     }
 
     private void init() {
+        long now = Instant.now().toEpochMilli();
         this.state = MetaEnum.READY.getCode();
         this.total = new AtomicLong(0);
         this.success = new AtomicLong(0);
         this.fail = new AtomicLong(0);
         this.snapshot = new HashMap<>();
-        this.beginTime = 0L;
-        this.endTime = 0L;
+        this.beginTime = now;
+        this.setUpdateTime(now);
+        this.endTime = now;
         // 初始化异常信息
         this.errorMessage = "";
         // 初始化混合同步阶段

@@ -160,7 +160,7 @@
 
                                             <div class="row">
                                                 <table class="table table-hover">
-                                                    <tbody th:with="model=${m?.model},total=${m?.meta?.total},success=${m?.meta?.success},fail=${m?.meta?.fail},beginTime=${m?.meta?.beginTime},endTime=${m?.meta?.endTime}">
+                                                    <tbody th:with="model=${m?.model},total=${m?.meta?.total},success=${m?.meta?.success},fail=${m?.meta?.fail},beginTime=${m?.meta?.beginTime},updateTime=${m?.meta?.updateTime}">
                                                     <tr>
                                                         <td class="text-left">
                                                             [[${m?.meta?.model}]]同步>总数:[[${total}]]
@@ -168,7 +168,7 @@
                                                                 <span th:if="${m?.meta?.counting}">(正在统计中)</span>
                                                                 <span th:if="${total gt 0 and (success + fail) gt 0}">,进度:[[${#numbers.formatPercent(((success + fail) / total), 2, 2)}]]</span>
                                                                 ,耗时:
-                                                                <span th:with="seconds=${(endTime - beginTime) / 1000}">
+                                                                <span th:with="seconds=${(updateTime - beginTime) / 1000}">
                                                                     <span th:if="${seconds lt 60}" th:text="${seconds + '秒'}" />
                                                                     <span th:if="${seconds ge 60}" th:with="minutes=${seconds / 60}" th:text="${minutes + '分' + (seconds - minutes * 60) + '秒'}" />
                                                                 </span>

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -29,6 +30,7 @@ public class ManagerFactory {
 
         // 标记运行中，使用Meta类的统一方法
         Meta meta = profileComponent.getMeta(mapping.getMetaId());
+        meta.setBeginTime(Instant.now().toEpochMilli());
         meta.saveState(MetaEnum.RUNNING);
 
         try {
