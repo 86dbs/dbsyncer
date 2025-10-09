@@ -178,10 +178,12 @@ public class Mapping extends AbstractConfigModel {
         this.recoverData = recoverData;
     }
 
+    @JSONField(serialize = false)
     public Meta getMeta() {
         return profileComponent.getMeta(this.metaId);
     }
 
+    @JSONField(serialize = false)
     public void resetMeta() {
         Meta meta = profileComponent.getMeta(this.metaId);
         // 清空状态
@@ -192,11 +194,13 @@ public class Mapping extends AbstractConfigModel {
         }
     }
 
+    @JSONField(serialize = false)
     public void resetMetaState(){
         Meta meta = profileComponent.getMeta(getMetaId());
         meta.resetState();
     }
 
+    @JSONField(serialize = false)
     public void updateMata(String metaSnapshot) {
         Meta meta = profileComponent.getMeta(getMetaId());
         meta.updateSnapshot(metaSnapshot);
@@ -205,10 +209,12 @@ public class Mapping extends AbstractConfigModel {
     }
 
 
+    @JSONField(serialize = false)
     public Task getTask() {
         return task;
     }
 
+    @JSONField(serialize = false)
     public void setTask(Task task) {
         this.task = task;
     }

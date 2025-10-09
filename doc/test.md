@@ -11,5 +11,8 @@
 ## 其他 
 - dql 测试
 - 源 mysql 目标 sql server
-- 目标 kafka
-- 断点
+- 源 sql server 目标 mysql
+- 源 sql server 目标 kafka
+- 源 mysql 目标 kafka
+- 断点 sqlserver
+- 断点 mysql 
