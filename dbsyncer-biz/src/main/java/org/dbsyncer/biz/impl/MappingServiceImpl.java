@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.biz.impl;
 
-import joptsimple.internal.Strings;
 import org.dbsyncer.biz.*;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.task.MappingCountTask;
@@ -12,7 +11,6 @@ import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
@@ -34,7 +32,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -100,7 +97,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             matchCustomizedTableGroups(model, tableGroups);
         }
         // 统计总数
-        submitMappingCountTask((Mapping) model, null);
+        submitMappingCountTask((Mapping) model);
         return id;
     }
 
@@ -109,12 +106,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Mapping mapping = profileComponent.getMapping(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
         Mapping newMapping = mapping.copy(snowflakeIdWorker);
-        mappingChecker.addMeta(newMapping);
-        profileComponent.addConfigModel(newMapping);
         log(LogType.MappingLog.COPY, newMapping);
 
         // 统计总数
-        submitMappingCountTask(newMapping, "");
+        resetCount(newMapping);
         return String.format("复制成功[%s]", newMapping.getName());
     }
 
@@ -131,9 +126,17 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             // 更新meta
             mapping.updateMata(metaSnapshot);
         }
-        // 统计总数
-        submitMappingCountTask(mapping, metaSnapshot);
+        resetCount(mapping);
         return id;
+    }
+
+    private void resetCount(Mapping mapping) {
+        // 统计总数
+        if (mapping.getModel().equals(ModelEnum.INCREMENT.getCode())) {
+            mapping.getMeta().clear();
+        } else {
+            submitMappingCountTask(mapping);
+        }
     }
 
     @Override
@@ -259,10 +262,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     /**
      * 提交统计驱动总数任务
      */
-    private void submitMappingCountTask(Mapping mapping, String metaSnapshot) {
+    private void submitMappingCountTask(Mapping mapping) {
         MappingCountTask task = new MappingCountTask();
         task.setMappingId(mapping.getId());
-        task.setMetaSnapshot(metaSnapshot);
         task.setParserComponent(parserComponent);
         task.setProfileComponent(profileComponent);
         task.setTableGroupService(tableGroupService);
@@ -443,7 +445,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
             sendNotifyMessage("重置驱动", String.format("手动重置驱动：%s(%s)", mapping.getName(), model));
         }
-        submitMappingCountTask(mapping, Strings.EMPTY);
+        submitMappingCountTask(mapping);
 
         return "重置成功";
     }

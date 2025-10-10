@@ -24,8 +24,6 @@ public class MappingCountTask extends AbstractCountTask {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private String metaSnapshot;
-
     @Override
     public String getUniqueId() {
         return mappingId;
@@ -58,9 +56,5 @@ public class MappingCountTask extends AbstractCountTask {
             meta.updateTotal();
             logger.info("完成统计:{}, {}张表", mapping.getName(), groupAll.size());
         }
-    }
-
-    public void setMetaSnapshot(String metaSnapshot) {
-        this.metaSnapshot = metaSnapshot;
     }
 }

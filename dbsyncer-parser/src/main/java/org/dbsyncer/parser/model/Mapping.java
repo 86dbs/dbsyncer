@@ -216,20 +216,22 @@ public class Mapping extends AbstractConfigModel {
         Mapping newMapping = JsonUtil.jsonToObj(json, Mapping.class);
         newMapping.profileComponent = profileComponent;
         newMapping.setName(this.getName() + "(复制)");
-        newMapping.setId(String.valueOf(snowflakeIdWorker.nextId()));
+        String newId = String.valueOf(snowflakeIdWorker.nextId());
+        newMapping.setId(newId);
         newMapping.setUpdateTime(Instant.now().toEpochMilli());
+        // meta
+        Meta.create(newMapping, snowflakeIdWorker, profileComponent);
+        profileComponent.addConfigModel(newMapping);
 
         // 复制映射表关系
         List<TableGroup> groupList = profileComponent.getTableGroupAll(this.getId());
-        if (!CollectionUtils.isEmpty(groupList)) {
-            groupList.forEach(tableGroup -> {
-                String tableGroupJson = JsonUtil.objToJson(tableGroup);
-                TableGroup newTableGroup = JsonUtil.jsonToObj(tableGroupJson, TableGroup.class);
-                newTableGroup.setId(String.valueOf(snowflakeIdWorker.nextId()));
-                newTableGroup.setMappingId(newMapping.getId());
-                profileComponent.addTableGroup(newTableGroup);
-            });
+        if (CollectionUtils.isEmpty(groupList)) {
+            return newMapping;
         }
+        groupList.forEach(tableGroup -> {
+            tableGroup.copy(newId, snowflakeIdWorker);
+        });
+
         return newMapping;
     }
 }

@@ -1,5 +1,7 @@
 package org.dbsyncer.manager;
 
+import org.dbsyncer.parser.LogService;
+import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
@@ -25,6 +27,9 @@ public class ManagerFactory {
     @Resource
     private Map<String, Puller> map;
 
+    @Resource
+    private LogService logService;
+
     public void start(Mapping mapping) {
         Puller puller = getPuller(mapping);
 
@@ -38,6 +43,7 @@ public class ManagerFactory {
         } catch (Exception e) {
             // 记录异常状态和异常信息到Meta对象，使用统一方法
             meta.saveState(MetaEnum.ERROR, e.getMessage());
+            logService.log(LogType.MappingLog.RUNNING, e.getMessage());
             throw new ManagerException(e.getMessage());
         }
     }

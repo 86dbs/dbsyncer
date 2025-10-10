@@ -71,7 +71,7 @@ public class MappingChecker extends AbstractChecker {
         this.modifyConfigModel(mapping, params);
 
         // 创建meta
-        addMeta(mapping);
+        Meta.create(mapping, snowflakeIdWorker, profileComponent);
 
         return mapping;
     }
@@ -115,18 +115,6 @@ public class MappingChecker extends AbstractChecker {
         batchMergeConfig(mapping, params);
 
         return mapping;
-    }
-
-    public void addMeta(Mapping mapping) {
-        Meta meta = new Meta(profileComponent);
-        meta.setName(mapping.getId());
-        meta.setMappingId(mapping.getId());
-
-        // 修改基本配置
-        this.modifyConfigModel(meta, new HashMap<>());
-
-        String id = profileComponent.addConfigModel(meta);
-        mapping.setMetaId(id);
     }
 
     /**

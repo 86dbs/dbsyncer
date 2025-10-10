@@ -5,10 +5,12 @@ package org.dbsyncer.parser.model;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 import org.apache.logging.log4j.util.Strings;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -190,5 +192,16 @@ public class TableGroup extends AbstractConfigModel {
         fullCompleted = false;
         cursors = null;
         this.errorMessage = null;
+    }
+
+    public TableGroup copy(String mappingId, SnowflakeIdWorker snowflakeIdWorker) {
+        String tableGroupJson = JsonUtil.objToJson(this);
+        TableGroup newTableGroup = JsonUtil.jsonToObj(tableGroupJson, TableGroup.class);
+        newTableGroup.clear();
+        newTableGroup.setId(String.valueOf(snowflakeIdWorker.nextId()));
+        newTableGroup.setMappingId(mappingId);
+
+        profileComponent.addTableGroup(newTableGroup);
+        return newTableGroup;
     }
 }

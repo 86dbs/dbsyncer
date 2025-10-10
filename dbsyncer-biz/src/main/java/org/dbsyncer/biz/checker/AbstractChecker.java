@@ -41,7 +41,7 @@ public abstract class AbstractChecker implements Checker {
     private PluginFactory pluginFactory;
 
     @Resource
-    private SnowflakeIdWorker snowflakeIdWorker;
+    protected SnowflakeIdWorker snowflakeIdWorker;
 
     /**
      * 修改基本配置

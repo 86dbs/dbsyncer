@@ -12,6 +12,7 @@ import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.enums.SyncPhaseEnum;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.listener.Listener;
+import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -69,7 +70,6 @@ public class Meta extends ConfigModel {
 
     public Meta() {
         super.setType(ConfigConstant.META);
-        super.setName(ConfigConstant.META);
         init();
     }
 
@@ -332,5 +332,18 @@ public class Meta extends ConfigModel {
     @JSONField(serialize = false)
     public boolean isRunning() {
         return MetaEnum.isRunning(this.state);
+    }
+
+    @JSONField(serialize = false)
+    public static Meta create(Mapping mapping, SnowflakeIdWorker snowflakeIdWorker, ProfileComponent profileComponent) {
+        Meta meta = new Meta(profileComponent);
+        String newId = String.valueOf(snowflakeIdWorker.nextId());
+        meta.setId(newId);
+        meta.setCreateTime(Instant.now().toEpochMilli());
+        meta.setMappingId(mapping.getId());
+        meta.setName(mapping.getId());
+        mapping.setMetaId(newId);
+        profileComponent.addConfigModel(meta);
+        return meta;
     }
 }
