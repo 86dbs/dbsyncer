@@ -18,7 +18,7 @@ import java.util.List;
 
 /**
  * 参数配置控制器
- * 
+ *
  * @author AE86
  * @version 1.0.0
  * @date 2025/01/08
@@ -39,11 +39,11 @@ public class ParamController {
     @ResponseBody
     public RestResult getParamOptions() {
         try {
-            logger.info("获取参数选项");
+            logger.debug("获取参数选项");
 
             List<ParamConfigVo> paramConfigs = paramConfigService.getAllParamConfigs();
 
-            logger.info("返回参数选项数量: {}", paramConfigs.size());
+            logger.debug("返回参数选项数量: {}", paramConfigs.size());
             return RestResult.restSuccess(paramConfigs);
         } catch (Exception e) {
             logger.error("获取参数选项失败: {}", e.getMessage(), e);

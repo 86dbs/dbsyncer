@@ -151,7 +151,7 @@ public class ParserComponentImpl implements ParserComponent {
      * 新的TableGroup流式处理方法
      */
     @Override
-    public void executeTableGroup(Task task, TableGroup tableGroup, Mapping mapping, Executor executor) {
+    public void executeTableGroup(String metaId, TableGroup tableGroup, Mapping mapping, Executor executor) {
         // 状态清理， 无须保存，因为第一个批次处理完后会保存。
         tableGroup.setErrorMessage("");
 
@@ -206,11 +206,11 @@ public class ParserComponentImpl implements ParserComponent {
                 .getConnectorService(context.getSourceConnectorInstance().getConfig());
 
         // 执行流式处理
-        ((DatabaseConnectorInstance) context.getSourceConnectorInstance()).execute(databaseTemplate ->
-                executeTableGroupWithStreaming(task, tableGroup, context, db, executor, primaryKeys, querySql, databaseTemplate));
+        ((DatabaseConnectorInstance) context.getSourceConnectorInstance()).execute(databaseTemplate -> 
+                executeTableGroupWithStreaming(metaId, tableGroup, context, db, executor, primaryKeys, querySql, databaseTemplate));
     }
 
-    private Object executeTableGroupWithStreaming(Task task, TableGroup tableGroup, AbstractPluginContext context,
+    private Object executeTableGroupWithStreaming(String metaId, TableGroup tableGroup, AbstractPluginContext context,
                                                   Database db, Executor executor, List<String> primaryKeys,
                                                   String querySql, DatabaseTemplate databaseTemplate) {
         // 获取流式处理的fetchSize
@@ -224,8 +224,11 @@ public class ParserComponentImpl implements ParserComponent {
             Iterator<Map<String, Object>> iterator = stream.iterator();
 
             while (iterator.hasNext()) {
-                if (!task.isRunning()) {
-                    logger.warn("任务被中止:{}", task.getId());
+                // 检查任务是否被停止或线程是否被中断
+                // 通过检查Meta状态来判断任务是否应该继续执行
+                Meta meta = profileComponent.getMeta(metaId);
+                if (!meta.isRunning() || Thread.currentThread().isInterrupted()) {
+                    logger.warn("任务被中止:{}", metaId);
                     return null;
                 }
 
@@ -233,13 +236,13 @@ public class ParserComponentImpl implements ParserComponent {
 
                 // 达到批次大小时处理数据
                 if (batch.size() >= context.getBatchSize()) {
-                    processTableGroupDataBatch(task.getId(), batch, tableGroup, context, executor, primaryKeys);
+                    processTableGroupDataBatch(metaId, batch, tableGroup, context, executor, primaryKeys);
                     batch = new ArrayList<>();
                 }
             }
             // 处理最后一批数据
             if (!batch.isEmpty()) {
-                processTableGroupDataBatch(task.getId(), batch, tableGroup, context, executor, primaryKeys);
+                processTableGroupDataBatch(metaId, batch, tableGroup, context, executor, primaryKeys);
             }
             // 标记流式处理完成
             tableGroup.setFullCompleted(true);
@@ -333,6 +336,8 @@ public class ParserComponentImpl implements ParserComponent {
         try {
             latch.await();
         } catch (InterruptedException e) {
+            // 重新设置中断状态
+            Thread.currentThread().interrupt();
             logger.error(e.getMessage());
         }
         return result;

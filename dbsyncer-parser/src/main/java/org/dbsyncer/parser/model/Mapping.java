@@ -69,8 +69,7 @@ public class Mapping extends AbstractConfigModel {
     @JSONField(serialize = false)
     public ProfileComponent profileComponent;
 
-    @JSONField(serialize = false)
-    private Task task;
+
 
     public String getSourceConnectorId() {
         return sourceConnectorId;
@@ -206,16 +205,5 @@ public class Mapping extends AbstractConfigModel {
         meta.updateSnapshot(metaSnapshot);
         profileComponent.editConfigModel(this);
 
-    }
-
-
-    @JSONField(serialize = false)
-    public Task getTask() {
-        return task;
-    }
-
-    @JSONField(serialize = false)
-    public void setTask(Task task) {
-        this.task = task;
     }
 }

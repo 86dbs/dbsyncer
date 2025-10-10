@@ -3,7 +3,6 @@ package org.dbsyncer.parser;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.plugin.PluginContext;
 
@@ -51,11 +50,12 @@ public interface ParserComponent {
     /**
      * TableGroup流式处理
      *
+     * @param metaId
      * @param tableGroup
      * @param mapping
      * @param executor
      */
-    void executeTableGroup(Task task, TableGroup tableGroup, Mapping mapping, Executor executor);
+    void executeTableGroup(String metaId, TableGroup tableGroup, Mapping mapping, Executor executor);
 
     /**
      * 批执行

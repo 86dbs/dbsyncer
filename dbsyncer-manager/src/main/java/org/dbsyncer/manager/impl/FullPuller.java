@@ -12,7 +12,6 @@ import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.model.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -58,13 +57,8 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
             Meta meta = profileComponent.getMeta(metaId);
             assert meta != null;
             try {
-                Task task = mapping.getTask();
-                if (task == null) {
-                    task = new Task(metaId);
-                    mapping.setTask(task);
-                }
                 logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
-                doTask(task, mapping, list, executor);
+                doTask(metaId, mapping, list, executor);
             } catch (Exception e) {
                 // 记录运行时异常状态和异常信息
                 meta.saveState(MetaEnum.ERROR, e.getMessage());
@@ -78,7 +72,6 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
                 }
 
                 // 清除task引用
-                mapping.setTask(null);
                 if (meta.getPhaseHandler() == null && !meta.isError()) {
                     meta.resetState();
                 }
@@ -92,19 +85,12 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
 
     @Override
     public void close(Mapping mapping) {
-        if (mapping != null) {
-            Task task = mapping.getTask();
-            if (task != null) {
-                task.stop();
-                mapping.setTask(null);
-            }
-        }
         mapping.resetMetaState();
     }
 
-    private void doTask(Task task, Mapping mapping, List<TableGroup> list, Executor executor) {
-        // 获取Meta对象 - 不再从Meta.snapshot获取cursor
-        Meta meta = profileComponent.getMeta(task.getId());
+    private void doTask(String metaId, Mapping mapping, List<TableGroup> list, Executor executor) {
+        // 获取Meta对象
+        Meta meta = profileComponent.getMeta(metaId);
 
         // 并发处理所有TableGroup
         List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -115,7 +101,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 try {
                     // 直接使用TableGroup的cursor进行流式处理
-                    parserComponent.executeTableGroup(task, tableGroup, mapping, executor);
+                    parserComponent.executeTableGroup(metaId, tableGroup, mapping, executor);
                 } catch (Exception e) {
                     logger.error("TableGroup {} 处理失败", tableGroup.getIndex(), e);
 
@@ -136,7 +122,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         // 记录结束时间
-        flush(task);
+        flush(metaId);
 
         // 检查并执行 Meta 中的阶段处理方法
         Runnable phaseHandler = meta.getPhaseHandler();
@@ -147,8 +133,8 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
         }
     }
 
-    private void flush(Task task) {
-        Meta meta = profileComponent.getMeta(task.getId());
+    private void flush(String metaId) {
+        Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "检查meta为空.");
 
         // 全量的过程中，有新数据则更新总数
@@ -166,12 +152,8 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
     @Override
     public void taskFinished(String metaId) {
         Meta meta = profileComponent.getMeta(metaId);
-        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
-        if (mapping != null) {
-            Task task = mapping.getTask();
-            if (task != null) {
-                flush(task);
-            }
+        if (meta != null) {
+            flush(metaId);
         }
     }
 }

@@ -6,6 +6,7 @@
 - 性能优化：支持多表并发处理。
 - 结构优化：将 DQL 类连接器重构，简化代码。
 - 结构优化：使用 sql template 技术 替代 sql builder 技术，简化 sql 生成的层次结构。(OK)；
+- 结构优化：用 Meta 替代 Task 类，解决 Task 在多线程环境下导致的任务有时无法关停问题。
 - 优化：meta 和 tableGroup 的名字更具有可读性和意义。
 - 优化：使用左右引号而非单一引号，解决 SQL server 引入的双重复杂度。
 - bug fixed: 编辑导致状态重置问题。(OK)
