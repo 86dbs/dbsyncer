@@ -108,30 +108,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String copy(String id) {
         Mapping mapping = profileComponent.getMapping(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
-
-        String json = JsonUtil.objToJson(mapping);
-        Mapping newMapping = JsonUtil.jsonToObj(json, Mapping.class);
-        mapping.profileComponent = profileComponent;
-        newMapping.setName(mapping.getName() + "(复制)");
-        newMapping.setId(String.valueOf(snowflakeIdWorker.nextId()));
-        newMapping.setUpdateTime(Instant.now().toEpochMilli());
+        Mapping newMapping = mapping.copy(snowflakeIdWorker);
         mappingChecker.addMeta(newMapping);
-
         profileComponent.addConfigModel(newMapping);
         log(LogType.MappingLog.COPY, newMapping);
 
-        // 复制映射表关系
-        List<TableGroup> groupList = profileComponent.getTableGroupAll(mapping.getId());
-        if (!CollectionUtils.isEmpty(groupList)) {
-            groupList.forEach(tableGroup -> {
-                String tableGroupJson = JsonUtil.objToJson(tableGroup);
-                TableGroup newTableGroup = JsonUtil.jsonToObj(tableGroupJson, TableGroup.class);
-                newTableGroup.setId(String.valueOf(snowflakeIdWorker.nextId()));
-                newTableGroup.setMappingId(newMapping.getId());
-                profileComponent.addTableGroup(newTableGroup);
-                log(LogType.TableGroupLog.COPY, newTableGroup);
-            });
-        }
         // 统计总数
         submitMappingCountTask(newMapping, "");
         return String.format("复制成功[%s]", newMapping.getName());

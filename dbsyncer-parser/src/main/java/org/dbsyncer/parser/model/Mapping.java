@@ -1,13 +1,17 @@
 package org.dbsyncer.parser.model;
 
 import com.alibaba.fastjson2.annotation.JSONField;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.SyncPhaseEnum;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -68,7 +72,6 @@ public class Mapping extends AbstractConfigModel {
 
     @JSONField(serialize = false)
     public ProfileComponent profileComponent;
-
 
 
     public String getSourceConnectorId() {
@@ -194,7 +197,7 @@ public class Mapping extends AbstractConfigModel {
     }
 
     @JSONField(serialize = false)
-    public void resetMetaState(){
+    public void resetMetaState() {
         Meta meta = profileComponent.getMeta(getMetaId());
         meta.resetState();
     }
@@ -205,5 +208,28 @@ public class Mapping extends AbstractConfigModel {
         meta.updateSnapshot(metaSnapshot);
         profileComponent.editConfigModel(this);
 
+    }
+
+    @JSONField(serialize = false)
+    public Mapping copy(SnowflakeIdWorker snowflakeIdWorker) {
+        String json = JsonUtil.objToJson(this);
+        Mapping newMapping = JsonUtil.jsonToObj(json, Mapping.class);
+        newMapping.profileComponent = profileComponent;
+        newMapping.setName(this.getName() + "(复制)");
+        newMapping.setId(String.valueOf(snowflakeIdWorker.nextId()));
+        newMapping.setUpdateTime(Instant.now().toEpochMilli());
+
+        // 复制映射表关系
+        List<TableGroup> groupList = profileComponent.getTableGroupAll(this.getId());
+        if (!CollectionUtils.isEmpty(groupList)) {
+            groupList.forEach(tableGroup -> {
+                String tableGroupJson = JsonUtil.objToJson(tableGroup);
+                TableGroup newTableGroup = JsonUtil.jsonToObj(tableGroupJson, TableGroup.class);
+                newTableGroup.setId(String.valueOf(snowflakeIdWorker.nextId()));
+                newTableGroup.setMappingId(newMapping.getId());
+                profileComponent.addTableGroup(newTableGroup);
+            });
+        }
+        return newMapping;
     }
 }
