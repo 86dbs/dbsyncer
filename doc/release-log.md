@@ -9,10 +9,10 @@
 - 结构优化：用 Meta 替代 Task 类，解决 Task 在多线程环境下导致的任务有时无法关停问题。
 - 优化：meta 和 tableGroup 的名字更具有可读性和意义。
 - 优化：使用左右引号而非单一引号，解决 SQL server 引入的双重复杂度。
+- 优化: tableGroup 不需要持久化 sql（OK）
 - bug fixed: 编辑导致状态重置问题。(OK)
 - bug fixed：重置计数为历史数量问题。(OK)
-- 优化: tableGroup 不需要持久化 sql（OK）
-- 结构优化：将 task 从 meta 移至 mapping 中(OK)
+- bug fixed: 复制的任务，数据总数没有计算问题。（OK）
 
 ## 2.4.0
 

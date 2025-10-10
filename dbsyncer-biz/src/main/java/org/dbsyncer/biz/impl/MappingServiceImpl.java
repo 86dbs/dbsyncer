@@ -111,6 +111,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         String json = JsonUtil.objToJson(mapping);
         Mapping newMapping = JsonUtil.jsonToObj(json, Mapping.class);
+        mapping.profileComponent = profileComponent;
         newMapping.setName(mapping.getName() + "(复制)");
         newMapping.setId(String.valueOf(snowflakeIdWorker.nextId()));
         newMapping.setUpdateTime(Instant.now().toEpochMilli());
@@ -131,6 +132,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 log(LogType.TableGroupLog.COPY, newTableGroup);
             });
         }
+        // 统计总数
+        submitMappingCountTask(newMapping, "");
         return String.format("复制成功[%s]", newMapping.getName());
     }
 
