@@ -60,7 +60,7 @@ public class SqlServerTemplate implements SqlTemplate {
         }
 
         String orderByClause = buildOrderByClause(primaryKeys);
-        return String.format("SELECT %s FROM %s WITH (NOLOCK)%s%s OFFSET ? ROWS FETCH NEXT ? ROWS ONLY", fieldList, schemaTable, whereClause, orderByClause);
+        return String.format("SELECT %s FROM %s WITH (NOLOCK)%s%s", fieldList, schemaTable, whereClause, orderByClause);
     }
 
     @Override

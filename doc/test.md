@@ -1,18 +1,28 @@
 # 测试场景
 
-## 模式
+## 全量模式
 
-- 全量测试
-- 增量测试
-  - 日志
-  - 定时
-- 混合测试
+- mysql源
+  - 无游标
+  - 有游标(断点)
+
+- sqlserver源
+  - 无游标
+  - 有游标(断点)
+
+## 增量模式
+
+- mysql源
+
+- sqlserver源
+
+## 混合模式
+
+## 数据写入
+
+- kafka
+- mysql
+- sqlserver
 
 ## 其他 
 - dql 测试
-- 源 mysql 目标 sql server
-- 源 sql server 目标 mysql
-- 源 sql server 目标 kafka
-- 源 mysql 目标 kafka
-- 断点 sqlserver
-- 断点 mysql 
