@@ -12,6 +12,7 @@
 - 使用 RefreshOffsetEvent 更新源的偏移量
 - 通过Listener监听数据变更
 - 使用BufferActuatorRouter和相关执行器处理变更事
+- 每3s写入snapshot信息
 
 ## 核心数据
 

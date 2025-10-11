@@ -188,11 +188,24 @@ public class TableGroup extends AbstractConfigModel {
     /**
      * 清理错误状态
      */
+    @JSONField(serialize = false)
     public void clear() {
         fullCompleted = false;
         cursors = null;
         this.errorMessage = null;
     }
+
+    @JSONField(serialize = false)
+    public static TableGroup create(String mappingId, String sourceTable, ParserComponent parserComponent, ProfileComponent profileComponent) {
+        TableGroup tableGroup = new TableGroup();
+        tableGroup.setName(mappingId + ":" + sourceTable);
+        tableGroup.currentVersion = TableGroup.Version;
+        tableGroup.parserComponent = parserComponent;
+        tableGroup.profileComponent = profileComponent;
+        tableGroup.setMappingId(mappingId);
+        return tableGroup;
+    }
+
 
     public TableGroup copy(String mappingId, SnowflakeIdWorker snowflakeIdWorker) {
         String tableGroupJson = JsonUtil.objToJson(this);
@@ -200,6 +213,7 @@ public class TableGroup extends AbstractConfigModel {
         newTableGroup.clear();
         newTableGroup.setId(String.valueOf(snowflakeIdWorker.nextId()));
         newTableGroup.setMappingId(mappingId);
+        newTableGroup.setName(mappingId + ":" + newTableGroup.getSourceTable().getName());
 
         profileComponent.addTableGroup(newTableGroup);
         return newTableGroup;

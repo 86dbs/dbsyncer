@@ -66,12 +66,7 @@ public class TableGroupChecker extends AbstractChecker {
         checkRepeatedTable(mappingId, sourceTable, targetTable);
 
         // 获取连接器信息
-        TableGroup tableGroup = new TableGroup();
-        tableGroup.setName(mapping.getId() + ":" + sourceTable);
-        tableGroup.currentVersion = TableGroup.Version;
-        tableGroup.parserComponent = parserComponent;
-        tableGroup.profileComponent = profileComponent;
-        tableGroup.setMappingId(mappingId);
+        TableGroup tableGroup = TableGroup.create(mappingId, sourceTable, parserComponent, profileComponent);
         tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable, sourceTablePK));
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable, targetTablePK));
 
