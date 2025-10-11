@@ -361,13 +361,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 架构名
         DatabaseConfig databaseConfig = (DatabaseConfig) commandConfig.getConnectorConfig();
-        String schema = sqlTemplate.buildSchema(databaseConfig.getSchema());
         // 同步字段
         List<Field> column = filterColumn(table.getColumn());
 
         // 构建SqlBuildContext
         SqlBuildContext buildContext = new SqlBuildContext();
-        buildContext.setSchema(schema);
+        buildContext.setSchema(databaseConfig.getSchema());
         buildContext.setTableName(tableName);
         buildContext.setFields(column);
         buildContext.setPrimaryKeys(primaryKeys);
