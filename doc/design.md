@@ -3,16 +3,16 @@
 ## 全量同步 vs 增量同步
 
 全量同步（Full Synchronization）：
-- 使用Task类来跟踪同步进度
-- 在FullPuller中创建和管理Task实例
-- Task保存了同步过程中的分页信息、表组索引等状态
+- FullPuller 全量同步入口
+- TableGroup 保存 cursor 信息
+- BufferActuator 写入数据（不使用队列）
 
 增量同步（Incremental Synchronization）：
-- 使用 ChangedEvent来表示数据变更事件
-- 使用 RefreshOffsetEvent 更新源的偏移量
 - 通过Listener监听数据变更
-- 使用BufferActuatorRouter和相关执行器处理变更事
-- 每3s写入snapshot信息
+- BufferActuatorRouter.execute() 发送 ChangedEvent来表示数据变更事件
+- 使用BufferActuatorRouter.offer 将数据写入队列，使用队列的原因：打包零散的数据变化，提高写入的性能。
+- AbstractBufferActuator 定时器从队列中拉取数据
+- 使用 Meta 保存源的偏移量，每3s写入偏移量信息
 
 ## 核心数据
 
@@ -24,11 +24,11 @@ Meta 记录了"做得怎么样"，即同步任务的执行状态和进度。对�
 
 BufferActuator
 - TableGroupBufferActuator 处理字段映射，每个表对应一个实例，具有更好的性能（独立线程池），但有数量限制，每个驱动器 max-buffer-actuator-size 个
-- GeneralBufferActuator 在没有专用 TableGroupBufferActuator 的情况下发挥作用, 由 BufferActuatorRouter 决定
+- GeneralBufferActuator 在没有专用 TableGroupBufferActuator 的情况下发挥作用, 由 BufferActuatorRouter 决定。处理数据变更和DDL变更，并触发事件回调。
 - StorageBufferActuator 处理数据持久化任务
+- AbstractBufferActuator 有定时器，每 300ms 触发一次，从缓存中拉取数据。有重入锁，保证同时只有一个任务在执行。
 
 BufferActuatorRouter 只处理增量同步模式
-GeneralBufferActuator：处理数据变更和DDL变更，并触发 RefreshOffsetEvent 事件
 
 Listener：
   - 依据连接类型和监听类型（日志|定时）创建监听器
@@ -50,10 +50,6 @@ Listener：
 ## 状态
 
 MetaEnum：在 Meta 中记录同步任务的整体状态
-- READY，RUNNING，STOPPING
-
-StateEnum：在 Task 中记录具体执行任务的状态
-- RUNNING，STOP
 
 ## 包依赖关系
 

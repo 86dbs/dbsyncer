@@ -40,7 +40,6 @@ public class TableGroup extends AbstractConfigModel {
     @JSONField(serialize = false)
     public ProfileComponent profileComponent;
 
-
     // 排序索引
     private int index;
 
@@ -206,7 +205,7 @@ public class TableGroup extends AbstractConfigModel {
         return tableGroup;
     }
 
-
+    @JSONField(serialize = false)
     public TableGroup copy(String mappingId, SnowflakeIdWorker snowflakeIdWorker) {
         String tableGroupJson = JsonUtil.objToJson(this);
         TableGroup newTableGroup = JsonUtil.jsonToObj(tableGroupJson, TableGroup.class);

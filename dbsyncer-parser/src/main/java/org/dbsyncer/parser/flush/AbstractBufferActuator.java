@@ -179,7 +179,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     public void run() {
         boolean locked = false;
         try {
-            locked = taskLock.tryLock(3, TimeUnit.SECONDS);
+            locked = taskLock.tryLock();
             if (locked) {
                 submit();
             }
