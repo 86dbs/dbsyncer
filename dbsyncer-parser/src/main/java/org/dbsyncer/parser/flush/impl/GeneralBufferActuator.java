@@ -204,10 +204,11 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         context.setBatchSize(generalBufferConfig.getBufferWriterCount());
         context.setSourceList(sourceDataList);
         context.setTargetList(targetDataList);
+        context.setPlugin(tableGroup.getPlugin());
         context.setPluginExtInfo(tableGroup.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
         context.setEnableSchemaResolver(enableSchemaResolver);
-        pluginFactory.process(tableGroup.getPlugin(), context, ProcessEnum.CONVERT);
+        pluginFactory.process(context, ProcessEnum.CONVERT);
 
         // 4、批量执行同步
         Result result = parserComponent.writeBatch(context, getExecutor());
@@ -218,7 +219,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
 
         // 6、执行后置处理
-        pluginFactory.process(tableGroup.getPlugin(), context, ProcessEnum.AFTER);
+        pluginFactory.process(context, ProcessEnum.AFTER);
     }
 
     /**

@@ -1,6 +1,6 @@
 package org.dbsyncer.biz.vo;
 
-import org.dbsyncer.plugin.model.Plugin;
+import org.dbsyncer.sdk.model.Plugin;
 
 public class PluginVo extends Plugin {
 

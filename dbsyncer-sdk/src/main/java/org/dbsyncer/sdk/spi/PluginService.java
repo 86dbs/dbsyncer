@@ -23,7 +23,7 @@ public interface PluginService {
     }
 
     /**
-     * 全量同步前置处理
+     * 全量同步/定时增量同步前置处理
      *
      * @param pluginContext 上下文
      */

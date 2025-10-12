@@ -149,6 +149,7 @@ public class ParserComponentImpl implements ParserComponent {
         context.setEvent(ConnectorConstant.OPERTION_INSERT);
         context.setCommand(command);
         context.setBatchSize(mapping.getBatchNum());
+        context.setPlugin(group.getPlugin());
         context.setPluginExtInfo(group.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
         context.setSourceTable(sourceTable);
@@ -159,7 +160,7 @@ public class ParserComponentImpl implements ParserComponent {
         ConnectorService sourceConnector = connectorFactory.getConnectorService(context.getSourceConnectorInstance().getConfig());
         picker.setSourceResolver(context.isEnableSchemaResolver() ? sourceConnector.getSchemaResolver() : null);
         // 0、插件前置处理
-        pluginFactory.process(group.getPlugin(), context, ProcessEnum.BEFORE);
+        pluginFactory.process(context, ProcessEnum.BEFORE);
 
         for (; ; ) {
             if (!task.isRunning()) {
@@ -187,7 +188,7 @@ public class ParserComponentImpl implements ParserComponent {
             // 4、插件转换
             context.setSourceList(source);
             context.setTargetList(target);
-            pluginFactory.process(group.getPlugin(), context, ProcessEnum.CONVERT);
+            pluginFactory.process(context, ProcessEnum.CONVERT);
 
             // 5、写入目标源
             Result result = writeBatch(context, executor);
@@ -200,7 +201,7 @@ public class ParserComponentImpl implements ParserComponent {
             flush(task, result);
 
             // 7、同步完成后通知插件做后置处理
-            pluginFactory.process(group.getPlugin(), context, ProcessEnum.AFTER);
+            pluginFactory.process(context, ProcessEnum.AFTER);
 
             // 8、判断尾页
             if (source.size() < context.getPageSize()) {
