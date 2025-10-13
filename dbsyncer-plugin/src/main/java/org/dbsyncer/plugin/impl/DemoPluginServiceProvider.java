@@ -22,7 +22,7 @@ public final class DemoPluginServiceProvider implements PluginService {
 
     @Override
     public void postProcessBefore(PluginContext context) {
-        logger.info("插件正在处理全量同步，目标源表:{}", context.getTargetTableName());
+        logger.info("插件正在处理同步，目标源表:{}", context.getTargetTableName());
     }
 
     @Override

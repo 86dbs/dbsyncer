@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.plugin.model.Plugin;
+import org.dbsyncer.sdk.model.Plugin;
 import org.dbsyncer.sdk.model.Filter;
 
 import java.util.ArrayList;
