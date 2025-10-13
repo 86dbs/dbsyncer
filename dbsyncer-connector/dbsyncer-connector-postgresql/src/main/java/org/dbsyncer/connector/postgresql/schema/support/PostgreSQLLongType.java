@@ -17,7 +17,8 @@ import java.util.stream.Collectors;
  */
 public class PostgreSQLLongType extends LongType {
     private enum TypeEnum {
-        INT8("int8");
+        INT8("int8"),
+        BIG_SERIAL("bigserial");
 
         private final String value;
 
