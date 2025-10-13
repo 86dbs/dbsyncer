@@ -6,6 +6,7 @@ package org.dbsyncer.connector.sqlserver;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.sqlserver.cdc.Lsn;
 import org.dbsyncer.connector.sqlserver.cdc.SqlServerListener;
+import org.dbsyncer.connector.sqlserver.schema.SqlServerSchemaResolver;
 import org.dbsyncer.connector.sqlserver.validator.SqlServerConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
@@ -21,6 +22,7 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +47,8 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
 
     protected final ConfigValidator<?> configValidator = new SqlServerConfigValidator();
+    
+    private final SqlServerSchemaResolver schemaResolver = new SqlServerSchemaResolver();
 
     public SqlServerConnector() {
         sqlTemplate = new SqlServerTemplate();
@@ -124,5 +128,10 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public Integer getStreamingFetchSize(ReaderContext context) {
         return context.getPageSize(); // 使用页面大小作为fetchSize
+    }
+    
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
     }
 }

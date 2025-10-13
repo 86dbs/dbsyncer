@@ -51,6 +51,20 @@ Listener：
 
 MetaEnum：在 Meta 中记录同步任务的整体状态
 
+## 异构数据库字段映射
+
+- DataTypeEnum 提供了统一的类型
+- AbstractDataType<T> 实现类型转换的核心逻辑：
+- SchemaResolver 接口：定义了类型转换的核心方
+- 数据转换核心类 - Picker
+
+过程如下：
+- 数据读取阶段: 从源数据库读取原始数据，在 GeneralBufferActuator 中触发
+- 字段映射阶段: 通过Picker.exchange()进行字段映射和值传递
+- 类型标准化阶段: 通过SchemaResolver.merge()将源数据转换为标准类型
+- 类型转换阶段: 通过SchemaResolver.convert()将标准类型转换为目标数据库类型
+- 数据写入阶段: 将转换后的数据写入目标数据库
+
 ## 包依赖关系
 
 dbsyncer-common (最底层)
