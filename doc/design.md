@@ -65,6 +65,13 @@ MetaEnum：在 Meta 中记录同步任务的整体状态
 - 类型转换阶段: 通过SchemaResolver.convert()将标准类型转换为目标数据库类型
 - 数据写入阶段: 将转换后的数据写入目标数据库
 
+源数据库数据 → [Picker.merge] → Java标准类型 → [AbstractConnector.convert] → 目标数据库数据
+↓              ↓                    ↓                    ↓
+SQL Server     sourceResolver     标准化数据         targetResolver
+int identity   .merge()           (Integer)         .convert()
+↓              ↓                    ↓                    ↓
+原始数据      转换为标准类型        中间状态
+
 ## 包依赖关系
 
 dbsyncer-common (最底层)

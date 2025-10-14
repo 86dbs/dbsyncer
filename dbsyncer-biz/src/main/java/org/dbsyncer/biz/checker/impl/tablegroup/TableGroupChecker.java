@@ -17,10 +17,14 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.schema.SchemaResolver;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -46,6 +50,9 @@ public class TableGroupChecker extends AbstractChecker {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private ConnectorFactory connectorFactory;
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
@@ -308,9 +315,17 @@ public class TableGroupChecker extends AbstractChecker {
             if (null == s && null == t) {
                 continue;
             }
-            // 用源字段信息作为目标字段信息
+            // 用源字段信息作为目标字段信息，但需要进行类型标准化
             if (null == t) {
-                t = new Field(s.getName(), s.getTypeName(), s.getType(), s.isPk(), s.getColumnSize(), s.getRatio());
+                // 获取源连接器的SchemaResolver进行类型标准化
+                Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+                ConnectorConfig sourceConnectorConfig = getConnectorConfig(mapping.getSourceConnectorId());
+                ConnectorService<?, ?> sourceConnectorService = connectorFactory.getConnectorService(sourceConnectorConfig.getConnectorType());
+                SchemaResolver sourceSchemaResolver = sourceConnectorService.getSchemaResolver();
+                
+                // 将源字段标准化为标准类型，作为目标字段
+                Field standardizedField = sourceSchemaResolver.toStandardType(s);
+                t = standardizedField;
             }
 
             if (null != t) {
@@ -319,6 +334,10 @@ public class TableGroupChecker extends AbstractChecker {
             list.add(new FieldMapping(s, t));
         }
         tableGroup.setFieldMapping(list);
+    }
+
+    private ConnectorConfig getConnectorConfig(String connectorId) {
+        return profileComponent.getConnector(connectorId).getConfig();
     }
 
 }

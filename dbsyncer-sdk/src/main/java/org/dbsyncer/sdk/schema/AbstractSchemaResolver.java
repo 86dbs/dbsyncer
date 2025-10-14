@@ -30,6 +30,10 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
         return mapping.get(field.getTypeName());
     }
 
+    protected DataType getDataType(Field field) {
+        return mapping.get(field.getTypeName());
+    }
+
     @Override
     public Object merge(Object val, Field field) {
         DataType dataType = getDataType(mapping, field);
