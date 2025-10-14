@@ -17,12 +17,12 @@ public class TableGroupBufferConfig extends BufferActuatorConfig {
     /**
      * 工作线程数
      */
-    private int threadCoreSize = Runtime.getRuntime().availableProcessors() * 2;
+    private int threadCoreSize = 1;
 
     /**
      * 最大工作线程数
      */
-    private int maxThreadSize = 10;
+    private int maxThreadSize = threadCoreSize * 2;
 
     /**
      * 工作线任务队列
