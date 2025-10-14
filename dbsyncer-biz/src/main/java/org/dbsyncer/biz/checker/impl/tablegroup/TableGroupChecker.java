@@ -315,17 +315,23 @@ public class TableGroupChecker extends AbstractChecker {
             if (null == s && null == t) {
                 continue;
             }
-            // 用源字段信息作为目标字段信息，但需要进行类型标准化
+            // 用源字段信息作为目标字段信息，但需要进行类型标准化和转换
             if (null == t) {
-                // 获取源连接器的SchemaResolver进行类型标准化
+                // 获取源连接器和目标连接器的SchemaResolver
                 Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
                 ConnectorConfig sourceConnectorConfig = getConnectorConfig(mapping.getSourceConnectorId());
+                ConnectorConfig targetConnectorConfig = getConnectorConfig(mapping.getTargetConnectorId());
                 ConnectorService<?, ?> sourceConnectorService = connectorFactory.getConnectorService(sourceConnectorConfig.getConnectorType());
+                ConnectorService<?, ?> targetConnectorService = connectorFactory.getConnectorService(targetConnectorConfig.getConnectorType());
                 SchemaResolver sourceSchemaResolver = sourceConnectorService.getSchemaResolver();
+                SchemaResolver targetSchemaResolver = targetConnectorService.getSchemaResolver();
                 
-                // 将源字段标准化为标准类型，作为目标字段
-                Field standardizedField = sourceSchemaResolver.toStandardType(s);
-                t = standardizedField;
+                // 1. 先用源连接器将源字段标准化为Java标准类型
+                Field standardField = sourceSchemaResolver.toStandardType(s);
+                
+                // 2. 再用目标连接器将Java标准类型转换为目标数据库类型
+                Field targetField = targetSchemaResolver.fromStandardType(standardField);
+                t = targetField;
             }
 
             if (null != t) {

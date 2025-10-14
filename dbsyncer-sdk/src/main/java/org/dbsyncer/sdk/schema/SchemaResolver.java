@@ -40,4 +40,13 @@ public interface SchemaResolver {
      * @return 标准化后的字段
      */
     Field toStandardType(Field field);
+    
+    /**
+     * 从标准类型转换为目标数据库类型
+     * 用于字段映射配置阶段的类型转换
+     *
+     * @param standardField 标准类型字段
+     * @return 目标数据库类型字段
+     */
+    Field fromStandardType(Field standardField);
 }

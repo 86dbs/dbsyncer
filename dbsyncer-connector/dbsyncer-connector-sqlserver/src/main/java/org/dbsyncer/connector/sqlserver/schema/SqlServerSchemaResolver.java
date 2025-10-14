@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -21,6 +22,25 @@ import java.util.stream.Stream;
  * @Date 2025-04-05
  */
 public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
+
+    // Java标准类型到SQL Server特定类型的映射
+    private static final Map<String, String> STANDARD_TO_TARGET_TYPE_MAP = new HashMap<>();
+    
+    static {
+        STANDARD_TO_TARGET_TYPE_MAP.put("INT", "int");
+        STANDARD_TO_TARGET_TYPE_MAP.put("STRING", "nvarchar");
+        STANDARD_TO_TARGET_TYPE_MAP.put("DECIMAL", "decimal");
+        STANDARD_TO_TARGET_TYPE_MAP.put("DATE", "date");
+        STANDARD_TO_TARGET_TYPE_MAP.put("TIME", "time");
+        STANDARD_TO_TARGET_TYPE_MAP.put("TIMESTAMP", "datetime");
+        STANDARD_TO_TARGET_TYPE_MAP.put("BOOLEAN", "bit");
+        STANDARD_TO_TARGET_TYPE_MAP.put("BYTE", "tinyint");
+        STANDARD_TO_TARGET_TYPE_MAP.put("SHORT", "smallint");
+        STANDARD_TO_TARGET_TYPE_MAP.put("LONG", "bigint");
+        STANDARD_TO_TARGET_TYPE_MAP.put("FLOAT", "real");
+        STANDARD_TO_TARGET_TYPE_MAP.put("DOUBLE", "float");
+        STANDARD_TO_TARGET_TYPE_MAP.put("BYTES", "varbinary");
+    }
 
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
@@ -66,12 +86,40 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
                          field.getTypeName()));
     }
 
+    @Override
+    public Field fromStandardType(Field standardField) {
+        // 将Java标准类型转换为SQL Server特定类型
+        String targetTypeName = getTargetTypeName(standardField.getTypeName());
+        return new Field(standardField.getName(),
+                       targetTypeName,
+                       getTargetTypeCode(targetTypeName),
+                       standardField.isPk(),
+                       standardField.getColumnSize(),
+                       standardField.getRatio());
+    }
+
     /**
      * 获取标准类型编码
      */
     private int getStandardTypeCode(DataTypeEnum dataTypeEnum) {
         // 使用枚举的ordinal值作为类型编码
         return dataTypeEnum.ordinal();
+    }
+
+    /**
+     * 获取目标类型名称（将Java标准类型转换为SQL Server特定类型）
+     */
+    private String getTargetTypeName(String standardTypeName) {
+        return STANDARD_TO_TARGET_TYPE_MAP.getOrDefault(standardTypeName, standardTypeName.toLowerCase());
+    }
+
+    /**
+     * 获取目标类型编码
+     */
+    private int getTargetTypeCode(String targetTypeName) {
+        // 这里可以根据需要实现类型编码映射
+        // 暂时返回0，实际使用时可能需要更精确的映射
+        return 0;
     }
 
 }
