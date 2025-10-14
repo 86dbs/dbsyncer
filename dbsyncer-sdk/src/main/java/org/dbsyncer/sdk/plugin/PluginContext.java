@@ -82,6 +82,11 @@ public interface PluginContext extends BaseContext {
     boolean isEnableSchemaResolver();
 
     /**
+     * 是否打印trace信息
+     */
+    boolean isEnablePrintTraceInfo();
+
+    /**
      * 数据源数据集合
      */
     List<Map> getSourceList();

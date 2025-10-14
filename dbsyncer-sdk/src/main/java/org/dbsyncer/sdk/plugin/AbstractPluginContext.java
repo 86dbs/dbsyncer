@@ -61,6 +61,11 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
     private boolean enableSchemaResolver;
 
     /**
+     * 是否打印trace信息
+     */
+    private boolean enablePrintTraceInfo;
+
+    /**
      * 数据源数据集合
      */
     private List<Map> sourceList;
@@ -163,6 +168,15 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
 
     public void setEnableSchemaResolver(boolean enableSchemaResolver) {
         this.enableSchemaResolver = enableSchemaResolver;
+    }
+
+    @Override
+    public boolean isEnablePrintTraceInfo() {
+        return enablePrintTraceInfo;
+    }
+
+    public void setEnablePrintTraceInfo(boolean enablePrintTraceInfo) {
+        this.enablePrintTraceInfo = enablePrintTraceInfo;
     }
 
     @Override
