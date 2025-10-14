@@ -5,6 +5,7 @@ package org.dbsyncer.connector.base;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
@@ -16,6 +17,8 @@ import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -40,6 +43,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Component
 public class ConnectorFactory implements DisposableBean {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Map<String, ConnectorInstance> pool = new ConcurrentHashMap<>();
 
@@ -204,11 +209,19 @@ public class ConnectorFactory implements DisposableBean {
                 Result result = new Result();
                 result.getError().append(e.getMessage());
                 result.addFailData(context.getTargetList());
+                if (context.isEnablePrintTraceInfo()) {
+                    logger.error("traceId:{}, tableName:{}, event:{}, targetList:{}, result:{}", context.getTraceId(), context.getSourceTableName(),
+                            context.getEvent(), context.getTargetList(), JsonUtil.objToJson(result));
+                }
                 return result;
             }
         }
 
         Result result = targetConnector.writer(targetInstance, context);
+        if (context.isEnablePrintTraceInfo()) {
+            logger.info("traceId:{}, tableName:{}, event:{}, targetList:{}, result:{}", context.getTraceId(), context.getSourceTableName(),
+                    context.getEvent(), context.getTargetList(), JsonUtil.objToJson(result));
+        }
         Assert.notNull(result, "Connector writer batch result can not null");
         return result;
     }

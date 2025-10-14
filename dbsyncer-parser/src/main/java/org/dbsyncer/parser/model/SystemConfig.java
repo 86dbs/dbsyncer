@@ -77,7 +77,12 @@ public class SystemConfig extends ConfigModel {
     /**
      * 表执行器上限数
      */
-    private int maxBufferActuatorSize = 20;
+    private int maxBufferActuatorSize = 50;
+
+    /**
+     * 是否打印trace信息（false-关闭; true-开启）
+     */
+    private boolean enablePrintTraceInfo;
 
     public int getExpireDataDays() {
         return expireDataDays;
@@ -173,5 +178,13 @@ public class SystemConfig extends ConfigModel {
 
     public void setMaxBufferActuatorSize(int maxBufferActuatorSize) {
         this.maxBufferActuatorSize = maxBufferActuatorSize;
+    }
+
+    public boolean isEnablePrintTraceInfo() {
+        return enablePrintTraceInfo;
+    }
+
+    public void setEnablePrintTraceInfo(boolean enablePrintTraceInfo) {
+        this.enablePrintTraceInfo = enablePrintTraceInfo;
     }
 }
