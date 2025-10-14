@@ -1,10 +1,10 @@
 /**
  * DBSyncer Copyright 2020-2024 All Rights Reserved.
  */
-package org.dbsyncer.connector.sqlserver.schema;
+package org.dbsyncer.connector.sqlite.schema;
 
-import org.dbsyncer.connector.sqlserver.SqlServerException;
-import org.dbsyncer.connector.sqlserver.schema.support.*;
+import org.dbsyncer.connector.sqlite.SQLiteException;
+import org.dbsyncer.connector.sqlite.schema.support.*;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
@@ -15,53 +15,44 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * SqlServer标准数据类型解析器
+ * SQLite标准数据类型解析器
  *
- * @Author AE86
+ * @Author 穿云
  * @Version 1.0.0
- * @Date 2025-04-05
+ * @Date 2024-12-24 23:45
  */
-public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
+public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
 
-    // Java标准类型到SQL Server特定类型的映射
+    // Java标准类型到SQLite特定类型的映射
     private static final Map<String, String> STANDARD_TO_TARGET_TYPE_MAP = new HashMap<>();
     
     static {
-        STANDARD_TO_TARGET_TYPE_MAP.put("INT", "int");
-        STANDARD_TO_TARGET_TYPE_MAP.put("STRING", "nvarchar");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DECIMAL", "decimal");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DATE", "date");
-        STANDARD_TO_TARGET_TYPE_MAP.put("TIME", "time");
-        STANDARD_TO_TARGET_TYPE_MAP.put("TIMESTAMP", "datetime2");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BOOLEAN", "bit");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BYTE", "tinyint");
-        STANDARD_TO_TARGET_TYPE_MAP.put("SHORT", "smallint");
-        STANDARD_TO_TARGET_TYPE_MAP.put("LONG", "bigint");
-        STANDARD_TO_TARGET_TYPE_MAP.put("FLOAT", "real");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DOUBLE", "float");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BYTES", "varbinary");
-        STANDARD_TO_TARGET_TYPE_MAP.put("ARRAY", "nvarchar(max)");
+        STANDARD_TO_TARGET_TYPE_MAP.put("INT", "INTEGER");
+        STANDARD_TO_TARGET_TYPE_MAP.put("STRING", "TEXT");
+        STANDARD_TO_TARGET_TYPE_MAP.put("DECIMAL", "REAL");
+        STANDARD_TO_TARGET_TYPE_MAP.put("DATE", "TEXT");
+        STANDARD_TO_TARGET_TYPE_MAP.put("TIME", "TEXT");
+        STANDARD_TO_TARGET_TYPE_MAP.put("TIMESTAMP", "TEXT");
+        STANDARD_TO_TARGET_TYPE_MAP.put("BOOLEAN", "INTEGER");
+        STANDARD_TO_TARGET_TYPE_MAP.put("BYTE", "INTEGER");
+        STANDARD_TO_TARGET_TYPE_MAP.put("SHORT", "INTEGER");
+        STANDARD_TO_TARGET_TYPE_MAP.put("LONG", "INTEGER");
+        STANDARD_TO_TARGET_TYPE_MAP.put("FLOAT", "REAL");
+        STANDARD_TO_TARGET_TYPE_MAP.put("DOUBLE", "REAL");
+        STANDARD_TO_TARGET_TYPE_MAP.put("BYTES", "BLOB");
+        STANDARD_TO_TARGET_TYPE_MAP.put("ARRAY", "TEXT");
     }
 
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
         Stream.of(
-                new SqlServerBooleanType(),
-                new SqlServerBytesType(),
-                new SqlServerByteType(),
-                new SqlServerDateType(),
-                new SqlServerDecimalType(),
-                new SqlServerDoubleType(),
-                new SqlServerFloatType(),
-                new SqlServerIntType(),
-                new SqlServerLongType(),
-                new SqlServerShortType(),
-                new SqlServerStringType(),
-                new SqlServerTimestampType(),
-                new SqlServerTimeType()
+                new SQLiteTextType(),      // TEXT 存储类 - 文本亲和性
+                new SQLiteIntegerType(),   // INTEGER 存储类 - 整数亲和性
+                new SQLiteRealType(),      // REAL 存储类 - 实数亲和性
+                new SQLiteBlobType()       // BLOB 存储类 - 二进制亲和性
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
-                throw new SqlServerException("Duplicate type name: " + typeName);
+                throw new SQLiteException("Duplicate type name: " + typeName);
             }
             mapping.put(typeName, t);
         }));
@@ -83,13 +74,13 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
 
         // 如果没有找到对应的DataType，抛出异常以发现系统不足
         throw new UnsupportedOperationException(
-            String.format("Unsupported SQL Server type: %s. Please add mapping for this type in DataType configuration.",
+            String.format("Unsupported SQLite type: %s. Please add mapping for this type in DataType configuration.",
                          field.getTypeName()));
     }
 
     @Override
     public Field fromStandardType(Field standardField) {
-        // 将Java标准类型转换为SQL Server特定类型
+        // 将Java标准类型转换为SQLite特定类型
         String targetTypeName = getTargetTypeName(standardField.getTypeName());
         return new Field(standardField.getName(),
                        targetTypeName,
@@ -108,10 +99,10 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
     }
 
     /**
-     * 获取目标类型名称（将Java标准类型转换为SQL Server特定类型）
+     * 获取目标类型名称（将Java标准类型转换为SQLite特定类型）
      */
     private String getTargetTypeName(String standardTypeName) {
-        return STANDARD_TO_TARGET_TYPE_MAP.getOrDefault(standardTypeName, standardTypeName.toLowerCase());
+        return STANDARD_TO_TARGET_TYPE_MAP.getOrDefault(standardTypeName, standardTypeName.toUpperCase());
     }
 
     /**
@@ -122,5 +113,4 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
         // 暂时返回0，实际使用时可能需要更精确的映射
         return 0;
     }
-
 }

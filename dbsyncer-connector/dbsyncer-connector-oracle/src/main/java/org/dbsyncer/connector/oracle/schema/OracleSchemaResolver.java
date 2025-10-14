@@ -29,7 +29,7 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
         STANDARD_TO_TARGET_TYPE_MAP.put("STRING", "VARCHAR2");
         STANDARD_TO_TARGET_TYPE_MAP.put("DECIMAL", "NUMBER");
         STANDARD_TO_TARGET_TYPE_MAP.put("DATE", "DATE");
-        STANDARD_TO_TARGET_TYPE_MAP.put("TIME", "DATE");
+        STANDARD_TO_TARGET_TYPE_MAP.put("TIME", "TIMESTAMP");
         STANDARD_TO_TARGET_TYPE_MAP.put("TIMESTAMP", "TIMESTAMP");
         STANDARD_TO_TARGET_TYPE_MAP.put("BOOLEAN", "NUMBER");
         STANDARD_TO_TARGET_TYPE_MAP.put("BYTE", "NUMBER");
@@ -38,6 +38,7 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
         STANDARD_TO_TARGET_TYPE_MAP.put("FLOAT", "BINARY_FLOAT");
         STANDARD_TO_TARGET_TYPE_MAP.put("DOUBLE", "BINARY_DOUBLE");
         STANDARD_TO_TARGET_TYPE_MAP.put("BYTES", "RAW");
+        STANDARD_TO_TARGET_TYPE_MAP.put("ARRAY", "CLOB");
     }
 
     @Override
