@@ -119,6 +119,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             response.setTypeEnum(request.getTypeEnum());
             response.setSql(request.getSql());
             response.setMerged(true);
+        } else if (profileComponent.getSystemConfig().isEnablePrintTraceInfo() && StringUtil.isNotBlank(request.getTraceId())) {
+            logger.info("traceId:{} merge into traceId:{}", request.getTraceId(), response.getTraceId());
         }
     }
 

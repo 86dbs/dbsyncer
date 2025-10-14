@@ -219,8 +219,8 @@ public class ConnectorFactory implements DisposableBean {
 
         Result result = targetConnector.writer(targetInstance, context);
         if (context.isEnablePrintTraceInfo()) {
-            logger.info("traceId:{}, tableName:{}, event:{}, targetList:{}, result:{}", context.getTraceId(), context.getSourceTableName(),
-                    context.getEvent(), context.getTargetList(), JsonUtil.objToJson(result));
+            logger.info("traceId:{}, tableName:{}, event:{}, result:{}", context.getTraceId(), context.getSourceTableName(),
+                    context.getEvent(), JsonUtil.objToJson(result));
         }
         Assert.notNull(result, "Connector writer batch result can not null");
         return result;
