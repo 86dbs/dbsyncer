@@ -47,7 +47,7 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
     public Integer asInteger() {
         byte[] bytes = asByteArray();
         if (bytes.length == BinlogByteEnum.BYTE.getByteLength()) {
-            return NumberUtil.toInt(ByteString.copyFrom(bytes).toStringUtf8());
+            return NumberUtil.toInt(asString());
         }
         if (bytes.length == BinlogByteEnum.SHORT.getByteLength()) {
             Short aShort = asShort();
