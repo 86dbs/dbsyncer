@@ -25,6 +25,11 @@ public class BitValueMapper extends AbstractValueMapper<byte[]> {
             buffer.putInt((Integer) val);
             return buffer.array();
         }
+        if (val instanceof Long) {
+            ByteBuffer buffer = ByteBuffer.allocate(8);
+            buffer.putLong((Long) val);
+            return buffer.array();
+        }
         if (val instanceof Boolean) {
             Boolean b = (Boolean) val;
             ByteBuffer buffer = ByteBuffer.allocate(2);
