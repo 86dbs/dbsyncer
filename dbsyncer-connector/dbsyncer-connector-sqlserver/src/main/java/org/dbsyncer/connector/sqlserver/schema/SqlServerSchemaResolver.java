@@ -46,19 +46,12 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
         Stream.of(
-                new SqlServerBooleanType(),
-                new SqlServerBytesType(),
-                new SqlServerByteType(),
-                new SqlServerDateType(),
-                new SqlServerDecimalType(),
-                new SqlServerDoubleType(),
-                new SqlServerFloatType(),
-                new SqlServerIntType(),
-                new SqlServerLongType(),
-                new SqlServerShortType(),
-                new SqlServerStringType(),
-                new SqlServerTimestampType(),
-                new SqlServerTimeType()
+                new SqlServerExactNumericType(),        // 精确数值类型
+                new SqlServerApproximateNumericType(),  // 近似数值类型
+                new SqlServerDateTimeType(),            // 日期时间类型
+                new SqlServerCharacterStringType(),     // 字符字符串类型
+                new SqlServerUnicodeStringType(),       // Unicode 字符串类型
+                new SqlServerBinaryStringType()         // 二进制字符串类型
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
                 throw new SqlServerException("Duplicate type name: " + typeName);
