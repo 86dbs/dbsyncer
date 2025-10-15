@@ -209,7 +209,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
         AtomicLong batchCounter = new AtomicLong();
         Map<String, Response> map = new ConcurrentHashMap<>();
-        while (!queue.isEmpty() && batchCounter.get() < config.getBufferPullCount()) {
+        while (!queue.isEmpty()) {
             Request poll = queue.poll();
             String key = getPartitionKey(poll);
             Response response = map.compute(key, (k, v) -> {
@@ -225,15 +225,28 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
             partition(poll, response);
             batchCounter.incrementAndGet();
 
+            // 当达到批次大小时，处理当前批次
+            if (batchCounter.get() >= config.getBufferPullCount()) {
+                process(map);
+                map.clear();
+                meter(timeRegistry, batchCounter.get());
+                batchCounter.set(0);
+                map = new ConcurrentHashMap<>();
+            }
+
             Request next = queue.peek();
             if (null != next && skipPartition(next, response)) {
                 break;
             }
         }
 
-        process(map);
-        map.clear();
-        meter(timeRegistry, batchCounter.get());
+        // 处理剩余未达到批次大小的数据
+        if (!map.isEmpty()) {
+            process(map);
+            map.clear();
+            meter(timeRegistry, batchCounter.get());
+        }
+        
         map = null;
         batchCounter = null;
     }
