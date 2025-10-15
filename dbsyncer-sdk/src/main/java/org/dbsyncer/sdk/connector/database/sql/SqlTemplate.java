@@ -75,18 +75,6 @@ public interface SqlTemplate {
     }
 
     /**
-     * 构建存在性检查SQL
-     *
-     * @param buildContext 构建上下文
-     * @return 构建后的SQL（包含?占位符）
-     */
-    default String buildQueryExistSql(SqlBuildContext buildContext) {
-        String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
-        String queryFilter = buildContext.getQueryFilter();
-        return buildQueryExistSql(schemaTable, queryFilter);
-    }
-
-    /**
      * 构建插入SQL
      *
      * @param buildContext 构建上下文
@@ -267,13 +255,6 @@ public interface SqlTemplate {
             return String.format("SELECT COUNT(1) FROM %s %s", schemaTable, queryFilter);
         }
         return String.format("SELECT COUNT(1) FROM %s", schemaTable);
-    }
-
-    default String buildQueryExistSql(String schemaTable, String queryFilter) {
-        if (StringUtil.isNotBlank(queryFilter)) {
-            return String.format("SELECT 1 FROM %s %s LIMIT 1", schemaTable, queryFilter);
-        }
-        return String.format("SELECT 1 FROM %s LIMIT 1", schemaTable);
     }
 
     default String buildInsertSql(String schemaTable, List<Field> fields) {

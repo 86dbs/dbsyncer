@@ -239,9 +239,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             // 2、设置参数
             execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
         } catch (Exception e) {
-            if (context.isForceUpdate()) {
-                data.forEach(row -> forceUpdate(result, connectorInstance, context, pkFields, row));
-            }
+            data.forEach(row -> forceUpdate(result, connectorInstance, context, pkFields, row));
         }
 
         if (null != execute) {
@@ -251,9 +249,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     result.getSuccessData().add(data.get(i));
                     continue;
                 }
-                if (context.isForceUpdate()) {
-                    forceUpdate(result, connectorInstance, context, pkFields, data.get(i));
-                }
+                forceUpdate(result, connectorInstance, context, pkFields, data.get(i));
             }
         }
         return result;
@@ -376,7 +372,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         map.put(ConnectorConstant.OPERTION_INSERT, sqlTemplate.buildInsertSql(buildContext));
         map.put(ConnectorConstant.OPERTION_UPDATE, sqlTemplate.buildUpdateSql(buildContext));
         map.put(ConnectorConstant.OPERTION_DELETE, sqlTemplate.buildDeleteSql(buildContext));
-        map.put(ConnectorConstant.OPERTION_QUERY_EXIST, sqlTemplate.buildQueryExistSql(buildContext));
         return map;
     }
 
@@ -668,18 +663,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     private void forceUpdate(Result result, DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> pkFields,
                              Map row) {
-        if (isUpdate(context.getEvent()) || isInsert(context.getEvent())) {
+        String event = context.getEvent();
+        if (context.isForceUpdate() && isInsert(event)) {
             // 存在执行覆盖更新，否则写入
-            final String queryCount = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_EXIST);
-            int size = pkFields.size();
-            Object[] args = new Object[size];
-            for (int i = 0; i < size; i++) {
-                args[i] = row.get(pkFields.get(i).getName());
-            }
-            final String event = existRow(connectorInstance, queryCount, args) ? ConnectorConstant.OPERTION_UPDATE
-                    : ConnectorConstant.OPERTION_INSERT;
-            logger.warn("{} {}表执行{}失败, 重新执行{}, {}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, row);
-            writer(result, connectorInstance, context, pkFields, row, event);
+            logger.warn("{} {}表执行{}失败, 执行{}, {}", context.getTraceId(), context.getTargetTableName(), event, ConnectorConstant.OPERTION_UPDATE, row);
+            writer(result, connectorInstance, context, pkFields, row, ConnectorConstant.OPERTION_UPDATE);
         }
     }
 

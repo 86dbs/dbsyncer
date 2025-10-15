@@ -73,15 +73,4 @@ public class SqlServerTemplate implements SqlTemplate {
         }
         return String.format("SELECT COUNT(*) FROM %s WITH (NOLOCK)", schemaTable);
     }
-
-    @Override
-    public String buildQueryExistSql(SqlBuildContext buildContext) {
-        String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
-        String queryFilter = buildContext.getQueryFilter();
-
-        if (StringUtil.isNotBlank(queryFilter)) {
-            return String.format("SELECT 1 FROM %s WITH (NOLOCK) %s", schemaTable, queryFilter);
-        }
-        return String.format("SELECT 1 FROM %s WITH (NOLOCK)", schemaTable);
-    }
 }

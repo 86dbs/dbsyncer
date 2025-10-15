@@ -46,10 +46,4 @@ public class ConnectorConstant {
      * 查询总数
      */
     public static final String OPERTION_QUERY_COUNT = "QUERY_COUNT";
-
-    /**
-     * 查询数据行是否存在
-     */
-    public static final String OPERTION_QUERY_EXIST = "QUERY_COUNT_EXIST";
-
 }
