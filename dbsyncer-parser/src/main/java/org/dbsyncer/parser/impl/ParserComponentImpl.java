@@ -275,6 +275,7 @@ public class ParserComponentImpl implements ParserComponent {
 
             // 5、更新Meta统计信息
             if (result != null) {
+                result.setTargetTableGroupName(tableGroup.getName());
                 flushStrategy.flushFullData(metaId, result, ConnectorConstant.OPERTION_INSERT);
             }
         }
@@ -321,7 +322,7 @@ public class ParserComponentImpl implements ParserComponent {
                         Result w = connectorFactory.writer(tmpContext);
                         result.addSuccessData(w.getSuccessData());
                         result.addFailData(w.getFailData());
-                        result.getError().append(w.getError());
+                        result.error = w.error;
                     } catch (Exception e) {
                         logger.error(e.getMessage());
                     } finally {

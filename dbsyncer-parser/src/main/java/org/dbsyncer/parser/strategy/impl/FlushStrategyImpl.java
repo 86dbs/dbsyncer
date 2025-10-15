@@ -5,7 +5,6 @@ package org.dbsyncer.parser.strategy.impl;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
@@ -64,9 +63,9 @@ public final class FlushStrategyImpl implements FlushStrategy {
             refreshTotal(metaId, result);
 
             if (!CollectionUtils.isEmpty(result.getFailData())) {
-                logger.error(result.getError().toString());
+                logger.error(result.error);
                 LogType logType = LogType.TableGroupLog.FULL_FAILED;
-                logService.log(logType, "%s:%s:%s", result.getTargetTableGroupName(), logType.getMessage(), result.getError().toString());
+                logService.log(logType, "%s:%s:failed num:%d:last error:%s", result.getTargetTableGroupName(), logType.getMessage(), result.getFailData().size(), result.error);
             }
             return;
         }
@@ -122,8 +121,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
         SystemConfig systemConfig = profileComponent.getSystemConfig();
         // 是否写失败数据
         if (systemConfig.isEnableStorageWriteFail() && !CollectionUtils.isEmpty(result.getFailData())) {
-            final String error = StringUtil.substring(result.getError().toString(), 0, systemConfig.getMaxStorageErrorLength());
-            asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, false, result.getFailData(), error);
+            asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, false, result.getFailData(), "");
         }
 
         // 是否写成功数据

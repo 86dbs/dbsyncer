@@ -207,7 +207,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             IOUtils.writeLines(lines, System.lineSeparator(), output, "UTF-8");
         } catch (Exception e) {
             result.addFailData(data);
-            result.getError().append(e.getMessage()).append(System.lineSeparator());
+            result.error = e.getMessage();
             logger.error(e.getMessage());
         } finally {
             IOUtils.closeQuietly(output);

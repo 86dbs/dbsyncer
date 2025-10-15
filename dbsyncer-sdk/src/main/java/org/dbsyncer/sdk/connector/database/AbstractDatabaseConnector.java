@@ -708,10 +708,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             result.getSuccessData().add(row);
         } catch (Exception e) {
             result.getFailData().add(row);
-            result.getError().append(context.getTraceId())
-                    .append(" SQL:").append(sql).append(System.lineSeparator())
-                    .append("DATA:").append(row).append(System.lineSeparator())
-                    .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
+            result.error = "SQL:" + sql + System.lineSeparator() +
+                    "DATA:" + row + System.lineSeparator() +
+                    "ERROR:" + e.getMessage() + System.lineSeparator();
             logger.error("执行{}失败: {}, DATA:{}", event, e.getMessage(), row);
         }
     }
@@ -765,7 +764,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             successMap.put(ConfigConstant.BINLOG_DATA, config.getSql());
             result.addSuccessData(Collections.singletonList(successMap));
         } catch (Exception e) {
-            result.getError().append(String.format("执行ddl: %s, 异常：%s", config.getSql(), e.getMessage()));
+            logger.error("执行DDL失败: {}", e.getMessage());
+            result.error = String.format("执行ddl: %s, 异常：%s", config.getSql(), e.getMessage());
         }
         return result;
     }

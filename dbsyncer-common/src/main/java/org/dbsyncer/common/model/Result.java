@@ -18,7 +18,7 @@ public class Result<T> {
     /**
      * 错误日志
      */
-    private final StringBuffer error = new StringBuffer();
+    public String error = null;
 
     /**
      * 驱动表映射关系ID
@@ -45,10 +45,6 @@ public class Result<T> {
 
     public List<T> getFailData() {
         return failData;
-    }
-
-    public StringBuffer getError() {
-        return error;
     }
 
     /**

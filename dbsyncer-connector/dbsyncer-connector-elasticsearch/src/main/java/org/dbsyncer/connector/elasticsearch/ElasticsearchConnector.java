@@ -65,13 +65,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -282,17 +276,14 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
                 r = items[i];
                 if (r.isFailed()) {
                     result.getFailData().add(data.get(i));
-                    result.getError().append("\n[").append(i)
-                            .append("]: index [").append(r.getIndex()).append("], type [")
-                            .append(r.getType()).append("], id [").append(r.getId())
-                            .append("], message [").append(r.getFailureMessage()).append("]");
+                    result.error = r.getFailureMessage();
                 }
                 result.getSuccessData().add(data.get(i));
             }
         } catch (Exception e) {
             // 记录错误数据
             result.addFailData(data);
-            result.getError().append(e.getMessage()).append(System.lineSeparator());
+            result.error = e.getMessage();
             logger.error(e.getMessage());
         }
         return result;

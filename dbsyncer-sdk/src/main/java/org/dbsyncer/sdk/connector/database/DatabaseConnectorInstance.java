@@ -32,7 +32,6 @@ public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConf
         } catch (EmptyResultDataAccessException e) {
             throw e;
         } catch (Exception e) {
-            logger.error(e.getMessage());
             throw new SdkException(e.getMessage(), e.getCause());
         } finally {
             dataSource.close(connection);

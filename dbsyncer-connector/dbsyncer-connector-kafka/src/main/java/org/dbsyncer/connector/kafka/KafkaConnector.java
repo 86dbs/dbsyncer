@@ -135,7 +135,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         } catch (Exception e) {
             // 记录错误数据
             result.addFailData(data);
-            result.getError().append(e.getMessage()).append(System.lineSeparator());
+            result.error = e.getMessage();
             logger.error(e.getMessage(), e);
         }
         return result;

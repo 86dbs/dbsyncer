@@ -193,7 +193,7 @@ public class ConnectorFactory implements DisposableBean {
                 }
             } catch (Exception e) {
                 Result result = new Result();
-                result.getError().append(e.getMessage());
+                result.error = e.getMessage();
                 result.addFailData(context.getTargetList());
                 return result;
             }

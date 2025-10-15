@@ -15,11 +15,7 @@ import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.Point;
 import org.elasticsearch.ElasticsearchException;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * CDC-ES定时监听器
