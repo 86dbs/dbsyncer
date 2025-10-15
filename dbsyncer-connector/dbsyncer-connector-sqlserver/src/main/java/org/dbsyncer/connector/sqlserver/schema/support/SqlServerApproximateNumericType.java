@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 /**
  * SQL Server 近似数值类型
  * 包括浮点数类型
+ * 注意：近似数值类型不支持 IDENTITY 属性
  *
  * @Author 穿云
  * @Version 1.0.0
@@ -65,3 +66,4 @@ public final class SqlServerApproximateNumericType extends DoubleType {
         return super.convert(val, field);
     }
 }
+

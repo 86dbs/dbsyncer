@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 /**
  * SQL Server 二进制字符串类型
  * 包括二进制数据类型
+ * 注意：二进制字符串类型不支持 IDENTITY 属性
  *
  * @Author 穿云
  * @Version 1.0.0
@@ -53,3 +54,4 @@ public final class SqlServerBinaryStringType extends BytesType {
         return super.convert(val, field);
     }
 }
+

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 /**
  * SQL Server 字符字符串类型
  * 包括非 Unicode 字符类型
+ * 注意：字符字符串类型不支持 IDENTITY 属性
  *
  * @Author 穿云
  * @Version 1.0.0
@@ -50,3 +51,4 @@ public final class SqlServerCharacterStringType extends StringType {
         return super.convert(val, field);
     }
 }
+

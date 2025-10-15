@@ -104,7 +104,7 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
      * 获取目标类型名称（将Java标准类型转换为SQL Server特定类型）
      */
     private String getTargetTypeName(String standardTypeName) {
-        return STANDARD_TO_TARGET_TYPE_MAP.getOrDefault(standardTypeName, standardTypeName.toLowerCase());
+        return STANDARD_TO_TARGET_TYPE_MAP.getOrDefault(standardTypeName, standardTypeName);
     }
 
     /**

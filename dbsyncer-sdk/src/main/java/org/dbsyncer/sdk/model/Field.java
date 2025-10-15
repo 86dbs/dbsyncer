@@ -84,7 +84,7 @@ public class Field {
     }
 
     public void setTypeName(String typeName) {
-        this.typeName = typeName;
+        this.typeName = typeName.toUpperCase();
     }
 
     public int getType() {

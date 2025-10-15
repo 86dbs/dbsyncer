@@ -32,12 +32,33 @@ public final class SqlServerExactNumericType extends LongType {
         DECIMAL,       // 精确小数
         NUMERIC,       // 数值类型 (DECIMAL 的同义词)
         MONEY,         // 货币类型 (8字节)
-        SMALLMONEY     // 小货币类型 (4字节)
+        SMALLMONEY,    // 小货币类型 (4字节)
+        // IDENTITY 类型 (自增列)
+        INT_IDENTITY("INT IDENTITY"),  // INT IDENTITY 自增列
+        BIGINT_IDENTITY("BIGINT IDENTITY"), // BIGINT IDENTITY 自增列
+        SMALLINT_IDENTITY("SMALLINT IDENTITY"), // SMALLINT IDENTITY 自增列
+        TINYINT_IDENTITY("TINYINT IDENTITY"),  // TINYINT IDENTITY 自增列
+        DECIMAL_IDENTITY("DECIMAL IDENTITY"),  // DECIMAL IDENTITY 自增列
+        NUMERIC_IDENTITY("NUMERIC IDENTITY");   // NUMERIC IDENTITY 自增列
+        
+        private final String typeName;
+        
+        TypeEnum() {
+            this.typeName = name();
+        }
+        
+        TypeEnum(String typeName) {
+            this.typeName = typeName;
+        }
+        
+        public String getTypeName() {
+            return typeName;
+        }
     }
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return Arrays.stream(TypeEnum.values()).map(TypeEnum::getTypeName).collect(Collectors.toSet());
     }
 
     @Override
@@ -75,3 +96,4 @@ public final class SqlServerExactNumericType extends LongType {
         return super.convert(val, field);
     }
 }
+

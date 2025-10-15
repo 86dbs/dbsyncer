@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 /**
  * SQL Server 日期和时间类型
  * 包括所有日期时间相关的类型
+ * 注意：日期时间类型不支持 IDENTITY 属性
  *
  * @Author 穿云
  * @Version 1.0.0
@@ -72,3 +73,4 @@ public final class SqlServerDateTimeType extends TimestampType {
         return super.convert(val, field);
     }
 }
+
