@@ -127,7 +127,21 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
         // 检查并执行 Meta 中的阶段处理方法
         Runnable phaseHandler = meta.getPhaseHandler();
         if (phaseHandler != null) {
-            phaseHandler.run();
+            // 检查所有tableGroup是否都已完成
+            boolean allTableGroupCompleted = true;
+            for (TableGroup tableGroup : list) {
+                if (!tableGroup.isFullCompleted()) {
+                    allTableGroupCompleted = false;
+                    break;
+                }
+            }
+            
+            // 只有当所有tableGroup都完成时才执行phaseHandler
+            if (allTableGroupCompleted) {
+                phaseHandler.run();
+            } else {
+                meta.resetState();
+            }
         } else {
             meta.resetState();
         }
