@@ -133,7 +133,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private void resetCount(Mapping mapping) {
         // 统计总数
         if (mapping.getModel().equals(ModelEnum.INCREMENT.getCode())) {
-            mapping.getMeta().clear();
+            mapping.getMeta().clear(mapping.getModel());
         } else {
             submitMappingCountTask(mapping);
         }
@@ -218,8 +218,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String start(String id) {
         Mapping mapping = assertMappingExist(id);
         final String metaId = mapping.getMetaId();
-        // 如果已经完成了，重置状态
-        clearMetaIfFinished(metaId);
 
         synchronized (LOCK) {
             assertRunning(metaId);
@@ -432,7 +430,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         synchronized (LOCK) {
             logger.info("重置驱动：{}", mapping.getName());
             Meta meta = profileComponent.getMeta(mapping.getMetaId());
-            meta.clear();
+            meta.clear(mapping.getModel());
             managerFactory.close(mapping);
             List<TableGroup> tableGroupAll = profileComponent.getTableGroupAll(mapping.getId());
             for (TableGroup tableGroup : tableGroupAll) {
@@ -448,16 +446,5 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         submitMappingCountTask(mapping);
 
         return "重置成功";
-    }
-
-    private void clearMetaIfFinished(String metaId) {
-        Meta meta = profileComponent.getMeta(metaId);
-        Assert.notNull(meta, "Mapping meta can not be null.");
-        // 完成任务则重置状态
-        if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {
-            meta.getFail().set(0);
-            meta.getSuccess().set(0);
-            profileComponent.editConfigModel(meta);
-        }
     }
 }

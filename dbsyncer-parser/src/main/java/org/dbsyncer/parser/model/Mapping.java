@@ -186,17 +186,6 @@ public class Mapping extends AbstractConfigModel {
     }
 
     @JSONField(serialize = false)
-    public void resetMeta() {
-        Meta meta = profileComponent.getMeta(this.metaId);
-        // 清空状态
-        meta.clear();
-        // 为计数设置阶段
-        if (model.equals(ModelEnum.INCREMENT.getCode())) {
-            meta.setSyncPhase(SyncPhaseEnum.INCREMENTAL);
-        }
-    }
-
-    @JSONField(serialize = false)
     public void resetMetaState() {
         Meta meta = profileComponent.getMeta(getMetaId());
         meta.resetState();

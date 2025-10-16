@@ -11,6 +11,7 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.enums.SyncPhaseEnum;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 
@@ -86,6 +87,16 @@ public class Meta extends ConfigModel {
         init();
         profileComponent.editConfigModel(this);
     }
+
+    public void clear(String model) {
+        init();
+        // 为计数设置阶段
+        if (model.equals(ModelEnum.INCREMENT.getCode())) {
+            this.setSyncPhase(SyncPhaseEnum.INCREMENTAL);
+        }
+        profileComponent.editConfigModel(this);
+    }
+
 
     private void init() {
         long now = Instant.now().toEpochMilli();
