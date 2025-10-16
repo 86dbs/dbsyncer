@@ -4,6 +4,7 @@
 package org.dbsyncer.parser.ddl.impl;
 
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
@@ -24,7 +25,6 @@ import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.spi.ConnectorService;
-import org.dbsyncer.sdk.util.SqlParserUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -62,7 +62,7 @@ public class DDLParserImpl implements DDLParser {
     public DDLConfig parse(ConnectorService connectorService, TableGroup tableGroup, String sql) throws JSQLParserException {
         DDLConfig ddlConfig = new DDLConfig();
         logger.info("ddl:{}", sql);
-        Statement statement = SqlParserUtil.parse(sql);
+        Statement statement = CCJSqlParserUtil.parse(sql);
         if (statement instanceof Alter && connectorService instanceof Database) {
             Alter alter = (Alter) statement;
             // 使用SQL模板构建带引号的表名
