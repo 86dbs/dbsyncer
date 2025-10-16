@@ -66,6 +66,9 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
     private ProfileComponent profileComponent;
 
     @Resource
+    private PluginFactory pluginFactory;
+
+    @Resource
     private LogService logService;
 
     @Resource
@@ -82,6 +85,8 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
         final String metaId = mapping.getMetaId();
         Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
+        Connector targetConnector = profileComponent.getConnector(mapping.getTargetConnectorId());
+        Assert.notNull(targetConnector, "目标连接器不能为空.");
         List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
         Assert.notEmpty(list, "表映射关系不能为空，请先添加源表到目标表关系.");
         Meta meta = profileComponent.getMeta(metaId);
@@ -162,9 +167,8 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
                 final TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, t);
                 final Picker picker = new Picker(group);
                 List<Field> fields = picker.getSourceFields();
-                Assert.notEmpty(fields,
-                        "表字段映射关系不能为空：" + group.getSourceTable().getName() + " > " + group.getTargetTable().getName());
-                return new TableGroupQuartzCommand(t.getSourceTable(), fields, t.getCommand());
+                Assert.notEmpty(fields, "表字段映射关系不能为空：" + group.getSourceTable().getName() + " > " + group.getTargetTable().getName());
+                return new TableGroupQuartzCommand(t.getSourceTable(), fields, t.getTargetTable(), t.getCommand(), group.getPlugin(), group.getPluginExtInfo());
             }).collect(Collectors.toList());
             quartzListener.setCommands(quartzCommands);
         }
@@ -184,6 +188,7 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
             abstractListener
                     .setConnectorService(connectorFactory.getConnectorService(connectorConfig.getConnectorType()));
             abstractListener.setConnectorInstance(connectorFactory.connect(connectorConfig));
+            abstractListener.setTargetConnectorInstance(connectorFactory.connect(targetConnectorConfig));
             abstractListener.setScheduledTaskService(scheduledTaskService);
             abstractListener.setConnectorConfig(connectorConfig);
             abstractListener.setListenerConfig(listenerConfig);

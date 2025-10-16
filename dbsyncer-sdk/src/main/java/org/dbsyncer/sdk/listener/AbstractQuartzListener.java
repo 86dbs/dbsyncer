@@ -120,9 +120,16 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         Object[] cursors = PrimaryKeyUtil.getLastCursors((String) snapshot.get(index + CURSOR));
 
         final QuartzListenerContext context = new QuartzListenerContext();
+        context.setSourceConnectorInstance(connectorInstance);
+        context.setTargetConnectorInstance(targetConnectorInstance);
         context.setSourceTable(table);
+        context.setSourceTableName(table.getName());
+        context.setTargetTableName(cmd.getTargetTable().getName());
         context.setCommand(point.getCommand());
         context.setPageSize(READ_NUM);
+        context.setPlugin(cmd.getPlugin());
+        context.setPluginExtInfo(cmd.getPluginExtInfo());
+        changeEventBefore(context);
         while (running) {
             context.setArgs(point.getArgs());
             context.setCursors(cursors);

@@ -44,6 +44,10 @@ public enum BinlogByteEnum {
      * 2Byte
      */
     SHORT(2),
+    /**
+     * 1Byte
+     */
+    BYTE(1),
     ;
 
     BinlogByteEnum(int byteLength) {

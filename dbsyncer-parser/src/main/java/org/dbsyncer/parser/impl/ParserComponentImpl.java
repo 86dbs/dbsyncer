@@ -179,6 +179,7 @@ public class ParserComponentImpl implements ParserComponent {
         context.setEvent(ConnectorConstant.OPERTION_INSERT);
         context.setCommand(command);
         context.setBatchSize(mapping.getBatchNum());
+        context.setPlugin(group.getPlugin());
         context.setPluginExtInfo(group.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
         context.setTargetFields(picker.getTargetFields());
@@ -190,7 +191,7 @@ public class ParserComponentImpl implements ParserComponent {
         picker.setSourceResolver(context.isEnableSchemaResolver() ? sourceConnector.getSchemaResolver() : null);
 
         // 0、插件前置处理
-        pluginFactory.process(group.getPlugin(), context, ProcessEnum.BEFORE);
+        pluginFactory.process(context, ProcessEnum.BEFORE);
 
         // 根据是否支持cursor选择不同的SQL
         boolean supportedCursor = null != tableGroup.getCursors();
@@ -206,7 +207,7 @@ public class ParserComponentImpl implements ParserComponent {
                 .getConnectorService(context.getSourceConnectorInstance().getConfig());
 
         // 执行流式处理
-        ((DatabaseConnectorInstance) context.getSourceConnectorInstance()).execute(databaseTemplate -> 
+        ((DatabaseConnectorInstance) context.getSourceConnectorInstance()).execute(databaseTemplate ->
                 executeTableGroupWithStreaming(metaId, tableGroup, context, db, executor, primaryKeys, querySql, databaseTemplate));
     }
 
@@ -265,9 +266,9 @@ public class ParserComponentImpl implements ParserComponent {
         ConvertUtil.convert(tableGroup.getConvert(), target);
 
         // 3、插件转换
-        context.setSourceList((List<Map>) (List<?>) source);
+        context.setSourceList(source);
         context.setTargetList(target);
-        pluginFactory.process(tableGroup.getPlugin(), context, ProcessEnum.CONVERT);
+        pluginFactory.process(context, ProcessEnum.CONVERT);
 
         // 4、写入目标源
         if (!CollectionUtils.isEmpty(target)) {
@@ -286,7 +287,7 @@ public class ParserComponentImpl implements ParserComponent {
         profileComponent.editConfigModel(tableGroup);
 
         // 7、同步完成后通知插件做后置处理
-        pluginFactory.process(tableGroup.getPlugin(), context, ProcessEnum.AFTER);
+        pluginFactory.process(context, ProcessEnum.AFTER);
     }
 
 

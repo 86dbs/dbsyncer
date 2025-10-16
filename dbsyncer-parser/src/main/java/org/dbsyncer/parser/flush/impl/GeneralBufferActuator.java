@@ -198,9 +198,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         Assert.isTrue(targetFields != null && !targetFields.isEmpty(), "targetFields can not be empty");
         context.setTargetFields(targetFields);
         context.setCommand(tableGroup.getCommand());
-        context.setBatchSize(generalBufferConfig.getBufferWriterCount());
+        context.setBatchSize(getBufferWriterCount());
         context.setSourceList(sourceDataList);
         context.setTargetList(targetDataList);
+        context.setPlugin(tableGroup.getPlugin());
         context.setPluginExtInfo(tableGroup.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
         context.setEnableSchemaResolver(enableSchemaResolver);
