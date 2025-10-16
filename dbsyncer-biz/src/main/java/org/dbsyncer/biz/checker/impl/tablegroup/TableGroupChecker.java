@@ -9,6 +9,7 @@ import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -24,7 +25,6 @@ import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
-import org.dbsyncer.connector.base.ConnectorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -325,13 +325,15 @@ public class TableGroupChecker extends AbstractChecker {
                 ConnectorService<?, ?> targetConnectorService = connectorFactory.getConnectorService(targetConnectorConfig.getConnectorType());
                 SchemaResolver sourceSchemaResolver = sourceConnectorService.getSchemaResolver();
                 SchemaResolver targetSchemaResolver = targetConnectorService.getSchemaResolver();
-                
+
                 // 1. 先用源连接器将源字段标准化为Java标准类型
                 Field standardField = sourceSchemaResolver.toStandardType(s);
-                
+
                 // 2. 再用目标连接器将Java标准类型转换为目标数据库类型
-                Field targetField = targetSchemaResolver.fromStandardType(standardField);
-                t = targetField;
+                if (null == targetSchemaResolver) // 如下游是 kafka
+                    t = standardField;
+                else
+                    t = targetSchemaResolver.fromStandardType(standardField);
             }
 
             if (null != t) {
