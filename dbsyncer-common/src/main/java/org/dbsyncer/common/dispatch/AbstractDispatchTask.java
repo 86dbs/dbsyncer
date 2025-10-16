@@ -29,7 +29,7 @@ public abstract class AbstractDispatchTask implements DispatchTask {
             running = true;
             execute();
         } catch (Exception e) {
-            logger.error("dispatch task，uniqueId:{}，error:{}", getUniqueId(), e);
+            logger.error("task execute error", e);
         } finally {
             running = false;
             if (consumer != null) {

@@ -51,20 +51,20 @@ public class Field {
 
     public Field(String name, String typeName, int type) {
         this.name = name;
-        this.typeName = typeName;
+        this.typeName = typeName.toUpperCase();
         this.type = type;
     }
 
     public Field(String name, String typeName, int type, boolean pk) {
         this.name = name;
-        this.typeName = typeName;
+        this.typeName = typeName.toUpperCase();
         this.type = type;
         this.pk = pk;
     }
 
     public Field(String name, String typeName, int type, boolean pk,int columnSize,int ratio) {
         this.name = name;
-        this.typeName = typeName;
+        this.typeName = typeName.toUpperCase();
         this.type = type;
         this.pk = pk;
         this.columnSize = columnSize;
