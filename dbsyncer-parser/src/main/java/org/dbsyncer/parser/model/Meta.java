@@ -45,7 +45,7 @@ public class Meta extends ConfigModel {
     private AtomicLong total;
     private AtomicLong success;
     private AtomicLong fail;
-    private Map<String, String> snapshot;
+    private Map<String, String> snapshot;   // 仅保存增量同步的 cursor 信息，因为增量是库级别的
     private long beginTime;
     private long endTime;
     @JSONField(serialize = false)

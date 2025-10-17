@@ -138,7 +138,6 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Override
     public TableGroup getTableGroup(String tableGroupId) {
         TableGroup tableGroup = operationTemplate.queryObject(TableGroup.class, tableGroupId);
-        Mapping mapping = getMapping(tableGroup.getMappingId());
         tableGroup.initTableGroup(parserComponent, this);
         return tableGroup;
     }
@@ -146,8 +145,6 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
         TableGroup temp = new TableGroup().setMappingId(mappingId);
-        Mapping mapping = getMapping(mappingId);
-
         List<TableGroup> tableGroups = operationTemplate.queryAll(new QueryConfig<>(temp, GroupStrategyEnum.TABLE));
         for (TableGroup tableGroup : tableGroups) {
             tableGroup.initTableGroup(parserComponent, this);
