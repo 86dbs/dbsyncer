@@ -18,6 +18,7 @@ import org.dbsyncer.parser.enums.SyncPhaseEnum;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.util.PickerUtil;
+import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.AbstractListener;
@@ -103,7 +104,7 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
                     meta.setEndTime(now);
                     profileComponent.editConfigModel(meta);
                     tableGroupContext.put(mapping, list);
-                    listener = getListener(mapping, connector, list, meta);
+                    listener = getListener(mapping, connector, targetConnector, list, meta);
                     meta.setListener(listener);
                 }
                 listener.start();
@@ -148,17 +149,17 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
         });
     }
 
-    private Listener getListener(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta) {
+    private Listener getListener(Mapping mapping, Connector connector, Connector targetConnector, List<TableGroup> list, Meta meta) {
         ConnectorConfig connectorConfig = connector.getConfig();
+        ConnectorConfig targetConnectorConfig = targetConnector.getConfig();
         ListenerConfig listenerConfig = mapping.getListener();
         String listenerType = listenerConfig.getListenerType();
 
         Listener listener = connectorFactory.getListener(connectorConfig.getConnectorType(), listenerType);
         if (null == listener) {
-            throw new ManagerException(
-                    String.format("Unsupported listener type \"%s\".", connectorConfig.getConnectorType()));
+            throw new ManagerException(String.format("Unsupported listener type \"%s\".", connectorConfig.getConnectorType()));
         }
-        listener.register(new ParserConsumer(bufferActuatorRouter, profileComponent, logService, meta.getId(), list));
+        listener.register(new ParserConsumer(bufferActuatorRouter, profileComponent, pluginFactory, logService, meta.getId(), list));
 
         // 默认定时抽取
         if (ListenerTypeEnum.isTiming(listenerType) && listener instanceof AbstractQuartzListener) {
@@ -185,8 +186,7 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
                 filterTable.add(table.getName());
             });
 
-            abstractListener
-                    .setConnectorService(connectorFactory.getConnectorService(connectorConfig.getConnectorType()));
+            abstractListener.setConnectorService(connectorFactory.getConnectorService(connectorConfig.getConnectorType()));
             abstractListener.setConnectorInstance(connectorFactory.connect(connectorConfig));
             abstractListener.setTargetConnectorInstance(connectorFactory.connect(targetConnectorConfig));
             abstractListener.setScheduledTaskService(scheduledTaskService);

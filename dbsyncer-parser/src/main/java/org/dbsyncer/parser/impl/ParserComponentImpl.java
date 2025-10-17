@@ -221,7 +221,7 @@ public class ParserComponentImpl implements ParserComponent {
         try (Stream<Map<String, Object>> stream = databaseTemplate.queryForStream(querySql,
                 new ArgumentPreparedStatementSetter(tableGroup.getCursors()),
                 new ColumnMapRowMapper())) {
-            List<Map<String, Object>> batch = new ArrayList<>();
+            List<Map> batch = new ArrayList<>();
             Iterator<Map<String, Object>> iterator = stream.iterator();
 
             while (iterator.hasNext()) {
@@ -255,12 +255,12 @@ public class ParserComponentImpl implements ParserComponent {
     /**
      * TableGroup专用的数据处理逻辑
      */
-    private void processTableGroupDataBatch(String metaId, List<Map<String, Object>> source, TableGroup tableGroup,
+    private void processTableGroupDataBatch(String metaId, List<Map> source, TableGroup tableGroup,
                                             AbstractPluginContext context, Executor executor,
                                             List<String> primaryKeys) {
         // 1、映射字段
         Picker picker = new Picker(tableGroup);
-        List<Map> target = picker.pickTargetData((List<Map>) (List<?>) source);
+        List<Map> target = picker.pickTargetData(source);
 
         // 2、参数转换
         ConvertUtil.convert(tableGroup.getConvert(), target);
@@ -277,6 +277,7 @@ public class ParserComponentImpl implements ParserComponent {
             // 5、更新Meta统计信息
             if (result != null) {
                 result.setTargetTableGroupName(tableGroup.getName());
+                result.setTableGroupId(tableGroup.getId());
                 flushStrategy.flushFullData(metaId, result, ConnectorConstant.OPERTION_INSERT);
             }
         }

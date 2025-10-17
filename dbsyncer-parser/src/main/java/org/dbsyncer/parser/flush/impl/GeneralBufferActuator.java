@@ -8,6 +8,7 @@ import org.dbsyncer.common.config.GeneralBufferConfig;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
@@ -113,6 +114,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             response.setTypeEnum(request.getTypeEnum());
             response.setSql(request.getSql());
             response.setMerged(true);
+        } else if (profileComponent.getSystemConfig().isEnablePrintTraceInfo() && StringUtil.isNotBlank(request.getTraceId())) {
+            logger.info("traceId:{} merge into traceId:{}", request.getTraceId(), response.getTraceId());
         }
     }
 
@@ -129,6 +132,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         if (meta == null) {
             return;
         }
+        // 打印trace信息
+        printTraceInfo(response);
         final Mapping mapping = profileComponent.getMapping(meta.getMappingId());
         List<TableGroupPicker> pickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
 
@@ -205,11 +210,12 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         context.setPluginExtInfo(tableGroup.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
         context.setEnableSchemaResolver(enableSchemaResolver);
+        context.setEnablePrintTraceInfo(StringUtil.isNotBlank(response.getTraceId()));
         // 设置Mapping参数
         if (mapping.getParams() != null) {
             context.getCommand().putAll(mapping.getParams());
         }
-        pluginFactory.process(tableGroup.getPlugin(), context, ProcessEnum.CONVERT);
+        pluginFactory.process(context, ProcessEnum.CONVERT);
 
         // 4、批量执行同步
         Result result = parserComponent.writeBatch(context, getExecutor());
@@ -220,7 +226,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
 
         // 6、执行后置处理
-        pluginFactory.process(tableGroup.getPlugin(), context, ProcessEnum.AFTER);
+        pluginFactory.process(context, ProcessEnum.AFTER);
     }
 
     /**
@@ -276,4 +282,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         return conn.getConfig();
     }
 
+    private void printTraceInfo(WriterResponse response) {
+        if (profileComponent.getSystemConfig().isEnablePrintTraceInfo() && StringUtil.isNotBlank(response.getTraceId())) {
+            logger.info("traceId:{}, tableName:{}, event:{}, offset:{}, row:{}", response.getTraceId(), response.getTableName(), response.getEvent(), JsonUtil.objToJson(response.getChangedOffset()), response.getDataList());
+        }
+    }
 }
