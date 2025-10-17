@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.web.controller.index;
 
+import com.alibaba.fastjson2.JSON;
 import org.dbsyncer.biz.AppConfigService;
 import org.dbsyncer.biz.ProjectGroupService;
 import org.dbsyncer.biz.vo.ProjectGroupVo;
@@ -19,6 +20,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 
+/**
+ * @author cdeluser
+ */
 @Controller
 @RequestMapping("/index")
 public class IndexController {
@@ -41,10 +45,28 @@ public class IndexController {
             model.put("projectGroupId", projectGroupId);
             model.put("projectGroups", projectGroupService.getProjectGroupAll());
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+            logger.error(e.getMessage(), e);
         }
         return "index/index.html";
     }
+
+    @ResponseBody
+    @GetMapping("/mappingdata")
+    public String mappingdata(ModelMap model, String projectGroupId) {
+        try {
+            ProjectGroupVo projectGroup = projectGroupService.getProjectGroup(projectGroupId);
+            model.put("connectorSize", projectGroup.getConnectorSize());
+            model.put("connectors", projectGroup.getConnectors());
+            model.put("mappings", projectGroup.getMappings());
+            model.put("projectGroupId", projectGroupId);
+            model.put("projectGroups", projectGroupService.getProjectGroupAll());
+            return JSON.toJSONString(projectGroup);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return "";
+        }
+    }
+
 
     @GetMapping("/version.json")
     @ResponseBody
