@@ -8,9 +8,7 @@ import org.dbsyncer.connector.postgresql.schema.PostgreSQLBitValueMapper;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLOtherValueMapper;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLSchemaResolver;
 import org.dbsyncer.connector.postgresql.validator.PostgreSQLConfigValidator;
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
-import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.connector.database.sql.impl.PostgreSQLTemplate;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
@@ -36,14 +34,13 @@ public class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected final ConfigValidator<?> configValidator = new PostgreSQLConfigValidator();
-
     private final PostgreSQLSchemaResolver schemaResolver = new PostgreSQLSchemaResolver();
 
     public PostgreSQLConnector() {
         VALUE_MAPPERS.put(Types.BIT, new PostgreSQLBitValueMapper());
         VALUE_MAPPERS.put(Types.OTHER, new PostgreSQLOtherValueMapper());
         sqlTemplate = new PostgreSQLTemplate();
+        configValidator = new PostgreSQLConfigValidator();
     }
 
     @Override

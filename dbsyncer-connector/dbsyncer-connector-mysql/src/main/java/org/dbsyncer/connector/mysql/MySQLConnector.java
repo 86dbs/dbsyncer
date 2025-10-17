@@ -8,7 +8,6 @@ import org.dbsyncer.connector.mysql.schema.MySQLDateValueMapper;
 import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
 import org.dbsyncer.connector.mysql.storage.MySQLStorageService;
 import org.dbsyncer.connector.mysql.validator.MySQLConfigValidator;
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.sql.impl.MySQLTemplate;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -36,12 +35,12 @@ public class MySQLConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected final ConfigValidator<?> configValidator = new MySQLConfigValidator();
     private final MySQLSchemaResolver schemaResolver = new MySQLSchemaResolver();
 
     public MySQLConnector() {
         sqlTemplate = new MySQLTemplate();
         VALUE_MAPPERS.put(Types.DATE, new MySQLDateValueMapper());
+        configValidator = new MySQLConfigValidator();
     }
 
     @Override

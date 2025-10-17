@@ -7,9 +7,7 @@ import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleClobValueMapper;
 import org.dbsyncer.connector.oracle.schema.OracleOtherValueMapper;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
-import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.connector.database.sql.impl.OracleTemplate;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
@@ -34,12 +32,12 @@ public class OracleConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected final ConfigValidator<?> configValidator = new OracleConfigValidator();
 
     public OracleConnector() {
         VALUE_MAPPERS.put(Types.OTHER, new OracleOtherValueMapper());
         VALUE_MAPPERS.put(Types.CLOB, new OracleClobValueMapper());
         sqlTemplate = new OracleTemplate();
+        configValidator = new OracleConfigValidator();
     }
 
     @Override

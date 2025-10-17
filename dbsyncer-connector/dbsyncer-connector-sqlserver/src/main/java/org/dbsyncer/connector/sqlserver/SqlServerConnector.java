@@ -10,7 +10,6 @@ import org.dbsyncer.connector.sqlserver.schema.SqlServerSchemaResolver;
 import org.dbsyncer.connector.sqlserver.validator.SqlServerConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
@@ -19,7 +18,6 @@ import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
@@ -46,12 +44,11 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     private final String SET_TABLE_IDENTITY_ON = "set identity_insert %s.[%s] on;";
     private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
 
-    protected final ConfigValidator<?> configValidator = new SqlServerConfigValidator();
-    
     private final SqlServerSchemaResolver schemaResolver = new SqlServerSchemaResolver();
 
     public SqlServerConnector() {
         sqlTemplate = new SqlServerTemplate();
+        configValidator = new SqlServerConfigValidator();
     }
 
     @Override
@@ -129,7 +126,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     public Integer getStreamingFetchSize(ReaderContext context) {
         return context.getPageSize(); // 使用页面大小作为fetchSize
     }
-    
+
     @Override
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
