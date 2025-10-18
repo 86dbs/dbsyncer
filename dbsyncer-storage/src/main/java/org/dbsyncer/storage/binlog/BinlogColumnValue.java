@@ -5,6 +5,7 @@ package org.dbsyncer.storage.binlog;
 
 import com.google.protobuf.ByteString;
 import org.dbsyncer.common.column.AbstractColumnValue;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.storage.enums.BinlogByteEnum;
 
 import java.math.BigDecimal;
@@ -45,6 +46,9 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
     @Override
     public Integer asInteger() {
         byte[] bytes = asByteArray();
+        if (bytes.length == BinlogByteEnum.BYTE.getByteLength()) {
+            return NumberUtil.toInt(asString());
+        }
         if (bytes.length == BinlogByteEnum.SHORT.getByteLength()) {
             Short aShort = asShort();
             return new Integer(aShort);

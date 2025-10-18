@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.parser.flush.impl;
 
+import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.TableGroup;
@@ -51,6 +53,8 @@ public final class BufferActuatorRouter implements DisposableBean {
 
     public void execute(String metaId, ChangedEvent event) {
         event.getChangedOffset().setMetaId(metaId);
+        // 打印trace信息
+        printTraceInfo(event);
         router.compute(metaId, (k, processor) -> {
             if (processor == null) {
                 offer(generalBufferActuator, event);
@@ -141,6 +145,13 @@ public final class BufferActuatorRouter implements DisposableBean {
 
     public Map<String, Map<String, TableGroupBufferActuator>> getRouter() {
         return Collections.unmodifiableMap(router);
+    }
+
+    private void printTraceInfo(ChangedEvent event) {
+        if (profileComponent.getSystemConfig().isEnablePrintTraceInfo()) {
+            event.setTraceId(UUIDUtil.getUUID().toLowerCase());
+            logger.info("traceId:{}, tableName:{}, event:{}, offset:{}, row:{}", event.getTraceId(), event.getSourceTableName(), event.getEvent(), JsonUtil.objToJson(event.getChangedOffset()), event.getChangedRow());
+        }
     }
 
 }

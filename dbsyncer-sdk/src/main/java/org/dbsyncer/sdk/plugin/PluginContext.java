@@ -3,6 +3,7 @@ package org.dbsyncer.sdk.plugin;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Plugin;
 
 import java.util.List;
 import java.util.Map;
@@ -81,6 +82,11 @@ public interface PluginContext extends BaseContext {
     boolean isEnableSchemaResolver();
 
     /**
+     * 是否打印trace信息
+     */
+    boolean isEnablePrintTraceInfo();
+
+    /**
      * 数据源数据集合
      */
     List<Map> getSourceList();
@@ -91,6 +97,13 @@ public interface PluginContext extends BaseContext {
     List<Map> getTargetList();
 
     void setTargetList(List<Map> targetList);
+
+    /**
+     * 获取插件
+     *
+     * @return
+     */
+    Plugin getPlugin();
 
     /**
      * 获取插件参数
