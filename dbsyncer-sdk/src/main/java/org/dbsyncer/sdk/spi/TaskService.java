@@ -9,14 +9,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 数据校验服务
+ * 任务调度服务
  *
  * @Author 穿云
  * @Version 1.0.0
  * @Date 2025-05-12 23:36
  */
-public interface DataVerificationService {
-
+public interface TaskService {
 
 
     /**
@@ -44,17 +43,28 @@ public interface DataVerificationService {
 
 
     /**
+     * 删除任务
+     *
+     * @param taskId
+     * @return
+     */
+    boolean deleteTask(String taskId);
+
+    /**
+     * 详情任务
+     *
+     * @param taskId
+     * @return
+     */
+    CommonTask detail(String taskId);
+
+    /**
      * 任务列表
      *
      * @param type
      * @return
      */
     List<CommonTask> list(String type);
-
-
-
-
-
 
 
 }
