@@ -12,5 +12,7 @@ public interface DispatchTaskService {
 
     void execute(DispatchTask task);
 
+    void stop(DispatchTask task);
+
     boolean isRunning(String uniqueId);
 }
