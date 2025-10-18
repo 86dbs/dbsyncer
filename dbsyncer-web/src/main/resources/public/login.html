@@ -1,16 +1,339 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
-	  xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<html lang="zh-CN">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>dbsyncer</title>
-<link type="image/x-icon" rel="icon" th:href="@{/img/logo.ico}"/>
-<link type="text/css" rel="stylesheet" th:href="@{/css/login/login.css}"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dbsyncer - 登录</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link type="image/x-icon" rel="icon" th:href="@{/img/logo.ico}"/>
+    <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/font-awesome.min.css}"/>
+    <link type="text/css" rel="stylesheet" th:if="${enableCDN}" src="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css"/>
+
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36CFC9',
+                        neutral: '#F5F7FA',
+                        dark: '#1D2129',
+                        danger: '#F53F3F'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                },
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+
+            .bg-gradient-primary {
+                background: linear-gradient(135deg, #165DFF 0%, #36CFC9 100%);
+            }
+
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+        }
+    </style>
 </head>
-<body></body>
-<script th:if="${enableCDN}" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/jquery/jquery-1.11.3.min.js}"></script>
-<script th:src="@{/plugins/js/placeholder/jquery.placeholder.js}"></script>
-<!-- 上述1个js文件解决IE10以上placeholder的兼容性问题 -->
-<script th:src="@{/js/login/login.js}"></script>
+<body class="font-inter bg-gray-50 min-h-screen flex items-center justify-center p-4">
+<!-- 登录卡片容器 -->
+<div class="w-full max-w-6xl grid md:grid-cols-2 gap-8 shadow-2xl rounded-2xl overflow-hidden">
+
+    <!-- 左侧品牌展示区 -->
+    <div class="hidden md:flex bg-gradient-primary p-12 flex-col justify-between text-white">
+        <div>
+            <div class="flex items-center space-x-3 mb-12">
+                <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                    <i class="fa fa-database text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight"><strong id="appName" /></h1>
+            </div>
+
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4 text-shadow">数据同步，<br>从未如此简单</h2>
+            <p class="text-white/80 mb-8 max-w-md">高效、稳定、安全的数据同步解决方案，为您的业务保驾护航</p>
+        </div>
+
+        <!-- 特性列表 -->
+        <div class="space-y-6">
+            <div class="flex items-start space-x-4">
+                <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <i class="fa fa-bolt"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-1">高效同步</h3>
+                    <p class="text-sm text-white/70">毫秒级响应，支持海量数据同步</p>
+                </div>
+            </div>
+
+            <div class="flex items-start space-x-4">
+                <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <i class="fa fa-shield"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-1">安全可靠</h3>
+                    <p class="text-sm text-white/70">多重加密保障，确保数据传输安全</p>
+                </div>
+            </div>
+
+            <div class="flex items-start space-x-4">
+                <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <i class="fa fa-cogs"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-1">灵活配置</h3>
+                    <p class="text-sm text-white/70">支持多种数据源，自定义同步策略</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧登录表单区 -->
+    <div class="bg-white p-8 md:p-12 flex flex-col">
+        <!-- 移动端Logo -->
+        <div class="md:hidden flex items-center space-x-3 mb-8">
+            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <i class="fa fa-database text-primary text-2xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-dark">dbsyncer</h1>
+        </div>
+
+        <div class="mt-6 md:mt-12">
+            <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark mb-2">欢迎回来</h2>
+            <p class="text-gray-500 mb-8">请输入您的账号信息登录系统</p>
+
+            <!-- 登录表单 -->
+            <form id="loginForm" class="space-y-6">
+                <!-- 用户名输入 -->
+                <div class="space-y-2">
+                    <label for="username" class="block text-sm font-medium text-gray-700">用户名</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa fa-user text-gray-400"></i>
+                        </div>
+                        <input type="text" id="username" name="username"
+                               class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom outline-none"
+                               placeholder="请输入用户名" required>
+                        <div id="usernameError" class="hidden text-danger text-sm mt-1">
+                            <i class="fa fa-exclamation-circle mr-1"></i>
+                            <span>用户名不能为空</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 密码输入 -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <label for="password" class="block text-sm font-medium text-gray-700">密码</label>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa fa-lock text-gray-400"></i>
+                        </div>
+                        <input type="password" id="password" name="password"
+                               class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom outline-none"
+                               placeholder="请输入密码" required>
+                        <button type="button" id="togglePassword"
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-custom">
+                            <i class="fa fa-eye-slash"></i>
+                        </button>
+                        <div id="passwordError" class="hidden text-danger text-sm mt-1">
+                            <i class="fa fa-exclamation-circle mr-1"></i>
+                            <span>密码不能为空</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 错误提示 -->
+                <div id="loginError" class="hidden bg-danger/10 text-danger p-3 rounded-lg text-sm flex items-center">
+                    <i class="fa fa-exclamation-circle mr-2"></i>
+                    <span id="errorMessage">登录失败，请检查用户名或密码</span>
+                </div>
+
+                <!-- 登录按钮 -->
+                <button type="submit" id="loginButton"
+                        class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-custom flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                    <span>登录</span>
+                    <i class="fa fa-sign-in"></i>
+                </button>
+
+                <!-- 加载状态按钮 -->
+                <button type="button" id="loadingButton"
+                        class="hidden w-full bg-primary/80 text-white font-medium py-3 px-4 rounded-lg transition-custom flex items-center justify-center space-x-2 cursor-not-allowed">
+                    <i class="fa fa-circle-o-notch fa-spin"></i>
+                    <span>登录中...</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="mt-auto pt-8 border-t border-gray-100 text-center text-sm text-gray-500">
+            <p id="appCopyRight" style="text-align:center;"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 获取项目地址
+    const $location = (window.location + '').split('/');
+    const $path = document.location.pathname;
+    const $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.substr(1).indexOf("/") + 1);
+    const loginForm = document.getElementById('loginForm');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const togglePassword = document.getElementById('togglePassword');
+    const loginButton = document.getElementById('loginButton');
+    const loadingButton = document.getElementById('loadingButton');
+    const usernameError = document.getElementById('usernameError');
+    const passwordError = document.getElementById('passwordError');
+    const loginError = document.getElementById('loginError');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // 切换密码可见性
+    togglePassword.addEventListener('click', () => {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+
+        // 切换图标
+        togglePassword.querySelector('i').classList.toggle('fa-eye');
+        togglePassword.querySelector('i').classList.toggle('fa-eye-slash');
+    });
+
+    // 初始化加载版权信息
+    window.addEventListener('load', () => {
+        // 发送GET请求
+        fetch('/index/version.json').then(response => {
+            if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
+            return response.json();
+        }).then(data => {
+            if (data.success === true) {
+                document.getElementById('appName').textContent = data.resultValue.appName;
+                document.getElementById('appCopyRight').innerHTML = data.resultValue.appCopyRight;
+            }
+        }).catch(error => {
+            throw new Error(`请求错误: ${error.message}`);
+        });
+    });
+    // 表单验证
+    function validateForm() {
+        let isValid = true;
+
+        // 验证用户名
+        if (!usernameInput.value.trim()) {
+            usernameError.classList.remove('hidden');
+            usernameInput.classList.add('border-danger');
+            usernameInput.classList.remove('border-gray-300', 'focus:border-primary');
+            isValid = false;
+        } else {
+            usernameError.classList.add('hidden');
+            usernameInput.classList.remove('border-danger');
+            usernameInput.classList.add('border-gray-300', 'focus:border-primary');
+        }
+
+        // 验证密码
+        if (!passwordInput.value.trim()) {
+            passwordError.classList.remove('hidden');
+            passwordInput.classList.add('border-danger');
+            passwordInput.classList.remove('border-gray-300', 'focus:border-primary');
+            isValid = false;
+        } else {
+            passwordError.classList.add('hidden');
+            passwordInput.classList.remove('border-danger');
+            passwordInput.classList.add('border-gray-300', 'focus:border-primary');
+        }
+
+        // 隐藏登录错误提示
+        loginError.classList.add('hidden');
+
+        return isValid;
+    }
+
+    // 输入框变化时重新验证
+    usernameInput.addEventListener('input', validateForm);
+    passwordInput.addEventListener('input', validateForm);
+
+    // 登录表单提交处理
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // 表单验证
+        if (!validateForm()) {
+            return;
+        }
+
+        // 显示加载状态，隐藏登录按钮
+        loginButton.classList.add('hidden');
+        loadingButton.classList.remove('hidden');
+
+        // 获取表单数据
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        const formData = new URLSearchParams();
+        formData.append('username', username);
+        formData.append('password', password);
+
+        try {
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded', // 显式声明表单格式
+                },
+                body: formData,
+            });
+
+            // 处理响应
+            const result = await response.json();
+            if (response.ok) {
+                // 登录成功，跳转到首页或其他页面
+                window.location.href = $basePath;
+            } else {
+                // 登录失败，显示错误信息
+                throw new Error(result.message || '登录失败，请检查用户名或密码');
+            }
+        } catch (error) {
+            // 显示错误信息
+            errorMessage.textContent = error.message;
+            loginError.classList.remove('hidden');
+
+            // 添加错误抖动动画
+            loginError.classList.add('animate-shake');
+            setTimeout(() => {
+                loginError.classList.remove('animate-shake');
+            }, 500);
+        } finally {
+            // 恢复按钮状态
+            loginButton.classList.remove('hidden');
+            loadingButton.classList.add('hidden');
+        }
+    });
+
+    // 添加抖动动画样式
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+      }
+      .animate-shake {
+        animation: shake 0.5s ease-in-out;
+      }
+    `;
+    document.head.appendChild(style);
+</script>
+</body>
 </html>

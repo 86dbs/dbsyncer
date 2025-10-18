@@ -48,7 +48,7 @@ public class AppConfig {
             copy.append("&copy;").append(LocalDate.now().getYear()).append(" ");
             copy.append(name);
             copy.append("(").append(version).append(")");
-            copy.append("<footer>Designed By <a href='https://gitee.com/ghi/dbsyncer' target='_blank' >");
+            copy.append("<footer>Designed By <a href='https://gitee.com/ghi/dbsyncer' class=\"text-sm text-primary hover:text-primary/80 transition-custom\" target='_blank' >");
             copy.append(company);
             copy.append("</a></footer>");
             this.copyright = copy.toString();
