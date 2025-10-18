@@ -3,9 +3,9 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.sdk.model.CommonTask;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -17,13 +17,27 @@ import java.util.Map;
  */
 public interface TaskService {
 
-
     /**
      * 新增任务
      *
      * @param params
      */
     boolean add(Map<String, String> params);
+
+    /**
+     * 修改
+     *
+     * @param params
+     */
+    boolean modify(Map<String, String> params);
+
+    /**
+     * 删除任务
+     *
+     * @param taskId
+     * @return
+     */
+    boolean delete(String taskId);
 
     /**
      * 启动
@@ -43,14 +57,6 @@ public interface TaskService {
 
 
     /**
-     * 删除任务
-     *
-     * @param taskId
-     * @return
-     */
-    boolean deleteTask(String taskId);
-
-    /**
      * 详情任务
      *
      * @param taskId
@@ -61,10 +67,17 @@ public interface TaskService {
     /**
      * 任务列表
      *
-     * @param type
+     * @param param
      * @return
      */
-    List<CommonTask> list(String type);
+    Paging list(Map<String, String> param);
 
+    /**
+     * 任务结果
+     *
+     * @param param
+     * @return
+     */
+    Paging result(Map<String, String> param);
 
 }
