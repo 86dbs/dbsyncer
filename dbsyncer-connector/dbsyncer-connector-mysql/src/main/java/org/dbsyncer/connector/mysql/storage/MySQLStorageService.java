@@ -359,11 +359,11 @@ public class MySQLStorageService extends AbstractStorageService {
         List<Field> dataFields = builder.getFields();
 
         // 任务
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.TASK_STATUS, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.TASK_STATUS, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> taskFields = builder.getFields();
 
         //任务详情
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.TASK_TARGET_TABLE_NAME, ConfigConstant.TASK_SOURCE_TABLE_NAME, ConfigConstant.CONTENT);
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.TASK_TARGET_TABLE_NAME, ConfigConstant.TASK_SOURCE_TABLE_NAME, ConfigConstant.TASK_CONTENT);
         List<Field> taskDetailFields = builder.getFields();
 
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
@@ -494,7 +494,7 @@ public class MySQLStorageService extends AbstractStorageService {
                     new Field(ConfigConstant.TASK_ID, "VARCHAR", Types.VARCHAR),
                     new Field(ConfigConstant.TASK_SOURCE_TABLE_NAME, "VARCHAR", Types.VARCHAR),
                     new Field(ConfigConstant.TASK_TARGET_TABLE_NAME, "VARCHAR", Types.VARCHAR),
-                    new Field(ConfigConstant.CONTENT, "VARCHAR", Types.VARCHAR)
+                    new Field(ConfigConstant.TASK_CONTENT, "VARCHAR", Types.VARCHAR)
             ).peek(field -> {
                 field.setLabelName(field.getName());
                 // 转换列下划线

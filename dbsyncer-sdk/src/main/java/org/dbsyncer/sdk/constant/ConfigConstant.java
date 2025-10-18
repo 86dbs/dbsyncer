@@ -63,6 +63,6 @@ public class ConfigConstant {
      */
     public static final String TASK_TARGET_TABLE_NAME = "target_table_name";
 
-    public static final String CONTENT = "content";
+    public static final String TASK_CONTENT = "content";
 
 }
