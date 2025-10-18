@@ -126,6 +126,38 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
+    public List<MetaInfo> getMetaInfos(DatabaseConnectorInstance connectorInstance, List<String> tableNamePatterns) {
+        List<MetaInfo>  metaInfos = new ArrayList<>();
+        List<Field> fields = new ArrayList<>();
+        final String schema = getSchema(connectorInstance.getConfig());
+        connectorInstance.execute(databaseTemplate -> {
+            SimpleConnection connection = databaseTemplate.getSimpleConnection();
+            Connection conn = connection.getConnection();
+            String catalog = conn.getCatalog();
+            String schemaNamePattern = null == schema ? conn.getSchema() : schema;
+            DatabaseMetaData metaData = conn.getMetaData();
+            for (int i = 0; i < tableNamePatterns.size(); i++) {
+                List<String> primaryKeys = findTablePrimaryKeys(metaData, catalog, schemaNamePattern, tableNamePatterns.get(i));
+                try (ResultSet columnMetadata = metaData.getColumns(catalog, schemaNamePattern, tableNamePatterns.get(i), null)) {
+                    while (columnMetadata.next()) {
+                        String columnName = columnMetadata.getString("COLUMN_NAME");
+                        int columnType = columnMetadata.getInt("DATA_TYPE");
+                        String typeName = columnMetadata.getString("TYPE_NAME");
+                        int columnSize = Math.max(0, columnMetadata.getInt("COLUMN_SIZE"));
+                        int ratio = Math.max(0, columnMetadata.getInt("DECIMAL_DIGITS"));
+                        fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio));
+                    }
+                }
+                metaInfos.add( new MetaInfo().setColumn(fields));
+            }
+            return metaInfos;
+        });
+        return metaInfos;
+    }
+
+
+
+    @Override
     public long getCount(DatabaseConnectorInstance connectorInstance, Map<String, String> command) {
         if (CollectionUtils.isEmpty(command)) {
             return 0L;
