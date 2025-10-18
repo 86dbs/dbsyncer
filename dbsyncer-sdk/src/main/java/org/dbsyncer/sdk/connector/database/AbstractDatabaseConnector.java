@@ -101,28 +101,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorInstance, String tableNamePattern) {
-        List<Field> fields = new ArrayList<>();
-        final String schema = getSchema(connectorInstance.getConfig());
-        connectorInstance.execute(databaseTemplate -> {
-            SimpleConnection connection = databaseTemplate.getSimpleConnection();
-            Connection conn = connection.getConnection();
-            String catalog = conn.getCatalog();
-            String schemaNamePattern = null == schema ? conn.getSchema() : schema;
-            DatabaseMetaData metaData = conn.getMetaData();
-            List<String> primaryKeys = findTablePrimaryKeys(metaData, catalog, schemaNamePattern, tableNamePattern);
-            try (ResultSet columnMetadata = metaData.getColumns(catalog, schemaNamePattern, tableNamePattern, null)) {
-                while (columnMetadata.next()) {
-                    String columnName = columnMetadata.getString("COLUMN_NAME");
-                    int columnType = columnMetadata.getInt("DATA_TYPE");
-                    String typeName = columnMetadata.getString("TYPE_NAME");
-                    int columnSize = Math.max(0, columnMetadata.getInt("COLUMN_SIZE"));
-                    int ratio = Math.max(0, columnMetadata.getInt("DECIMAL_DIGITS"));
-                    fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio));
-                }
-            }
-            return fields;
-        });
-        return new MetaInfo().setColumn(fields);
+        List<String> tableNamePatterns = new ArrayList<>();
+        tableNamePatterns.add(tableNamePattern);
+        List<MetaInfo> metaInfos = getMetaInfos(connectorInstance, tableNamePatterns);
+        if (CollectionUtils.isEmpty(metaInfos)) {
+            return null;
+        }
+        return metaInfos.get(0);
     }
 
     @Override
@@ -136,9 +121,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             String catalog = conn.getCatalog();
             String schemaNamePattern = null == schema ? conn.getSchema() : schema;
             DatabaseMetaData metaData = conn.getMetaData();
-            for (int i = 0; i < tableNamePatterns.size(); i++) {
-                List<String> primaryKeys = findTablePrimaryKeys(metaData, catalog, schemaNamePattern, tableNamePatterns.get(i));
-                try (ResultSet columnMetadata = metaData.getColumns(catalog, schemaNamePattern, tableNamePatterns.get(i), null)) {
+            for (String tableNamePattern : tableNamePatterns) {
+                List<String> primaryKeys = findTablePrimaryKeys(metaData, catalog, schemaNamePattern, tableNamePattern);
+                try (ResultSet columnMetadata = metaData.getColumns(catalog, schemaNamePattern, tableNamePattern, null)) {
                     while (columnMetadata.next()) {
                         String columnName = columnMetadata.getString("COLUMN_NAME");
                         int columnType = columnMetadata.getInt("DATA_TYPE");
@@ -148,14 +133,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                         fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio));
                     }
                 }
-                metaInfos.add( new MetaInfo().setColumn(fields));
+                metaInfos.add(new MetaInfo().setColumn(fields));
             }
             return metaInfos;
         });
         return metaInfos;
     }
-
-
 
     @Override
     public long getCount(DatabaseConnectorInstance connectorInstance, Map<String, String> command) {
@@ -546,7 +529,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * 根据过滤条件获取查询SQL
      *
      * @param fieldMap
-     * @param queryOperator {@link OperationEnum}
+     * @param operator {@link OperationEnum}
      * @param filter
      * @return
      */
