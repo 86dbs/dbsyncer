@@ -39,7 +39,6 @@ public class ParserSupportConfiguration {
         return new TableGroupBufferActuator();
     }
 
-
     @Bean
     @ConditionalOnMissingBean
     @DependsOn(value = "serviceFactory")
@@ -48,7 +47,7 @@ public class ParserSupportConfiguration {
         if (taskService != null) {
             return taskService;
         }
-        return  new TaskService() {
+        return new TaskService() {
             @Override
             public void add(Map<String, String> params) {
 

@@ -23,8 +23,6 @@ import java.util.ServiceLoader;
 @Configuration
 public class SdkSupportConfiguration {
 
-
-
     @Bean
     @ConditionalOnMissingBean
     public LicenseService licenseService() {
@@ -70,6 +68,5 @@ public class SdkSupportConfiguration {
             }
         };
     }
-
 
 }
