@@ -363,7 +363,7 @@ public class MySQLStorageService extends AbstractStorageService {
         List<Field> taskFields = builder.getFields();
 
         //任务详情
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.TARGET_TABLE_NAME, ConfigConstant.SOURCE_TABLE_NAME, ConfigConstant.CONTENT);
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.TASK_TARGET_TABLE_NAME, ConfigConstant.TASK_SOURCE_TABLE_NAME, ConfigConstant.CONTENT);
         List<Field> taskDetailFields = builder.getFields();
 
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
@@ -492,8 +492,8 @@ public class MySQLStorageService extends AbstractStorageService {
                     new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB),
                     new Field(ConfigConstant.TASK_STATUS, "INTEGER", Types.INTEGER),
                     new Field(ConfigConstant.TASK_ID, "VARCHAR", Types.VARCHAR),
-                    new Field(ConfigConstant.SOURCE_TABLE_NAME, "VARCHAR", Types.VARCHAR),
-                    new Field(ConfigConstant.TARGET_TABLE_NAME, "VARCHAR", Types.VARCHAR),
+                    new Field(ConfigConstant.TASK_SOURCE_TABLE_NAME, "VARCHAR", Types.VARCHAR),
+                    new Field(ConfigConstant.TASK_TARGET_TABLE_NAME, "VARCHAR", Types.VARCHAR),
                     new Field(ConfigConstant.CONTENT, "VARCHAR", Types.VARCHAR)
             ).peek(field -> {
                 field.setLabelName(field.getName());

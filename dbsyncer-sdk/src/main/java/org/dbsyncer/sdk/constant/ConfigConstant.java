@@ -56,12 +56,12 @@ public class ConfigConstant {
     /**
      * Source table name
      */
-    public static final String SOURCE_TABLE_NAME = "source_table_name";
+    public static final String TASK_SOURCE_TABLE_NAME = "source_table_name";
 
     /**
      * Target table name
      */
-    public static final String TARGET_TABLE_NAME = "target_table_name";
+    public static final String TASK_TARGET_TABLE_NAME = "target_table_name";
 
     public static final String CONTENT = "content";
 
