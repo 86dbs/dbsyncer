@@ -45,24 +45,12 @@ public class ConfigConstant {
     public static final String BINLOG_DATA = "data";
 
     /**
-     * Task status
+     * 任务
      */
     public static final String TASK_STATUS = "status";
-    /**
-     * Task id
-     */
     public static final String TASK_ID = "task_id";
-
-    /**
-     * Source table name
-     */
-    public static final String SOURCE_TABLE_NAME = "source_table_name";
-
-    /**
-     * Target table name
-     */
-    public static final String TARGET_TABLE_NAME = "target_table_name";
-
-    public static final String CONTENT = "content";
+    public static final String TASK_SOURCE_TABLE_NAME = "source_table_name";
+    public static final String TASK_TARGET_TABLE_NAME = "target_table_name";
+    public static final String TASK_CONTENT = "content";
 
 }

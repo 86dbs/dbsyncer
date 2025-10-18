@@ -5,9 +5,7 @@ package org.dbsyncer.sdk.enums;
 
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.storage.Strategy;
-import org.dbsyncer.sdk.storage.strategy.ConfigStrategy;
-import org.dbsyncer.sdk.storage.strategy.DataStrategy;
-import org.dbsyncer.sdk.storage.strategy.LogStrategy;
+import org.dbsyncer.sdk.storage.strategy.*;
 
 /**
  * 存储策略枚举
@@ -31,10 +29,17 @@ public enum StorageStrategyEnum {
     /**
      * 日志策略
      */
-    LOG(StorageEnum.LOG, new LogStrategy());
+    LOG(StorageEnum.LOG, new LogStrategy()),
 
+    /**
+     * 任务策略
+     */
+    TASK(StorageEnum.TASK, new TaskStrategy()),
 
-
+    /**
+     * 数据校验明细策略
+     */
+    TASK_DATA_VERIFICATION_DETAIL(StorageEnum.TASK_DATA_VERIFICATION_DETAIL, new TaskDataVerificationDetailStrategy());
 
     private final StorageEnum type;
     private final Strategy strategy;

@@ -359,18 +359,18 @@ public class MySQLStorageService extends AbstractStorageService {
         List<Field> dataFields = builder.getFields();
 
         // 任务
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.TASK_STATUS, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.TASK_STATUS, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_JSON, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskFields = builder.getFields();
 
-        //任务详情
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.TARGET_TABLE_NAME, ConfigConstant.SOURCE_TABLE_NAME, ConfigConstant.CONTENT);
-        List<Field> taskDetailFields = builder.getFields();
+        // 数据校验明细
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.TASK_SOURCE_TABLE_NAME, ConfigConstant.TASK_TARGET_TABLE_NAME, ConfigConstant.TASK_CONTENT, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> dataVerifyDetailFields = builder.getFields();
 
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
         tables.computeIfAbsent(StorageEnum.DATA.getType(), k -> new Executor(k, dataFields, false, false));
         tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
-        tables.computeIfAbsent(StorageEnum.TASK_DETAIL.getType(), k -> new Executor(k, taskDetailFields, true, true));
+        tables.computeIfAbsent(StorageEnum.TASK_DATA_VERIFICATION_DETAIL.getType(), k -> new Executor(k, dataVerifyDetailFields, true, true));
         // 创建表
         tables.forEach((tableName, e) -> {
             if (e.isSystemTable()) {
@@ -463,11 +463,11 @@ public class MySQLStorageService extends AbstractStorageService {
         // 开启高亮
         if (!CollectionUtils.isEmpty(list) && !CollectionUtils.isEmpty(highLightKeys)) {
             list.forEach(row ->
-                    highLightKeys.forEach(paramFilter -> {
-                        String text = String.valueOf(row.get(paramFilter.getName()));
-                        String replacement = "<span style='color:red'>" + paramFilter.getValue() + "</span>";
-                        row.put(paramFilter.getName(), StringUtil.replace(text, paramFilter.getValue(), replacement));
-                    })
+                highLightKeys.forEach(paramFilter -> {
+                    String text = String.valueOf(row.get(paramFilter.getName()));
+                    String replacement = "<span style='color:red'>" + paramFilter.getValue() + "</span>";
+                    row.put(paramFilter.getName(), StringUtil.replace(text, paramFilter.getValue(), replacement));
+                })
             );
         }
     }
@@ -490,11 +490,11 @@ public class MySQLStorageService extends AbstractStorageService {
                     new Field(ConfigConstant.DATA_EVENT, "VARCHAR", Types.VARCHAR),
                     new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR),
                     new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB),
-                    new Field(ConfigConstant.TASK_STATUS, "INTEGER", Types.INTEGER),
                     new Field(ConfigConstant.TASK_ID, "VARCHAR", Types.VARCHAR),
-                    new Field(ConfigConstant.SOURCE_TABLE_NAME, "VARCHAR", Types.VARCHAR),
-                    new Field(ConfigConstant.TARGET_TABLE_NAME, "VARCHAR", Types.VARCHAR),
-                    new Field(ConfigConstant.CONTENT, "VARCHAR", Types.VARCHAR)
+                    new Field(ConfigConstant.TASK_STATUS, "INTEGER", Types.INTEGER),
+                    new Field(ConfigConstant.TASK_SOURCE_TABLE_NAME, "VARCHAR", Types.VARCHAR),
+                    new Field(ConfigConstant.TASK_TARGET_TABLE_NAME, "VARCHAR", Types.VARCHAR),
+                    new Field(ConfigConstant.TASK_CONTENT, "VARCHAR", Types.VARCHAR)
             ).peek(field -> {
                 field.setLabelName(field.getName());
                 // 转换列下划线
