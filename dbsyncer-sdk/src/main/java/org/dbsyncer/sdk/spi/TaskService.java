@@ -55,7 +55,6 @@ public interface TaskService {
      */
     boolean stop(String taskId);
 
-
     /**
      * 详情任务
      *
