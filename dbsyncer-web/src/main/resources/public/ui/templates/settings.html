@@ -1,0 +1,138 @@
+<div class="space-y-6">
+    <h2 class="text-2xl font-bold">系统设置</h2>
+
+    <el-card class="shadow-sm">
+        <el-tabs v-model="activeSettingTab" type="border-card">
+            <el-tab-pane label="基本设置" name="basic">
+                <div class="p-4 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <el-form-item label="应用名称">
+                                <el-input v-model="appName" placeholder="输入应用名称"></el-input>
+                            </el-form-item>
+
+                            <el-form-item label="自动刷新间隔">
+                                <el-select
+                                        v-model="refreshInterval"
+                                        :options="refreshIntervalOptions"
+                                ></el-select>
+                            </el-form-item>
+
+                            <el-form-item label="主题模式">
+                                <el-radio-group v-model="themeMode">
+                                    <el-radio-button label="light">浅色模式</el-radio-button>
+                                    <el-radio-button label="dark">深色模式</el-radio-button>
+                                    <el-radio-button label="auto">跟随系统</el-radio-button>
+                                </el-radio-group>
+                            </el-form-item>
+                        </div>
+
+                        <div>
+                            <el-form-item label="语言设置">
+                                <el-select
+                                        v-model="language"
+                                        :options="languageOptions"
+                                ></el-select>
+                            </el-form-item>
+
+                            <el-form-item label="日志保留天数">
+                                <el-input-number
+                                        v-model="logRetentionDays"
+                                        :min="1"
+                                        :max="365"
+                                        placeholder="日志保留天数"
+                                ></el-input-number>
+                            </el-form-item>
+
+                            <el-form-item label="通知设置">
+                                <el-checkbox-group v-model="notificationSettings">
+                                    <el-checkbox label="task_start">任务开始通知</el-checkbox>
+                                    <el-checkbox label="task_success">任务成功通知</el-checkbox>
+                                    <el-checkbox label="task_failure">任务失败通知</el-checkbox>
+                                    <el-checkbox label="system_updates">系统更新通知</el-checkbox>
+                                </el-checkbox-group>
+                            </el-form-item>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-2">
+                        <el-button type="default">重置</el-button>
+                        <el-button type="primary">保存设置</el-button>
+                    </div>
+                </div>
+            </el-tab-pane>
+
+            <el-tab-pane label="安全设置" name="security">
+                <div class="p-4 space-y-6">
+                    <el-form-item label="修改密码">
+                        <el-input
+                                v-model="newPassword"
+                                type="password"
+                                placeholder="输入新密码"
+                        ></el-input>
+                    </el-form-item>
+
+                    <el-form-item label="确认密码">
+                        <el-input
+                                v-model="confirmPassword"
+                                type="password"
+                                placeholder="确认新密码"
+                        ></el-input>
+                    </el-form-item>
+
+                    <el-form-item label="API 访问控制">
+                        <el-switch v-model="apiAccessControl"></el-switch>
+                        <p class="text-sm text-gray-500 mt-1">启用后需要 API 密钥才能访问接口</p>
+                    </el-form-item>
+
+                    <el-form-item v-if="apiAccessControl" label="API 密钥">
+                        <div class="flex items-center">
+                            <el-input
+                                    v-model="apiKey"
+                                    placeholder="API 密钥"
+                                    readonly
+                                    class="flex-1"
+                            ></el-input>
+                            <el-button type="default" size="small" class="ml-2">
+                                生成新密钥
+                            </el-button>
+                        </div>
+                    </el-form-item>
+
+                    <div class="flex justify-end space-x-2">
+                        <el-button type="default">取消</el-button>
+                        <el-button type="primary">保存安全设置</el-button>
+                    </div>
+                </div>
+            </el-tab-pane>
+
+            <el-tab-pane label="关于" name="about">
+                <div class="p-6 flex flex-col items-center text-center">
+                    <el-avatar shape="circle" class="bg-primary text-white h-20 w-20 mb-4">
+                        <i class="fa fa-database text-3xl"></i>
+                    </el-avatar>
+                    <h3 class="text-xl font-bold mb-1">DBsyncer</h3>
+                    <p class="text-gray-500 mb-4">数据库同步与管理工具</p>
+                    <p class="text-sm text-gray-500 mb-1">版本: 2.3.1</p>
+                    <p class="text-sm text-gray-500 mb-6">发布日期: 2023-06-15</p>
+
+                    <div class="flex space-x-4 mb-6">
+                        <el-button type="default" size="small">
+                            <i class="fa fa-file-text-o mr-1"></i>帮助文档
+                        </el-button>
+                        <el-button type="default" size="small">
+                            <i class="fa fa-life-ring mr-1"></i>获取支持
+                        </el-button>
+                        <el-button type="default" size="small">
+                            <i class="fa fa-refresh mr-1"></i>检查更新
+                        </el-button>
+                    </div>
+
+                    <p class="text-xs text-gray-400">
+                        © 2023 DBSyncer 团队. 保留所有权利.
+                    </p>
+                </div>
+            </el-tab-pane>
+        </el-tabs>
+    </el-card>
+</div>

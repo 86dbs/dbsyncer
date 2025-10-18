@@ -1,0 +1,343 @@
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold">同步任务</h2>
+        <el-button type="primary" @click="showTaskForm = true">
+            <i class="fa fa-plus mr-1"></i>创建任务
+        </el-button>
+    </div>
+
+    <el-card class="shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
+            <div class="flex flex-wrap gap-2">
+                <el-select
+                        v-model="taskStatusFilter"
+                        :options="taskStatusOptions"
+                        placeholder="任务状态"
+                        size="small"
+                ></el-select>
+                <el-select
+                        v-model="syncTypeFilter"
+                        :options="syncTypeOptions"
+                        placeholder="同步类型"
+                        size="small"
+                ></el-select>
+            </div>
+            <el-input
+                    v-model="taskSearch"
+                    placeholder="搜索任务..."
+                    size="small"
+                    class="w-full md:w-64"
+                    prefix-icon="el-icon-search"
+            ></el-input>
+        </div>
+
+        <el-table
+                :data="filteredTasks"
+                border
+                highlight-current-row
+                style="width: 100%;"
+        >
+            <el-table-column prop="name" label="任务名称"></el-table-column>
+            <el-table-column label="同步方向">
+                <template slot-scope="scope">
+                    {{ scope.row.source }} → {{ scope.row.target }}
+                </template>
+            </el-table-column>
+            <el-table-column prop="syncType" label="同步类型">
+                <template slot-scope="scope">
+                    {{ syncTypeMap[scope.row.syncType] || scope.row.syncType }}
+                </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态">
+                <template slot-scope="scope">
+                    <el-tag
+                            :type="taskStatusMap[scope.row.status].color"
+                    >
+                        {{ taskStatusMap[scope.row.status].label }}
+                    </el-tag>
+                </template>
+            </el-table-column>
+            <el-table-column prop="lastRun" label="上次运行"></el-table-column>
+            <el-table-column label="操作" align="right">
+                <template slot-scope="scope">
+                    <el-button
+                            size="mini"
+                            :type="scope.row.status === 'running' ? 'default' : 'primary'"
+                            @click="handleTaskStartStop(scope.row.id, scope.row.status)"
+                    >
+                        {{ scope.row.status === 'running' ? '停止' : '启动' }}
+                    </el-button>
+                    <el-button
+                            size="mini"
+                            type="default"
+                            @click="handleTaskEdit(scope.row.id)"
+                    >
+                        编辑
+                    </el-button>
+                    <el-button
+                            size="mini"
+                            type="default"
+                            @click="handleTaskLogs(scope.row.id)"
+                    >
+                        日志
+                    </el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+
+        <el-pagination
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+                :current-page="currentPage"
+                :page-sizes="[10, 20, 50, 100]"
+                :page-size="pageSize"
+                layout="total, sizes, prev, pager, next, jumper"
+                :total="filteredTasks.length"
+                class="mt-4"
+        ></el-pagination>
+    </el-card>
+
+    <!-- 创建任务对话框 -->
+    <el-dialog
+            title="创建同步任务"
+            :visible.sync="showTaskForm"
+            width="800px"
+    >
+        <el-form :model="newTask" ref="taskForm" :rules="taskRules">
+            <el-tabs v-model="activeTaskTab" type="border-card">
+                <el-tab-pane label="基本信息" name="basic">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2">
+                        <el-form-item
+                                label="任务名称"
+                                prop="name"
+                        >
+                            <el-input v-model="newTask.name" placeholder="例如：订单数据同步"></el-input>
+                        </el-form-item>
+
+                        <el-form-item
+                                label="任务描述"
+                                prop="description"
+                        >
+                            <el-input v-model="newTask.description" placeholder="简要描述任务用途"></el-input>
+                        </el-form-item>
+
+                        <el-form-item
+                                label="源数据库"
+                                prop="sourceConnectionId"
+                        >
+                            <el-select
+                                    v-model="newTask.sourceConnectionId"
+                                    :options="connectionOptions"
+                                    placeholder="选择源数据库"
+                            ></el-select>
+                        </el-form-item>
+
+                        <el-form-item
+                                label="目标数据库"
+                                prop="targetConnectionId"
+                        >
+                            <el-select
+                                    v-model="newTask.targetConnectionId"
+                                    :options="connectionOptions"
+                                    placeholder="选择目标数据库"
+                            ></el-select>
+                        </el-form-item>
+
+                        <el-form-item
+                                label="同步类型"
+                                prop="syncType"
+                        >
+                            <el-select
+                                    v-model="newTask.syncType"
+                                    :options="syncTypeOptions"
+                                    placeholder="选择同步类型"
+                            ></el-select>
+                        </el-form-item>
+
+                        <el-form-item
+                                label="同步策略"
+                                prop="syncStrategy"
+                        >
+                            <el-select
+                                    v-model="newTask.syncStrategy"
+                                    :options="syncStrategyOptions"
+                                    placeholder="选择同步策略"
+                            ></el-select>
+                        </el-form-item>
+                    </div>
+                </el-tab-pane>
+
+                <el-tab-pane label="表映射" name="tables">
+                    <div class="p-2">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-medium">表映射关系</h4>
+                            <el-button size="small" type="primary" @click="addTableMapping">
+                                <i class="fa fa-plus mr-1"></i>添加映射
+                            </el-button>
+                        </div>
+
+                        <el-table
+                                :data="newTask.tableMappings"
+                                border
+                                highlight-current-row
+                                style="width: 100%;"
+                        >
+                            <el-table-column prop="sourceTable" label="源表"></el-table-column>
+                            <el-table-column prop="targetTable" label="目标表"></el-table-column>
+                            <el-table-column prop="mappingType" label="映射类型">
+                                <template slot-scope="scope">
+                                    {{ mappingTypeMap[scope.row.mappingType] || scope.row.mappingType }}
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="操作" align="right">
+                                <template slot-scope="scope">
+                                    <el-button
+                                            size="mini"
+                                            type="text"
+                                            @click="handleEditTableMapping(scope.$index)"
+                                    >
+                                        编辑
+                                    </el-button>
+                                    <el-button
+                                            size="mini"
+                                            type="text"
+                                            style="color: #F56C6C"
+                                            @click="handleDeleteTableMapping(scope.$index)"
+                                    >
+                                        删除
+                                    </el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+                </el-tab-pane>
+
+                <el-tab-pane label="调度设置" name="schedule">
+                    <div class="p-2 space-y-4">
+                        <el-form-item
+                                label="任务状态"
+                                prop="status"
+                        >
+                            <el-radio-group v-model="newTask.status">
+                                <el-radio label="enabled">启用</el-radio>
+                                <el-radio label="disabled">禁用</el-radio>
+                            </el-radio-group>
+                        </el-form-item>
+
+                        <el-form-item
+                                label="执行方式"
+                                prop="executionMode"
+                        >
+                            <el-select
+                                    v-model="newTask.executionMode"
+                                    :options="executionModeOptions"
+                                    placeholder="选择执行方式"
+                            ></el-select>
+                        </el-form-item>
+
+                        <div v-if="newTask.executionMode === 'scheduled'">
+                            <el-form-item
+                                    label="调度表达式"
+                                    prop="cronExpression"
+                            >
+                                <div class="flex">
+                                    <el-input
+                                            v-model="newTask.cronExpression"
+                                            placeholder="例如：0 0 * * * ?"
+                                            class="flex-1"
+                                    ></el-input>
+                                    <el-button type="default" size="small" class="ml-2">
+                                        <i class="fa fa-clock-o mr-1"></i>生成
+                                    </el-button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    表达式说明：秒 分 时 日 月 周 年（可选），例如：0 0/5 * * * ? 表示每5分钟执行一次
+                                </p>
+                            </el-form-item>
+                        </div>
+
+                        <el-form-item
+                                label="同步超时(分钟)"
+                                prop="timeout"
+                        >
+                            <el-input-number
+                                    v-model="newTask.timeout"
+                                    :min="1"
+                                    :max="120"
+                                    placeholder="同步超时时间"
+                            ></el-input-number>
+                        </el-form-item>
+
+                        <el-form-item
+                                label="重试次数"
+                                prop="retryCount"
+                        >
+                            <el-input-number
+                                    v-model="newTask.retryCount"
+                                    :min="0"
+                                    :max="10"
+                                    placeholder="失败重试次数"
+                            ></el-input-number>
+                        </el-form-item>
+                    </div>
+                </el-tab-pane>
+
+                <el-tab-pane label="高级选项" name="advanced">
+                    <div class="p-2 space-y-4">
+                        <el-form-item label="并行度">
+                            <el-slider
+                                    v-model="newTask.parallelism"
+                                    :min="1"
+                                    :max="10"
+                                    :step="1"
+                            ></el-slider>
+                            <p class="text-center mt-1">{{ newTask.parallelism }} 个并行线程</p>
+                        </el-form-item>
+
+                        <el-form-item label="批量大小">
+                            <el-input-number
+                                    v-model="newTask.batchSize"
+                                    :min="10"
+                                    :max="10000"
+                                    :step="10"
+                                    placeholder="批量处理记录数"
+                            ></el-input-number>
+                        </el-form-item>
+
+                        <el-form-item label="冲突解决策略">
+                            <el-select
+                                    v-model="newTask.conflictStrategy"
+                                    :options="conflictStrategyOptions"
+                                    placeholder="选择冲突解决策略"
+                            ></el-select>
+                        </el-form-item>
+
+                        <el-form-item label="过滤条件">
+                            <el-input
+                                    v-model="newTask.filterCondition"
+                                    placeholder="例如：status = 1 AND create_time > '2023-01-01'"
+                            ></el-input>
+                            <p class="text-xs text-gray-500 mt-1">
+                                源数据过滤条件，将只同步满足条件的数据
+                            </p>
+                        </el-form-item>
+
+                        <el-form-item label="高级选项">
+                            <el-checkbox-group v-model="newTask.advancedOptions">
+                                <el-checkbox label="ignore_error">忽略错误继续执行</el-checkbox>
+                                <el-checkbox label="use_transaction">使用事务保证一致性</el-checkbox>
+                                <el-checkbox label="auto_create_table">自动创建目标表</el-checkbox>
+                                <el-checkbox label="record_history">记录数据变更历史</el-checkbox>
+                            </el-checkbox-group>
+                        </el-form-item>
+                    </div>
+                </el-tab-pane>
+            </el-tabs>
+        </el-form>
+
+        <div slot="footer" class="flex justify-end space-x-2">
+            <el-button @click="showTaskForm = false">取消</el-button>
+            <el-button type="primary" @click="saveTask">创建任务</el-button>
+        </div>
+    </el-dialog>
+</div>

@@ -50,7 +50,6 @@ public class ConfigConstant {
     public static final String TASK_STATUS = "status";
     public static final String TASK_ID = "taskId";
     public static final String TASK_SOURCE_TABLE_NAME = "sourceTableName";
-    public static final String TASK_TARGET_TABLE_NAME = "targetTableName";
     public static final String TASK_CONTENT = "content";
 
 }
