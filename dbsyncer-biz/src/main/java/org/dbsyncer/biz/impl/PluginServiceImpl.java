@@ -15,7 +15,7 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.plugin.PluginFactory;
-import org.dbsyncer.plugin.model.Plugin;
+import org.dbsyncer.sdk.model.Plugin;
 import org.dbsyncer.common.enums.FileSuffixEnum;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;

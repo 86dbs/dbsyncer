@@ -24,7 +24,7 @@ public class GeneralBufferConfig extends BufferActuatorConfig {
     /**
      * 最大工作线程数
      */
-    private int maxThreadSize = 16;
+    private int maxThreadSize = threadCoreSize * 2;;
 
     /**
      * 工作线任务队列

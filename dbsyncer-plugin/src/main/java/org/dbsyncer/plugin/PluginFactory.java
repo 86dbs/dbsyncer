@@ -6,7 +6,7 @@ package org.dbsyncer.plugin;
 import org.apache.commons.io.FileUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.plugin.enums.ProcessEnum;
-import org.dbsyncer.plugin.model.Plugin;
+import org.dbsyncer.sdk.model.Plugin;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.spi.PluginService;
 import org.slf4j.Logger;
@@ -110,10 +110,10 @@ public class PluginFactory implements DisposableBean {
     /**
      * 全量同步/增量同步处理
      *
-     * @param plugin
      * @param context
      */
-    public void process(Plugin plugin, PluginContext context, ProcessEnum processEnum) {
+    public void process(PluginContext context, ProcessEnum processEnum) {
+        Plugin plugin = context.getPlugin();
         if (null != plugin) {
             String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
             service.computeIfPresent(pluginId, (k, c) -> {

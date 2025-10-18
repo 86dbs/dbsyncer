@@ -2,6 +2,7 @@ package org.dbsyncer.sdk.plugin;
 
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Plugin;
 
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,11 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
     private boolean enableSchemaResolver;
 
     /**
+     * 是否打印trace信息
+     */
+    private boolean enablePrintTraceInfo;
+
+    /**
      * 数据源数据集合
      */
     private List<Map> sourceList;
@@ -68,6 +74,11 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
      * 目标源源数据集合
      */
     private List<Map> targetList;
+
+    /**
+     * 插件
+     */
+    private Plugin plugin;
 
     /**
      * 插件参数
@@ -160,6 +171,15 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
     }
 
     @Override
+    public boolean isEnablePrintTraceInfo() {
+        return enablePrintTraceInfo;
+    }
+
+    public void setEnablePrintTraceInfo(boolean enablePrintTraceInfo) {
+        this.enablePrintTraceInfo = enablePrintTraceInfo;
+    }
+
+    @Override
     public List<Map> getSourceList() {
         return sourceList;
     }
@@ -175,6 +195,15 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
 
     public void setTargetList(List<Map> targetList) {
         this.targetList = targetList;
+    }
+
+    @Override
+    public Plugin getPlugin() {
+        return plugin;
+    }
+
+    public void setPlugin(Plugin plugin) {
+        this.plugin = plugin;
     }
 
     @Override

@@ -17,6 +17,7 @@ import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.util.PickerUtil;
+import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.AbstractListener;
@@ -61,6 +62,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
     private ProfileComponent profileComponent;
 
     @Resource
+    private PluginFactory pluginFactory;
+
+    @Resource
     private LogService logService;
 
     @Resource
@@ -79,6 +83,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
         final String metaId = mapping.getMetaId();
         Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
+        Connector targetConnector = profileComponent.getConnector(mapping.getTargetConnectorId());
+        Assert.notNull(targetConnector, "目标连接器不能为空.");
         List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
         Assert.notEmpty(list, "表映射关系不能为空，请先添加源表到目标表关系.");
         Meta meta = profileComponent.getMeta(metaId);
@@ -93,7 +99,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
                     meta.setEndTime(now);
                     profileComponent.editConfigModel(meta);
                     tableGroupContext.put(mapping, list);
-                    return getListener(mapping, connector, list, meta);
+                    return getListener(mapping, connector, targetConnector, list, meta);
                 }).start();
             } catch (Exception e) {
                 close(metaId);
@@ -134,8 +140,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
         map.values().forEach(Listener::flushEvent);
     }
 
-    private Listener getListener(Mapping mapping, Connector connector, List<TableGroup> list, Meta meta) {
+    private Listener getListener(Mapping mapping, Connector connector,Connector targetConnector, List<TableGroup> list, Meta meta) {
         ConnectorConfig connectorConfig = connector.getConfig();
+        ConnectorConfig targetConnectorConfig = targetConnector.getConfig();
         ListenerConfig listenerConfig = mapping.getListener();
         String listenerType = listenerConfig.getListenerType();
 
@@ -143,7 +150,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         if (null == listener) {
             throw new ManagerException(String.format("Unsupported listener type \"%s\".", connectorConfig.getConnectorType()));
         }
-        listener.register(new ParserConsumer(bufferActuatorRouter, profileComponent, logService, meta.getId(), list));
+        listener.register(new ParserConsumer(bufferActuatorRouter, profileComponent, pluginFactory, logService, meta.getId(), list));
 
         // 默认定时抽取
         if (ListenerTypeEnum.isTiming(listenerType) && listener instanceof AbstractQuartzListener) {
@@ -153,7 +160,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 final Picker picker = new Picker(group);
                 List<Field> fields = picker.getSourceFields();
                 Assert.notEmpty(fields, "表字段映射关系不能为空：" + group.getSourceTable().getName() + " > " + group.getTargetTable().getName());
-                return new TableGroupQuartzCommand(t.getSourceTable(), fields, t.getCommand());
+                return new TableGroupQuartzCommand(t.getSourceTable(), fields, t.getTargetTable(), t.getCommand(), group.getPlugin(), group.getPluginExtInfo());
             }).collect(Collectors.toList());
             quartzListener.setCommands(quartzCommands);
         }
@@ -172,6 +179,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
             abstractListener.setConnectorService(connectorFactory.getConnectorService(connectorConfig.getConnectorType()));
             abstractListener.setConnectorInstance(connectorFactory.connect(connectorConfig));
+            abstractListener.setTargetConnectorInstance(connectorFactory.connect(targetConnectorConfig));
             abstractListener.setScheduledTaskService(scheduledTaskService);
             abstractListener.setConnectorConfig(connectorConfig);
             abstractListener.setListenerConfig(listenerConfig);
