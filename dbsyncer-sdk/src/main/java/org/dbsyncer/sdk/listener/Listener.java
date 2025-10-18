@@ -37,6 +37,13 @@ public interface Listener {
     void register(Watcher watcher);
 
     /**
+     * 数据变更前置事件
+     *
+     * @param context
+     */
+    void changeEventBefore(QuartzListenerContext context);
+
+    /**
      * 数据变更事件
      *
      * @param event

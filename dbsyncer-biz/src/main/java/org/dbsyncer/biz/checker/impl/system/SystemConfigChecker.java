@@ -58,6 +58,7 @@ public class SystemConfigChecker extends AbstractChecker {
         params.put("enableStorageWriteFull", StringUtil.isNotBlank(params.get("enableStorageWriteFull")) ? "true" : "false");
         params.put("enableWatermark", StringUtil.isNotBlank(params.get("enableWatermark")) ? "true" : "false");
         params.put("enableSchemaResolver", StringUtil.isNotBlank(params.get("enableSchemaResolver")) ? "true" : "false");
+        params.put("enablePrintTraceInfo", StringUtil.isNotBlank(params.get("enablePrintTraceInfo")) ? "true" : "false");
         String enableCDN = "false";
         if (StringUtil.isNotBlank(params.get("enableCDN"))) {
             if (!NetworkUtil.isInternetAvailable()) {
