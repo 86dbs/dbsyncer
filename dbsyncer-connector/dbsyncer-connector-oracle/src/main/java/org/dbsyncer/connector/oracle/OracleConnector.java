@@ -8,6 +8,7 @@ import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleClobValueMapper;
 import org.dbsyncer.connector.oracle.schema.OracleOtherValueMapper;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
+import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -20,6 +21,8 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 
@@ -139,4 +142,20 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         return "select 1 from dual";
     }
 
+    @Override
+    protected String getCatalog(DatabaseConfig config, Connection connection) {
+        return null;
+    }
+
+    @Override
+    protected String getSchema(DatabaseConfig config, Connection connection) throws SQLException {
+        String schema = config.getSchema();
+        if (StringUtil.isBlank(schema)) {
+            schema = connection.getSchema();
+        }
+        if (StringUtil.isNotBlank(schema)) {
+            schema = schema.toUpperCase();
+        }
+        return schema;
+    }
 }

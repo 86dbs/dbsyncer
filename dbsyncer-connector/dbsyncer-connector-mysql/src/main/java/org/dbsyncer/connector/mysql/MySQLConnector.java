@@ -9,6 +9,7 @@ import org.dbsyncer.connector.mysql.schema.MySQLDateValueMapper;
 import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
 import org.dbsyncer.connector.mysql.storage.MySQLStorageService;
 import org.dbsyncer.connector.mysql.validator.MySQLConfigValidator;
+import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -23,6 +24,7 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
 import java.sql.Types;
 import java.util.List;
 
@@ -146,5 +148,10 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     @Override
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
+    }
+
+    @Override
+    protected String getSchema(DatabaseConfig config, Connection connection) {
+        return null;
     }
 }

@@ -9,6 +9,7 @@ import org.dbsyncer.connector.postgresql.schema.PostgreSQLBitValueMapper;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLOtherValueMapper;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLSchemaResolver;
 import org.dbsyncer.connector.postgresql.validator.PostgreSQLConfigValidator;
+import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -22,6 +23,7 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
 import java.sql.Types;
 import java.util.List;
 
@@ -137,5 +139,10 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     @Override
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
+    }
+
+    @Override
+    protected String getSchema(DatabaseConfig config, Connection connection) {
+        return StringUtil.isNotBlank(config.getSchema()) ? config.getSchema() : "public";
     }
 }

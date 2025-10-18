@@ -25,6 +25,7 @@ import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
+import java.sql.Connection;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,9 +40,6 @@ import java.util.stream.Collectors;
  * @Date 2022-05-22 22:56
  */
 public final class SqlServerConnector extends AbstractDatabaseConnector {
-
-    private final String QUERY_VIEW = "select name from sysobjects where xtype in('v')";
-    private final String QUERY_TABLE = "select name from sys.tables where schema_id = schema_id('%s') and is_ms_shipped = 0";
     private final String QUERY_TABLE_IDENTITY = "select is_identity from sys.columns where object_id = object_id('%s') and is_identity > 0";
     private final String SET_TABLE_IDENTITY_ON = "set identity_insert %s.[%s] on;";
     private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
@@ -56,14 +54,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public ConfigValidator getConfigValidator() {
         return configValidator;
-    }
-
-    @Override
-    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
-        DatabaseConfig config = connectorInstance.getConfig();
-        List<Table> tables = getTables(connectorInstance, String.format(QUERY_TABLE, config.getSchema()), TableTypeEnum.TABLE);
-        tables.addAll(getTables(connectorInstance, QUERY_VIEW, TableTypeEnum.VIEW));
-        return tables;
     }
 
     @Override
@@ -107,7 +97,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         if (CollectionUtils.isEmpty(primaryKeys)) {
             return primaryKeys;
         }
-        return primaryKeys.stream().map(pk -> convertKey(pk)).collect(Collectors.toList());
+        return primaryKeys.stream().map(this::convertKey).collect(Collectors.toList());
     }
 
     private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {
@@ -155,8 +145,13 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         return result;
     }
 
+    @Override
+    protected String getSchema(DatabaseConfig config, Connection connection) {
+        return StringUtil.isNotBlank(config.getSchema()) ? config.getSchema() : "dbo";
+    }
+
     private String convertKey(String key) {
-        return new StringBuilder("[").append(key).append("]").toString();
+        return "[" + key + "]";
     }
 
 }

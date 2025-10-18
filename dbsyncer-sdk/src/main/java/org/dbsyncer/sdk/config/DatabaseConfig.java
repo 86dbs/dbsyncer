@@ -39,6 +39,11 @@ public class DatabaseConfig extends ConnectorConfig {
     private String password;
 
     /**
+     * 数据库名
+     */
+    private String database;
+
+    /**
      * 构架名
      */
     private String schema;
@@ -101,6 +106,14 @@ public class DatabaseConfig extends ConnectorConfig {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(String database) {
+        this.database = database;
     }
 
     public String getSchema() {
