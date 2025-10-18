@@ -142,4 +142,8 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         }
         return pk.stream().anyMatch(key -> key.equalsIgnoreCase(name));
     }
+
+    public MetaInfo getTableMetaInfo(DatabaseConnectorInstance connectorInstance, String tableNamePattern) {
+        return super.getMetaInfo(connectorInstance, tableNamePattern);
+    }
 }
