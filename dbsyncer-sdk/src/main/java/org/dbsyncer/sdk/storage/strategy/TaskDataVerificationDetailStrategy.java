@@ -11,7 +11,7 @@ import org.dbsyncer.sdk.storage.Strategy;
  * @Version 1.0.0
  * @Date 2025-10-18 20:39
  */
-public class TaskDataVerificationDetailStrategy implements Strategy {
+public final class TaskDataVerificationDetailStrategy implements Strategy {
     @Override
     public String createSharding(String separator, String collectionId) {
         return StorageEnum.TASK_DATA_VERIFICATION_DETAIL.getType();

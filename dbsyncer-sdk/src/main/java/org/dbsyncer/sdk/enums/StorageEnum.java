@@ -31,7 +31,6 @@ public enum StorageEnum {
      */
     TASK_DATA_VERIFICATION_DETAIL("task_data_verification_detail");
 
-
     private final String type;
 
     StorageEnum(String type) {

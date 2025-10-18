@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.model;
 
 import java.io.Serializable;
@@ -6,6 +9,9 @@ import java.sql.Timestamp;
 /**
  * 任务配置表实体类
  *
+ * @Author 穿云
+ * @Version 1.0.0
+ * @Date 2025-10-18 21:18
  */
 public class CommonTask implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -32,6 +38,7 @@ public class CommonTask implements Serializable {
 
     /**
      * 任务状态, 0-未执行；1-执行中；2-执行成功；3-执行失败；
+     * {@link CommonTaskStatusEnum}
      */
     private int status;
 
@@ -45,8 +52,6 @@ public class CommonTask implements Serializable {
      */
     private String json;
 
-
-    // getter和setter方法
     public String getId() {
         return id;
     }

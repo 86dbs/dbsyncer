@@ -37,15 +37,9 @@ public enum StorageStrategyEnum {
     TASK(StorageEnum.TASK, new TaskStrategy()),
 
     /**
-     * 任务详情策略
+     * 数据校验明细策略
      */
     TASK_DATA_VERIFICATION_DETAIL(StorageEnum.TASK_DATA_VERIFICATION_DETAIL, new TaskDataVerificationDetailStrategy());
-
-
-
-
-
-
 
     private final StorageEnum type;
     private final Strategy strategy;
