@@ -1,4 +1,4 @@
-CREATE TABLE `dbsyncer_task_detail` (
+CREATE TABLE `dbsyncer_task_data_verification_detail` (
     `ID` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '唯一ID',
     `TASK_ID` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '关联的任务id',
     `TYPE` varchar(24) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '任务类型, dataVerification',
