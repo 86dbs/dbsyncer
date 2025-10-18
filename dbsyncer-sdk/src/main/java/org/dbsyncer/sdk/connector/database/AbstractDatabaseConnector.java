@@ -130,18 +130,18 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public List<MetaInfo> getMetaInfos(DatabaseConnectorInstance connectorInstance, List<String> tableNamePatterns) {
-        List<MetaInfo>  metaInfos = new ArrayList<>();
-        List<Field> fields = new ArrayList<>();
-        connectorInstance.execute(databaseTemplate -> {
+        return connectorInstance.execute(databaseTemplate -> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             DatabaseConfig config = connectorInstance.getConfig();
             final String catalog = getCatalog(config, conn);
             final String schema = getSchema(config, conn);
             DatabaseMetaData metaData = conn.getMetaData();
-            for (String tableNamePattern : tableNamePatterns) {
-                List<String> primaryKeys = findTablePrimaryKeys(metaData, catalog, schema, tableNamePattern);
-                try (ResultSet columnMetadata = metaData.getColumns(catalog, schema, tableNamePattern, null)) {
+            List<MetaInfo> metaInfos = new ArrayList<>();
+            for (String tableName : tableNamePatterns) {
+                List<Field> fields = new ArrayList<>();
+                List<String> primaryKeys = findTablePrimaryKeys(metaData, catalog, schema, tableName);
+                try (ResultSet columnMetadata = metaData.getColumns(catalog, schema, tableName, null)) {
                     while (columnMetadata.next()) {
                         String columnName = columnMetadata.getString("COLUMN_NAME");
                         int columnType = columnMetadata.getInt("DATA_TYPE");
@@ -155,7 +155,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             }
             return metaInfos;
         });
-        return metaInfos;
     }
 
     @Override

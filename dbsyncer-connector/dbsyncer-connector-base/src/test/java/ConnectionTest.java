@@ -425,8 +425,10 @@ public class ConnectionTest {
 
     @Test
     public void testReadSchema() {
-        getTables(createOracleConfig(), "test", "AE86", "MY_ORG");
-        getTables(createOracleConfig(), "test", "AE86", null);
+        List<Table> tables = getTables(createOracleConfig(), "test", "AE86", "MY_ORG");
+        assert !tables.isEmpty();
+        List<Table> tables1 = getTables(createOracleConfig(), "test", "AE86", null);
+        assert !tables1.isEmpty();
 
         getTables(createMysqlConfig(), "test", "root", "MY_ORG");
         getTables(createMysqlConfig(), "test", "root", null);
