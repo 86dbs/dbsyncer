@@ -29,7 +29,7 @@ public enum StorageEnum {
     /**
      * 任务详情：同步任务详情
      */
-    TASK_DETAIL("task_data_verification_detail");
+    TASK_DATA_VERIFICATION_DETAIL("task_data_verification_detail");
 
 
     private final String type;

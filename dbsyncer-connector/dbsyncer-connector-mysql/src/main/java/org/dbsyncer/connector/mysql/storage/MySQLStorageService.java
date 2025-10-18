@@ -370,7 +370,7 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
         tables.computeIfAbsent(StorageEnum.DATA.getType(), k -> new Executor(k, dataFields, false, false));
         tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
-        tables.computeIfAbsent(StorageEnum.TASK_DETAIL.getType(), k -> new Executor(k, taskDetailFields, true, true));
+        tables.computeIfAbsent(StorageEnum.TASK_DATA_VERIFICATION_DETAIL.getType(), k -> new Executor(k, taskDetailFields, true, true));
         // 创建表
         tables.forEach((tableName, e) -> {
             if (e.isSystemTable()) {
