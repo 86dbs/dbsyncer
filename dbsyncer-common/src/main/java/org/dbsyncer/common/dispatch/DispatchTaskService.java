@@ -12,7 +12,7 @@ public interface DispatchTaskService {
 
     void execute(DispatchTask task);
 
-    void stop(DispatchTask task);
+    void stop(String uniqueId);
 
     boolean isRunning(String uniqueId);
 }
