@@ -22,14 +22,14 @@ public interface TaskService {
      *
      * @param params
      */
-    boolean add(Map<String, String> params);
+    void add(Map<String, String> params);
 
     /**
      * 修改
      *
      * @param params
      */
-    boolean modify(Map<String, String> params);
+    void modify(Map<String, String> params);
 
     /**
      * 删除任务
@@ -37,7 +37,7 @@ public interface TaskService {
      * @param taskId
      * @return
      */
-    boolean delete(String taskId);
+    void delete(String taskId);
 
     /**
      * 启动
@@ -45,7 +45,7 @@ public interface TaskService {
      * @param taskId
      * @return
      */
-    boolean start(String taskId);
+    void start(String taskId);
 
     /**
      * 停止任务
@@ -53,7 +53,7 @@ public interface TaskService {
      * @param taskId
      * @return
      */
-    boolean stop(String taskId);
+    void stop(String taskId);
 
     /**
      * 详情任务
