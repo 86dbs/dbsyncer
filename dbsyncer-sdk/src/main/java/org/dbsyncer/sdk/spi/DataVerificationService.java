@@ -3,6 +3,11 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import org.dbsyncer.sdk.model.CommonTask;
+
+import java.util.List;
+import java.util.Map;
+
 /**
  * 数据校验服务
  *
@@ -12,12 +17,44 @@ package org.dbsyncer.sdk.spi;
  */
 public interface DataVerificationService {
 
+
+
     /**
-     * 数据校验
+     * 新增任务
      *
-     * @param mappingId 驱动id
-     * @return 任务id
+     * @param params
      */
-    String verify(String mappingId);
+    boolean add(Map<String, String> params);
+
+    /**
+     * 启动
+     *
+     * @param taskId
+     * @return
+     */
+    boolean start(String taskId);
+
+    /**
+     * 停止任务
+     *
+     * @param taskId
+     * @return
+     */
+    boolean stop(String taskId);
+
+
+    /**
+     * 任务列表
+     *
+     * @param type
+     * @return
+     */
+    List<CommonTask> list(String type);
+
+
+
+
+
+
 
 }
