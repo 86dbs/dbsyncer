@@ -1,10 +1,10 @@
 CREATE TABLE `dbsyncer_task_data_verification_detail` (
     `ID` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '唯一ID',
     `TASK_ID` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '关联的任务id',
-    `TYPE` varchar(24) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '任务类型, dataVerification',
+    `TYPE` varchar(32) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '任务类型, dataVerification',
     `SOURCE_TABLE_NAME` varchar(100) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT '' COMMENT '数据源表名称',
     `TARGET_TABLE_NAME` varchar(100) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT '' COMMENT '目标源表名称',
-    `CONTENT` text CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '执行结果(上限8192个字符)',
+    `CONTENT` text CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '执行结果 最高保存1000条数据',
     `CREATE_TIME` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `UPDATE_TIME` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`ID`) USING BTREE,
