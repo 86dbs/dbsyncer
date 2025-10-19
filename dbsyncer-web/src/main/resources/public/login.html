@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>dbsyncer - 登录</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link type="image/x-icon" rel="icon" th:href="@{/img/logo.ico}"/>
     <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/font-awesome.min.css}"/>
     <link type="text/css" rel="stylesheet" th:if="${enableCDN}" src="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css"/>
 
+    <script th:if="${enableCDN}" src="https://cdn.tailwindcss.com"></script>
+    <script th:if="${!enableCDN}" th:src="@{/plugins/js/tailwindcss/tailwindcss.min.js}"></script>
     <!-- 配置Tailwind自定义颜色和字体 -->
     <script>
         tailwind.config = {
