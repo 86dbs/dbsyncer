@@ -1,0 +1,273 @@
+/* ========== CSS Reset ========== */
+*, ::before, ::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: #e5e7eb;
+}
+
+::before, ::after {
+    --tw-content: '';
+}
+
+html {
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    -moz-tab-size: 4;
+    tab-size: 4;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+}
+
+body {
+    margin: 0;
+    line-height: inherit;
+}
+
+/* ========== 颜色变量 ========== */
+:root {
+    --color-primary: #165DFF;
+    --color-secondary: #36CFC9;
+    --color-neutral: #F5F7FA;
+    --color-dark: #1D2129;
+    --color-danger: #F53F3F;
+}
+
+/* ========== 布局工具类 ========== */
+.min-h-screen { min-height: 100vh; }
+.flex { display: flex; }
+.hidden { display: none; }
+.grid { display: grid; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.flex-col { flex-direction: column; }
+.flex-shrink-0 { flex-shrink: 0; }
+.w-full { width: 100%; }
+.w-8 { width: 2rem; }
+.w-10 { width: 2.5rem; }
+.h-8 { height: 2rem; }
+.h-10 { height: 2.5rem; }
+.max-w-6xl { max-width: 72rem; }
+.max-w-md { max-width: 28rem; }
+
+/* ========== 间距工具类 ========== */
+.p-4 { padding: 1rem; }
+.p-8 { padding: 2rem; }
+.p-12 { padding: 3rem; }
+.p-3 { padding: 0.75rem; }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.pl-3 { padding-left: 0.75rem; }
+.pl-10 { padding-left: 2.5rem; }
+.pr-3 { padding-right: 0.75rem; }
+.pr-10 { padding-right: 2.5rem; }
+.pt-8 { padding-top: 2rem; }
+.m-0 { margin: 0; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-6 { margin-top: 1.5rem; }
+.mt-12 { margin-top: 3rem; }
+.mt-auto { margin-top: auto; }
+.mb-1 { margin-top: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-8 { margin-bottom: 2rem; }
+.mb-12 { margin-bottom: 3rem; }
+.mr-1 { margin-right: 0.25rem; }
+.mr-2 { margin-right: 0.5rem; }
+
+/* ========== 间距（space）工具类 ========== */
+.space-x-2 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.5rem; }
+.space-x-3 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.75rem; }
+.space-x-4 > :not([hidden]) ~ :not([hidden]) { margin-left: 1rem; }
+.space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
+.space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem; }
+
+/* ========== 间隙（gap）工具类 ========== */
+.gap-8 { gap: 2rem; }
+
+/* ========== 文字工具类 ========== */
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-2xl { font-size: 1.5rem; line-height: 2rem; }
+.text-white { color: #ffffff; }
+.text-gray-400 { color: #9ca3af; }
+.text-gray-500 { color: #6b7280; }
+.text-gray-600 { color: #4b5563; }
+.text-gray-700 { color: #374151; }
+.text-center { text-align: center; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.tracking-tight { letter-spacing: -0.025em; }
+
+/* ========== 背景工具类 ========== */
+.bg-white { background-color: #ffffff; }
+.bg-gray-50 { background-color: #f9fafb; }
+.bg-gray-100 { background-color: #f3f4f6; }
+
+/* ========== 边框工具类 ========== */
+.border { border-width: 1px; }
+.border-t { border-top-width: 1px; }
+.border-gray-100 { border-color: #f3f4f6; }
+.border-gray-300 { border-color: #d1d5db; }
+.rounded-lg { border-radius: 0.5rem; }
+.rounded-2xl { border-radius: 1rem; }
+.rounded-full { border-radius: 9999px; }
+
+/* ========== 阴影工具类 ========== */
+.shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+
+/* ========== 溢出工具类 ========== */
+.overflow-hidden { overflow: hidden; }
+
+/* ========== 定位工具类 ========== */
+.relative { position: relative; }
+.absolute { position: absolute; }
+.inset-y-0 { top: 0; bottom: 0; }
+.left-0 { left: 0; }
+.right-0 { right: 0; }
+
+/* ========== 指针工具类 ========== */
+.pointer-events-none { pointer-events: none; }
+.cursor-not-allowed { cursor: not-allowed; }
+
+/* ========== 轮廓工具类 ========== */
+.outline-none { outline: 2px solid transparent; outline-offset: 2px; }
+
+/* ========== 自定义颜色类 ========== */
+.bg-primary { background-color: var(--color-primary); }
+.bg-danger { background-color: var(--color-danger); }
+.text-primary { color: var(--color-primary); }
+.text-danger { color: var(--color-danger); }
+.text-dark { color: var(--color-dark); }
+.border-danger { border-color: var(--color-danger); }
+
+/* ========== 自定义渐变背景 ========== */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #165DFF 0%, #36CFC9 100%);
+}
+
+/* ========== 透明度工具类 ========== */
+.bg-primary\/10 { background-color: rgba(22, 93, 255, 0.1); }
+.bg-primary\/80 { background-color: rgba(22, 93, 255, 0.8); }
+.bg-primary\/90 { background-color: rgba(22, 93, 255, 0.9); }
+.bg-danger\/10 { background-color: rgba(245, 63, 63, 0.1); }
+.bg-white\/20 { background-color: rgba(255, 255, 255, 0.2); }
+.text-white\/70 { color: rgba(255, 255, 255, 0.7); }
+.text-white\/80 { color: rgba(255, 255, 255, 0.8); }
+
+/* ========== 过渡动画 ========== */
+.transition-custom {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========== 文字阴影 ========== */
+.text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ========== 输入框样式 ========== */
+input[type="text"],
+input[type="password"] {
+    display: block;
+    width: 100%;
+}
+
+/* ========== 按钮样式 ========== */
+button {
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: not-allowed;
+}
+
+/* ========== 表单元素 ========== */
+.block {
+    display: block;
+}
+
+/* ========== 响应式工具类 ========== */
+@media (min-width: 768px) {
+    .md\:hidden { display: none; }
+    .md\:flex { display: flex; }
+    .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .md\:p-12 { padding: 3rem; }
+    .md\:mt-12 { margin-top: 3rem; }
+}
+
+/* ========== Focus 状态 ========== */
+.focus\:ring-2:focus {
+    --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+    --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+    box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+}
+
+.focus\:ring-primary:focus {
+    --tw-ring-color: var(--color-primary);
+}
+
+.focus\:ring-primary\/50:focus {
+    --tw-ring-color: rgba(22, 93, 255, 0.5);
+}
+
+.focus\:border-primary:focus {
+    border-color: var(--color-primary);
+}
+
+.focus\:ring-offset-2:focus {
+    --tw-ring-offset-width: 2px;
+}
+
+.focus\:outline-none:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+/* ========== Hover 状态 ========== */
+.hover\:bg-primary\/90:hover {
+    background-color: rgba(22, 93, 255, 0.9);
+}
+
+.hover\:text-gray-600:hover {
+    color: #4b5563;
+}
+
+/* ========== Font Awesome 图标支持 ========== */
+.fa {
+    display: inline-block;
+    font: normal normal normal 14px/1 FontAwesome;
+    font-size: inherit;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+}
+
+.fa-spin {
+    animation: fa-spin 2s infinite linear;
+}
+
+@keyframes fa-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(359deg); }
+}
+
+/* ========== 响应式字体大小（clamp） ========== */
+.text-responsive-xl {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.text-responsive-2xl {
+    font-size: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+/* ========== 抖动动画 ========== */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.animate-shake {
+    animation: shake 0.5s ease-in-out;
+}
