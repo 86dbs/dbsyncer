@@ -1,8 +1,3 @@
-/**
- * Tailwind CSS 自定义样式 - 登录页面专用
- * 基于 Tailwind CSS 3.x 核心样式
- */
-
 /* ========== CSS Reset ========== */
 *, ::before, ::after {
     box-sizing: border-box;
@@ -276,4 +271,3 @@ button:disabled {
 .animate-shake {
     animation: shake 0.5s ease-in-out;
 }
-

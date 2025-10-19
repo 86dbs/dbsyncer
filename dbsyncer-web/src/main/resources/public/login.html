@@ -10,8 +10,10 @@
     <link type="text/css" rel="stylesheet" th:if="${enableCDN}" src="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css"/>
 </head>
 <body class="font-inter bg-gray-50 min-h-screen flex items-center justify-center p-4">
+<!-- 背景粒子特效画布：固定铺满屏幕，位于内容层之下 -->
+<canvas id="bgParticles" style="position:fixed;left:0;top:0;width:100%;height:100%;z-index:0;pointer-events:none;"></canvas>
 <!-- 登录卡片容器 -->
-<div class="w-full max-w-6xl grid md:grid-cols-2 gap-8 shadow-2xl rounded-2xl overflow-hidden">
+<div class="w-full max-w-6xl grid md:grid-cols-2 gap-8 shadow-2xl rounded-2xl overflow-hidden" style="position:relative;z-index:10;">
 
     <!-- 左侧品牌展示区 -->
     <div class="hidden md:flex bg-gradient-primary p-12 flex-col justify-between text-white">
@@ -87,10 +89,10 @@
                         <input type="text" id="username" name="username"
                                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom outline-none"
                                placeholder="请输入用户名" required>
-                        <div id="usernameError" class="hidden text-danger text-sm mt-1">
-                            <i class="fa fa-exclamation-circle mr-1"></i>
-                            <span>用户名不能为空</span>
-                        </div>
+                    </div>
+                    <div id="usernameError" class="hidden text-danger text-sm mt-1">
+                        <i class="fa fa-exclamation-circle mr-1"></i>
+                        <span>用户名不能为空</span>
                     </div>
                 </div>
 
@@ -107,13 +109,13 @@
                                class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom outline-none"
                                placeholder="请输入密码" required>
                         <button type="button" id="togglePassword"
-                                class="absolute inset-y-0 right-0 pr-3 flex mr-1 mt-1 mb-2 items-center text-gray-400 hover:text-gray-600 transition-custom">
+                                class="absolute inset-y-0 right-0 pr-3 flex mr-1 mt-1 mb-1 items-center rounded-lg">
                             <i class="fa fa-eye-slash"></i>
                         </button>
-                        <div id="passwordError" class="hidden text-danger text-sm mt-1">
-                            <i class="fa fa-exclamation-circle mr-1"></i>
-                            <span>密码不能为空</span>
-                        </div>
+                    </div>
+                    <div id="passwordError" class="hidden text-danger text-sm mt-1">
+                        <i class="fa fa-exclamation-circle mr-1"></i>
+                        <span>密码不能为空</span>
                     </div>
                 </div>
 
@@ -147,6 +149,112 @@
 </div>
 
 <script>
+    // 背景粒子特效（轻量、与现有蓝色系风格一致）
+    (function () {
+        const canvas = document.getElementById('bgParticles');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        let dpr = Math.max(1, window.devicePixelRatio || 1);
+        let width = 0, height = 0;
+        const particles = [];
+        const PARTICLE_COUNT_BASE = 0.00012; // 越小越少：按像素面积计算数量，避免在小屏过密
+        const MAX_ALPHA = 0.45; // 最高不透明度，保持低调不抢眼
+        const COLORS = [
+            'rgba(59,130,246,ALPHA)',   // 蓝色（接近 primary）
+            'rgba(37,99,235,ALPHA)',    // 深蓝
+            'rgba(99,102,241,ALPHA)',   // 靛紫
+            'rgba(56,189,248,ALPHA)'    // 青蓝
+        ];
+
+        function resize() {
+            width = canvas.clientWidth = window.innerWidth;
+            height = canvas.clientHeight = window.innerHeight;
+            canvas.width = Math.round(width * dpr);
+            canvas.height = Math.round(height * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            // 依据面积动态调整粒子数量
+            const target = Math.min(180, Math.max(60, Math.floor(width * height * PARTICLE_COUNT_BASE)));
+            if (particles.length > target) {
+                particles.length = target;
+            } else {
+                while (particles.length < target) particles.push(createParticle());
+            }
+        }
+
+        function rand(min, max) { return Math.random() * (max - min) + min; }
+        function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+        function createParticle() {
+            const speed = rand(0.08, 0.35);
+            const angle = rand(0, Math.PI * 2);
+            const radius = rand(0.6, 1.8);
+            const alpha = rand(0.08, MAX_ALPHA);
+            const color = pick(COLORS).replace('ALPHA', alpha.toFixed(3));
+            return {
+                x: rand(0, width),
+                y: rand(0, height),
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                r: radius,
+                a: alpha,
+                color
+            };
+        }
+
+        function step() {
+            ctx.clearRect(0, 0, width, height);
+
+            // 轻微的渐隐，形成拖尾层次（非常轻，不突兀）
+            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            ctx.fillRect(0, 0, width, height);
+
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // 边界回环
+                if (p.x < -10) p.x = width + 10; else if (p.x > width + 10) p.x = -10;
+                if (p.y < -10) p.y = height + 10; else if (p.y > height + 10) p.y = -10;
+
+                // 绘制柔和发光点
+                const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 6);
+                grad.addColorStop(0, p.color);
+                grad.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r * 6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 邻近连线（仅近距离，极细，提升科技感）
+            ctx.lineWidth = 0.6;
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const a = particles[i], b = particles[j];
+                    const dx = a.x - b.x, dy = a.y - b.y;
+                    const dist2 = dx * dx + dy * dy;
+                    const maxDist = 120; // 连线最大距离
+                    if (dist2 < maxDist * maxDist) {
+                        const t = 1 - Math.sqrt(dist2) / maxDist;
+                        ctx.strokeStyle = `rgba(99,102,241,${0.12 * t})`;
+                        ctx.beginPath();
+                        ctx.moveTo(a.x, a.y);
+                        ctx.lineTo(b.x, b.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(step);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        requestAnimationFrame(step);
+    })();
     // 获取项目地址
     const $location = (window.location + '').split('/');
     const $path = document.location.pathname;
