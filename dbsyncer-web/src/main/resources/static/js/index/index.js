@@ -195,10 +195,19 @@ function createTimer($projectGroupSelect) {
 
             if (timer2 == null) {
                 timer2 = setInterval(function () {
-                    // 加载页面
-                    var projectGroupId = $projectGroupSelect.selectpicker('val');
-                    projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
-                    timerLoad("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
+                    // 检查当前是否在index页面，只有在index页面时才刷新
+                    var currentUrl = window.location.pathname;
+                    var isIndexPage = currentUrl.includes('/index') || currentUrl === '/' || currentUrl === '';
+                    
+                    // 检查当前内容区域是否包含index页面内容
+                    var isIndexContent = $('#mainContent').find('.dbsyncer-dashboard-header').length > 0;
+                    
+                    if (isIndexPage || isIndexContent) {
+                        // 加载页面
+                        var projectGroupId = $projectGroupSelect.selectpicker('val');
+                        projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
+                        timerLoad("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
+                    }
                 }, data.resultValue * 1000);
             }
 

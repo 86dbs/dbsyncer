@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 同步任务管理页面 -->
+<div class="dbsyncer-page-header">
+    <h1 class="dbsyncer-page-title">同步任务管理</h1>
+    <p class="dbsyncer-page-subtitle">管理和配置数据同步任务</p>
+</div>
+
+<!-- 同步任务列表表格 -->
+<div class="dbsyncer-table-container">
+    <!-- 表格头部 -->
+    <div class="dbsyncer-table-header">
+        <h2 class="dbsyncer-table-title">同步任务列表</h2>
+        <div class="dbsyncer-table-actions">
+            <button class="dbsyncer-btn dbsyncer-btn-primary" id="addMappingBtn">
+                <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
+                添加任务
+            </button>
+        </div>
+    </div>
+
+    <!-- 表格工具栏 -->
+    <div class="dbsyncer-table-toolbar">
+        <div class="dbsyncer-table-toolbar-left">
+            <div class="dbsyncer-table-search">
+                <i class="fa fa-search dbsyncer-table-search-icon"></i>
+                <input type="text" class="dbsyncer-table-search-input" placeholder="搜索任务名称..." id="searchInput">
+            </div>
+        </div>
+        <div class="dbsyncer-table-toolbar-right">
+            <button class="dbsyncer-btn dbsyncer-btn-secondary" id="refreshBtn">
+                <i class="fa fa-refresh dbsyncer-btn-icon-left"></i>
+                刷新
+            </button>
+        </div>
+    </div>
+
+    <!-- 表格主体 -->
+    <div class="dbsyncer-table-wrapper">
+        <table class="dbsyncer-table" id="mappingTable">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">序号</th>
+                    <th style="width: 15%;">任务名称</th>
+                    <th style="width: 15%;">数据源</th>
+                    <th style="width: 15%;">目标源</th>
+                    <th style="width: 15%;">类型</th>
+                    <th style="width: 10%;">状态</th>
+                    <th style="width: 15%;">创建时间</th>
+                    <th style="width: 15%;">更新时间</th>
+                    <th style="width: 10%;">操作</th>
+                </tr>
+            </thead>
+            <tbody id="mappingTableBody">
+                <!-- 动态数据 -->
+                <tr th:each="mapping, iterStat : ${mappings}" th:if="${mappings != null and !mappings.isEmpty()}">
+                    <td th:text="${iterStat.index + 1}">1</td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <i class="fa fa-exchange dbsyncer-connector-icon" style="color: #28a745; margin-right: 8px;"></i>
+                            <span th:text="${mapping.name}">任务名称</span>
+                        </div>
+                    </td>
+                    <td th:text="${mapping.sourceConnector != null ? mapping.sourceConnector.name : 'N/A'}">数据源</td>
+                    <td th:text="${mapping.targetConnector != null ? mapping.targetConnector.name : 'N/A'}">目标源</td>
+                    <td th:text="${mapping.meta != null ? mapping.meta.model : 'N/A'}">类型</td>
+                    <td>
+                        <span th:if="${mapping?.meta?.state eq 0}" class="badge badge-default">未运行</span>
+                        <span th:if="${mapping?.meta?.state eq 1}" class="badge badge-success">运行中</span>
+                        <span th:if="${mapping?.meta?.state eq 2}" class="badge badge-warning">停止中</span>
+                    </td>
+                    <td th:text="${#dates.format(mapping.createTime, 'yyyy-MM-dd HH:mm:ss')}">创建时间</td>
+                    <td th:text="${#dates.format(mapping.updateTime, 'yyyy-MM-dd HH:mm:ss')}">更新时间</td>
+                    <td class="dbsyncer-table-actions-cell">
+                        <a href="javascript:void(0);" class="dbsyncer-action-btn" th:data-id="${mapping.id}" onclick="editMapping(this.dataset.id)">
+                            <i class="fa fa-edit"></i>
+                            编辑
+                        </a>
+                        <!-- 根据状态显示启动或停止按钮 -->
+                        <a href="javascript:void(0);" 
+                           class="dbsyncer-action-btn mapping-action-btn" 
+                           th:data-id="${mapping.id}"
+                           th:data-state="${mapping?.meta?.state}"
+                           th:data-running="${mapping?.meta?.state eq 1}">
+                            <i th:class="${mapping?.meta?.state eq 1 ? 'fa fa-stop' : 'fa fa-play'}"></i>
+                            <span th:text="${mapping?.meta?.state eq 1 ? '停止' : '启动'}">启动</span>
+                        </a>
+                        <a href="javascript:void(0);" class="dbsyncer-action-btn danger" th:data-id="${mapping.id}" onclick="deleteMapping(this.dataset.id)">
+                            <i class="fa fa-trash"></i>
+                            删除
+                        </a>
+                    </td>
+                </tr>
+                <!-- 空数据提示 -->
+                <tr th:if="${mappings == null or mappings.isEmpty()}">
+                    <td colspan="9" class="dbsyncer-table-empty">
+                        <div class="dbsyncer-empty-state">
+                            <i class="fa fa-exchange dbsyncer-empty-icon"></i>
+                            <p class="dbsyncer-empty-text">暂无同步任务</p>
+                            <p class="dbsyncer-empty-subtext">点击"添加任务"按钮创建第一个同步任务</p>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 分页组件 -->
+    <div class="dbsyncer-pagination" th:if="${mappings != null and !mappings.isEmpty()}">
+        <div class="dbsyncer-pagination-info">
+            共 <span id="totalCount" th:text="${mappings.size()}">0</span> 条记录，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页
+        </div>
+        <div class="dbsyncer-pagination-controls">
+            <button class="dbsyncer-pagination-btn" id="prevBtn" disabled>
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <div class="dbsyncer-pagination-page">
+                <button class="dbsyncer-pagination-page-btn active">1</button>
+            </div>
+            <button class="dbsyncer-pagination-btn" id="nextBtn" disabled>
+                <i class="fa fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// 同步任务管理页面脚本 - 全局函数定义
+
+/**
+ * 加载同步任务列表
+ */
+function loadMappingList() {
+    // 智能刷新：根据当前页面类型执行相应的刷新操作
+    refreshCurrentMappingPage();
+}
+
+/**
+ * 智能刷新当前页面
+ */
+function refreshCurrentMappingPage() {
+    var contentDiv = $('#mainContent');
+    if (!contentDiv.length) {
+        return;
+    }
+
+    // 检测当前页面类型
+    var currentContent = contentDiv.html();
+    
+    // 判断当前是否在同步任务列表页面
+    if (currentContent.includes('dbsyncer-page-title') && currentContent.includes('同步任务管理')) {
+        // 当前在同步任务列表页面，刷新列表数据
+        refreshMappingListData();
+    } else if (currentContent.includes('mappingAddForm') || currentContent.includes('添加驱动')) {
+        // 当前在添加任务页面，刷新添加页面
+        loadAddMappingPage();
+    } else {
+        // 其他情况，默认刷新同步任务列表页面
+        loadMappingListPage();
+    }
+}
+
+/**
+ * 刷新同步任务列表数据（不重新加载整个页面）
+ */
+function refreshMappingListData() {
+    // 使用全局加载提示（如果可用）
+    if (typeof $.loadingT === 'function') {
+        $.loadingT(true);
+    }
+    
+    // 通过AJAX获取最新的同步任务列表数据
+    $.ajax({
+        url: '/mapping/list',
+        type: 'GET',
+        success: function(response) {
+            // 隐藏加载提示
+            if (typeof $.loadingT === 'function') {
+                $.loadingT(false);
+            }
+            
+            // 解析响应内容，提取表格数据
+            var $response = $(response);
+            var tableBody = $response.find('#mappingTableBody');
+            
+            if (tableBody.length) {
+                // 更新表格内容
+                $('#mappingTableBody').html(tableBody.html());
+                
+                // 重新绑定启动/停止按钮事件
+                bindMappingActionButtons();
+                
+                // 更新分页信息
+                updateMappingPaginationInfo();
+                
+                // 显示成功提示
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl('数据刷新成功', 'success');
+                }
+            } else {
+                // 如果无法解析响应，回退到重新加载整个页面
+                loadMappingListPage();
+            }
+        },
+        error: function() {
+            // 隐藏加载提示
+            if (typeof $.loadingT === 'function') {
+                $.loadingT(false);
+            }
+            
+            // 显示错误提示
+            if (typeof bootGrowl === 'function') {
+                bootGrowl('数据刷新失败，请稍后重试', 'danger');
+            }
+        }
+    });
+}
+
+/**
+ * 动态加载添加任务页面
+ */
+function loadAddMappingPage() {
+    // 使用doLoader函数动态加载添加任务页面
+    if (typeof doLoader === 'function') {
+        doLoader('/mapping/pageAdd', 0);
+    } else {
+        // 如果没有doLoader函数，使用jQuery load方法
+        loadAddMappingPageDirectly();
+    }
+}
+
+/**
+ * 直接加载添加任务页面
+ */
+function loadAddMappingPageDirectly() {
+    // 使用统一的内容区域
+    var contentDiv = $('#mainContent');
+    if (contentDiv.length) {
+        // 显示加载状态
+        if (typeof $.loadingT === 'function') {
+            $.loadingT(true);
+        }
+        
+        // 加载添加任务页面内容
+        contentDiv.load('/mapping/pageAdd', function(response, status, xhr) {
+            if (typeof $.loadingT === 'function') {
+                $.loadingT(false);
+            }
+            
+            if (status === 'success') {
+                // 初始化添加任务页面的脚本
+                initAddMappingPage();
+            } else {
+                alert('加载添加任务页面失败，请稍后重试');
+            }
+        });
+    }
+}
+
+/**
+ * 初始化添加任务页面
+ */
+function initAddMappingPage() {
+    // 重写backIndexPage函数，使其返回到同步任务列表页面
+    window.backIndexPage = function() {
+        loadMappingListPage();
+    };
+
+    // 绑定返回按钮事件
+    $('#mappingBackBtn').off('click').on('click', function() {
+        // 返回到同步任务列表页面
+        loadMappingListPage();
+    });
+
+    // 绑定保存按钮事件
+    $('#mappingSubmitBtn').off('click').on('click', function() {
+        submitMappingForm();
+    });
+
+    // 初始化select插件
+    if (typeof initSelectIndex === 'function') {
+        initSelectIndex($(".select-control"), 0);
+    }
+
+    // 初始化开关
+    if (typeof initSwitch === 'function') {
+        initSwitch();
+    }
+}
+
+/**
+ * 加载同步任务列表页面
+ */
+function loadMappingListPage() {
+    // 使用统一的内容区域
+    var contentDiv = $('#mainContent');
+    if (contentDiv.length) {
+        // 显示加载状态
+        if (typeof $.loadingT === 'function') {
+            $.loadingT(true);
+        }
+        
+        // 加载同步任务列表页面内容
+        contentDiv.load('/mapping/list', function(response, status, xhr) {
+            if (typeof $.loadingT === 'function') {
+                $.loadingT(false);
+            }
+            
+            if (status === 'success') {
+                // 重新初始化同步任务列表页面的脚本
+                initMappingListPage();
+            } else {
+                alert('加载同步任务列表页面失败，请稍后重试');
+            }
+        });
+    }
+}
+
+/**
+ * 初始化同步任务列表页面
+ */
+function initMappingListPage() {
+    // 先解绑事件，避免重复绑定
+    $('#addMappingBtn').off('click');
+    $('#refreshBtn').off('click');
+    $('#searchInput').off('input');
+    $('.mapping-action-btn').off('click');
+    
+    // 重新绑定事件
+    $('#addMappingBtn').on('click', function() {
+        loadAddMappingPage();
+    });
+
+    $('#refreshBtn').on('click', function() {
+        loadMappingList();
+    });
+
+    $('#searchInput').on('input', function() {
+        var query = $(this).val();
+        filterMappings(query);
+    });
+
+    // 绑定启动/停止按钮事件
+    bindMappingActionButtons();
+}
+
+/**
+ * 绑定启动/停止按钮事件
+ */
+function bindMappingActionButtons() {
+    $('.mapping-action-btn').on('click', function() {
+        var id = $(this).data('id');
+        var isRunning = $(this).data('running');
+        
+        if (isRunning === true || isRunning === 'true') {
+            stopMapping(id);
+        } else {
+            startMapping(id);
+        }
+    });
+}
+
+/**
+ * 提交任务表单
+ */
+function submitMappingForm() {
+    var form = $('#mappingAddForm');
+    
+    // 使用现有的表单验证
+    if (typeof form.formValidate === 'function' && form.formValidate() === true) {
+        var data = form.serializeJson();
+        
+        // 显示提交状态
+        var submitBtn = $('#mappingSubmitBtn');
+        var originalText = submitBtn.html();
+        submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+        
+        // 使用现有的doPoster函数提交表单
+        if (typeof doPoster === 'function') {
+            doPoster("/mapping/add", data, function(response) {
+                submitBtn.html(originalText).prop('disabled', false);
+                
+                if (response.success === true) {
+                    if (typeof bootGrowl === 'function') {
+                        bootGrowl("新增任务成功!", "success");
+                    } else {
+                        alert('任务添加成功');
+                    }
+                    // 返回到同步任务列表页面
+                    loadMappingListPage();
+                } else {
+                    if (typeof bootGrowl === 'function') {
+                        bootGrowl(response.resultValue, "danger");
+                    } else {
+                        alert('添加失败: ' + response.resultValue);
+                    }
+                }
+            });
+        }
+    }
+}
+
+/**
+ * 筛选同步任务
+ */
+function filterMappings(query) {
+    // 获取所有表格行
+    var rows = $('#mappingTableBody tr');
+    
+    rows.each(function() {
+        var row = $(this);
+        var name = row.find('td:nth-child(2) span').text().toLowerCase();
+        
+        var showRow = true;
+        
+        // 按名称搜索
+        if (query && name.indexOf(query.toLowerCase()) === -1) {
+            showRow = false;
+        }
+        
+        row.toggle(showRow);
+    });
+    
+    // 更新分页信息
+    updateMappingPaginationInfo();
+}
+
+/**
+ * 更新分页信息
+ */
+function updateMappingPaginationInfo() {
+    var visibleRows = $('#mappingTableBody tr:visible').length;
+    $('#totalCount').text(visibleRows);
+}
+
+// 页面初始化
+$(document).ready(function() {
+    // 添加任务按钮点击事件 - 动态加载添加任务页面
+    $('#addMappingBtn').on('click', function() {
+        loadAddMappingPage();
+    });
+
+    // 刷新按钮点击事件
+    $('#refreshBtn').on('click', function() {
+        loadMappingList();
+    });
+
+    // 搜索框输入事件
+    $('#searchInput').on('input', function() {
+        var query = $(this).val();
+        filterMappings(query);
+    });
+
+    // 绑定启动/停止按钮事件
+    bindMappingActionButtons();
+});
+
+/**
+ * 编辑同步任务 - 动态加载编辑页面
+ */
+function editMapping(id) {
+    // 使用统一的内容区域
+    var contentDiv = $('#mainContent');
+    if (contentDiv.length) {
+        // 显示加载状态
+        if (typeof $.loadingT === 'function') {
+            $.loadingT(true);
+        }
+        
+        // 加载编辑页面内容
+        contentDiv.load('/mapping/page/edit?id=' + id, function(response, status, xhr) {
+            if (typeof $.loadingT === 'function') {
+                $.loadingT(false);
+            }
+            
+            if (status === 'success') {
+                // 初始化编辑页面的脚本
+                initMappingEditPage();
+            } else {
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl('加载编辑页面失败，请稍后重试', 'danger');
+                } else {
+                    alert('加载编辑页面失败，请稍后重试');
+                }
+            }
+        });
+    }
+}
+
+/**
+ * 初始化同步任务编辑页面
+ */
+function initMappingEditPage() {
+    // 重写backIndexPage函数，使其返回到同步任务列表页面
+    window.backIndexPage = function() {
+        loadMappingListPage();
+    };
+
+    // 绑定返回按钮事件
+    $('#mappingBackBtn').off('click').on('click', function() {
+        loadMappingListPage();
+    });
+
+    // 绑定保存按钮事件
+    $('#mappingSubmitBtn').off('click').on('click', function() {
+        var $form = $("#mappingModifyForm");
+        if (typeof $form.formValidate === 'function' && $form.formValidate() === true) {
+            var data = $form.serializeJson();
+            submitMappingEditForm(data);
+        }
+    });
+
+    // 绑定同步方式切换事件
+    if (typeof bindMappingModelChange === 'function') {
+        bindMappingModelChange();
+    }
+    
+    // 绑定删除表映射事件
+    if (typeof bindMappingTableGroupCheckBoxClick === 'function') {
+        bindMappingTableGroupCheckBoxClick();
+    }
+
+    // 绑定表关系点击事件
+    if (typeof bindMappingTableGroupListClick === 'function') {
+        bindMappingTableGroupListClick();
+    }
+    
+    // 绑定下拉选择事件自动匹配相似表事件
+    if (typeof bindTableSelect === 'function') {
+        bindTableSelect();
+    }
+    
+    // 绑定多值输入框事件
+    if (typeof initMultipleInputTags === 'function') {
+        initMultipleInputTags();
+    }
+    
+    // 绑定删除表关系点击事件
+    if (typeof bindMappingTableGroupDelClick === 'function') {
+        bindMappingTableGroupDelClick();
+    }
+    
+    // 绑定刷新数据表按钮点击事件
+    if (typeof bindRefreshTablesClick === 'function') {
+        bindRefreshTablesClick();
+    }
+
+    // 初始化select插件
+    if (typeof initSelectIndex === 'function') {
+        initSelectIndex($(".select-control-table"), -1);
+    }
+    
+    // 绑定下拉过滤按钮点击事件
+    if (typeof bindMultipleSelectFilterBtnClick === 'function') {
+        bindMultipleSelectFilterBtnClick();
+    }
+}
+
+/**
+ * 提交编辑同步任务表单
+ */
+function submitMappingEditForm(data) {
+    // 显示提交状态
+    var submitBtn = $('#mappingSubmitBtn');
+    var originalText = submitBtn.html();
+    submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+    
+    // 使用现有的doPoster函数提交表单
+    if (typeof doPoster === 'function') {
+        doPoster("/mapping/edit", data, function(response) {
+            submitBtn.html(originalText).prop('disabled', false);
+            
+            if (response.success === true) {
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl("修改驱动成功!", "success");
+                } else {
+                    alert('修改驱动成功');
+                }
+                // 返回到同步任务列表页面
+                loadMappingListPage();
+            } else {
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl(response.resultValue, "danger");
+                } else {
+                    alert('修改失败: ' + response.resultValue);
+                }
+            }
+        });
+    } else {
+        // 如果没有doPoster函数，使用jQuery Ajax
+        $.ajax({
+            url: '/mapping/edit',
+            type: 'POST',
+            data: data,
+            success: function(response) {
+                submitBtn.html(originalText).prop('disabled', false);
+                
+                if (response.success) {
+                    if (typeof bootGrowl === 'function') {
+                        bootGrowl("修改驱动成功!", "success");
+                    } else {
+                        alert('修改驱动成功');
+                    }
+                    loadMappingListPage();
+                } else {
+                    if (typeof bootGrowl === 'function') {
+                        bootGrowl(response.resultValue || response.message, "danger");
+                    } else {
+                        alert('修改失败: ' + (response.resultValue || response.message));
+                    }
+                }
+            },
+            error: function() {
+                submitBtn.html(originalText).prop('disabled', false);
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl('修改失败，请稍后重试', 'danger');
+                } else {
+                    alert('修改失败，请稍后重试');
+                }
+            }
+        });
+    }
+}
+
+/**
+ * 启动任务
+ */
+function startMapping(id) {
+    // 显示加载状态
+    var btn = event.target.closest('.dbsyncer-action-btn');
+    var originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 启动中...';
+    btn.disabled = true;
+
+    // 调用后端API启动任务
+    $.ajax({
+        url: '/mapping/start',
+        type: 'POST',
+        data: { id: id },
+        success: function(response) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            
+            if (response.success) {
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl('任务启动成功', 'success');
+                } else {
+                    alert('任务启动成功');
+                }
+                // 刷新列表
+                loadMappingListPage();
+            } else {
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl('任务启动失败: ' + response.resultValue, 'danger');
+                } else {
+                    alert('任务启动失败: ' + response.resultValue);
+                }
+            }
+        },
+        error: function() {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            alert('任务启动失败，请稍后重试');
+        }
+    });
+}
+
+/**
+ * 停止任务
+ */
+function stopMapping(id) {
+    // 显示加载状态
+    var btn = event.target.closest('.dbsyncer-action-btn');
+    var originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 停止中...';
+    btn.disabled = true;
+
+    // 调用后端API停止任务
+    $.ajax({
+        url: '/mapping/stop',
+        type: 'POST',
+        data: { id: id },
+        success: function(response) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            
+            if (response.success) {
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl('任务停止成功', 'success');
+                } else {
+                    alert('任务停止成功');
+                }
+                // 刷新列表
+                loadMappingListPage();
+            } else {
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl('任务停止失败: ' + response.resultValue, 'danger');
+                } else {
+                    alert('任务停止失败: ' + response.resultValue);
+                }
+            }
+        },
+        error: function() {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            alert('任务停止失败，请稍后重试');
+        }
+    });
+}
+
+/**
+ * 删除同步任务
+ */
+function deleteMapping(id) {
+    if (confirm('确定要删除这个同步任务吗？删除后无法恢复。')) {
+        // 调用后端API删除任务
+        $.ajax({
+            url: '/mapping/remove',
+            type: 'POST',
+            data: { id: id },
+            success: function(response) {
+                if (response.success) {
+                    if (typeof bootGrowl === 'function') {
+                        bootGrowl('删除成功', 'success');
+                    } else {
+                        alert('删除成功');
+                    }
+                    // 刷新列表
+                    loadMappingListPage();
+                } else {
+                    if (typeof bootGrowl === 'function') {
+                        bootGrowl('删除失败: ' + response.resultValue, 'danger');
+                    } else {
+                        alert('删除失败: ' + response.resultValue);
+                    }
+                }
+            },
+            error: function() {
+                alert('删除失败，请稍后重试');
+            }
+        });
+    }
+}
+
+// ============ 编辑页面辅助函数（从 mapping/edit.js 移植） ============
+
+/**
+ * 刷新编辑页面
+ */
+function refreshMappingEditPage(id) {
+    editMapping(id);
+}
+
+/**
+ * 绑定修改驱动同步方式切换事件
+ */
+function bindMappingModelChange() {
+    var $mappingModelChange = $("#mappingModelChange");
+    var $radio = $mappingModelChange.find('input:radio[type="radio"]');
+    // 初始化icheck插件
+    $radio.iCheck({
+        labelHover: false,
+        cursor: true,
+        radioClass: 'iradio_flat-blue',
+    }).on('ifChecked', function (event) {
+        var $form = $("#mappingModifyForm");
+        if ($form.formValidate() == true) {
+            var data = $form.serializeJson();
+            doPoster("/mapping/edit", data, function (response) {
+                if (response.success == true) {
+                    refreshMappingEditPage($("#mappingId").val());
+                } else {
+                    bootGrowl(response.resultValue, "danger");
+                }
+            });
+        }
+    });
+
+    // 渲染选择radio配置
+    var $value = $mappingModelChange.find('input[type="radio"]:checked').val();
+    // 显示驱动编辑配置（全量/增量）
+    var $full = $("#mappingFullConfig");
+    var $increment = $("#mappingIncrementConfig");
+    if ('full' == $value) {
+        $increment.addClass("hidden");
+        $full.removeClass("hidden");
+    } else {
+        $full.addClass("hidden");
+        $increment.removeClass("hidden");
+    }
+}
+
+/**
+ * 绑定删除表关系复选框事件
+ */
+function bindMappingTableGroupCheckBoxClick() {
+    var $checkboxAll = $('.tableGroupCheckboxAll');
+    var $checkbox = $('.tableGroupCheckbox');
+    var $delBtn = $("#tableGroupDelBtn");
+    $checkboxAll.iCheck({
+        checkboxClass: 'icheckbox_square-red',
+        labelHover: false,
+        cursor: true
+    }).on('ifChecked', function (event) {
+        $checkbox.iCheck('check');
+    }).on('ifUnchecked', function (event) {
+        $checkbox.iCheck('uncheck');
+    }).on('ifChanged', function (event) {
+        $delBtn.prop('disabled', getCheckedBoxSize($checkbox).length < 1);
+    });
+
+    // 初始化icheck插件
+    $checkbox.iCheck({
+        checkboxClass: 'icheckbox_square-red',
+        cursor: true
+    }).on('ifChanged', function (event) {
+        $delBtn.prop('disabled', getCheckedBoxSize($checkbox).length < 1);
+    });
+}
+
+/**
+ * 获取选择的CheckBox[value]
+ */
+function getCheckedBoxSize($checkbox) {
+    var checked = [];
+    $checkbox.each(function() {
+        if ($(this).prop('checked')) {
+            checked.push($(this).val());
+        }
+    });
+    return checked;
+}
+
+/**
+ * 绑定表关系点击事件
+ */
+function bindMappingTableGroupListClick() {
+    var $tableGroupList = $("#tableGroupList");
+    $tableGroupList.unbind("click");
+    $tableGroupList.find("tr").bind('click', function () {
+        // 动态加载表组编辑页面
+        if (typeof doLoader === 'function') {
+            doLoader('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
+        }
+    });
+
+    // 绑定表格拖拽事件
+    if (typeof $.fn.tableDnD === 'function') {
+        $tableGroupList.tableDnD({
+            onDrop: function(table, row) {
+                var newData = [];
+                var $trList = $(table).find("tr");
+                $.each($trList, function () {
+                    newData.push($(this).attr('id'));
+                });
+                $("#sortedTableGroupIds").val(newData.join('|'));
+            }
+        });
+    }
+}
+
+/**
+ * 绑定下拉选择事件自动匹配相似表事件
+ */
+function bindTableSelect() {
+    const $sourceSelect = $("#sourceTable");
+    const $targetSelect = $("#targetTable");
+    $sourceSelect.on('changed.bs.select', function(e) {
+        $targetSelect.selectpicker('val', $(this).selectpicker('val'));
+    });
+    bindMappingTableGroupAddClick($sourceSelect, $targetSelect);
+}
+
+/**
+ * 绑定下拉过滤按钮点击事件
+ */
+function bindMultipleSelectFilterBtnClick() {
+    $(".actions-btn").parent().append('<button type="button" class="actions-btn bs-show-all btn btn-default" title="显示所有表，包含已添加的表">取消过滤</button><button type="button" class="actions-btn bs-exclude-all btn btn-default" title="不显示已添加的表">过滤</button>');
+    $(".actions-btn").css('width', '25%');
+    $(".bs-show-all").bind("click", function () {
+        editMapping($("#mappingId").val() + '&exclude=1');
+        bootGrowl("取消过滤成功!", "success");
+    });
+    $(".bs-exclude-all").bind("click", function () {
+        refreshMappingEditPage($("#mappingId").val());
+        bootGrowl("过滤成功!", "success");
+    });
+}
+
+/**
+ * 绑定新增表关系点击事件
+ */
+function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
+    let $addBtn = $("#tableGroupAddBtn");
+    $addBtn.unbind("click");
+    $addBtn.bind('click', function () {
+        let m = {};
+        m.mappingId = $(this).attr("mappingId");
+        m.sourceTable = $sourceSelect.selectpicker('val');
+        m.targetTable = $targetSelect.selectpicker('val');
+        if (undefined == m.sourceTable) {
+            bootGrowl("请选择数据源表", "danger");
+            return;
+        }
+        if (undefined == m.targetTable) {
+            bootGrowl("请选择目标源表", "danger");
+            return;
+        }
+
+        let sLen = m.sourceTable.length;
+        let tLen = m.targetTable.length;
+        if (sLen < 1) {
+            bootGrowl("请选择数据源表", "danger");
+            return;
+        }
+        if (tLen < 1) {
+            bootGrowl("请选择目标源表", "danger");
+            return;
+        }
+        if (sLen != tLen) {
+            bootGrowl("表映射关系数量不一致，请检查源表和目标表关系", "danger");
+            return;
+        }
+
+        m.sourceTable = m.sourceTable.join('|');
+        m.targetTable = m.targetTable.join('|');
+        m.sourceTablePK = $("#sourceTablePK").val();
+        m.targetTablePK = $("#targetTablePK").val();
+
+        doPoster("/tableGroup/add", m, function (data) {
+            if (data.success == true) {
+                bootGrowl("新增映射关系成功!", "success");
+                refreshMappingEditPage(m.mappingId);
+            } else {
+                bootGrowl(data.resultValue, "danger");
+                if (data.status == 400) {
+                    refreshMappingEditPage(m.mappingId);
+                }
+            }
+        });
+    });
+}
+
+/**
+ * 绑定删除表关系点击事件
+ */
+function bindMappingTableGroupDelClick() {
+    $("#tableGroupDelBtn").click(function () {
+        var ids = getCheckedBoxSize($(".tableGroupCheckbox"));
+        if (ids.length > 0) {
+            var $mappingId = $(this).attr("mappingId");
+            doPoster("/tableGroup/remove", {"mappingId": $mappingId, "ids" : ids.join()}, function (data) {
+                if (data.success == true) {
+                    bootGrowl("删除映射关系成功!", "success");
+                    refreshMappingEditPage($mappingId);
+                } else {
+                    bootGrowl(data.resultValue, "danger");
+                }
+            });
+        }
+    });
+}
+
+/**
+ * 修改驱动名称
+ */
+function mappingModifyName() {
+    var $name = $("#mappingModifyName");
+    var tmp = $name.text();
+    $name.text("");
+    $name.append("<input type='text'/>");
+    var $input = $name.find("input");
+    $input.focus().val(tmp);
+    $input.blur(function() {
+        $name.text($(this).val());
+        $("#mappingModifyForm input[name='name']").val($(this).val());
+        $input.unbind();
+    });
+}
+
+/**
+ * 绑定刷新表事件
+ */
+function bindRefreshTablesClick() {
+    let $refreshBtn = $("#refreshTableBtn");
+    $refreshBtn.bind('click', function() {
+        let id = $(this).attr("tableGroupId");
+        doPoster("/mapping/refreshTables", {'id': id}, function (data) {
+            if (data.success == true) {
+                bootGrowl("刷新表成功!", "success");
+                refreshMappingEditPage(id);
+            } else {
+                bootGrowl(data.resultValue, "danger");
+            }
+        });
+    });
+}
+</script>
+
+</html>
+

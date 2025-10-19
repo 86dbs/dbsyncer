@@ -65,4 +65,208 @@
 </div>
 
 <script th:src="@{/js/connector/add.js}"></script>
+
+<script>
+// 动态加载数据源列表页面
+function loadConnectorListPage() {
+    // 使用统一的内容区域
+    var contentDiv = $('#mainContent');
+    if (contentDiv.length) {
+        // 显示加载状态
+        showLoadingState();
+        
+        // 加载数据源列表页面内容
+        contentDiv.load('/connector/list', function(response, status, xhr) {
+            if (status === 'success') {
+                hideLoadingState();
+                // 重新初始化数据源列表页面的脚本
+                initConnectorListPage();
+            } else {
+                hideLoadingState();
+                alert('加载数据源列表页面失败，请稍后重试');
+            }
+        });
+    }
+}
+
+// 显示加载状态
+function showLoadingState() {
+    var contentDiv = $('#mainContent');
+    if (contentDiv.length) {
+        contentDiv.html('<div class="dbsyncer-loading-container"><div class="dbsyncer-loading-spinner"></div><div class="dbsyncer-loading-text">加载中...</div></div>');
+    }
+}
+
+// 隐藏加载状态
+function hideLoadingState() {
+    // 加载状态会在内容加载完成后自动替换
+}
+
+// 初始化数据源列表页面
+function initConnectorListPage() {
+    // 重新绑定事件
+    $('#addConnectorBtn').on('click', function() {
+        loadAddConnectorPage();
+    });
+
+    $('#refreshBtn').on('click', function() {
+        loadConnectorList();
+    });
+
+    $('#searchInput').on('input', function() {
+        var query = $(this).val();
+        filterConnectors(query);
+    });
+
+    $('#typeFilter').on('change', function() {
+        filterConnectors();
+    });
+}
+
+// 动态加载添加连接页面
+function loadAddConnectorPage() {
+    // 使用统一的内容区域
+    var contentDiv = $('#mainContent');
+    if (contentDiv.length) {
+        // 显示加载状态
+        showLoadingState();
+        
+        // 加载添加连接页面内容
+        contentDiv.load('/connector/page/add', function(response, status, xhr) {
+            if (status === 'success') {
+                hideLoadingState();
+                // 初始化添加连接页面的脚本
+                initAddConnectorPage();
+            } else {
+                hideLoadingState();
+                alert('加载添加连接页面失败，请稍后重试');
+            }
+        });
+    }
+}
+
+// 初始化添加连接页面
+function initAddConnectorPage() {
+    // 重写backIndexPage函数，使其返回到数据源列表页面
+    window.backIndexPage = function() {
+        loadConnectorListPage();
+    };
+
+    // 先解绑事件，避免重复绑定
+    $('#connectorBackBtn').off('click');
+    $('#connectorSubmitBtn').off('click');
+
+    // 绑定返回按钮事件
+    $('#connectorBackBtn').on('click', function() {
+        loadConnectorListPage();
+    });
+
+    // 绑定保存按钮事件
+    $('#connectorSubmitBtn').on('click', function() {
+        submitConnectorForm();
+    });
+
+    // 初始化连接器类型选择器
+    if (typeof initSelectIndex === 'function') {
+        var $select = $("#connectorType");
+        initSelectIndex($select, 1);
+    }
+
+    // 绑定连接器类型切换事件
+    if (typeof bindConnectorChangeEvent === 'function') {
+        var $select = $("#connectorType");
+        bindConnectorChangeEvent($select);
+    }
+}
+
+// 提交连接器表单
+function submitConnectorForm() {
+    var form = $('#connectorAddForm');
+    var submitBtn = $('#connectorSubmitBtn');
+    
+    // 防止重复提交：检查按钮是否已被禁用
+    if (submitBtn.prop('disabled')) {
+        return;
+    }
+    
+    // 使用现有的表单验证
+    if (typeof form.formValidate === 'function' && form.formValidate() === true) {
+        var data = form.serializeJson();
+        
+        // 显示提交状态并禁用按钮
+        var originalText = submitBtn.html();
+        submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+        
+        // 使用现有的doPoster函数提交表单
+        if (typeof doPoster === 'function') {
+            doPoster("/connector/add", data, function(response) {
+                // 恢复按钮状态
+                submitBtn.html(originalText).prop('disabled', false);
+                
+                if (response.success === true) {
+                    if (typeof bootGrowl === 'function') {
+                        bootGrowl("新增连接成功!", "success");
+                    } else {
+                        alert('连接器添加成功');
+                    }
+                    // 返回到数据源列表页面
+                    loadConnectorListPage();
+                } else {
+                    if (typeof bootGrowl === 'function') {
+                        bootGrowl(response.resultValue, "danger");
+                    } else {
+                        alert('添加失败: ' + response.resultValue);
+                    }
+                }
+            });
+        } else {
+            // 如果没有doPoster函数，使用jQuery Ajax
+            $.ajax({
+                url: '/connector/add',
+                type: 'POST',
+                data: data,
+                success: function(response) {
+                    // 恢复按钮状态
+                    submitBtn.html(originalText).prop('disabled', false);
+                    
+                    if (response.success) {
+                        alert('连接器添加成功');
+                        loadConnectorListPage();
+                    } else {
+                        alert('添加失败: ' + response.message);
+                    }
+                },
+                error: function() {
+                    // 恢复按钮状态
+                    submitBtn.html(originalText).prop('disabled', false);
+                    alert('添加失败，请稍后重试');
+                }
+            });
+        }
+    }
+}
+
+// 页面加载完成后初始化
+$(document).ready(function() {
+    // 重写backIndexPage函数，使其返回到数据源列表页面
+    window.backIndexPage = function() {
+        loadConnectorListPage();
+    };
+
+    // 先解绑事件，避免重复绑定
+    $('#connectorBackBtn').off('click');
+    $('#connectorSubmitBtn').off('click');
+
+    // 绑定返回按钮事件
+    $('#connectorBackBtn').on('click', function() {
+        loadConnectorListPage();
+    });
+
+    // 绑定保存按钮事件
+    $('#connectorSubmitBtn').on('click', function() {
+        submitConnectorForm();
+    });
+});
+</script>
+
 </html>

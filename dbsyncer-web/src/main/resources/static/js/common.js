@@ -238,34 +238,59 @@ $.fn.serializeJson = function () {
 
 // 全局加载页面
 function doLoader(url, route = 0) {
-    // 加载页面
-    const contents = document.querySelectorAll('.contentDiv');
-    contents.forEach(function (content) {
-        content.classList.add('hidden');
-    });
-    const contentToShow = $('#initContainer' + route);
-    if (contentToShow) {
-        contentToShow.removeClass('hidden');
+    // 使用统一的内容区域
+    const contentToShow = $('#mainContent');
+    if (contentToShow.length) {
+        // 显示加载状态
+        $.loadingT(true);
+        
+        // 加载页面内容
+        contentToShow.load($basePath + url, function (response, status, xhr) {
+            $.loadingT(false);
+            
+            if (status === 'success') {
+                // 执行水印等初始化操作
+                if (typeof watermark === 'function') {
+                    watermark();
+                }
+            } else {
+                // 显示错误信息
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl('页面加载失败', 'danger');
+                } else {
+                    alert('页面加载失败，请稍后重试');
+                }
+            }
+        });
     }
-    contentToShow.load($basePath + url, function (response, status, xhr) {
-        if (status != 'success') {
-            bootGrowl(response);
-        }
-        watermark();
-        $.loadingT(false);
-    });
 }
 
 function timerLoad(url, route = 1) {
-
-    const contentToShow = $('#initContainer' + route);
-    contentToShow.load($basePath + url, function (response, status, xhr) {
-        if (status != 'success') {
-            bootGrowl(response);
-        }
-        watermark();
-        $.loadingT(false);
-    });
+    // 使用统一的内容区域
+    const contentToShow = $('#mainContent');
+    if (contentToShow.length) {
+        // 显示加载状态
+        $.loadingT(true);
+        
+        // 加载页面内容
+        contentToShow.load($basePath + url, function (response, status, xhr) {
+            $.loadingT(false);
+            
+            if (status === 'success') {
+                // 执行水印等初始化操作
+                if (typeof watermark === 'function') {
+                    watermark();
+                }
+            } else {
+                // 显示错误信息
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl('页面加载失败', 'danger');
+                } else {
+                    alert('页面加载失败，请稍后重试');
+                }
+            }
+        });
+    }
 }
 
 // 异常请求

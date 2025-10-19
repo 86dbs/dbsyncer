@@ -49,29 +49,22 @@ $(function () {
     // 绑定所有的菜单链接点击事件，根据不同的URL加载页面
     $("#menu li a[url]").click(function () {
         var route = $(this).data('route');
-        // 加载页面
-        doLoader($(this).attr("url"), route);
-        // 加载页面
-        const contents = document.querySelectorAll('.contentDiv');
-        contents.forEach(function (content) {
-            content.classList.add('hidden');
-        });
-        if (route === 1) {
+        var url = $(this).attr("url");
+        
+        // 清理定时器 - 只有在离开index页面时才清理
+        if (url !== '/index' && url !== '/') {
             if (timer != null) {
                 clearInterval(timer);
                 timer = null;
             }
-        } else if (route === 2) {
             if (timer2 != null) {
                 clearInterval(timer2);
                 timer2 = null;
             }
         }
-        const contentToShow = $('#initContainer' + route);
-        if (contentToShow) {
-            contentToShow.removeClass('hidden');
-        }
-
+        
+        // 加载页面（doLoader函数现在处理内容区域管理）
+        doLoader(url, route);
     });
 
     // 头部导航栏选中切换事件

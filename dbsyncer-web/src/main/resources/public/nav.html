@@ -2,49 +2,109 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<nav th:fragment="nav" class="navbar navbar-default" role="navigation" >
-    <div class="container-fluid">
-        <div class="navbar-header">
-            <img draggable="false" th:src="@{'/img/logo.png'}" style="width: 50px; height: 50px;">&nbsp;
+<!-- 顶部导航栏 -->
+<header th:fragment="nav" class="dbsyncer-header">
+    <!-- Logo区域 -->
+    <div class="dbsyncer-logo">
+        <div class="dbsyncer-logo-icon"></div>
+        <a href="javascript:void(0);" class="dbsyncer-logo-text">DBsyncer</a>
+    </div>
+    
+    <!-- 右侧操作区域 -->
+    <div class="dbsyncer-header-actions">
+        
+        <!-- 用户信息 -->
+        <div class="dbsyncer-user-info dropdown-toggle" data-toggle="dropdown">
+            <div class="dbsyncer-user-avatar">管</div>
+            <div class="dbsyncer-user-name">管理员</div>
+            <i class="fa fa-chevron-down dbsyncer-user-dropdown"></i>
         </div>
-        <div>
-            <ul id="menu" class="nav navbar-nav">
-                <li class="active"><a href="javascript:void(0);"  data-route="1" url="/index"><span
-                        class="fa fa-tachometer"></span>驱动</a>
-                </li>
-                <li><a href="javascript:void(0);" url="/monitor" data-route="2"><span class="fa fa-line-chart"></span>监控</a></li>
-                <li><a href="javascript:void(0);" url="/plugin" data-route="0"><span class="fa fa-puzzle-piece" aria-hidden="true"></span>插件</a></li>
-                <li class="dropdown">
-                    <a href="javascript:void(0);" class="dropdown-toggle" data-toggle="dropdown">配置<b class="caret"></b></a>
-                    <ul class="dropdown-menu">
-                        <li><a href="javascript:void(0);" url="/system" data-route="3"><span class="fa fa-cog"></span>系统参数</a></li>
-                        <li><a href="javascript:void(0);" url="/user" data-route="3"><span class="fa fa-users"></span>用户管理</a></li>
-                        <li><a href="javascript:void(0);" url="/task" data-route="3"><span class="fa fa-tasks"></span>任务配置</a></li>
-                        <li><a href="javascript:void(0);" url="/config" data-route="3"><span class="fa fa-file-code-o" aria-hidden="true"></span>配置管理</a></li>
-                        <li><a href="javascript:void(0);" url="/license" data-route="3"><span class="fa fa-key" aria-hidden="true"></span>授权许可</a></li>
-                    </ul>
-                </li>
-            </ul>
-            <ul class="nav navbar-nav navbar-right">
-                <li id="licenseInfo" class="hidden license-info-item">
-                    <a href="javascript:void(0);" style="cursor:default">
-                        专业版&nbsp;
-                        <img id="licenseCheck" class="hidden license-info-item" draggable="false" title="已激活" width="17px" height="17px" th:src="@{'/img/license/check.png'}">
-                        <img id="licenseRemind" class="hidden license-info-item" draggable="false" title="即将过期, 请联系星河同步官方续期" width="17px" height="17px" th:src="@{'/img/license/remind.png'}">
-                        <img id="licenseWarning" class="hidden license-info-item" draggable="false" title="已过期, 请联系星河同步官方续期" width="17px" height="17px" th:src="@{'/img/license/warning.png'}">
-                        <span id="effectiveContent" class="hidden license-info-item"></span>
-                    </a>
-                </li>
-                <li class="dropdown">
-                    <a href="javascript:void(0);" class="dropdown-toggle" data-toggle="dropdown"><span id="currentUser"></span></a>
-                    <ul class="dropdown-menu">
-                        <li><a href="javascript:void(0);" id="edit_personal"> <i class ="fa fa-pencil"></i>修改</a></li>
-                        <li><a href="javascript:void(0);" id="nav_logout"> <i class ="fa fa-power-off"></i>注销</a></li>
-                    </ul>
-                </li>
-            </ul>
+        
+        <!-- 用户下拉菜单 -->
+        <ul class="dropdown-menu dropdown-menu-right">
+            <li><a href="javascript:void(0);" id="edit_personal"><i class="fa fa-pencil"></i> 修改</a></li>
+            <li><a href="javascript:void(0);" id="nav_logout"><i class="fa fa-power-off"></i> 注销</a></li>
+        </ul>
+    </div>
+</header>
+
+<!-- 左侧边栏 -->
+<aside th:fragment="sidebar" class="dbsyncer-sidebar">
+    <div class="dbsyncer-sidebar-content">
+        <!-- 主要功能 -->
+        <div class="dbsyncer-nav-group">
+            <div class="dbsyncer-nav-group-title">主要功能</div>
+
+
+
+            <div class="dbsyncer-nav-item">
+                <a href="javascript:void(0);" class="dbsyncer-nav-link" data-route="2" url="/connector/list">
+                    <i class="fa fa-database dbsyncer-nav-icon"></i>
+                    <span class="dbsyncer-nav-text">数据源管理</span>
+                </a>
+            </div>
+            <div class="dbsyncer-nav-item">
+                <a href="javascript:void(0);" class="dbsyncer-nav-link" data-route="1" url="/mapping/list">
+                    <i class="fa fa-exchange dbsyncer-nav-icon"></i>
+                    <span class="dbsyncer-nav-text">同步任务</span>
+                </a>
+            </div>
+
+        </div>
+        
+        <!-- 系统监控 -->
+        <div class="dbsyncer-nav-group">
+            <div class="dbsyncer-nav-group-title">系统监控</div>
+            
+            <div class="dbsyncer-nav-item">
+                <a href="javascript:void(0);" class="dbsyncer-nav-link" data-route="4" url="/monitor">
+                    <i class="fa fa-line-chart dbsyncer-nav-icon"></i>
+                    <span class="dbsyncer-nav-text">性能监控</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- 系统设置 -->
+        <div class="dbsyncer-nav-group">
+            <div class="dbsyncer-nav-group-title">系统设置</div>
+            
+            <div class="dbsyncer-nav-item">
+                <a href="javascript:void(0);" class="dbsyncer-nav-link" data-route="5" url="/system">
+                    <i class="fa fa-cog dbsyncer-nav-icon"></i>
+                    <span class="dbsyncer-nav-text">系统配置</span>
+                </a>
+            </div>
+            
+            <div class="dbsyncer-nav-item">
+                <a href="javascript:void(0);" class="dbsyncer-nav-link" data-route="6" url="/user">
+                    <i class="fa fa-users dbsyncer-nav-icon"></i>
+                    <span class="dbsyncer-nav-text">用户管理</span>
+                </a>
+            </div>
+            
+            <div class="dbsyncer-nav-item">
+                <a href="javascript:void(0);" class="dbsyncer-nav-link" data-route="7" url="/plugin">
+                    <i class="fa fa-puzzle-piece dbsyncer-nav-icon"></i>
+                    <span class="dbsyncer-nav-text">插件管理</span>
+                </a>
+            </div>
         </div>
     </div>
-</nav>
+    
+    <!-- 底部用户信息 -->
+    <div class="dbsyncer-sidebar-footer">
+        <div class="dbsyncer-sidebar-user">
+            <div class="dbsyncer-sidebar-user-avatar">管</div>
+            <div class="dbsyncer-sidebar-user-info">
+                <div class="dbsyncer-sidebar-user-name">管理员</div>
+                <div class="dbsyncer-sidebar-user-email">admin@dbsyncer.com</div>
+            </div>
+            <i class="fa fa-sign-out dbsyncer-sidebar-user-action"></i>
+        </div>
+    </div>
+</aside>
+
+<!-- 移动端遮罩 -->
+<div class="dbsyncer-sidebar-overlay"></div>
 
 </html>

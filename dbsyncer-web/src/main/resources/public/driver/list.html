@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 驱动管理页面 -->
+<div class="dbsyncer-page-header">
+    <h1 class="dbsyncer-page-title">驱动管理</h1>
+    <p class="dbsyncer-page-subtitle">管理和配置数据同步驱动</p>
+</div>
+
+<!-- 驱动列表表格 -->
+<div class="dbsyncer-table-container">
+    <!-- 表格头部 -->
+    <div class="dbsyncer-table-header">
+        <h2 class="dbsyncer-table-title">驱动列表</h2>
+        <div class="dbsyncer-table-actions">
+            <button class="dbsyncer-btn dbsyncer-btn-primary" id="addDriverBtn">
+                <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
+                添加驱动
+            </button>
+        </div>
+    </div>
+
+    <!-- 表格工具栏 -->
+    <div class="dbsyncer-table-toolbar">
+        <div class="dbsyncer-table-toolbar-left">
+            <div class="dbsyncer-table-search">
+                <i class="fa fa-search dbsyncer-table-search-icon"></i>
+                <input type="text" class="dbsyncer-table-search-input" placeholder="搜索驱动名称..." id="searchInput">
+            </div>
+            <div class="dbsyncer-table-filter">
+                <select class="dbsyncer-table-filter-select" id="typeFilter">
+                    <option value="">全部类型</option>
+                    <option value="full">全量同步</option>
+                    <option value="increment">增量同步</option>
+                </select>
+                <select class="dbsyncer-table-filter-select" id="statusFilter">
+                    <option value="">全部状态</option>
+                    <option value="running">运行中</option>
+                    <option value="stopped">已停止</option>
+                    <option value="error">错误</option>
+                </select>
+            </div>
+        </div>
+        <div class="dbsyncer-table-toolbar-right">
+            <button class="dbsyncer-btn dbsyncer-btn-secondary" id="refreshBtn">
+                <i class="fa fa-refresh dbsyncer-btn-icon-left"></i>
+                刷新
+            </button>
+        </div>
+    </div>
+
+    <!-- 表格主体 -->
+    <div class="dbsyncer-table-wrapper">
+        <table class="dbsyncer-table" id="driverTable">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">序号</th>
+                    <th style="width: 15%;">驱动名称</th>
+                    <th style="width: 10%;">同步类型</th>
+                    <th style="width: 15%;">源数据源</th>
+                    <th style="width: 15%;">目标数据源</th>
+                    <th style="width: 10%;">状态</th>
+                    <th style="width: 10%;">进度</th>
+                    <th style="width: 10%;">创建时间</th>
+                    <th style="width: 10%;">操作</th>
+                </tr>
+            </thead>
+            <tbody id="driverTableBody">
+                <!-- 示例数据 -->
+                <tr>
+                    <td>1</td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <i class="fa fa-exchange" style="color: #1890ff; margin-right: 8px;"></i>
+                            <span>用户数据同步</span>
+                        </div>
+                    </td>
+                    <td>全量同步</td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <img src="/img/mysql.png" alt="MySQL" style="width: 16px; height: 16px; margin-right: 6px;">
+                            <span>生产数据库</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <img src="/img/oracle.png" alt="Oracle" style="width: 16px; height: 16px; margin-right: 6px;">
+                            <span>测试数据库</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="dbsyncer-status-tag success">运行中</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <div style="width: 60px; height: 6px; background: #f0f0f0; border-radius: 3px; margin-right: 8px;">
+                                <div style="width: 75%; height: 100%; background: #52c41a; border-radius: 3px;"></div>
+                            </div>
+                            <span style="font-size: 12px; color: #666;">75%</span>
+                        </div>
+                    </td>
+                    <td>2024-01-15 10:30:00</td>
+                    <td class="dbsyncer-table-actions-cell">
+                        <a href="javascript:void(0);" class="dbsyncer-action-btn" onclick="viewDriver('1')">
+                            <i class="fa fa-eye"></i>
+                            查看
+                        </a>
+                        <a href="javascript:void(0);" class="dbsyncer-action-btn" onclick="editDriver('1')">
+                            <i class="fa fa-edit"></i>
+                            编辑
+                        </a>
+                        <a href="javascript:void(0);" class="dbsyncer-action-btn warning" onclick="stopDriver('1')">
+                            <i class="fa fa-stop"></i>
+                            停止
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <i class="fa fa-exchange" style="color: #1890ff; margin-right: 8px;"></i>
+                            <span>订单数据同步</span>
+                        </div>
+                    </td>
+                    <td>增量同步</td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <img src="/img/postgresql.png" alt="PostgreSQL" style="width: 16px; height: 16px; margin-right: 6px;">
+                            <span>订单数据库</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <img src="/img/elasticsearch.png" alt="Elasticsearch" style="width: 16px; height: 16px; margin-right: 6px;">
+                            <span>搜索索引</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="dbsyncer-status-tag warning">已停止</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <div style="width: 60px; height: 6px; background: #f0f0f0; border-radius: 3px; margin-right: 8px;">
+                                <div style="width: 0%; height: 100%; background: #fa8c16; border-radius: 3px;"></div>
+                            </div>
+                            <span style="font-size: 12px; color: #666;">0%</span>
+                        </div>
+                    </td>
+                    <td>2024-01-16 09:15:00</td>
+                    <td class="dbsyncer-table-actions-cell">
+                        <a href="javascript:void(0);" class="dbsyncer-action-btn" onclick="viewDriver('2')">
+                            <i class="fa fa-eye"></i>
+                            查看
+                        </a>
+                        <a href="javascript:void(0);" class="dbsyncer-action-btn" onclick="editDriver('2')">
+                            <i class="fa fa-edit"></i>
+                            编辑
+                        </a>
+                        <a href="javascript:void(0);" class="dbsyncer-action-btn success" onclick="startDriver('2')">
+                            <i class="fa fa-play"></i>
+                            启动
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <i class="fa fa-exchange" style="color: #1890ff; margin-right: 8px;"></i>
+                            <span>日志数据同步</span>
+                        </div>
+                    </td>
+                    <td>增量同步</td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <img src="/img/mysql.png" alt="MySQL" style="width: 16px; height: 16px; margin-right: 6px;">
+                            <span>日志数据库</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <img src="/img/kafka.png" alt="Kafka" style="width: 16px; height: 16px; margin-right: 6px;">
+                            <span>消息队列</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="dbsyncer-status-tag error">错误</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <div style="width: 60px; height: 6px; background: #f0f0f0; border-radius: 3px; margin-right: 8px;">
+                                <div style="width: 30%; height: 100%; background: #f5222d; border-radius: 3px;"></div>
+                            </div>
+                            <span style="font-size: 12px; color: #666;">30%</span>
+                        </div>
+                    </td>
+                    <td>2024-01-17 11:20:00</td>
+                    <td class="dbsyncer-table-actions-cell">
+                        <a href="javascript:void(0);" class="dbsyncer-action-btn" onclick="viewDriver('3')">
+                            <i class="fa fa-eye"></i>
+                            查看
+                        </a>
+                        <a href="javascript:void(0);" class="dbsyncer-action-btn" onclick="editDriver('3')">
+                            <i class="fa fa-edit"></i>
+                            编辑
+                        </a>
+                        <a href="javascript:void(0);" class="dbsyncer-action-btn danger" onclick="deleteDriver('3')">
+                            <i class="fa fa-trash"></i>
+                            删除
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 分页组件 -->
+    <div class="dbsyncer-pagination">
+        <div class="dbsyncer-pagination-info">
+            共 <span id="totalCount">3</span> 条记录，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页
+        </div>
+        <div class="dbsyncer-pagination-controls">
+            <button class="dbsyncer-pagination-btn" id="prevBtn" disabled>
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <div class="dbsyncer-pagination-page">
+                <button class="dbsyncer-pagination-page-btn active">1</button>
+            </div>
+            <button class="dbsyncer-pagination-btn" id="nextBtn" disabled>
+                <i class="fa fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// 驱动管理页面脚本
+$(document).ready(function() {
+    // 添加驱动按钮点击事件
+    $('#addDriverBtn').on('click', function() {
+        window.location.href = '/mapping/add';
+    });
+
+    // 刷新按钮点击事件
+    $('#refreshBtn').on('click', function() {
+        loadDriverList();
+    });
+
+    // 搜索框输入事件
+    $('#searchInput').on('input', function() {
+        var query = $(this).val();
+        filterDrivers(query);
+    });
+
+    // 筛选器变化事件
+    $('#typeFilter, #statusFilter').on('change', function() {
+        filterDrivers();
+    });
+
+    // 加载驱动列表
+    function loadDriverList() {
+        // 这里应该调用后端API获取驱动列表
+        console.log('加载驱动列表');
+    }
+
+    // 筛选驱动
+    function filterDrivers(query) {
+        var typeFilter = $('#typeFilter').val();
+        var statusFilter = $('#statusFilter').val();
+        
+        // 这里应该实现筛选逻辑
+        console.log('筛选驱动:', { query, typeFilter, statusFilter });
+    }
+});
+
+// 查看驱动详情
+function viewDriver(id) {
+    window.location.href = '/mapping/view?id=' + id;
+}
+
+// 编辑驱动
+function editDriver(id) {
+    window.location.href = '/mapping/edit?id=' + id;
+}
+
+// 启动驱动
+function startDriver(id) {
+    if (confirm('确定要启动这个驱动吗？')) {
+        // 显示加载状态
+        var btn = event.target.closest('.dbsyncer-action-btn');
+        var originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 启动中...';
+        btn.disabled = true;
+
+        // 模拟API调用
+        setTimeout(function() {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            
+            // 这里应该调用后端API启动驱动
+            alert('驱动启动成功');
+            location.reload(); // 刷新页面更新状态
+        }, 2000);
+    }
+}
+
+// 停止驱动
+function stopDriver(id) {
+    if (confirm('确定要停止这个驱动吗？')) {
+        // 显示加载状态
+        var btn = event.target.closest('.dbsyncer-action-btn');
+        var originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 停止中...';
+        btn.disabled = true;
+
+        // 模拟API调用
+        setTimeout(function() {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            
+            // 这里应该调用后端API停止驱动
+            alert('驱动停止成功');
+            location.reload(); // 刷新页面更新状态
+        }, 2000);
+    }
+}
+
+// 删除驱动
+function deleteDriver(id) {
+    if (confirm('确定要删除这个驱动吗？删除后无法恢复。')) {
+        // 这里应该调用后端API删除驱动
+        console.log('删除驱动:', id);
+        alert('删除成功');
+        location.reload(); // 刷新页面
+    }
+}
+</script>
+
+</html>

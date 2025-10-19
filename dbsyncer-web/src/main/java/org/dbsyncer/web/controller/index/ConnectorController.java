@@ -27,6 +27,13 @@ public class ConnectorController extends BaseController {
     @Resource
     private ConnectorService connectorService;
 
+    @GetMapping("/list")
+    public String pageList(HttpServletRequest request, ModelMap model) {
+        // 获取所有连接器数据
+        model.put("connectors", connectorService.getConnectorAll());
+        return "connector/list";
+    }
+
     @GetMapping("/page/add")
     public String pageAdd(HttpServletRequest request, ModelMap model) {
         model.put("connectorTypes", connectorService.getConnectorTypeAll());
@@ -98,6 +105,22 @@ public class ConnectorController extends BaseController {
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/test")
+    @ResponseBody
+    public RestResult test(@RequestParam(value = "id") String id) {
+        try {
+            boolean isAlive = connectorService.isAlive(id);
+            if (isAlive) {
+                return RestResult.restSuccess("连接测试成功");
+            } else {
+                return RestResult.restFail("连接测试失败");
+            }
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail("连接测试失败: " + e.getMessage());
         }
     }
 

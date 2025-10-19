@@ -4,50 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>dbsyncer - 登录</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS 本地引用 -->
+    <link type="text/css" rel="stylesheet" th:href="@{/css/tailwind-login.css}"/>
     <link type="image/x-icon" rel="icon" th:href="@{/img/logo.ico}"/>
     <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/font-awesome.min.css}"/>
     <link type="text/css" rel="stylesheet" th:if="${enableCDN}" src="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css"/>
-
-    <!-- 配置Tailwind自定义颜色和字体 -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#165DFF',
-                        secondary: '#36CFC9',
-                        neutral: '#F5F7FA',
-                        dark: '#1D2129',
-                        danger: '#F53F3F'
-                    },
-                    fontFamily: {
-                        inter: ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                },
-            }
-        }
-    </script>
-
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .content-auto {
-                content-visibility: auto;
-            }
-
-            .bg-gradient-primary {
-                background: linear-gradient(135deg, #165DFF 0%, #36CFC9 100%);
-            }
-
-            .text-shadow {
-                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
-
-            .transition-custom {
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            }
-        }
-    </style>
 </head>
 <body class="font-inter bg-gray-50 min-h-screen flex items-center justify-center p-4">
 <!-- 登录卡片容器 -->
@@ -63,7 +24,7 @@
                 <h1 class="text-2xl font-bold tracking-tight"><strong id="appName" /></h1>
             </div>
 
-            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4 text-shadow">数据同步，<br>从未如此简单</h2>
+            <h2 class="text-responsive-2xl font-bold mb-4 text-shadow">数据同步，<br>从未如此简单</h2>
             <p class="text-white/80 mb-8 max-w-md">高效、稳定、安全的数据同步解决方案，为您的业务保驾护航</p>
         </div>
 
@@ -112,7 +73,7 @@
         </div>
 
         <div class="mt-6 md:mt-12">
-            <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark mb-2">欢迎回来</h2>
+            <h2 class="text-responsive-xl font-bold text-dark mb-2">欢迎回来</h2>
             <p class="text-gray-500 mb-8">请输入您的账号信息登录系统</p>
 
             <!-- 登录表单 -->
@@ -320,20 +281,6 @@
             loadingButton.classList.add('hidden');
         }
     });
-
-    // 添加抖动动画样式
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-        20%, 40%, 60%, 80% { transform: translateX(5px); }
-      }
-      .animate-shake {
-        animation: shake 0.5s ease-in-out;
-      }
-    `;
-    document.head.appendChild(style);
 </script>
 </body>
 </html>

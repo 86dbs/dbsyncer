@@ -35,6 +35,18 @@ public class MappingController extends BaseController {
     @Resource
     private TableGroupService tableGroupService;
 
+    /**
+     * 同步任务列表页面
+     */
+    @GetMapping("/list")
+    public String list(ModelMap model) {
+        model.put("mappings", mappingService.getMappingAll());
+        return "mapping/list";
+    }
+
+    /**
+     * 添加同步任务页面
+     */
     @GetMapping("/pageAdd")
     public String page(ModelMap model) {
         model.put("connectors", connectorService.getConnectorAll());

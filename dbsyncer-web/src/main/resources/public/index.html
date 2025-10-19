@@ -31,6 +31,7 @@
     <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/icheck/all.css}"/>
     <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/loading-plus/loading-plus.css}"/>
     <link type="text/css" rel="stylesheet" th:href="@{/css/common.css}">
+    <link type="text/css" rel="stylesheet" th:href="@{/css/dbsyncer-theme.css}">
     <link type="text/css" rel="stylesheet" th:href="@{/css/index/index.css}">
 </head>
 <body>
@@ -38,8 +39,16 @@
 <!-- 导航栏 -->
 <div th:replace="nav :: nav"></div>
 
-<!-- 内容区域 -->
-<div th:replace="content :: content"></div>
+<!-- 左侧边栏 -->
+<div th:replace="nav :: sidebar"></div>
+
+<!-- 主内容区 -->
+<main class="dbsyncer-main">
+    <div class="dbsyncer-page">
+        <!-- 内容区域 -->
+        <div th:replace="content :: content"></div>
+    </div>
+</main>
 
 <!-- 底部区域 -->
 <div th:replace="footer :: copy"></div>
@@ -79,5 +88,6 @@
 <script th:src="@{/plugins/js/placeholder/jquery.placeholder.js}"></script>
 <script th:src="@{/plugins/js/formValidate/formValidate.js}"></script>
 <script th:src="@{/js/common.js}"></script>
+<script th:src="@{/js/dbsyncer-theme.js}"></script>
 <script th:src="@{/js/index.js}"></script>
 </html>
