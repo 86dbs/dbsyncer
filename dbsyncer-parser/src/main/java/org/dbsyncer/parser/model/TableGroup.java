@@ -154,7 +154,7 @@ public class TableGroup extends AbstractConfigModel {
         this.parserComponent = parserComponent;
         this.profileComponent = profileComponent;
         Mapping mapping = profileComponent.getMapping(mappingId);
-        setCommand(initCommand(mapping, connectorFactory));
+        initCommand(mapping, connectorFactory);
         if (currentVersion != TableGroup.Version) {
             currentVersion = TableGroup.Version;
             profileComponent.editConfigModel(this);
@@ -163,7 +163,7 @@ public class TableGroup extends AbstractConfigModel {
     }
 
     @JSONField(serialize = false)
-    public Map<String, String> initCommand(Mapping mapping, ConnectorFactory connectorFactory) {
+    public void initCommand(Mapping mapping, ConnectorFactory connectorFactory) {
         ConnectorConfig sConnConfig = profileComponent.getConnector(mapping.getSourceConnectorId()).getConfig();
         ConnectorConfig tConnConfig = profileComponent.getConnector(mapping.getTargetConnectorId()).getConfig();
         Table sourceTable = this.getSourceTable();
@@ -209,7 +209,8 @@ public class TableGroup extends AbstractConfigModel {
         sourceConfig.setCachedPrimaryKeys(this.getCachedPrimaryKeys());
 
         // 获取连接器同步参数
-        return connectorFactory.getCommand(sourceConfig, targetConfig);
+        Map<String, String> commandGenerated = connectorFactory.getCommand(sourceConfig, targetConfig);
+        this.command = commandGenerated;
     }
 
     // 新增字段 - 流式处理状态管理
