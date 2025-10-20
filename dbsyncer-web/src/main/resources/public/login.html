@@ -14,11 +14,11 @@
 <div class="w-full max-w-6xl grid md:grid-cols-2 gap-8 shadow-2xl rounded-2xl overflow-hidden" style="position:relative;z-index:10;">
 
     <!-- 左侧品牌展示区 -->
-    <div class="hidden md:flex bg-gradient-primary p-12 flex-col justify-between text-white">
+    <div class="md:flex bg-gradient-primary p-12 flex-col justify-between text-white">
         <div>
             <div class="flex items-center space-x-3 mb-12">
                 <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                    <i class="icon-database"></i>
+                    <i class="svg-database"></i>
                 </div>
                 <h1 id="appName" class="text-2xl font-bold tracking-tight"></h1>
             </div>
@@ -31,7 +31,7 @@
         <div class="space-y-6">
             <div class="flex items-start space-x-4">
                 <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    <i class="icon-bolt"></i>
+                    <i class="svg-bolt"></i>
                 </div>
                 <div>
                     <h3 class="font-semibold mt-1">高效同步</h3>
@@ -41,7 +41,7 @@
 
             <div class="flex items-start space-x-4">
                 <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    <i class="icon-shield"></i>
+                    <i class="svg-shield"></i>
                 </div>
                 <div>
                     <h3 class="font-semibold mt-1">安全可靠</h3>
@@ -51,7 +51,7 @@
 
             <div class="flex items-start space-x-4">
                 <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    <i class="icon-cogs"></i>
+                    <i class="svg-cogs"></i>
                 </div>
                 <div>
                     <h3 class="font-semibold mt-1">灵活配置</h3>
@@ -63,14 +63,6 @@
 
     <!-- 右侧登录表单区 -->
     <div class="bg-white p-8 md:p-12 flex flex-col h-full w-full-50 right-0 absolute">
-        <!-- 移动端Logo -->
-        <div class="md:hidden flex items-center space-x-3 mb-8">
-            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <i class="fa fa-database text-primary text-2xl"></i>
-            </div>
-            <h1 class="text-2xl font-bold tracking-tight text-dark">dbsyncer</h1>
-        </div>
-
         <div class="mt-6 md:mt-12">
             <h2 class="text-responsive-xl font-bold text-dark mb-2">欢迎回来</h2>
             <p class="text-gray-500 mb-8">请输入您的账号信息登录系统</p>
@@ -82,15 +74,17 @@
                     <label for="username" class="block text-sm font-medium text-gray-700">用户名</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fa fa-user text-gray-400"></i>
+                            <i class="svg-user"></i>
                         </div>
                         <input type="text" id="username" name="username"
                                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom outline-none"
                                placeholder="请输入用户名" required>
                     </div>
                     <div id="usernameError" class="hidden text-danger text-sm mt-1">
-                        <i class="fa fa-exclamation-circle mr-1"></i>
-                        <span>用户名不能为空</span>
+                        <div class="flex">
+                            <i class="svg-exclamation-circle"></i>
+                            <span>用户名不能为空</span>
+                        </div>
                     </div>
                 </div>
 
@@ -101,39 +95,43 @@
                     </div>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fa fa-lock text-gray-400"></i>
+                            <i class="svg-lock"></i>
                         </div>
                         <input type="password" id="password" name="password"
                                class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom outline-none"
                                placeholder="请输入密码" required>
                         <button type="button" id="togglePassword"
                                 class="absolute inset-y-0 right-0 pr-3 flex mr-1 mt-1 mb-1 items-center rounded-lg">
-                            <i class="fa fa-eye-slash"></i>
+                            <i class="svg-eye-slash"></i>
                         </button>
                     </div>
                     <div id="passwordError" class="hidden text-danger text-sm mt-1">
-                        <i class="fa fa-exclamation-circle mr-1"></i>
-                        <span>密码不能为空</span>
+                        <div class="flex">
+                            <i class="svg-exclamation-circle"></i>
+                            <span>密码不能为空</span>
+                        </div>
                     </div>
                 </div>
 
                 <!-- 错误提示 -->
                 <div id="loginError" class="hidden bg-danger/10 text-danger p-3 rounded-lg text-sm flex items-center">
-                    <i class="fa fa-exclamation-circle mr-2"></i>
-                    <span id="errorMessage">登录失败，请检查用户名或密码</span>
+                    <div class="flex">
+                        <i class="svg-exclamation-circle"></i>
+                        <span id="errorMessage">登录失败，请检查用户名或密码</span>
+                    </div>
                 </div>
 
                 <!-- 登录按钮 -->
                 <button type="submit" id="loginButton"
                         class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-custom flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
                     <span>登录</span>
-                    <i class="fa fa-sign-in"></i>
+                    <i class="svg-sign-in"></i>
                 </button>
 
                 <!-- 加载状态按钮 -->
                 <button type="button" id="loadingButton"
                         class="hidden w-full bg-primary/80 text-white font-medium py-3 px-4 rounded-lg transition-custom flex items-center justify-center space-x-2 cursor-not-allowed">
-                    <i class="fa fa-circle-o-notch fa-spin"></i>
+                    <i class="rotate-loading"></i>
                     <span>登录中...</span>
                 </button>
             </form>
@@ -274,8 +272,8 @@
         passwordInput.setAttribute('type', type);
 
         // 切换图标
-        togglePassword.querySelector('i').classList.toggle('fa-eye');
-        togglePassword.querySelector('i').classList.toggle('fa-eye-slash');
+        togglePassword.querySelector('i').classList.toggle('svg-eye');
+        togglePassword.querySelector('i').classList.toggle('svg-eye-slash');
     });
 
     // 初始化加载版权信息
