@@ -3,9 +3,8 @@
  */
 package org.dbsyncer.sdk.connector.database.sql.impl;
 
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
-import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
+import org.dbsyncer.sdk.model.Field;
 
 import java.util.List;
 
@@ -26,5 +25,21 @@ public class MySQLTemplate implements SqlTemplate {
     @Override
     public String getRightQuotation() {
         return "`";
+    }
+
+    @Override
+    public String buildUpsertSql(String schemaTable, List<Field> fields, List<String> primaryKeys) {
+        String fieldNames = fields.stream()
+                .map(field -> buildColumn(field.getName()))
+                .collect(java.util.stream.Collectors.joining(", "));
+        String placeholders = fields.stream()
+                .map(field -> "?")
+                .collect(java.util.stream.Collectors.joining(", "));
+        String updateClause = fields.stream()
+                .filter(field -> !field.isPk())
+                .map(field -> buildColumn(field.getName()) + " = VALUES(" + buildColumn(field.getName()) + ")")
+                .collect(java.util.stream.Collectors.joining(", "));
+        return String.format("INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
+                schemaTable, fieldNames, placeholders, updateClause);
     }
 }

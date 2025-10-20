@@ -46,4 +46,9 @@ public class ConnectorConstant {
      * 查询总数
      */
     public static final String OPERTION_QUERY_COUNT = "QUERY_COUNT";
+
+    /**
+     * 覆盖插入（Upsert）
+     */
+    public static final String OPERTION_UPSERT = "UPSERT";
 }

@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
 
+import org.dbsyncer.sdk.model.Field;
 import java.util.List;
 
 /**
@@ -72,5 +73,29 @@ public class SqlServerTemplate implements SqlTemplate {
             return String.format("SELECT COUNT(*) FROM %s WITH (NOLOCK) %s", schemaTable, queryFilter);
         }
         return String.format("SELECT COUNT(*) FROM %s WITH (NOLOCK)", schemaTable);
+    }
+    
+    @Override
+    public String buildUpsertSql(String schemaTable, List<Field> fields, List<String> primaryKeys) {
+        String fieldNames = fields.stream()
+                .map(field -> buildColumn(field.getName()))
+                .collect(java.util.stream.Collectors.joining(", "));
+        String placeholders = fields.stream()
+                .map(field -> "?")
+                .collect(java.util.stream.Collectors.joining(", "));
+        String updateClause = fields.stream()
+                .filter(field -> !field.isPk())
+                .map(field -> buildColumn(field.getName()) + " = SOURCE." + buildColumn(field.getName()))
+                .collect(java.util.stream.Collectors.joining(", "));
+        String pkCondition = primaryKeys.stream()
+                .map(pk -> "TARGET." + buildColumn(pk) + " = SOURCE." + buildColumn(pk))
+                .collect(java.util.stream.Collectors.joining(" AND "));
+        
+        return String.format(
+            "MERGE %s AS TARGET " +
+            "USING (SELECT %s) AS SOURCE ON %s " +
+            "WHEN MATCHED THEN UPDATE SET %s " +
+            "WHEN NOT MATCHED THEN INSERT (%s) VALUES (%s);",
+            schemaTable, placeholders, pkCondition, updateClause, fieldNames, placeholders);
     }
 }

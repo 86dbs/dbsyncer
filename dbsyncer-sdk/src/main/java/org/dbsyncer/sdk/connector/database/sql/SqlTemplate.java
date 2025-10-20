@@ -108,6 +108,27 @@ public interface SqlTemplate {
     }
 
     /**
+     * 构建覆盖插入SQL（Upsert）
+     *
+     * @param buildContext 构建上下文
+     * @return 构建后的SQL（包含?占位符）
+     */
+    default String buildUpsertSql(SqlBuildContext buildContext) {
+        String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
+        return buildUpsertSql(schemaTable, buildContext.getFields(), buildContext.getPrimaryKeys());
+    }
+
+    /**
+     * 构建覆盖插入SQL（Upsert）
+     *
+     * @param schemaTable 带引号的表名
+     * @param fields      字段列表
+     * @param primaryKeys 主键列表
+     * @return 构建后的SQL（包含?占位符）
+     */
+    String buildUpsertSql(String schemaTable, List<Field> fields, List<String> primaryKeys);
+
+    /**
      * 构建DQL查询SQL（在用户SQL基础上添加主键条件）
      *
      * @param userSql     用户原始SQL

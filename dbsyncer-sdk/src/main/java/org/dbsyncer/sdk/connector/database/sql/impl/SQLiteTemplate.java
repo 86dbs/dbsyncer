@@ -7,7 +7,9 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
 
+import org.dbsyncer.sdk.model.Field;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * SQLite特定SQL模板实现
@@ -47,5 +49,19 @@ public class SQLiteTemplate implements SqlTemplate {
 
         String orderByClause = buildOrderByClause(primaryKeys);
         return String.format("SELECT %s FROM %s%s%s LIMIT ? OFFSET ?", fieldList, schemaTable, whereClause, orderByClause);
+    }
+    
+    @Override
+    public String buildUpsertSql(String schemaTable, List<Field> fields, List<String> primaryKeys) {
+        String fieldNames = fields.stream()
+                .map(field -> buildColumn(field.getName()))
+                .collect(Collectors.joining(", "));
+        String placeholders = fields.stream()
+                .map(field -> "?")
+                .collect(Collectors.joining(", "));
+        
+        // SQLite使用INSERT OR REPLACE语法
+        return String.format("INSERT OR REPLACE INTO %s (%s) VALUES (%s)", 
+                             schemaTable, fieldNames, placeholders);
     }
 }

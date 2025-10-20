@@ -211,7 +211,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         List<Field> targetFields = context.getTargetFields();
 
         // 1、获取SQL
-        String executeSql = context.getCommand().get(event);
+        String executeSql;
+        if (context.isForceUpdate() && isInsert(event)) {
+            // 覆盖模式下使用 Upsert SQL
+            executeSql = context.getCommand().get(ConnectorConstant.OPERTION_UPSERT);
+        } else {
+            // 正常模式下使用原有 SQL
+            executeSql = context.getCommand().get(event);
+        }
+        
         Assert.hasText(executeSql, "执行SQL语句不能为空.");
         if (CollectionUtils.isEmpty(targetFields)) {
             logger.error("writer fields can not be empty.");
@@ -221,6 +229,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             logger.error("writer data can not be empty.");
             throw new SdkException("writer data can not be empty.");
         }
+        
         List<Field> fields = new ArrayList<>(targetFields);
         List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(targetFields);
         // Update / Delete
@@ -236,7 +245,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         Result result = new Result();
         int[] execute = null;
         try {
-            // 2、设置参数
+            // 2、设置参数并执行SQL
             execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
         } catch (Exception e) {
             data.forEach(row -> forceUpdate(result, connectorInstance, context, pkFields, row));
@@ -372,6 +381,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         map.put(ConnectorConstant.OPERTION_INSERT, sqlTemplate.buildInsertSql(buildContext));
         map.put(ConnectorConstant.OPERTION_UPDATE, sqlTemplate.buildUpdateSql(buildContext));
         map.put(ConnectorConstant.OPERTION_DELETE, sqlTemplate.buildDeleteSql(buildContext));
+        map.put(ConnectorConstant.OPERTION_UPSERT, sqlTemplate.buildUpsertSql(buildContext));
         return map;
     }
 

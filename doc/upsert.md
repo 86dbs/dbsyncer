@@ -2,7 +2,7 @@
 
 ## 1. 概述
 
-当前项目在数据同步时有覆盖模式，该模式当目标数据已经存在时，由 insert 改为 update。这个逻辑没有问题，但在大规模覆盖时，性能瓶颈严重。因此在覆盖模式下直接使用数据库服务器端的能力来提高性能，如 mysql 使用 replace into, mssql 使用 merge into 等。
+当前项目在数据同步时有覆盖模式，该模式当目标数据已经存在时，由 insert 改为 update。这个逻辑没有问题，但在大规模覆盖时，性能瓶颈严重。因此在覆盖模式下直接使用数据库服务器端的能力来提高性能，如 mysql 使用 insert on duplicate, mssql 使用 merge into 等。
 
 ## 2. 现状分析
 
@@ -42,7 +42,7 @@ private void forceUpdate(Result result, DatabaseConnectorInstance connectorInsta
 | SQL Server | MERGE INTO | 可控制更新和插入逻辑 |
 | PostgreSQL | INSERT ... ON CONFLICT | 标准 SQL，功能强大 |
 | Oracle | MERGE INTO | 功能完善，语法复杂 |
-| SQLite | INSERT OR REPLACE | 简洁语法，完全替换记录 |
+| SQLite | INSERT ... ON CONFLICT | 简洁语法，完全替换记录 |
 
 ### 3.3 实现架构
 

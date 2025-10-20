@@ -7,7 +7,9 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
 
+import org.dbsyncer.sdk.model.Field;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * PostgreSQL特定SQL模板实现
@@ -47,5 +49,25 @@ public class PostgreSQLTemplate implements SqlTemplate {
 
         String orderByClause = buildOrderByClause(primaryKeys);
         return String.format("SELECT %s FROM %s%s%s LIMIT ? OFFSET ?", fieldList, schemaTable, whereClause, orderByClause);
+    }
+    
+    @Override
+    public String buildUpsertSql(String schemaTable, List<Field> fields, List<String> primaryKeys) {
+        String fieldNames = fields.stream()
+                .map(field -> buildColumn(field.getName()))
+                .collect(Collectors.joining(", "));
+        String placeholders = fields.stream()
+                .map(field -> "?")
+                .collect(Collectors.joining(", "));
+        String updateClause = fields.stream()
+                .filter(field -> !field.isPk())
+                .map(field -> buildColumn(field.getName()) + " = EXCLUDED." + buildColumn(field.getName()))
+                .collect(Collectors.joining(", "));
+        String conflictClause = primaryKeys.stream()
+                .map(this::buildColumn)
+                .collect(Collectors.joining(", "));
+        
+        return String.format("INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s", 
+                             schemaTable, fieldNames, placeholders, conflictClause, updateClause);
     }
 }
