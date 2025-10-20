@@ -91,6 +91,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
     private void doTask(String metaId, Mapping mapping, List<TableGroup> list, Executor executor) {
         // 获取Meta对象
         Meta meta = profileComponent.getMeta(metaId);
+        Assert.notNull(meta, "Meta对象不存在");
 
         // 并发处理所有TableGroup
         List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -121,8 +122,14 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
         // 等待所有TableGroup完成
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
+        // 处理 meta 运行过程中被删除的情况
+        Meta metaReal = profileComponent.getMeta(metaId);
+        if (metaReal == null) {
+            return;
+        }
+
         // 记录结束时间
-        flush(metaId);
+        flush(meta);
 
         // 检查并执行 Meta 中的阶段处理方法
         Runnable phaseHandler = meta.getPhaseHandler();
@@ -147,10 +154,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
         }
     }
 
-    private void flush(String metaId) {
-        Meta meta = profileComponent.getMeta(metaId);
-        Assert.notNull(meta, "检查meta为空.");
-
+    private void flush(Meta meta) {
         // 全量的过程中，有新数据则更新总数
         long finished = meta.getSuccess().get() + meta.getFail().get();
         if (meta.getTotal().get() < finished) {
@@ -167,7 +171,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
     public void taskFinished(String metaId) {
         Meta meta = profileComponent.getMeta(metaId);
         if (meta != null) {
-            flush(metaId);
+            flush(meta);
         }
     }
 }
