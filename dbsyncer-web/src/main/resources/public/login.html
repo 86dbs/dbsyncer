@@ -22,10 +22,10 @@
                 <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
                     <i class="fa fa-database text-2xl"></i>
                 </div>
-                <h1 class="text-2xl font-bold tracking-tight"><strong id="appName" /></h1>
+                <h1 id="appName" class="text-2xl font-bold tracking-tight"></h1>
             </div>
 
-            <h2 class="text-responsive-2xl font-bold mb-4 text-shadow">数据同步，<br>从未如此简单</h2>
+            <h2 class="text-responsive-2xl font-bold mb-4 text-shadow">星河数据，易享同步</h2>
             <p class="text-white/80 mb-8 max-w-md">高效、稳定、安全的数据同步解决方案，为您的业务保驾护航</p>
         </div>
 
@@ -64,7 +64,7 @@
     </div>
 
     <!-- 右侧登录表单区 -->
-    <div class="bg-white p-8 md:p-12 flex flex-col">
+    <div class="bg-white p-8 md:p-12 flex flex-col h-full w-full-50 right-0 absolute">
         <!-- 移动端Logo -->
         <div class="md:hidden flex items-center space-x-3 mb-8">
             <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -295,43 +295,28 @@
             throw new Error(`请求错误: ${error.message}`);
         });
     });
-    // 表单验证
-    function validateForm() {
-        let isValid = true;
 
-        // 验证用户名
-        if (!usernameInput.value.trim()) {
-            usernameError.classList.remove('hidden');
-            usernameInput.classList.add('border-danger');
-            usernameInput.classList.remove('border-gray-300', 'focus:border-primary');
-            isValid = false;
-        } else {
-            usernameError.classList.add('hidden');
-            usernameInput.classList.remove('border-danger');
-            usernameInput.classList.add('border-gray-300', 'focus:border-primary');
-        }
-
-        // 验证密码
-        if (!passwordInput.value.trim()) {
-            passwordError.classList.remove('hidden');
-            passwordInput.classList.add('border-danger');
-            passwordInput.classList.remove('border-gray-300', 'focus:border-primary');
-            isValid = false;
-        } else {
-            passwordError.classList.add('hidden');
-            passwordInput.classList.remove('border-danger');
-            passwordInput.classList.add('border-gray-300', 'focus:border-primary');
-        }
-
+    function validateItem($input, $error){
         // 隐藏登录错误提示
         loginError.classList.add('hidden');
-
-        return isValid;
+        if (!$input.value.trim()) {
+            $error.classList.remove('hidden');
+            $input.classList.add('border-danger');
+            $input.classList.remove('border-gray-300', 'focus:border-primary');
+            return false;
+        }
+        $error.classList.add('hidden');
+        $input.classList.remove('border-danger');
+        $input.classList.add('border-gray-300', 'focus:border-primary');
+        return true;
     }
-
+    // 表单验证
+    function validateForm() {
+        return validateItem(usernameInput, usernameError) && validateItem(passwordInput, passwordError);
+    }
     // 输入框变化时重新验证
-    usernameInput.addEventListener('input', validateForm);
-    passwordInput.addEventListener('input', validateForm);
+    usernameInput.addEventListener('input', () => validateItem(usernameInput, usernameError));
+    passwordInput.addEventListener('input', () => validateItem(passwordInput, passwordError));
 
     // 登录表单提交处理
     loginForm.addEventListener('submit', async (e) => {

@@ -43,7 +43,9 @@ body {
 .justify-between { justify-content: space-between; }
 .flex-col { flex-direction: column; }
 .flex-shrink-0 { flex-shrink: 0; }
+.w-full-50 { width: 50%; }
 .w-full { width: 100%; }
+.h-full { height: 100%; }
 .w-8 { width: 2rem; }
 .w-10 { width: 2.5rem; }
 .h-8 { height: 2rem; }
