@@ -8,6 +8,7 @@ import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLBooleanType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDateType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDecimalType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDoubleType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLFloatType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLIntType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLLongType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLStringType;
@@ -33,6 +34,7 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
                 new PostgreSQLIntType(),
                 new PostgreSQLLongType(),
                 new PostgreSQLDecimalType(),
+                new PostgreSQLFloatType(),
                 new PostgreSQLDoubleType(),
                 new PostgreSQLDateType(),
                 new PostgreSQLTimestampType(),

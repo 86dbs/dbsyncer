@@ -6,24 +6,24 @@
     <title>dbsyncer - 登录</title>
     <link type="image/x-icon" rel="icon" th:href="@{/img/logo.ico}"/>
     <link type="text/css" rel="stylesheet" th:href="@{/css/login.css}"/>
+    <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/font-awesome.min.css}"/>
+    <link type="text/css" rel="stylesheet" th:if="${enableCDN}" src="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css"/>
 </head>
 <body class="font-inter bg-gray-50 min-h-screen flex items-center justify-center p-4">
-<!-- 背景粒子特效画布：固定铺满屏幕，位于内容层之下 -->
-<canvas id="bgParticles" style="position:fixed;left:0;top:0;width:100%;height:100%;z-index:0;pointer-events:none;"></canvas>
 <!-- 登录卡片容器 -->
-<div class="w-full max-w-6xl grid md:grid-cols-2 gap-8 shadow-2xl rounded-2xl overflow-hidden" style="position:relative;z-index:10;">
+<div class="w-full max-w-6xl grid md:grid-cols-2 gap-8 shadow-2xl rounded-2xl overflow-hidden">
 
     <!-- 左侧品牌展示区 -->
     <div class="hidden md:flex bg-gradient-primary p-12 flex-col justify-between text-white">
         <div>
             <div class="flex items-center space-x-3 mb-12">
                 <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                    <i class="icon-database"></i>
+                    <i class="fa fa-database text-2xl"></i>
                 </div>
-                <h1 id="appName" class="text-2xl font-bold tracking-tight"></h1>
+                <h1 class="text-2xl font-bold tracking-tight"><strong id="appName" /></h1>
             </div>
 
-            <h2 class="text-responsive-2xl font-bold mb-4 text-shadow">星河数据，易享同步</h2>
+            <h2 class="text-responsive-2xl font-bold mb-4 text-shadow">数据同步，<br>从未如此简单</h2>
             <p class="text-white/80 mb-8 max-w-md">高效、稳定、安全的数据同步解决方案，为您的业务保驾护航</p>
         </div>
 
@@ -31,30 +31,30 @@
         <div class="space-y-6">
             <div class="flex items-start space-x-4">
                 <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    <i class="icon-bolt"></i>
+                    <i class="fa fa-bolt"></i>
                 </div>
                 <div>
-                    <h3 class="font-semibold mt-1">高效同步</h3>
+                    <h3 class="font-semibold mb-1">高效同步</h3>
                     <p class="text-sm text-white/70">毫秒级响应，支持海量数据同步</p>
                 </div>
             </div>
 
             <div class="flex items-start space-x-4">
                 <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    <i class="icon-shield"></i>
+                    <i class="fa fa-shield"></i>
                 </div>
                 <div>
-                    <h3 class="font-semibold mt-1">安全可靠</h3>
+                    <h3 class="font-semibold mb-1">安全可靠</h3>
                     <p class="text-sm text-white/70">多重加密保障，确保数据传输安全</p>
                 </div>
             </div>
 
             <div class="flex items-start space-x-4">
                 <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    <i class="icon-cogs"></i>
+                    <i class="fa fa-cogs"></i>
                 </div>
                 <div>
-                    <h3 class="font-semibold mt-1">灵活配置</h3>
+                    <h3 class="font-semibold mb-1">灵活配置</h3>
                     <p class="text-sm text-white/70">支持多种数据源，自定义同步策略</p>
                 </div>
             </div>
@@ -62,7 +62,7 @@
     </div>
 
     <!-- 右侧登录表单区 -->
-    <div class="bg-white p-8 md:p-12 flex flex-col h-full w-full-50 right-0 absolute">
+    <div class="bg-white p-8 md:p-12 flex flex-col">
         <!-- 移动端Logo -->
         <div class="md:hidden flex items-center space-x-3 mb-8">
             <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -87,10 +87,10 @@
                         <input type="text" id="username" name="username"
                                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom outline-none"
                                placeholder="请输入用户名" required>
-                    </div>
-                    <div id="usernameError" class="hidden text-danger text-sm mt-1">
-                        <i class="fa fa-exclamation-circle mr-1"></i>
-                        <span>用户名不能为空</span>
+                        <div id="usernameError" class="hidden text-danger text-sm mt-1">
+                            <i class="fa fa-exclamation-circle mr-1"></i>
+                            <span>用户名不能为空</span>
+                        </div>
                     </div>
                 </div>
 
@@ -107,13 +107,13 @@
                                class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom outline-none"
                                placeholder="请输入密码" required>
                         <button type="button" id="togglePassword"
-                                class="absolute inset-y-0 right-0 pr-3 flex mr-1 mt-1 mb-1 items-center rounded-lg">
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-custom">
                             <i class="fa fa-eye-slash"></i>
                         </button>
-                    </div>
-                    <div id="passwordError" class="hidden text-danger text-sm mt-1">
-                        <i class="fa fa-exclamation-circle mr-1"></i>
-                        <span>密码不能为空</span>
+                        <div id="passwordError" class="hidden text-danger text-sm mt-1">
+                            <i class="fa fa-exclamation-circle mr-1"></i>
+                            <span>密码不能为空</span>
+                        </div>
                     </div>
                 </div>
 
@@ -147,112 +147,6 @@
 </div>
 
 <script>
-    // 背景粒子特效（轻量、与现有蓝色系风格一致）
-    (function () {
-        const canvas = document.getElementById('bgParticles');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-
-        let dpr = Math.max(1, window.devicePixelRatio || 1);
-        let width = 0, height = 0;
-        const particles = [];
-        const PARTICLE_COUNT_BASE = 0.00012; // 越小越少：按像素面积计算数量，避免在小屏过密
-        const MAX_ALPHA = 0.45; // 最高不透明度，保持低调不抢眼
-        const COLORS = [
-            'rgba(59,130,246,ALPHA)',   // 蓝色（接近 primary）
-            'rgba(37,99,235,ALPHA)',    // 深蓝
-            'rgba(99,102,241,ALPHA)',   // 靛紫
-            'rgba(56,189,248,ALPHA)'    // 青蓝
-        ];
-
-        function resize() {
-            width = canvas.clientWidth = window.innerWidth;
-            height = canvas.clientHeight = window.innerHeight;
-            canvas.width = Math.round(width * dpr);
-            canvas.height = Math.round(height * dpr);
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-            // 依据面积动态调整粒子数量
-            const target = Math.min(180, Math.max(60, Math.floor(width * height * PARTICLE_COUNT_BASE)));
-            if (particles.length > target) {
-                particles.length = target;
-            } else {
-                while (particles.length < target) particles.push(createParticle());
-            }
-        }
-
-        function rand(min, max) { return Math.random() * (max - min) + min; }
-        function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-
-        function createParticle() {
-            const speed = rand(0.08, 0.35);
-            const angle = rand(0, Math.PI * 2);
-            const radius = rand(0.6, 1.8);
-            const alpha = rand(0.08, MAX_ALPHA);
-            const color = pick(COLORS).replace('ALPHA', alpha.toFixed(3));
-            return {
-                x: rand(0, width),
-                y: rand(0, height),
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed,
-                r: radius,
-                a: alpha,
-                color
-            };
-        }
-
-        function step() {
-            ctx.clearRect(0, 0, width, height);
-
-            // 轻微的渐隐，形成拖尾层次（非常轻，不突兀）
-            ctx.fillStyle = 'rgba(255,255,255,0.03)';
-            ctx.fillRect(0, 0, width, height);
-
-            for (let i = 0; i < particles.length; i++) {
-                const p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-
-                // 边界回环
-                if (p.x < -10) p.x = width + 10; else if (p.x > width + 10) p.x = -10;
-                if (p.y < -10) p.y = height + 10; else if (p.y > height + 10) p.y = -10;
-
-                // 绘制柔和发光点
-                const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 6);
-                grad.addColorStop(0, p.color);
-                grad.addColorStop(1, 'rgba(255,255,255,0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r * 6, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // 邻近连线（仅近距离，极细，提升科技感）
-            ctx.lineWidth = 0.6;
-            for (let i = 0; i < particles.length; i++) {
-                for (let j = i + 1; j < particles.length; j++) {
-                    const a = particles[i], b = particles[j];
-                    const dx = a.x - b.x, dy = a.y - b.y;
-                    const dist2 = dx * dx + dy * dy;
-                    const maxDist = 120; // 连线最大距离
-                    if (dist2 < maxDist * maxDist) {
-                        const t = 1 - Math.sqrt(dist2) / maxDist;
-                        ctx.strokeStyle = `rgba(99,102,241,${0.12 * t})`;
-                        ctx.beginPath();
-                        ctx.moveTo(a.x, a.y);
-                        ctx.lineTo(b.x, b.y);
-                        ctx.stroke();
-                    }
-                }
-            }
-
-            requestAnimationFrame(step);
-        }
-
-        window.addEventListener('resize', resize);
-        resize();
-        requestAnimationFrame(step);
-    })();
     // 获取项目地址
     const $location = (window.location + '').split('/');
     const $path = document.location.pathname;
@@ -293,28 +187,43 @@
             throw new Error(`请求错误: ${error.message}`);
         });
     });
-
-    function validateItem($input, $error){
-        // 隐藏登录错误提示
-        loginError.classList.add('hidden');
-        if (!$input.value.trim()) {
-            $error.classList.remove('hidden');
-            $input.classList.add('border-danger');
-            $input.classList.remove('border-gray-300', 'focus:border-primary');
-            return false;
-        }
-        $error.classList.add('hidden');
-        $input.classList.remove('border-danger');
-        $input.classList.add('border-gray-300', 'focus:border-primary');
-        return true;
-    }
     // 表单验证
     function validateForm() {
-        return validateItem(usernameInput, usernameError) && validateItem(passwordInput, passwordError);
+        let isValid = true;
+
+        // 验证用户名
+        if (!usernameInput.value.trim()) {
+            usernameError.classList.remove('hidden');
+            usernameInput.classList.add('border-danger');
+            usernameInput.classList.remove('border-gray-300', 'focus:border-primary');
+            isValid = false;
+        } else {
+            usernameError.classList.add('hidden');
+            usernameInput.classList.remove('border-danger');
+            usernameInput.classList.add('border-gray-300', 'focus:border-primary');
+        }
+
+        // 验证密码
+        if (!passwordInput.value.trim()) {
+            passwordError.classList.remove('hidden');
+            passwordInput.classList.add('border-danger');
+            passwordInput.classList.remove('border-gray-300', 'focus:border-primary');
+            isValid = false;
+        } else {
+            passwordError.classList.add('hidden');
+            passwordInput.classList.remove('border-danger');
+            passwordInput.classList.add('border-gray-300', 'focus:border-primary');
+        }
+
+        // 隐藏登录错误提示
+        loginError.classList.add('hidden');
+
+        return isValid;
     }
+
     // 输入框变化时重新验证
-    usernameInput.addEventListener('input', () => validateItem(usernameInput, usernameError));
-    passwordInput.addEventListener('input', () => validateItem(passwordInput, passwordError));
+    usernameInput.addEventListener('input', validateForm);
+    passwordInput.addEventListener('input', validateForm);
 
     // 登录表单提交处理
     loginForm.addEventListener('submit', async (e) => {
