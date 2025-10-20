@@ -3,11 +3,10 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <!-- 顶部导航栏 -->
-<header th:fragment="nav" class="dbsyncer-header"  style="justify-content: space-between;">
+<header th:fragment="nav" class="dbsyncer-header" style="justify-content: space-between;">
     <!-- Logo区域 -->
     <div class="dbsyncer-logo">
-        <div class="dbsyncer-logo-icon"></div>
-        <a href="javascript:void(0);" class="dbsyncer-logo-text">DBsyncer</a>
+        <img draggable="false" th:src="@{'/img/logo.png'}" style="width: 50px; height: 50px;">
     </div>
     
     <!-- 右侧操作区域 -->

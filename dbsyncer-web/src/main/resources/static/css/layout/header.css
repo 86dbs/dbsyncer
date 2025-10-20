@@ -1,8 +1,3 @@
-/**
- * DBsyncer 顶部导航栏样式
- * 基于截图UI风格的头部设计
- */
-
 /* 顶部导航栏容器 */
 .dbsyncer-header {
   position: fixed;
@@ -24,37 +19,6 @@
   display: flex;
   align-items: center;
   margin-right: var(--spacing-xl);
-}
-
-.dbsyncer-logo-icon {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: var(--spacing-sm);
-}
-
-.dbsyncer-logo-icon::before {
-  content: '';
-  width: 16px;
-  height: 16px;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M3 3h18v2H3V3zm0 4h18v2H3V7zm0 4h18v2H3v-2zm0 4h18v2H3v-2zm0 4h18v2H3v-2z"/></svg>') no-repeat center;
-  background-size: contain;
-}
-
-.dbsyncer-logo-text {
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--text-primary);
-  text-decoration: none;
-}
-
-.dbsyncer-logo-text:hover {
-  color: var(--primary-color);
-  text-decoration: none;
 }
 
 /* 搜索框区域 */
@@ -201,10 +165,6 @@
   .dbsyncer-search {
     max-width: 200px;
     margin-right: var(--spacing-md);
-  }
-  
-  .dbsyncer-logo-text {
-    display: none;
   }
   
   .dbsyncer-user-name {

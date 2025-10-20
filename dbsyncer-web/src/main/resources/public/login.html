@@ -6,8 +6,6 @@
     <title>dbsyncer - 登录</title>
     <link type="image/x-icon" rel="icon" th:href="@{/img/logo.ico}"/>
     <link type="text/css" rel="stylesheet" th:href="@{/css/login.css}"/>
-    <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/font-awesome.min.css}"/>
-    <link type="text/css" rel="stylesheet" th:if="${enableCDN}" src="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css"/>
 </head>
 <body class="font-inter bg-gray-50 min-h-screen flex items-center justify-center p-4">
 <!-- 背景粒子特效画布：固定铺满屏幕，位于内容层之下 -->
@@ -20,7 +18,7 @@
         <div>
             <div class="flex items-center space-x-3 mb-12">
                 <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                    <i class="fa fa-database text-2xl"></i>
+                    <i class="icon-database"></i>
                 </div>
                 <h1 id="appName" class="text-2xl font-bold tracking-tight"></h1>
             </div>
@@ -33,7 +31,7 @@
         <div class="space-y-6">
             <div class="flex items-start space-x-4">
                 <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    <i class="fa fa-bolt"></i>
+                    <i class="icon-bolt"></i>
                 </div>
                 <div>
                     <h3 class="font-semibold mt-1">高效同步</h3>
@@ -43,7 +41,7 @@
 
             <div class="flex items-start space-x-4">
                 <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    <i class="fa fa-shield"></i>
+                    <i class="icon-shield"></i>
                 </div>
                 <div>
                     <h3 class="font-semibold mt-1">安全可靠</h3>
@@ -53,7 +51,7 @@
 
             <div class="flex items-start space-x-4">
                 <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    <i class="fa fa-cogs"></i>
+                    <i class="icon-cogs"></i>
                 </div>
                 <div>
                     <h3 class="font-semibold mt-1">灵活配置</h3>
