@@ -66,6 +66,7 @@
 
         // 点击外部关闭下拉菜单
         $(document).on('click', function(e) {
+
             if (!$(e.target).closest('.dbsyncer-user-info').length) {
                 $('.dropdown-menu').hide();
             }

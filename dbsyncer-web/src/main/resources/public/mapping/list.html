@@ -48,8 +48,7 @@
                     <th style="width: 15%;">目标源</th>
                     <th style="width: 15%;">类型</th>
                     <th style="width: 10%;">状态</th>
-                    <th style="width: 15%;">创建时间</th>
-                    <th style="width: 15%;">更新时间</th>
+                    <th style="width: 10%;">同步情况</th>
                     <th style="width: 10%;">操作</th>
                 </tr>
             </thead>
@@ -67,12 +66,16 @@
                     <td th:text="${mapping.targetConnector != null ? mapping.targetConnector.name : 'N/A'}">目标源</td>
                     <td th:text="${mapping.meta != null ? mapping.meta.model : 'N/A'}">类型</td>
                     <td>
-                        <span th:if="${mapping?.meta?.state eq 0}" class="badge badge-default">未运行</span>
-                        <span th:if="${mapping?.meta?.state eq 1}" class="badge badge-success">运行中</span>
-                        <span th:if="${mapping?.meta?.state eq 2}" class="badge badge-warning">停止中</span>
+                        <span th:if="${mapping?.meta?.state eq 0}" class="label label-default">未运行</span>
+                        <span th:if="${mapping?.meta?.state eq 1}" class="label label-success">运行中</span>
+                        <span th:if="${mapping?.meta?.state eq 2}" class="label label-default">停止中</span>
                     </td>
-                    <td th:text="${#dates.format(mapping.createTime, 'yyyy-MM-dd HH:mm:ss')}">创建时间</td>
-                    <td th:text="${#dates.format(mapping.updateTime, 'yyyy-MM-dd HH:mm:ss')}">更新时间</td>
+                    <td>
+                        <span th:if="${mapping?.meta?.total > 0}" th:text="'总数:'+${mapping?.meta.total}" class="label label-default">总数</span>
+                        <span  th:text="'已完成:'+${mapping?.meta.success}" class="label label-success">已完成数量</span>
+                        <span th:if="${mapping?.meta?.fail > 0}" th:text="'失败数量:'+${mapping?.meta.fail}" class="label label-danger">失败数量</span>
+                    </td>
+
                     <td class="dbsyncer-table-actions-cell">
                         <a href="javascript:void(0);" class="dbsyncer-action-btn" th:data-id="${mapping.id}" onclick="editMapping(this.dataset.id)">
                             <i class="fa fa-edit"></i>
@@ -129,6 +132,12 @@
 <script>
 // 同步任务管理页面脚本 - 全局函数定义
 
+// 同步任务列表自动刷新定时器
+var mappingListAutoRefreshTimer = null;
+
+// 自动刷新间隔（毫秒），默认5秒
+var MAPPING_LIST_REFRESH_INTERVAL = 5000;
+
 /**
  * 加载同步任务列表
  */
@@ -164,10 +173,14 @@ function refreshCurrentMappingPage() {
 
 /**
  * 刷新同步任务列表数据（不重新加载整个页面）
+ * @param {boolean} silent - 是否静默刷新（不显示加载提示和成功消息）
  */
-function refreshMappingListData() {
-    // 使用全局加载提示（如果可用）
-    if (typeof $.loadingT === 'function') {
+function refreshMappingListData(silent) {
+    // 默认不是静默刷新
+    silent = silent || false;
+    
+    // 使用全局加载提示（如果可用且非静默模式）
+    if (!silent && typeof $.loadingT === 'function') {
         $.loadingT(true);
     }
     
@@ -177,7 +190,7 @@ function refreshMappingListData() {
         type: 'GET',
         success: function(response) {
             // 隐藏加载提示
-            if (typeof $.loadingT === 'function') {
+            if (!silent && typeof $.loadingT === 'function') {
                 $.loadingT(false);
             }
             
@@ -195,23 +208,25 @@ function refreshMappingListData() {
                 // 更新分页信息
                 updateMappingPaginationInfo();
                 
-                // 显示成功提示
-                if (typeof bootGrowl === 'function') {
+                // 显示成功提示（仅非静默模式）
+                if (!silent && typeof bootGrowl === 'function') {
                     bootGrowl('数据刷新成功', 'success');
                 }
             } else {
-                // 如果无法解析响应，回退到重新加载整个页面
-                loadMappingListPage();
+                // 如果无法解析响应，且不是静默模式，回退到重新加载整个页面
+                if (!silent) {
+                    loadMappingListPage();
+                }
             }
         },
         error: function() {
             // 隐藏加载提示
-            if (typeof $.loadingT === 'function') {
+            if (!silent && typeof $.loadingT === 'function') {
                 $.loadingT(false);
             }
             
-            // 显示错误提示
-            if (typeof bootGrowl === 'function') {
+            // 显示错误提示（仅非静默模式）
+            if (!silent && typeof bootGrowl === 'function') {
                 bootGrowl('数据刷新失败，请稍后重试', 'danger');
             }
         }
@@ -219,9 +234,53 @@ function refreshMappingListData() {
 }
 
 /**
+ * 启动同步任务列表自动刷新定时器
+ */
+function startMappingListAutoRefresh() {
+    // 先清除已存在的定时器
+    stopMappingListAutoRefresh();
+    
+    // 启动新的定时器
+    mappingListAutoRefreshTimer = setInterval(function() {
+        // 检查当前是否还在同步任务列表页面
+        var contentDiv = $('#mainContent');
+        if (contentDiv.length) {
+            var currentContent = contentDiv.html();
+            // 只有在同步任务列表页面时才刷新
+            if (currentContent.includes('dbsyncer-page-title') && currentContent.includes('同步任务管理')) {
+                // 静默刷新（不显示加载提示和成功消息）
+                refreshMappingListData(true);
+            } else {
+                // 如果不在列表页面，停止定时器
+                stopMappingListAutoRefresh();
+            }
+        } else {
+            // 如果内容区域不存在，停止定时器
+            stopMappingListAutoRefresh();
+        }
+    }, MAPPING_LIST_REFRESH_INTERVAL);
+    
+    console.log('同步任务列表自动刷新已启动，刷新间隔: ' + (MAPPING_LIST_REFRESH_INTERVAL / 1000) + '秒');
+}
+
+/**
+ * 停止同步任务列表自动刷新定时器
+ */
+function stopMappingListAutoRefresh() {
+    if (mappingListAutoRefreshTimer !== null) {
+        clearInterval(mappingListAutoRefreshTimer);
+        mappingListAutoRefreshTimer = null;
+        console.log('同步任务列表自动刷新已停止');
+    }
+}
+
+/**
  * 动态加载添加任务页面
  */
 function loadAddMappingPage() {
+    // 停止自动刷新定时器
+    stopMappingListAutoRefresh();
+    
     // 使用doLoader函数动态加载添加任务页面
     if (typeof doLoader === 'function') {
         doLoader('/mapping/pageAdd', 0);
@@ -344,6 +403,9 @@ function initMappingListPage() {
 
     // 绑定启动/停止按钮事件
     bindMappingActionButtons();
+    
+    // 启动自动刷新定时器
+    startMappingListAutoRefresh();
 }
 
 /**
@@ -455,12 +517,23 @@ $(document).ready(function() {
 
     // 绑定启动/停止按钮事件
     bindMappingActionButtons();
+    
+    // 启动自动刷新定时器
+    startMappingListAutoRefresh();
+});
+
+// 页面卸载时清除定时器
+$(window).on('beforeunload', function() {
+    stopMappingListAutoRefresh();
 });
 
 /**
  * 编辑同步任务 - 动态加载编辑页面
  */
 function editMapping(id) {
+    // 停止自动刷新定时器
+    stopMappingListAutoRefresh();
+    
     // 使用统一的内容区域
     var contentDiv = $('#mainContent');
     if (contentDiv.length) {
