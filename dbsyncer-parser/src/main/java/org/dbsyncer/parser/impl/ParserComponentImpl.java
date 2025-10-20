@@ -6,7 +6,6 @@ package org.dbsyncer.parser.impl;
 import org.dbsyncer.common.ProcessEvent;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
@@ -17,15 +16,12 @@ import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.FullPluginContext;
-import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
-import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.connector.database.DatabaseTemplate;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.AbstractPluginContext;
@@ -90,55 +86,6 @@ public class ParserComponentImpl implements ParserComponent {
         }
         return metaInfo;
     }
-
-    @Override
-    public Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup) {
-        ConnectorConfig sConnConfig = getConnectorConfig(mapping.getSourceConnectorId());
-        ConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
-        Table sourceTable = tableGroup.getSourceTable();
-        Table targetTable = tableGroup.getTargetTable();
-        Table sTable = sourceTable.clone().setColumn(new ArrayList<>());
-        Table tTable = targetTable.clone().setColumn(new ArrayList<>());
-        List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
-        if (!CollectionUtils.isEmpty(fieldMapping)) {
-            fieldMapping.forEach(m -> {
-                if (null != m.getSource()) {
-                    sTable.getColumn().add(m.getSource());
-                }
-                if (null != m.getTarget()) {
-                    tTable.getColumn().add(m.getTarget());
-                }
-            });
-        }
-        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable,
-                connectorFactory.connect(sConnConfig), tableGroup.getFilter());
-        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), tTable,
-                connectorFactory.connect(tConnConfig), null);
-
-        // 预构建字段列表SQL片段并缓存
-        String fieldListSql = tableGroup.getCachedFieldListSql();
-        if (StringUtil.isBlank(fieldListSql)) {
-            ConnectorService connectorService = connectorFactory.getConnectorService(sConnConfig);
-            // 使用SQL模板的引号方法
-            if (connectorService instanceof AbstractDatabaseConnector) {
-                AbstractDatabaseConnector dbConnector = (AbstractDatabaseConnector) connectorService;
-                List<String> fieldList = sTable.getColumn().stream().map(Field::getName).collect(Collectors.toList());
-                fieldListSql = dbConnector.sqlTemplate.buildQuotedStringList(fieldList);
-                tableGroup.setCachedFieldListSql(fieldListSql);
-                List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sTable);
-                tableGroup.setCachedPrimaryKeys(dbConnector.sqlTemplate.buildQuotedStringList(primaryKeys));
-            }
-        }
-        // 将缓存的字段列表设置到CommandConfig中
-        sourceConfig.setCachedFieldListSql(fieldListSql);
-
-        // 将缓存的主键列表设置到CommandConfig中
-        sourceConfig.setCachedPrimaryKeys(tableGroup.getCachedPrimaryKeys());
-
-        // 获取连接器同步参数
-        return connectorFactory.getCommand(sourceConfig, targetConfig);
-    }
-
 
     @Override
     public long getCount(String connectorId, Map<String, String> command) {

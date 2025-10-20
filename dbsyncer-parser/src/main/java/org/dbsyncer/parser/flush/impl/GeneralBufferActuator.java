@@ -260,7 +260,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             ddlParser.refreshFiledMappings(tableGroup, targetDDLConfig);
 
             // 5.更新执行命令
-            tableGroup.setCommand(parserComponent.getCommand(mapping, tableGroup));
+            tableGroup.initCommand(mapping, connectorFactory);
 
             // 6.持久化存储 & 更新缓存配置
             profileComponent.editTableGroup(tableGroup);

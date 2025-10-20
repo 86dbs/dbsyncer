@@ -30,15 +30,6 @@ public interface ParserComponent {
     MetaInfo getMetaInfo(String connectorId, String tableName);
 
     /**
-     * 获取映射关系执行命令
-     *
-     * @param mapping
-     * @param tableGroup
-     * @return
-     */
-    Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup);
-
-    /**
      * 获取总数
      *
      * @param connectorId

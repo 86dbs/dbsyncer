@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.util.Map;
 
 /**
  * 抽象类统计驱动总数任务
@@ -56,8 +55,7 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
     protected void updateTableGroupCount(Mapping mapping, TableGroup tableGroup) {
         long now = Instant.now().toEpochMilli();
         TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
-        Map<String, String> command = parserComponent.getCommand(mapping, group);
-        long count = parserComponent.getCount(mapping.getSourceConnectorId(), command);
+        long count = parserComponent.getCount(mapping.getSourceConnectorId(), group.getCommand());
         tableGroup.getSourceTable().setCount(count);
         profileComponent.editConfigModel(tableGroup);
         logger.info("{}表{}, 总数:{}, {}ms", mapping.getName(), tableGroup.getSourceTable().getName(), count, (Instant.now().toEpochMilli() - now));
