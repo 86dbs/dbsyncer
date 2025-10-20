@@ -652,6 +652,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return data.stream().map(row -> batchRow(fields, row)).collect(Collectors.toList());
     }
 
+    // 加工用于填充 sql 的参数的变量列表。
     private Object[] batchRow(List<Field> fields, Map row) {
         final int size = fields.size();
         Object[] args = new Object[size];
@@ -671,13 +672,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
     }
 
+    // 仅用于 forceUpdate
     private void writer(Result result, DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> pkFields, Map row,
                         String event) {
         // 1、获取 SQL
         String sql = context.getCommand().get(event);
 
         List<Field> fields = new ArrayList<>(context.getTargetFields());
-        // Update / Delete
         if (!isInsert(event)) {
             if (isDelete(event)) {
                 fields.clear();
