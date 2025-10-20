@@ -42,22 +42,22 @@ public class MappingCountTask extends AbstractCountTask {
         }
         List<TableGroup> groupAll = profileComponent.getTableGroupAll(mappingId);
         logger.info("正在统计:{}, {}张表", mapping.getName(), groupAll.size());
+
+        Meta meta = profileComponent.getMeta(mapping.getMetaId());
         if (CollectionUtils.isEmpty(groupAll)) {
+            meta.updateFullTotal();
             return;
         }
-        if (!CollectionUtils.isEmpty(groupAll)) {
-            for (TableGroup tableGroup : groupAll) {
-                // 驱动任务类型发生切换，提前释放任务
-                if (shouldStop(mapping)) {
-                    logger.warn("驱动被修改, 提前结束任务 ({},{})", mapping.getName(), mapping.getModel());
-                    return;
-                }
-                mapping = profileComponent.getMapping(mappingId);
-                updateTableGroupCount(mapping, tableGroup);
+        for (TableGroup tableGroup : groupAll) {
+            // 驱动任务类型发生切换，提前释放任务
+            if (shouldStop(mapping)) {
+                logger.warn("驱动被修改, 提前结束任务 ({},{})", mapping.getName(), mapping.getModel());
+                return;
             }
-            Meta meta = profileComponent.getMeta(mapping.getMetaId());
-            meta.updateTotal();
-            logger.info("完成统计:{}, {}张表", mapping.getName(), groupAll.size());
+            mapping = profileComponent.getMapping(mappingId);
+            updateTableGroupCount(mapping, tableGroup);
         }
+        meta.updateFullTotal();
+        logger.info("完成统计:{}, {}张表", mapping.getName(), groupAll.size());
     }
 }

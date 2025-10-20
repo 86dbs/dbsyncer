@@ -145,23 +145,25 @@ public class Meta extends ConfigModel {
         this.total = total;
     }
 
-    public void updateTotal() {
+    /**
+     * 更新全量同步总条数
+     */
+    public void updateFullTotal() {
         // 全量同步
-        if (SyncPhaseEnum.FULL == getSyncPhase()) {
-            // 统计tableGroup总条数
-            AtomicLong count = new AtomicLong(0);
-            List<TableGroup> groupAll = profileComponent.getTableGroupAll(this.getMappingId());
-            if (!CollectionUtils.isEmpty(groupAll)) {
-                for (TableGroup g : groupAll) {
-                    count.getAndAdd(g.getSourceTable().getCount());
-                }
-            }
-            if (total.get() < count.get()) {
-                total = count;
-                setUpdateTime(Instant.now().toEpochMilli());
-                profileComponent.editConfigModel(this);
+        if (SyncPhaseEnum.FULL != getSyncPhase()) {
+            return;
+        }
+        // 统计tableGroup总条数
+        AtomicLong count = new AtomicLong(0);
+        List<TableGroup> groupAll = profileComponent.getTableGroupAll(this.getMappingId());
+        if (!CollectionUtils.isEmpty(groupAll)) {
+            for (TableGroup g : groupAll) {
+                count.getAndAdd(g.getSourceTable().getCount());
             }
         }
+        total = count;
+        setUpdateTime(Instant.now().toEpochMilli());
+        profileComponent.editConfigModel(this);
     }
 
 
