@@ -364,6 +364,18 @@
   color: var(--bg-primary);
 }
 
+/* 分页省略号 */
+.dbsyncer-pagination-ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+  user-select: none;
+}
+
 /* 空状态 */
 .dbsyncer-table-empty {
   padding: var(--spacing-xxl);

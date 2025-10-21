@@ -138,6 +138,12 @@ var mappingListAutoRefreshTimer = null;
 // 自动刷新间隔（毫秒），默认5秒
 var MAPPING_LIST_REFRESH_INTERVAL = 5000;
 
+// 分页配置
+var ITEMS_PER_PAGE = 10; // 每页显示条数
+var currentPage = 1; // 当前页码
+var totalItems = 0; // 总数据条数
+var totalPages = 0; // 总页数
+
 /**
  * 加载同步任务列表
  */
@@ -179,6 +185,10 @@ function refreshMappingListData(silent) {
     // 默认不是静默刷新
     silent = silent || false;
     
+    // 保存当前页码和搜索条件
+    var savedPage = currentPage;
+    var searchQuery = $('#searchInput').val();
+    
     // 使用全局加载提示（如果可用且非静默模式）
     if (!silent && typeof $.loadingT === 'function') {
         $.loadingT(true);
@@ -205,8 +215,18 @@ function refreshMappingListData(silent) {
                 // 重新绑定启动/停止按钮事件
                 bindMappingActionButtons();
                 
-                // 更新分页信息
-                updateMappingPaginationInfo();
+                // 如果有搜索条件，重新应用搜索
+                if (searchQuery && searchQuery.trim() !== '') {
+                    filterMappings(searchQuery);
+                } else {
+                    // 重新初始化分页
+                    initPagination();
+                    
+                    // 尝试恢复之前的页码
+                    if (savedPage > 1 && savedPage <= totalPages) {
+                        goToPage(savedPage);
+                    }
+                }
                 
                 // 显示成功提示（仅非静默模式）
                 if (!silent && typeof bootGrowl === 'function') {
@@ -385,6 +405,8 @@ function initMappingListPage() {
     $('#addMappingBtn').off('click');
     $('#refreshBtn').off('click');
     $('#searchInput').off('input');
+    $('#prevBtn').off('click');
+    $('#nextBtn').off('click');
     $('.mapping-action-btn').off('click');
     
     // 重新绑定事件
@@ -403,6 +425,18 @@ function initMappingListPage() {
 
     // 绑定启动/停止按钮事件
     bindMappingActionButtons();
+    
+    // 绑定分页按钮事件
+    $('#prevBtn').on('click', function() {
+        prevPage();
+    });
+    
+    $('#nextBtn').on('click', function() {
+        nextPage();
+    });
+    
+    // 初始化分页
+    initPagination();
     
     // 启动自动刷新定时器
     startMappingListAutoRefresh();
@@ -468,25 +502,50 @@ function submitMappingForm() {
  * 筛选同步任务
  */
 function filterMappings(query) {
-    // 获取所有表格行
-    var rows = $('#mappingTableBody tr');
+    // 获取所有表格行（排除空数据提示行）
+    var $rows = $('#mappingTableBody tr').not(':contains("暂无同步任务")');
     
-    rows.each(function() {
-        var row = $(this);
-        var name = row.find('td:nth-child(2) span').text().toLowerCase();
+    // 如果没有搜索条件，显示所有行并重新分页
+    if (!query || query.trim() === '') {
+        $rows.each(function() {
+            $(this).data('filtered', false);
+        });
+        initPagination();
+        return;
+    }
+    
+    // 标记符合条件的行
+    $rows.each(function() {
+        var $row = $(this);
+        var name = $row.find('td:nth-child(2) span').text().toLowerCase();
+        var matches = name.indexOf(query.toLowerCase()) !== -1;
         
-        var showRow = true;
-        
-        // 按名称搜索
-        if (query && name.indexOf(query.toLowerCase()) === -1) {
-            showRow = false;
-        }
-        
-        row.toggle(showRow);
+        // 使用 data 属性标记是否被过滤
+        $row.data('filtered', !matches);
     });
     
-    // 更新分页信息
-    updateMappingPaginationInfo();
+    // 重新计算分页（只包含未被过滤的行）
+    var $visibleRows = $rows.filter(function() {
+        return !$(this).data('filtered');
+    });
+    
+    totalItems = $visibleRows.length;
+    totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    
+    // 重置到第一页
+    currentPage = 1;
+    
+    // 隐藏所有行
+    $rows.hide();
+    
+    // 显示当前页的数据
+    if (totalItems > 0) {
+        $visibleRows.slice(0, ITEMS_PER_PAGE).show();
+    }
+    
+    // 更新分页控件
+    updatePaginationDisplay();
+    updatePaginationControls();
 }
 
 /**
@@ -495,6 +554,198 @@ function filterMappings(query) {
 function updateMappingPaginationInfo() {
     var visibleRows = $('#mappingTableBody tr:visible').length;
     $('#totalCount').text(visibleRows);
+    
+    // 重新计算分页
+    initPagination();
+}
+
+/**
+ * 初始化分页
+ */
+function initPagination() {
+    // 获取所有可见的数据行（排除空数据提示行）
+    var $rows = $('#mappingTableBody tr').not(':contains("暂无同步任务")');
+    totalItems = $rows.length;
+    
+    // 计算总页数
+    totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    
+    // 如果当前页超过总页数，重置到第一页
+    if (currentPage > totalPages && totalPages > 0) {
+        currentPage = 1;
+    }
+    
+    // 如果没有数据，设置当前页为1
+    if (totalItems === 0) {
+        currentPage = 1;
+        totalPages = 1;
+    }
+    
+    // 显示当前页的数据
+    showPage(currentPage);
+    
+    // 更新分页控件
+    updatePaginationControls();
+}
+
+/**
+ * 显示指定页的数据
+ * @param {number} page - 页码（从1开始）
+ */
+function showPage(page) {
+    // 验证页码
+    if (page < 1) page = 1;
+    if (page > totalPages && totalPages > 0) page = totalPages;
+    
+    currentPage = page;
+    
+    // 获取所有数据行（排除空数据提示行）
+    var $rows = $('#mappingTableBody tr').not(':contains("暂无同步任务")');
+    
+    // 计算当前页的数据范围
+    var startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    var endIndex = startIndex + ITEMS_PER_PAGE;
+    
+    // 隐藏所有行
+    $rows.hide();
+    
+    // 只显示当前页的行
+    $rows.slice(startIndex, endIndex).show();
+    
+    // 更新分页信息显示
+    updatePaginationDisplay();
+}
+
+/**
+ * 更新分页信息显示
+ */
+function updatePaginationDisplay() {
+    $('#totalCount').text(totalItems);
+    $('#currentPage').text(currentPage);
+    $('#totalPages').text(totalPages > 0 ? totalPages : 1);
+}
+
+/**
+ * 更新分页控件（按钮状态和页码按钮）
+ */
+function updatePaginationControls() {
+    // 更新上一页按钮状态
+    if (currentPage <= 1) {
+        $('#prevBtn').prop('disabled', true).addClass('disabled');
+    } else {
+        $('#prevBtn').prop('disabled', false).removeClass('disabled');
+    }
+    
+    // 更新下一页按钮状态
+    if (currentPage >= totalPages) {
+        $('#nextBtn').prop('disabled', true).addClass('disabled');
+    } else {
+        $('#nextBtn').prop('disabled', false).removeClass('disabled');
+    }
+    
+    // 生成页码按钮
+    generatePageButtons();
+}
+
+/**
+ * 生成页码按钮
+ */
+function generatePageButtons() {
+    var $pageContainer = $('.dbsyncer-pagination-page');
+    $pageContainer.empty();
+    
+    // 如果总页数小于等于7，显示所有页码
+    if (totalPages <= 7) {
+        for (var i = 1; i <= totalPages; i++) {
+            $pageContainer.append(createPageButton(i));
+        }
+    } else {
+        // 总页数大于7，显示省略号
+        // 始终显示第一页
+        $pageContainer.append(createPageButton(1));
+        
+        // 计算显示范围
+        var startPage, endPage;
+        
+        if (currentPage <= 3) {
+            // 当前页在前面，显示 1 2 3 4 5 ... 最后页
+            startPage = 2;
+            endPage = 5;
+            for (var i = startPage; i <= endPage; i++) {
+                $pageContainer.append(createPageButton(i));
+            }
+            $pageContainer.append('<span class="dbsyncer-pagination-ellipsis">...</span>');
+            $pageContainer.append(createPageButton(totalPages));
+        } else if (currentPage >= totalPages - 2) {
+            // 当前页在后面，显示 1 ... 倒数5 倒数4 倒数3 倒数2 最后页
+            $pageContainer.append('<span class="dbsyncer-pagination-ellipsis">...</span>');
+            startPage = totalPages - 4;
+            endPage = totalPages;
+            for (var i = startPage; i <= endPage; i++) {
+                $pageContainer.append(createPageButton(i));
+            }
+        } else {
+            // 当前页在中间，显示 1 ... 当前页-1 当前页 当前页+1 ... 最后页
+            $pageContainer.append('<span class="dbsyncer-pagination-ellipsis">...</span>');
+            for (var i = currentPage - 1; i <= currentPage + 1; i++) {
+                $pageContainer.append(createPageButton(i));
+            }
+            $pageContainer.append('<span class="dbsyncer-pagination-ellipsis">...</span>');
+            $pageContainer.append(createPageButton(totalPages));
+        }
+    }
+}
+
+/**
+ * 创建页码按钮
+ * @param {number} page - 页码
+ * @returns {jQuery} 页码按钮元素
+ */
+function createPageButton(page) {
+    var $btn = $('<button class="dbsyncer-pagination-page-btn">' + page + '</button>');
+    
+    // 设置当前页的激活状态
+    if (page === currentPage) {
+        $btn.addClass('active');
+    }
+    
+    // 绑定点击事件
+    $btn.on('click', function() {
+        goToPage(page);
+    });
+    
+    return $btn;
+}
+
+/**
+ * 跳转到指定页
+ * @param {number} page - 目标页码
+ */
+function goToPage(page) {
+    if (page < 1 || page > totalPages) return;
+    if (page === currentPage) return;
+    
+    currentPage = page;
+    showPage(currentPage);
+    updatePaginationControls();
+}
+
+/**
+ * 上一页
+ */
+function prevPage() {
+    if (currentPage > 1) {
+        goToPage(currentPage - 1);
+    }
+}
+
+/**
+ * 下一页
+ */
+function nextPage() {
+    if (currentPage < totalPages) {
+        goToPage(currentPage + 1);
+    }
 }
 
 // 页面初始化
@@ -517,6 +768,18 @@ $(document).ready(function() {
 
     // 绑定启动/停止按钮事件
     bindMappingActionButtons();
+    
+    // 绑定分页按钮事件
+    $('#prevBtn').on('click', function() {
+        prevPage();
+    });
+    
+    $('#nextBtn').on('click', function() {
+        nextPage();
+    });
+    
+    // 初始化分页
+    initPagination();
     
     // 启动自动刷新定时器
     startMappingListAutoRefresh();
