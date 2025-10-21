@@ -171,15 +171,15 @@ public class MetricReporter implements ScheduledTaskJob {
         Map<String, Long> map = new HashMap<>();
         Stream.of(buckets).filter(b -> b.getTime() >= oneMin)
                 .sorted(Comparator.comparing(Bucket::getTime))
-                .forEach(b -> map.put(DateFormatUtil.timestampToString(new Timestamp(b.getTime()), DateFormatUtil.TIME_FORMATTER), b.get())
+                .forEach(b -> map.put(DateFormatUtil.timestampToString(new Timestamp(b.getTime()), DateFormatUtil.HH_MM_SS), b.get())
                 );
         for (int i = 0; i < buckets.length; i++) {
             long milli = now.minus(buckets.length - i, ChronoUnit.SECONDS).toEpochMilli();
-            String key = DateFormatUtil.timestampToString(new Timestamp(milli), DateFormatUtil.TIME_FORMATTER);
+            String key = DateFormatUtil.timestampToString(new Timestamp(milli), DateFormatUtil.HH_MM_SS);
             vo.addName(key);
-            vo.addValue(map.containsKey(key) ? map.get(key) : 0L);
+            vo.addValue(map.getOrDefault(key, 0L));
         }
-        vo.setAverage(Math.floor(map.values().stream().mapToInt(v -> v.intValue()).average().orElse(0)));
+        vo.setAverage(Math.floor(map.values().stream().mapToInt(Long::intValue).average().orElse(0)));
         return vo;
     }
 
