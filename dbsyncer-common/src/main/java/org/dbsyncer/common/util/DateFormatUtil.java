@@ -151,6 +151,11 @@ public abstract class DateFormatUtil {
             return null;
         }
 
+        // 2024-06-05 21:15:13.
+        if (StringUtil.endsWith(s, StringUtil.POINT)) {
+            s = s.substring(0, s.lastIndexOf(StringUtil.POINT));
+        }
+
         // 2020-7-12 00:00:00
         if (s.length() < 19) {
             return Timestamp.valueOf(LocalDateTime.from(YYYY_MM_DD_HH_MM_SS.parse(format(s))));
