@@ -20,7 +20,6 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
