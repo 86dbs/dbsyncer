@@ -186,7 +186,7 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
     }
 
     private Timestamp toTimestamp(Object value) {
-        return DateFormatUtil.stringToTimestamp(StringUtil.replace(Objects.toString(value), StringUtil.POINT, StringUtil.EMPTY));
+        return DateFormatUtil.stringToTimestamp(Objects.toString(value));
     }
 
     private OffsetDateTime toOffsetDateTime(Object value) {
