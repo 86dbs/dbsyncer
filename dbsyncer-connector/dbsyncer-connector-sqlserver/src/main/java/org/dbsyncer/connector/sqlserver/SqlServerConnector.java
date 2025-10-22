@@ -191,7 +191,6 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
         String tableName = context.getTargetTableName();
 
         // 执行批量插入
-        @SuppressWarnings("unchecked")
         List<Map<String, Object>> typedData = new java.util.ArrayList<>();
         for (Map map : data) {
             typedData.add((Map<String, Object>) map);
@@ -228,7 +227,6 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
         }
 
         // 执行批量 UPSERT
-        @SuppressWarnings("unchecked")
         List<Map<String, Object>> typedData = new java.util.ArrayList<>();
         for (Map map : data) {
             typedData.add((Map<String, Object>) map);

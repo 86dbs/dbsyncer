@@ -28,6 +28,72 @@ public class SqlServerBulkCopyUtil {
     private static final SqlServerTemplate sqlTemplate = new SqlServerTemplate();
 
     /**
+     * 批次处理函数接口
+     */
+    @FunctionalInterface
+    private interface BatchProcessor {
+        int process(Connection connection, String tableName, List<Field> fields, 
+                   List<Map<String, Object>> batchData, String schemaName, boolean enableIdentityInsert) throws SQLException;
+    }
+
+    /**
+     * 统一的批次处理方法
+     *
+     * @param connection 数据库连接
+     * @param tableName  目标表名
+     * @param fields     字段列表
+     * @param dataList   数据列表
+     * @param schemaName schema名称
+     * @param enableIdentityInsert 是否启用IDENTITY_INSERT
+     * @param operationName 操作名称（用于日志）
+     * @param processor 批次处理器
+     * @return 处理的记录数
+     * @throws SQLException SQL异常
+     */
+    private static int executeBatchOperation(Connection connection, String tableName,
+                                           List<Field> fields, List<Map<String, Object>> dataList, 
+                                           String schemaName, boolean enableIdentityInsert,
+                                           String operationName, BatchProcessor processor) throws SQLException {
+        if (dataList == null || dataList.isEmpty()) {
+            return 0;
+        }
+
+        // SQL Server 参数限制：最多 2100 个参数
+        // 每个字段一个参数，所以每批最多 2100 / 字段数 条记录
+        int maxParamsPerBatch = 2100;
+        int fieldsCount = fields.size();
+        int maxRowsPerBatch = maxParamsPerBatch / fieldsCount;
+        
+        if (maxRowsPerBatch <= 0) {
+            throw new SQLException("字段数量过多，无法进行批量" + operationName);
+        }
+        
+        int totalProcessed = 0;
+        int batchCount = (int) Math.ceil((double) dataList.size() / maxRowsPerBatch);
+        
+        logger.info("开始批量{}，总数据量: {}, 字段数: {}, 每批最大行数: {}, 批次数: {}", 
+                   operationName, dataList.size(), fieldsCount, maxRowsPerBatch, batchCount);
+
+        for (int batchIndex = 0; batchIndex < batchCount; batchIndex++) {
+            int startIndex = batchIndex * maxRowsPerBatch;
+            int endIndex = Math.min(startIndex + maxRowsPerBatch, dataList.size());
+            List<Map<String, Object>> batchData = dataList.subList(startIndex, endIndex);
+            
+            try {
+                int batchProcessed = processor.process(connection, tableName, fields, batchData, schemaName, enableIdentityInsert);
+                totalProcessed += batchProcessed;
+                logger.info("{} 批次 {}/{} 完成，处理 {} 条记录", operationName, batchIndex + 1, batchCount, batchProcessed);
+            } catch (Exception e) {
+                logger.error("{} 批次 {}/{} 失败: {}", operationName, batchIndex + 1, batchCount, e.getMessage(), e);
+                throw new SQLException("批次" + operationName + "失败: " + e.getMessage(), e);
+            }
+        }
+
+        logger.info("批量{}完成，共处理 {} 条记录到表 {}", operationName, totalProcessed, tableName);
+        return totalProcessed;
+    }
+
+    /**
      * 执行批量插入
      *
      * @param connection 数据库连接
@@ -41,43 +107,8 @@ public class SqlServerBulkCopyUtil {
      */
     public static int bulkInsert(Connection connection, String tableName,
                                  List<Field> fields, List<Map<String, Object>> dataList, String schemaName, boolean enableIdentityInsert) throws SQLException {
-        if (dataList == null || dataList.isEmpty()) {
-            return 0;
-        }
-
-        // SQL Server 参数限制：最多 2100 个参数
-        // 每个字段一个参数，所以每批最多 2100 / 字段数 条记录
-        int maxParamsPerBatch = 2100;
-        int fieldsCount = fields.size();
-        int maxRowsPerBatch = maxParamsPerBatch / fieldsCount;
-        
-        if (maxRowsPerBatch <= 0) {
-            throw new SQLException("字段数量过多，无法进行批量插入");
-        }
-        
-        int totalInserted = 0;
-        int batchCount = (int) Math.ceil((double) dataList.size() / maxRowsPerBatch);
-        
-        logger.info("开始批量插入，总数据量: {}, 每批最大行数: {}, 批次数: {}", 
-                   dataList.size(), maxRowsPerBatch, batchCount);
-
-        for (int batchIndex = 0; batchIndex < batchCount; batchIndex++) {
-            int startIndex = batchIndex * maxRowsPerBatch;
-            int endIndex = Math.min(startIndex + maxRowsPerBatch, dataList.size());
-            List<Map<String, Object>> batchData = dataList.subList(startIndex, endIndex);
-            
-            try {
-                int batchInserted = insertBatchParameterized(connection, tableName, fields, batchData, schemaName, enableIdentityInsert);
-                totalInserted += batchInserted;
-                logger.info("批次 {}/{} 完成，插入 {} 条记录", batchIndex + 1, batchCount, batchInserted);
-            } catch (Exception e) {
-                logger.error("批次 {}/{} 插入失败: {}", batchIndex + 1, batchCount, e.getMessage(), e);
-                throw new SQLException("批次插入失败: " + e.getMessage(), e);
-            }
-        }
-
-        logger.info("批量插入完成，共插入 {} 条记录到表 {}", totalInserted, tableName);
-        return totalInserted;
+        return executeBatchOperation(connection, tableName, fields, dataList, schemaName, enableIdentityInsert, 
+                "插入", SqlServerBulkCopyUtil::insertBatchParameterized);
     }
     
     
@@ -169,43 +200,9 @@ public class SqlServerBulkCopyUtil {
     public static int bulkUpsert(Connection connection, String tableName,
                                  List<Field> fields, List<Map<String, Object>> dataList,
                                  List<String> primaryKeys, String schemaName, boolean enableIdentityInsert) throws SQLException {
-        if (dataList == null || dataList.isEmpty()) {
-            return 0;
-        }
-
-        // SQL Server 参数限制：最多 2100 个参数
-        // 每个字段一个参数，所以每批最多 2100 / 字段数 条记录
-        int maxParamsPerBatch = 2100;
-        int fieldsCount = fields.size();
-        int maxRowsPerBatch = maxParamsPerBatch / fieldsCount;
-        
-        if (maxRowsPerBatch <= 0) {
-            throw new SQLException("字段数量过多，无法进行批量 UPSERT");
-        }
-
-        int totalProcessed = 0;
-        int batchCount = (int) Math.ceil((double) dataList.size() / maxRowsPerBatch);
-        
-        logger.info("开始批量 UPSERT，总数据量: {}, 字段数: {}, 每批最大行数: {}, 批次数: {}", 
-                   dataList.size(), fieldsCount, maxRowsPerBatch, batchCount);
-
-        for (int batchIndex = 0; batchIndex < batchCount; batchIndex++) {
-            int startIndex = batchIndex * maxRowsPerBatch;
-            int endIndex = Math.min(startIndex + maxRowsPerBatch, dataList.size());
-            List<Map<String, Object>> batchData = dataList.subList(startIndex, endIndex);
-            
-            try {
-                int batchProcessed = upsertBatch(connection, tableName, fields, batchData, primaryKeys, schemaName, enableIdentityInsert);
-                totalProcessed += batchProcessed;
-                logger.debug("UPSERT 批次 {}/{} 完成，处理 {} 条记录", batchIndex + 1, batchCount, batchProcessed);
-            } catch (Exception e) {
-                logger.error("UPSERT 批次 {}/{} 失败: {}", batchIndex + 1, batchCount, e.getMessage(), e);
-                throw new SQLException("批次 UPSERT 失败: " + e.getMessage(), e);
-            }
-        }
-
-        logger.info("批量 UPSERT 完成，共处理 {} 条记录到表 {}", totalProcessed, tableName);
-        return totalProcessed;
+        return executeBatchOperation(connection, tableName, fields, dataList, schemaName, enableIdentityInsert, 
+                "UPSERT", (conn, tName, flds, batchData, sName, enable) -> 
+                    upsertBatch(conn, tName, flds, batchData, primaryKeys, sName, enable));
     }
     
     /**
