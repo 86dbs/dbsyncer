@@ -23,6 +23,7 @@ import org.dbsyncer.parser.model.UserInfo;
 import org.dbsyncer.sdk.model.Product;
 import org.dbsyncer.sdk.model.ProductInfo;
 import org.dbsyncer.sdk.spi.LicenseService;
+import org.dbsyncer.web.Version;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,6 +188,7 @@ public class LicenseController extends BaseController {
         info.setOsName(System.getProperty("os.name"));
         info.setPhone(StringUtil.isNotBlank(info.getPhone()) ? info.getPhone() : userInfo.getPhone());
         info.setEmail(StringUtil.isNotBlank(info.getEmail()) ? info.getEmail() : userInfo.getEmail());
+        info.setVersion(Version.CURRENT.getVersion());
         return invoke(info);
     }
 
