@@ -48,6 +48,12 @@ public interface ProjectGroupService {
     ProjectGroupVo getProjectGroup(String id);
 
     /**
+     * 获取未使用的分组
+     * @return
+     */
+    ProjectGroupVo getProjectGroupUnUsed();
+
+    /**
      * 获取所有分组
      *
      * @return

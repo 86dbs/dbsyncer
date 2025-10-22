@@ -6,21 +6,21 @@ function bindAddProjectGroup() {
 }
 
 // 修改分组
-function bindEditProjectGroup($projectGroupSelect) {
-    $("#editProjectGroupBtn").click(function () {
-        var $id = $projectGroupSelect.selectpicker('val');
-        if (!isBlank($id)) {
-            doLoader('/projectGroup/page/edit?id=' + $id);
-            return;
-        }
-        bootGrowl("请选择分组", "danger");
-    });
+function doEditProjectGroup($projectGroupSelect) {
+
+    var $id = $projectGroupSelect;
+    if (!isBlank($id)) {
+        doLoader('/projectGroup/page/edit?id=' + $id);
+        return;
+    }
+    bootGrowl("请选择分组", "danger");
+
 }
 
 // 删除分组
-function bindRemoveProjectGroup($projectGroupSelect) {
-    $("#removeProjectGroupBtn").click(function () {
-        var $id = $projectGroupSelect.selectpicker('val');
+function doRemoveProjectGroup($projectGroupSelect) {
+
+        var $id = $projectGroupSelect;
         if (isBlank($id)) {
             bootGrowl("请选择分组", "danger");
             return;
@@ -51,7 +51,6 @@ function bindRemoveProjectGroup($projectGroupSelect) {
                 }
             }]
         });
-    });
 }
 
 // 给分组下拉绑定事件
@@ -196,7 +195,8 @@ function createTimer($projectGroupSelect) {
             if (timer2 == null) {
                 timer2 = setInterval(function () {
                     // 加载页面
-                    var projectGroupId = $projectGroupSelect.selectpicker('val');
+                    //var projectGroupId = $projectGroupSelect.selectpicker('val');
+                    var projectGroupId = $projectGroupSelect;
                     projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
                     timerLoad("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
                 }, data.resultValue * 1000);
@@ -217,7 +217,8 @@ function refreshMappingList($projectGroupSelect) {
                 if (timer2 == null) {
                     timer2 = setInterval(function () {
                         // 加载页面
-                        var projectGroupId = $projectGroupSelect.selectpicker('val');
+                        //var projectGroupId = $projectGroupSelect.selectpicker('val');
+                        var projectGroupId = $projectGroupSelect;
                         projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
                         $.ajax({
                                url: '/index/mappingdata?projectGroupId='+ projectGroupId + "&refresh=" + new Date().getTime(), // 假设这是获取驱动列表的接口
@@ -307,7 +308,6 @@ function refreshMappingList($projectGroupSelect) {
                                           htmlContent += '</tr>';
                                           htmlContent += '</tbody>';
                                           $("#"+mid).find("#processDiv").html("");
-                                          console.log(htmlContent);
                                           $("#"+mid).find("#processDiv").html(htmlContent);
                                        });
                                    }
@@ -326,14 +326,17 @@ function refreshMappingList($projectGroupSelect) {
 
 }
 
+function groupShow(id){
+    var projectGroupId = (typeof id === 'string') ? id : '';
+    timerLoad("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
+    $("#projectGroup").val(projectGroupId);
+}
+
 $(function () {
     // 初始化select插件
-    initSelectIndex($(".select-control"));
+    //initSelectIndex($(".select-control"));
     bindAddProjectGroup();
-    var $projectGroupSelect = $("#projectGroup");
-    bindEditProjectGroup($projectGroupSelect);
-    bindRemoveProjectGroup($projectGroupSelect);
-    bindProjectGroupSelect($projectGroupSelect);
+    var $projectGroupSelect = $("#projectGroup").val();
 
    // createTimer($projectGroupSelect);
    //异步刷新  同步进度 部分HTML

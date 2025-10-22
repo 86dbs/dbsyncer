@@ -3,7 +3,12 @@ package org.dbsyncer.web.controller.index;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.ProjectGroupService;
+import org.dbsyncer.biz.vo.MappingVo;
+import org.dbsyncer.biz.vo.ProjectGroupVo;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.ProjectGroup;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +22,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 分组控制器
@@ -42,16 +50,49 @@ public class ProjectGroupController extends BaseController {
 
     @GetMapping("/page/add")
     public String pageAdd(ModelMap model) {
-        model.put("connectors", connectorService.getConnectorAll());
-        model.put("mappings", mappingService.getMappingAll());
+        List<ProjectGroup> projectGroupAll = projectGroupService.getProjectGroupAll();
+        List<String> connectorUsed = new ArrayList<>();
+        List<String> mappingUsed = new ArrayList<>();
+        if(!CollectionUtils.isEmpty(projectGroupAll)){
+            for (ProjectGroup projectGroup : projectGroupAll){
+                connectorUsed.addAll(projectGroup.getConnectorIds());
+                mappingUsed.addAll(projectGroup.getMappingIds());
+            }
+        }
+        List<Connector> connectorAll = connectorService.getConnectorAll();
+        List<MappingVo> mappingAll = mappingService.getMappingAll();
+        //移除之前使用的连接、驱动
+        connectorAll = connectorAll.stream().filter(connector -> !connectorUsed.contains(connector.getId())).collect(Collectors.toList());
+        mappingAll = mappingAll.stream().filter(mapping -> !mappingUsed.contains(mapping.getId())).collect(Collectors.toList());
+        model.put("connectors",connectorAll );
+        model.put("mappings", mappingAll);
+        model.put("title", "添加分组");
         return "group/save";
     }
 
     @GetMapping("/page/edit")
     public String pageEdit(ModelMap model, String id) {
-        model.put("projectGroup", projectGroupService.getProjectGroup(id));
-        model.put("connectors", connectorService.getConnectorAll());
-        model.put("mappings", mappingService.getMappingAll());
+        ProjectGroupVo projectGroupEdit = projectGroupService.getProjectGroup(id);
+        List<ProjectGroup> projectGroupAll = projectGroupService.getProjectGroupAll();
+        List<String> connectorUsed = new ArrayList<>();
+        List<String> mappingUsed = new ArrayList<>();
+        if(!CollectionUtils.isEmpty(projectGroupAll)){
+            for (ProjectGroup projectGroup : projectGroupAll){
+                connectorUsed.addAll(projectGroup.getConnectorIds());
+                mappingUsed.addAll(projectGroup.getMappingIds());
+            }
+        }
+        List<Connector> connectorAll = connectorService.getConnectorAll();
+        List<MappingVo> mappingAll = mappingService.getMappingAll();
+        //移除之前使用的连接、驱动
+        connectorAll = connectorAll.stream().filter(connector -> !connectorUsed.contains(connector.getId())).collect(Collectors.toList());
+        connectorAll.addAll(projectGroupEdit.getConnectors());
+        mappingAll = mappingAll.stream().filter(mapping -> !mappingUsed.contains(mapping.getId())).collect(Collectors.toList());
+        mappingAll.addAll(projectGroupEdit.getMappings());
+        model.put("projectGroup", projectGroupEdit);
+        model.put("connectors", connectorAll);
+        model.put("mappings", mappingAll);
+        model.put("title", "修改分组");
         return "group/save";
     }
 

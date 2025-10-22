@@ -38,7 +38,12 @@ public class IndexController {
     @GetMapping("")
     public String index(ModelMap model, String projectGroupId) {
         try {
-            ProjectGroupVo projectGroup = projectGroupService.getProjectGroup(projectGroupId);
+            ProjectGroupVo projectGroup = new ProjectGroupVo();
+            if ("".equals(projectGroupId)) {
+                projectGroup = projectGroupService.getProjectGroupUnUsed();
+            }else {
+                projectGroup = projectGroupService.getProjectGroup(projectGroupId);
+            }
             model.put("connectorSize", projectGroup.getConnectorSize());
             model.put("connectors", projectGroup.getConnectors());
             model.put("mappings", projectGroup.getMappings());
@@ -54,7 +59,13 @@ public class IndexController {
     @GetMapping("/mappingdata")
     public String mappingdata(ModelMap model, String projectGroupId) {
         try {
-            ProjectGroupVo projectGroup = projectGroupService.getProjectGroup(projectGroupId);
+            ProjectGroupVo projectGroup = new ProjectGroupVo();
+            if ("".equals(projectGroupId)) {
+                projectGroup = projectGroupService.getProjectGroupUnUsed();
+                projectGroupId = "";
+            }else {
+                projectGroup = projectGroupService.getProjectGroup(projectGroupId);
+            }
             model.put("connectorSize", projectGroup.getConnectorSize());
             model.put("connectors", projectGroup.getConnectors());
             model.put("mappings", projectGroup.getMappings());
