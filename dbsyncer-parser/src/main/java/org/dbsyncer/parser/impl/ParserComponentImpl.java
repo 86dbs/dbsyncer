@@ -253,7 +253,7 @@ public class ParserComponentImpl implements ParserComponent {
         int total = context.getTargetList().size();
         // 单次任务
         if (total <= batchSize) {
-            return connectorFactory.writer(context);
+            return executeWriterOperation(context);
         }
 
         // 批量任务, 拆分
@@ -268,7 +268,7 @@ public class ParserComponentImpl implements ParserComponent {
                 offset += batchSize;
                 executor.execute(() -> {
                     try {
-                        Result w = connectorFactory.writer(tmpContext);
+                        Result w = executeWriterOperation(tmpContext);
                         result.addSuccessData(w.getSuccessData());
                         result.addFailData(w.getFailData());
                         result.error = w.error;
@@ -301,6 +301,28 @@ public class ParserComponentImpl implements ParserComponent {
      */
     private ConnectorConfig getConnectorConfig(String connectorId) {
         return profileComponent.getConnector(connectorId).getConfig();
+    }
+
+    /**
+     * 执行写入操作，根据事件类型智能路由到对应的方法
+     *
+     * @param context
+     * @return
+     */
+    private Result executeWriterOperation(PluginContext context) {
+        String event = context.getEvent();
+        switch (event) {
+            case ConnectorConstant.OPERTION_INSERT:
+                return connectorFactory.insert(context);
+            case ConnectorConstant.OPERTION_UPDATE:
+                return connectorFactory.update(context);
+            case ConnectorConstant.OPERTION_DELETE:
+                return connectorFactory.delete(context);
+            case ConnectorConstant.OPERTION_UPSERT:
+                return connectorFactory.upsert(context);
+            default:
+                throw new RuntimeException("不支持的事件类型：" + event);
+        }
     }
 
 }

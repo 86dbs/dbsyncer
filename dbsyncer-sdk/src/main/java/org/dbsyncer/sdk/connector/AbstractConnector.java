@@ -148,4 +148,8 @@ public abstract class AbstractConnector {
     protected boolean isDelete(String event) {
         return StringUtil.equals(ConnectorConstant.OPERTION_DELETE, event);
     }
+
+    protected boolean isUpsert(String event) {
+        return StringUtil.equals(ConnectorConstant.OPERTION_UPSERT, event);
+    }
 }

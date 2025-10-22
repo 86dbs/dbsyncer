@@ -82,7 +82,7 @@ public class SqlServerBulkCopyUtil {
             try {
                 int batchProcessed = executeBatchWithIdentityInsert(connection, tableName, fields, batchData, schemaName, enableIdentityInsert, processor);
                 totalProcessed += batchProcessed;
-                logger.info("{} 批次 {}/{} 完成，处理 {} 条记录", operationName, batchIndex + 1, batchCount, batchProcessed);
+                logger.debug("{} 批次 {}/{} 完成，处理 {} 条记录", operationName, batchIndex + 1, batchCount, batchProcessed);
             } catch (Exception e) {
                 logger.error("{} 批次 {}/{} 失败: {}", operationName, batchIndex + 1, batchCount, e.getMessage(), e);
                 throw new SQLException("批次" + operationName + "失败: " + e.getMessage(), e);

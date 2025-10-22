@@ -219,7 +219,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             // 正常模式下使用原有 SQL
             executeSql = context.getCommand().get(event);
         }
-        
+
         Assert.hasText(executeSql, "执行SQL语句不能为空.");
         if (CollectionUtils.isEmpty(targetFields)) {
             logger.error("writer fields can not be empty.");
@@ -229,14 +229,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             logger.error("writer data can not be empty.");
             throw new SdkException("writer data can not be empty.");
         }
-        
+
         List<Field> fields = new ArrayList<>(targetFields);
         List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(targetFields);
-        // Update / Delete
+        // Update / Delete / Upsert
         if (!isInsert(event)) {
             if (isDelete(event)) {
                 fields.clear();
-            } else if (isUpdate(event)) {
+            } else if (isUpdate(event) || isUpsert(event)) {
                 removeFieldWithPk(fields, pkFields);
             }
             fields.addAll(pkFields);
@@ -675,7 +675,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     private void forceUpdate(Result result, DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> pkFields,
                              Map row) {
         String event = context.getEvent();
-        if (context.isForceUpdate() && isInsert(event)) {
+        if (context.isForceUpdate() && (isInsert(event) || isUpsert(event))) {
             // 存在执行覆盖更新，否则写入
             logger.warn("{} {}表执行{}失败, 执行{}, {}", context.getTraceId(), context.getTargetTableName(), event, ConnectorConstant.OPERTION_UPDATE, row);
             writer(result, connectorInstance, context, pkFields, row, ConnectorConstant.OPERTION_UPDATE);
@@ -689,10 +689,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         String sql = context.getCommand().get(event);
 
         List<Field> fields = new ArrayList<>(context.getTargetFields());
+        // Update / Delete / Upsert
         if (!isInsert(event)) {
             if (isDelete(event)) {
                 fields.clear();
-            } else if (isUpdate(event)) {
+            } else if (isUpdate(event) || isUpsert(event)) {
                 removeFieldWithPk(fields, pkFields);
             }
             fields.addAll(pkFields);

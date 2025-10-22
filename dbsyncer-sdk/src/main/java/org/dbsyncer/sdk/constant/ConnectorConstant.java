@@ -23,6 +23,11 @@ public class ConnectorConstant {
     public static final String OPERTION_DELETE = "DELETE";
 
     /**
+     * 插入或更新
+     */
+    public static final String OPERTION_UPSERT = "UPSERT";
+
+    /**
      * 表结构更改
      */
     public static final String OPERTION_ALTER = "ALTER";
@@ -46,9 +51,4 @@ public class ConnectorConstant {
      * 查询总数
      */
     public static final String OPERTION_QUERY_COUNT = "QUERY_COUNT";
-
-    /**
-     * 覆盖插入（Upsert）
-     */
-    public static final String OPERTION_UPSERT = "UPSERT";
 }

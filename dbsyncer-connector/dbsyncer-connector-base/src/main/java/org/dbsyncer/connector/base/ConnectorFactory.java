@@ -209,6 +209,80 @@ public class ConnectorFactory implements DisposableBean {
         return result;
     }
 
+    /**
+     * 插入数据到目标源
+     */
+    public Result insert(PluginContext context) {
+        return executeWriterOperation(context, (connector, instance, ctx) -> connector.insert(instance, ctx));
+    }
+
+    /**
+     * 更新目标源数据
+     */
+    public Result update(PluginContext context) {
+        return executeWriterOperation(context, (connector, instance, ctx) -> connector.update(instance, ctx));
+    }
+
+    /**
+     * 删除目标源数据
+     */
+    public Result delete(PluginContext context) {
+        return executeWriterOperation(context, (connector, instance, ctx) -> connector.delete(instance, ctx));
+    }
+
+    /**
+     * 插入或更新目标源数据
+     */
+    public Result upsert(PluginContext context) {
+        return executeWriterOperation(context, (connector, instance, ctx) -> connector.upsert(instance, ctx));
+    }
+
+    /**
+     * 执行写入操作的通用方法
+     */
+    private Result executeWriterOperation(PluginContext context, WriterOperation operation) {
+        ConnectorInstance targetInstance = context.getTargetConnectorInstance();
+        Assert.notNull(targetInstance, "targetConnectorInstance can not null");
+        ConnectorService targetConnector = getConnectorService(targetInstance.getConfig());
+        
+        if (targetConnector instanceof AbstractConnector) {
+            AbstractConnector conn = (AbstractConnector) targetConnector;
+            try {
+                // 支持标准解析器
+                if (context.isEnableSchemaResolver() && targetConnector.getSchemaResolver() != null) {
+                    conn.convertProcessBeforeWriter(context, targetConnector.getSchemaResolver());
+                } else {
+                    conn.convertProcessBeforeWriter(context, targetInstance);
+                }
+            } catch (Exception e) {
+                Result result = new Result();
+                result.error = e.getMessage();
+                result.addFailData(context.getTargetList());
+                if (context.isEnablePrintTraceInfo()) {
+                    logger.error("traceId:{}, tableName:{}, event:{}, targetList:{}, result:{}", context.getTraceId(), context.getSourceTableName(),
+                            context.getEvent(), context.getTargetList(), JsonUtil.objToJson(result));
+                }
+                return result;
+            }
+        }
+
+        Result result = operation.execute(targetConnector, targetInstance, context);
+        if (context.isEnablePrintTraceInfo()) {
+            logger.info("traceId:{}, tableName:{}, event:{}, result:{}", context.getTraceId(), context.getSourceTableName(),
+                    context.getEvent(), JsonUtil.objToJson(result));
+        }
+        Assert.notNull(result, "Connector writer batch result can not null");
+        return result;
+    }
+
+    /**
+     * 写入操作接口
+     */
+    @FunctionalInterface
+    private interface WriterOperation {
+        Result execute(ConnectorService connector, ConnectorInstance instance, PluginContext context);
+    }
+
     public Result writerDDL(ConnectorInstance connectorInstance, DDLConfig ddlConfig) {
         Assert.notNull(connectorInstance, "ConnectorInstance can not null");
         Result result = getConnectorService(connectorInstance.getConfig()).writerDDL(connectorInstance, ddlConfig);
