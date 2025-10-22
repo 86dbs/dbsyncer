@@ -29,8 +29,6 @@ public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConf
         try {
             connection = getConnection();
             return (T) callback.apply(new DatabaseTemplate((SimpleConnection) connection));
-        } catch (EmptyResultDataAccessException e) {
-            throw e;
         } catch (Exception e) {
             throw new SdkException(e.getMessage(), e.getCause());
         } finally {

@@ -15,6 +15,7 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -28,7 +29,6 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -151,24 +151,22 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
         // 只对 INSERT 操作且数据量大于阈值时使用批量复制
         if (ConnectorConstant.OPERTION_INSERT.equals(event) &&
                 !CollectionUtils.isEmpty(data)) {
-            
-            // 统一管理连接，避免重复代码
-            Connection connection = null;
             try {
-                connection = connectorInstance.getConnection();
-                
-                // 获取 schema 名称
-                String schemaName = connectorInstance.getConfig().getSchema();
-                if (schemaName == null || schemaName.trim().isEmpty()) {
-                    schemaName = "dbo"; // 默认 schema
-                }
-                
-                // 如果强制更新，使用 UPSERT；否则使用普通插入
-                if (context.isForceUpdate()) {
-                    return bulkUpsert(connection, context, targetFields, data, schemaName);
-                } else {
-                    return bulkInsert(connection, context, targetFields, data, schemaName);
-                }
+                return connectorInstance.execute(databaseTemplate -> {
+                    SimpleConnection connection = databaseTemplate.getSimpleConnection();
+                    // 获取 schema 名称
+                    String schemaName = connectorInstance.getConfig().getSchema();
+                    if (schemaName == null || schemaName.trim().isEmpty()) {
+                        schemaName = "dbo"; // 默认 schema
+                    }
+
+                    // 如果强制更新，使用 UPSERT；否则使用普通插入
+                    if (context.isForceUpdate()) {
+                        return bulkUpsert(connection, context, targetFields, data, schemaName);
+                    } else {
+                        return bulkInsert(connection, context, targetFields, data, schemaName);
+                    }
+                });
             } catch (Exception e) {
                 Result result = new Result();
                 result.error = e.getMessage();
@@ -178,18 +176,6 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
                             context.getEvent(), context.getTargetList(), JsonUtil.objToJson(result));
                 }
                 return result;
-            } finally {
-                // 统一释放连接
-                if (connection != null) {
-                    try {
-                        if (!connection.isClosed()) {
-                            connection.close();
-                            logger.debug("数据库连接已释放");
-                        }
-                    } catch (SQLException e) {
-                        logger.warn("释放数据库连接时出错: {}", e.getMessage());
-                    }
-                }
             }
         }
 
@@ -213,7 +199,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
         for (Map map : data) {
             typedData.add((Map<String, Object>) map);
         }
-        
+
         int insertedCount = SqlServerBulkCopyUtil.bulkInsert(connection, tableName, targetFields, typedData, schemaName);
 
         // 设置成功数据
@@ -250,7 +236,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
         for (Map map : data) {
             typedData.add((Map<String, Object>) map);
         }
-        
+
         int processedCount = SqlServerBulkCopyUtil.bulkUpsert(connection, tableName, targetFields, typedData, primaryKeys, schemaName);
 
         // 设置成功数据
