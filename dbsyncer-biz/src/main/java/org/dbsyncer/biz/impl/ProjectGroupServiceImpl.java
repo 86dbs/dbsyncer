@@ -21,11 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -117,6 +113,30 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
                 );
             }
         }
+        return vo;
+    }
+
+    @Override
+    public ProjectGroupVo getProjectGroupUnUsed() {
+        List<ProjectGroup> projectGroupAll = profileComponent.getProjectGroupAll();
+        List<String> connectorUsed = new ArrayList<>();
+        List<String> mappingUsed = new ArrayList<>();
+        if(!CollectionUtils.isEmpty(projectGroupAll)){
+            for (ProjectGroup projectGroup : projectGroupAll){
+                connectorUsed.addAll(projectGroup.getConnectorIds());
+                mappingUsed.addAll(projectGroup.getMappingIds());
+            }
+        }
+        ProjectGroupVo vo = new ProjectGroupVo();
+        List<Connector> connectorAll = connectorService.getConnectorAll();
+        List<MappingVo> mappingAll = mappingService.getMappingAll();
+        //移除之前使用的连接、驱动
+        connectorAll = connectorAll.stream().filter(connector -> !connectorUsed.contains(connector.getId())).collect(Collectors.toList());
+        mappingAll = mappingAll.stream().filter(mapping -> !mappingUsed.contains(mapping.getId())).collect(Collectors.toList());
+
+        vo.setConnectors(connectorAll);
+        vo.setConnectorSize(CollectionUtils.isEmpty(connectorAll) ? 0 : connectorAll.size());
+        vo.setMappings(mappingAll);
         return vo;
     }
 
