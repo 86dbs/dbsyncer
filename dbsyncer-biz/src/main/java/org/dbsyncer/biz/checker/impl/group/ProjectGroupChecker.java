@@ -72,7 +72,7 @@ public class ProjectGroupChecker extends AbstractChecker {
         String[] connectorIds = StringUtil.split(params.get("connectorIds"), StringUtil.VERTICAL_LINE);
         String[] mappingIds = StringUtil.split(params.get("mappingIds"), StringUtil.VERTICAL_LINE);
         boolean exist = (connectorIds != null && connectorIds.length > 0) | (mappingIds != null && mappingIds.length > 0);
-        Assert.isTrue(exist, "请选择连接或驱动.");
+        Assert.isTrue(exist, "连接或驱动不能同时为空！");
 
         projectGroup.setConnectorIds(CollectionUtils.isEmpty(connectorIds) ? Collections.EMPTY_LIST : Arrays.asList(connectorIds));
         projectGroup.setMappingIds(CollectionUtils.isEmpty(mappingIds) ? Collections.EMPTY_LIST : Arrays.asList(mappingIds));
