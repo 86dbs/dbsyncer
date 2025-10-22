@@ -48,8 +48,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     private final String QUERY_VIEW = "select name from sysobjects where xtype in('v')";
     private final String QUERY_TABLE = "select name from sys.tables where schema_id = schema_id('%s') and is_ms_shipped = 0";
     private final String QUERY_TABLE_IDENTITY = "select is_identity from sys.columns where object_id = object_id('%s') and is_identity > 0";
-    private final String SET_TABLE_IDENTITY_ON = "set identity_insert %s.[%s] on;";
-    private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
+    private final String MARK_HAS_IDENTITY = "mark.hasIdentity";
 
     private final SqlServerSchemaResolver schemaResolver = new SqlServerSchemaResolver();
 
@@ -94,19 +93,14 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        Map<String, String> targetCommand = super.getTargetCommand(commandConfig);
+        Map<String, String> targetCommand = new HashMap<>();
         String tableName = commandConfig.getTable().getName();
         // 判断表是否包含标识自增列
         DatabaseConnectorInstance db = (DatabaseConnectorInstance) commandConfig.getConnectorInstance();
         List<Integer> result = db.execute(databaseTemplate -> databaseTemplate.queryForList(String.format(QUERY_TABLE_IDENTITY, tableName), Integer.class));
         // 允许显式插入标识列的值
-        if (!CollectionUtils.isEmpty(result)) {
-            DatabaseConfig config = (DatabaseConfig) commandConfig.getConnectorConfig();
-            String insert = String.format(SET_TABLE_IDENTITY_ON, config.getSchema(), tableName)
-                    + targetCommand.get(ConnectorConstant.OPERTION_INSERT)
-                    + String.format(SET_TABLE_IDENTITY_OFF, config.getSchema(), tableName);
-            targetCommand.put(ConnectorConstant.OPERTION_INSERT, insert);
-        }
+        boolean hasIdentity = !CollectionUtils.isEmpty(result);
+        targetCommand.put(MARK_HAS_IDENTITY, String.valueOf(hasIdentity));
         return targetCommand;
     }
 
@@ -160,11 +154,14 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
                         schemaName = "dbo"; // 默认 schema
                     }
 
+                    // 检查是否需要启用 IDENTITY_INSERT
+                    boolean enableIdentityInsert = Boolean.parseBoolean(context.getCommand().get(MARK_HAS_IDENTITY));
+                    
                     // 如果强制更新，使用 UPSERT；否则使用普通插入
                     if (context.isForceUpdate()) {
-                        return bulkUpsert(connection, context, targetFields, data, schemaName);
+                        return bulkUpsert(connection, context, targetFields, data, schemaName, enableIdentityInsert);
                     } else {
-                        return bulkInsert(connection, context, targetFields, data, schemaName);
+                        return bulkInsert(connection, context, targetFields, data, schemaName, enableIdentityInsert);
                     }
                 });
             } catch (Exception e) {
@@ -187,7 +184,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
      * 执行批量插入
      */
     private Result bulkInsert(Connection connection, PluginContext context,
-                              List<Field> targetFields, List<Map> data, String schemaName) throws Exception {
+                              List<Field> targetFields, List<Map> data, String schemaName, boolean enableIdentityInsert) throws Exception {
         Result result = new Result();
 
         // 获取表名
@@ -200,7 +197,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
             typedData.add((Map<String, Object>) map);
         }
 
-        int insertedCount = SqlServerBulkCopyUtil.bulkInsert(connection, tableName, targetFields, typedData, schemaName);
+        int insertedCount = SqlServerBulkCopyUtil.bulkInsert(connection, tableName, targetFields, typedData, schemaName, enableIdentityInsert);
 
         // 设置成功数据
         result.addSuccessData(data);
@@ -214,7 +211,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
      * 执行批量 UPSERT
      */
     private Result bulkUpsert(Connection connection, PluginContext context,
-                              List<Field> targetFields, List<Map> data, String schemaName) throws Exception {
+                              List<Field> targetFields, List<Map> data, String schemaName, boolean enableIdentityInsert) throws Exception {
         Result result = new Result();
 
         // 获取表名
@@ -227,7 +224,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
 
         if (primaryKeys.isEmpty()) {
             logger.warn("表 {} 没有主键，无法执行 UPSERT，回退到普通插入", tableName);
-            return bulkInsert(connection, context, targetFields, data, schemaName);
+            return bulkInsert(connection, context, targetFields, data, schemaName, enableIdentityInsert);
         }
 
         // 执行批量 UPSERT
@@ -237,7 +234,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
             typedData.add((Map<String, Object>) map);
         }
 
-        int processedCount = SqlServerBulkCopyUtil.bulkUpsert(connection, tableName, targetFields, typedData, primaryKeys, schemaName);
+        int processedCount = SqlServerBulkCopyUtil.bulkUpsert(connection, tableName, targetFields, typedData, primaryKeys, schemaName, enableIdentityInsert);
 
         // 设置成功数据
         result.addSuccessData(data);

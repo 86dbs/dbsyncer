@@ -32,11 +32,13 @@ public class SqlServerBulkCopyUtil {
      * @param tableName  目标表名
      * @param fields     字段列表
      * @param dataList   数据列表
+     * @param schemaName schema名称
+     * @param enableIdentityInsert 是否启用IDENTITY_INSERT
      * @return 插入的记录数
      * @throws SQLException SQL异常
      */
     public static int bulkInsert(Connection connection, String tableName,
-                                 List<Field> fields, List<Map<String, Object>> dataList, String schemaName) throws SQLException {
+                                 List<Field> fields, List<Map<String, Object>> dataList, String schemaName, boolean enableIdentityInsert) throws SQLException {
         if (dataList == null || dataList.isEmpty()) {
             return 0;
         }
@@ -63,7 +65,7 @@ public class SqlServerBulkCopyUtil {
             List<Map<String, Object>> batchData = dataList.subList(startIndex, endIndex);
             
             try {
-                int batchInserted = insertBatchParameterized(connection, tableName, fields, batchData, schemaName);
+                int batchInserted = insertBatchParameterized(connection, tableName, fields, batchData, schemaName, enableIdentityInsert);
                 totalInserted += batchInserted;
                 logger.debug("批次 {}/{} 完成，插入 {} 条记录", batchIndex + 1, batchCount, batchInserted);
             } catch (Exception e) {
@@ -81,7 +83,7 @@ public class SqlServerBulkCopyUtil {
      * 插入单个批次的数据（参数化 SQL，安全可靠）
      */
     private static int insertBatchParameterized(Connection connection, String tableName,
-                                                List<Field> fields, List<Map<String, Object>> batchData, String schemaName) throws SQLException {
+                                                List<Field> fields, List<Map<String, Object>> batchData, String schemaName, boolean enableIdentityInsert) throws SQLException {
         if (batchData.isEmpty()) {
             return 0;
         }
@@ -89,43 +91,58 @@ public class SqlServerBulkCopyUtil {
         // 构建参数化的批量插入 SQL
         String sql = buildParameterizedInsertSQL(tableName, fields, batchData.size());
         
-        // 分别执行 IDENTITY_INSERT 开关和插入语句
-        String identityInsertOn = String.format("SET IDENTITY_INSERT %s.[%s] ON", schemaName, tableName);
-        String identityInsertOff = String.format("SET IDENTITY_INSERT %s.[%s] OFF", schemaName, tableName);
-        
-        try {
-            // 1. 开启 IDENTITY_INSERT
-            try (PreparedStatement ps1 = connection.prepareStatement(identityInsertOn)) {
-                ps1.executeUpdate();
-            }
+        if (enableIdentityInsert) {
+            // 需要启用 IDENTITY_INSERT 的情况
+            String identityInsertOn = String.format("SET IDENTITY_INSERT %s.[%s] ON", schemaName, tableName);
+            String identityInsertOff = String.format("SET IDENTITY_INSERT %s.[%s] OFF", schemaName, tableName);
             
-            // 2. 执行批量插入
-            try (PreparedStatement ps2 = connection.prepareStatement(sql)) {
+            try {
+                // 1. 开启 IDENTITY_INSERT
+                try (PreparedStatement ps1 = connection.prepareStatement(identityInsertOn)) {
+                    ps1.executeUpdate();
+                }
+                
+                // 2. 执行批量插入
+                try (PreparedStatement ps2 = connection.prepareStatement(sql)) {
+                    // 设置参数值
+                    int paramIndex = 1;
+                    for (Map<String, Object> rowData : batchData) {
+                        for (Field field : fields) {
+                            Object value = rowData.get(field.getName());
+                            ps2.setObject(paramIndex++, value);
+                        }
+                    }
+                    int result = ps2.executeUpdate();
+                    
+                    // 3. 关闭 IDENTITY_INSERT
+                    try (PreparedStatement ps3 = connection.prepareStatement(identityInsertOff)) {
+                        ps3.executeUpdate();
+                    }
+                    
+                    return result;
+                }
+            } catch (Exception e) {
+                // 确保在异常情况下也关闭 IDENTITY_INSERT
+                try (PreparedStatement ps = connection.prepareStatement(identityInsertOff)) {
+                    ps.executeUpdate();
+                } catch (SQLException closeException) {
+                    logger.warn("关闭 IDENTITY_INSERT 时出错: {}", closeException.getMessage());
+                }
+                throw e;
+            }
+        } else {
+            // 不需要 IDENTITY_INSERT 的情况，直接执行插入
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
                 // 设置参数值
                 int paramIndex = 1;
                 for (Map<String, Object> rowData : batchData) {
                     for (Field field : fields) {
                         Object value = rowData.get(field.getName());
-                        ps2.setObject(paramIndex++, value);
+                        ps.setObject(paramIndex++, value);
                     }
                 }
-                int result = ps2.executeUpdate();
-                
-                // 3. 关闭 IDENTITY_INSERT
-                try (PreparedStatement ps3 = connection.prepareStatement(identityInsertOff)) {
-                    ps3.executeUpdate();
-                }
-                
-                return result;
+                return ps.executeUpdate();
             }
-        } catch (Exception e) {
-            // 确保在异常情况下也关闭 IDENTITY_INSERT
-            try (PreparedStatement ps = connection.prepareStatement(identityInsertOff)) {
-                ps.executeUpdate();
-            } catch (SQLException closeException) {
-                logger.warn("关闭 IDENTITY_INSERT 时出错: {}", closeException.getMessage());
-            }
-            throw e;
         }
     }
 
@@ -171,12 +188,14 @@ public class SqlServerBulkCopyUtil {
      * @param fields      字段列表
      * @param dataList    数据列表
      * @param primaryKeys 主键字段列表
+     * @param schemaName  schema名称
+     * @param enableIdentityInsert 是否启用IDENTITY_INSERT
      * @return 处理的记录数
      * @throws SQLException SQL异常
      */
     public static int bulkUpsert(Connection connection, String tableName,
                                  List<Field> fields, List<Map<String, Object>> dataList,
-                                 List<String> primaryKeys, String schemaName) throws SQLException {
+                                 List<String> primaryKeys, String schemaName, boolean enableIdentityInsert) throws SQLException {
         if (dataList == null || dataList.isEmpty()) {
             return 0;
         }
@@ -203,7 +222,7 @@ public class SqlServerBulkCopyUtil {
             List<Map<String, Object>> batchData = dataList.subList(startIndex, endIndex);
             
             try {
-                int batchProcessed = upsertBatch(connection, tableName, fields, batchData, primaryKeys, schemaName);
+                int batchProcessed = upsertBatch(connection, tableName, fields, batchData, primaryKeys, schemaName, enableIdentityInsert);
                 totalProcessed += batchProcessed;
                 logger.debug("UPSERT 批次 {}/{} 完成，处理 {} 条记录", batchIndex + 1, batchCount, batchProcessed);
             } catch (Exception e) {
@@ -221,7 +240,7 @@ public class SqlServerBulkCopyUtil {
      */
     private static int upsertBatch(Connection connection, String tableName,
                                    List<Field> fields, List<Map<String, Object>> batchData,
-                                   List<String> primaryKeys, String schemaName) throws SQLException {
+                                   List<String> primaryKeys, String schemaName, boolean enableIdentityInsert) throws SQLException {
         if (batchData.isEmpty()) {
             return 0;
         }
@@ -229,10 +248,12 @@ public class SqlServerBulkCopyUtil {
         // 构建 MERGE 语句
         String sql = buildMergeSQL(tableName, fields, batchData.size(), primaryKeys);
         
-        // 直接应用 IDENTITY_INSERT 开关，使用传入的 schemaName
-        String identityInsertOn = String.format("SET IDENTITY_INSERT %s.[%s] ON;", schemaName, tableName);
-        String identityInsertOff = String.format("SET IDENTITY_INSERT %s.[%s] OFF;", schemaName, tableName);
-        sql = identityInsertOn + " " + sql + " " + identityInsertOff;
+        if (enableIdentityInsert) {
+            // 需要启用 IDENTITY_INSERT 的情况
+            String identityInsertOn = String.format("SET IDENTITY_INSERT %s.[%s] ON;", schemaName, tableName);
+            String identityInsertOff = String.format("SET IDENTITY_INSERT %s.[%s] OFF;", schemaName, tableName);
+            sql = identityInsertOn + " " + sql + " " + identityInsertOff;
+        }
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             // 设置参数
