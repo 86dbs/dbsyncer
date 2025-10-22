@@ -126,7 +126,9 @@ public interface SqlTemplate {
      * @param primaryKeys 主键列表
      * @return 构建后的SQL（包含?占位符）
      */
-    String buildUpsertSql(String schemaTable, List<Field> fields, List<String> primaryKeys);
+    default String buildUpsertSql(String schemaTable, List<Field> fields, List<String> primaryKeys){
+        return "";
+    }
 
     /**
      * 构建DQL查询SQL（在用户SQL基础上添加主键条件）

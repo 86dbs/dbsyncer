@@ -32,8 +32,8 @@ public class SqlServerBulkCopyUtil {
      */
     @FunctionalInterface
     private interface BatchProcessor {
-        int process(Connection connection, String tableName, List<Field> fields, 
-                   List<Map<String, Object>> batchData, String schemaName, boolean enableIdentityInsert) throws SQLException;
+        int process(Connection connection, String sql, List<Field> fields, 
+                   List<Map<String, Object>> batchData) throws SQLException;
     }
 
     /**
@@ -80,7 +80,7 @@ public class SqlServerBulkCopyUtil {
             List<Map<String, Object>> batchData = dataList.subList(startIndex, endIndex);
             
             try {
-                int batchProcessed = processor.process(connection, tableName, fields, batchData, schemaName, enableIdentityInsert);
+                int batchProcessed = executeBatchWithIdentityInsert(connection, tableName, fields, batchData, schemaName, enableIdentityInsert, processor);
                 totalProcessed += batchProcessed;
                 logger.info("{} 批次 {}/{} 完成，处理 {} 条记录", operationName, batchIndex + 1, batchCount, batchProcessed);
             } catch (Exception e) {
@@ -91,6 +91,57 @@ public class SqlServerBulkCopyUtil {
 
         logger.info("批量{}完成，共处理 {} 条记录到表 {}", operationName, totalProcessed, tableName);
         return totalProcessed;
+    }
+
+    /**
+     * 执行单个批次，处理IDENTITY_INSERT逻辑
+     *
+     * @param connection 数据库连接
+     * @param tableName  目标表名
+     * @param fields     字段列表
+     * @param batchData  批次数据
+     * @param schemaName schema名称
+     * @param enableIdentityInsert 是否启用IDENTITY_INSERT
+     * @param processor  批次处理器
+     * @return 处理的记录数
+     * @throws SQLException SQL异常
+     */
+    private static int executeBatchWithIdentityInsert(Connection connection, String tableName,
+                                                     List<Field> fields, List<Map<String, Object>> batchData,
+                                                     String schemaName, boolean enableIdentityInsert,
+                                                     BatchProcessor processor) throws SQLException {
+        if (enableIdentityInsert) {
+            // 需要启用 IDENTITY_INSERT 的情况
+            String schemaTable = sqlTemplate.buildTable(schemaName, tableName);
+            String identityInsertOn = sqlTemplate.buildIdentityInsertSql(schemaTable, true);
+            String identityInsertOff = sqlTemplate.buildIdentityInsertSql(schemaTable, false);
+            
+            // 使用 Statement 执行 SET 语句，确保在同一个会话中
+            try (java.sql.Statement stmt = connection.createStatement()) {
+                // 1. 开启 IDENTITY_INSERT
+                stmt.executeUpdate(identityInsertOn);
+                
+                // 2. 执行具体的批次操作
+                int result = processor.process(connection, schemaTable, fields, batchData);
+                
+                // 3. 关闭 IDENTITY_INSERT
+                stmt.executeUpdate(identityInsertOff);
+                
+                return result;
+            } catch (Exception e) {
+                // 确保在异常情况下也关闭 IDENTITY_INSERT
+                try (java.sql.Statement stmt = connection.createStatement()) {
+                    stmt.executeUpdate(identityInsertOff);
+                } catch (SQLException closeException) {
+                    logger.warn("关闭 IDENTITY_INSERT 时出错: {}", closeException.getMessage());
+                }
+                throw e;
+            }
+        } else {
+            // 不需要 IDENTITY_INSERT 的情况，直接执行
+            String schemaTable = sqlTemplate.buildTable(schemaName, tableName);
+            return processor.process(connection, schemaTable, fields, batchData);
+        }
     }
 
     /**
@@ -108,75 +159,33 @@ public class SqlServerBulkCopyUtil {
     public static int bulkInsert(Connection connection, String tableName,
                                  List<Field> fields, List<Map<String, Object>> dataList, String schemaName, boolean enableIdentityInsert) throws SQLException {
         return executeBatchOperation(connection, tableName, fields, dataList, schemaName, enableIdentityInsert, 
-                "插入", SqlServerBulkCopyUtil::insertBatchParameterized);
+                "插入", SqlServerBulkCopyUtil::executeInsertBatch);
     }
     
     
     /**
-     * 插入单个批次的数据（参数化 SQL，安全可靠）
+     * 执行插入批次（简化版，不处理IDENTITY_INSERT）
      */
-    private static int insertBatchParameterized(Connection connection, String tableName,
-                                                List<Field> fields, List<Map<String, Object>> batchData, String schemaName, boolean enableIdentityInsert) throws SQLException {
+    private static int executeInsertBatch(Connection connection, String schemaTable,
+                                         List<Field> fields, List<Map<String, Object>> batchData) throws SQLException {
         if (batchData.isEmpty()) {
             return 0;
         }
 
         // 构建参数化的批量插入 SQL
-        String schemaTable = sqlTemplate.buildTable(schemaName, tableName);
         String sql = sqlTemplate.buildBatchInsertSql(schemaTable, fields, batchData.size());
         
-        if (enableIdentityInsert) {
-            // 需要启用 IDENTITY_INSERT 的情况
-            String identityInsertOn = sqlTemplate.buildIdentityInsertSql(schemaTable, true);
-            String identityInsertOff = sqlTemplate.buildIdentityInsertSql(schemaTable, false);
-            
-            try {
-                // 1. 开启 IDENTITY_INSERT
-                try (PreparedStatement ps1 = connection.prepareStatement(identityInsertOn)) {
-                    ps1.executeUpdate();
+        // 执行批量插入
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            // 设置参数值
+            int paramIndex = 1;
+            for (Map<String, Object> rowData : batchData) {
+                for (Field field : fields) {
+                    Object value = rowData.get(field.getName());
+                    ps.setObject(paramIndex++, value);
                 }
-                
-                // 2. 执行批量插入
-                try (PreparedStatement ps2 = connection.prepareStatement(sql)) {
-                    // 设置参数值
-                    int paramIndex = 1;
-                    for (Map<String, Object> rowData : batchData) {
-                        for (Field field : fields) {
-                            Object value = rowData.get(field.getName());
-                            ps2.setObject(paramIndex++, value);
-                        }
-                    }
-                    int result = ps2.executeUpdate();
-                    
-                    // 3. 关闭 IDENTITY_INSERT
-                    try (PreparedStatement ps3 = connection.prepareStatement(identityInsertOff)) {
-                        ps3.executeUpdate();
-                    }
-                    
-                    return result;
-                }
-            } catch (Exception e) {
-                // 确保在异常情况下也关闭 IDENTITY_INSERT
-                try (PreparedStatement ps = connection.prepareStatement(identityInsertOff)) {
-                    ps.executeUpdate();
-                } catch (SQLException closeException) {
-                    logger.warn("关闭 IDENTITY_INSERT 时出错: {}", closeException.getMessage());
-                }
-                throw e;
             }
-        } else {
-            // 不需要 IDENTITY_INSERT 的情况，直接执行插入
-            try (PreparedStatement ps = connection.prepareStatement(sql)) {
-                // 设置参数值
-                int paramIndex = 1;
-                for (Map<String, Object> rowData : batchData) {
-                    for (Field field : fields) {
-                        Object value = rowData.get(field.getName());
-                        ps.setObject(paramIndex++, value);
-                    }
-                }
-                return ps.executeUpdate();
-            }
+            return ps.executeUpdate();
         }
     }
 
@@ -201,31 +210,24 @@ public class SqlServerBulkCopyUtil {
                                  List<Field> fields, List<Map<String, Object>> dataList,
                                  List<String> primaryKeys, String schemaName, boolean enableIdentityInsert) throws SQLException {
         return executeBatchOperation(connection, tableName, fields, dataList, schemaName, enableIdentityInsert, 
-                "UPSERT", (conn, tName, flds, batchData, sName, enable) -> 
-                    upsertBatch(conn, tName, flds, batchData, primaryKeys, sName, enable));
+                "UPSERT", (conn, schemaTable, flds, batchData) -> 
+                    executeUpsertBatch(conn, schemaTable, flds, batchData, primaryKeys));
     }
     
     /**
-     * 执行单个批次的 UPSERT
+     * 执行UPSERT批次（简化版，不处理IDENTITY_INSERT）
      */
-    private static int upsertBatch(Connection connection, String tableName,
-                                   List<Field> fields, List<Map<String, Object>> batchData,
-                                   List<String> primaryKeys, String schemaName, boolean enableIdentityInsert) throws SQLException {
+    private static int executeUpsertBatch(Connection connection, String schemaTable,
+                                         List<Field> fields, List<Map<String, Object>> batchData,
+                                         List<String> primaryKeys) throws SQLException {
         if (batchData.isEmpty()) {
             return 0;
         }
 
         // 构建 MERGE 语句
-        String schemaTable = sqlTemplate.buildTable(schemaName, tableName);
         String sql = sqlTemplate.buildBatchUpsertSql(schemaTable, fields, batchData.size(), primaryKeys);
         
-        if (enableIdentityInsert) {
-            // 需要启用 IDENTITY_INSERT 的情况
-            String identityInsertOn = sqlTemplate.buildIdentityInsertSql(schemaTable, true);
-            String identityInsertOff = sqlTemplate.buildIdentityInsertSql(schemaTable, false);
-            sql = identityInsertOn + " " + sql + " " + identityInsertOff;
-        }
-
+        // 执行批量 UPSERT
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             // 设置参数
             int paramIndex = 1;
