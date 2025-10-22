@@ -27,6 +27,7 @@ import org.dbsyncer.web.Version;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -68,11 +69,13 @@ public class LicenseController extends BaseController {
     @Resource
     private UserConfigService userConfigService;
 
+    @Value("${dbsyncer.web.license.server.address:http://101.132.145.213:9999/api/license/create}")
+    private String serverAddress;
+
     public static final Integer SUCCESS = 200;
     public static final String STATUS = "status";
     public static final String DATA = "data";
     public static final String MSG = "msg";
-    public static final String SERVER_ADDRESS = "http://101.132.145.213:8989/api/license/create";
 
     @RequestMapping("")
     public String index(ModelMap model) {
@@ -197,7 +200,7 @@ public class LicenseController extends BaseController {
         StringEntity se = new StringEntity(data);
         se.setContentEncoding("UTF-8");
         se.setContentType("application/json");
-        HttpPost httpPost = new HttpPost(SERVER_ADDRESS);
+        HttpPost httpPost = new HttpPost(serverAddress);
         httpPost.setEntity(se);
         CloseableHttpClient httpClient = HttpClients.createDefault();
         try {
@@ -223,4 +226,7 @@ public class LicenseController extends BaseController {
         return userConfigService.getUserInfo(authentication.getName());
     }
 
+    public void setServerAddress(String serverAddress) {
+        this.serverAddress = serverAddress;
+    }
 }
