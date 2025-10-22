@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.sqlserver.bulk;
 
+import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
 import org.dbsyncer.sdk.model.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,7 @@ import java.util.Map;
 public class SqlServerBulkCopyUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(SqlServerBulkCopyUtil.class);
+    private static final SqlServerTemplate sqlTemplate = new SqlServerTemplate();
 
     /**
      * 执行批量插入
@@ -45,7 +47,7 @@ public class SqlServerBulkCopyUtil {
 
         // SQL Server 参数限制：最多 2100 个参数
         // 每个字段一个参数，所以每批最多 2100 / 字段数 条记录
-        int maxParamsPerBatch = 2000; // 留一些余量
+        int maxParamsPerBatch = 2100;
         int fieldsCount = fields.size();
         int maxRowsPerBatch = maxParamsPerBatch / fieldsCount;
         
@@ -67,7 +69,7 @@ public class SqlServerBulkCopyUtil {
             try {
                 int batchInserted = insertBatchParameterized(connection, tableName, fields, batchData, schemaName, enableIdentityInsert);
                 totalInserted += batchInserted;
-                logger.debug("批次 {}/{} 完成，插入 {} 条记录", batchIndex + 1, batchCount, batchInserted);
+                logger.info("批次 {}/{} 完成，插入 {} 条记录", batchIndex + 1, batchCount, batchInserted);
             } catch (Exception e) {
                 logger.error("批次 {}/{} 插入失败: {}", batchIndex + 1, batchCount, e.getMessage(), e);
                 throw new SQLException("批次插入失败: " + e.getMessage(), e);
@@ -89,12 +91,13 @@ public class SqlServerBulkCopyUtil {
         }
 
         // 构建参数化的批量插入 SQL
-        String sql = buildParameterizedInsertSQL(tableName, fields, batchData.size());
+        String schemaTable = sqlTemplate.buildTable(schemaName, tableName);
+        String sql = sqlTemplate.buildBatchInsertSql(schemaTable, fields, batchData.size());
         
         if (enableIdentityInsert) {
             // 需要启用 IDENTITY_INSERT 的情况
-            String identityInsertOn = String.format("SET IDENTITY_INSERT %s.[%s] ON", schemaName, tableName);
-            String identityInsertOff = String.format("SET IDENTITY_INSERT %s.[%s] OFF", schemaName, tableName);
+            String identityInsertOn = sqlTemplate.buildIdentityInsertSql(schemaTable, true);
+            String identityInsertOff = sqlTemplate.buildIdentityInsertSql(schemaTable, false);
             
             try {
                 // 1. 开启 IDENTITY_INSERT
@@ -147,36 +150,6 @@ public class SqlServerBulkCopyUtil {
     }
 
     
-    /**
-     * 构建参数化的批量插入 SQL
-     * 使用 PreparedStatement 参数，更安全且类型安全
-     */
-    private static String buildParameterizedInsertSQL(String tableName, List<Field> fields, int rowCount) {
-        // 构建列名列表
-        String columnList = fields.stream()
-            .map(field -> "[" + field.getName() + "]")
-            .reduce((a, b) -> a + ", " + b)
-            .orElse("");
-        
-        // 构建 VALUES 子句，使用参数占位符
-        StringBuilder valuesClause = new StringBuilder();
-        for (int i = 0; i < rowCount; i++) {
-            if (i > 0) {
-                valuesClause.append(", ");
-            }
-            valuesClause.append("(");
-            
-            for (int j = 0; j < fields.size(); j++) {
-                if (j > 0) {
-                    valuesClause.append(", ");
-                }
-                valuesClause.append("?"); // 参数占位符
-            }
-            valuesClause.append(")");
-        }
-        
-        return String.format("INSERT INTO %s (%s) VALUES %s", tableName, columnList, valuesClause.toString());
-    }
     
     
 
@@ -202,7 +175,7 @@ public class SqlServerBulkCopyUtil {
 
         // SQL Server 参数限制：最多 2100 个参数
         // 每个字段一个参数，所以每批最多 2100 / 字段数 条记录
-        int maxParamsPerBatch = 2000; // 留一些余量
+        int maxParamsPerBatch = 2100;
         int fieldsCount = fields.size();
         int maxRowsPerBatch = maxParamsPerBatch / fieldsCount;
         
@@ -246,12 +219,13 @@ public class SqlServerBulkCopyUtil {
         }
 
         // 构建 MERGE 语句
-        String sql = buildMergeSQL(tableName, fields, batchData.size(), primaryKeys);
+        String schemaTable = sqlTemplate.buildTable(schemaName, tableName);
+        String sql = sqlTemplate.buildBatchUpsertSql(schemaTable, fields, batchData.size(), primaryKeys);
         
         if (enableIdentityInsert) {
             // 需要启用 IDENTITY_INSERT 的情况
-            String identityInsertOn = String.format("SET IDENTITY_INSERT %s.[%s] ON;", schemaName, tableName);
-            String identityInsertOff = String.format("SET IDENTITY_INSERT %s.[%s] OFF;", schemaName, tableName);
+            String identityInsertOn = sqlTemplate.buildIdentityInsertSql(schemaTable, true);
+            String identityInsertOff = sqlTemplate.buildIdentityInsertSql(schemaTable, false);
             sql = identityInsertOn + " " + sql + " " + identityInsertOff;
         }
 
@@ -269,55 +243,4 @@ public class SqlServerBulkCopyUtil {
         }
     }
 
-    /**
-     * 构建 MERGE 语句
-     */
-    private static String buildMergeSQL(String tableName, List<Field> fields, int rowCount, List<String> primaryKeys) {
-        // 构建列名列表
-        String columnList = fields.stream()
-                .map(field -> "[" + field.getName() + "]")
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("");
-
-        // 构建单行参数模板
-        String rowTemplate = "(" + fields.stream()
-                .map(field -> "?")
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("") + ")";
-
-        // 构建多行 VALUES 子句
-        String valuesClause = java.util.stream.IntStream.range(0, rowCount)
-                .mapToObj(i -> rowTemplate)
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("");
-
-        // 构建 ON 条件（主键匹配）
-        String onCondition = primaryKeys.stream()
-                .map(key -> "target.[" + key + "] = source.[" + key + "]")
-                .reduce((a, b) -> a + " AND " + b)
-                .orElse("");
-
-        // 构建 UPDATE SET 子句（非主键字段）
-        String updateClause = fields.stream()
-                .filter(field -> !primaryKeys.contains(field.getName()))
-                .map(field -> "target.[" + field.getName() + "] = source.[" + field.getName() + "]")
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("");
-
-        // 构建 INSERT VALUES 子句
-        String insertValues = fields.stream()
-                .map(field -> "source.[" + field.getName() + "]")
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("");
-
-        // 组合完整的 MERGE SQL
-        return String.format(
-                "MERGE %s AS target " +
-                        "USING (VALUES %s) AS source (%s) " +
-                        "ON (%s) " +
-                        "WHEN MATCHED THEN UPDATE SET %s " +
-                        "WHEN NOT MATCHED THEN INSERT (%s) VALUES (%s);",
-                tableName, valuesClause, columnList, onCondition, updateClause, columnList, insertValues
-        );
-    }
 }

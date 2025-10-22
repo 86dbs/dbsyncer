@@ -389,4 +389,12 @@ public interface SqlTemplate {
     default String buildQuotedFieldList(List<String> fieldNames) {
         return buildQuotedFieldList(fieldNames, ", ");
     }
+
+    default String buildBatchInsertSql(String schemaTable, List<Field> fields, int rowCount){
+        return "";
+    }
+
+    default String buildBatchUpsertSql(String schemaTable, List<Field> fields, int rowCount, List<String> primaryKeys){
+        return "";
+    }
 }
