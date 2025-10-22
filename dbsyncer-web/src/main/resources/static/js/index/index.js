@@ -241,7 +241,7 @@ function refreshMappingList($projectGroupSelect) {
                                           }else if(model == 'increment'){
                                             modelname= '增量';
                                           }else if(model == 'fullIncrement'){
-                                           modelname= '全量+增量';
+                                           modelname= '混合';
                                           }
                                           var meta = m && m.meta ? m.meta : {};
                                           var total = meta.total || 0;
@@ -307,8 +307,7 @@ function refreshMappingList($projectGroupSelect) {
                                           htmlContent += '</td>';
                                           htmlContent += '</tr>';
                                           htmlContent += '</tbody>';
-                                          $("#"+mid).find("#processDiv").html("");
-                                          $("#"+mid).find("#processDiv").html(htmlContent);
+                                          $("#"+mid).find(".table-hover").html(htmlContent);
                                        });
                                    }
                                },
