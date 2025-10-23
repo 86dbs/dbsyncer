@@ -195,13 +195,6 @@ public class ConnectorFactory implements DisposableBean {
      * 批量写入数据到目标源
      */
     public Result writeBatch(PluginContext context) {
-        Result result = new Result();
-        // 终止同步数据到目标源库
-        if (context.isTerminated()) {
-            result.getSuccessData().addAll(context.getTargetList());
-            return result;
-        }
-
         return executeWriterOperation(context);
     }
 

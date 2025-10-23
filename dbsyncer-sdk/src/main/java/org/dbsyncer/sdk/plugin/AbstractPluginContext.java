@@ -15,12 +15,6 @@ import java.util.Map;
 public abstract class AbstractPluginContext extends AbstractBaseContext implements PluginContext, Cloneable {
 
     /**
-     * 是否终止任务
-     * <p>true：目标源不再接收同步数据，默认值false
-     */
-    private boolean terminated;
-
-    /**
      * 目标源连接实例
      */
     private ConnectorInstance targetConnectorInstance;
@@ -86,16 +80,6 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
     private String pluginExtInfo;
 
     private String traceId;
-
-    @Override
-    public boolean isTerminated() {
-        return terminated;
-    }
-
-    @Override
-    public void setTerminated(boolean terminated) {
-        this.terminated = terminated;
-    }
 
     @Override
     public ConnectorInstance getTargetConnectorInstance() {

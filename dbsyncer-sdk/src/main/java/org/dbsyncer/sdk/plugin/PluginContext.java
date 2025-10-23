@@ -25,21 +25,6 @@ public interface PluginContext extends BaseContext {
     ModelEnum getModelEnum();
 
     /**
-     * 是否终止同步数据到目标源库
-     *
-     * @return
-     */
-    boolean isTerminated();
-
-    /**
-     * 是否终止同步数据到目标源库
-     * <p>true: 终止，默认值false
-     *
-     * @param terminated
-     */
-    void setTerminated(boolean terminated);
-
-    /**
      * 目标源连接实例
      */
     ConnectorInstance getTargetConnectorInstance();
