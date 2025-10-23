@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -25,6 +26,9 @@ import org.springframework.util.Assert;
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 /**
  * 连接器工厂
@@ -138,7 +142,19 @@ public class ConnectorFactory implements DisposableBean {
     public MetaInfo getMetaInfo(ConnectorInstance connectorInstance, String tableName) {
         Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
         Assert.hasText(tableName, "tableName can not be empty.");
-        return getConnectorService(connectorInstance.getConfig()).getMetaInfo(connectorInstance, tableName);
+        List<Table> table = getTable(connectorInstance);
+        MetaInfo metaInfo = getConnectorService(connectorInstance.getConfig()).getMetaInfo(connectorInstance, tableName);
+        if (!CollectionUtils.isEmpty(table)) {
+            for (Table t : table) {
+                if (t.getName().equals(tableName)) {
+                    metaInfo.setTableType(t.getType());
+                    metaInfo.setSql(t.getSql());
+                    break;
+                }
+            }
+        }
+        return metaInfo;
+
     }
 
     public Object getPosition(ConnectorInstance connectorInstance) {
@@ -176,31 +192,36 @@ public class ConnectorFactory implements DisposableBean {
     }
 
     /**
-     * 插入数据到目标源
+     * 批量写入数据到目标源
      */
-    public Result insert(PluginContext context) {
-        return executeWriterOperation(context, (connector, instance, ctx) -> connector.insert(instance, ctx));
+    public Result writeBatch(PluginContext context) {
+        Result result = new Result();
+        // 终止同步数据到目标源库
+        if (context.isTerminated()) {
+            result.getSuccessData().addAll(context.getTargetList());
+            return result;
+        }
+
+        return executeWriterOperation(context);
     }
 
     /**
-     * 更新目标源数据
+     * 执行写入操作，根据事件类型智能路由到对应的方法
      */
-    public Result update(PluginContext context) {
-        return executeWriterOperation(context, (connector, instance, ctx) -> connector.update(instance, ctx));
-    }
-
-    /**
-     * 删除目标源数据
-     */
-    public Result delete(PluginContext context) {
-        return executeWriterOperation(context, (connector, instance, ctx) -> connector.delete(instance, ctx));
-    }
-
-    /**
-     * 插入或更新目标源数据
-     */
-    public Result upsert(PluginContext context) {
-        return executeWriterOperation(context, (connector, instance, ctx) -> connector.upsert(instance, ctx));
+    private Result executeWriterOperation(PluginContext context) {
+        String event = context.getEvent();
+        switch (event) {
+            case ConnectorConstant.OPERTION_INSERT:
+                return executeWriterOperation(context, (connector, instance, ctx) -> connector.insert(instance, ctx));
+            case ConnectorConstant.OPERTION_UPDATE:
+                return executeWriterOperation(context, (connector, instance, ctx) -> connector.update(instance, ctx));
+            case ConnectorConstant.OPERTION_DELETE:
+                return executeWriterOperation(context, (connector, instance, ctx) -> connector.delete(instance, ctx));
+            case ConnectorConstant.OPERTION_UPSERT:
+                return executeWriterOperation(context, (connector, instance, ctx) -> connector.upsert(instance, ctx));
+            default:
+                throw new RuntimeException("不支持的事件类型：" + event);
+        }
     }
 
     /**
@@ -210,7 +231,7 @@ public class ConnectorFactory implements DisposableBean {
         ConnectorInstance targetInstance = context.getTargetConnectorInstance();
         Assert.notNull(targetInstance, "targetConnectorInstance can not null");
         ConnectorService targetConnector = getConnectorService(targetInstance.getConfig());
-        
+
         if (targetConnector instanceof AbstractConnector) {
             AbstractConnector conn = (AbstractConnector) targetConnector;
             try {

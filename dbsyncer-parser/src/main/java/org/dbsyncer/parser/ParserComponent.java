@@ -48,13 +48,4 @@ public interface ParserComponent {
      */
     void executeTableGroup(String metaId, TableGroup tableGroup, Mapping mapping, Executor executor);
 
-    /**
-     * 批执行
-     *
-     * @param pluginContext
-     * @param executor
-     * @return
-     */
-    Result writeBatch(PluginContext pluginContext, Executor executor);
-
 }

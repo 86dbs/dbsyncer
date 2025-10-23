@@ -25,7 +25,6 @@ import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.AbstractPluginContext;
-import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -39,9 +38,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -184,13 +181,13 @@ public class ParserComponentImpl implements ParserComponent {
 
                 // 达到批次大小时处理数据
                 if (batch.size() >= context.getBatchSize()) {
-                    processTableGroupDataBatch(metaId, batch, tableGroup, context, executor, primaryKeys);
+                    processTableGroupDataBatch(metaId, batch, tableGroup, context, primaryKeys);
                     batch = new ArrayList<>();
                 }
             }
             // 处理最后一批数据
             if (!batch.isEmpty()) {
-                processTableGroupDataBatch(metaId, batch, tableGroup, context, executor, primaryKeys);
+                processTableGroupDataBatch(metaId, batch, tableGroup, context, primaryKeys);
             }
             // 标记流式处理完成
             tableGroup.setFullCompleted(true);
@@ -203,8 +200,7 @@ public class ParserComponentImpl implements ParserComponent {
      * TableGroup专用的数据处理逻辑
      */
     private void processTableGroupDataBatch(String metaId, List<Map> source, TableGroup tableGroup,
-                                            AbstractPluginContext context, Executor executor,
-                                            List<String> primaryKeys) {
+                                            AbstractPluginContext context, List<String> primaryKeys) {
         // 1、映射字段
         Picker picker = new Picker(tableGroup);
         List<Map> target = picker.pickTargetData(source);
@@ -219,7 +215,7 @@ public class ParserComponentImpl implements ParserComponent {
 
         // 4、写入目标源
         if (!CollectionUtils.isEmpty(target)) {
-            Result result = writeBatch(context, executor);
+            Result result = connectorFactory.writeBatch(context);
 
             // 5、更新Meta统计信息
             if (result != null) {
@@ -230,67 +226,12 @@ public class ParserComponentImpl implements ParserComponent {
         }
 
         // 6、更新TableGroup的cursor并持久化
-        Object[] newCursors = PrimaryKeyUtil.getLastCursors((List<Map>) (List<?>) source, primaryKeys);
+        Object[] newCursors = PrimaryKeyUtil.getLastCursors(source, primaryKeys);
         tableGroup.setCursors(newCursors);
         profileComponent.editConfigModel(tableGroup);
 
         // 7、同步完成后通知插件做后置处理
         pluginFactory.process(context, ProcessEnum.AFTER);
-    }
-
-
-    @Override
-    public Result writeBatch(PluginContext context, Executor executor) {
-        Result result = new Result();
-        // 终止同步数据到目标源库
-        if (context.isTerminated()) {
-            result.getSuccessData().addAll(context.getTargetList());
-            return result;
-        }
-
-        int batchSize = context.getBatchSize();
-        // 总数
-        int total = context.getTargetList().size();
-        // 单次任务
-        if (total <= batchSize) {
-            return executeWriterOperation(context);
-        }
-
-        // 批量任务, 拆分
-        int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
-        CountDownLatch latch = new CountDownLatch(taskSize);
-        int offset = 0;
-        for (int i = 0; i < taskSize; i++) {
-            try {
-                PluginContext tmpContext = (PluginContext) context.clone();
-                tmpContext.setTargetList(
-                        context.getTargetList().stream().skip(offset).limit(batchSize).collect(Collectors.toList()));
-                offset += batchSize;
-                executor.execute(() -> {
-                    try {
-                        Result w = executeWriterOperation(tmpContext);
-                        result.addSuccessData(w.getSuccessData());
-                        result.addFailData(w.getFailData());
-                        result.error = w.error;
-                    } catch (Exception e) {
-                        logger.error(e.getMessage());
-                    } finally {
-                        latch.countDown();
-                    }
-                });
-            } catch (CloneNotSupportedException e) {
-                logger.error(e.getMessage(), e);
-                latch.countDown();
-            }
-        }
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            // 重新设置中断状态
-            Thread.currentThread().interrupt();
-            logger.error(e.getMessage());
-        }
-        return result;
     }
 
     /**
@@ -303,26 +244,5 @@ public class ParserComponentImpl implements ParserComponent {
         return profileComponent.getConnector(connectorId).getConfig();
     }
 
-    /**
-     * 执行写入操作，根据事件类型智能路由到对应的方法
-     *
-     * @param context
-     * @return
-     */
-    private Result executeWriterOperation(PluginContext context) {
-        String event = context.getEvent();
-        switch (event) {
-            case ConnectorConstant.OPERTION_INSERT:
-                return connectorFactory.insert(context);
-            case ConnectorConstant.OPERTION_UPDATE:
-                return connectorFactory.update(context);
-            case ConnectorConstant.OPERTION_DELETE:
-                return connectorFactory.delete(context);
-            case ConnectorConstant.OPERTION_UPSERT:
-                return connectorFactory.upsert(context);
-            default:
-                throw new RuntimeException("不支持的事件类型：" + event);
-        }
-    }
 
 }

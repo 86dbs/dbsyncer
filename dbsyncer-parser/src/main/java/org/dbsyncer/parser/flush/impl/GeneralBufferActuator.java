@@ -11,7 +11,6 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.ddl.DDLParser;
@@ -64,8 +63,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Resource
     private ConnectorFactory connectorFactory;
 
-    @Resource
-    private ParserComponent parserComponent;
 
     @Resource
     private ProfileComponent profileComponent;
@@ -218,7 +215,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         pluginFactory.process(context, ProcessEnum.CONVERT);
 
         // 4、批量执行同步
-        Result result = parserComponent.writeBatch(context, getExecutor());
+        Result result = connectorFactory.writeBatch(context);
 
         // 5、持久化同步结果
         result.setTableGroupId(tableGroup.getId());
@@ -251,8 +248,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             }
 
             // 3.更新表属性字段
-            MetaInfo sourceMetaInfo = parserComponent.getMetaInfo(mapping.getSourceConnectorId(), tableGroup.getSourceTable().getName());
-            MetaInfo targetMetaInfo = parserComponent.getMetaInfo(mapping.getTargetConnectorId(), tableGroup.getTargetTable().getName());
+            MetaInfo sourceMetaInfo = connectorFactory.getMetaInfo(connectorFactory.connect(getConnectorConfig(mapping.getSourceConnectorId())), tableGroup.getSourceTable().getName());
+            MetaInfo targetMetaInfo = connectorFactory.getMetaInfo(connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())), tableGroup.getTargetTable().getName());
             tableGroup.getSourceTable().setColumn(sourceMetaInfo.getColumn());
             tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
 

@@ -7,16 +7,14 @@
 - 过滤条件简化：过滤条件直接输入表达式
 - 功能新增：UI 增加同步阶段的显式，以及全量同步的完成状态
 - 功能新增：提供每一个数据表的状态查询
+- getMetaInfo 满天飞，实际上是表信息。
 - 优化：提交任务时对 fieldMapping 进行检测，如空不允许提交。
-- bug：失败数对应的日志缺失
-- bug：UI 自动刷新导致操作列表消失问题
-- bug: 增量阶段，停止，启动不应该对计数重置。
+- bug：失败数对应的日志缺失（全量）
 
 ## 问题池
 
 - 增量-定时 重构
   - 增量定时-移除 AbstractDatabaseConnector.reader, 与 Listener 中重复定义, 但 Reader 语义更好。
-- MetaInfo 是否多余？
 - AbstractDatabaseConnector.filterColumn 这个应该在编辑时处理，而不是在运行时处理
 - 队列溢出问题：删除队列，使用 kafka 作为中间数据源
 - 优化：监控界面增加任务结束的记录
