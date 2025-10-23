@@ -211,14 +211,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         List<Field> targetFields = context.getTargetFields();
 
         // 1、获取SQL
-        String executeSql;
-        if (context.isForceUpdate() && isInsert(event)) {
-            // 覆盖模式下使用 Upsert SQL
-            executeSql = context.getCommand().get(ConnectorConstant.OPERTION_UPSERT);
-        } else {
-            // 正常模式下使用原有 SQL
-            executeSql = context.getCommand().get(event);
-        }
+        String executeSql = context.getCommand().get(event);
 
         Assert.hasText(executeSql, "执行SQL语句不能为空.");
         if (CollectionUtils.isEmpty(targetFields)) {
@@ -233,10 +226,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         List<Field> fields = new ArrayList<>(targetFields);
         List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(targetFields);
         // Update / Delete / Upsert
-        if (!isInsert(event)) {
-            if (isDelete(event)) {
+        if (!ConnectorConstant.isInsert(event)) {
+            if (ConnectorConstant.isDelete(event)) {
                 fields.clear();
-            } else if (isUpdate(event) || isUpsert(event)) {
+            } else if (ConnectorConstant.isUpdate(event) || ConnectorConstant.isUpsert(event)) {
                 removeFieldWithPk(fields, pkFields);
             }
             fields.addAll(pkFields);

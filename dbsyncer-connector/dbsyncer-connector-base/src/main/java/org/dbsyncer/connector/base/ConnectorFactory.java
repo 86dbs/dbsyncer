@@ -26,9 +26,6 @@ import org.springframework.util.Assert;
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 
 /**
  * 连接器工厂
@@ -195,14 +192,10 @@ public class ConnectorFactory implements DisposableBean {
      * 批量写入数据到目标源
      */
     public Result writeBatch(PluginContext context) {
-        return executeWriterOperation(context);
-    }
-
-    /**
-     * 执行写入操作，根据事件类型智能路由到对应的方法
-     */
-    private Result executeWriterOperation(PluginContext context) {
         String event = context.getEvent();
+        if (context.isForceUpdate() && ConnectorConstant.isInsert(event)) {
+            context.setEvent(ConnectorConstant.OPERTION_UPSERT);
+        }
         switch (event) {
             case ConnectorConstant.OPERTION_INSERT:
                 return executeWriterOperation(context, (connector, instance, ctx) -> connector.insert(instance, ctx));

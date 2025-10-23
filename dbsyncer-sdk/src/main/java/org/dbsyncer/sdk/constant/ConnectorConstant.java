@@ -1,5 +1,7 @@
 package org.dbsyncer.sdk.constant;
 
+import org.dbsyncer.common.util.StringUtil;
+
 /**
  * @author AE86
  * @version 1.0.0
@@ -51,4 +53,21 @@ public class ConnectorConstant {
      * 查询总数
      */
     public static final String OPERTION_QUERY_COUNT = "QUERY_COUNT";
+
+
+    public static boolean isUpdate(String event) {
+        return StringUtil.equals(ConnectorConstant.OPERTION_UPDATE, event);
+    }
+
+    public static boolean isInsert(String event) {
+        return StringUtil.equals(ConnectorConstant.OPERTION_INSERT, event);
+    }
+
+    public static boolean isDelete(String event) {
+        return StringUtil.equals(ConnectorConstant.OPERTION_DELETE, event);
+    }
+
+    public static boolean isUpsert(String event) {
+        return StringUtil.equals(ConnectorConstant.OPERTION_UPSERT, event);
+    }
 }

@@ -405,26 +405,26 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     }
 
     private void addRequest(BulkRequest request, String index, String type, String event, String id, Map data) {
-        if (isUpdate(event)) {
+        if (ConnectorConstant.isUpdate(event)) {
             UpdateRequest req = new UpdateRequest(index, type, id);
             req.doc(data, XContentType.JSON);
             request.add(req);
             return;
         }
-        if (isInsert(event)) {
+        if (ConnectorConstant.isInsert(event)) {
             IndexRequest req = new IndexRequest(index, type, id);
             req.source(data, XContentType.JSON);
             request.add(req);
             return;
         }
-        if (isUpsert(event)) {
+        if (ConnectorConstant.isUpsert(event)) {
             // Elasticsearch 的 upsert 使用 IndexRequest，如果文档不存在则创建，存在则更新
             IndexRequest req = new IndexRequest(index, type, id);
             req.source(data, XContentType.JSON);
             request.add(req);
             return;
         }
-        if (isDelete(event)) {
+        if (ConnectorConstant.isDelete(event)) {
             request.add(new DeleteRequest(index, type, id));
         }
     }

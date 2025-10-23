@@ -136,20 +136,4 @@ public abstract class AbstractConnector {
             }
         }
     }
-
-    protected boolean isUpdate(String event) {
-        return StringUtil.equals(ConnectorConstant.OPERTION_UPDATE, event);
-    }
-
-    protected boolean isInsert(String event) {
-        return StringUtil.equals(ConnectorConstant.OPERTION_INSERT, event);
-    }
-
-    protected boolean isDelete(String event) {
-        return StringUtil.equals(ConnectorConstant.OPERTION_DELETE, event);
-    }
-
-    protected boolean isUpsert(String event) {
-        return StringUtil.equals(ConnectorConstant.OPERTION_UPSERT, event);
-    }
 }

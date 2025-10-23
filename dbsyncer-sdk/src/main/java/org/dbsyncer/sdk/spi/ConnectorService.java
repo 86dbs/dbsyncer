@@ -19,7 +19,6 @@ import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
-import org.dbsyncer.sdk.constant.ConnectorConstant;
 
 import java.util.List;
 import java.util.Map;
@@ -138,7 +137,6 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @return
      */
     default Result insert(I connectorInstance, PluginContext context) {
-        context.setEvent(ConnectorConstant.OPERTION_INSERT);
         return writer(connectorInstance, context);
     }
 
@@ -150,7 +148,6 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @return
      */
     default Result upsert(I connectorInstance, PluginContext context) {
-        context.setEvent(ConnectorConstant.OPERTION_UPSERT);
         return writer(connectorInstance, context);
     }
 
@@ -162,7 +159,6 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @return
      */
     default Result update(I connectorInstance, PluginContext context) {
-        context.setEvent(ConnectorConstant.OPERTION_UPDATE);
         return writer(connectorInstance, context);
     }
 
@@ -174,7 +170,6 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @return
      */
     default Result delete(I connectorInstance, PluginContext context) {
-        context.setEvent(ConnectorConstant.OPERTION_DELETE);
         return writer(connectorInstance, context);
     }
 
