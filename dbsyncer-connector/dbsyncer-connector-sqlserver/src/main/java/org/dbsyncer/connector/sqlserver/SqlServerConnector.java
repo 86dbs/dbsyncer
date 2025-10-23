@@ -17,7 +17,6 @@ import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
-import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
@@ -134,51 +133,75 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     /**
-     * 重写 writer 方法，对 SQL Server 使用批量复制优化
+     * 重写 insert 方法，对 SQL Server 使用批量复制优化
      */
     @Override
-    public Result writer(DatabaseConnectorInstance connectorInstance, PluginContext context) {
-        String event = context.getEvent();
+    public Result insert(DatabaseConnectorInstance connectorInstance, PluginContext context) {
+        return executeBulkOperation(connectorInstance, context,
+                (connection, schemaName, enableIdentityInsert) ->
+                        bulkInsert(connection, context, context.getTargetFields(), context.getTargetList(), schemaName, enableIdentityInsert));
+    }
+
+    @Override
+    public Result upsert(DatabaseConnectorInstance connectorInstance, PluginContext context) {
+        return executeBulkOperation(connectorInstance, context,
+                (connection, schemaName, enableIdentityInsert) ->
+                        bulkUpsert(connection, context, context.getTargetFields(), context.getTargetList(), schemaName, enableIdentityInsert));
+    }
+
+    /**
+     * 执行批量操作的通用方法
+     */
+    private Result executeBulkOperation(DatabaseConnectorInstance connectorInstance, PluginContext context,
+                                        BulkOperation bulkOperation) {
         List<Map> data = context.getTargetList();
-        List<Field> targetFields = context.getTargetFields();
 
-        // 只对 INSERT 操作且数据量大于阈值时使用批量复制
-        if (ConnectorConstant.OPERTION_INSERT.equals(event) &&
-                !CollectionUtils.isEmpty(data)) {
-            try {
-                return connectorInstance.execute(databaseTemplate -> {
-                    SimpleConnection connection = databaseTemplate.getSimpleConnection();
-                    // 获取 schema 名称
-                    String schemaName = connectorInstance.getConfig().getSchema();
-                    if (schemaName == null || schemaName.trim().isEmpty()) {
-                        schemaName = "dbo"; // 默认 schema
-                    }
-
-                    // 检查是否需要启用 IDENTITY_INSERT
-                    boolean enableIdentityInsert = Boolean.parseBoolean(context.getCommand().get(MARK_HAS_IDENTITY));
-                    
-                    // 如果强制更新，使用 UPSERT；否则使用普通插入
-                    if (context.isForceUpdate()) {
-                        return bulkUpsert(connection, context, targetFields, data, schemaName, enableIdentityInsert);
-                    } else {
-                        return bulkInsert(connection, context, targetFields, data, schemaName, enableIdentityInsert);
-                    }
-                });
-            } catch (Exception e) {
-                Result result = new Result();
-                result.error = e.getMessage();
-                result.addFailData(context.getTargetList());
-                if (context.isEnablePrintTraceInfo()) {
-                    logger.error("traceId:{}, tableName:{}, event:{}, targetList:{}, result:{}", context.getTraceId(), context.getSourceTableName(),
-                            context.getEvent(), context.getTargetList(), JsonUtil.objToJson(result));
-                }
-                return result;
-            }
+        if (CollectionUtils.isEmpty(data)) {
+            return new Result();
         }
 
-        // 其他情况使用标准插入
-        return super.writer(connectorInstance, context);
+        try {
+            return connectorInstance.execute(databaseTemplate -> {
+                SimpleConnection connection = databaseTemplate.getSimpleConnection();
+                // 获取 schema 名称
+                String schemaName = connectorInstance.getConfig().getSchema();
+                if (schemaName == null || schemaName.trim().isEmpty()) {
+                    schemaName = "dbo"; // 默认 schema
+                }
+
+                // 检查是否需要启用 IDENTITY_INSERT
+                boolean enableIdentityInsert = Boolean.parseBoolean(context.getCommand().get(MARK_HAS_IDENTITY));
+
+                // 执行具体的批量操作
+                return bulkOperation.execute(connection, schemaName, enableIdentityInsert);
+            });
+        } catch (Exception e) {
+            return handleBulkOperationError(e, context);
+        }
     }
+
+    /**
+     * 批量操作函数式接口
+     */
+    @FunctionalInterface
+    private interface BulkOperation {
+        Result execute(Connection connection, String schemaName, boolean enableIdentityInsert) throws Exception;
+    }
+
+    /**
+     * 处理批量操作异常
+     */
+    private Result handleBulkOperationError(Exception e, PluginContext context) {
+        Result result = new Result();
+        result.error = e.getMessage();
+        result.addFailData(context.getTargetList());
+        if (context.isEnablePrintTraceInfo()) {
+            logger.error("traceId:{}, tableName:{}, event:{}, targetList:{}, result:{}", context.getTraceId(), context.getSourceTableName(),
+                    context.getEvent(), context.getTargetList(), JsonUtil.objToJson(result));
+        }
+        return result;
+    }
+
 
     /**
      * 执行批量插入
