@@ -401,7 +401,16 @@ function bindFieldMappingDelClick(){
 }
 // 返回驱动配置页面
 function backMappingPage($this){
-    doLoader('/mapping/page/edit?id=' + $this.attr("mappingId"));
+    // 返回接口时增加classOn=1，edit页面接到后默认展开映射关系tab
+    doLoader('/mapping/page/edit?classOn=1&id=' + $this.attr("mappingId"));
+}
+
+function doTableGroupSubmit() {
+   //保存
+   let $form = $("#tableGroupModifyForm");
+   if ($form.formValidate() == true) {
+       submit($form.serializeJson());
+   }
 }
 
 $(function() {
@@ -430,13 +439,7 @@ $(function() {
     bindFieldMappingListClick();
     bindFieldMappingDelClick();
 
-    //保存
-    $("#tableGroupSubmitBtn").click(function () {
-        let $form = $("#tableGroupModifyForm");
-        if ($form.formValidate() == true) {
-            submit($form.serializeJson());
-        }
-    });
+
 
     // 返回按钮，跳转至上个页面
     $("#tableGroupBackBtn").bind('click', function(){

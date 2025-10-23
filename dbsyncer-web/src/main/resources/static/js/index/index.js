@@ -91,7 +91,7 @@ function bindAddMapping() {
 function bindEditMapping() {
     $(".mappingList .dbsyncer_block").click(function () {
         var $id = $(this).attr("id");
-        doLoader('/mapping/page/edit?id=' + $id);
+        doLoader('/mapping/page/edit?classOn=0&id=' + $id);
     });
 }
 
@@ -257,7 +257,7 @@ function refreshMappingList($projectGroupSelect) {
 
                                           htmlContent += '<tbody>';
                                           htmlContent += '<tr>';
-                                          htmlContent += '<td class="text-left">';
+                                          htmlContent += '<td class="text-left" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;  max-width: 0; width: 100%;">';
                                           htmlContent += modelname + '同步>总数:' + total;
 
                                           // 检查同步阶段是否为0（正在统计中）
@@ -312,7 +312,7 @@ function refreshMappingList($projectGroupSelect) {
                                    }
                                },
                                error: function() {
-                                   alert('刷新失败');
+                                  // alert('刷新失败');
                                }
                            });
                     }, data.resultValue * 1000);
@@ -329,6 +329,23 @@ function groupShow(id){
     var projectGroupId = (typeof id === 'string') ? id : '';
     timerLoad("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
     $("#projectGroup").val(projectGroupId);
+}
+
+function nextToMapping(str){
+
+    // 获取映射关系标签页及对应链接
+    const $baseConfigTab = $('#'+str);
+    const $baseConfigLink = $('a[href="#' + str + '"]');
+
+    if ($baseConfigTab.length && $baseConfigLink.length) {
+        // 移除所有tab-pane的active类，再为目标标签页添加active
+        $('.tab-pane').removeClass('active');
+        $('.nav-tabs li').removeClass('active');
+        $baseConfigTab.addClass('active');
+
+        // 激活对应的tab链接及其父元素（通常是li）
+        $baseConfigLink.addClass('active').parent().addClass('active');
+    }
 }
 
 $(function () {

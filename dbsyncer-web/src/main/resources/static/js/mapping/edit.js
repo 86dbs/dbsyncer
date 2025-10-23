@@ -239,7 +239,23 @@ function bindRefreshTablesClick() {
     });
 }
 
+function doMappingSubmit() {
+    // 保存
+    let $form = $("#mappingModifyForm");
+    if ($form.formValidate() == true) {
+        let data = $form.serializeJson();
+        submit(data);
+    }
+}
+
 $(function () {
+
+    var classOnVal =  $("#mappingShow").val();
+    if(classOnVal && classOnVal==1){
+        //从editTableGroup跳转回来后默认展示映射关系tab
+        nextToMapping('mappingBaseConfig');
+    }
+
     // 绑定同步方式切换事件
     bindMappingModelChange();
     // 绑定删除表映射事件
@@ -261,17 +277,9 @@ $(function () {
     // 绑定下拉过滤按钮点击事件
     bindMultipleSelectFilterBtnClick();
 
-    // 保存
-    $("#mappingSubmitBtn").click(function () {
-        let $form = $("#mappingModifyForm");
-        if ($form.formValidate() == true) {
-            let data = $form.serializeJson();
-            submit(data);
-        }
-    });
-
     // 返回
     $("#mappingBackBtn").click(function () {
         backIndexPage();
     });
+
 })
