@@ -206,33 +206,62 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public Result writer(DatabaseConnectorInstance connectorInstance, PluginContext context) {
+        // writer 方法只负责执行 SQL，不处理业务逻辑
+        return executeWriter(connectorInstance, context, context.getTargetFields());
+    }
+
+    @Override
+    public Result insert(DatabaseConnectorInstance connectorInstance, PluginContext context) {
+        // INSERT 操作：使用所有字段
+        List<Field> fields = new ArrayList<>(context.getTargetFields());
+        return executeWriter(connectorInstance, context, fields);
+    }
+
+    @Override
+    public Result update(DatabaseConnectorInstance connectorInstance, PluginContext context) {
+        // UPDATE 操作：移除主键字段，只保留非主键字段 + 主键字段
+        List<Field> fields = new ArrayList<>(context.getTargetFields());
+        List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
+        removeFieldWithPk(fields, pkFields);
+        fields.addAll(pkFields);
+        return executeWriter(connectorInstance, context, fields);
+    }
+
+    @Override
+    public Result delete(DatabaseConnectorInstance connectorInstance, PluginContext context) {
+        // DELETE 操作：只使用主键字段
+        List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
+        return executeWriter(connectorInstance, context, pkFields);
+    }
+
+    @Override
+    public Result upsert(DatabaseConnectorInstance connectorInstance, PluginContext context) {
+        // UPSERT 操作：同 UPDATE 逻辑
+        List<Field> fields = new ArrayList<>(context.getTargetFields());
+        List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
+        removeFieldWithPk(fields, pkFields);
+        fields.addAll(pkFields);
+        return executeWriter(connectorInstance, context, fields);
+    }
+
+    /**
+     * 执行写入操作的通用方法
+     */
+    private Result executeWriter(DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> fields) {
         String event = context.getEvent();
         List<Map> data = context.getTargetList();
-        List<Field> targetFields = context.getTargetFields();
 
         // 1、获取SQL
         String executeSql = context.getCommand().get(event);
-
         Assert.hasText(executeSql, "执行SQL语句不能为空.");
-        if (CollectionUtils.isEmpty(targetFields)) {
+
+        if (CollectionUtils.isEmpty(fields)) {
             logger.error("writer fields can not be empty.");
             throw new SdkException("writer fields can not be empty.");
         }
         if (CollectionUtils.isEmpty(data)) {
             logger.error("writer data can not be empty.");
             throw new SdkException("writer data can not be empty.");
-        }
-
-        List<Field> fields = new ArrayList<>(targetFields);
-        List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(targetFields);
-        // Update / Delete / Upsert
-        if (!ConnectorConstant.isInsert(event)) {
-            if (ConnectorConstant.isDelete(event)) {
-                fields.clear();
-            } else if (ConnectorConstant.isUpdate(event) || ConnectorConstant.isUpsert(event)) {
-                removeFieldWithPk(fields, pkFields);
-            }
-            fields.addAll(pkFields);
         }
 
         Result result = new Result();

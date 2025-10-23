@@ -137,7 +137,7 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @return
      */
     default Result insert(I connectorInstance, PluginContext context) {
-        return writer(connectorInstance, context);
+        throw new SdkException("should overwrite his method");
     }
 
     /**
@@ -148,7 +148,7 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @return
      */
     default Result upsert(I connectorInstance, PluginContext context) {
-        return writer(connectorInstance, context);
+        throw new SdkException("should overwrite his method");
     }
 
     /**
@@ -159,7 +159,7 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @return
      */
     default Result update(I connectorInstance, PluginContext context) {
-        return writer(connectorInstance, context);
+        throw new SdkException("should overwrite his method");
     }
 
     /**
@@ -170,7 +170,7 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @return
      */
     default Result delete(I connectorInstance, PluginContext context) {
-        return writer(connectorInstance, context);
+        throw new SdkException("should overwrite his method");
     }
 
     /**

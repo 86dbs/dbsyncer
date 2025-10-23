@@ -432,4 +432,6 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     private interface FilterMapper {
         void apply(BoolQueryBuilder builder, String key, String value);
     }
+
+
 }
