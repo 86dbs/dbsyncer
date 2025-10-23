@@ -244,21 +244,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         Result result = new Result();
         int[] execute = null;
-        try {
-            // 2、设置参数并执行SQL
-            execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
-        } catch (Exception e) {
-            data.forEach(row -> forceUpdate(result, connectorInstance, context, pkFields, row));
-        }
-
+        // 2、设置参数并执行SQL
+        execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
         if (null != execute) {
             int batchSize = execute.length;
             for (int i = 0; i < batchSize; i++) {
                 if (execute[i] == 1 || execute[i] == -2) {
                     result.getSuccessData().add(data.get(i));
-                    continue;
                 }
-                forceUpdate(result, connectorInstance, context, pkFields, data.get(i));
             }
         }
         return result;
@@ -670,59 +663,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             args[i] = row.get(fields.get(i).getName());
         }
         return args;
-    }
-
-    private void forceUpdate(Result result, DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> pkFields,
-                             Map row) {
-        String event = context.getEvent();
-        if (context.isForceUpdate() && (isInsert(event) || isUpsert(event))) {
-            // 存在执行覆盖更新，否则写入
-            logger.warn("{} {}表执行{}失败, 执行{}, {}", context.getTraceId(), context.getTargetTableName(), event, ConnectorConstant.OPERTION_UPDATE, row);
-            writer(result, connectorInstance, context, pkFields, row, ConnectorConstant.OPERTION_UPDATE);
-        }
-    }
-
-    // 仅用于 forceUpdate
-    private void writer(Result result, DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> pkFields, Map row,
-                        String event) {
-        // 1、获取 SQL
-        String sql = context.getCommand().get(event);
-
-        List<Field> fields = new ArrayList<>(context.getTargetFields());
-        // Update / Delete / Upsert
-        if (!isInsert(event)) {
-            if (isDelete(event)) {
-                fields.clear();
-            } else if (isUpdate(event) || isUpsert(event)) {
-                removeFieldWithPk(fields, pkFields);
-            }
-            fields.addAll(pkFields);
-        }
-
-        try {
-            // 2、设置参数
-            int execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql, batchRow(fields, row)));
-            if (execute == 0) {
-                throw new SdkException(String.format("%s 尝试执行[%s]失败", context.getTraceId(), event));
-            }
-            result.getSuccessData().add(row);
-        } catch (Exception e) {
-            result.getFailData().add(row);
-            result.error = "SQL:" + sql + System.lineSeparator() +
-                    "DATA:" + row + System.lineSeparator() +
-                    "ERROR:" + e.getMessage() + System.lineSeparator();
-            logger.error("执行{}失败: {}, DATA:{}", event, e.getMessage(), row);
-        }
-    }
-
-    private boolean existRow(DatabaseConnectorInstance connectorInstance, String sql, Object[] args) {
-        int rowNum = 0;
-        try {
-            rowNum = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, Integer.class, args));
-        } catch (Exception e) {
-            logger.error("检查数据行存在异常:{}，SQL:{},参数:{}", e.getMessage(), sql, args);
-        }
-        return rowNum > 0;
     }
 
     private boolean isPk(Map<String, List<String>> tables, String tableName, String name) {

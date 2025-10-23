@@ -175,40 +175,6 @@ public class ConnectorFactory implements DisposableBean {
         return getConnectorService(connectorInstance.getConfig()).getCount(connectorInstance, command);
     }
 
-    public Result writer(PluginContext context) {
-        ConnectorInstance targetInstance = context.getTargetConnectorInstance();
-        Assert.notNull(targetInstance, "targetConnectorInstance can not null");
-        ConnectorService targetConnector = getConnectorService(targetInstance.getConfig());
-        if (targetConnector instanceof AbstractConnector) {
-            AbstractConnector conn = (AbstractConnector) targetConnector;
-            try {
-                // 支持标准解析器
-                if (context.isEnableSchemaResolver() && targetConnector.getSchemaResolver() != null) {
-                    conn.convertProcessBeforeWriter(context, targetConnector.getSchemaResolver());
-                } else {
-                    conn.convertProcessBeforeWriter(context, targetInstance);
-                }
-            } catch (Exception e) {
-                Result result = new Result();
-                result.error = e.getMessage();
-                result.addFailData(context.getTargetList());
-                if (context.isEnablePrintTraceInfo()) {
-                    logger.error("traceId:{}, tableName:{}, event:{}, targetList:{}, result:{}", context.getTraceId(), context.getSourceTableName(),
-                            context.getEvent(), context.getTargetList(), JsonUtil.objToJson(result));
-                }
-                return result;
-            }
-        }
-
-        Result result = targetConnector.writer(targetInstance, context);
-        if (context.isEnablePrintTraceInfo()) {
-            logger.info("traceId:{}, tableName:{}, event:{}, result:{}", context.getTraceId(), context.getSourceTableName(),
-                    context.getEvent(), JsonUtil.objToJson(result));
-        }
-        Assert.notNull(result, "Connector writer batch result can not null");
-        return result;
-    }
-
     /**
      * 插入数据到目标源
      */
