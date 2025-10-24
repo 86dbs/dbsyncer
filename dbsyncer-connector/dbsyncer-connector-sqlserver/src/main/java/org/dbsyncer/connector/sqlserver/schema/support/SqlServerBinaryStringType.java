@@ -6,6 +6,7 @@ package org.dbsyncer.connector.sqlserver.schema.support;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.BytesType;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -38,9 +39,11 @@ public final class SqlServerBinaryStringType extends BytesType {
             return (byte[]) val;
         }
         if (val instanceof String) {
-            return ((String) val).getBytes();
+            // 使用UTF-8编码将字符串转换为字节数组
+            return ((String) val).getBytes(StandardCharsets.UTF_8);
         }
-        return new byte[0];
+        // 对于其他类型，先转换为字符串再转换为字节数组
+        return String.valueOf(val).getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
@@ -49,9 +52,8 @@ public final class SqlServerBinaryStringType extends BytesType {
             return val;
         }
         if (val instanceof String) {
-            return ((String) val).getBytes();
+            return ((String) val).getBytes(StandardCharsets.UTF_8);
         }
         return super.convert(val, field);
     }
 }
-

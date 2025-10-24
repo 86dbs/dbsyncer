@@ -219,7 +219,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
             typedData.add((Map<String, Object>) map);
         }
 
-        int insertedCount = SqlServerBulkCopyUtil.bulkInsert(connection, tableName, targetFields, typedData, schemaName, enableIdentityInsert);
+        int insertedCount = SqlServerBulkCopyUtil.bulkInsert(connection, tableName, targetFields, typedData, schemaName, enableIdentityInsert, getSchemaResolver());
 
         // 设置成功数据
         result.addSuccessData(data);
@@ -255,7 +255,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
             typedData.add((Map<String, Object>) map);
         }
 
-        int processedCount = SqlServerBulkCopyUtil.bulkUpsert(connection, tableName, targetFields, typedData, primaryKeys, schemaName, enableIdentityInsert);
+        int processedCount = SqlServerBulkCopyUtil.bulkUpsert(connection, tableName, targetFields, typedData, primaryKeys, schemaName, enableIdentityInsert, getSchemaResolver());
 
         // 设置成功数据
         result.addSuccessData(data);

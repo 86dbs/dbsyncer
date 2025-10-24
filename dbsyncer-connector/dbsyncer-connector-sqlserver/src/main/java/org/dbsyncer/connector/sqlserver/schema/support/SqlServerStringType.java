@@ -6,6 +6,7 @@ package org.dbsyncer.connector.sqlserver.schema.support;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -42,8 +43,10 @@ public final class SqlServerStringType extends StringType {
             return (String) val;
         }
         if (val instanceof byte[]) {
-            return new String((byte[]) val);
+            // 使用UTF-8编码将字节数组转换为字符串
+            return new String((byte[]) val, StandardCharsets.UTF_8);
         }
+        // 对于其他类型，直接转换为字符串
         return String.valueOf(val);
     }
 
@@ -52,7 +55,9 @@ public final class SqlServerStringType extends StringType {
         if (val instanceof String) {
             return val;
         }
+        if (val instanceof byte[]) {
+            return new String((byte[]) val, StandardCharsets.UTF_8);
+        }
         return super.convert(val, field);
     }
 }
-
