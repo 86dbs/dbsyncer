@@ -45,6 +45,10 @@ public class PostgreSQLBooleanType extends BooleanType {
         if (val instanceof Boolean) {
             return val;
         }
+        if (val instanceof Number) {
+            Number num = (Number) val;
+            return num.intValue() == 1 ? Boolean.TRUE : Boolean.FALSE;
+        }
         return throwUnsupportedException(val, field);
     }
 }

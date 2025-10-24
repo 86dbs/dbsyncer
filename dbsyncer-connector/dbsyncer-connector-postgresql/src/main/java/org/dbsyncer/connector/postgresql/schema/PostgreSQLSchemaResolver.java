@@ -5,6 +5,7 @@ package org.dbsyncer.connector.postgresql.schema;
 
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLBooleanType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLBytesType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDateType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDecimalType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDoubleType;
@@ -38,7 +39,8 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
                 new PostgreSQLDoubleType(),
                 new PostgreSQLDateType(),
                 new PostgreSQLTimestampType(),
-                new PostgreSQLBooleanType()
+                new PostgreSQLBooleanType(),
+                new PostgreSQLBytesType()
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
                 throw new PostgreSQLException("Duplicate type name: " + typeName);

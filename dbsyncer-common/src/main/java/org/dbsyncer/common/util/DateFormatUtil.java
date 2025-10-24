@@ -9,6 +9,8 @@ import org.dbsyncer.common.column.Lexer;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -26,30 +28,36 @@ import java.time.temporal.TemporalAccessor;
 
 public abstract class DateFormatUtil {
 
-    /**
-     * yyyy-MM-dd HH:mm:ss
-     */
-    public static final DateTimeFormatter CHINESE_STANDARD_TIME_FORMATTER = DateTimeFormatter.ofPattern(
-            "yyyy-MM-dd HH:mm:ss");
-    /**
-     * yyyy-MM-dd'T'HH:mm:ss.SSSZ
-     */
-    public static final DateTimeFormatter TS_TZ_WITH_MILLISECOND_FORMATTER = DateTimeFormatter.ofPattern(
-            "yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-    /**
-     * yyyy-MM-dd'T'HH:mm:ssZ
-     */
-    public static final DateTimeFormatter TS_TZ_FORMATTER = DateTimeFormatter.ofPattern(
-            "yyyy-MM-dd'T'HH:mm:ssZ");
-    /**
-     * yyyy-MM-dd
-     */
-    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(
-            "yyyy-MM-dd");
-    /**
-     * HH:mm:ss
-     */
-    public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+    // 常见日期时间格式模式
+    public static final String PATTERN_YYYY_MM_DD = "yyyy-MM-dd";
+    public static final String PATTERN_YYYY_MM_DD_HH_MM_SS = "yyyy-MM-dd HH:mm:ss";
+    public static final String PATTERN_YYYY_MM_DD_HH_MM_SS_SSS = "yyyy-MM-dd HH:mm:ss.SSS";
+    public static final String PATTERN_YYYY_MM_DD_HH_MM_SS_SSSSSS = "yyyy-MM-dd HH:mm:ss.SSSSSS";
+    public static final String PATTERN_YYYY_MM_DD_T_HH_MM_SS_XXX = "yyyy-MM-dd'T'HH:mm:ssXXX";
+    public static final String PATTERN_YYYY_MM_DD_T_HH_MM_SS_SSS_XXX = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
+    public static final String PATTERN_YYYY_MM_DD_T_HH_MM_SS_Z = "yyyy-MM-dd'T'HH:mm:ssZ";
+    public static final String PATTERN_YYYY_MM_DD_T_HH_MM_SS_SSS_Z = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+    public static final String PATTERN_YYYYMMDD = "yyyyMMdd";
+    public static final String PATTERN_YYYYMMDDHHMMSS = "yyyyMMddHHmmss";
+    public static final String PATTERN_YYYYMMDDHHMMSSSSS = "yyyyMMddHHmmssSSS";
+
+    public static final DateTimeFormatter YYYY_MM_DD = DateTimeFormatter.ofPattern(PATTERN_YYYY_MM_DD);
+    public static final DateTimeFormatter YYYY_MM_DD_HH_MM_SS = DateTimeFormatter.ofPattern(PATTERN_YYYY_MM_DD_HH_MM_SS);
+    public static final DateTimeFormatter YYYY_MM_DD_HH_MM_SS_SSS = DateTimeFormatter.ofPattern(PATTERN_YYYY_MM_DD_HH_MM_SS_SSS);
+    public static final DateTimeFormatter YYYY_MM_DD_HH_MM_SS_SSSSSS = DateTimeFormatter.ofPattern(PATTERN_YYYY_MM_DD_HH_MM_SS_SSSSSS);
+    /* 带时区格式 */
+    public static final DateTimeFormatter YYYY_MM_DD_T_HH_MM_SS_XXX = DateTimeFormatter.ofPattern(PATTERN_YYYY_MM_DD_T_HH_MM_SS_XXX);
+    public static final DateTimeFormatter YYYY_MM_DD_T_HH_MM_SS_SSS_XXX = DateTimeFormatter.ofPattern(PATTERN_YYYY_MM_DD_T_HH_MM_SS_SSS_XXX);
+    public static final DateTimeFormatter YYYY_MM_DD_T_HH_MM_SS_Z = DateTimeFormatter.ofPattern(PATTERN_YYYY_MM_DD_T_HH_MM_SS_Z);
+    public static final DateTimeFormatter YYYY_MM_DD_T_HH_MM_SS_SSS_Z = DateTimeFormatter.ofPattern(PATTERN_YYYY_MM_DD_T_HH_MM_SS_SSS_Z);
+
+    // 兼容格式
+    private static final DateTimeFormatter[] FORMATTERS = {YYYY_MM_DD, YYYY_MM_DD_HH_MM_SS, YYYY_MM_DD_HH_MM_SS_SSS, YYYY_MM_DD_HH_MM_SS_SSSSSS, YYYY_MM_DD_T_HH_MM_SS_XXX, YYYY_MM_DD_T_HH_MM_SS_SSS_XXX, YYYY_MM_DD_T_HH_MM_SS_Z, YYYY_MM_DD_T_HH_MM_SS_SSS_Z, DateTimeFormatter.ISO_OFFSET_DATE_TIME, DateTimeFormatter.ISO_LOCAL_DATE_TIME, DateTimeFormatter.ISO_DATE_TIME, DateTimeFormatter.ISO_INSTANT};
+
+    // 定义常见的日期时间格式模式
+    private static final String[] SIMPLE_PATTERNS = {PATTERN_YYYY_MM_DD, PATTERN_YYYY_MM_DD_HH_MM_SS, PATTERN_YYYY_MM_DD_HH_MM_SS_SSS, PATTERN_YYYY_MM_DD_HH_MM_SS_SSSSSS, PATTERN_YYYYMMDD, PATTERN_YYYYMMDDHHMMSS, PATTERN_YYYYMMDDHHMMSSSSS};
+
+    public static final DateTimeFormatter HH_MM_SS = DateTimeFormatter.ofPattern("HH:mm:ss");
     /**
      * 默认时区
      */
@@ -107,20 +115,19 @@ public abstract class DateFormatUtil {
             .toFormatter();
 
     public static String getCurrentTime() {
-        return LocalDateTime.now().format(TIME_FORMATTER);
+        return LocalDateTime.now().format(HH_MM_SS);
     }
 
     public static String dateToString(Date date) {
-        return date.toLocalDate().format(DATE_FORMATTER);
+        return date.toLocalDate().format(YYYY_MM_DD);
     }
 
     public static String dateToString(java.util.Date date) {
-        return date.toInstant().atZone(zoneId).toLocalDateTime()
-                .format(CHINESE_STANDARD_TIME_FORMATTER);
+        return date.toInstant().atZone(zoneId).toLocalDateTime().format(YYYY_MM_DD_HH_MM_SS);
     }
 
     public static Date stringToDate(String s) {
-        return Date.valueOf(LocalDate.parse(s, DATE_FORMATTER));
+        return Date.valueOf(LocalDate.parse(s, YYYY_MM_DD));
     }
 
     public static Date stringToDate(String s, DateTimeFormatter formatter) {
@@ -128,7 +135,7 @@ public abstract class DateFormatUtil {
     }
 
     public static String timestampToString(Timestamp timestamp) {
-        return timestampToString(timestamp, CHINESE_STANDARD_TIME_FORMATTER);
+        return timestampToString(timestamp, YYYY_MM_DD_HH_MM_SS);
     }
 
     public static String timestampToString(Timestamp timestamp, DateTimeFormatter formatter) {
@@ -136,65 +143,63 @@ public abstract class DateFormatUtil {
     }
 
     public static LocalTime stringToLocalTime(String s) {
-        return LocalTime.parse(s, CHINESE_STANDARD_TIME_FORMATTER);
+        return LocalTime.parse(s, YYYY_MM_DD_HH_MM_SS);
     }
 
     public static Timestamp stringToTimestamp(String s) {
-        try {
-            // 2020-7-12 00:00:00
-            if (s.length() < 19) {
-                return Timestamp.valueOf(
-                        LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(format(s))));
-            }
-
-            // 2020-07-12 00:00:00
-            if (s.length() == 19) {
-                return Timestamp.valueOf(
-                        LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(s)));
-            }
-
-            // 2020-07-12 00:00:00.0
-            if (s.length() == 21) {
-                s = s.substring(0, s.lastIndexOf("."));
-                return Timestamp.valueOf(
-                        LocalDateTime.from(CHINESE_STANDARD_TIME_FORMATTER.parse(s)));
-            }
-
-            // 2022-07-21T05:00:59+0800
-            if (s.length() == 24) {
-                // 2024-06-14T16:00:00.000Z
-                if (StringUtil.endsWith(s, "Z")) {
-                    return stringToTimestamp(s, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-                }
-                return stringToTimestamp(s, TS_TZ_FORMATTER);
-            }
-
-            // 2022-07-21T05:35:34.000+0800
-            if (s.length() == 28) {
-                return stringToTimestamp(s, TS_TZ_WITH_MILLISECOND_FORMATTER);
-            }
-
-            // 2022-07-21T05:35:34.000+08:00
-            if (s.length() == 29) {
-                s = s.replaceAll(":[^:]*$", "00");
-                return stringToTimestamp(s, TS_TZ_WITH_MILLISECOND_FORMATTER);
-            }
-
-            throw new CommonException(String.format("Can not parse val[%s] to Timestamp", s));
-        } catch (ParseException e) {
-            throw new CommonException(e);
+        if (StringUtil.isBlank(s)) {
+            return null;
         }
+
+        // 2024-06-05 21:15:13.
+        if (StringUtil.endsWith(s, StringUtil.POINT)) {
+            s = s.substring(0, s.lastIndexOf(StringUtil.POINT));
+        }
+
+        // 2020-7-12 00:00:00
+        if (s.length() < 19) {
+            return Timestamp.valueOf(LocalDateTime.from(YYYY_MM_DD_HH_MM_SS.parse(format(s))));
+        }
+
+        for (DateTimeFormatter formatter : FORMATTERS) {
+            try {
+                if (s.contains("T") && s.contains("+")) {
+                    // 处理带时区的ISO格式
+                    Instant instant = Instant.from(formatter.parse(s));
+                    return Timestamp.from(instant);
+                }
+                // 处理本地时间格式
+                return Timestamp.valueOf(LocalDateTime.parse(s, formatter));
+            } catch (DateTimeParseException e) {
+                // 继续尝试下一个格式
+                continue;
+            }
+        }
+        // 尝试SimpleDateFormat
+        return parseWithSimpleDateFormat(s);
     }
 
-    public static Timestamp stringToTimestamp(String s, DateTimeFormatter formatter)
-            throws ParseException {
+    private static Timestamp parseWithSimpleDateFormat(String s) {
+        for (String pattern : SIMPLE_PATTERNS) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat(pattern);
+                sdf.setLenient(false); // 严格模式
+                return new Timestamp(sdf.parse(s).getTime());
+            } catch (ParseException e) {
+                // 继续尝试下一个格式
+                continue;
+            }
+        }
+
+        throw new CommonException(String.format("Can not parse val[%s] to Timestamp", s));
+    }
+
+    public static Timestamp stringToTimestamp(String s, DateTimeFormatter formatter) throws ParseException {
         return Timestamp.valueOf(LocalDateTime.from(formatter.parse(s)).atZone(zoneId).toLocalDateTime());
     }
 
     public static Timestamp timeWithoutTimeZoneToTimestamp(String s) {
-        return Timestamp.valueOf(
-                LocalDateTime.from(DateFormatUtil.TS_FORMAT.parse(s)).atZone(ZoneOffset.UTC)
-                        .toLocalDateTime());
+        return Timestamp.valueOf(LocalDateTime.from(DateFormatUtil.TS_FORMAT.parse(s)).atZone(ZoneOffset.UTC).toLocalDateTime());
     }
 
     public static OffsetTime timeWithTimeZone(String s) {
@@ -253,5 +258,27 @@ public abstract class DateFormatUtil {
         }
         return s;
     }
+
+//    public static void main(String[] args) {
+//        String[] dateTimeExamples = {
+//                "2020-7-2 16:13:14",
+//                "2020-07-12 16:13:14",
+//                "2020-07-12 16:13:14.0",
+//                "2020-07-12 16:13:14.016000",
+//                "2022-07-21T05:00:59+0800",
+//                "2022-07-21T05:00:59.111Z",
+//                "2022-07-21T05:35:34.111+0800",
+//                "2022-07-21T05:35:34.111+08:00"
+//        };
+//
+//        for (String example : dateTimeExamples) {
+//            Timestamp timestamp = DateFormatUtil.stringToTimestamp(example);
+//            if (timestamp != null) {
+//                System.out.println(String.format("解析 '%s' -> %s", example, timestamp));
+//            } else {
+//                System.out.println("无法解析: " + example);
+//            }
+//        }
+//    }
 
 }
