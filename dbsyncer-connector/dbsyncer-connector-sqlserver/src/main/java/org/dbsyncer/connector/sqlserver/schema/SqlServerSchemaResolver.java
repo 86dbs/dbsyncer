@@ -25,7 +25,7 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
 
     // Java标准类型到SQL Server特定类型的映射
     private static final Map<String, String> STANDARD_TO_TARGET_TYPE_MAP = new HashMap<>();
-    
+
     static {
         STANDARD_TO_TARGET_TYPE_MAP.put("INT", "int");
         STANDARD_TO_TARGET_TYPE_MAP.put("STRING", "nvarchar");
@@ -49,8 +49,7 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
                 new SqlServerExactNumericType(),        // 精确数值类型
                 new SqlServerApproximateNumericType(),  // 近似数值类型
                 new SqlServerDateTimeType(),            // 日期时间类型
-                new SqlServerCharacterStringType(),     // 字符字符串类型
-                new SqlServerUnicodeStringType(),       // Unicode 字符串类型
+                new SqlServerStringType(),     // 字符字符串类型
                 new SqlServerBinaryStringType()         // 二进制字符串类型
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
@@ -67,17 +66,17 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
         if (dataType != null) {
             // 使用DataType的getType()方法获取标准类型
             return new Field(field.getName(),
-                           dataType.getType().name(),
-                           getStandardTypeCode(dataType.getType()),
-                           field.isPk(),
-                           field.getColumnSize(),
-                           field.getRatio());
+                    dataType.getType().name(),
+                    getStandardTypeCode(dataType.getType()),
+                    field.isPk(),
+                    field.getColumnSize(),
+                    field.getRatio());
         }
 
         // 如果没有找到对应的DataType，抛出异常以发现系统不足
         throw new UnsupportedOperationException(
-            String.format("Unsupported SQL Server type: %s. Please add mapping for this type in DataType configuration.",
-                         field.getTypeName()));
+                String.format("Unsupported SQL Server type: %s. Please add mapping for this type in DataType configuration.",
+                        field.getTypeName()));
     }
 
     @Override
@@ -85,11 +84,11 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
         // 将Java标准类型转换为SQL Server特定类型
         String targetTypeName = getTargetTypeName(standardField.getTypeName());
         return new Field(standardField.getName(),
-                       targetTypeName,
-                       getTargetTypeCode(targetTypeName),
-                       standardField.isPk(),
-                       standardField.getColumnSize(),
-                       standardField.getRatio());
+                targetTypeName,
+                getTargetTypeCode(targetTypeName),
+                standardField.isPk(),
+                standardField.getColumnSize(),
+                standardField.getRatio());
     }
 
     /**

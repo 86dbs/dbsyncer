@@ -11,20 +11,24 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * SQL Server Unicode 字符串类型
- * 包括 Unicode 字符类型
- * 注意：Unicode 字符串类型不支持 IDENTITY 属性
+ * SQL Server 字符字符串类型
+ * 包括非 Unicode 字符类型
+ * 注意：字符字符串类型不支持 IDENTITY 属性
  *
  * @Author 穿云
  * @Version 1.0.0
  * @Date 2024-12-24 23:45
  */
-public final class SqlServerUnicodeStringType extends StringType {
+public final class SqlServerStringType extends StringType {
 
     private enum TypeEnum {
+        CHAR,           // 固定长度字符
+        VARCHAR,        // 可变长度字符
+        TEXT,           // 文本类型 (已弃用，建议使用 VARCHAR(MAX))
         NCHAR,          // 固定长度 Unicode 字符
         NVARCHAR,       // 可变长度 Unicode 字符
-        NTEXT           // Unicode 文本类型 (已弃用，建议使用 NVARCHAR(MAX))
+        NTEXT,          // Unicode 文本类型 (已弃用，建议使用 NVARCHAR(MAX))
+        XML
     }
 
     @Override
