@@ -110,8 +110,7 @@ public class ParserComponentImpl implements ParserComponent {
         // append mapping param to command
         if (mapping.getParams() != null)
             command.putAll(mapping.getParams());
-        // 获取同步字段
-        Picker picker = new Picker(group);
+
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
 
         final FullPluginContext context = new FullPluginContext();
@@ -126,13 +125,16 @@ public class ParserComponentImpl implements ParserComponent {
         context.setPlugin(group.getPlugin());
         context.setPluginExtInfo(group.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
-        context.setTargetFields(picker.getTargetFields());
         context.setPageSize(mapping.getReadNum());
         context.setEnableSchemaResolver(profileComponent.getSystemConfig().isEnableSchemaResolver());
         context.setCursors(tableGroup.getCursors());
+
         ConnectorService sourceConnector = connectorFactory
                 .getConnectorService(context.getSourceConnectorInstance().getConfig());
+        Picker picker = new Picker(group);
         picker.setSourceResolver(context.isEnableSchemaResolver() ? sourceConnector.getSchemaResolver() : null);
+        context.setTargetFields(picker.getTargetFields());
+
 
         // 0、插件前置处理
         pluginFactory.process(context, ProcessEnum.BEFORE);
@@ -152,11 +154,11 @@ public class ParserComponentImpl implements ParserComponent {
 
         // 执行流式处理
         ((DatabaseConnectorInstance) context.getSourceConnectorInstance()).execute(databaseTemplate ->
-                executeTableGroupWithStreaming(metaId, tableGroup, context, db, executor, primaryKeys, querySql, databaseTemplate));
+                executeTableGroupWithStreaming(metaId, tableGroup, context, picker, db, primaryKeys, querySql, databaseTemplate));
     }
 
     private Object executeTableGroupWithStreaming(String metaId, TableGroup tableGroup, AbstractPluginContext context,
-                                                  Database db, Executor executor, List<String> primaryKeys,
+                                                  Picker picker, Database db, List<String> primaryKeys,
                                                   String querySql, DatabaseTemplate databaseTemplate) {
         // 获取流式处理的fetchSize
         Integer fetchSize = db.getStreamingFetchSize(context);
@@ -181,13 +183,13 @@ public class ParserComponentImpl implements ParserComponent {
 
                 // 达到批次大小时处理数据
                 if (batch.size() >= context.getBatchSize()) {
-                    processTableGroupDataBatch(metaId, batch, tableGroup, context, primaryKeys);
+                    processTableGroupDataBatch(metaId, batch, tableGroup, context, picker, primaryKeys);
                     batch = new ArrayList<>();
                 }
             }
             // 处理最后一批数据
             if (!batch.isEmpty()) {
-                processTableGroupDataBatch(metaId, batch, tableGroup, context, primaryKeys);
+                processTableGroupDataBatch(metaId, batch, tableGroup, context, picker, primaryKeys);
             }
             // 标记流式处理完成
             tableGroup.setFullCompleted(true);
@@ -200,9 +202,8 @@ public class ParserComponentImpl implements ParserComponent {
      * TableGroup专用的数据处理逻辑
      */
     private void processTableGroupDataBatch(String metaId, List<Map> source, TableGroup tableGroup,
-                                            AbstractPluginContext context, List<String> primaryKeys) {
+                                            AbstractPluginContext context, Picker picker, List<String> primaryKeys) {
         // 1、映射字段
-        Picker picker = new Picker(tableGroup);
         List<Map> target = picker.pickTargetData(source);
 
         // 2、参数转换
