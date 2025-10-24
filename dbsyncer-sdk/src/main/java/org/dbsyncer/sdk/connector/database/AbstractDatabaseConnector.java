@@ -238,9 +238,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     public Result upsert(DatabaseConnectorInstance connectorInstance, PluginContext context) {
         // UPSERT 操作：同 UPDATE 逻辑
         List<Field> fields = new ArrayList<>(context.getTargetFields());
-        List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
-        removeFieldWithPk(fields, pkFields);
-        fields.addAll(pkFields);
         return executeWriter(connectorInstance, context, fields);
     }
 
