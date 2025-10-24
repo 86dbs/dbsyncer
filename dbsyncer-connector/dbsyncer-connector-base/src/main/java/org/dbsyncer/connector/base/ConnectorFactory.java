@@ -194,7 +194,8 @@ public class ConnectorFactory implements DisposableBean {
     public Result writeBatch(PluginContext context) {
         String event = context.getEvent();
         if (context.isForceUpdate() && ConnectorConstant.isInsert(event)) {
-            context.setEvent(ConnectorConstant.OPERTION_UPSERT);
+            event = ConnectorConstant.OPERTION_UPSERT;
+            context.setEvent(event);
         }
         switch (event) {
             case ConnectorConstant.OPERTION_INSERT:
