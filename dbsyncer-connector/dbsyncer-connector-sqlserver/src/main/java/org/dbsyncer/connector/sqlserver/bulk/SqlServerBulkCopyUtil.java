@@ -9,6 +9,7 @@ import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -132,14 +133,14 @@ public class SqlServerBulkCopyUtil {
                 stmt.executeUpdate(identityInsertOff);
                 
                 return result;
-            } catch (Exception e) {
+            } catch (Exception ex) {
                 // 确保在异常情况下也关闭 IDENTITY_INSERT
                 try (java.sql.Statement stmt = connection.createStatement()) {
                     stmt.executeUpdate(identityInsertOff);
                 } catch (SQLException closeException) {
                     logger.warn("关闭 IDENTITY_INSERT 时出错: {}", closeException.getMessage());
                 }
-                throw e;
+                throw ex;
             }
         } else {
             // 不需要 IDENTITY_INSERT 的情况，直接执行
@@ -225,13 +226,29 @@ public class SqlServerBulkCopyUtil {
                     logger.warn("字段 {} 期望byte[]类型但得到 {} 类型，尝试转换", field.getName(), convertedValue.getClass().getName());
                     ps.setObject(paramIndex, convertedValue);
                 }
+            } else if (typeName.contains("DECIMAL") || typeName.contains("NUMERIC")) {
+                // 对于Decimal类型字段，确保使用正确的设置方法保持精度
+                if (convertedValue instanceof BigDecimal) {
+                    ps.setBigDecimal(paramIndex, (BigDecimal) convertedValue);
+                } else if (convertedValue == null) {
+                    ps.setNull(paramIndex, Types.DECIMAL);
+                } else {
+                    // 尝试转换为BigDecimal
+                    try {
+                        BigDecimal bd = new BigDecimal(convertedValue.toString());
+                        ps.setBigDecimal(paramIndex, bd);
+                    } catch (NumberFormatException ex) {
+                        logger.warn("字段 {} 无法转换为BigDecimal，使用默认设置", field.getName());
+                        ps.setObject(paramIndex, convertedValue);
+                    }
+                }
             } else {
                 // 对于其他类型，使用默认设置方法
                 ps.setObject(paramIndex, convertedValue);
             }
-        } catch (Exception e) {
+        } catch (Exception ex) {
             // 如果SchemaResolver转换失败，记录日志并使用原始值
-            logger.debug("SchemaResolver转换失败，使用原始值: {}", e.getMessage());
+            logger.debug("SchemaResolver转换失败，使用原始值: {}", ex.getMessage());
             // 根据字段类型正确设置参数
             String typeName = field.getTypeName().toUpperCase();
             if (typeName.contains("VARBINARY") || typeName.contains("BINARY") || typeName.contains("IMAGE")) {
@@ -243,6 +260,27 @@ public class SqlServerBulkCopyUtil {
                     ps.setBytes(paramIndex, ((String) value).getBytes(java.nio.charset.StandardCharsets.UTF_8));
                 } else if (value == null) {
                     ps.setNull(paramIndex, Types.VARBINARY);
+                } else {
+                    // 其他类型直接设置
+                    ps.setObject(paramIndex, value);
+                }
+            } else if (typeName.contains("DECIMAL") || typeName.contains("NUMERIC")) {
+                // 对于Decimal类型字段，确保使用正确的设置方法保持精度
+                if (value instanceof BigDecimal) {
+                    ps.setBigDecimal(paramIndex, (BigDecimal) value);
+                } else if (value instanceof String) {
+                    try {
+                        BigDecimal bd = new BigDecimal((String) value);
+                        ps.setBigDecimal(paramIndex, bd);
+                    } catch (NumberFormatException ex2) {
+                        logger.warn("字段 {} 无法转换为BigDecimal，使用默认设置", field.getName());
+                        ps.setObject(paramIndex, value);
+                    }
+                } else if (value instanceof Number) {
+                    BigDecimal bd = new BigDecimal(value.toString());
+                    ps.setBigDecimal(paramIndex, bd);
+                } else if (value == null) {
+                    ps.setNull(paramIndex, Types.DECIMAL);
                 } else {
                     // 其他类型直接设置
                     ps.setObject(paramIndex, value);

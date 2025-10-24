@@ -28,19 +28,12 @@ public final class SqlServerExactNumericType extends LongType {
         SMALLINT,      // 2字节整数 (-32,768 到 32,767)
         INT,           // 4字节整数 (-2,147,483,648 到 2,147,483,647)
         BIGINT,        // 8字节整数 (-9,223,372,036,854,775,808 到 9,223,372,036,854,775,807)
-        // 精确小数类型
-        DECIMAL,       // 精确小数
-        NUMERIC,       // 数值类型 (DECIMAL 的同义词)
-        MONEY,         // 货币类型 (8字节)
-        SMALLMONEY,    // 小货币类型 (4字节)
         // IDENTITY 类型 (自增列)
         INT_IDENTITY("INT IDENTITY"),  // INT IDENTITY 自增列
         BIGINT_IDENTITY("BIGINT IDENTITY"), // BIGINT IDENTITY 自增列
         SMALLINT_IDENTITY("SMALLINT IDENTITY"), // SMALLINT IDENTITY 自增列
-        TINYINT_IDENTITY("TINYINT IDENTITY"),  // TINYINT IDENTITY 自增列
-        DECIMAL_IDENTITY("DECIMAL IDENTITY"),  // DECIMAL IDENTITY 自增列
-        NUMERIC_IDENTITY("NUMERIC IDENTITY");   // NUMERIC IDENTITY 自增列
-        
+        TINYINT_IDENTITY("TINYINT IDENTITY");  // TINYINT IDENTITY 自增列
+
         private final String typeName;
         
         TypeEnum() {
@@ -96,4 +89,3 @@ public final class SqlServerExactNumericType extends LongType {
         return super.convert(val, field);
     }
 }
-

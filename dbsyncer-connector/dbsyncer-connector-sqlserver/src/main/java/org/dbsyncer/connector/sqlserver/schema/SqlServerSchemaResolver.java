@@ -46,7 +46,8 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
         Stream.of(
-                new SqlServerExactNumericType(),        // 精确数值类型
+                new SqlServerExactNumericType(),        // 精确数值类型（整数类型）
+                new SqlServerDecimalType(),             // Decimal类型（精确小数类型）
                 new SqlServerApproximateNumericType(),  // 近似数值类型
                 new SqlServerDateTimeType(),            // 日期时间类型
                 new SqlServerStringType(),     // 字符字符串类型
