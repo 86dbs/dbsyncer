@@ -38,12 +38,12 @@ public class Application {
         if (location.exists()) {
             BuildProperties build = new BuildProperties(loadFrom(location, "build"));
             version = build.getVersion();
-            String buildTime = build.getTime().atZone(ZoneId.systemDefault()).format(DateFormatUtil.CHINESE_STANDARD_TIME_FORMATTER);
+            String buildTime = build.getTime().atZone(ZoneId.systemDefault()).format(DateFormatUtil.YYYY_MM_DD_HH_MM_SS);
             properties.put("info.app.build.time", buildTime);
         }
         properties.put("info.app.version", version);
         properties.put("info.app.current", Version.CURRENT);
-        properties.put("info.app.start.time", LocalDateTime.now().format(DateFormatUtil.CHINESE_STANDARD_TIME_FORMATTER));
+        properties.put("info.app.start.time", LocalDateTime.now().format(DateFormatUtil.YYYY_MM_DD_HH_MM_SS));
         properties.put("spring.thymeleaf.prefix", "classpath:/public/");
         properties.put("management.endpoints.web.base-path", "/app");
         properties.put("management.endpoints.web.exposure.include", "*");

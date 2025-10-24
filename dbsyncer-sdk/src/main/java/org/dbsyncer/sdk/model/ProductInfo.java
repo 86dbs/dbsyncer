@@ -56,6 +56,11 @@ public class ProductInfo {
     private long createTime;
 
     /**
+     * 版本号
+     */
+    private long version;
+
+    /**
      * 授权产品列表明细
      */
     private List<Product> products = new ArrayList<>();
@@ -122,6 +127,14 @@ public class ProductInfo {
 
     public void setCreateTime(long createTime) {
         this.createTime = createTime;
+    }
+
+    public long getVersion() {
+        return version;
+    }
+
+    public void setVersion(long version) {
+        this.version = version;
     }
 
     public List<Product> getProducts() {
