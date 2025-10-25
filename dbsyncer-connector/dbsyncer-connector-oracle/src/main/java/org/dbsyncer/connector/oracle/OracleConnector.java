@@ -8,7 +8,6 @@ import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleClobValueMapper;
 import org.dbsyncer.connector.oracle.schema.OracleOtherValueMapper;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
-import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -143,13 +142,12 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String getCatalog(DatabaseConfig config, Connection connection) {
+    protected String getCatalog(String database, Connection connection) {
         return null;
     }
 
     @Override
-    protected String getSchema(DatabaseConfig config, Connection connection) throws SQLException {
-        String schema = config.getSchema();
+    protected String getSchema(String schema, Connection connection) throws SQLException {
         if (StringUtil.isBlank(schema)) {
             schema = connection.getSchema();
         }

@@ -171,12 +171,14 @@ public final class IncrementPuller extends AbstractPuller implements Application
             List<Table> sourceTable = new ArrayList<>();
             list.forEach(t -> {
                 Table table = t.getSourceTable();
-                if (!filterTable.contains(t.getName())) {
+                if (!filterTable.contains(table.getName())) {
                     sourceTable.add(table);
+                    filterTable.add(table.getName());
                 }
-                filterTable.add(table.getName());
             });
 
+            abstractListener.setDatabase(mapping.getSourceDatabase());
+            abstractListener.setSchema(mapping.getSourceSchema());
             abstractListener.setConnectorService(connectorFactory.getConnectorService(connectorConfig.getConnectorType()));
             abstractListener.setConnectorInstance(connectorFactory.connect(connectorConfig));
             abstractListener.setTargetConnectorInstance(connectorFactory.connect(targetConnectorConfig));
@@ -185,6 +187,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
             abstractListener.setListenerConfig(listenerConfig);
             abstractListener.setFilterTable(filterTable);
             abstractListener.setSourceTable(sourceTable);
+            abstractListener.setSqlTables(mapping.getSourceSqlTables());
             abstractListener.setSnapshot(meta.getSnapshot());
             abstractListener.setMetaId(meta.getId());
         }

@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.sqlite.validator.SQLiteConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -49,9 +50,9 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
+    public List<Table> getTable(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
         DatabaseConfig config = connectorInstance.getConfig();
-        List<Table> tables = getTables(connectorInstance, String.format(QUERY_TABLE, config.getSchema()), TableTypeEnum.TABLE);
+        List<Table> tables = getTables(connectorInstance, String.format(QUERY_TABLE, context.getSchema()), TableTypeEnum.TABLE);
         tables.addAll(getTables(connectorInstance, QUERY_VIEW, TableTypeEnum.VIEW));
         return tables;
     }

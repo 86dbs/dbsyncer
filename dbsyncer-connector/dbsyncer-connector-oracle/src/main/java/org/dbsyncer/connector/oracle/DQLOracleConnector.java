@@ -4,8 +4,6 @@
 package org.dbsyncer.connector.oracle;
 
 import org.dbsyncer.connector.oracle.cdc.DqlOracleListener;
-import org.dbsyncer.connector.oracle.validator.DqlOracleConfigValidator;
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -23,16 +21,9 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
  */
 public final class DQLOracleConnector extends AbstractDQLConnector {
 
-    private final DqlOracleConfigValidator configValidator = new DqlOracleConfigValidator();
-
     @Override
     public String getConnectorType() {
         return "DqlOracle";
-    }
-
-    @Override
-    public ConfigValidator getConfigValidator() {
-        return configValidator;
     }
 
     @Override

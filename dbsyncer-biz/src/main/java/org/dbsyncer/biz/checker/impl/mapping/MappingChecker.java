@@ -7,6 +7,7 @@ import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
@@ -18,6 +19,7 @@ import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.model.SqlTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -53,7 +55,11 @@ public class MappingChecker extends AbstractChecker {
         logger.info("params:{}", params);
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         String sourceConnectorId = params.get("sourceConnectorId");
+        String sourceDatabase = params.get("sourceDatabase");
+        String sourceSchema = params.get("sourceSchema");
         String targetConnectorId = params.get("targetConnectorId");
+        String targetDatabase = params.get("targetDatabase");
+        String targetSchema = params.get("targetSchema");
         Assert.hasText(name, "驱动名称不能为空");
         Assert.hasText(sourceConnectorId, "数据源不能为空.");
         Assert.hasText(targetConnectorId, "目标源不能为空.");
@@ -61,7 +67,12 @@ public class MappingChecker extends AbstractChecker {
         Mapping mapping = new Mapping();
         mapping.setName(name);
         mapping.setSourceConnectorId(sourceConnectorId);
+        mapping.setSourceDatabase(sourceDatabase);
+        mapping.setSourceSchema(sourceSchema);
+        setSqlTables(mapping, params);
         mapping.setTargetConnectorId(targetConnectorId);
+        mapping.setTargetDatabase(targetDatabase);
+        mapping.setTargetSchema(targetSchema);
         mapping.setModel(ModelEnum.FULL.getCode());
         mapping.setListener(new ListenerConfig(ListenerTypeEnum.LOG.getType()));
         mapping.setParams(new HashMap<>());
@@ -73,6 +84,21 @@ public class MappingChecker extends AbstractChecker {
         addMeta(mapping);
 
         return mapping;
+    }
+
+    private void setSqlTables(Mapping mapping, Map<String, String> params) {
+        Object sqlTableParams = params.get("sqlTables");
+        Assert.notNull(sqlTableParams, "sqlTables is null.");
+        String sqlTables = (sqlTableParams instanceof String) ? (String) sqlTableParams : JsonUtil.objToJson(sqlTableParams);
+        Assert.hasText(sqlTables, "sqlTables is empty.");
+        List<SqlTable> sqlTableArray = JsonUtil.jsonToArray(sqlTables, SqlTable.class);
+        Assert.isTrue(!CollectionUtils.isEmpty(sqlTableArray), "sqlTableArray is empty.");
+        sqlTableArray.forEach(sqlTable -> {
+            Assert.hasText(sqlTable.getSqlName(), "SqlName is empty.");
+            Assert.hasText(sqlTable.getSql(), "Sql is empty.");
+            Assert.hasText(sqlTable.getTable(), "Table is empty.");
+        });
+        mapping.setSourceSqlTables(sqlTableArray);
     }
 
     @Override

@@ -812,7 +812,11 @@
         $.ajax({
             url: $basePath + "/task/getTables",
             type: "GET",
-            data: { connectorId: connectorId },
+            data: {
+                connectorId: connectorId,
+                database: '',
+                schema: ''
+            },
             success: function (result) {
                 if (result.success) {
                     const tableSelects = type === 'source' ? '.source-table-select' : '.target-table-select';

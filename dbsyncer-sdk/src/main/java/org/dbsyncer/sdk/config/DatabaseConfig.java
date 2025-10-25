@@ -4,11 +4,6 @@
 package org.dbsyncer.sdk.config;
 
 import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.model.SqlTable;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author AE86
@@ -24,9 +19,14 @@ public class DatabaseConfig extends ConnectorConfig {
     private String driverClassName;
 
     /**
-     * 连接地址
+     * 主机
      */
-    private String url;
+    private String host;
+
+    /**
+     * 端口
+     */
+    private int port;
 
     /**
      * 帐号
@@ -39,16 +39,6 @@ public class DatabaseConfig extends ConnectorConfig {
     private String password;
 
     /**
-     * 数据库名
-     */
-    private String database;
-
-    /**
-     * 构架名
-     */
-    private String schema;
-
-    /**
      * 最大连接数
      */
     private int maxActive = 128;
@@ -59,22 +49,11 @@ public class DatabaseConfig extends ConnectorConfig {
     private long keepAlive = 60000;
 
     /**
-     * sql
-     */
-    private List<SqlTable> sqlTables;
-
-    /**
      * 参数配置
      */
-    private Map<String, String> properties = new ConcurrentHashMap<>();
+    private String properties;
 
-    public String getProperty(String key) {
-        return properties.get(key);
-    }
-
-    public String getProperty(String key, String defaultValue) {
-        return properties.getOrDefault(key, defaultValue);
-    }
+    private String url;
 
     public String getDriverClassName() {
         return driverClassName;
@@ -84,12 +63,20 @@ public class DatabaseConfig extends ConnectorConfig {
         this.driverClassName = driverClassName;
     }
 
-    public String getUrl() {
-        return url;
+    public String getHost() {
+        return host;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
     }
 
     public String getUsername() {
@@ -108,22 +95,6 @@ public class DatabaseConfig extends ConnectorConfig {
         this.password = password;
     }
 
-    public String getDatabase() {
-        return database;
-    }
-
-    public void setDatabase(String database) {
-        this.database = database;
-    }
-
-    public String getSchema() {
-        return schema;
-    }
-
-    public void setSchema(String schema) {
-        this.schema = schema;
-    }
-
     public int getMaxActive() {
         return maxActive;
     }
@@ -140,19 +111,20 @@ public class DatabaseConfig extends ConnectorConfig {
         this.keepAlive = keepAlive;
     }
 
-    public List<SqlTable> getSqlTables() {
-        return sqlTables;
-    }
-
-    public void setSqlTables(List<SqlTable> sqlTables) {
-        this.sqlTables = sqlTables;
-    }
-
-    public Map<String, String> getProperties() {
+    public String getProperties() {
         return properties;
     }
 
-    public void setProperties(Map<String, String> properties) {
+    public void setProperties(String properties) {
         this.properties = properties;
     }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
 }

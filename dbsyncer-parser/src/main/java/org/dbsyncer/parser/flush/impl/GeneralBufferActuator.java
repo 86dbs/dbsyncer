@@ -31,6 +31,7 @@ import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.IncrementPluginContext;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
@@ -250,8 +251,14 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             }
 
             // 3.更新表属性字段
-            MetaInfo sourceMetaInfo = parserComponent.getMetaInfo(mapping.getSourceConnectorId(), tableGroup.getSourceTable().getName());
-            MetaInfo targetMetaInfo = parserComponent.getMetaInfo(mapping.getTargetConnectorId(), tableGroup.getTargetTable().getName());
+            DefaultConnectorServiceContext sourceContext = new DefaultConnectorServiceContext(mapping.getSourceDatabase(), mapping.getSourceSchema(), tableGroup.getSourceTable().getName());
+            DefaultConnectorServiceContext targetContext = new DefaultConnectorServiceContext(mapping.getTargetDatabase(), mapping.getTargetSchema(), tableGroup.getTargetTable().getName());
+            List<MetaInfo> sourceMetaInfos = parserComponent.getMetaInfo(mapping.getSourceConnectorId(), sourceContext);
+            MetaInfo sourceMetaInfo = CollectionUtils.isEmpty(sourceMetaInfos) ? null : sourceMetaInfos.get(0);
+            Assert.notNull(sourceMetaInfo, "无法获取连接器表信息:" + tableGroup.getSourceTable().getName());
+            List<MetaInfo> targetMetaInfos = parserComponent.getMetaInfo(mapping.getTargetConnectorId(), targetContext);
+            MetaInfo targetMetaInfo = CollectionUtils.isEmpty(targetMetaInfos) ? null : targetMetaInfos.get(0);
+            Assert.notNull(targetMetaInfo, "无法获取连接器表信息:" + tableGroup.getTargetTable().getName());
             tableGroup.getSourceTable().setColumn(sourceMetaInfo.getColumn());
             tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
 

@@ -6,8 +6,11 @@ package org.dbsyncer.connector.postgresql.validator;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.AbstractDataBaseConfigValidator;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.util.DatabaseUtil;
 
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * @Author AE86
@@ -16,11 +19,12 @@ import java.util.Map;
  */
 public class PostgreSQLConfigValidator extends AbstractDataBaseConfigValidator {
     @Override
-    public void modify(DatabaseConfig connectorConfig, Map<String, String> params) {
-        super.modify(connectorConfig, params);
-        super.modifySchema(connectorConfig, params);
+    public void modify(AbstractDatabaseConnector connectorService, DatabaseConfig connectorConfig, Map<String, String> params) {
+        super.modify(connectorService, connectorConfig, params);
 
-        connectorConfig.getProperties().put("dropSlotOnClose", StringUtil.isNotBlank(params.get("dropSlotOnClose")) ? "true" : "false");
-        connectorConfig.getProperties().put("pluginName", params.get("pluginName"));
+        Properties properties = DatabaseUtil.parseJdbcProperties(connectorConfig.getProperties());
+        properties.put("dropSlotOnClose", StringUtil.isNotBlank(params.get("dropSlotOnClose")) ? "true" : "false");
+        properties.put("pluginName", params.get("pluginName"));
+        connectorConfig.setProperties(DatabaseUtil.propertiesToParams(properties));
     }
 }

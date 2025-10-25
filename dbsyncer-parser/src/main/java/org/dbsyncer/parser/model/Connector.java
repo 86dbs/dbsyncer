@@ -1,10 +1,7 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-
-import java.util.List;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 
 /**
  * @author AE86
@@ -18,23 +15,9 @@ public class Connector extends ConfigModel{
     }
 
     /**
-     * 表名,["MY_USER", "T_MY_USER", "table_999"]
-     */
-    private List<Table> table;
-
-    /**
      * 连接器配置
      */
     private ConnectorConfig config;
-
-    public List<Table> getTable() {
-        return table;
-    }
-
-    public Connector setTable(List<Table> table) {
-        this.table = table;
-        return this;
-    }
 
     public ConnectorConfig getConfig() {
         return config;

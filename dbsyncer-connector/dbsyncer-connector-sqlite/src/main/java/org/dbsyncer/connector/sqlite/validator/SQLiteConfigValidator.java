@@ -5,6 +5,7 @@ package org.dbsyncer.connector.sqlite.validator;
 
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.AbstractDataBaseConfigValidator;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 
 import java.util.Map;
 
@@ -17,8 +18,7 @@ import java.util.Map;
  */
 public class SQLiteConfigValidator extends AbstractDataBaseConfigValidator {
     @Override
-    public void modify(DatabaseConfig connectorConfig, Map<String, String> params) {
-        super.modify(connectorConfig, params);
-        super.modifySchema(connectorConfig, params);
+    public void modify(AbstractDatabaseConnector connectorService, DatabaseConfig connectorConfig, Map<String, String> params) {
+        super.modify(connectorService, connectorConfig, params);
     }
 }

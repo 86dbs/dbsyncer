@@ -4,8 +4,6 @@
 package org.dbsyncer.connector.mysql;
 
 import org.dbsyncer.connector.mysql.cdc.DqlMySQLListener;
-import org.dbsyncer.connector.mysql.validator.DqlMySQLConfigValidator;
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -23,16 +21,9 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
  */
 public final class DQLMySQLConnector extends AbstractDQLConnector {
 
-    private final DqlMySQLConfigValidator configValidator = new DqlMySQLConfigValidator();
-
     @Override
     public String getConnectorType() {
         return "DqlMySQL";
-    }
-
-    @Override
-    public ConfigValidator getConfigValidator() {
-        return configValidator;
     }
 
     @Override

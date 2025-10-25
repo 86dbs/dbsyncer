@@ -8,11 +8,13 @@ import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.connector.database.ds.SimpleDataSource;
+import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
 
 import java.sql.Connection;
+import java.util.Properties;
 
 public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConfig, Connection> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -21,7 +23,10 @@ public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConf
 
     public DatabaseConnectorInstance(DatabaseConfig config) {
         this.config = config;
-        this.dataSource = new SimpleDataSource(config.getDriverClassName(), config.getUrl(), config.getUsername(), config.getPassword(), config.getMaxActive(), config.getKeepAlive());
+        Properties properties = DatabaseUtil.parseJdbcProperties(config.getProperties());
+        properties.put("user", config.getUsername());
+        properties.put("password", config.getPassword());
+        this.dataSource = new SimpleDataSource(config.getDriverClassName(), config.getUrl(), properties, config.getMaxActive(), config.getKeepAlive());
     }
 
     public <T> T execute(HandleCallback callback) {

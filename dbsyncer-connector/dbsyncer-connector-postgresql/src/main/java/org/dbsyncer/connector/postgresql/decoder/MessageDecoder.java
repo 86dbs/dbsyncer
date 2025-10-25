@@ -19,7 +19,7 @@ import java.nio.ByteBuffer;
  */
 public interface MessageDecoder {
 
-    default void postProcessBeforeInitialization(ConnectorService connectorService, DatabaseConnectorInstance connectorInstance) {
+    default void postProcessBeforeInitialization(ConnectorService connectorService, DatabaseConnectorInstance connectorInstance, String database) {
     }
 
     boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn);
@@ -35,5 +35,9 @@ public interface MessageDecoder {
     void setMetaId(String metaId);
 
     void setConfig(DatabaseConfig config);
+
+    void setDatabase(String database);
+
+    void setSchema(String schema);
 
 }

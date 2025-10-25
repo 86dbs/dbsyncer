@@ -100,14 +100,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         return primaryKeys.stream().map(this::convertKey).collect(Collectors.toList());
     }
 
-    private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {
-        List<String> tableNames = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
-        if (!CollectionUtils.isEmpty(tableNames)) {
-            return tableNames.stream().map(name -> new Table(name, type.getCode())).collect(Collectors.toList());
-        }
-        return new ArrayList<>();
-    }
-
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         Map<String, String> targetCommand = super.getTargetCommand(commandConfig);
@@ -118,9 +110,9 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         // 允许显式插入标识列的值
         if (!CollectionUtils.isEmpty(result)) {
             DatabaseConfig config = (DatabaseConfig) commandConfig.getConnectorConfig();
-            String insert = String.format(SET_TABLE_IDENTITY_ON, config.getSchema(), tableName)
+            String insert = String.format(SET_TABLE_IDENTITY_ON, commandConfig.getSchema(), tableName)
                     + targetCommand.get(ConnectorConstant.OPERTION_INSERT)
-                    + String.format(SET_TABLE_IDENTITY_OFF, config.getSchema(), tableName);
+                    + String.format(SET_TABLE_IDENTITY_OFF, commandConfig.getSchema(), tableName);
             targetCommand.put(ConnectorConstant.OPERTION_INSERT, insert);
         }
         return targetCommand;
@@ -146,8 +138,8 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String getSchema(DatabaseConfig config, Connection connection) {
-        return StringUtil.isNotBlank(config.getSchema()) ? config.getSchema() : "dbo";
+    protected String getSchema(String schema, Connection connection) {
+        return StringUtil.isNotBlank(schema) ? schema : "dbo";
     }
 
     private String convertKey(String key) {

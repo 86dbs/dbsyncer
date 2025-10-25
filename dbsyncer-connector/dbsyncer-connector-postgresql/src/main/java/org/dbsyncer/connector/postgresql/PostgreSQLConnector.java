@@ -142,7 +142,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String getSchema(DatabaseConfig config, Connection connection) {
-        return StringUtil.isNotBlank(config.getSchema()) ? config.getSchema() : "public";
+    protected String getSchema(String schema, Connection connection) {
+        return StringUtil.isNotBlank(schema) ? schema : "public";
     }
 }

@@ -21,6 +21,7 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -147,7 +148,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     }
 
     @Override
-    public List<Table> getTable(ESConnectorInstance connectorInstance) {
+    public List<Table> getTable(ESConnectorInstance connectorInstance, ConnectorServiceContext context) {
         try {
             IndicesClient indices = connectorInstance.getConnection().indices();
             GetAliasesRequest aliasesRequest = new GetAliasesRequest();
@@ -155,7 +156,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             Map<String, Set<AliasMetadata>> aliases = indicesAlias.getAliases();
             if (!CollectionUtils.isEmpty(aliases)) {
                 // 排除系统索引
-                return aliases.keySet().stream().filter(index -> !StringUtil.startsWith(index, StringUtil.POINT)).map(index -> new Table(index)).collect(Collectors.toList());
+                return aliases.keySet().stream().filter(index -> !StringUtil.startsWith(index, StringUtil.POINT)).map(Table::new).collect(Collectors.toList());
             }
             return Collections.EMPTY_LIST;
         } catch (IOException e) {
@@ -165,37 +166,42 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     }
 
     @Override
-    public MetaInfo getMetaInfo(ESConnectorInstance connectorInstance, String index) {
-        List<Field> fields = new ArrayList<>();
+    public List<MetaInfo> getMetaInfo(ESConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        List<MetaInfo> metaInfos = new ArrayList<>();
         try {
-            GetIndexRequest request = new GetIndexRequest(index);
-            GetIndexResponse indexResponse = connectorInstance.getConnection().indices().get(request, RequestOptions.DEFAULT);
-            MappingMetadata mappingMetaData = indexResponse.getMappings().get(index);
-            // 低于7.x 版本
-            if (EasyVersion.V_7_0_0.after(connectorInstance.getVersion())) {
-                Map<String, Object> sourceMap = XContentHelper.convertToMap(mappingMetaData.source().compressedReference(), true, null).v2();
-                if (CollectionUtils.isEmpty(sourceMap)) {
-                    throw new ElasticsearchException("未获取到索引配置");
+            for (String index : context.getTablePatterns()){
+                GetIndexRequest request = new GetIndexRequest(index);
+                GetIndexResponse indexResponse = connectorInstance.getConnection().indices().get(request, RequestOptions.DEFAULT);
+                MappingMetadata mappingMetaData = indexResponse.getMappings().get(index);
+                List<Field> fields = new ArrayList<>();
+                // 低于7.x 版本
+                if (EasyVersion.V_7_0_0.after(connectorInstance.getVersion())) {
+                    Map<String, Object> sourceMap = XContentHelper.convertToMap(mappingMetaData.source().compressedReference(), true, null).v2();
+                    if (CollectionUtils.isEmpty(sourceMap)) {
+                        throw new ElasticsearchException("未获取到索引配置");
+                    }
+                    Iterator<String> iterator = sourceMap.keySet().iterator();
+                    String indexType = null;
+                    if (iterator.hasNext()) {
+                        indexType = iterator.next();
+                        parseProperties(fields, (Map) sourceMap.get(indexType));
+                    }
+                    if (StringUtil.isBlank(indexType)) {
+                        throw new ElasticsearchException("索引type为空");
+                    }
+                    metaInfos.add(new MetaInfo().setTable(index).setColumn(fields).setIndexType(indexType));
+                    continue;
                 }
-                Iterator<String> iterator = sourceMap.keySet().iterator();
-                String indexType = null;
-                if (iterator.hasNext()) {
-                    indexType = iterator.next();
-                    parseProperties(fields, (Map) sourceMap.get(indexType));
-                }
-                if (StringUtil.isBlank(indexType)) {
-                    throw new ElasticsearchException("索引type为空");
-                }
-                return new MetaInfo().setColumn(fields).setIndexType(indexType);
-            }
 
-            // 7.x 版本以上
-            parseProperties(fields, mappingMetaData.sourceAsMap());
-            return new MetaInfo().setColumn(fields);
+                // 7.x 版本以上
+                parseProperties(fields, mappingMetaData.sourceAsMap());
+                metaInfos.add(new MetaInfo().setTable(index).setColumn(fields));
+            }
         } catch (IOException e) {
             logger.error(e.getMessage());
             throw new ElasticsearchException(e);
         }
+        return metaInfos;
     }
 
     @Override

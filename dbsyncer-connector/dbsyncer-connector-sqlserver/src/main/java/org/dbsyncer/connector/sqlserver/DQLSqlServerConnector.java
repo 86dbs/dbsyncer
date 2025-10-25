@@ -5,8 +5,6 @@ package org.dbsyncer.connector.sqlserver;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlserver.cdc.DqlSqlServerListener;
-import org.dbsyncer.connector.sqlserver.validator.DqlSqlServerConfigValidator;
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -26,16 +24,9 @@ import java.util.List;
  */
 public final class DQLSqlServerConnector extends AbstractDQLConnector {
 
-    private final DqlSqlServerConfigValidator configValidator = new DqlSqlServerConfigValidator();
-
     @Override
     public String getConnectorType() {
         return "DqlSqlServer";
-    }
-
-    @Override
-    public ConfigValidator getConfigValidator() {
-        return configValidator;
     }
 
     @Override

@@ -21,6 +21,8 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
     protected String metaId;
 
     protected DatabaseConfig config;
+    protected String database;
+    protected String schema;
 
     @Override
     public boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn) {
@@ -51,7 +53,7 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
 
     @Override
     public String getSlotName() {
-        return String.format("dbs_slot_%s_%s_%s", config.getSchema(), config.getUsername(), metaId).toLowerCase();
+        return String.format("dbs_slot_%s_%s_%s", schema, config.getUsername(), metaId).toLowerCase();
     }
 
     @Override
@@ -62,6 +64,16 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
     @Override
     public void setConfig(DatabaseConfig config) {
         this.config = config;
+    }
+
+    @Override
+    public void setDatabase(String database) {
+        this.database = database;
+    }
+
+    @Override
+    public void setSchema(String schema) {
+        this.schema = schema;
     }
 
     /**

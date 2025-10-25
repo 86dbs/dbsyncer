@@ -20,6 +20,7 @@ import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
+import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,7 +152,17 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String getSchema(DatabaseConfig config, Connection connection) {
+    protected String getSchema(String schema, Connection connection) {
         return null;
+    }
+
+    @Override
+    public String buildJdbcUrl(DatabaseConfig config, String database) {
+        StringBuilder url = new StringBuilder();
+        url.append("jdbc:mysql://").append(config.getHost()).append(":").append(config.getPort());
+        if (database != null && !database.trim().isEmpty()) {
+            url.append("/").append(database);
+        }
+        return DatabaseUtil.buildJdbcUrl(url.toString(), config.getProperties());
     }
 }

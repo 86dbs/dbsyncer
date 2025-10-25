@@ -9,6 +9,7 @@ import org.dbsyncer.sdk.SdkException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
 import java.util.regex.Matcher;
 
 import static java.util.regex.Pattern.compile;
@@ -24,6 +25,17 @@ public abstract class DatabaseUtil {
             }
         }
         return DriverManager.getConnection(url, username, password);
+    }
+
+    public static Connection getConnection(String driverClassName, String url, Properties properties) throws SQLException {
+        if (StringUtil.isNotBlank(driverClassName)) {
+            try {
+                Class.forName(driverClassName);
+            } catch (ClassNotFoundException e) {
+                throw new SdkException(e.getCause());
+            }
+        }
+        return DriverManager.getConnection(url, properties);
     }
 
     public static void close(AutoCloseable rs) {
@@ -48,6 +60,59 @@ public abstract class DatabaseUtil {
         }
 
         throw new SdkException("database is invalid");
+    }
+
+    public static Properties parseJdbcProperties(String params) {
+        Properties properties = new Properties();
+        if (params == null || params.trim().isEmpty()) {
+            return properties;
+        }
+        // 按&分割参数
+        String[] paramArray = params.split("&");
+        for (String param : paramArray) {
+            // 按=分割键值对
+            String[] keyValue = param.split("=", 2);
+            if (keyValue.length == 2) {
+                String key = keyValue[0].trim();
+                String value = keyValue[1].trim();
+                if (!key.isEmpty()) {
+                    properties.put(key, value);
+                }
+            }
+        }
+        return properties;
+    }
+
+    public static String propertiesToParams(Properties properties) {
+        if (properties == null || properties.isEmpty()) {
+            return "";
+        }
+        StringBuilder params = new StringBuilder();
+        boolean first = true;
+        for (String key : properties.stringPropertyNames()) {
+            if (!first) {
+                params.append("&");
+            }
+            String value = properties.getProperty(key);
+            params.append(key).append("=").append(value);
+            first = false;
+        }
+        return params.toString();
+    }
+
+    public static String buildJdbcUrl(String baseUrl, String params) {
+        if (params == null || params.trim().isEmpty()) {
+            return baseUrl;
+        }
+        StringBuilder url = new StringBuilder(baseUrl);
+        // 检查基础URL是否已包含参数
+        if (baseUrl.contains("?")) {
+            url.append("&");
+        } else {
+            url.append("?");
+        }
+        url.append(params);
+        return url.toString();
     }
 
 }

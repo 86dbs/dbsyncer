@@ -13,6 +13,7 @@ import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -35,9 +36,6 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
-import org.springframework.jdbc.support.rowset.SqlRowSet;
-import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
 import org.springframework.util.Assert;
 
 import java.sql.Connection;
@@ -91,18 +89,17 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public String getConnectorInstanceCacheKey(DatabaseConfig config) {
-        return String.format("%s-%s-%s", config.getConnectorType(), config.getUrl(), config.getUsername());
+        return String.format("%s-%s-%s-%s", config.getConnectorType(), config.getHost(), config.getPort(), config.getUsername());
     }
 
     @Override
-    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
+    public List<Table> getTable(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
         return connectorInstance.execute(databaseTemplate -> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             // 兼容处理 schema 和 catalog
-            DatabaseConfig config = connectorInstance.getConfig();
-            String effectiveCatalog = getCatalog(config, conn);
-            String effectiveSchema = getSchema(config, conn);
+            String effectiveCatalog = getCatalog(context.getCatalog(), conn);
+            String effectiveSchema = getSchema(context.getSchema(), conn);
 
             String[] types = {TableTypeEnum.TABLE.getCode(), TableTypeEnum.VIEW.getCode(), TableTypeEnum.MATERIALIZED_VIEW.getCode()};
             final ResultSet rs = conn.getMetaData().getTables(effectiveCatalog, effectiveSchema, null, types);
@@ -118,27 +115,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorInstance, String tableNamePattern) {
-        List<String> tableNamePatterns = new ArrayList<>();
-        tableNamePatterns.add(tableNamePattern);
-        List<MetaInfo> metaInfos = getMetaInfos(connectorInstance, tableNamePatterns);
-        if (CollectionUtils.isEmpty(metaInfos)) {
-            return null;
-        }
-        return metaInfos.get(0);
-    }
-
-    @Override
-    public List<MetaInfo> getMetaInfos(DatabaseConnectorInstance connectorInstance, List<String> tableNamePatterns) {
+    public List<MetaInfo> getMetaInfo(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
         return connectorInstance.execute(databaseTemplate -> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
-            DatabaseConfig config = connectorInstance.getConfig();
-            final String catalog = getCatalog(config, conn);
-            final String schema = getSchema(config, conn);
+            final String catalog = getCatalog(context.getCatalog(), conn);
+            final String schema = getSchema(context.getSchema(), conn);
             DatabaseMetaData metaData = conn.getMetaData();
             List<MetaInfo> metaInfos = new ArrayList<>();
-            for (String tableName : tableNamePatterns) {
+            for (String tableName : context.getTablePatterns()) {
                 List<Field> fields = new ArrayList<>();
                 List<String> primaryKeys = findTablePrimaryKeys(metaData, catalog, schema, tableName);
                 try (ResultSet columnMetadata = metaData.getColumns(catalog, schema, tableName, null)) {
@@ -151,7 +136,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                         fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio));
                     }
                 }
-                metaInfos.add(new MetaInfo().setColumn(fields));
+                metaInfos.add(new MetaInfo().setTable(tableName).setColumn(fields));
             }
             return metaInfos;
         });
@@ -268,7 +253,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         // 架构名
-        String schema = getSchemaWithQuotation((DatabaseConfig) commandConfig.getConnectorConfig());
+        String schema = getSchemaWithQuotation(commandConfig.getSchema());
         // 同步字段
         List<Field> column = filterColumn(table.getColumn());
         // 获取过滤SQL
@@ -302,7 +287,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         // 架构名
-        String schema = getSchemaWithQuotation((DatabaseConfig) commandConfig.getConnectorConfig());
+        String schema = getSchemaWithQuotation(commandConfig.getSchema());
         // 同步字段
         List<Field> column = filterColumn(table.getColumn());
         SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, column, null);
@@ -319,38 +304,38 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     /**
      * 获取数据库名
      *
-     * @param config
+     * @param database
      * @param connection
      * @return
      */
-    protected String getCatalog(DatabaseConfig config, Connection connection) throws SQLException {
-        return StringUtil.isNotBlank(config.getDatabase()) ? config.getDatabase() : connection.getCatalog();
+    protected String getCatalog(String database, Connection connection) throws SQLException {
+        return StringUtil.isNotBlank(database) ? database : connection.getCatalog();
     }
 
     /**
      * 获取架构名
      *
-     * @param config
+     * @param schema
      * @param connection
      * @return
      */
-    protected String getSchema(DatabaseConfig config, Connection connection) throws SQLException {
-        return StringUtil.isNotBlank(config.getSchema()) ? config.getSchema() : connection.getSchema();
+    protected String getSchema(String schema, Connection connection) throws SQLException {
+        return StringUtil.isNotBlank(schema) ? schema : connection.getSchema();
     }
 
     /**
      * 获取架构名
      *
-     * @param config
+     * @param schema
      * @return
      */
-    protected String getSchemaWithQuotation(DatabaseConfig config) {
-        StringBuilder schema = new StringBuilder();
-        if (StringUtil.isNotBlank(config.getSchema())) {
+    protected String getSchemaWithQuotation(String schema) {
+        StringBuilder s = new StringBuilder();
+        if (StringUtil.isNotBlank(schema)) {
             String quotation = buildSqlWithQuotation();
-            schema.append(quotation).append(config.getSchema()).append(quotation).append(".").toString();
+            s.append(quotation).append(schema).append(quotation).append(".").toString();
         }
-        return schema.toString();
+        return s.toString();
     }
 
     /**
@@ -667,5 +652,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             result.getError().append(String.format("执行ddl: %s, 异常：%s", config.getSql(), e.getMessage()));
         }
         return result;
+    }
+
+    public String buildJdbcUrl(DatabaseConfig connectorConfig, String database) {
+        throw new SdkException("unsupported build jdbc url");
     }
 }

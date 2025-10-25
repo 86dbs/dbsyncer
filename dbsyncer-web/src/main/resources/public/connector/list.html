@@ -16,7 +16,7 @@
         <div class="dbsyncer-table-actions">
             <button class="dbsyncer-btn dbsyncer-btn-primary" id="addConnectorBtn">
                 <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
-                添加数据连接
+                添加连接
             </button>
         </div>
     </div>
@@ -58,9 +58,7 @@
                     <th style="width: 5%;">序号</th>
                     <th style="width: 15%;">数据源名称</th>
                     <th style="width: 10%;">类型</th>
-                    <th style="width: 20%;">连接信息</th>
-                    <th style="width: 15%;">创建时间</th>
-                    <th style="width: 15%;">更新时间</th>
+                    <th style="width: 50%;">连接信息</th>
                     <th style="width: 10%;">操作</th>
                 </tr>
             </thead>
@@ -75,10 +73,8 @@
                         </div>
                     </td>
                     <td th:text="${connector.config.connectorType}">类型</td>
-                    <td th:text="${connector.config != null ? connector.config.url: 'N/A'}">连接信息</td>
+                    <td th:text="${connector?.config?.host} + ':' + ${connector?.config?.port}">连接信息</td>
 
-                    <td th:text="${#dates.format(connector.createTime, 'yyyy-MM-dd HH:mm:ss')}">创建时间</td>
-                    <td th:text="${#dates.format(connector.updateTime, 'yyyy-MM-dd HH:mm:ss')}">更新时间</td>
                     <td class="dbsyncer-table-actions-cell">
                         <a href="javascript:void(0);" class="dbsyncer-action-btn" th:data-id="${connector.id}" onclick="editConnector(this.dataset.id)">
                             <i class="fa fa-edit"></i>
@@ -100,7 +96,7 @@
                         <div class="dbsyncer-empty-state">
                             <i class="fa fa-database dbsyncer-empty-icon"></i>
                             <p class="dbsyncer-empty-text">暂无数据源</p>
-                            <p class="dbsyncer-empty-subtext">点击"添加数据连接"按钮创建第一个数据源</p>
+                            <p class="dbsyncer-empty-subtext">点击"添加连接"按钮创建第一个数据源</p>
                         </div>
                     </td>
                 </tr>
@@ -150,7 +146,7 @@ function refreshCurrentPage() {
     if (currentContent.includes('dbsyncer-page-title') && currentContent.includes('数据源管理')) {
         // 当前在数据源列表页面，刷新列表数据
         refreshConnectorListData();
-    } else if (currentContent.includes('connectorAddForm') || currentContent.includes('添加数据连接')) {
+    } else if (currentContent.includes('connectorAddForm') || currentContent.includes('添加连接')) {
         // 当前在添加连接页面，刷新添加页面
         loadAddConnectorPage();
     } else {

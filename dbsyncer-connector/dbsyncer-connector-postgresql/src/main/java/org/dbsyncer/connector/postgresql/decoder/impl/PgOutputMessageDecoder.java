@@ -8,6 +8,8 @@ import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.connector.postgresql.decoder.AbstractMessageDecoder;
 import org.dbsyncer.connector.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.connector.postgresql.enums.MessageTypeEnum;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
@@ -41,9 +43,10 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     private DatabaseConnectorInstance connectorInstance;
 
     @Override
-    public void postProcessBeforeInitialization(ConnectorService connectorService, DatabaseConnectorInstance connectorInstance) {
+    public void postProcessBeforeInitialization(ConnectorService connectorService, DatabaseConnectorInstance connectorInstance, String database) {
         this.connectorService = connectorService;
         this.connectorInstance = connectorInstance;
+        this.database = database;
         initPublication();
         readSchema();
     }
@@ -95,7 +98,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     }
 
     private String getPubName() {
-        return String.format("dbs_pub_%s_%s", config.getSchema(), config.getUsername()).toLowerCase();
+        return String.format("dbs_pub_%s_%s", schema, config.getUsername()).toLowerCase();
     }
 
     private void initPublication() {
@@ -120,13 +123,13 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     }
 
     private void readSchema() {
-        final String querySchema = String.format(GET_TABLE_SCHEMA, config.getSchema());
+        final String querySchema = String.format(GET_TABLE_SCHEMA, schema);
         List<Map> schemas = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySchema));
         if (!CollectionUtils.isEmpty(schemas)) {
             schemas.forEach(map -> {
                 Long oid = (Long) map.get("oid");
                 String tableName = (String) map.get("tableName");
-                MetaInfo metaInfo = connectorService.getMetaInfo(connectorInstance, tableName);
+                MetaInfo metaInfo = getMetaInfo(tableName);
                 Assert.notEmpty(metaInfo.getColumn(), String.format("The table column for '%s' must not be empty.", tableName));
                 tables.put(oid.intValue(), new TableId(oid.intValue(), tableName, metaInfo.getColumn()));
             });
@@ -159,10 +162,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
             logger.warn("The column size of table '{}' is {}, but we has been received column size is {}.", tableId.tableName, tableId.fields.size(), nColumn);
 
             // The table schema has been changed, we should be get a new table schema from db.
-            MetaInfo metaInfo = connectorService.getMetaInfo(connectorInstance, tableId.tableName);
-            if (CollectionUtils.isEmpty(metaInfo.getColumn())) {
-                throw new PostgreSQLException(String.format("The table column for '%s' is empty.", tableId.tableName));
-            }
+            MetaInfo metaInfo = getMetaInfo(tableId.tableName);
             tableId.fields = metaInfo.getColumn();
             return;
         }
@@ -190,6 +190,15 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
                     logger.info("t, n, u not set, got instead {}", type);
             }
         }
+    }
+
+    private MetaInfo getMetaInfo(String tableName) {
+        ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, tableName);
+        List<MetaInfo> metaInfos = connectorService.getMetaInfo(connectorInstance, context);
+        MetaInfo metaInfo = CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);
+        Assert.isTrue(metaInfo != null, String.format("The table '%s' is not exist.", tableName));
+        Assert.notEmpty(metaInfo.getColumn(), String.format("The table column for '%s' must not be empty.", tableName));
+        return metaInfo;
     }
 
     final class TableId {

@@ -24,12 +24,12 @@ import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.FullPluginContext;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
-import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -73,20 +73,10 @@ public class ParserComponentImpl implements ParserComponent {
     private ApplicationContext applicationContext;
 
     @Override
-    public MetaInfo getMetaInfo(String connectorId, String tableName) {
+    public List<MetaInfo> getMetaInfo(String connectorId, ConnectorServiceContext context) {
         Connector connector = profileComponent.getConnector(connectorId);
         ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
-        MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorInstance, tableName);
-        if (!CollectionUtils.isEmpty(connector.getTable())) {
-            for (Table t : connector.getTable()) {
-                if (t.getName().equals(tableName)) {
-                    metaInfo.setTableType(t.getType());
-                    metaInfo.setSql(t.getSql());
-                    break;
-                }
-            }
-        }
-        return metaInfo;
+        return connectorFactory.getMetaInfo(connectorInstance, context);
     }
 
     @Override
@@ -108,8 +98,8 @@ public class ParserComponentImpl implements ParserComponent {
                 }
             });
         }
-        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable, connectorFactory.connect(sConnConfig), tableGroup.getFilter());
-        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), tTable, connectorFactory.connect(tConnConfig), null);
+        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), mapping.getSourceSchema(), sTable, connectorFactory.connect(sConnConfig), tableGroup.getFilter());
+        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), mapping.getTargetSchema(), tTable, connectorFactory.connect(tConnConfig), null);
         // 获取连接器同步参数
         return connectorFactory.getCommand(sourceConfig, targetConfig);
     }

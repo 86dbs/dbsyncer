@@ -13,6 +13,11 @@ import java.util.List;
 public class MetaInfo {
 
     /**
+     * 表
+     */
+    private String table;
+
+    /**
      * 表类型
      */
     private String tableType;
@@ -32,6 +37,15 @@ public class MetaInfo {
      * 索引类型（ES）
      */
     private String indexType;
+
+    public String getTable() {
+        return table;
+    }
+
+    public MetaInfo setTable(String table) {
+        this.table = table;
+        return this;
+    }
 
     public String getTableType() {
         return tableType;

@@ -10,10 +10,9 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
-import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -52,13 +51,12 @@ public class ConnectorChecker extends AbstractChecker {
         connector.setConfig(config);
 
         // 连接器配置校验
-        ConfigValidator configValidator = connectorFactory.getConnectorService(connectorType).getConfigValidator();
+        ConnectorService connectorService = connectorFactory.getConnectorService(connectorType);
+        ConfigValidator configValidator = connectorService.getConfigValidator();
         Assert.notNull(configValidator, "ConfigValidator can not be null.");
-        configValidator.modify(config, params);
+        configValidator.modify(connectorService, config, params);
 
-        // 获取表
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
-        connector.setTable(connectorFactory.getTable(connectorInstance));
+        connectorFactory.connect(config);
 
         // 修改基本配置
         this.modifyConfigModel(connector, params);
@@ -80,13 +78,12 @@ public class ConnectorChecker extends AbstractChecker {
         this.modifyConfigModel(connector, params);
 
         // 连接器配置校验
-        ConfigValidator configValidator = connectorFactory.getConnectorService(config.getConnectorType()).getConfigValidator();
+        ConnectorService connectorService = connectorFactory.getConnectorService(config.getConnectorType());
+        ConfigValidator configValidator = connectorService.getConfigValidator();
         Assert.notNull(configValidator, "ConfigValidator can not be null.");
-        configValidator.modify(config, params);
+        configValidator.modify(connectorService, config, params);
 
-        // 获取表
-        ConnectorInstance connectorInstance = connectorFactory.connect(config);
-        connector.setTable(connectorFactory.getTable(connectorInstance));
+        connectorFactory.connect(config);
 
         return connector;
     }

@@ -6,10 +6,14 @@ package org.dbsyncer.web.controller.task;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
@@ -182,7 +186,7 @@ public class TaskController {
     @GetMapping("/getTables")
     @ResponseBody
     public RestResult getTables(@RequestParam("connectorId") String connectorId, 
-                               @RequestParam(value = "databaseName", required = false) String databaseName,
+                               @RequestParam(value = "database", required = false) String database,
                                @RequestParam(value = "schema", required = false) String schema) {
         try {
             Connector connector = connectorService.getConnector(connectorId);
@@ -191,8 +195,8 @@ public class TaskController {
             }
             
             ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
-            List<Table> tables = connectorFactory.getTable(connectorInstance);
-            
+            ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, StringUtil.EMPTY);
+            List<Table> tables = connectorFactory.getTable(connectorInstance, context);
             return RestResult.restSuccess(tables);
         } catch (Exception e) {
             log.error("获取表列表失败", e);
@@ -206,6 +210,8 @@ public class TaskController {
     @GetMapping("/getTableFields")
     @ResponseBody
     public RestResult getTableFields(@RequestParam("connectorId") String connectorId,
+                                     @RequestParam(value = "database", required = false) String database,
+                                     @RequestParam(value = "schema", required = false) String schema,
                                     @RequestParam("tableName") String tableName) {
         try {
             Connector connector = connectorService.getConnector(connectorId);
@@ -214,8 +220,9 @@ public class TaskController {
             }
             
             ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
-            MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorInstance, tableName);
-            
+            ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, tableName);
+            List<MetaInfo> metaInfos = connectorFactory.getMetaInfo(connectorInstance, context);
+            MetaInfo metaInfo = CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);
             if (metaInfo == null || metaInfo.getColumn() == null) {
                 return RestResult.restFail("获取表字段失败");
             }

@@ -3,6 +3,9 @@
  */
 package org.dbsyncer.sdk.connector;
 
+import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.spi.ConnectorService;
+
 import java.util.Map;
 
 /**
@@ -12,15 +15,16 @@ import java.util.Map;
  * @Version 1.0.0
  * @Date 2020-01-07 23:17
  */
-public interface ConfigValidator<C> {
+public interface ConfigValidator<S extends ConnectorService, C extends ConnectorConfig> {
 
     /**
      * 修改配置
      *
+     * @param connectorService
      * @param connectorConfig
      * @param params
      * @return
      */
-    void modify(C connectorConfig, Map<String, String> params);
+    void modify(S connectorService, C connectorConfig, Map<String, String> params);
 
 }

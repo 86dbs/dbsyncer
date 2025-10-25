@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
@@ -20,7 +21,6 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -89,29 +89,19 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * 获取所有表名
      *
      * @param connectorInstance
+     * @param context
      * @return
      */
-    List<Table> getTable(I connectorInstance);
+    List<Table> getTable(I connectorInstance, ConnectorServiceContext context);
 
     /**
      * 获取表元信息
      *
      * @param connectorInstance
-     * @param tableNamePattern
+     * @param context
      * @return
      */
-    MetaInfo getMetaInfo(I connectorInstance, String tableNamePattern);
-
-    /**
-     * 获取表元信息
-     *
-     * @param connectorInstance
-     * @param tableNamePatterns
-     * @return
-     */
-    default List<MetaInfo> getMetaInfos(I connectorInstance, List<String> tableNamePatterns) {
-        return new ArrayList<>();
-    }
+    List<MetaInfo> getMetaInfo(I connectorInstance, ConnectorServiceContext context);
 
     /**
      * 获取总数

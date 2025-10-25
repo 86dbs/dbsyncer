@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.kafka.validator;
 
 import org.dbsyncer.common.util.NumberUtil;
+import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.springframework.stereotype.Component;
@@ -19,10 +20,10 @@ import java.util.Map;
  * @Date 2021-11-22 23:55
  */
 @Component
-public class KafkaConfigValidator implements ConfigValidator<KafkaConfig> {
+public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, KafkaConfig> {
 
     @Override
-    public void modify(KafkaConfig connectorConfig, Map<String, String> params) {
+    public void modify(KafkaConnector connectorService, KafkaConfig connectorConfig, Map<String, String> params) {
         String bootstrapServers = params.get("bootstrapServers");
         String topic = params.get("topic");
         String fields = params.get("fields");
