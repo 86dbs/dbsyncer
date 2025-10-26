@@ -16,7 +16,7 @@
     <div class="form-group">
         <label class="col-sm-2 control-label">服务名称<strong class="text-primary">*</strong></label>
         <div class="col-sm-4">
-            <input class="form-control" name="serviceName" type="text" maxlength="32" dbsyncer-valid="require" placeholder="ORCL" th:value="${connector?.config?.username}?: 'ORCL'"/>
+            <input class="form-control" name="serviceName" type="text" maxlength="32" dbsyncer-valid="require" placeholder="ORCL" th:value="${connector?.config?.serviceName}?: 'ORCL'"/>
         </div>
     </div>
     <div class="form-group">
