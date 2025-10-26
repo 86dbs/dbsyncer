@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.sqlite;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlite.validator.SQLiteConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -57,9 +58,9 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildJdbcUrl(DatabaseConfig connectorConfig, String database) {
+    public String buildJdbcUrl(DatabaseConfig config, String database) {
         // jdbc:sqlite:C:/Users/example.db
-        return "";
+        return "jdbc:sqlite:" + database;
     }
 
     @Override

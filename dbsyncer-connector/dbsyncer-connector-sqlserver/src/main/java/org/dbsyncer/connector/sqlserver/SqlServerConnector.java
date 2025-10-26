@@ -152,12 +152,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         if (StringUtil.isNotBlank(database)) {
             url.append(";databaseName=").append(database);
         }
-        // 添加连接参数
-        String properties = config.getProperties();
-        if (StringUtil.isNotBlank(properties)) {
-            properties = properties.replace("&", ";");
-            url.append(";").append(properties);
-        }
         return url.toString();
     }
 }

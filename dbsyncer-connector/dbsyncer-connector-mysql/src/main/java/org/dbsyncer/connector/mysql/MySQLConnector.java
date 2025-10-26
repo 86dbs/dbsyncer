@@ -163,11 +163,6 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         if (database != null && !database.trim().isEmpty()) {
             url.append("/").append(database);
         }
-        String properties = config.getProperties();
-        if (StringUtil.isNotBlank(properties)) {
-            // 检查基础URL是否已包含参数
-            url.append(url.toString().contains("?") ? "&" : "?").append(properties);
-        }
         return url.toString();
     }
 
