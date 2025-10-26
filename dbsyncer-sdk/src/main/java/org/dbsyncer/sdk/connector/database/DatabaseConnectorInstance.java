@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.connector.database;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -24,8 +25,12 @@ public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConf
     public DatabaseConnectorInstance(DatabaseConfig config) {
         this.config = config;
         Properties properties = DatabaseUtil.parseJdbcProperties(config.getProperties());
-        properties.put("user", config.getUsername());
-        properties.put("password", config.getPassword());
+        if (StringUtil.isNotBlank(config.getUsername())) {
+            properties.put("user", config.getUsername());
+        }
+        if (StringUtil.isNotBlank(config.getPassword())) {
+            properties.put("password", config.getPassword());
+        }
         this.dataSource = new SimpleDataSource(config.getDriverClassName(), config.getUrl(), properties, config.getMaxActive(), config.getKeepAlive());
     }
 

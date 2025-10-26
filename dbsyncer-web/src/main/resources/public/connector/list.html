@@ -73,7 +73,7 @@
                         </div>
                     </td>
                     <td th:text="${connector.config.connectorType}">类型</td>
-                    <td th:text="${connector?.config?.host} + ':' + ${connector?.config?.port}">连接信息</td>
+                    <td th:text="${connector?.config?.url}">连接信息</td>
 
                     <td class="dbsyncer-table-actions-cell">
                         <a href="javascript:void(0);" class="dbsyncer-action-btn" th:data-id="${connector.id}" onclick="editConnector(this.dataset.id)">
