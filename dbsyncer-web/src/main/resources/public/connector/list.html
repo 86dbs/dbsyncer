@@ -2,24 +2,8 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<!-- 数据源管理页面 -->
-<div class="dbsyncer-page-header">
-    <h1 class="dbsyncer-page-title">数据源管理</h1>
-    <p class="dbsyncer-page-subtitle">管理和配置数据库连接</p>
-</div>
-
 <!-- 数据源列表表格 -->
 <div class="dbsyncer-table-container">
-    <!-- 表格头部 -->
-    <div class="dbsyncer-table-header">
-        <h2 class="dbsyncer-table-title">数据源列表</h2>
-        <div class="dbsyncer-table-actions">
-            <button class="dbsyncer-btn dbsyncer-btn-primary" id="addConnectorBtn">
-                <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
-                添加连接
-            </button>
-        </div>
-    </div>
 
     <!-- 表格工具栏 -->
     <div class="dbsyncer-table-toolbar">
@@ -43,6 +27,10 @@
             </div>
         </div>
         <div class="dbsyncer-table-toolbar-right">
+            <button class="dbsyncer-btn dbsyncer-btn-primary" id="addConnectorBtn">
+                <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
+                添加连接
+            </button>
             <button class="dbsyncer-btn dbsyncer-btn-secondary" id="refreshBtn">
                 <i class="fa fa-refresh dbsyncer-btn-icon-left"></i>
                 刷新
@@ -69,7 +57,7 @@
                     <td>
                         <div class="d-flex align-center">
                             <i th:class="'fa fa-database dbsyncer-connector-icon'" th:style="'color: #007bff; margin-right: 8px;'"></i>
-                            <span th:text="${connector.name}">数据源名称</span>
+                            <span th:text="${connector.name}">名称</span>
                         </div>
                     </td>
                     <td th:text="${connector.config.connectorType}">类型</td>
