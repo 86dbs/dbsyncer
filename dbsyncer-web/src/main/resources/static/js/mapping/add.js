@@ -77,11 +77,18 @@ function handleConnectorChange(connectorId, type) {
                 
                 // 根据连接器类型加载数据
                 if (connectorType.indexOf('mysql') !== -1) {
+                    // MySQL: 加载数据库列表
+                    loadDatabaseList(connectorId, type);
+                } else if (connectorType.indexOf('oracle') !== -1) {
+                    // Oracle: 直接加载Schema列表
+                    loadOracleSchemas(connectorId, type);
+                } else if (connectorType.indexOf('postgresql') !== -1 || connectorType.indexOf('sqlserver') !== -1) {
+                    // PostgreSQL/SQL Server: 加载数据库列表（后续级联Schema）
                     loadDatabaseList(connectorId, type);
                 } else {
                     // 清空对应的字段
                     $("#" + type + "Database").empty().append('<option value="">请选择数据库</option>');
-                    $("#" + type + "Schema").val('');
+                    $("#" + type + "Schema").empty().append('<option value="">请选择Schema</option>');
                 }
                 
                 // 更新字段显示状态
@@ -177,7 +184,7 @@ function updateFieldsVisibility() {
 }
 
 /**
- * 加载数据库列表（用于MySQL）
+ * 加载数据库列表（用于MySQL/PostgreSQL/SQL Server）
  * 
  * @param {string} connectorId - 连接器ID
  * @param {string} type - 'source' 或 'target'
@@ -227,6 +234,89 @@ function loadDatabaseList(connectorId, type) {
     });
 }
 
+/**
+ * 加载Oracle Schema列表
+ * 
+ * @param {string} connectorId - 连接器ID
+ * @param {string} type - 'source' 或 'target'
+ */
+function loadOracleSchemas(connectorId, type) {
+    var schemaSelect = $("#" + type + "Schema");
+    
+    $.ajax({
+        url: '/mapping/getDatabaseOrSchemaList',
+        type: 'GET',
+        data: { connectorId: connectorId },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success && response.resultValue) {
+                var connector = response.resultValue;
+                
+                // 清空并重新加载
+                schemaSelect.empty().append('<option value="">请选择Schema</option>');
+                
+                // 从schemaName字段获取Schema列表
+                if (connector.schemaName && connector.schemaName.length > 0) {
+                    connector.schemaName.forEach(function(schemaName) {
+                        schemaSelect.append('<option value="' + schemaName + '">' + schemaName + '</option>');
+                    });
+                }
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('获取Schema列表失败:', error);
+            schemaSelect.empty().append('<option value="">获取Schema列表失败</option>');
+        }
+    });
+}
+
+/**
+ * 级联加载Schema列表（用于PostgreSQL/SQL Server）
+ * 
+ * @param {string} connectorId - 连接器ID
+ * @param {string} databaseName - 数据库名称
+ * @param {string} type - 'source' 或 'target'
+ */
+function loadCascadeSchemas(connectorId, databaseName, type) {
+    var schemaSelect = $("#" + type + "Schema");
+    
+    // 清空Schema选择
+    schemaSelect.empty().append('<option value="">请选择Schema</option>');
+    
+    if (!databaseName) {
+        return;
+    }
+    
+    $.ajax({
+        url: '/mapping/getSchemaList',
+        type: 'GET',
+        data: {
+            connectorId: connectorId,
+            databaseName: databaseName
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success && response.resultValue) {
+                var schemas = response.resultValue;
+                
+                // 添加Schema选项
+                schemas.forEach(function(schema) {
+                    schemaSelect.append('<option value="' + schema + '">' + schema + '</option>');
+                });
+                
+                // 如果只有一个Schema，自动选中
+                if (schemas.length === 1) {
+                    schemaSelect.val(schemas[0]);
+                }
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('级联加载Schema失败:', error);
+            schemaSelect.append('<option value="">加载Schema失败</option>');
+        }
+    });
+}
+
 $(function () {
     // 兼容IE PlaceHolder
     $('input[type="text"],input[type="password"],textarea').PlaceHolder();
@@ -248,6 +338,32 @@ $(function () {
     $targetSelect.on('change', function() {
         var connectorId = $(this).val();
         handleConnectorChange(connectorId, 'target');
+    });
+    
+    // 监听源数据库选择变化（用于PostgreSQL/SQL Server级联加载Schema）
+    $('#sourceDatabase').on('change', function() {
+        var databaseName = $(this).val();
+        var connectorId = $sourceSelect.val();
+        var connectorType = connectorTypes.source;
+        
+        if (databaseName && connectorId && connectorType) {
+            if (connectorType.indexOf('postgresql') !== -1 || connectorType.indexOf('sqlserver') !== -1) {
+                loadCascadeSchemas(connectorId, databaseName, 'source');
+            }
+        }
+    });
+    
+    // 监听目标数据库选择变化（用于PostgreSQL/SQL Server级联加载Schema）
+    $('#targetDatabase').on('change', function() {
+        var databaseName = $(this).val();
+        var connectorId = $targetSelect.val();
+        var connectorType = connectorTypes.target;
+        
+        if (databaseName && connectorId && connectorType) {
+            if (connectorType.indexOf('postgresql') !== -1 || connectorType.indexOf('sqlserver') !== -1) {
+                loadCascadeSchemas(connectorId, databaseName, 'target');
+            }
+        }
     });
     
     // 初始化时触发一次，处理默认选中的连接器

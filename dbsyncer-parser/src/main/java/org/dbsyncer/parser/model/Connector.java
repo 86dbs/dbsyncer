@@ -23,6 +23,9 @@ public class Connector extends ConfigModel {
 
     private List<String> dataBaseName;
 
+    private List<String> schemaName;
+
+
     public ConnectorConfig getConfig() {
         return config;
     }
@@ -38,5 +41,13 @@ public class Connector extends ConfigModel {
 
     public void setDataBaseName(List<String> dataBaseName) {
         this.dataBaseName = dataBaseName;
+    }
+
+    public List<String> getSchemaName() {
+        return schemaName;
+    }
+
+    public void setSchemaName(List<String> schemaName) {
+        this.schemaName = schemaName;
     }
 }

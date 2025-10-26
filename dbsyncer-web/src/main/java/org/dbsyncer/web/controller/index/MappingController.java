@@ -6,6 +6,9 @@ import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +23,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -181,6 +187,76 @@ public class MappingController extends BaseController {
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 根据连接器和数据库获取Schema列表（用于PostgreSQL/SQL Server级联选择）
+     *
+     * @param connectorId 连接器ID
+     * @param databaseName 数据库名称
+     * @return Schema列表
+     */
+    @GetMapping("/getSchemaList")
+    @ResponseBody
+    public RestResult getSchemaList(@RequestParam(value = "connectorId") String connectorId,
+                                     @RequestParam(value = "databaseName") String databaseName) {
+        try {
+            Connector connector = connectorService.getConnector(connectorId);
+            if (connector == null) {
+                return RestResult.restFail("连接器不存在");
+            }
+
+            String connectorType = connector.getConfig().getConnectorType().toLowerCase();
+            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+
+            List<String> schemas = new ArrayList<>();
+
+            if (!(connectorInstance instanceof DatabaseConnectorInstance)) {
+                return RestResult.restSuccess(schemas);
+            }
+
+            DatabaseConnectorInstance connection = (DatabaseConnectorInstance) connectorInstance;
+
+            if (connectorType.contains("postgresql")) {
+                // PostgreSQL
+                schemas = connection.execute(databaseTemplate -> {
+                    List<String> schemaList = new ArrayList<>();
+                    String sql = String.format(
+                        "SELECT schema_name FROM information_schema.schemata " +
+                        "WHERE catalog_name = '%s' AND schema_name NOT IN ('pg_catalog', 'information_schema', 'pg_toast')",
+                        databaseName
+                    );
+                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement().executeQuery(sql)) {
+                        while (rs.next()) {
+                            schemaList.add(rs.getString(1));
+                        }
+                    }
+                    return schemaList;
+                });
+            } else if (connectorType.contains("sqlserver")) {
+                // SQL Server
+                schemas = connection.execute(databaseTemplate -> {
+                    List<String> schemaList = new ArrayList<>();
+                    String sql = String.format(
+                        "SELECT name FROM [%s].sys.schemas " +
+                        "WHERE name NOT IN ('guest', 'INFORMATION_SCHEMA', 'sys', 'db_owner', 'db_accessadmin', " +
+                        "'db_securityadmin', 'db_ddladmin', 'db_backupoperator', 'db_datareader', 'db_datawriter', 'db_denydatareader', 'db_denydatawriter')",
+                        databaseName
+                    );
+                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement().executeQuery(sql)) {
+                        while (rs.next()) {
+                            schemaList.add(rs.getString(1));
+                        }
+                    }
+                    return schemaList;
+                });
+            }
+
+            return RestResult.restSuccess(schemas);
+        } catch (Exception e) {
+            logger.error("获取Schema列表失败", e);
+            return RestResult.restFail("获取Schema列表失败: " + e.getMessage());
         }
     }
 

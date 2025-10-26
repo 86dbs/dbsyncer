@@ -68,6 +68,10 @@ public class ConnectorChecker extends AbstractChecker {
         List<String> databaseNames = fetchDatabaseNames(connectorInstance, connectorType);
         connector.setDataBaseName(databaseNames);
 
+        // 获取Schema列表（仅Oracle直接获取）
+        List<String> schemaNames = fetchSchemaNames(connectorInstance, connectorType, null);
+        connector.setSchemaName(schemaNames);
+
         // 修改基本配置
         this.modifyConfigModel(connector, params);
 
@@ -98,6 +102,10 @@ public class ConnectorChecker extends AbstractChecker {
         String connectorType = config.getConnectorType();
         List<String> databaseNames = fetchDatabaseNames(connectorInstance, connectorType);
         connector.setDataBaseName(databaseNames);
+
+        // 获取Schema列表（仅Oracle直接获取）
+        List<String> schemaNames = fetchSchemaNames(connectorInstance, connectorType, null);
+        connector.setSchemaName(schemaNames);
 
         return connector;
     }
@@ -215,6 +223,158 @@ public class ConnectorChecker extends AbstractChecker {
         }
         
         return databases;
+    }
+
+    /**
+     * 获取Schema名称列表
+     * 
+     * @param connectorInstance 连接器实例
+     * @param connectorType 连接器类型
+     * @param databaseName 数据库名称（PostgreSQL/SQL Server需要，Oracle不需要）
+     * @return Schema名称列表
+     */
+    private List<String> fetchSchemaNames(ConnectorInstance connectorInstance, String connectorType, String databaseName) {
+        List<String> schemas = new ArrayList<>();
+        
+        try {
+            // 只处理数据库类型的连接器
+            if (!(connectorInstance instanceof DatabaseConnectorInstance)) {
+                logger.info("连接器类型{}不支持获取Schema列表", connectorType);
+                return schemas;
+            }
+            
+            DatabaseConnectorInstance connection = (DatabaseConnectorInstance) connectorInstance;
+            String type = connectorType.toLowerCase();
+            
+            if (type.contains("oracle")) {
+                // Oracle: 直接获取所有用户Schema
+                schemas = connection.execute(databaseTemplate -> {
+                    List<String> schemaList = new ArrayList<>();
+                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement()
+                            .executeQuery("SELECT username FROM all_users ORDER BY username")) {
+                        while (rs.next()) {
+                            String schemaName = rs.getString(1);
+                            if (!isSystemSchema(schemaName, "oracle")) {
+                                schemaList.add(schemaName);
+                            }
+                        }
+                    }
+                    return schemaList;
+                });
+                logger.info("成功获取Oracle Schema列表，共{}个Schema", schemas.size());
+                
+            } else if (type.contains("postgresql")) {
+                // PostgreSQL: 需要指定数据库名称
+                if (databaseName == null || databaseName.isEmpty()) {
+                    logger.info("PostgreSQL获取Schema需要指定数据库名称");
+                    return schemas;
+                }
+                
+                // 切换到指定数据库获取Schema
+                schemas = fetchPostgreSQLSchemas(connection, databaseName);
+                logger.info("成功获取PostgreSQL数据库[{}]的Schema列表，共{}个Schema", databaseName, schemas.size());
+                
+            } else if (type.contains("sqlserver")) {
+                // SQL Server: 需要指定数据库名称
+                if (databaseName == null || databaseName.isEmpty()) {
+                    logger.info("SQL Server获取Schema需要指定数据库名称");
+                    return schemas;
+                }
+                
+                // 切换到指定数据库获取Schema
+                schemas = fetchSQLServerSchemas(connection, databaseName);
+                logger.info("成功获取SQL Server数据库[{}]的Schema列表，共{}个Schema", databaseName, schemas.size());
+                
+            } else {
+                logger.info("连接器类型{}暂不支持获取Schema列表", connectorType);
+            }
+            
+        } catch (Exception e) {
+            logger.error("获取Schema列表失败: {}", e.getMessage(), e);
+        }
+        
+        return schemas;
+    }
+
+    /**
+     * 获取PostgreSQL指定数据库的Schema列表
+     */
+    private List<String> fetchPostgreSQLSchemas(DatabaseConnectorInstance connection, String databaseName) {
+        return connection.execute(databaseTemplate -> {
+            List<String> schemaList = new ArrayList<>();
+            String sql = String.format(
+                "SELECT schema_name FROM information_schema.schemata " +
+                "WHERE catalog_name = '%s' AND schema_name NOT IN ('pg_catalog', 'information_schema', 'pg_toast')",
+                databaseName
+            );
+            try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement().executeQuery(sql)) {
+                while (rs.next()) {
+                    String schemaName = rs.getString(1);
+                    schemaList.add(schemaName);
+                }
+            }
+            return schemaList;
+        });
+    }
+
+    /**
+     * 获取SQL Server指定数据库的Schema列表
+     */
+    private List<String> fetchSQLServerSchemas(DatabaseConnectorInstance connection, String databaseName) {
+        return connection.execute(databaseTemplate -> {
+            List<String> schemaList = new ArrayList<>();
+            String sql = String.format(
+                "SELECT name FROM [%s].sys.schemas " +
+                "WHERE name NOT IN ('guest', 'INFORMATION_SCHEMA', 'sys', 'db_owner', 'db_accessadmin', " +
+                "'db_securityadmin', 'db_ddladmin', 'db_backupoperator', 'db_datareader', 'db_datawriter', 'db_denydatareader', 'db_denydatawriter')",
+                databaseName
+            );
+            try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement().executeQuery(sql)) {
+                while (rs.next()) {
+                    String schemaName = rs.getString(1);
+                    schemaList.add(schemaName);
+                }
+            }
+            return schemaList;
+        });
+    }
+
+    /**
+     * 判断是否为系统Schema
+     * 
+     * @param schemaName Schema名称
+     * @param dbType 数据库类型
+     * @return true表示系统Schema
+     */
+    private boolean isSystemSchema(String schemaName, String dbType) {
+        if (schemaName == null || schemaName.isEmpty()) {
+            return true;
+        }
+        
+        Set<String> systemSchemas = new HashSet<>();
+        
+        if ("oracle".equalsIgnoreCase(dbType)) {
+            // Oracle系统用户
+            systemSchemas.add("SYS");
+            systemSchemas.add("SYSTEM");
+            systemSchemas.add("DBSNMP");
+            systemSchemas.add("SYSMAN");
+            systemSchemas.add("OUTLN");
+            systemSchemas.add("MDSYS");
+            systemSchemas.add("ORDSYS");
+            systemSchemas.add("EXFSYS");
+            systemSchemas.add("CTXSYS");
+            systemSchemas.add("XDB");
+            systemSchemas.add("ANONYMOUS");
+            systemSchemas.add("ORACLE_OCM");
+            systemSchemas.add("APPQOSSYS");
+            systemSchemas.add("WMSYS");
+            systemSchemas.add("APEX_030200");
+            systemSchemas.add("APEX_PUBLIC_USER");
+            systemSchemas.add("FLOWS_FILES");
+        }
+        
+        return systemSchemas.contains(schemaName.toUpperCase());
     }
 
     /**
