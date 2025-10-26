@@ -150,9 +150,9 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     public String buildJdbcUrl(DatabaseConfig config, String database) {
         // jdbc:postgresql://127.0.0.1:5432/postgres
         StringBuilder url = new StringBuilder();
-        url.append("jdbc:postgresql://").append(config.getHost()).append(":").append(config.getPort());
-        if (database != null && !database.trim().isEmpty()) {
-            url.append("/").append(database);
+        url.append("jdbc:postgresql://").append(config.getHost()).append(":").append(config.getPort()).append("/");
+        if (StringUtil.isNotBlank(database)) {
+            url.append(database);
         }
         return url.toString();
     }
