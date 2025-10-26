@@ -36,16 +36,45 @@
                                 <!-- 数据源 -->
                                 <label class="col-sm-2 control-label">数据源</label>
                                 <div class="col-sm-4">
-                                    <select name="sourceConnectorId" class="form-control select-control">
+                                    <select name="sourceConnectorId" id="sourceConnectorId" class="form-control select-control">
                                         <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
                                     </select>
                                 </div>
+
                                 <!-- 目标源 -->
                                 <label class="col-sm-2 control-label">目标源</label>
                                 <div class="col-sm-4">
-                                    <select name="targetConnectorId" class="form-control select-control">
+                                    <select name="targetConnectorId" id="targetConnectorId" class="form-control select-control">
                                         <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
                                     </select>
+                                </div>
+                            </div>
+
+                            <!-- 数据库配置 (MySQL) -->
+                            <div class="form-group" id="databaseGroup" style="display:none;">
+                                <label class="col-sm-2 control-label">源数据库</label>
+                                <div class="col-sm-4">
+                                    <select name="sourceDatabase" id="sourceDatabase" class="form-control">
+                                        <option value="">请选择数据库</option>
+                                    </select>
+                                </div>
+                                <label class="col-sm-2 control-label">目标数据库</label>
+                                <div class="col-sm-4">
+                                    <select name="targetDatabase" id="targetDatabase" class="form-control">
+                                        <option value="">请选择数据库</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Schema配置 (Oracle/SQL Server/PostgreSQL) -->
+                            <div class="form-group" id="schemaGroup" style="display:none;">
+                                <label class="col-sm-2 control-label">源Schema</label>
+                                <div class="col-sm-4">
+                                    <input class="form-control" name="sourceSchema" id="sourceSchema" type="text" maxlength="100" placeholder="请输入Schema名称" />
+                                </div>
+                                <label class="col-sm-2 control-label">目标Schema</label>
+                                <div class="col-sm-4">
+                                    <input class="form-control" name="targetSchema" id="targetSchema" type="text" maxlength="100" placeholder="请输入Schema名称" />
                                 </div>
                             </div>
 

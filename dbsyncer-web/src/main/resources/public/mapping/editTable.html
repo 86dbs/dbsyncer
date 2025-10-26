@@ -9,7 +9,7 @@
             <label class="col-sm-3 control-label text-right">数据源表</label>
             <div class="col-sm-9">
                 <select id="sourceTable" class="form-control select-control-table" multiple="multiple">
-                    <option th:each="t,s:${mapping?.sourceConnector?.table}" th:text="${t?.name} + ' ('+${t?.type}+')'"
+                    <option th:each="t,s:${mapping?.sourceTable}" th:text="${t?.name} + ' ('+${t?.type}+')'"
                             th:value="${t?.name}"/>
                 </select>
             </div>
@@ -24,7 +24,7 @@
                 <label class="col-sm-3 control-label text-right">目标源表</label>
                 <div class="col-sm-9">
                     <select id="targetTable" class="form-control select-control-table" multiple="multiple">
-                        <option th:each="t,s:${mapping?.targetConnector?.table}"
+                        <option th:each="t,s:${mapping?.targetTable}"
                                 th:text="${t?.name} + ' ('+${t?.type}+')'" th:value="${t?.name}"/>
                     </select>
                 </div>
