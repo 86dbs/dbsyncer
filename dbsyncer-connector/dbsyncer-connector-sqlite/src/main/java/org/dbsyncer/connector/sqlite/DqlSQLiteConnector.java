@@ -5,8 +5,6 @@
 package org.dbsyncer.connector.sqlite;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.sqlite.validator.DqlSQLiteConfigValidator;
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -26,16 +24,9 @@ import java.util.List;
  */
 public final class DqlSQLiteConnector extends AbstractDQLConnector {
 
-    private final DqlSQLiteConfigValidator configValidator = new DqlSQLiteConfigValidator();
-
     @Override
     public String getConnectorType() {
         return "DqlSQLite";
-    }
-
-    @Override
-    public ConfigValidator getConfigValidator() {
-        return configValidator;
     }
 
     @Override

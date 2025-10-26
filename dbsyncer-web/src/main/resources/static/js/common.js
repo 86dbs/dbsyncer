@@ -89,36 +89,69 @@ function beautifySql() {
     $sql.removeAttr('tmp');
 }
 
-// 初始化select组件，默认选中
+/**
+ * 初始化select组件，默认选中指定索引的选项
+ * @param {jQuery} $select - 需要初始化的select元素
+ * @param {number} $selectedIndex - 默认选中的索引，-1表示不设置默认值
+ * @returns {jQuery} 返回初始化后的select元素
+ */
 function initSelectIndex($select, $selectedIndex) {
     let select = initSelect($select);
-
     if ($selectedIndex < 0) {
         return select;
     }
-
     $.each($select, function () {
+        console.log("选中事件", $selectedIndex);
         var v = $(this).selectpicker('val');
         if (undefined == v || '' == v) {
             var $option = $(this).find("option")[$selectedIndex];
             if (undefined != $option) {
                 $(this).selectpicker('val', $option.value);
+                // 刷新组件状态，确保UI与值同步
+                $(this).selectpicker('refresh');
             }
         }
     });
     return select;
 }
 
+/**
+ * 初始化select组件
+ * @param {jQuery} $select - 需要初始化的select元素
+ * @returns {jQuery} 返回初始化后的select元素
+ */
 function initSelect($select) {
-    return $select.selectpicker({
+    var selectInstance = $select.selectpicker({
         "title": "请选择",
         "actionsBox": true,
         "liveSearch": true,
         "selectAllText": "全选",
         "deselectAllText": "取消全选",
         "noneResultsText": "没有找到 {0}",
-        "selectedTextFormat": "count > 10"
+        "selectedTextFormat": "count > 10",
+        "container": false,  // 不使用容器，避免DOM结构冲突
+        "dropupAuto": true   // 自动判断向上或向下展开
     });
+    
+    // 修复选择后下拉菜单无法再次打开的问题
+    $select.on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+        // 确保下拉菜单的内层ul元素显示正常
+        var $dropdown = $(this).next('.dropdown-menu');
+        if ($dropdown.length) {
+            $dropdown.find('ul.dropdown-menu.inner').css('display', '');
+        }
+    });
+    
+    // 监听下拉菜单隐藏事件，确保下次可以正常打开
+    $select.on('hidden.bs.select', function (e) {
+        var $dropdown = $(this).next('.dropdown-menu');
+        if ($dropdown.length) {
+            // 移除可能导致问题的display样式
+            $dropdown.find('ul.dropdown-menu.inner').css('display', '');
+        }
+    });
+    
+    return selectInstance;
 }
 
 // 绑定多值输入框事件
@@ -238,34 +271,59 @@ $.fn.serializeJson = function () {
 
 // 全局加载页面
 function doLoader(url, route = 0) {
-    // 加载页面
-    const contents = document.querySelectorAll('.contentDiv');
-    contents.forEach(function (content) {
-        content.classList.add('hidden');
-    });
-    const contentToShow = $('#initContainer' + route);
-    if (contentToShow) {
-        contentToShow.removeClass('hidden');
+    // 使用统一的内容区域
+    const contentToShow = $('#mainContent');
+    if (contentToShow.length) {
+        // 显示加载状态
+        $.loadingT(true);
+        
+        // 加载页面内容
+        contentToShow.load($basePath + url, function (response, status, xhr) {
+            $.loadingT(false);
+            
+            if (status === 'success') {
+                // 执行水印等初始化操作
+                if (typeof watermark === 'function') {
+                    watermark();
+                }
+            } else {
+                // 显示错误信息
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl('页面加载失败', 'danger');
+                } else {
+                    alert('页面加载失败，请稍后重试');
+                }
+            }
+        });
     }
-    contentToShow.load($basePath + url, function (response, status, xhr) {
-        if (status != 'success') {
-            bootGrowl(response);
-        }
-        watermark();
-        $.loadingT(false);
-    });
 }
 
 function timerLoad(url, route = 1) {
-
-    const contentToShow = $('#initContainer' + route);
-    contentToShow.load($basePath + url, function (response, status, xhr) {
-        if (status != 'success') {
-            bootGrowl(response);
-        }
-        watermark();
-        $.loadingT(false);
-    });
+    // 使用统一的内容区域
+    const contentToShow = $('#mainContent');
+    if (contentToShow.length) {
+        // 显示加载状态
+        $.loadingT(true);
+        
+        // 加载页面内容
+        contentToShow.load($basePath + url, function (response, status, xhr) {
+            $.loadingT(false);
+            
+            if (status === 'success') {
+                // 执行水印等初始化操作
+                if (typeof watermark === 'function') {
+                    watermark();
+                }
+            } else {
+                // 显示错误信息
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl('页面加载失败', 'danger');
+                } else {
+                    alert('页面加载失败，请稍后重试');
+                }
+            }
+        });
+    }
 }
 
 // 异常请求

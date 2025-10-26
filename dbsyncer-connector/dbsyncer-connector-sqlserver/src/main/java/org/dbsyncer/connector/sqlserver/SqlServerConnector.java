@@ -17,14 +17,13 @@ import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
-import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
-import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
+import java.sql.Connection;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,9 +38,6 @@ import java.util.stream.Collectors;
  * @Date 2022-05-22 22:56
  */
 public final class SqlServerConnector extends AbstractDatabaseConnector {
-
-    private final String QUERY_VIEW = "select name from sysobjects where xtype in('v')";
-    private final String QUERY_TABLE = "select name from sys.tables where schema_id = schema_id('%s') and is_ms_shipped = 0";
     private final String QUERY_TABLE_IDENTITY = "select is_identity from sys.columns where object_id = object_id('%s') and is_identity > 0";
     private final String SET_TABLE_IDENTITY_ON = "set identity_insert %s.[%s] on;";
     private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
@@ -56,14 +52,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public ConfigValidator getConfigValidator() {
         return configValidator;
-    }
-
-    @Override
-    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
-        DatabaseConfig config = connectorInstance.getConfig();
-        List<Table> tables = getTables(connectorInstance, String.format(QUERY_TABLE, config.getSchema()), TableTypeEnum.TABLE);
-        tables.addAll(getTables(connectorInstance, QUERY_VIEW, TableTypeEnum.VIEW));
-        return tables;
     }
 
     @Override
@@ -107,15 +95,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         if (CollectionUtils.isEmpty(primaryKeys)) {
             return primaryKeys;
         }
-        return primaryKeys.stream().map(pk -> convertKey(pk)).collect(Collectors.toList());
-    }
-
-    private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {
-        List<String> tableNames = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
-        if (!CollectionUtils.isEmpty(tableNames)) {
-            return tableNames.stream().map(name -> new Table(name, type.getCode())).collect(Collectors.toList());
-        }
-        return new ArrayList<>();
+        return primaryKeys.stream().map(this::convertKey).collect(Collectors.toList());
     }
 
     @Override
@@ -128,9 +108,9 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         // 允许显式插入标识列的值
         if (!CollectionUtils.isEmpty(result)) {
             DatabaseConfig config = (DatabaseConfig) commandConfig.getConnectorConfig();
-            String insert = String.format(SET_TABLE_IDENTITY_ON, config.getSchema(), tableName)
+            String insert = String.format(SET_TABLE_IDENTITY_ON, commandConfig.getSchema(), tableName)
                     + targetCommand.get(ConnectorConstant.OPERTION_INSERT)
-                    + String.format(SET_TABLE_IDENTITY_OFF, config.getSchema(), tableName);
+                    + String.format(SET_TABLE_IDENTITY_OFF, commandConfig.getSchema(), tableName);
             targetCommand.put(ConnectorConstant.OPERTION_INSERT, insert);
         }
         return targetCommand;
@@ -155,8 +135,23 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         return result;
     }
 
-    private String convertKey(String key) {
-        return new StringBuilder("[").append(key).append("]").toString();
+    @Override
+    protected String getSchema(String schema, Connection connection) {
+        return StringUtil.isNotBlank(schema) ? schema : "dbo";
     }
 
+    private String convertKey(String key) {
+        return "[" + key + "]";
+    }
+
+    @Override
+    public String buildJdbcUrl(DatabaseConfig config, String database) {
+        // jdbc:sqlserver://127.0.0.1:1433;databaseName=test;encrypt=false;trustServerCertificate=true
+        StringBuilder url = new StringBuilder();
+        url.append("jdbc:sqlserver://").append(config.getHost()).append(":").append(config.getPort());
+        if (StringUtil.isNotBlank(database)) {
+            url.append(";databaseName=").append(database);
+        }
+        return url.toString();
+    }
 }

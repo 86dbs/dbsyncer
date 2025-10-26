@@ -60,7 +60,6 @@ public class OracleListener extends AbstractDatabaseListener {
             String username = config.getUsername();
             String password = config.getPassword();
             String url = config.getUrl();
-            String schema = config.getSchema();
             boolean containsPos = snapshot.containsKey(REDO_POSITION);
             logMiner = new LogMiner(username, password, url, schema, driverClassName);
             logMiner.setStartScn(containsPos ? Long.parseLong(snapshot.get(REDO_POSITION)) : 0);

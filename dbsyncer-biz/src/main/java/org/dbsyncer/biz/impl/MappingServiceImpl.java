@@ -5,7 +5,6 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
-import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.RepeatedTableGroupException;
@@ -15,6 +14,7 @@ import org.dbsyncer.biz.task.MappingCountTask;
 import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
+import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -30,6 +30,8 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
@@ -212,7 +214,24 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (exclude != null && exclude == 1) {
             return convertMapping2Vo(mapping);
         }
-
+        ConnectorInstance connectorInstance = null;
+        ConnectorServiceContext context = null;
+        if (mapping.getSourceColumn() == null) {
+            Connector connector = connectorService.getConnector(mapping.getSourceConnectorId());
+            if (connector != null) {
+                connectorInstance = connectorFactory.connect(connector.getConfig());
+                context = new DefaultConnectorServiceContext(mapping.getSourceDatabase(), mapping.getSourceSchema(), StringUtil.EMPTY);
+                mapping.setSourceTable(connectorFactory.getTable(connectorInstance, context));
+            }
+        }
+        if (mapping.getTargetTable() == null) {
+            Connector targetConnect = connectorService.getConnector(mapping.getSourceConnectorId());
+            if (targetConnect != null) {
+                connectorInstance = connectorFactory.connect(targetConnect.getConfig());
+                context = new DefaultConnectorServiceContext(mapping.getTargetDatabase(), mapping.getTargetSchema(), StringUtil.EMPTY);
+                mapping.setTargetTable(connectorFactory.getTable(connectorInstance, context));
+            }
+        }
         // 过滤已映射的表
         MappingVo vo = convertMapping2Vo(mapping);
         List<TableGroup> tableGroupAll = tableGroupService.getTableGroupAll(id);
@@ -223,8 +242,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 sTables.add(tableGroup.getSourceTable().getName());
                 tTables.add(tableGroup.getTargetTable().getName());
             });
-            vo.getSourceConnector().setTable(vo.getSourceConnector().getTable().stream().filter(t -> !sTables.contains(t.getName())).collect(Collectors.toList()));
-            vo.getTargetConnector().setTable(vo.getTargetConnector().getTable().stream().filter(t -> !tTables.contains(t.getName())).collect(Collectors.toList()));
+            vo.setSourceTable(mapping.getSourceTable().stream().filter(t -> !CollectionUtils.isEmpty(sTables) && !sTables.contains(t.getName())).collect(Collectors.toList()));
+            vo.setTargetTable(mapping.getTargetTable().stream().filter(t -> !CollectionUtils.isEmpty(tTables) && !tTables.contains(t.getName())).collect(Collectors.toList()));
             sTables.clear();
             tTables.clear();
         }
@@ -280,8 +299,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String refreshMappingTables(String id) {
         Mapping mapping = profileComponent.getMapping(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
-        updateConnectorTables(mapping.getSourceConnectorId());
-        updateConnectorTables(mapping.getTargetConnectorId());
+        mapping.setSourceTable(getConnectorTables(mapping.getSourceConnectorId(), mapping.getSourceDatabase(), mapping.getSourceSchema()));
+        mapping.setTargetTable(getConnectorTables(mapping.getTargetConnectorId(), mapping.getTargetDatabase(), mapping.getTargetSchema()));
+        profileComponent.editConfigModel(mapping);
         return "刷新驱动表成功";
     }
 
@@ -298,13 +318,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         dispatchTaskService.execute(task);
     }
 
-    private void updateConnectorTables(String connectorId) {
+    private List<Table> getConnectorTables(String connectorId, String catalog, String schema) {
         Connector connector = profileComponent.getConnector(connectorId);
         Assert.notNull(connector, "The connector id is invalid.");
         // 刷新数据表
         ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
-        connector.setTable(connectorFactory.getTable(connectorInstance));
-        profileComponent.editConfigModel(connector);
+        return connectorFactory.getTable(connectorInstance, new DefaultConnectorServiceContext(catalog, schema, StringUtil.EMPTY));
     }
 
     private MappingVo convertMapping2Vo(Mapping mapping) {
@@ -348,30 +367,26 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      */
     private void matchSimilarTableGroups(ConfigModel model) {
         Mapping mapping = (Mapping) model;
-        Connector s = profileComponent.getConnector(mapping.getSourceConnectorId());
-        Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
-        if (CollectionUtils.isEmpty(s.getTable()) || CollectionUtils.isEmpty(t.getTable())) {
+        List<Table> sourceTables = mapping.getSourceTable();
+        List<Table> targetTables = mapping.getTargetTable();
+        if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
             return;
         }
+        // 优化匹配性能
+        Map<String, Table> targetTableMap = targetTables.stream().collect(Collectors.toMap(table -> table.getName().toUpperCase(), table -> table));
 
         // 匹配相似表
-        for (Table sourceTable : s.getTable()) {
+        for (Table sourceTable : sourceTables) {
             if (StringUtil.isBlank(sourceTable.getName())) {
                 continue;
             }
-            for (Table targetTable : t.getTable()) {
-                if (StringUtil.isBlank(targetTable.getName())) {
-                    continue;
-                }
-                // 目标源表不支持视图
-                if (TableTypeEnum.isView(targetTable.getType())) {
-                    continue;
-                }
-                if (StringUtil.equalsIgnoreCase(sourceTable.getName(), targetTable.getName())) {
+            targetTableMap.computeIfPresent(sourceTable.getName().toUpperCase(), (k, targetTable) -> {
+                // 排除目标源表视图
+                if (!TableTypeEnum.isView(targetTable.getType())) {
                     addTableGroup(mapping.getId(), sourceTable.getName(), targetTable.getName(), StringUtil.EMPTY);
-                    break;
                 }
-            }
+                return targetTable;
+            });
         }
     }
 
@@ -383,9 +398,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      */
     private void matchCustomizedTableGroups(ConfigModel model, String tableGroups) {
         Mapping mapping = (Mapping) model;
-        Connector s = profileComponent.getConnector(mapping.getSourceConnectorId());
-        Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
-        if (CollectionUtils.isEmpty(s.getTable()) || CollectionUtils.isEmpty(t.getTable())) {
+        List<Table> sourceTables = mapping.getSourceTable();
+        List<Table> targetTables = mapping.getTargetTable();
+        if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
             return;
         }
         String[] lines = StringUtil.split(tableGroups, StringUtil.BREAK_LINE);
@@ -419,7 +434,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                     }
                     // |C2,C3|
                     if (m.length == 1) {
-                        String name = replaceStar(m[0], tPk);;
+                        String name = replaceStar(m[0], tPk);
+                        ;
                         if (StringUtil.startsWith(mapping, StringUtil.VERTICAL_LINE)) {
                             fms.add(StringUtil.VERTICAL_LINE + name);
                             continue;

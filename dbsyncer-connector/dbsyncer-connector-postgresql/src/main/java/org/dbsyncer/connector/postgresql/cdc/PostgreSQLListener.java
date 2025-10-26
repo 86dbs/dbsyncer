@@ -97,11 +97,14 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
             }
 
             database = instance.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_DATABASE, String.class));
-            messageDecoder = MessageDecoderEnum.getMessageDecoder(config.getProperty(PLUGIN_NAME));
+            Properties properties = DatabaseUtil.parseJdbcProperties(config.getProperties());
+            messageDecoder = MessageDecoderEnum.getMessageDecoder(properties.getProperty(PLUGIN_NAME));
             messageDecoder.setMetaId(metaId);
             messageDecoder.setConfig(config);
-            messageDecoder.postProcessBeforeInitialization(connectorService, instance);
-            dropSlotOnClose = BooleanUtil.toBoolean(config.getProperty(DROP_SLOT_ON_CLOSE, "true"));
+            messageDecoder.setDatabase(database);
+            messageDecoder.setSchema(schema);
+            messageDecoder.postProcessBeforeInitialization(connectorService, instance, database);
+            dropSlotOnClose = BooleanUtil.toBoolean(properties.getProperty(DROP_SLOT_ON_CLOSE, "true"));
 
             connect();
             connected = true;

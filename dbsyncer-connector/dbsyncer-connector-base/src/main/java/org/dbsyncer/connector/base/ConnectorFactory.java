@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -126,11 +127,12 @@ public class ConnectorFactory implements DisposableBean {
      * 获取配置表
      *
      * @param connectorInstance
+     * @param context
      * @return
      */
-    public List<Table> getTable(ConnectorInstance connectorInstance) {
+    public List<Table> getTable(ConnectorInstance connectorInstance, ConnectorServiceContext context) {
         Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
-        List tableList = getConnectorService(connectorInstance.getConfig()).getTable(connectorInstance);
+        List<Table> tableList = getConnectorService(connectorInstance.getConfig()).getTable(connectorInstance, context);
         // 按升序展示表
         Collections.sort(tableList, Comparator.comparing(Table::getName));
         return tableList;
@@ -140,13 +142,12 @@ public class ConnectorFactory implements DisposableBean {
      * 获取配置表元信息
      *
      * @param connectorInstance
-     * @param tableName
+     * @param context
      * @return
      */
-    public MetaInfo getMetaInfo(ConnectorInstance connectorInstance, String tableName) {
+    public List<MetaInfo> getMetaInfo(ConnectorInstance connectorInstance, ConnectorServiceContext context) {
         Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
-        Assert.hasText(tableName, "tableName can not be empty.");
-        return getConnectorService(connectorInstance.getConfig()).getMetaInfo(connectorInstance, tableName);
+        return getConnectorService(connectorInstance.getConfig()).getMetaInfo(connectorInstance, context);
     }
 
     public Object getPosition(ConnectorInstance connectorInstance) {

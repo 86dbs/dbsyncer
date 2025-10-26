@@ -3,7 +3,9 @@ package org.dbsyncer.web.controller.index;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
+import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,16 +37,36 @@ public class MappingController extends BaseController {
     @Resource
     private TableGroupService tableGroupService;
 
+
+    @Resource
+    ConnectorFactory connectorFactory;
+
+    /**
+     * 同步任务列表页面
+     */
+    @GetMapping("/list")
+    public String list(ModelMap model) {
+        model.put("mappings", mappingService.getMappingAll());
+        return "mapping/list";
+    }
+
+    /**
+     * 添加同步任务页面
+     */
     @GetMapping("/pageAdd")
     public String page(ModelMap model) {
         model.put("connectors", connectorService.getConnectorAll());
+        model.put("mappings", mappingService.getMappingAll());
         return "mapping/add";
     }
 
     @GetMapping("/page/{page}")
     public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id, Integer exclude) {
-        model.put("mapping", mappingService.getMapping(id, exclude));
+
+        MappingVo mapping = mappingService.getMapping(id, exclude);
+        model.put("mapping", mapping);
         model.put("tableGroups", tableGroupService.getTableGroupAll(id));
+        model.put("targetTable", tableGroupService.getTableGroupAll(id));
         initConfig(model);
         return "mapping/" + page;
     }
@@ -122,6 +144,40 @@ public class MappingController extends BaseController {
     public RestResult refreshTables(@RequestParam(value = "id") String id) {
         try {
             return RestResult.restSuccess(mappingService.refreshMappingTables(id));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取连接器信息（类型等）
+     *
+     * @param connectorId 连接器ID
+     * @return 连接器信息
+     */
+    @GetMapping("/getConnectorInfo")
+    @ResponseBody
+    public RestResult getConnectorInfo(@RequestParam(value = "connectorId") String connectorId) {
+        try {
+            return RestResult.restSuccess(connectorService.getConnector(connectorId));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取数据库列表或Schema列表
+     *
+     * @param connectorId 连接器ID
+     * @return 数据库或Schema列表
+     */
+    @GetMapping("/getDatabaseOrSchemaList")
+    @ResponseBody
+    public RestResult getDatabaseOrSchemaList(@RequestParam(value = "connectorId") String connectorId) {
+        try {
+            return RestResult.restSuccess(connectorService.getConnector(connectorId));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

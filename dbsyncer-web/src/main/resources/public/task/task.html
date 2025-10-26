@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="dbsyncer-table-container">
+
+    <!-- 表格工具栏 -->
+    <div class="dbsyncer-table-toolbar">
+        <div class="dbsyncer-table-toolbar-left">
+            <div class="dbsyncer-table-search">
+                <i class="fa fa-search dbsyncer-table-search-icon"></i>
+                <input type="text" class="dbsyncer-table-search-input" placeholder="搜索名称..." id="searchInput">
+            </div>
+        </div>
+        <div class="dbsyncer-table-toolbar-right">
+            <button id="addTaskBtn" class="dbsyncer-btn dbsyncer-btn-primary">
+                <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
+                创建任务
+            </button>
+            <button class="dbsyncer-btn dbsyncer-btn-secondary" id="refreshBtn">
+                <i class="fa fa-refresh dbsyncer-btn-icon-left"></i>
+                刷新
+            </button>
+        </div>
+    </div>
+
+    <!-- 任务列表 -->
+    <div class="dbsyncer-table-wrapper">
+        <table class="dbsyncer-table">
+            <thead>
+            <tr>
+                <th>序号</th>
+                <th>任务ID</th>
+                <th>任务名称</th>
+                <th>任务类型</th>
+                <th>任务状态</th>
+                <th>创建时间</th>
+                <th>更新时间</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="taskList">
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script th:src="@{/js/task/index.js}"></script>
+</html>
+
+
+

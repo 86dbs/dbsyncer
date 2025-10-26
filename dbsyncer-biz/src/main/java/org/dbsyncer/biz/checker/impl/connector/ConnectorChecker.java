@@ -11,16 +11,22 @@ import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @Author AE86
@@ -52,13 +58,15 @@ public class ConnectorChecker extends AbstractChecker {
         connector.setConfig(config);
 
         // 连接器配置校验
-        ConfigValidator configValidator = connectorFactory.getConnectorService(connectorType).getConfigValidator();
+        ConnectorService connectorService = connectorFactory.getConnectorService(connectorType);
+        ConfigValidator configValidator = connectorService.getConfigValidator();
         Assert.notNull(configValidator, "ConfigValidator can not be null.");
-        configValidator.modify(config, params);
+        configValidator.modify(connectorService, config, params);
 
-        // 获取表
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
-        connector.setTable(connectorFactory.getTable(connectorInstance));
+        // 连接并获取数据库列表
+        ConnectorInstance connectorInstance = connectorFactory.connect(config);
+        List<String> databaseNames = fetchDatabaseNames(connectorInstance, connectorType);
+        connector.setDataBaseName(databaseNames);
 
         // 修改基本配置
         this.modifyConfigModel(connector, params);
@@ -80,13 +88,16 @@ public class ConnectorChecker extends AbstractChecker {
         this.modifyConfigModel(connector, params);
 
         // 连接器配置校验
-        ConfigValidator configValidator = connectorFactory.getConnectorService(config.getConnectorType()).getConfigValidator();
+        ConnectorService connectorService = connectorFactory.getConnectorService(config.getConnectorType());
+        ConfigValidator configValidator = connectorService.getConfigValidator();
         Assert.notNull(configValidator, "ConfigValidator can not be null.");
-        configValidator.modify(config, params);
+        configValidator.modify(connectorService, config, params);
 
-        // 获取表
+        // 连接并获取数据库列表
         ConnectorInstance connectorInstance = connectorFactory.connect(config);
-        connector.setTable(connectorFactory.getTable(connectorInstance));
+        String connectorType = config.getConnectorType();
+        List<String> databaseNames = fetchDatabaseNames(connectorInstance, connectorType);
+        connector.setDataBaseName(databaseNames);
 
         return connector;
     }
@@ -102,6 +113,159 @@ public class ConnectorChecker extends AbstractChecker {
             logger.error(e.getMessage());
             throw new BizException("获取连接器配置异常.");
         }
+    }
+
+    /**
+     * 获取数据库名称列表
+     * 
+     * @param connectorInstance 连接器实例
+     * @param connectorType 连接器类型
+     * @return 数据库名称列表
+     */
+    private List<String> fetchDatabaseNames(ConnectorInstance connectorInstance, String connectorType) {
+        List<String> databases = new ArrayList<>();
+        
+        try {
+            // 只处理数据库类型的连接器
+            if (!(connectorInstance instanceof DatabaseConnectorInstance)) {
+                logger.info("连接器类型{}不支持获取数据库列表", connectorType);
+                return databases;
+            }
+            
+            DatabaseConnectorInstance connection = (DatabaseConnectorInstance) connectorInstance;
+            String type = connectorType.toLowerCase();
+            
+            if (type.contains("mysql")) {
+                // MySQL: SHOW DATABASES
+                databases = connection.execute(databaseTemplate -> {
+                    List<String> dbList = new ArrayList<>();
+                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement()
+                            .executeQuery("SHOW DATABASES")) {
+                        while (rs.next()) {
+                            String dbName = rs.getString(1);
+                            // 过滤系统数据库
+                            if (!isSystemDatabase(dbName)) {
+                                dbList.add(dbName);
+                            }
+                        }
+                    }
+                    return dbList;
+                });
+                logger.info("成功获取MySQL数据库列表，共{}个数据库", databases.size());
+                
+            } else if (type.contains("postgresql")) {
+                // PostgreSQL: SELECT datname FROM pg_database
+                databases = connection.execute(databaseTemplate -> {
+                    List<String> dbList = new ArrayList<>();
+                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement()
+                            .executeQuery("SELECT datname FROM pg_database WHERE datistemplate = false")) {
+                        while (rs.next()) {
+                            String dbName = rs.getString(1);
+                            if (!isSystemDatabase(dbName)) {
+                                dbList.add(dbName);
+                            }
+                        }
+                    }
+                    return dbList;
+                });
+                logger.info("成功获取PostgreSQL数据库列表，共{}个数据库", databases.size());
+                
+            } else if (type.contains("oracle")) {
+                // Oracle: SELECT username FROM all_users
+                databases = connection.execute(databaseTemplate -> {
+                    List<String> dbList = new ArrayList<>();
+                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement()
+                            .executeQuery("SELECT username FROM all_users ORDER BY username")) {
+                        while (rs.next()) {
+                            String dbName = rs.getString(1);
+                            if (!isSystemDatabase(dbName)) {
+                                dbList.add(dbName);
+                            }
+                        }
+                    }
+                    return dbList;
+                });
+                logger.info("成功获取Oracle用户列表，共{}个用户", databases.size());
+                
+            } else if (type.contains("sqlserver")) {
+                // SQL Server: SELECT name FROM sys.databases
+                databases = connection.execute(databaseTemplate -> {
+                    List<String> dbList = new ArrayList<>();
+                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement()
+                            .executeQuery("SELECT name FROM sys.databases WHERE database_id > 4")) {
+                        while (rs.next()) {
+                            String dbName = rs.getString(1);
+                            if (!isSystemDatabase(dbName)) {
+                                dbList.add(dbName);
+                            }
+                        }
+                    }
+                    return dbList;
+                });
+                logger.info("成功获取SQL Server数据库列表，共{}个数据库", databases.size());
+                
+            } else {
+                // 其他数据库类型暂不支持
+                logger.info("连接器类型{}暂不支持自动获取数据库列表", connectorType);
+            }
+            
+        } catch (Exception e) {
+            logger.error("获取数据库列表失败: {}", e.getMessage(), e);
+            // 不抛出异常，返回空列表
+        }
+        
+        return databases;
+    }
+
+    /**
+     * 判断是否为系统数据库
+     * 
+     * @param dbName 数据库名称
+     * @return true表示系统数据库
+     */
+    private boolean isSystemDatabase(String dbName) {
+        if (dbName == null || dbName.isEmpty()) {
+            return true;
+        }
+        
+        // 定义系统数据库列表
+        Set<String> systemDatabases = new HashSet<>();
+        
+        // MySQL系统数据库
+        systemDatabases.add("information_schema");
+        systemDatabases.add("mysql");
+        systemDatabases.add("performance_schema");
+        systemDatabases.add("sys");
+        
+        // PostgreSQL系统数据库
+        systemDatabases.add("postgres");
+        systemDatabases.add("template0");
+        systemDatabases.add("template1");
+        
+        // Oracle系统用户
+        systemDatabases.add("SYS");
+        systemDatabases.add("SYSTEM");
+        systemDatabases.add("DBSNMP");
+        systemDatabases.add("SYSMAN");
+        systemDatabases.add("OUTLN");
+        systemDatabases.add("MDSYS");
+        systemDatabases.add("ORDSYS");
+        systemDatabases.add("EXFSYS");
+        systemDatabases.add("CTXSYS");
+        systemDatabases.add("XDB");
+        systemDatabases.add("ANONYMOUS");
+        systemDatabases.add("ORACLE_OCM");
+        systemDatabases.add("APPQOSSYS");
+        systemDatabases.add("WMSYS");
+        
+        // SQL Server系统数据库已通过SQL过滤 (database_id > 4)
+        systemDatabases.add("master");
+        systemDatabases.add("tempdb");
+        systemDatabases.add("model");
+        systemDatabases.add("msdb");
+        
+        return systemDatabases.contains(dbName.toLowerCase()) || 
+               systemDatabases.contains(dbName.toUpperCase());
     }
 
 }

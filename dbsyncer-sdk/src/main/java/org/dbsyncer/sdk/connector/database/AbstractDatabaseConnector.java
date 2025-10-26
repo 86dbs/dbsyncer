@@ -13,6 +13,7 @@ import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -35,9 +36,6 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
-import org.springframework.jdbc.support.rowset.SqlRowSet;
-import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
 import org.springframework.util.Assert;
 
 import java.sql.Connection;
@@ -91,38 +89,57 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public String getConnectorInstanceCacheKey(DatabaseConfig config) {
-        return String.format("%s-%s-%s", config.getConnectorType(), config.getUrl(), config.getUsername());
+        return String.format("%s-%s-%s-%s", config.getConnectorType(), config.getHost(), config.getPort(), config.getUsername());
     }
 
     @Override
-    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
-        return getTable(connectorInstance, null, getSchema(connectorInstance.getConfig()), null);
-    }
-
-    @Override
-    public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorInstance, String tableNamePattern) {
-        List<Field> fields = new ArrayList<>();
-        final String schema = getSchema(connectorInstance.getConfig());
-        connectorInstance.execute(databaseTemplate -> {
+    public List<Table> getTable(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        return connectorInstance.execute(databaseTemplate -> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
-            String catalog = conn.getCatalog();
-            String schemaNamePattern = null == schema ? conn.getSchema() : schema;
-            DatabaseMetaData metaData = conn.getMetaData();
-            List<String> primaryKeys = findTablePrimaryKeys(metaData, catalog, schemaNamePattern, tableNamePattern);
-            try (ResultSet columnMetadata = metaData.getColumns(catalog, schemaNamePattern, tableNamePattern, null)) {
-                while (columnMetadata.next()) {
-                    String columnName = columnMetadata.getString("COLUMN_NAME");
-                    int columnType = columnMetadata.getInt("DATA_TYPE");
-                    String typeName = columnMetadata.getString("TYPE_NAME");
-                    int columnSize = Math.max(0, columnMetadata.getInt("COLUMN_SIZE"));
-                    int ratio = Math.max(0, columnMetadata.getInt("DECIMAL_DIGITS"));
-                    fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio));
-                }
+            // 兼容处理 schema 和 catalog
+            String effectiveCatalog = getCatalog(context.getCatalog(), conn);
+            String effectiveSchema = getSchema(context.getSchema(), conn);
+
+            String[] types = {TableTypeEnum.TABLE.getCode(), TableTypeEnum.VIEW.getCode(), TableTypeEnum.MATERIALIZED_VIEW.getCode()};
+            final ResultSet rs = conn.getMetaData().getTables(effectiveCatalog, effectiveSchema, null, types);
+            logger.info("Using connector type: {}, catalog: {}, schema: {}", getConnectorType(), effectiveCatalog, effectiveSchema);
+            List<Table> tables = new ArrayList<>();
+            while (rs.next()) {
+                final String tableName = rs.getString("TABLE_NAME");
+                final String tableType = rs.getString("TABLE_TYPE");
+                tables.add(new Table(tableName, tableType));
             }
-            return fields;
+            return tables;
         });
-        return new MetaInfo().setColumn(fields);
+    }
+
+    @Override
+    public List<MetaInfo> getMetaInfo(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        return connectorInstance.execute(databaseTemplate -> {
+            SimpleConnection connection = databaseTemplate.getSimpleConnection();
+            Connection conn = connection.getConnection();
+            final String catalog = getCatalog(context.getCatalog(), conn);
+            final String schema = getSchema(context.getSchema(), conn);
+            DatabaseMetaData metaData = conn.getMetaData();
+            List<MetaInfo> metaInfos = new ArrayList<>();
+            for (String tableName : context.getTablePatterns()) {
+                List<Field> fields = new ArrayList<>();
+                List<String> primaryKeys = findTablePrimaryKeys(metaData, catalog, schema, tableName);
+                try (ResultSet columnMetadata = metaData.getColumns(catalog, schema, tableName, null)) {
+                    while (columnMetadata.next()) {
+                        String columnName = columnMetadata.getString("COLUMN_NAME");
+                        int columnType = columnMetadata.getInt("DATA_TYPE");
+                        String typeName = columnMetadata.getString("TYPE_NAME");
+                        int columnSize = Math.max(0, columnMetadata.getInt("COLUMN_SIZE"));
+                        int ratio = Math.max(0, columnMetadata.getInt("DECIMAL_DIGITS"));
+                        fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio));
+                    }
+                }
+                metaInfos.add(new MetaInfo().setTable(tableName).setColumn(fields));
+            }
+            return metaInfos;
+        });
     }
 
     @Override
@@ -236,7 +253,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         // 架构名
-        String schema = getSchemaWithQuotation((DatabaseConfig) commandConfig.getConnectorConfig());
+        String schema = getSchemaWithQuotation(commandConfig.getSchema());
         // 同步字段
         List<Field> column = filterColumn(table.getColumn());
         // 获取过滤SQL
@@ -270,7 +287,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         // 架构名
-        String schema = getSchemaWithQuotation((DatabaseConfig) commandConfig.getConnectorConfig());
+        String schema = getSchemaWithQuotation(commandConfig.getSchema());
         // 同步字段
         List<Field> column = filterColumn(table.getColumn());
         SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, column, null);
@@ -285,28 +302,40 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * 获取架构名
+     * 获取数据库名
      *
-     * @param config
+     * @param database
+     * @param connection
      * @return
      */
-    protected String getSchema(DatabaseConfig config) {
-        return config.getSchema();
+    protected String getCatalog(String database, Connection connection) throws SQLException {
+        return StringUtil.isNotBlank(database) ? database : connection.getCatalog();
     }
 
     /**
      * 获取架构名
      *
-     * @param config
+     * @param schema
+     * @param connection
      * @return
      */
-    protected String getSchemaWithQuotation(DatabaseConfig config) {
-        StringBuilder schema = new StringBuilder();
-        if (StringUtil.isNotBlank(config.getSchema())) {
+    protected String getSchema(String schema, Connection connection) throws SQLException {
+        return StringUtil.isNotBlank(schema) ? schema : connection.getSchema();
+    }
+
+    /**
+     * 获取架构名
+     *
+     * @param schema
+     * @return
+     */
+    protected String getSchemaWithQuotation(String schema) {
+        StringBuilder s = new StringBuilder();
+        if (StringUtil.isNotBlank(schema)) {
             String quotation = buildSqlWithQuotation();
-            schema.append(quotation).append(config.getSchema()).append(quotation).append(".").toString();
+            s.append(quotation).append(schema).append(quotation).append(".").toString();
         }
-        return schema.toString();
+        return s.toString();
     }
 
     /**
@@ -321,56 +350,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             final String quotation = buildSqlWithQuotation();
             PrimaryKeyUtil.buildSql(sql, config.getPrimaryKeys(), quotation, ",", "", true);
         }
-    }
-
-    /**
-     * 获取数据库表元数据信息
-     *
-     * @param databaseTemplate
-     * @param metaSql          查询元数据
-     * @param schema           架构名
-     * @param tableName        表名
-     * @return
-     */
-    protected MetaInfo getMetaInfo(DatabaseTemplate databaseTemplate, String metaSql, String schema, String tableName) throws SQLException {
-        SqlRowSet sqlRowSet = databaseTemplate.queryForRowSet(metaSql);
-        ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
-        SqlRowSetMetaData metaData = rowSet.getMetaData();
-
-        // 查询表字段信息
-        int columnCount = metaData.getColumnCount();
-        if (1 > columnCount) {
-            throw new SdkException("查询表字段不能为空.");
-        }
-        List<Field> fields = new ArrayList<>(columnCount);
-        Map<String, List<String>> tables = new HashMap<>();
-        try {
-            Connection connection = databaseTemplate.getSimpleConnection();
-            DatabaseMetaData md = connection.getMetaData();
-            final String catalog = connection.getCatalog();
-            schema = StringUtil.isNotBlank(schema) ? schema : null;
-            String name = null;
-            String label = null;
-            String typeName = null;
-            String table = null;
-            int columnType;
-            boolean pk;
-            for (int i = 1; i <= columnCount; i++) {
-                table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
-                if (null == tables.get(table)) {
-                    tables.putIfAbsent(table, findTablePrimaryKeys(md, catalog, schema, table));
-                }
-                name = metaData.getColumnName(i);
-                label = metaData.getColumnLabel(i);
-                typeName = metaData.getColumnTypeName(i);
-                columnType = metaData.getColumnType(i);
-                pk = isPk(tables, table, name);
-                fields.add(new Field(label, typeName, columnType, pk));
-            }
-        } finally {
-            tables.clear();
-        }
-        return new MetaInfo().setColumn(fields);
     }
 
     /**
@@ -457,64 +436,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * 获取表列表
-     *
-     * @param connectorInstance
-     * @param catalog
-     * @param schema
-     * @param tableNamePattern
-     * @return
-     */
-    private List<Table> getTable(DatabaseConnectorInstance connectorInstance, String catalog, String schema, String tableNamePattern) {
-        return connectorInstance.execute(databaseTemplate -> {
-            List<Table> tables = new ArrayList<>();
-            SimpleConnection connection = databaseTemplate.getSimpleConnection();
-            Connection conn = connection.getConnection();
-            DatabaseMetaData metaData = conn.getMetaData();
-            String dbProductName = metaData.getDatabaseProductName().toLowerCase();
-            // 兼容处理 schema 和 catalog
-            String effectiveCatalog = null;
-            String effectiveSchema = null;
-            if (dbProductName.contains("mysql") || dbProductName.contains("mariadb")) {
-                // MySQL: schema=null, catalog=database name
-                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
-            } else if (dbProductName.contains("oracle")) {
-                // Oracle: schema=用户名（大写），catalog=null
-                effectiveSchema = (schema != null) ? schema : conn.getSchema();
-                if (effectiveSchema != null) {
-                    effectiveSchema = effectiveSchema.toUpperCase();
-                }
-            } else if (dbProductName.contains("postgresql")) {
-                // PostgreSQL: schema=public 等，catalog=数据库名
-                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
-                effectiveSchema = (schema != null) ? schema : "public";
-            } else if (dbProductName.contains("sql server")) {
-                // SQL Server: catalog=数据库名，schema=如 dbo
-                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
-                effectiveSchema = (schema != null) ? schema : "dbo";
-            } else {
-                // 其他数据库按默认处理
-                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
-                effectiveSchema = (schema != null) ? schema : conn.getSchema();
-            }
-
-            String[] types = {TableTypeEnum.TABLE.getCode(), TableTypeEnum.VIEW.getCode(), TableTypeEnum.MATERIALIZED_VIEW.getCode()};
-            final ResultSet rs = conn.getMetaData().getTables(effectiveCatalog, effectiveSchema, tableNamePattern, types);
-            logger.info("Using dbProductName：{}, catalog: {}, schema: {}", dbProductName, effectiveCatalog, effectiveSchema);
-            while (rs.next()) {
-                final String tableName = rs.getString("TABLE_NAME");
-                final String tableType = rs.getString("TABLE_TYPE");
-                tables.add(new Table(tableName, tableType));
-            }
-            return tables;
-        });
-    }
-
-    /**
      * 根据过滤条件获取查询SQL
      *
      * @param fieldMap
-     * @param queryOperator {@link OperationEnum}
+     * @param operator {@link OperationEnum}
      * @param filter
      * @return
      */
@@ -605,7 +530,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * @return
      * @throws SQLException
      */
-    private List<String> findTablePrimaryKeys(DatabaseMetaData md, String catalog, String schema, String tableName) throws SQLException {
+    protected List<String> findTablePrimaryKeys(DatabaseMetaData md, String catalog, String schema, String tableName) throws SQLException {
         //根据表名获得主键结果集
         ResultSet rs = null;
         List<String> primaryKeys = new ArrayList<>();
@@ -693,14 +618,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return rowNum > 0;
     }
 
-    private boolean isPk(Map<String, List<String>> tables, String tableName, String name) {
-        List<String> pk = tables.get(tableName);
-        if (CollectionUtils.isEmpty(pk)) {
-            return false;
-        }
-        return pk.stream().anyMatch(key -> key.equalsIgnoreCase(name));
-    }
-
     private void removeFieldWithPk(List<Field> fields, List<Field> pkFields) {
         if (CollectionUtils.isEmpty(fields) || CollectionUtils.isEmpty(pkFields)) {
             return;
@@ -736,4 +653,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
         return result;
     }
+
+    public abstract String buildJdbcUrl(DatabaseConfig connectorConfig, String database);
 }

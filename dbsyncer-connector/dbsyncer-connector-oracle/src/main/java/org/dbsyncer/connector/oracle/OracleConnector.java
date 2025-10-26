@@ -8,6 +8,7 @@ import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleClobValueMapper;
 import org.dbsyncer.connector.oracle.schema.OracleOtherValueMapper;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
+import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -20,6 +21,8 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 
@@ -139,4 +142,38 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         return "select 1 from dual";
     }
 
+    @Override
+    protected String getCatalog(String database, Connection connection) {
+        return null;
+    }
+
+    @Override
+    protected String getSchema(String schema, Connection connection) throws SQLException {
+        if (StringUtil.isBlank(schema)) {
+            schema = connection.getSchema();
+        }
+        if (StringUtil.isNotBlank(schema)) {
+            schema = schema.toUpperCase();
+        }
+        return schema;
+    }
+
+    @Override
+    public String buildJdbcUrl(DatabaseConfig config, String database) {
+        // jdbc:oracle:thin:@127.0.0.1:1521:ORCL
+        StringBuilder url = new StringBuilder();
+        url.append("jdbc:oracle:thin:@").append(config.getHost()).append(":").append(config.getPort());
+        String serviceName = config.getServiceName();
+        if (StringUtil.isNotBlank(serviceName)) {
+            // 使用Service Name
+            url.append("/").append(serviceName);
+        } else if (StringUtil.isNotBlank(database)) {
+            // 使用SID (传统方式)
+            url.append(":").append(database);
+        } else {
+            throw new IllegalArgumentException("Oracle需要指定serviceName或database(SID)");
+        }
+
+        return url.toString();
+    }
 }

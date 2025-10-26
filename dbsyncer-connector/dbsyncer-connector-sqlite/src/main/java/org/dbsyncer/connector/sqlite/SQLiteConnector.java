@@ -4,9 +4,11 @@
 package org.dbsyncer.connector.sqlite;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlite.validator.SQLiteConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -49,11 +51,16 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
-        DatabaseConfig config = connectorInstance.getConfig();
-        List<Table> tables = getTables(connectorInstance, String.format(QUERY_TABLE, config.getSchema()), TableTypeEnum.TABLE);
+    public List<Table> getTable(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        List<Table> tables = getTables(connectorInstance, String.format(QUERY_TABLE, context.getSchema()), TableTypeEnum.TABLE);
         tables.addAll(getTables(connectorInstance, QUERY_VIEW, TableTypeEnum.VIEW));
         return tables;
+    }
+
+    @Override
+    public String buildJdbcUrl(DatabaseConfig config, String database) {
+        // jdbc:sqlite:C:/Users/example.db
+        return "jdbc:sqlite:" + database;
     }
 
     @Override
@@ -97,7 +104,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
         if (CollectionUtils.isEmpty(primaryKeys)) {
             return primaryKeys;
         }
-        return primaryKeys.stream().map(pk -> convertKey(pk)).collect(Collectors.toList());
+        return primaryKeys.stream().map(this::convertKey).collect(Collectors.toList());
     }
 
     private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {
@@ -109,7 +116,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     }
 
     private String convertKey(String key) {
-        return new StringBuilder("\"").append(key).append("\"").toString();
+        return "\"" + key + "\"";
     }
 
 }

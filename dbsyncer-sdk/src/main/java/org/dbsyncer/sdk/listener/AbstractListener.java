@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.SqlTable;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
@@ -31,6 +32,8 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final int FLUSH_DELAYED_SECONDS = 20;
+    protected String database;
+    protected String schema;
     protected ConnectorInstance connectorInstance;
     protected ConnectorInstance targetConnectorInstance;
     protected ConnectorService connectorService;
@@ -39,6 +42,7 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     protected ListenerConfig listenerConfig;
     protected Set<String> filterTable;
     protected List<Table> sourceTable;
+    protected List<SqlTable> sqlTables;
     protected Map<String, String> snapshot;
     protected String metaId;
     private Watcher watcher;
@@ -128,6 +132,14 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
         }
     }
 
+    public void setDatabase(String database) {
+        this.database = database;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
+    }
+
     public void setConnectorInstance(ConnectorInstance connectorInstance) {
         this.connectorInstance = connectorInstance;
     }
@@ -162,6 +174,11 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
 
     public AbstractListener setSourceTable(List<Table> sourceTable) {
         this.sourceTable = sourceTable;
+        return this;
+    }
+
+    public AbstractListener setSqlTables(List<SqlTable> sqlTables) {
+        this.sqlTables = sqlTables;
         return this;
     }
 

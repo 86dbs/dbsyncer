@@ -5,18 +5,26 @@ package org.dbsyncer.sdk.connector.database;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
-import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.SqlTable;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
+import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,33 +37,63 @@ import java.util.Map;
 public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
 
     @Override
-    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
-        DatabaseConfig cfg = connectorInstance.getConfig();
-        List<SqlTable> sqlTables = cfg.getSqlTables();
-        List<Table> tables = new ArrayList<>();
-        if (!CollectionUtils.isEmpty(sqlTables)) {
-            sqlTables.forEach(s ->
-                tables.add(new Table(s.getSqlName(), TableTypeEnum.TABLE.getCode(), Collections.EMPTY_LIST, s.getSql(), null))
-            );
-        }
-        return tables;
+    public ConfigValidator getConfigValidator() {
+        return null;
     }
 
     @Override
-    public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorInstance, String sqlName) {
-        DatabaseConfig cfg = connectorInstance.getConfig();
-        List<SqlTable> sqlTables = cfg.getSqlTables();
-        for (SqlTable s : sqlTables) {
-            if (StringUtil.equals(s.getSqlName(), sqlName)) {
+    public List<MetaInfo> getMetaInfo(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        return connectorInstance.execute(databaseTemplate -> {
+            List<MetaInfo> metaInfos = new ArrayList<>();
+            for (SqlTable s : context.getSqlTablePatterns()) {
                 String sql = s.getSql().toUpperCase();
                 sql = sql.replace("\t", " ");
                 sql = sql.replace("\r", " ");
                 sql = sql.replace("\n", " ");
-                String queryMetaSql = StringUtil.contains(sql, " WHERE ") ? s.getSql() + " AND 1!=1 " : s.getSql() + " WHERE 1!=1 ";
-                return connectorInstance.execute(databaseTemplate -> super.getMetaInfo(databaseTemplate, queryMetaSql, getSchema(cfg), s.getTable()));
+                String metaSql = StringUtil.contains(sql, " WHERE ") ? s.getSql() + " AND 1!=1 " : s.getSql() + " WHERE 1!=1 ";
+                String tableName = s.getTable();
+                SqlRowSet sqlRowSet = databaseTemplate.queryForRowSet(metaSql);
+                ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
+                SqlRowSetMetaData metaData = rowSet.getMetaData();
+
+                // 查询表字段信息
+                int columnCount = metaData.getColumnCount();
+                if (1 > columnCount) {
+                    throw new SdkException("查询表字段不能为空.");
+                }
+                List<Field> fields = new ArrayList<>(columnCount);
+                Map<String, List<String>> tables = new HashMap<>();
+                try {
+                    SimpleConnection connection = databaseTemplate.getSimpleConnection();
+                    DatabaseMetaData md = connection.getMetaData();
+                    Connection conn = connection.getConnection();
+                    final String catalog = getCatalog(context.getCatalog(), conn);
+                    final String schema = getSchema(context.getSchema(), conn);
+                    String name = null;
+                    String label = null;
+                    String typeName = null;
+                    String table = null;
+                    int columnType;
+                    boolean pk;
+                    for (int i = 1; i <= columnCount; i++) {
+                        table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
+                        if (null == tables.get(table)) {
+                            tables.putIfAbsent(table, findTablePrimaryKeys(md, catalog, schema, table));
+                        }
+                        name = metaData.getColumnName(i);
+                        label = metaData.getColumnLabel(i);
+                        typeName = metaData.getColumnTypeName(i);
+                        columnType = metaData.getColumnType(i);
+                        pk = isPk(tables, table, name);
+                        fields.add(new Field(label, typeName, columnType, pk));
+                    }
+                } finally {
+                    tables.clear();
+                }
+                metaInfos.add(new MetaInfo().setTable(s.getSqlName()).setColumn(fields));
             }
-        }
-        return null;
+            return metaInfos;
+        });
     }
 
     @Override
@@ -84,7 +122,20 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         return map;
     }
 
-    public MetaInfo getTableMetaInfo(DatabaseConnectorInstance connectorInstance, String tableNamePattern) {
-        return super.getMetaInfo(connectorInstance, tableNamePattern);
+    private boolean isPk(Map<String, List<String>> tables, String tableName, String name) {
+        List<String> pk = tables.get(tableName);
+        if (CollectionUtils.isEmpty(pk)) {
+            return false;
+        }
+        return pk.stream().anyMatch(key -> key.equalsIgnoreCase(name));
+    }
+
+    public List<MetaInfo> getTableMetaInfo(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        return super.getMetaInfo(connectorInstance, context);
+    }
+
+    @Override
+    public String buildJdbcUrl(DatabaseConfig connectorConfig, String database) {
+        return "";
     }
 }

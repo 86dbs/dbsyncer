@@ -1,0 +1,333 @@
+/**
+ * DBsyncer 卡片组件样式
+ * 基于截图UI风格的卡片设计
+ */
+
+/* 基础卡片 */
+.dbsyncer-card {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  overflow: hidden;
+  transition: all var(--transition-fast);
+}
+
+.dbsyncer-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* 卡片头部 */
+.dbsyncer-card-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-secondary);
+  background-color: var(--bg-primary);
+}
+
+.dbsyncer-card-title {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dbsyncer-card-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  margin: var(--spacing-xs) 0 0 0;
+}
+
+/* 卡片内容 */
+.dbsyncer-card-body {
+  padding: var(--spacing-lg);
+}
+
+.dbsyncer-card-footer {
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--border-secondary);
+  background-color: var(--bg-secondary);
+}
+
+/* 统计卡片 */
+.dbsyncer-stat-card {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.dbsyncer-stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.dbsyncer-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+}
+
+.dbsyncer-stat-card.success::before {
+  background: linear-gradient(90deg, var(--success-color), #73d13d);
+}
+
+.dbsyncer-stat-card.warning::before {
+  background: linear-gradient(90deg, var(--warning-color), #ffc53d);
+}
+
+.dbsyncer-stat-card.error::before {
+  background: linear-gradient(90deg, var(--error-color), #ff4d4f);
+}
+
+/* 统计卡片内容 */
+.dbsyncer-stat-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.dbsyncer-stat-info {
+  flex: 1;
+}
+
+.dbsyncer-stat-value {
+  font-size: var(--font-size-xxxl);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: var(--spacing-sm);
+}
+
+.dbsyncer-stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.dbsyncer-stat-description {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  line-height: var(--line-height-md);
+}
+
+.dbsyncer-stat-change {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+}
+
+.dbsyncer-stat-change.positive {
+  color: var(--success-color);
+}
+
+.dbsyncer-stat-change.negative {
+  color: var(--error-color);
+}
+
+.dbsyncer-stat-change.neutral {
+  color: var(--text-tertiary);
+}
+
+.dbsyncer-stat-change-icon {
+  font-size: var(--font-size-xs);
+}
+
+.dbsyncer-stat-change-text {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+/* 统计卡片图标 */
+.dbsyncer-stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xl);
+  color: var(--bg-primary);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+}
+
+.dbsyncer-stat-icon.success {
+  background: linear-gradient(135deg, var(--success-color), #73d13d);
+}
+
+.dbsyncer-stat-icon.warning {
+  background: linear-gradient(135deg, var(--warning-color), #ffc53d);
+}
+
+.dbsyncer-stat-icon.error {
+  background: linear-gradient(135deg, var(--error-color), #ff4d4f);
+}
+
+/* 图表卡片 */
+.dbsyncer-chart-card {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  overflow: hidden;
+}
+
+.dbsyncer-chart-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dbsyncer-chart-title {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dbsyncer-chart-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.dbsyncer-chart-action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dbsyncer-chart-action-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.dbsyncer-chart-body {
+  padding: var(--spacing-lg);
+}
+
+.dbsyncer-chart-container {
+  height: 300px;
+  position: relative;
+}
+
+/* 进度卡片 */
+.dbsyncer-progress-card {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+}
+
+.dbsyncer-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+
+.dbsyncer-progress-title {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dbsyncer-progress-value {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dbsyncer-progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--spacing-sm);
+}
+
+.dbsyncer-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+  border-radius: var(--radius-sm);
+  transition: width var(--transition-normal);
+}
+
+.dbsyncer-progress-fill.success {
+  background: linear-gradient(90deg, var(--success-color), #73d13d);
+}
+
+.dbsyncer-progress-fill.warning {
+  background: linear-gradient(90deg, var(--warning-color), #ffc53d);
+}
+
+.dbsyncer-progress-fill.error {
+  background: linear-gradient(90deg, var(--error-color), #ff4d4f);
+}
+
+.dbsyncer-progress-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.dbsyncer-progress-detail {
+  text-align: center;
+}
+
+.dbsyncer-progress-detail-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+
+.dbsyncer-progress-detail-value {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .dbsyncer-stat-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .dbsyncer-stat-icon {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .dbsyncer-progress-details {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .dbsyncer-progress-details {
+    grid-template-columns: 1fr;
+  }
+}

@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.elasticsearch.validator;
 
 import org.dbsyncer.common.util.NumberUtil;
+import org.dbsyncer.connector.elasticsearch.ElasticsearchConnector;
 import org.dbsyncer.connector.elasticsearch.config.ESConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.springframework.util.Assert;
@@ -17,10 +18,10 @@ import java.util.Map;
  * @Version 1.0.0
  * @Date 2021-08-25 23:30
  */
-public final class ESConfigValidator implements ConfigValidator<ESConfig> {
+public final class ESConfigValidator implements ConfigValidator<ElasticsearchConnector, ESConfig> {
 
     @Override
-    public void modify(ESConfig connectorConfig, Map<String, String> params) {
+    public void modify(ElasticsearchConnector connectorService, ESConfig connectorConfig, Map<String, String> params) {
         String username = params.get("username");
         String password = params.get("password");
         String url = params.get("url");

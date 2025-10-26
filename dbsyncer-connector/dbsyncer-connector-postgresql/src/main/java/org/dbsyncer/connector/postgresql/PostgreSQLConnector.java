@@ -9,6 +9,7 @@ import org.dbsyncer.connector.postgresql.schema.PostgreSQLBitValueMapper;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLOtherValueMapper;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLSchemaResolver;
 import org.dbsyncer.connector.postgresql.validator.PostgreSQLConfigValidator;
+import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -22,6 +23,7 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
 import java.sql.Types;
 import java.util.List;
 
@@ -137,5 +139,21 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     @Override
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
+    }
+
+    @Override
+    protected String getSchema(String schema, Connection connection) {
+        return StringUtil.isNotBlank(schema) ? schema : "public";
+    }
+
+    @Override
+    public String buildJdbcUrl(DatabaseConfig config, String database) {
+        // jdbc:postgresql://127.0.0.1:5432/postgres
+        StringBuilder url = new StringBuilder();
+        url.append("jdbc:postgresql://").append(config.getHost()).append(":").append(config.getPort()).append("/");
+        if (StringUtil.isNotBlank(database)) {
+            url.append(database);
+        }
+        return url.toString();
     }
 }

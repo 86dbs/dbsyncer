@@ -73,7 +73,6 @@ public class SqlServerListener extends AbstractDatabaseListener {
     private Worker worker;
     private Lsn lastLsn;
     private String serverName;
-    private String schema;
     private final int BUFFER_CAPACITY = 256;
     private BlockingQueue<Lsn> buffer = new LinkedBlockingQueue<>(BUFFER_CAPACITY);
     private Lock lock = new ReentrantLock(true);
@@ -147,7 +146,6 @@ public class SqlServerListener extends AbstractDatabaseListener {
         if (service.isAlive(instance)) {
             DatabaseConfig cfg = instance.getConfig();
             serverName = cfg.getUrl();
-            schema = cfg.getSchema();
         }
     }
 

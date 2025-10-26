@@ -1,0 +1,60 @@
+/**
+ * DBsyncer 色彩系统
+ * 基于截图UI风格的颜色规范
+ */
+
+/* 主色调类 */
+.text-primary { color: var(--primary-color) !important; }
+.text-success { color: var(--success-color) !important; }
+.text-warning { color: var(--warning-color) !important; }
+.text-error { color: var(--error-color) !important; }
+.text-info { color: var(--info-color) !important; }
+
+.text-primary-light { color: var(--text-primary) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+.text-tertiary { color: var(--text-tertiary) !important; }
+.text-disabled { color: var(--text-disabled) !important; }
+
+/* 背景色类 */
+.bg-primary { background-color: var(--bg-primary) !important; }
+.bg-secondary { background-color: var(--bg-secondary) !important; }
+.bg-tertiary { background-color: var(--bg-tertiary) !important; }
+.bg-quaternary { background-color: var(--bg-quaternary) !important; }
+
+.bg-primary-color { background-color: var(--primary-color) !important; }
+.bg-success { background-color: var(--success-color) !important; }
+.bg-warning { background-color: var(--warning-color) !important; }
+.bg-error { background-color: var(--error-color) !important; }
+
+/* 边框色类 */
+.border-primary { border-color: var(--border-primary) !important; }
+.border-secondary { border-color: var(--border-secondary) !important; }
+.border-tertiary { border-color: var(--border-tertiary) !important; }
+
+/* 状态指示器 */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-round);
+  margin-right: var(--spacing-sm);
+}
+
+.status-indicator.success { background-color: var(--success-color); }
+.status-indicator.warning { background-color: var(--warning-color); }
+.status-indicator.error { background-color: var(--error-color); }
+.status-indicator.info { background-color: var(--info-color); }
+.status-indicator.primary { background-color: var(--primary-color); }
+
+/* 进度条颜色 */
+.progress-bar-primary { background-color: var(--primary-color); }
+.progress-bar-success { background-color: var(--success-color); }
+.progress-bar-warning { background-color: var(--warning-color); }
+.progress-bar-error { background-color: var(--error-color); }
+
+/* 图表颜色 */
+.chart-color-primary { color: var(--primary-color); }
+.chart-color-success { color: var(--success-color); }
+.chart-color-warning { color: var(--warning-color); }
+.chart-color-error { color: var(--error-color); }
+.chart-color-info { color: var(--info-color); }

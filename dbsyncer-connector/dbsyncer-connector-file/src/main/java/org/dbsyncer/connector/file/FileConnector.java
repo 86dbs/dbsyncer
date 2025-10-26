@@ -17,6 +17,7 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
@@ -120,14 +121,18 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     }
 
     @Override
-    public List<Table> getTable(FileConnectorInstance connectorInstance) {
+    public List<Table> getTable(FileConnectorInstance connectorInstance, ConnectorServiceContext context) {
         return connectorInstance.getFileSchemaList().stream().map(fileSchema -> new Table(fileSchema.getFileName())).collect(Collectors.toList());
     }
 
     @Override
-    public MetaInfo getMetaInfo(FileConnectorInstance connectorInstance, String tableName) {
-        FileSchema fileSchema = connectorInstance.getFileSchema(tableName);
-        return new MetaInfo().setColumn(fileSchema.getFields());
+    public List<MetaInfo> getMetaInfo(FileConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        List<MetaInfo> metaInfos = new ArrayList<>();
+        context.getTablePatterns().forEach(tableName -> {
+            FileSchema fileSchema = connectorInstance.getFileSchema(tableName);
+            metaInfos.add(new MetaInfo().setTable(tableName).setColumn(fileSchema.getFields()));
+        });
+        return metaInfos;
     }
 
     @Override

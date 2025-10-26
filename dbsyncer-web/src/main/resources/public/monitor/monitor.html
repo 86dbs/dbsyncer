@@ -3,84 +3,73 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <!-- Monitor -->
-<div class="container-fluid">
-    <div class="row">
+<div class="dbsyncer-table-container">
         <form class="form-horizontal" role="form" method="post">
             <!-- 应用性能 -->
             <div class="col-md-12">
-                <div class="panel-group">
-                    <div class="panel panel-success">
-                        <div class="panel-heading">
-                            <h4 class="panel-title">
-                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#systemMetrics">应用性能</u>
-                            </h4>
+                <div class="col-md-7">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h3><small>总共</small>&nbsp;<span class="label label-info" id="totalSpan">0</span></h3>
                         </div>
-                        <div id="systemMetrics" class="panel-body panel-collapse collapse in">
-                            <div class="col-md-7">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <h3><small>总共</small>&nbsp;<span class="label label-info" id="totalSpan">0</span></h3>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <h3><small>成功</small>&nbsp;<span class="label label-success" id="successSpan">0</span></h3>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <h3><small>失败</small>&nbsp;<span class="label label-warning" id="failSpan">0</span></h3>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <h3><small>新增</small>&nbsp;<span class="label label-default" id="insertSpan">0</span></h3>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <h3><small>修改</small>&nbsp;<span class="label label-default" id="updateSpan">0</span></h3>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <h3><small>删除</small>&nbsp;<span class="label label-default" id="deleteSpan">0</span></h3>
-                                    </div>
-                                </div>
-                                <hr>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div id="tpsChart" style="height: 260px;"></div>
-                                    </div>
-
-                                    <div class="col-md-3">
-                                        <div id="queueChart" style="height: 260px;"></div>
-                                    </div>
-
-                                    <div class="col-md-3">
-                                        <div id="storageChart" style="height: 260px;"></div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div id="cpuChart" style="height: 260px; "></div>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <div id="memoryChart" style="height: 260px;"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-5">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <table id="metricTable" class="table table-hover">
-                                            <tr th:each="m,s : ${metrics}">
-                                                <td style="width:5%;" th:text="${s.index}+1"></td>
-                                                <td th:text="${'['+ m?.group + '] ' + m?.metricName}"></td>
-                                                <td th:text="${m?.detail}"></td>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="col-md-4">
+                            <h3><small>成功</small>&nbsp;<span class="label label-success" id="successSpan">0</span>
+                            </h3>
+                        </div>
+                        <div class="col-md-4">
+                            <h3><small>失败</small>&nbsp;<span class="label label-warning" id="failSpan">0</span></h3>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h3><small>新增</small>&nbsp;<span class="label label-default" id="insertSpan">0</span></h3>
+                        </div>
+                        <div class="col-md-4">
+                            <h3><small>修改</small>&nbsp;<span class="label label-default" id="updateSpan">0</span></h3>
+                        </div>
+                        <div class="col-md-4">
+                            <h3><small>删除</small>&nbsp;<span class="label label-default" id="deleteSpan">0</span></h3>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div id="tpsChart" style="height: 260px;"></div>
                         </div>
 
+                        <div class="col-md-3">
+                            <div id="queueChart" style="height: 260px;"></div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div id="storageChart" style="height: 260px;"></div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div id="cpuChart" style="height: 260px; "></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div id="memoryChart" style="height: 260px;"></div>
+                        </div>
                     </div>
                 </div>
+
+                <div class="col-md-5">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <table id="metricTable" class="table table-hover">
+                                <tr th:each="m,s : ${metrics}">
+                                    <td style="width:5%;" th:text="${s.index}+1"></td>
+                                    <td th:text="${'['+ m?.group + '] ' + m?.metricName}"></td>
+                                    <td th:text="${m?.detail}"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <!-- 数据 -->
@@ -215,7 +204,6 @@
             </div>
 
         </form>
-    </div>
 </div>
 
 <script th:src="@{/js/monitor/index.js}"></script>

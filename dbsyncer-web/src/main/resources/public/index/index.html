@@ -2,13 +2,153 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<!-- ProjectGroup Connector Mapping -->
-<div class="container-fluid">
+<!-- 仪表盘页面 -->
+<div class="dbsyncer-dashboard-header">
+    <h1 class="dbsyncer-dashboard-title">仪表盘</h1>
+    <p class="dbsyncer-dashboard-subtitle">监控和管理所有数据库同步任务</p>
+</div>
+
+<!-- 统计卡片网格 -->
+<div class="dbsyncer-stats-grid">
+    <!-- 总任务数 -->
+    <div class="dbsyncer-stat-card">
+        <div class="dbsyncer-stat-content">
+            <div class="dbsyncer-stat-info">
+                <div class="dbsyncer-stat-label">总任务数</div>
+                <div class="dbsyncer-stat-value">24</div>
+                <div class="dbsyncer-stat-description">较上周增长14%</div>
+                <div class="dbsyncer-stat-change positive">
+                    <i class="fa fa-arrow-up dbsyncer-stat-change-icon"></i>
+                    <span class="dbsyncer-stat-change-text">3个</span>
+                </div>
+            </div>
+            <div class="dbsyncer-stat-icon">
+                <i class="fa fa-tasks"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 运行中任务 -->
+    <div class="dbsyncer-stat-card success">
+        <div class="dbsyncer-stat-content">
+            <div class="dbsyncer-stat-info">
+                <div class="dbsyncer-stat-label">运行中任务</div>
+                <div class="dbsyncer-stat-value">18</div>
+                <div class="dbsyncer-stat-description">占总任务数 75%</div>
+                <div class="dbsyncer-stat-change positive">
+                    <i class="fa fa-check dbsyncer-stat-change-icon"></i>
+                    <span class="dbsyncer-stat-change-text">正常</span>
+                </div>
+            </div>
+            <div class="dbsyncer-stat-icon success">
+                <i class="fa fa-play"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 失败任务 -->
+    <div class="dbsyncer-stat-card error">
+        <div class="dbsyncer-stat-content">
+            <div class="dbsyncer-stat-info">
+                <div class="dbsyncer-stat-label">失败任务</div>
+                <div class="dbsyncer-stat-value">2</div>
+                <div class="dbsyncer-stat-description">需要立即处理</div>
+                <div class="dbsyncer-stat-change negative">
+                    <i class="fa fa-arrow-up dbsyncer-stat-change-icon"></i>
+                    <span class="dbsyncer-stat-change-text">1个</span>
+                </div>
+            </div>
+            <div class="dbsyncer-stat-icon error">
+                <i class="fa fa-exclamation-triangle"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 同步数据量 -->
+    <div class="dbsyncer-stat-card">
+        <div class="dbsyncer-stat-content">
+            <div class="dbsyncer-stat-info">
+                <div class="dbsyncer-stat-label">同步数据量</div>
+                <div class="dbsyncer-stat-value">14.2 GB</div>
+                <div class="dbsyncer-stat-description">较昨日增长</div>
+                <div class="dbsyncer-stat-change positive">
+                    <i class="fa fa-arrow-up dbsyncer-stat-change-icon"></i>
+                    <span class="dbsyncer-stat-change-text">23%</span>
+                </div>
+            </div>
+            <div class="dbsyncer-stat-icon">
+                <i class="fa fa-database"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图表区域 -->
+<div class="dbsyncer-charts-grid">
+    <!-- 同步趋势图表 -->
+    <div class="dbsyncer-trend-chart">
+        <div class="dbsyncer-trend-header">
+            <h3 class="dbsyncer-trend-title">同步趋势</h3>
+            <div class="dbsyncer-trend-filters">
+                <button class="dbsyncer-trend-filter-btn">今日</button>
+                <button class="dbsyncer-trend-filter-btn active">本周</button>
+                <button class="dbsyncer-trend-filter-btn">本月</button>
+            </div>
+        </div>
+        <div class="dbsyncer-trend-body">
+            <div class="dbsyncer-trend-chart-container" id="trendChart"></div>
+            <div class="dbsyncer-trend-legend">
+                <div class="dbsyncer-trend-legend-item">
+                    <div class="dbsyncer-trend-legend-color primary"></div>
+                    <span class="dbsyncer-trend-legend-text">同步数据量 (MB)</span>
+                </div>
+                <div class="dbsyncer-trend-legend-item">
+                    <div class="dbsyncer-trend-legend-color secondary"></div>
+                    <span class="dbsyncer-trend-legend-text">同步次数</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务状态分布图表 -->
+    <div class="dbsyncer-status-chart">
+        <div class="dbsyncer-status-header">
+            <h3 class="dbsyncer-status-title">任务状态分布</h3>
+            <div class="dbsyncer-status-actions">
+                <button class="dbsyncer-status-action-btn">
+                    <i class="fa fa-ellipsis-v"></i>
+                </button>
+            </div>
+        </div>
+        <div class="dbsyncer-status-body">
+            <div class="dbsyncer-status-chart-container" id="statusChart"></div>
+            <div class="dbsyncer-status-legend">
+                <div class="dbsyncer-status-legend-item">
+                    <div class="dbsyncer-status-legend-color success"></div>
+                    <span class="dbsyncer-status-legend-text">运行中</span>
+                    <span class="dbsyncer-status-legend-value">18</span>
+                </div>
+                <div class="dbsyncer-status-legend-item">
+                    <div class="dbsyncer-status-legend-color warning"></div>
+                    <span class="dbsyncer-status-legend-text">暂停中</span>
+                    <span class="dbsyncer-status-legend-value">4</span>
+                </div>
+                <div class="dbsyncer-status-legend-item">
+                    <div class="dbsyncer-status-legend-color error"></div>
+                    <span class="dbsyncer-status-legend-text">失败</span>
+                    <span class="dbsyncer-status-legend-value">2</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 原有功能区域（保持兼容性） -->
+<div class="container-fluid" style="margin-top: 2rem;">
     <div class="row">
         <form class="form-horizontal" role="form" method="post">
             <!-- 分组管理 -->
             <div class="col-md-12" th:if="${projectGroups?.size() gt 0}">
-                <!-- 显示分组开始位置 -->
                 <div class="form-group">
                     <div class="col-md-12">
                         <div class="row">
@@ -33,12 +173,10 @@
                     </div>
                 </div>
                 <hr class="simple" color="#6f5499" />
-                <!-- 显示分组结束位置 -->
             </div>
 
             <!-- 连接管理 -->
             <div class="col-md-12">
-                <!-- 连接开始位置 -->
                 <div class="form-group">
                     <div class="col-md-10">
                         <button type="button" class="btn btn-primary" id="indexAddConnectorBtn">
@@ -51,14 +189,13 @@
                         </button>
                     </div>
                 </div>
+                
                 <!-- 显示连接列表 -->
                 <div class="row" th:if="${connectors?.size() gt 0}">
                     <div class="col-md-12">
                         <div class="panel panel-default">
-                            <!-- 连接 -->
                             <div class="panel-body text-center">
                                 <div class="row connectorList">
-                                    <!-- 连接__开始 -->
                                     <div class="col-md-1" th:each="c,state : ${connectors}">
                                         <div th:id="${c?.id}" class="dbsyncer_block">
                                             <div class="row">
@@ -68,7 +205,6 @@
                                                 <span th:text="${c?.name}" th:title="${c?.name}" />
                                             </div>
                                         </div>
-                                        <!-- 删除操作 -->
                                         <div class="dropdown">
                                             <a data-toggle="dropdown" href="javascript:;"><span class="well-sign-operation"><i class="fa fa-gears fa-1x"></i></span></a>
                                             <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
@@ -77,20 +213,15 @@
                                             </ul>
                                         </div>
                                     </div>
-                                    <!-- 连接__结束 -->
-
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
-                <!-- 连接开结束位置 -->
             </div>
 
             <!-- 驱动管理 -->
             <div class="col-md-12">
-                <!-- 驱动开始位置 -->
                 <div class="form-group" th:if="${connectorSize gt 0}">
                     <div class="col-md-12">
                         <button type="button" class="btn btn-primary" id="indexAddMappingBtn">
@@ -105,14 +236,10 @@
                         <div class="panel panel-default">
                             <div class="panel-body">
                                 <div class="row mappingList">
-                                    <!-- 驱动__开始 -->
                                     <div class="col-md-4" th:each="m,state : ${mappings}">
                                         <div th:id="${m?.id}" th:class="${m?.model eq 'full'} ? 'dbsyncer_block dbsyncer_block_full' : 'dbsyncer_block dbsyncer_block_increment'">
-                                            <!--驱动标题信息 -->
                                             <div class="row text-center dbsyncer_driver_name" th:text="${m?.name}" th:title="${m?.name}"></div>
-
                                             <div class="row">
-                                                <!--左边驱动信息 -->
                                                 <div class="col-md-5">
                                                     <div class="mapping_well">
                                                         <div class="col-md-4">
@@ -126,8 +253,6 @@
                                                     <span th:if="${m?.sourceConnector?.running}" th:title="连接正常" class="well-sign-left"><i class="fa fa-2x fa-circle well-sign-green"></i></span>
                                                     <span th:unless="${m?.sourceConnector?.running}" th:title="连接异常" class="well-sign-left"><i class="fa fa-2x fa-times-circle-o well-sign-red"></i></span>
                                                 </div>
-
-                                                <!--中间图标 -->
                                                 <div class="col-md-2">
                                                     <div class="line">
                                                         <span th:if="${m?.meta?.state eq 1}" class="running-through-rate well-sign-green">✔</span>
@@ -136,8 +261,6 @@
                                                         <span th:if="${m?.meta?.state eq 2}" class="running-state label label-warning">停止中</span>
                                                     </div>
                                                 </div>
-
-                                                <!-- 右边驱动信息 -->
                                                 <div class="col-md-5">
                                                     <div class="mapping_well">
                                                         <div class="col-md-4">
@@ -152,7 +275,6 @@
                                                     </div>
                                                 </div>
                                             </div>
-
                                             <div class="row">
                                                 <table class="table table-hover">
                                                     <tbody th:with="model=${m?.model},total=${m?.meta?.total},success=${m?.meta?.success},fail=${m?.meta?.fail},beginTime=${m?.meta?.beginTime},endTime=${m?.meta?.endTime}">
@@ -185,34 +307,24 @@
                                                     </tbody>
                                                 </table>
                                             </div>
-
                                             <div class="row text-right text-muted" th:text="${#dates.format(m?.updateTime, 'yyyy-MM-dd HH:mm:ss')}"></div>
                                         </div>
-
-                                        <!-- 右上角下拉菜单 -->
                                         <div class="dropdown">
                                             <a data-toggle="dropdown" href="javascript:;"><span class="well-sign-operation"><i class="fa fa-gears fa-2x"></i></span></a>
                                             <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
-                                                <!-- 未运行 -->
                                                 <li th:if="${m?.meta?.state ne 1}" th:url="'/mapping/start?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-check-circle-o well-sign-green"></i>&nbsp;&nbsp;启动</a></li>
-                                                <!-- 运行中 -->
                                                 <li th:if="${m?.meta?.state eq 1}" th:url="'/mapping/stop?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-times-circle-o well-sign-red"></i>&nbsp;&nbsp;停止</a></li>
                                                 <li th:url="'/mapping/copy?id='+${m?.id}"><a href="javascript:;"><i class="fa fa-copy"></i>&nbsp;复制</a></li>
-                                                <!-- 未运行 -->
                                                 <li th:if="${m?.meta?.state ne 1}" th:url="'/mapping/remove?id='+${m?.id}" confirm="true" confirmMessage="确认删除驱动?"><a href="javascript:;"><i class="fa fa-trash well-sign-red"></i>&nbsp;&nbsp;删除</a></li>
                                             </ul>
                                         </div>
                                     </div>
-                                    <!-- 驱动__结束 -->
-
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- 驱动结束位置 -->
             </div>
-
         </form>
     </div>
 </div>

@@ -1,10 +1,24 @@
 function submit(data) {
-    doPoster("/connector/add", data, function (data) {
-        if (data.success == true) {
+    var $btn = $("#connectorSubmitBtn");
+    
+    // 防止重复提交：检查按钮是否已被禁用
+    if ($btn.prop('disabled')) {
+        return;
+    }
+    
+    // 禁用按钮并显示加载状态
+    var originalText = $btn.html();
+    $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+    
+    doPoster("/connector/add", data, function (response) {
+        // 恢复按钮状态
+        $btn.html(originalText).prop('disabled', false);
+        
+        if (response.success == true) {
             bootGrowl("新增连接成功!", "success");
             backIndexPage();
         } else {
-            bootGrowl(data.resultValue, "danger");
+            bootGrowl(response.resultValue, "danger");
         }
     });
 }
@@ -41,9 +55,20 @@ $(function () {
     // 绑定连接器类型切换事件
     bindConnectorChangeEvent($select);
 
+    // 先解绑事件，避免重复绑定
+    $("#connectorSubmitBtn").off('click');
+    $("#connectorBackBtn").off('click');
+
     //保存
     $("#connectorSubmitBtn").click(function () {
         var $form = $("#connectorAddForm");
+        var $btn = $(this);
+        
+        // 防止重复提交
+        if ($btn.prop('disabled')) {
+            return;
+        }
+        
         if ($form.formValidate() == true) {
             var data = $form.serializeJson();
             submit(data);

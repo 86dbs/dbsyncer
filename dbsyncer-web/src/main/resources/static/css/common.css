@@ -17,3 +17,18 @@
 /* 去掉框架黑边框样式 */
 .btn:active:focus, .btn:focus{outline:none; }
 .bootstrap-select .dropdown-toggle:focus,.bootstrap-select>select.mobile-device:focus+.dropdown-toggle {outline:none !important;}
+
+/* 修复bootstrap-select下拉菜单显示问题 */
+.bootstrap-select .dropdown-menu.open > .inner.open > ul.dropdown-menu.inner {
+    display: block !important;
+}
+
+/* 确保下拉菜单在展开状态时内层列表可见 */
+.bootstrap-select .dropdown-menu.open ul.dropdown-menu.inner {
+    display: block !important;
+}
+
+
+.open>.dropdown-menu{
+    display: block !important;
+}

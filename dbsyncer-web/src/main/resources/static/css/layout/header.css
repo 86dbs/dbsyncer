@@ -1,0 +1,183 @@
+/* 顶部导航栏容器 */
+.dbsyncer-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-sm);
+  z-index: var(--z-fixed);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-lg);
+}
+
+/* Logo区域 */
+.dbsyncer-logo {
+  display: flex;
+  align-items: center;
+  margin-right: var(--spacing-xl);
+}
+
+/* 搜索框区域 */
+.dbsyncer-search {
+  flex: 1;
+  max-width: 400px;
+  margin-right: var(--spacing-lg);
+}
+
+.dbsyncer-search-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--spacing-md) 0 40px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-secondary);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+}
+
+.dbsyncer-search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background-color: var(--bg-primary);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.dbsyncer-search-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.dbsyncer-search-wrapper {
+  position: relative;
+}
+
+.dbsyncer-search-icon {
+  position: absolute;
+  left: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+/* 右侧操作区域 */
+.dbsyncer-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.dbsyncer-header-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dbsyncer-header-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.dbsyncer-header-btn.active {
+  background-color: var(--primary-color);
+  color: var(--bg-primary);
+}
+
+/* 通知按钮 */
+.dbsyncer-notification-btn {
+  position: relative;
+}
+
+.dbsyncer-notification-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--error-color);
+  border-radius: var(--radius-round);
+  border: 2px solid var(--bg-primary);
+}
+
+/* 用户信息区域 */
+.dbsyncer-user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dbsyncer-user-info:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.dbsyncer-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-round);
+  background-color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.dbsyncer-user-name {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.dbsyncer-user-dropdown {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  transition: transform var(--transition-fast);
+}
+
+.dbsyncer-user-info:hover .dbsyncer-user-dropdown {
+  transform: rotate(180deg);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .dbsyncer-header {
+    padding: 0 var(--spacing-md);
+  }
+  
+  .dbsyncer-search {
+    max-width: 200px;
+    margin-right: var(--spacing-md);
+  }
+  
+  .dbsyncer-user-name {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .dbsyncer-search {
+    display: none;
+  }
+  
+  .dbsyncer-header-actions {
+    gap: var(--spacing-sm);
+  }
+}

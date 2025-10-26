@@ -1,0 +1,406 @@
+/**
+ * DBsyncer 仪表盘页面样式
+ * 基于截图UI风格的仪表盘设计
+ */
+
+/* 仪表盘页面头部 */
+.dbsyncer-dashboard-header {
+  margin-bottom: var(--spacing-xl);
+}
+
+.dbsyncer-dashboard-title {
+  font-size: var(--font-size-xxl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.dbsyncer-dashboard-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  margin-bottom: 0;
+}
+
+/* 统计卡片网格 */
+.dbsyncer-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+/* 统计卡片 */
+.dbsyncer-stat-card {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.dbsyncer-stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.dbsyncer-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+}
+
+.dbsyncer-stat-card.success::before {
+  background: linear-gradient(90deg, var(--success-color), #73d13d);
+}
+
+.dbsyncer-stat-card.warning::before {
+  background: linear-gradient(90deg, var(--warning-color), #ffc53d);
+}
+
+.dbsyncer-stat-card.error::before {
+  background: linear-gradient(90deg, var(--error-color), #ff4d4f);
+}
+
+/* 统计卡片内容 */
+.dbsyncer-stat-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.dbsyncer-stat-info {
+  flex: 1;
+}
+
+.dbsyncer-stat-value {
+  font-size: var(--font-size-xxxl);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: var(--spacing-sm);
+}
+
+.dbsyncer-stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.dbsyncer-stat-description {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  line-height: var(--line-height-md);
+}
+
+.dbsyncer-stat-change {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+}
+
+.dbsyncer-stat-change.positive {
+  color: var(--success-color);
+}
+
+.dbsyncer-stat-change.negative {
+  color: var(--error-color);
+}
+
+.dbsyncer-stat-change.neutral {
+  color: var(--text-tertiary);
+}
+
+.dbsyncer-stat-change-icon {
+  font-size: var(--font-size-xs);
+}
+
+.dbsyncer-stat-change-text {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+/* 统计卡片图标 */
+.dbsyncer-stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xl);
+  color: var(--bg-primary);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+}
+
+.dbsyncer-stat-icon.success {
+  background: linear-gradient(135deg, var(--success-color), #73d13d);
+}
+
+.dbsyncer-stat-icon.warning {
+  background: linear-gradient(135deg, var(--warning-color), #ffc53d);
+}
+
+.dbsyncer-stat-icon.error {
+  background: linear-gradient(135deg, var(--error-color), #ff4d4f);
+}
+
+/* 图表区域 */
+.dbsyncer-charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--spacing-lg);
+}
+
+/* 同步趋势图表 */
+.dbsyncer-trend-chart {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  overflow: hidden;
+}
+
+.dbsyncer-trend-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dbsyncer-trend-title {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dbsyncer-trend-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.dbsyncer-trend-filter-btn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--border-primary);
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dbsyncer-trend-filter-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.dbsyncer-trend-filter-btn.active {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--bg-primary);
+}
+
+.dbsyncer-trend-body {
+  padding: var(--spacing-lg);
+}
+
+.dbsyncer-trend-chart-container {
+  height: 300px;
+  position: relative;
+}
+
+.dbsyncer-trend-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-md);
+}
+
+.dbsyncer-trend-legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.dbsyncer-trend-legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.dbsyncer-trend-legend-color.primary {
+  background-color: var(--primary-color);
+}
+
+.dbsyncer-trend-legend-color.secondary {
+  background-color: #52c41a;
+}
+
+.dbsyncer-trend-legend-text {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* 任务状态分布图表 */
+.dbsyncer-status-chart {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  overflow: hidden;
+}
+
+.dbsyncer-status-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dbsyncer-status-title {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dbsyncer-status-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.dbsyncer-status-action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dbsyncer-status-action-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.dbsyncer-status-body {
+  padding: var(--spacing-lg);
+}
+
+.dbsyncer-status-chart-container {
+  height: 200px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dbsyncer-status-legend {
+  margin-top: var(--spacing-lg);
+}
+
+.dbsyncer-status-legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.dbsyncer-status-legend-color {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-round);
+}
+
+.dbsyncer-status-legend-color.success {
+  background-color: var(--success-color);
+}
+
+.dbsyncer-status-legend-color.warning {
+  background-color: var(--warning-color);
+}
+
+.dbsyncer-status-legend-color.error {
+  background-color: var(--error-color);
+}
+
+.dbsyncer-status-legend-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.dbsyncer-status-legend-value {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .dbsyncer-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .dbsyncer-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dbsyncer-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dbsyncer-stat-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .dbsyncer-stat-icon {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .dbsyncer-trend-filters {
+    flex-wrap: wrap;
+  }
+  
+  .dbsyncer-trend-legend {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .dbsyncer-trend-header,
+  .dbsyncer-status-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+  
+  .dbsyncer-trend-filters {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

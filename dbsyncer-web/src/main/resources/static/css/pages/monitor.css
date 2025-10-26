@@ -1,0 +1,408 @@
+/**
+ * DBsyncer 性能监控页面样式
+ * 基于截图UI风格的性能监控设计
+ */
+
+/* 性能监控页面头部 */
+.dbsyncer-monitor-header {
+  margin-bottom: var(--spacing-xl);
+}
+
+.dbsyncer-monitor-title {
+  font-size: var(--font-size-xxl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.dbsyncer-monitor-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  margin-bottom: 0;
+}
+
+/* 页面工具栏 */
+.dbsyncer-monitor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.dbsyncer-monitor-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.dbsyncer-monitor-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+/* 时间筛选器 */
+.dbsyncer-time-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.dbsyncer-time-filter-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-primary);
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dbsyncer-time-filter-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.dbsyncer-time-filter-btn.active {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--bg-primary);
+}
+
+/* 导出按钮 */
+.dbsyncer-export-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-primary);
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dbsyncer-export-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* 系统资源使用率区域 */
+.dbsyncer-resource-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.dbsyncer-resource-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.dbsyncer-resource-title {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dbsyncer-resource-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.dbsyncer-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-primary);
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dbsyncer-refresh-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.dbsyncer-interval-select {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-primary);
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dbsyncer-interval-select:hover {
+  border-color: var(--primary-color);
+}
+
+/* 资源卡片网格 */
+.dbsyncer-resource-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+/* 资源使用率卡片 */
+.dbsyncer-resource-card {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  transition: all var(--transition-fast);
+}
+
+.dbsyncer-resource-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.dbsyncer-resource-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+
+.dbsyncer-resource-card-title {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dbsyncer-resource-card-value {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dbsyncer-resource-card-value.warning {
+  color: var(--warning-color);
+}
+
+.dbsyncer-resource-card-value.success {
+  color: var(--success-color);
+}
+
+/* 进度条 */
+.dbsyncer-progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--spacing-sm);
+}
+
+.dbsyncer-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+  border-radius: var(--radius-sm);
+  transition: width var(--transition-normal);
+}
+
+.dbsyncer-progress-fill.success {
+  background: linear-gradient(90deg, var(--success-color), #73d13d);
+}
+
+.dbsyncer-progress-fill.warning {
+  background: linear-gradient(90deg, var(--warning-color), #ffc53d);
+}
+
+.dbsyncer-progress-fill.error {
+  background: linear-gradient(90deg, var(--error-color), #ff4d4f);
+}
+
+/* 资源详情 */
+.dbsyncer-resource-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.dbsyncer-resource-detail {
+  text-align: center;
+}
+
+.dbsyncer-resource-detail-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+
+.dbsyncer-resource-detail-value {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* 详细图表区域 */
+.dbsyncer-detail-chart {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  overflow: hidden;
+}
+
+.dbsyncer-detail-chart-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.dbsyncer-detail-chart-title {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dbsyncer-detail-chart-body {
+  padding: var(--spacing-lg);
+}
+
+.dbsyncer-detail-chart-container {
+  height: 400px;
+  position: relative;
+}
+
+/* 状态指示器 */
+.dbsyncer-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.dbsyncer-status-indicator.success {
+  background-color: rgba(82, 196, 26, 0.1);
+  color: var(--success-color);
+}
+
+.dbsyncer-status-indicator.warning {
+  background-color: rgba(250, 140, 22, 0.1);
+  color: var(--warning-color);
+}
+
+.dbsyncer-status-indicator.error {
+  background-color: rgba(245, 34, 45, 0.1);
+  color: var(--error-color);
+}
+
+.dbsyncer-status-indicator::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-round);
+  background-color: currentColor;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .dbsyncer-resource-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .dbsyncer-resource-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dbsyncer-monitor-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .dbsyncer-monitor-toolbar-left,
+  .dbsyncer-monitor-toolbar-right {
+    justify-content: center;
+  }
+  
+  .dbsyncer-resource-details {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .dbsyncer-resource-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .dbsyncer-time-filter {
+    flex-wrap: wrap;
+  }
+  
+  .dbsyncer-time-filter-btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* 加载状态 */
+.dbsyncer-monitor-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--text-tertiary);
+}
+
+.dbsyncer-monitor-loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-primary);
+  border-top: 2px solid var(--primary-color);
+  border-radius: var(--radius-round);
+  animation: dbsyncer-spin 1s linear infinite;
+  margin-right: var(--spacing-sm);
+}
+
+/* 实时数据指示器 */
+.dbsyncer-realtime-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: rgba(82, 196, 26, 0.1);
+  color: var(--success-color);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.dbsyncer-realtime-indicator::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-round);
+  background-color: var(--success-color);
+  animation: dbsyncer-pulse 2s infinite;
+}
+
+@keyframes dbsyncer-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}

@@ -41,7 +41,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -69,14 +68,14 @@ public class MySQLStorageService extends AbstractStorageService {
     public void init(Properties properties) {
         DatabaseConfig config = new DatabaseConfig();
         config.setConnectorType(properties.getProperty("dbsyncer.storage.type"));
-        config.setUrl(properties.getProperty("dbsyncer.storage.mysql.url", "jdbc:mysql://127.0.0.1:3306/dbsyncer?rewriteBatchedStatements=true&seUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true&tinyInt1isBit=false&allowPublicKeyRetrieval=true"));
+        String url = properties.getProperty("dbsyncer.storage.mysql.url");
         String username = properties.getProperty("dbsyncer.storage.mysql.username", "admin");
         String password = properties.getProperty("dbsyncer.storage.mysql.password", "admin");
         config.setUsername(StringUtil.replace(username.trim(), "\t", StringUtil.EMPTY));
         config.setPassword(StringUtil.replace(password.trim(), "\t", StringUtil.EMPTY));
         config.setDriverClassName(properties.getProperty("dbsyncer.storage.mysql.driver-class-name"));
-        logger.info("url:{}", config.getUrl());
-        database = DatabaseUtil.getDatabaseName(config.getUrl());
+        logger.info("url:{}", url);
+        database = DatabaseUtil.getDatabaseName(url);
         connectorInstance = new DatabaseConnectorInstance(config);
         // 初始化表
         initTable();
@@ -359,9 +358,19 @@ public class MySQLStorageService extends AbstractStorageService {
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.DATA_SUCCESS, ConfigConstant.DATA_TABLE_GROUP_ID, ConfigConstant.DATA_TARGET_TABLE_NAME, ConfigConstant.DATA_EVENT, ConfigConstant.DATA_ERROR, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.BINLOG_DATA);
         List<Field> dataFields = builder.getFields();
 
+        // 任务
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.TASK_STATUS, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_JSON, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> taskFields = builder.getFields();
+
+        // 数据校验明细
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.TASK_SOURCE_TABLE_NAME, ConfigConstant.DATA_TARGET_TABLE_NAME, ConfigConstant.TASK_CONTENT, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> dataVerifyDetailFields = builder.getFields();
+
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
         tables.computeIfAbsent(StorageEnum.DATA.getType(), k -> new Executor(k, dataFields, false, false));
+        tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
+        tables.computeIfAbsent(StorageEnum.TASK_DATA_VERIFICATION_DETAIL.getType(), k -> new Executor(k, dataVerifyDetailFields, true, true));
         // 创建表
         tables.forEach((tableName, e) -> {
             if (e.isSystemTable()) {
@@ -480,7 +489,11 @@ public class MySQLStorageService extends AbstractStorageService {
                     new Field(ConfigConstant.DATA_TARGET_TABLE_NAME, "VARCHAR", Types.VARCHAR),
                     new Field(ConfigConstant.DATA_EVENT, "VARCHAR", Types.VARCHAR),
                     new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR),
-                    new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB)
+                    new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB),
+                    new Field(ConfigConstant.TASK_ID, "VARCHAR", Types.VARCHAR),
+                    new Field(ConfigConstant.TASK_STATUS, "INTEGER", Types.INTEGER),
+                    new Field(ConfigConstant.TASK_SOURCE_TABLE_NAME, "VARCHAR", Types.VARCHAR),
+                    new Field(ConfigConstant.TASK_CONTENT, "VARCHAR", Types.VARCHAR)
             ).peek(field -> {
                 field.setLabelName(field.getName());
                 // 转换列下划线

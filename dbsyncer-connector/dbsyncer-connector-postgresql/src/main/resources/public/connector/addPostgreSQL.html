@@ -4,9 +4,19 @@
 
 <div th:fragment="content">
     <div class="form-group">
-        <label class="col-sm-2 control-label">帐号<strong class="text-primary">*</strong></label>
+        <label class="col-sm-2 control-label">主机<strong class="text-primary">*</strong></label>
         <div class="col-sm-4">
-            <input class="form-control" dbsyncer-valid="require" maxlength="32" name="username" placeholder="root"
+            <input class="form-control" name="host" type="text" maxlength="32" dbsyncer-valid="require" placeholder="127.0.0.1" th:value="${connector?.config?.host}?: '127.0.0.1'"/>
+        </div>
+        <label class="col-sm-2 control-label">端口<strong class="text-primary">*</strong></label>
+        <div class="col-sm-4 ">
+            <input class="form-control" name="port" type="number" maxlength="64" dbsyncer-valid="require" placeholder="5432" th:value="${connector?.config?.port}?: '5432'"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label">用户名<strong class="text-primary">*</strong></label>
+        <div class="col-sm-4">
+            <input class="form-control" dbsyncer-valid="require" maxlength="32" name="username" placeholder="postgres"
                    th:value="${connector?.config?.username}" type="text"/>
         </div>
         <label class="col-sm-2 control-label">密码<strong class="text-primary">*</strong></label>
@@ -14,36 +24,12 @@
             <input class="form-control" dbsyncer-valid="require" maxlength="64" name="password" type="password" th:value="${connector?.config?.password}"/>
         </div>
     </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">URL<strong class="text-primary">*</strong></label>
-        <div class="col-sm-10">
-            <textarea class="form-control dbsyncer_textarea_resize_none" dbsyncer-valid="require" maxlength="1024"
-                      name="url" rows="5"
-                      th:text="${connector?.config?.url} ?: 'jdbc:postgresql://127.0.0.1:5432/postgres'"></textarea>
-        </div>
-    </div>
     <div th:replace="connector/addDataBaseProperties :: content"></div>
     <div class="form-group">
-        <label class="col-sm-2 control-label">架构名<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" dbsyncer-valid="require" maxlength="32" name="schema" placeholder="public"
-                   th:value="${connector?.config?.schema} ?: 'public'" type="text"/>
-        </div>
-        <div class="col-sm-6"></div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">删除Slot<i aria-hidden="true" class="fa fa-question-circle fa_gray" title="增量同步，停止驱动自动删除Slot"></i></label>
-        <div class="col-sm-4">
-            <input class="dbsyncer_switch" name="dropSlotOnClose"
-                   th:checked="${#maps.isEmpty(connector?.config?.properties) or connector?.config?.properties?.dropSlotOnClose eq 'true'}"
-                   type="checkbox">
-        </div>
-        <label class="col-sm-2 control-label">插件</label>
-        <div class="col-sm-4">
-            <select class="form-control select-control" name="pluginName">
-                <option value="pgoutput" th:selected="${connector?.config?.properties?.pluginName eq 'pgoutput'}">pgoutput</option>
-                <option value="test_decoding" th:selected="${connector?.config?.properties?.pluginName eq 'test_decoding'}">test_decoding</option>
-            </select>
+        <label class="col-sm-2 control-label">连接参数</label>
+        <div class="col-sm-10">
+            <textarea name="properties" class="form-control dbsyncer_textarea_resize_none" maxlength="1024" rows="5"
+                      th:text="${connector?.config?.properties} ?: 'ssl=false&stringtype=unspecified&binaryTransfer=true&loginTimeout=10&connectTimeout=30'"></textarea>
         </div>
     </div>
     <div class="form-group">

@@ -5,6 +5,7 @@ package org.dbsyncer.connector.file.validator;
 
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.file.FileConnector;
 import org.dbsyncer.connector.file.model.FileSchema;
 import org.dbsyncer.connector.file.config.FileConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -21,10 +22,10 @@ import java.util.Map;
  * @Version 1.0.0
  * @Date 2022-05-06 00:04
  */
-public class FileConfigValidator implements ConfigValidator<FileConfig> {
+public class FileConfigValidator implements ConfigValidator<FileConnector, FileConfig> {
 
     @Override
-    public void modify(FileConfig fileConfig, Map<String, String> params) {
+    public void modify(FileConnector connectorService, FileConfig fileConfig, Map<String, String> params) {
         String fileDir = params.get("fileDir");
         String schema = params.get("schema");
         String separator = StringUtil.trim(params.get("separator"));

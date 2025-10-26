@@ -4,8 +4,6 @@
 package org.dbsyncer.connector.postgresql;
 
 import org.dbsyncer.connector.postgresql.cdc.DqlPostgreSQLListener;
-import org.dbsyncer.connector.postgresql.validator.DqlPostgreSQLConfigValidator;
-import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -23,16 +21,9 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
  */
 public final class DQLPostgreSQLConnector extends AbstractDQLConnector {
 
-    private final DqlPostgreSQLConfigValidator configValidator = new DqlPostgreSQLConfigValidator();
-
     @Override
     public String getConnectorType() {
         return "DqlPostgreSQL";
-    }
-
-    @Override
-    public ConfigValidator getConfigValidator() {
-        return configValidator;
     }
 
     @Override

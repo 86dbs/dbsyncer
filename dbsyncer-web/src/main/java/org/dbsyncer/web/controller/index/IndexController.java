@@ -43,7 +43,7 @@ public class IndexController {
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);
         }
-        return "index/index.html";
+        return "connector/list.html";
     }
 
     @GetMapping("/version.json")

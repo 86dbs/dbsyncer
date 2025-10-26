@@ -4,6 +4,8 @@ import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.SqlTable;
+import org.dbsyncer.sdk.model.Table;
 
 import java.util.List;
 
@@ -23,8 +25,29 @@ public class Mapping extends AbstractConfigModel {
     // 数据源连接器ID
     private String sourceConnectorId;
 
+    // 数据源库名称
+    private String sourceDatabase;
+
+    // 数据源库构架名
+    private String sourceSchema;
+
+    // 数据源库表列表
+    private List<Table> sourceTable;
+
+    // 数据源Sql表
+    private List<SqlTable> sourceSqlTables;
+
     // 目标源连接器ID
     private String targetConnectorId;
+
+    // 目标源库名称
+    private String targetDatabase;
+
+    // 目标源库构架名
+    private String targetSchema;
+
+    // 目标源库表列表
+    private List<Table> targetTable;
 
     // 数据源字段
     private List<Field> sourceColumn;
@@ -71,12 +94,68 @@ public class Mapping extends AbstractConfigModel {
         this.sourceConnectorId = sourceConnectorId;
     }
 
+    public String getSourceDatabase() {
+        return sourceDatabase;
+    }
+
+    public void setSourceDatabase(String sourceDatabase) {
+        this.sourceDatabase = sourceDatabase;
+    }
+
+    public String getSourceSchema() {
+        return sourceSchema;
+    }
+
+    public void setSourceSchema(String sourceSchema) {
+        this.sourceSchema = sourceSchema;
+    }
+
+    public List<Table> getSourceTable() {
+        return sourceTable;
+    }
+
+    public void setSourceTable(List<Table> sourceTable) {
+        this.sourceTable = sourceTable;
+    }
+
+    public List<SqlTable> getSourceSqlTables() {
+        return sourceSqlTables;
+    }
+
+    public void setSourceSqlTables(List<SqlTable> sourceSqlTables) {
+        this.sourceSqlTables = sourceSqlTables;
+    }
+
     public String getTargetConnectorId() {
         return targetConnectorId;
     }
 
     public void setTargetConnectorId(String targetConnectorId) {
         this.targetConnectorId = targetConnectorId;
+    }
+
+    public String getTargetDatabase() {
+        return targetDatabase;
+    }
+
+    public void setTargetDatabase(String targetDatabase) {
+        this.targetDatabase = targetDatabase;
+    }
+
+    public String getTargetSchema() {
+        return targetSchema;
+    }
+
+    public void setTargetSchema(String targetSchema) {
+        this.targetSchema = targetSchema;
+    }
+
+    public List<Table> getTargetTable() {
+        return targetTable;
+    }
+
+    public void setTargetTable(List<Table> targetTable) {
+        this.targetTable = targetTable;
     }
 
     public List<Field> getSourceColumn() {
