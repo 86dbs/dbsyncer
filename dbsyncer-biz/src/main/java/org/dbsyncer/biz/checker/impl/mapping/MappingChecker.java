@@ -88,7 +88,9 @@ public class MappingChecker extends AbstractChecker {
 
     private void setSqlTables(Mapping mapping, Map<String, String> params) {
         Object sqlTableParams = params.get("sqlTables");
-        Assert.notNull(sqlTableParams, "sqlTables is null.");
+        if (sqlTableParams == null) {
+            return;
+        }
         String sqlTables = (sqlTableParams instanceof String) ? (String) sqlTableParams : JsonUtil.objToJson(sqlTableParams);
         Assert.hasText(sqlTables, "sqlTables is empty.");
         List<SqlTable> sqlTableArray = JsonUtil.jsonToArray(sqlTables, SqlTable.class);

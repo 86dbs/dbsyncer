@@ -30,6 +30,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
@@ -213,7 +214,24 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (exclude != null && exclude == 1) {
             return convertMapping2Vo(mapping);
         }
-
+        ConnectorInstance connectorInstance = null;
+        ConnectorServiceContext context = null;
+        if (mapping.getSourceColumn() == null) {
+            Connector connector = connectorService.getConnector(mapping.getSourceConnectorId());
+            if (connector != null) {
+                connectorInstance = connectorFactory.connect(connector.getConfig());
+                context = new DefaultConnectorServiceContext(mapping.getSourceDatabase(), mapping.getSourceSchema(), StringUtil.EMPTY);
+                mapping.setSourceTable(connectorFactory.getTable(connectorInstance, context));
+            }
+        }
+        if (mapping.getTargetTable() == null) {
+            Connector targetConnect = connectorService.getConnector(mapping.getSourceConnectorId());
+            if (targetConnect != null) {
+                connectorInstance = connectorFactory.connect(targetConnect.getConfig());
+                context = new DefaultConnectorServiceContext(mapping.getTargetDatabase(), mapping.getTargetSchema(), StringUtil.EMPTY);
+                mapping.setTargetTable(connectorFactory.getTable(connectorInstance, context));
+            }
+        }
         // 过滤已映射的表
         MappingVo vo = convertMapping2Vo(mapping);
         List<TableGroup> tableGroupAll = tableGroupService.getTableGroupAll(id);
@@ -224,8 +242,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 sTables.add(tableGroup.getSourceTable().getName());
                 tTables.add(tableGroup.getTargetTable().getName());
             });
-            vo.setSourceTable(mapping.getSourceTable().stream().filter(t -> !sTables.contains(t.getName())).collect(Collectors.toList()));
-            vo.setTargetTable(mapping.getTargetTable().stream().filter(t -> !tTables.contains(t.getName())).collect(Collectors.toList()));
+            vo.setSourceTable(mapping.getSourceTable().stream().filter(t -> !CollectionUtils.isEmpty(sTables) && !sTables.contains(t.getName())).collect(Collectors.toList()));
+            vo.setTargetTable(mapping.getTargetTable().stream().filter(t -> !CollectionUtils.isEmpty(tTables) && !tTables.contains(t.getName())).collect(Collectors.toList()));
             sTables.clear();
             tTables.clear();
         }
@@ -362,7 +380,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             if (StringUtil.isBlank(sourceTable.getName())) {
                 continue;
             }
-            targetTableMap.computeIfPresent(sourceTable.getName().toUpperCase(), (k,targetTable) -> {
+            targetTableMap.computeIfPresent(sourceTable.getName().toUpperCase(), (k, targetTable) -> {
                 // 排除目标源表视图
                 if (!TableTypeEnum.isView(targetTable.getType())) {
                     addTableGroup(mapping.getId(), sourceTable.getName(), targetTable.getName(), StringUtil.EMPTY);
@@ -416,7 +434,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                     }
                     // |C2,C3|
                     if (m.length == 1) {
-                        String name = replaceStar(m[0], tPk);;
+                        String name = replaceStar(m[0], tPk);
+                        ;
                         if (StringUtil.startsWith(mapping, StringUtil.VERTICAL_LINE)) {
                             fms.add(StringUtil.VERTICAL_LINE + name);
                             continue;
