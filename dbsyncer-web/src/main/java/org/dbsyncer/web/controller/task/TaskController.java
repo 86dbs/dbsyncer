@@ -169,7 +169,6 @@ public class TaskController {
             if (connector == null) {
                 return RestResult.restFail("连接器不存在");
             }
-            
             ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
             List<String> databases = getDatabaseList(connectorInstance);
             

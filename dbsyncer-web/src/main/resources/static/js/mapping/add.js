@@ -193,10 +193,24 @@ function loadDatabaseList(connectorId, type) {
         success: function(response) {
             if (response.success && response.resultValue) {
                 var connector = response.resultValue;
-                // 这里暂时使用连接器配置中的数据库信息
-                // 后续可以扩展为从数据库实时获取数据库列表
-                if (connector.config && connector.config.url) {
-                    // 从URL中提取数据库名
+                
+                // 优先使用连接器中保存的数据库列表
+                if (connector.dataBaseName && connector.dataBaseName.length > 0) {
+                    // 从dataBaseName字段获取数据库列表
+                    connector.dataBaseName.forEach(function(dbName) {
+                        databaseSelect.append('<option value="' + dbName + '">' + dbName + '</option>');
+                    });
+                    
+                    // 如果URL中包含数据库名，自动选中
+                    if (connector.config && connector.config.url) {
+                        var url = connector.config.url;
+                        var match = url.match(/\/([^\/\?]+)(\?|$)/);
+                        if (match && match[1]) {
+                            databaseSelect.val(match[1]);
+                        }
+                    }
+                } else if (connector.config && connector.config.url) {
+                    // 兼容旧版本：从URL中提取数据库名
                     var url = connector.config.url;
                     var match = url.match(/\/([^\/\?]+)(\?|$)/);
                     if (match && match[1]) {

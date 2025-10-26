@@ -3,7 +3,9 @@ package org.dbsyncer.web.controller.index;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
+import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +37,10 @@ public class MappingController extends BaseController {
     @Resource
     private TableGroupService tableGroupService;
 
+
+    @Resource
+    ConnectorFactory connectorFactory;
+
     /**
      * 同步任务列表页面
      */
@@ -56,8 +62,11 @@ public class MappingController extends BaseController {
 
     @GetMapping("/page/{page}")
     public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id, Integer exclude) {
-        model.put("mapping", mappingService.getMapping(id, exclude));
+
+        MappingVo mapping = mappingService.getMapping(id, exclude);
+        model.put("mapping", mapping);
         model.put("tableGroups", tableGroupService.getTableGroupAll(id));
+        model.put("targetTable", tableGroupService.getTableGroupAll(id));
         initConfig(model);
         return "mapping/" + page;
     }
@@ -151,7 +160,6 @@ public class MappingController extends BaseController {
     @ResponseBody
     public RestResult getConnectorInfo(@RequestParam(value = "connectorId") String connectorId) {
         try {
-
             return RestResult.restSuccess(connectorService.getConnector(connectorId));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
