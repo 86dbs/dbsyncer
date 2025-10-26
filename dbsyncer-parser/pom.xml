@@ -37,5 +37,10 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.scxhtb</groupId>
+            <artifactId>dbsyncer-platform</artifactId>
+            <version>2.0.7</version>
+        </dependency>
     </dependencies>
 </project>

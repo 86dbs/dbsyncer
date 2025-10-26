@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 左侧边栏 -->
+<aside th:fragment="nav" class="w-64 bg-white border-r border-gray-200 flex-shrink-0 hidden md:flex flex-col">
+    <!-- 品牌标识 -->
+    <div class="p-5 border-b border-gray-200 flex items-center gap-3">
+        <div class="flex items-center justify-center">
+            <img draggable="false" th:src="@{'/img/logo.png'}" style="width: 50px; height: 50px;">
+        </div>
+        <h1 class="text-xl font-bold text-dark">DBSyncer</h1>
+    </div>
+
+    <!-- 导航菜单 -->
+    <nav class="flex-1 p-4 overflow-y-auto">
+        <div class="space-y-1 mb-6">
+            <p class="text-xs text-gray-500 uppercase px-4 mb-2 font-medium">主要功能</p>
+            <div class="sidebar-item active" url="/index">
+                <i class="fa fa-tachometer w-5 text-center"></i>
+                <span>仪表盘</span>
+            </div>
+            <div class="sidebar-item" url="/mapping/list">
+                <i class="fa fa-exchange w-5 text-center"></i>
+                <span>同步任务</span>
+            </div>
+            <div class="sidebar-item" url="/connector/list">
+                <i class="fa fa-plug w-5 text-center"></i>
+                <span>数据源管理</span>
+            </div>
+            <div class="sidebar-item" url="/task">
+                <i class="fa fa-history w-5 text-center"></i>
+                <span>订正校验</span>
+            </div>
+            <div class="sidebar-item" url="/monitor">
+                <i class="fa fa-line-chart w-5 text-center"></i>
+                <span>性能监控</span>
+            </div>
+            <div class="sidebar-item" url="/plugin">
+                <i class="fa fa-puzzle-piece w-5 text-center"></i>
+                <span>插件管理</span>
+            </div>
+        </div>
+
+        <div class="space-y-1 mb-6">
+            <p class="text-xs text-gray-500 uppercase px-4 mb-2 font-medium">系统设置</p>
+            <div class="sidebar-item" url="/system">
+                <i class="fa fa-cog w-5 text-center"></i>
+                <span>系统配置</span>
+            </div>
+            <div class="sidebar-item" url="/config">
+                <i class="fa fa-puzzle-piece w-5 text-center"></i>
+                <span>配置管理</span>
+            </div>
+            <div class="sidebar-item" url="/user">
+                <i class="fa fa-user w-5 text-center"></i>
+                <span>用户管理</span>
+            </div>
+            <div class="sidebar-item" url="/license">
+                <i class="fa fa-user w-5 text-center"></i>
+                <span>授权许可</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 版权信息 -->
+    <div class="p-4 border-t border-gray-200">
+        <div class="flex items-center gap-3">
+            <div>
+                <p class="text-sm">©2025 DBSyncer(2.0.7)</p>
+                <p class="text-xs text-gray-500">Designed By 四川星河同步科技有限公司</p>
+            </div>
+        </div>
+    </div>
+</aside>
+</html>
