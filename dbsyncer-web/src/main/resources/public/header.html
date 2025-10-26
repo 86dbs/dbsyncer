@@ -3,16 +3,8 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <!-- 顶部导航栏 -->
-<header th:fragment="header" class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-    <div class="flex items-center gap-4">
-        <button class="md:hidden text-gray-500 hover:text-primary">
-            <i class="fa fa-bars text-xl"></i>
-        </button>
-        <div class="relative">
-            <input type="text" placeholder="搜索任务、数据源..." class="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary w-64">
-            <i class="fa fa-search absolute left-3 top-3 text-gray-400"></i>
-        </div>
-    </div>
+<header th:fragment="header" class="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6">
+    <div class="flex gap-4"></div>
 
     <div class="flex items-center gap-4">
         <button class="relative p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-full">

@@ -63,12 +63,6 @@
 
         <!-- 页面内容 -->
         <div id="mainContent" class="flex-1 overflow-y-auto p-6">
-            <!-- 页面标题 -->
-            <div class="mb-6">
-                <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark">仪表盘</h2>
-                <p class="text-gray-500 mt-1">监控和管理所有数据库同步任务</p>
-            </div>
-
             <!-- 统计卡片 -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                 <div class="stat-card">
@@ -180,6 +174,19 @@
                             <span class="text-sm">已失败</span>
                             <span class="ml-auto font-medium">2</span>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 页面标题 -->
+            <div class="mb-6">
+                <div class="flex items-center gap-4">
+                    <button class="md:hidden text-gray-500 hover:text-primary">
+                        <i class="fa fa-bars text-xl"></i>
+                    </button>
+                    <div class="relative">
+                        <input type="text" placeholder="搜索任务、数据源..." class="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary w-64">
+                        <i class="fa fa-search absolute left-3 top-3 text-gray-400"></i>
                     </div>
                 </div>
             </div>
