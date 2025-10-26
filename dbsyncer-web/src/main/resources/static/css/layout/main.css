@@ -19,8 +19,7 @@
 
 /* 页面容器 */
 .dbsyncer-page {
-  padding: var(--spacing-xl);
-  max-width: 1200px;
+  padding: var(--spacing-lg);
   margin: 0 auto;
 }
 
