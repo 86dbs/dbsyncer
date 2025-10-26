@@ -145,4 +145,20 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     protected String getSchema(String schema, Connection connection) {
         return StringUtil.isNotBlank(schema) ? schema : "public";
     }
+
+    @Override
+    public String buildJdbcUrl(DatabaseConfig config, String database) {
+        // jdbc:postgresql://127.0.0.1:5432/postgres
+        StringBuilder url = new StringBuilder();
+        url.append("jdbc:postgresql://").append(config.getHost()).append(":").append(config.getPort());
+        if (database != null && !database.trim().isEmpty()) {
+            url.append("/").append(database);
+        }
+        String properties = config.getProperties();
+        if (StringUtil.isNotBlank(properties)) {
+            // 检查基础URL是否已包含参数
+            url.append(url.toString().contains("?") ? "&" : "?").append(properties);
+        }
+        return url.toString();
+    }
 }

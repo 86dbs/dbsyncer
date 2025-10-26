@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
@@ -131,5 +132,10 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
 
     public List<MetaInfo> getTableMetaInfo(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
         return super.getMetaInfo(connectorInstance, context);
+    }
+
+    @Override
+    public String buildJdbcUrl(DatabaseConfig connectorConfig, String database) {
+        return "";
     }
 }

@@ -51,10 +51,15 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
 
     @Override
     public List<Table> getTable(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
-        DatabaseConfig config = connectorInstance.getConfig();
         List<Table> tables = getTables(connectorInstance, String.format(QUERY_TABLE, context.getSchema()), TableTypeEnum.TABLE);
         tables.addAll(getTables(connectorInstance, QUERY_VIEW, TableTypeEnum.VIEW));
         return tables;
+    }
+
+    @Override
+    public String buildJdbcUrl(DatabaseConfig connectorConfig, String database) {
+        // jdbc:sqlite:C:/Users/example.db
+        return "";
     }
 
     @Override
@@ -98,7 +103,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
         if (CollectionUtils.isEmpty(primaryKeys)) {
             return primaryKeys;
         }
-        return primaryKeys.stream().map(pk -> convertKey(pk)).collect(Collectors.toList());
+        return primaryKeys.stream().map(this::convertKey).collect(Collectors.toList());
     }
 
     private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {
@@ -110,7 +115,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     }
 
     private String convertKey(String key) {
-        return new StringBuilder("\"").append(key).append("\"").toString();
+        return "\"" + key + "\"";
     }
 
 }

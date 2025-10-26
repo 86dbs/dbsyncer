@@ -49,6 +49,11 @@ public class DatabaseConfig extends ConnectorConfig {
     private long keepAlive = 60000;
 
     /**
+     * 服务名称(Oracle)
+     */
+    private String serviceName;
+
+    /**
      * 参数配置
      */
     private String properties;
@@ -109,6 +114,14 @@ public class DatabaseConfig extends ConnectorConfig {
 
     public void setKeepAlive(long keepAlive) {
         this.keepAlive = keepAlive;
+    }
+
+    public String getServiceName() {
+        return serviceName;
+    }
+
+    public void setServiceName(String serviceName) {
+        this.serviceName = serviceName;
     }
 
     public String getProperties() {

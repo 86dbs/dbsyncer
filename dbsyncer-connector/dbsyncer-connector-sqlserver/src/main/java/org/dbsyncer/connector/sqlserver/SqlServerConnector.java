@@ -17,12 +17,10 @@ import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
-import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
-import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
 import java.sql.Connection;
@@ -146,4 +144,20 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         return "[" + key + "]";
     }
 
+    @Override
+    public String buildJdbcUrl(DatabaseConfig config, String database) {
+        // jdbc:sqlserver://127.0.0.1:1433;databaseName=test;encrypt=false;trustServerCertificate=true
+        StringBuilder url = new StringBuilder();
+        url.append("jdbc:sqlserver://").append(config.getHost()).append(":").append(config.getPort());
+        if (StringUtil.isNotBlank(database)) {
+            url.append(";databaseName=").append(database);
+        }
+        // 添加连接参数
+        String properties = config.getProperties();
+        if (StringUtil.isNotBlank(properties)) {
+            properties = properties.replace("&", ";");
+            url.append(";").append(properties);
+        }
+        return url.toString();
+    }
 }

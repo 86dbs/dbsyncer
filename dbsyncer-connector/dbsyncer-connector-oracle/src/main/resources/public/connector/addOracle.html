@@ -4,7 +4,23 @@
 
 <div th:fragment="content">
     <div class="form-group">
-        <label class="col-sm-2 control-label">帐号<strong class="text-primary">*</strong></label>
+        <label class="col-sm-2 control-label">主机<strong class="text-primary">*</strong></label>
+        <div class="col-sm-4">
+            <input class="form-control" name="host" type="text" maxlength="32" dbsyncer-valid="require" placeholder="127.0.0.1" th:value="${connector?.config?.host}?: '127.0.0.1'"/>
+        </div>
+        <label class="col-sm-2 control-label">端口<strong class="text-primary">*</strong></label>
+        <div class="col-sm-4 ">
+            <input class="form-control" name="port" type="number" maxlength="64" dbsyncer-valid="require" placeholder="1521" th:value="${connector?.config?.port}?: '1521'"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label">服务名称<strong class="text-primary">*</strong></label>
+        <div class="col-sm-4">
+            <input class="form-control" name="serviceName" type="text" maxlength="32" dbsyncer-valid="require" placeholder="ORCL" th:value="${connector?.config?.username}?: 'ORCL'"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-2 control-label">用户名<strong class="text-primary">*</strong></label>
         <div class="col-sm-4">
             <input class="form-control" name="username" type="text" maxlength="32" dbsyncer-valid="require" placeholder="sys" th:value="${connector?.config?.username}"/>
         </div>
@@ -13,21 +29,13 @@
             <input class="form-control" name="password" type="password" maxlength="64" dbsyncer-valid="require" th:value="${connector?.config?.password}"/>
         </div>
     </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">URL<strong class="text-primary">*</strong></label>
-        <div class="col-sm-10">
-            <textarea name="url" class="form-control dbsyncer_textarea_resize_none" maxlength="1024"
-                      dbsyncer-valid="require" rows="5"
-                      th:text="${connector?.config?.url} ?: 'jdbc:oracle:thin:@127.0.0.1:1521:ORCL'"></textarea>
-        </div>
-    </div>
     <div th:replace="connector/addDataBaseProperties :: content"></div>
     <div class="form-group">
-        <label class="col-sm-2 control-label">架构名 </label>
-        <div class="col-sm-4">
-            <input class="form-control" name="schema" type="text" maxlength="32" th:value="${connector?.config?.schema}"/>
+        <label class="col-sm-2 control-label">连接参数</label>
+        <div class="col-sm-10">
+            <textarea name="properties" class="form-control dbsyncer_textarea_resize_none" maxlength="1024" rows="5"
+                      th:text="${connector?.config?.properties}"></textarea>
         </div>
-        <div class="col-sm-6"></div>
     </div>
     <div class="form-group">
         <label class="col-sm-2 control-label">驱动 </label>

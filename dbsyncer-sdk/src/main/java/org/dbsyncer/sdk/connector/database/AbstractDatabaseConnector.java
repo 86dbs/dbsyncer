@@ -654,7 +654,5 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return result;
     }
 
-    public String buildJdbcUrl(DatabaseConfig connectorConfig, String database) {
-        throw new SdkException("unsupported build jdbc url");
-    }
+    public abstract String buildJdbcUrl(DatabaseConfig connectorConfig, String database);
 }

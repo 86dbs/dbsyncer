@@ -100,19 +100,4 @@ public abstract class DatabaseUtil {
         return params.toString();
     }
 
-    public static String buildJdbcUrl(String baseUrl, String params) {
-        if (params == null || params.trim().isEmpty()) {
-            return baseUrl;
-        }
-        StringBuilder url = new StringBuilder(baseUrl);
-        // 检查基础URL是否已包含参数
-        if (baseUrl.contains("?")) {
-            url.append("&");
-        } else {
-            url.append("?");
-        }
-        url.append(params);
-        return url.toString();
-    }
-
 }
