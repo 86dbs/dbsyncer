@@ -1,239 +1,85 @@
-// 添加分组
-function bindAddProjectGroup() {
-    $("#addProjectGroupBtn").click(function () {
-        doLoader("/projectGroup/page/add");
-    });
-}
 
-// 修改分组
-function bindEditProjectGroup($projectGroupSelect) {
-    $("#editProjectGroupBtn").click(function () {
-        var $id = $projectGroupSelect.selectpicker('val');
-        if (!isBlank($id)) {
-            doLoader('/projectGroup/page/edit?id=' + $id);
-            return;
-        }
-        bootGrowl("请选择分组", "danger");
-    });
-}
-
-// 删除分组
-function bindRemoveProjectGroup($projectGroupSelect) {
-    $("#removeProjectGroupBtn").click(function () {
-        var $id = $projectGroupSelect.selectpicker('val');
-        if (isBlank($id)) {
-            bootGrowl("请选择分组", "danger");
-            return;
-        }
-        BootstrapDialog.show({
-            title: "提示",
-            type: BootstrapDialog.TYPE_INFO,
-            message: "确认删除分组？",
-            size: BootstrapDialog.SIZE_NORMAL,
-            buttons: [{
-                label: "确定",
-                action: function (dialog) {
-                    doPoster('/projectGroup/remove', {id: $id}, function (data) {
-                        if (data.success == true) {
-                            // 显示主页
-                            backIndexPage();
-                            bootGrowl(data.resultValue, "success");
-                        } else {
-                            bootGrowl(data.resultValue, "danger");
-                        }
-                    });
-                    dialog.close();
-                }
-            }, {
-                label: "取消",
-                action: function (dialog) {
-                    dialog.close();
-                }
-            }]
-        });
-    });
-}
-
-// 给分组下拉绑定事件
-function bindProjectGroupSelect($projectGroupSelect) {
-    $projectGroupSelect.off('change changed.bs.select');
-
-    $projectGroupSelect.on('change', function () {
-        $.loadingT(true);
-        doLoader("/index?projectGroupId=" + $(this).val());
-    });
-
-}
-
-// 添加连接
-function bindAddConnector() {
-    // 绑定添加连接按钮点击事件
-    $("#indexAddConnectorBtn").click(function () {
-        doLoader('/connector/page/add');
-    });
-}
-
-// 编辑连接
-function bindEditConnector() {
-    $(".connectorList .dbsyncer_block").click(function () {
-        var $id = $(this).attr("id");
-        doLoader('/connector/page/edit?id=' + $id);
-    });
-}
-
-// 添加驱动
-function bindAddMapping() {
-    $("#indexAddMappingBtn").click(function () {
-        doLoader('/mapping/pageAdd');
-    });
-}
-
-// 编辑驱动
-function bindEditMapping() {
-    $(".mappingList .dbsyncer_block").click(function () {
-        var $id = $(this).attr("id");
-        doLoader('/mapping/page/edit?id=' + $id);
-    });
-}
-
-// 查看驱动日志
-function bindQueryData() {
-    $(".mappingList .queryData").click(function () {
-        // 阻止触发click传递事件
-        event.cancelBubble = true;
-        var $menu = $('#menu > li');
-        $menu.removeClass('active');
-        $menu.find("a[url='/monitor']").parent().addClass('active');
-
-        var $id = $(this).attr("id");
-        doLoader('/monitor?dataStatus=0&id=' + $id);
-    });
-}
-
-// 给连接下拉菜单绑定事件
-function bindConnectorDropdownMenu() {
-    // 绑定删除连接事件
-    $(".connectorList .dropdown-menu li.remove").click(function () {
-        var $url = $(this).attr("url");
-        // 如果当前为恢复状态
-        BootstrapDialog.show({
-            title: "警告",
-            type: BootstrapDialog.TYPE_DANGER,
-            message: "确认删除连接？",
-            size: BootstrapDialog.SIZE_NORMAL,
-            buttons: [{
-                label: "确定",
-                action: function (dialog) {
-                    doPost($url);
-                    dialog.close();
-                }
-            }, {
-                label: "取消",
-                action: function (dialog) {
-                    dialog.close();
-                }
-            }]
-        });
-    });
-    // 绑定复制连接事件
-    $(".connectorList .dropdown-menu li.copy").click(function () {
-        var $url = $(this).attr("url");
-        doPost($url);
-    });
-}
-
-// 给驱动下拉菜单绑定事件
-function bindMappingDropdownMenu() {
-    $(".mappingList .dropdown-menu li").click(function () {
-        var $url = $(this).attr("url");
-        var $confirm = $(this).attr("confirm");
-        var $confirmMessage = $(this).attr("confirmMessage");
-
-        if ("true" == $confirm) {
-            // 如果当前为恢复状态
-            BootstrapDialog.show({
-                title: "警告",
-                type: BootstrapDialog.TYPE_DANGER,
-                message: $confirmMessage,
-                size: BootstrapDialog.SIZE_NORMAL,
-                buttons: [{
-                    label: "确定",
-                    action: function (dialog) {
-                        doPost($url);
-                        dialog.close();
-                    }
-                }, {
-                    label: "取消",
-                    action: function (dialog) {
-                        dialog.close();
-                    }
-                }]
-            });
-            return;
-        }
-
-        doPost($url);
-    });
-}
-
-function doPost(url) {
-    doPoster(url, null, function (data) {
-        if (data.success == true) {
-            // 显示主页
-            backIndexPage();
-            bootGrowl(data.resultValue, "success");
-        } else {
-            bootGrowl(data.resultValue, "danger");
-        }
-    });
-}
-
-// 创建定时器
-function createTimer($projectGroupSelect) {
-    doGetWithoutLoading("/monitor/getRefreshIntervalSeconds", {}, function (data) {
-        if (data.success == true) {
-
-            if (timer2 == null) {
-                timer2 = setInterval(function () {
-                    // 检查当前是否在index页面，只有在index页面时才刷新
-                    var currentUrl = window.location.pathname;
-                    var isIndexPage = currentUrl.includes('/index') || currentUrl === '/' || currentUrl === '';
-                    
-                    // 检查当前内容区域是否包含index页面内容
-                    var isIndexContent = $('#mainContent').find('.dbsyncer-dashboard-header').length > 0;
-                    
-                    if (isIndexPage || isIndexContent) {
-                        // 加载页面
-                        var projectGroupId = $projectGroupSelect.selectpicker('val');
-                        projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
-                        timerLoad("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
-                    }
-                }, data.resultValue * 1000);
+// 初始化图表
+// 同步趋势图表
+const trendCtx = document.getElementById('syncTrendChart').getContext('2d');
+const trendChart = new Chart(trendCtx, {
+    type: 'line',
+    data: {
+        labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+        datasets: [
+            {
+                label: '同步数据量 (MB)',
+                data: [1250, 1900, 1750, 2400, 2100, 1800, 2300],
+                borderColor: '#165DFF',
+                backgroundColor: 'rgba(22, 93, 255, 0.1)',
+                tension: 0.3,
+                fill: true
+            },
+            {
+                label: '同步次数',
+                data: [32, 45, 38, 52, 48, 36, 42],
+                borderColor: '#36CFC9',
+                backgroundColor: 'transparent',
+                tension: 0.3,
+                yAxisID: 'y1'
             }
-
-        } else {
-            bootGrowl(data.resultValue, "danger");
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: '数据量 (MB)'
+                }
+            },
+            y1: {
+                beginAtZero: true,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: '同步次数'
+                },
+                grid: {
+                    drawOnChartArea: false
+                }
+            }
         }
-    });
-}
+    }
+});
 
-$(function () {
-    // 初始化select插件
-    initSelectIndex($(".select-control"));
-    bindAddProjectGroup();
-    var $projectGroupSelect = $("#projectGroup");
-    bindEditProjectGroup($projectGroupSelect);
-    bindRemoveProjectGroup($projectGroupSelect);
-    bindProjectGroupSelect($projectGroupSelect);
-    createTimer($projectGroupSelect);
-
-    bindAddConnector();
-    bindEditConnector();
-
-    bindAddMapping();
-    bindEditMapping();
-    bindQueryData();
-
-    bindConnectorDropdownMenu();
-    bindMappingDropdownMenu();
+// 任务状态图表
+const statusCtx = document.getElementById('taskStatusChart').getContext('2d');
+const statusChart = new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['运行中', '暂停中', '已失败'],
+        datasets: [{
+            data: [18, 4, 2],
+            backgroundColor: [
+                '#52C41A',
+                '#FAAD14',
+                '#FF4D4F'
+            ],
+            borderWidth: 0,
+            hoverOffset: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
 });

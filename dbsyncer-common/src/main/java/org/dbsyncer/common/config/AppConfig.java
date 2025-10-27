@@ -47,10 +47,10 @@ public class AppConfig {
             StringBuilder copy = new StringBuilder();
             copy.append("&copy;").append(LocalDate.now().getYear()).append(" ");
             copy.append(name);
-            copy.append("(").append(version).append(")");
-            copy.append("<footer>Designed By <a href='https://gitee.com/ghi/dbsyncer' class=\"text-sm text-primary hover:text-primary/80 transition-custom\" target='_blank' >");
+            copy.append(" ").append(version);
+            copy.append("<br /><a href='https://gitee.com/ghi/dbsyncer' target='_blank' >");
             copy.append(company);
-            copy.append("</a></footer>");
+            copy.append("</a>");
             this.copyright = copy.toString();
         }
         return copyright;
