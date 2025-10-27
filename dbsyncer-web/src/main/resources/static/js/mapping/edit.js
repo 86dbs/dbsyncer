@@ -11,8 +11,8 @@ function submit(data) {
 }
 //*********************************** 驱动保存 结束位置***********************************//
 // 刷新页面
-function refresh(id) {
-    doLoader('/mapping/page/edit?id=' + id);
+function refresh(id,classOn) {
+    doLoader('/mapping/page/edit?id=' + id+"&classOn="+classOn);
 }
 
 // 绑定修改驱动同步方式切换事件
@@ -30,7 +30,7 @@ function bindMappingModelChange() {
             var data = $form.serializeJson();
             doPoster("/mapping/edit", data, function (response) {
                 if (response.success == true) {
-                    refresh($("#mappingId").val());
+                    refresh($("#mappingId").val(),0);
                 } else {
                     bootGrowl(response.resultValue, "danger");
                 }
@@ -133,7 +133,7 @@ function bindMultipleSelectFilterBtnClick() {
         bootGrowl("取消过滤成功!", "success");
     });
     $(".bs-exclude-all").bind("click", function () {
-        refresh($("#mappingId").val());
+        refresh($("#mappingId").val(),1);
         bootGrowl("过滤成功!", "success");
     });
 }
@@ -179,11 +179,11 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
         doPoster("/tableGroup/add", m, function (data) {
             if (data.success == true) {
                 bootGrowl("新增映射关系成功!", "success");
-                refresh(m.mappingId);
+                refresh(m.mappingId,1);
             } else {
                 bootGrowl(data.resultValue, "danger");
                 if (data.status == 400) {
-                    refresh(m.mappingId);
+                    refresh(m.mappingId,1);
                 }
             }
         });
@@ -199,7 +199,7 @@ function bindMappingTableGroupDelClick() {
             doPoster("/tableGroup/remove", { "mappingId": $mappingId, "ids": ids.join() }, function (data) {
                 if (data.success == true) {
                     bootGrowl("删除映射关系成功!", "success");
-                    refresh($mappingId);
+                    refresh($mappingId,1);
                 } else {
                     bootGrowl(data.resultValue, "danger");
                 }
@@ -231,7 +231,7 @@ function bindRefreshTablesClick() {
         doPoster("/mapping/refreshTables", { 'id': id }, function (data) {
             if (data.success == true) {
                 bootGrowl("刷新表成功!", "success");
-                refresh(id);
+                refresh(id,1);
             } else {
                 bootGrowl(data.resultValue, "danger");
             }
@@ -248,12 +248,173 @@ function doMappingSubmit() {
     }
 }
 
+// updateProgressChart 改进版
+function updateProgressChart(total, success, fail) {
+    const $canvas = $('#progressChart');
+    if ($canvas.length === 0) return;
+
+    const canvas = $canvas[0];
+    const ctx = canvas.getContext('2d');
+    const progress = total > 0 ? (success + fail) / total : 0;
+
+    let chart = Chart.getChart(canvas);
+    if (chart) {
+        chart.data.datasets[0].data[0] = progress;
+        chart.update();
+    } else {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [progress, 1 - progress],
+                    backgroundColor: ['#3498db', 'rgba(255, 255, 255, 0.2)'],
+                    borderColor: '#3498db',
+                    borderWidth: 5,
+                    cutout: '70%'
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                animation: {
+                    animateRotate: true,
+                    animateScale: true
+                }
+            }
+        });
+    }
+}
+
+
+
+
+function getMappping(id) {
+     var intervalId = null; // 保存定时器ID
+     doGetWithoutLoading("/monitor/getRefreshIntervalSeconds", {}, function (data) {
+         if (data.success == true) {
+           intervalId = setInterval(function () {
+                     // 加载页面
+                     $.ajax({
+                            url: '/mapping/get?id='+ id + "&refresh=" + new Date().getTime(),
+                            type: 'GET',
+                            success: function(dataJson) {
+                                // 重新绑定事件处理器（如果需要）
+                                var success = dataJson.success;
+                                var m = dataJson.resultValue;
+                                if(success && m ){
+                                   // 安全访问对象属性
+                                   var mid = m && m.id ? m.id : '';
+                                   var model = m && m.model ? m.model : '';
+                                   var modelname =  '';
+                                   if(model == 'full'){
+                                     modelname= '全量';
+                                   }else if(model == 'increment'){
+                                     modelname= '增量';
+                                   }else if(model == 'fullIncrement'){
+                                    modelname= '混合';
+                                   }
+                                   var meta = m && m.meta ? m.meta : {};
+                                   var total = meta.total || 0;
+                                   var success = meta.success || 0;
+                                   var fail = meta.fail || 0;
+                                   var beginTime = meta.beginTime || 0;
+                                   var updateTime = meta.updateTime || 0;
+                                   var syncPhase = meta.syncPhase || {};
+                                   var syncPhaseCode = syncPhase.code || 0;
+                                   var counting = meta.counting || false;
+                                   var errorMessage = meta.errorMessage || '';
+                                   var id = meta.id || '';
+                                   var state = meta.state || '';
+
+                                    var stateHtmlContent = '<p>任务状态：</p>';
+                                    if(state == 0){
+                                          stateHtmlContent += '<span class="highlight-number total-color">未运行</span>';
+                                    }else if(state == 1){
+                                         stateHtmlContent += '<span class="highlight-number success-color">运行中</span>';
+                                    }else if(state == 2){
+                                         stateHtmlContent += '<span class="highlight-number error-color">停止中</span>';
+                                    }else if(state == 3){
+                                         stateHtmlContent += '<span class="highlight-number error-color">异常</span>';
+                                    }
+                                    $("#mappingState").html(stateHtmlContent);
+
+                                  $("#metaPercent").find("p").text("数据同步进度:");
+                                  if (counting) {
+                                      $("#metaPercent").find(".highlight-number").text("(正在统计中)");
+                                  } else {
+                                       if (total > 0 && (success + fail) > 0) {
+                                          var progress = ((success + fail) / total * 100).toFixed(2);
+                                          $("#metaPercent").find(".highlight-number").text(progress + "%");
+                                          // 同步更新文本标签
+                                          $("#progressText").text(progress + "%");
+                                      } else {
+                                          $("#metaPercent").find(".highlight-number").text("0%");
+                                          $("#progressText").text("0%");
+                                      }
+                                  }
+                                 // 重新绘制环形图
+                                  updateProgressChart(total, success, fail);
+                                    // 计算耗时
+                     //               var seconds = Math.floor((updateTime - beginTime) / 1000);
+                     //               htmlContent += ',耗时:';
+                     //               if (seconds < 60) {
+                     //                   htmlContent += seconds + '秒';
+                     //               } else {
+                     //                   var minutes = Math.floor(seconds / 60);
+                     //                   htmlContent += minutes + '分' + (seconds - minutes * 60) + '秒';
+                     //               }
+
+                                   $("#metaModel").html('<p>总数:</p>' + '<span class="highlight-number total-color">'+total+'</span>');
+
+                                   if (success > 0) {
+                                     $("#metaSuccess").html('<p>成功:</p>' +'<span class="highlight-number success-color">'+ success+'</span>');
+                                   }
+                                   if (fail > 0) {
+                                     $("#metaError").html('<p>失败:</p>' +'<span class="highlight-number error-color">'+ fail+'</span>');
+                                   }
+
+                                }
+                            },
+                            error: function() {
+                               // alert('刷新失败');
+                            }
+                        });
+                 }, data.resultValue * 1000);
+         } else {
+             bootGrowl(data.resultValue, "danger");
+         }
+     });
+    // 页面卸载时清除定时器
+    $(window).on('beforeunload', function () {
+        if (intervalId !== null) {
+            clearInterval(intervalId);
+        }
+    });
+
+    // 返回时也清除定时器
+    $("#mappingBackBtn").click(function () {
+        if (intervalId !== null) {
+            clearInterval(intervalId);
+        }
+    });
+
+}
+
 $(function () {
 
     var classOnVal =  $("#mappingShow").val();
     if(classOnVal && classOnVal==1){
         //从editTableGroup跳转回来后默认展示映射关系tab
         nextToMapping('mappingBaseConfig');
+    }
+
+    var mappingId =  $("#mappingId").val();
+    if(mappingId){
+        getMappping(mappingId);
     }
 
     // 绑定同步方式切换事件
@@ -280,6 +441,56 @@ $(function () {
     // 返回
     $("#mappingBackBtn").click(function () {
         backIndexPage();
+    });
+
+     // 创建环形图
+    const $canvas = $('#progressChart');
+    if ($canvas.length === 0) {
+        console.error("Canvas element not found for progress chart");
+        return;
+    }
+
+    const canvas = $canvas[0];
+    const ctx = canvas.getContext('2d');
+
+    // 获取数据
+    const total = parseInt($('#metaModelHidden').val());
+    const success = parseInt($('#successHidden').val());
+    const fail = parseInt($('#failHidden').val());
+
+    const progress = total > 0 ? (success + fail) / total : 0;
+    const percentage = Math.round(progress * 100);
+
+    // 更新文本
+    $('#progressText').text(`${percentage}%`);
+
+    // 创建图表
+    const chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [progress, 1 - progress],
+                backgroundColor: [
+                    '#3498db', // 蓝色填充
+                    'rgba(255, 255, 255, 0.2)' // 白色背景
+                ],
+                borderColor: '#3498db',
+                borderWidth: 5,
+                cutout: '70%'
+            }]
+        },
+        options: {
+            responsive: false,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false }
+            },
+            animation: {
+                animateRotate: true,
+                animateScale: true
+            }
+        }
     });
 
 })

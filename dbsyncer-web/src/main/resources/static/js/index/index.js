@@ -179,7 +179,8 @@ function doPost(url) {
     doPoster(url, null, function (data) {
         if (data.success == true) {
             // 显示主页
-            backIndexPage();
+            var projectGroup = $("#projectGroup").val() || '';
+            backIndexPage(projectGroup);
             bootGrowl(data.resultValue, "success");
         } else {
             bootGrowl(data.resultValue, "danger");
@@ -231,6 +232,7 @@ function refreshMappingList($projectGroupSelect) {
                                    if(Array.isArray(datalist) ){
                                       // 遍历数组并拼接 div 字符串
                                         $.each(datalist, function(index, m) {
+
                                           var htmlContent = '';
                                           // 安全访问对象属性
                                           var mid = m && m.id ? m.id : '';
@@ -254,6 +256,20 @@ function refreshMappingList($projectGroupSelect) {
                                           var counting = meta.counting || false;
                                           var errorMessage = meta.errorMessage || '';
                                           var id = meta.id || '';
+                                         var stateVal = meta.state != null && meta.state !== '' ? parseInt(meta.state) : 0;
+
+                                           var stateHtmlContent = '';
+                                           if(stateVal == 0){
+                                                stateHtmlContent += '<span class="running-state label label-info">未运行</span>';
+                                           }else if(stateVal == 1){
+                                                stateHtmlContent += '<span class="running-state label label-success">运行中</span>';
+                                           }else if(stateVal == 2){
+                                                stateHtmlContent += '<span class="running-state label label-warning">停止中</span>';
+                                           }else if(stateVal == 3){
+                                                stateHtmlContent += '<span class="running-state label label-danger">异常</span>';
+                                                stateHtmlContent += '<span title=" '+errorMessage +' " class="mapping-error-sign" data-toggle="tooltip" data-placement="top"><i class="fa fa-exclamation-triangle"></i></span>';
+                                           }
+
 
                                           htmlContent += '<tbody>';
                                           htmlContent += '<tr>';
@@ -308,6 +324,7 @@ function refreshMappingList($projectGroupSelect) {
                                           htmlContent += '</tr>';
                                           htmlContent += '</tbody>';
                                           $("#"+mid).find(".table-hover").html(htmlContent);
+                                          $("#"+mid).find("#stateId").html(stateHtmlContent);
                                        });
                                    }
                                },

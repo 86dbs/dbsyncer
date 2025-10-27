@@ -1,18 +1,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 <head>
-    <style>
-        .tab-content .tab-pane {
-             border-left: 1px solid #ddd !important;
-             border-right: 1px solid #ddd !important;
-             border-bottom: 1px solid #ddd !important;
-             padding: 15px;
-             /* 关键：确保边框包含在元素宽度内，避免宽度溢出导致的间隙 */
-             box-sizing: border-box !important;
-             width: 100% !important; /* 占满父容器宽度，避免左右留白 */
-             margin: 0 !important; /* 清除容器自身可能的外边距 */
-         }
-    </style>
+    <link type="text/css" rel="stylesheet" th:href="@{/css/mapping/edit.css}">
 </head>
 
 <div class="container-fluid">
@@ -24,7 +13,7 @@
                     <button id="mappingBackBtn" type="button" class="btn btn-default">
                         <span class="fa fa-reply"></span>返回
                     </button>
-                    <button id="mappingSubmitBtn" th:onclick="doMappingSubmit()" type="button" class="btn btn-primary">
+                    <button id="mappingSubmitBtn" th:onclick="doMappingSubmit()"  th:attr="disabled=${mapping?.meta?.state eq 1}" type="button" class="btn btn-primary">
                         <span class="fa fa-save"></span>保存
                     </button>
                 </div>
@@ -38,7 +27,11 @@
             <!-- 隐藏表单值 -->
             <div class="form-group hidden">
                 <input id="mappingId" name="id" type="text" th:value="${mapping?.id}"/>
+                <input id="metaModelHidden"  type="hidden" th:value="${mapping?.meta?.total}"/>
+                <input id="successHidden"  type="hidden" th:value="${mapping?.meta?.success}"/>
+                <input id="failHidden" type="hidden" th:value="${mapping?.meta?.fail}"/>
                 <input name="name" type="text" th:value="${mapping?.name}"/>
+                <input name="state" type="text" th:value="${mapping?.meta?.state}"/>
                 <input type="hidden" id="mappingShow" th:value="${classOn}" />
             </div>
 
@@ -76,6 +69,58 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel panel-default">
+                    <div class="panel-body" th:with="model=${mapping?.model},total=${mapping?.meta?.total},success=${mapping?.meta?.success},fail=${mapping?.meta?.fail},beginTime=${mapping?.meta?.beginTime},updateTime=${mapping?.meta?.updateTime}">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <div  class="text-left" id ="mappingState">
+                                    <p>任务状态：</p>
+                                    <span th:if="${mapping?.meta?.state eq 0}" class="highlight-number total-color">未运行</span>
+                                    <span th:if="${mapping?.meta?.state eq 1}" class="highlight-number success-color">运行中</span>
+                                    <span th:if="${mapping?.meta?.state eq 2}" class="highlight-number error-color">停止中</span>
+                                    <span th:if="${mapping?.meta?.state eq 3}" class="highlight-number error-color">异常</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3" id="metaPercent">
+                                <div class="text-left">
+                                    <p>数据同步进度:</p>
+                                    <span th:if="${mapping?.meta?.counting}">(正在统计中)</span>
+                                    <span th:unless="${mapping?.meta?.counting}">
+                                            <span th:if="${total gt 0 and (success + fail) gt 0}" class="highlight-number">
+                                                [[${#numbers.formatPercent(((success + fail) / total), 1, 2)}]]
+                                            </span>
+                                            <span th:unless="${total gt 0 and (success + fail) gt 0}" class="highlight-number" >0%</span>
+                                        </span>
+                                    <!--环状图-->
+<!--                                    <canvas id="progressChart" width="100" height="100" style="display: block; margin: 0 auto;"></canvas>-->
+                                    <!--   <p id="progressText" style="font-size: 1.2em; font-weight: bold; color: #333;">0%</p>-->
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div  class="text-left" id ="metaModel">
+<!--                                    <p>[[${mapping?.meta?.model}]]同步</p>-->
+                                    <p>总数:</p>
+                                    <span class="highlight-number total-color">[[${total}]]</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-2">
+                                <div id="metaSuccess">
+                                    <p>成功:</p>
+                                    <span class="highlight-number success-color">[[${success}]]</span>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-left" id="metaError">
+                                    <p>失败:</p>
+                                    <span class="highlight-number error-color">[[${fail}]]</span>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -185,7 +230,7 @@
                             <button type="button"  th:onclick="nextToMapping('mappingBaseConfig')" class="btn btn-default">
                                 <span class="fa fa-arrow-left"></span> 上一步
                             </button>
-                            <button type="button"  th:onclick="doMappingSubmit()" class="btn btn-primary">
+                            <button type="button" th:attr="disabled=${mapping?.meta?.state eq 1}" th:onclick="doMappingSubmit()" class="btn btn-primary">
                                 <span class="fa fa-save"></span>保存
                             </button>
                         </div>
@@ -197,8 +242,11 @@
     </div>
 </div>
 
+<script th:src="@{/js/mapping/chart.js}"></script>
 <script th:src="@{/js/mapping/edit.js}"></script>
 <script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
 <script th:src="@{/js/mapping/editIncrement.js}"></script>
 <script th:src="@{/js/mapping/editPlugin.js}"></script>
+
+
 </html>

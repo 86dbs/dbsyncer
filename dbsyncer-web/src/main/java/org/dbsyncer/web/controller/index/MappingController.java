@@ -54,6 +54,17 @@ public class MappingController extends BaseController {
         return "mapping/" + page;
     }
 
+    @GetMapping("/get")
+    @ResponseBody
+    public RestResult get(@RequestParam(value = "id") String id) {
+        try {
+            return RestResult.restSuccess(mappingService.getMapping(id));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
     @PostMapping("/copy")
     @ResponseBody
     public RestResult add(@RequestParam("id") String id) {

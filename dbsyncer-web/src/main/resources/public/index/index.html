@@ -141,8 +141,8 @@
                                                     </div>
 
                                                     <!--中间图标 -->
-                                                    <div class="col-md-2">
-                                                        <div class="line">
+                                                    <div class="col-md-2" >
+                                                        <div class="line" id="stateId">
                                                             <span th:if="${m?.meta?.state eq 1}" class="running-through-rate well-sign-green">✔</span>
                                                             <span th:if="${m?.meta?.state eq 0}" class="running-state label label-info">未运行</span>
                                                             <span th:if="${m?.meta?.state eq 1}" class="running-state label label-success">运行中</span>
