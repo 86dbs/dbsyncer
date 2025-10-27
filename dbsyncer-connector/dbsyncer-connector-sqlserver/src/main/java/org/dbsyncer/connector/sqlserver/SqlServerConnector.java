@@ -92,7 +92,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        Map<String, String> targetCommand = new HashMap<>();
+        Map<String, String> targetCommand = super.getTargetCommand(commandConfig);
         String tableName = commandConfig.getTable().getName();
         // 判断表是否包含标识自增列
         DatabaseConnectorInstance db = (DatabaseConnectorInstance) commandConfig.getConnectorInstance();
@@ -132,6 +132,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
         return schemaResolver;
     }
 
+    // 重要说明 mssql-jdbc 9 +  useBulkCopyForBatchInsert=true 原生驱动 Buck insert 无效，性能非常慢，需要定制实现
     /**
      * 重写 insert 方法，对 SQL Server 使用批量复制优化
      */

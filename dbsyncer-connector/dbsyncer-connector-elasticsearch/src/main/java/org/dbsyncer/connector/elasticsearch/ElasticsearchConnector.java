@@ -433,5 +433,28 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         void apply(BoolQueryBuilder builder, String key, String value);
     }
 
+    @Override
+    public Result insert(ESConnectorInstance connectorInstance, PluginContext context) {
+        // INSERT 操作：使用所有字段
+        return writer(connectorInstance, context);
+    }
+
+    @Override
+    public Result update(ESConnectorInstance connectorInstance, PluginContext context) {
+        // INSERT 操作：使用所有字段
+        return writer(connectorInstance, context);
+    }
+
+    @Override
+    public Result delete(ESConnectorInstance connectorInstance, PluginContext context) {
+        // INSERT 操作：使用所有字段
+        return writer(connectorInstance, context);
+    }
+
+    @Override
+    public Result upsert(ESConnectorInstance connectorInstance, PluginContext context) {
+        // INSERT 操作：使用所有字段
+        return writer(connectorInstance, context);
+    }
 
 }

@@ -245,4 +245,27 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         return null;
     }
 
+    @Override
+    public Result insert(FileConnectorInstance connectorInstance, PluginContext context) {
+        // INSERT 操作：使用所有字段
+        return writer(connectorInstance, context);
+    }
+
+    @Override
+    public Result update(FileConnectorInstance connectorInstance, PluginContext context) {
+        // INSERT 操作：使用所有字段
+        return writer(connectorInstance, context);
+    }
+
+    @Override
+    public Result delete(FileConnectorInstance connectorInstance, PluginContext context) {
+        // INSERT 操作：使用所有字段
+        return writer(connectorInstance, context);
+    }
+
+    @Override
+    public Result upsert(FileConnectorInstance connectorInstance, PluginContext context) {
+        // INSERT 操作：使用所有字段
+        return writer(connectorInstance, context);
+    }
 }

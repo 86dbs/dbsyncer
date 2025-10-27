@@ -113,7 +113,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
             // 从 command 中获取 topic 参数，如果没有则使用目标表名作为默认值
             String topic = context.getCommand().get("topic");
 
-            topic = topic == null ? connectorInstance.getConfig().getTopic(): topic;
+            topic = topic == null ? connectorInstance.getConfig().getTopic() : topic;
 
             // 验证 topic 是否为空
             if (topic == null || topic.isEmpty()) {
@@ -154,6 +154,30 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     @Override
     public Listener getListener(String listenerType) {
         return null;
+    }
+
+    @Override
+    public Result insert(KafkaConnectorInstance connectorInstance, PluginContext context) {
+        // INSERT 操作：使用所有字段
+        return writer(connectorInstance, context);
+    }
+
+    @Override
+    public Result update(KafkaConnectorInstance connectorInstance, PluginContext context) {
+        // INSERT 操作：使用所有字段
+        return writer(connectorInstance, context);
+    }
+
+    @Override
+    public Result delete(KafkaConnectorInstance connectorInstance, PluginContext context) {
+        // INSERT 操作：使用所有字段
+        return writer(connectorInstance, context);
+    }
+
+    @Override
+    public Result upsert(KafkaConnectorInstance connectorInstance, PluginContext context) {
+        // INSERT 操作：使用所有字段
+        return writer(connectorInstance, context);
     }
 
 }
