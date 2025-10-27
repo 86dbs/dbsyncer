@@ -13,6 +13,7 @@
 
 ## 问题池
 
+- 重大隐性bug: 系统配置丢失问题：在数据库里会形成多份“系统配置”，应该为一份，原因原有配置没有加载完成，但请求了 login 接口，导致系统配置重建。
 - 增量-定时 重构
   - 增量定时-移除 AbstractDatabaseConnector.reader, 与 Listener 中重复定义, 但 Reader 语义更好。
 - AbstractDatabaseConnector.filterColumn 这个应该在编辑时处理，而不是在运行时处理
