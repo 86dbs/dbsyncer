@@ -20,6 +20,7 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -101,6 +102,17 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @return
      */
     MetaInfo getMetaInfo(I connectorInstance, String tableNamePattern);
+
+    /**
+     * 获取表元信息
+     *
+     * @param connectorInstance
+     * @param tableNamePatterns
+     * @return
+     */
+    default List<MetaInfo> getMetaInfos(I connectorInstance, List<String> tableNamePatterns) {
+        return new ArrayList<>();
+    }
 
     /**
      * 获取总数

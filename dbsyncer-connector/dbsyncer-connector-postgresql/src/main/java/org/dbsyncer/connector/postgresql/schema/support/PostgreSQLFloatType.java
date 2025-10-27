@@ -4,7 +4,7 @@
 package org.dbsyncer.connector.postgresql.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.BooleanType;
+import org.dbsyncer.sdk.schema.support.FloatType;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -15,9 +15,9 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2025-06-25 23:26
  */
-public class PostgreSQLBooleanType extends BooleanType {
+public class PostgreSQLFloatType extends FloatType {
     private enum TypeEnum {
-        BOOL("bool");
+        FLOAT4("float4");
 
         private final String value;
 
@@ -36,19 +36,7 @@ public class PostgreSQLBooleanType extends BooleanType {
     }
 
     @Override
-    protected Boolean merge(Object val, Field field) {
-        return throwUnsupportedException(val, field);
-    }
-
-    @Override
-    protected Object convert(Object val, Field field) {
-        if (val instanceof Boolean) {
-            return val;
-        }
-        if (val instanceof Number) {
-            Number num = (Number) val;
-            return num.intValue() == 1 ? Boolean.TRUE : Boolean.FALSE;
-        }
+    protected Float merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
 }
