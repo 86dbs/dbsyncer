@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.stream.Stream;
 
 /**
@@ -95,7 +94,7 @@ public class ParserComponentImpl implements ParserComponent {
      * 新的TableGroup流式处理方法
      */
     @Override
-    public void executeTableGroup(String metaId, TableGroup tableGroup, Mapping mapping, Executor executor) {
+    public void executeTableGroup(String metaId, TableGroup tableGroup, Mapping mapping) {
         // 状态清理， 无须保存，因为第一个批次处理完后会保存。
         tableGroup.setErrorMessage("");
 

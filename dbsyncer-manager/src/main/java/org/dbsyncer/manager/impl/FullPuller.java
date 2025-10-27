@@ -102,7 +102,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 try {
                     // 直接使用TableGroup的cursor进行流式处理
-                    parserComponent.executeTableGroup(metaId, tableGroup, mapping, executor);
+                    parserComponent.executeTableGroup(metaId, tableGroup, mapping);
                 } catch (Exception e) {
                     logger.error("TableGroup {} 处理失败", tableGroup.getIndex(), e);
 

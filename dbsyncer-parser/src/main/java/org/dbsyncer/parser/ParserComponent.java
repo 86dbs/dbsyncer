@@ -1,13 +1,10 @@
 package org.dbsyncer.parser;
 
-import org.dbsyncer.common.model.Result;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.model.MetaInfo;
-import org.dbsyncer.sdk.plugin.PluginContext;
 
 import java.util.Map;
-import java.util.concurrent.Executor;
 
 /**
  * <pre>
@@ -44,8 +41,7 @@ public interface ParserComponent {
      * @param metaId
      * @param tableGroup
      * @param mapping
-     * @param executor
      */
-    void executeTableGroup(String metaId, TableGroup tableGroup, Mapping mapping, Executor executor);
+    void executeTableGroup(String metaId, TableGroup tableGroup, Mapping mapping);
 
 }
