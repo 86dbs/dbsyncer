@@ -3,9 +3,9 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <!-- 左侧边栏 -->
-<aside th:fragment="nav" class="w-64 bg-white border-r border-gray-200 flex-shrink-0 hidden md:flex flex-col">
+<aside th:fragment="nav" class="bg-white border-r border-gray-200 flex-shrink-0 hidden md:flex flex-col">
     <!-- 品牌标识 -->
-    <div class="p-1 flex items-center gap-3">
+    <div class="pt-2 flex items-center gap-3">
         <div class="flex gap-3"></div>
         <div class="flex items-center justify-center">
             <img draggable="false" th:src="@{'/img/logo.png'}" style="width: 50px; height: 50px;">
@@ -14,7 +14,7 @@
     </div>
 
     <!-- 导航菜单 -->
-    <nav class="flex-1 p-4 overflow-y-auto">
+    <nav class="flex-1 p-2 overflow-y-auto">
         <div class="space-y-1 mb-6">
             <div class="sidebar-item active" url="/index">
                 <i class="fa fa-tachometer w-5 text-center"></i>
