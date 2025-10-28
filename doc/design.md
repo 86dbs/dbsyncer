@@ -72,6 +72,14 @@ int identity   .merge()           (Integer)         .convert()
 ↓              ↓                    ↓                    ↓
 原始数据      转换为标准类型        中间状态
 
+## DDL 同步
+
+- 只存在于增量同步
+- 算法 
+  - 从缓存里拉取数据
+  - 以表名为 key 放入 分区
+  - 
+
 ## 包依赖关系
 
 dbsyncer-common (最底层)
