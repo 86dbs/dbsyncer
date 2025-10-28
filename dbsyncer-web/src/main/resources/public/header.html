@@ -7,24 +7,21 @@
     <div class="flex gap-4"></div>
 
     <div class="flex items-center gap-4">
-        <button class="relative p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-full">
-            <i class="fa fa-bell text-xl"></i>
-            <span class="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full"></span>
-        </button>
         <div class="flex items-center gap-3 text-gray-500">
-            <span class="hidden md:inline font-medium">专业版</span>
+            <span class="md:inline font-medium">专业版</span>
             <img id="licenseCheck" class="license-info-item" draggable="false" title="已激活" width="17px" height="17px" th:src="@{'/img/license/check.png'}">
             <img id="licenseRemind" class="hidden license-info-item" draggable="false" title="即将过期, 请联系星河同步官方续期" width="17px" height="17px" th:src="@{'/img/license/remind.png'}">
             <img id="licenseWarning" class="hidden license-info-item" draggable="false" title="已过期, 请联系星河同步官方续期" width="17px" height="17px" th:src="@{'/img/license/warning.png'}">
             <span id="effectiveContent" class="license-info-item">还剩10个月8天</span>
         </div>
-        <div class="h-6 w-px bg-gray-300"></div>
-        <div class="flex items-center gap-3">
-            <img draggable="false" th:src="@{'/img/logo.png'}" alt="用户头像" class="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm">
-            <span id="currentUser" class="hidden md:inline font-medium">admin</span>
-            <i class="fa fa-angle-down text-gray-500"></i>
+        <div class="dropdown flex items-center gap-3">
+            <button id="data-user-dropdown" class="flex items-center gap-3 text-gray-500" data-toggle>
+                <img draggable="false" th:src="@{'/img/logo.png'}" alt="用户头像" class="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm">
+                <span id="currentUser" class="md:inline font-medium">admin</span>
+                <i class="fa fa-angle-down"></i>
+            </button>
             <!-- 用户下拉菜单 -->
-            <ul class="dropdown-menu dropdown-menu-right">
+            <ul class="dropdown-menu">
                 <li><a href="javascript:void(0);" id="edit_personal"><i class="fa fa-pencil"></i> 修改</a></li>
                 <li><a href="javascript:void(0);" id="nav_logout"><i class="fa fa-power-off"></i> 注销</a></li>
             </ul>

@@ -16,46 +16,12 @@
     <link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css"/>
     <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/font-awesome.min.css}"/>
     <link type="text/css" rel="stylesheet" th:href="@{/css/dbsyncer-theme.css}">
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .content-auto {
-                content-visibility: auto;
-            }
-            .sidebar-item {
-                @apply flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-primary/5 hover:text-primary rounded-lg transition-all duration-200 cursor-pointer;
-            }
-            .sidebar-item.active {
-                @apply bg-primary/10 text-primary font-medium border-r-4 border-primary;
-            }
-            .card {
-                @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md;
-            }
-            .stat-card {
-                @apply card p-5 flex flex-col gap-2;
-            }
-            .btn {
-                @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2;
-            }
-            .btn-primary {
-                @apply bg-primary text-white hover:bg-primary/90 active:bg-primary/80;
-            }
-            .btn-outline {
-                @apply border border-gray-300 hover:border-primary hover:text-primary;
-            }
-            .form-input {
-                @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all;
-            }
-            .badge {
-                @apply px-2 py-1 rounded-full text-xs font-medium;
-            }
-        }
-    </style>
-    <script th:if="${enableCDN}" src="https://cdn.tailwindcss.com"></script>
-    <script th:src="@{/plugins/js/tailwindcss/tailwindcss.js}"></script>
     <script th:if="${enableCDN}" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     <script th:src="@{/plugins/js/chartjs/chart.umd.min.js}"></script>
+    <script th:if="${enableCDN}" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script th:if="${!enableCDN}" th:src="@{/plugins/js/jquery/jquery-1.11.3.min.js}"></script>
 </head>
-<body class="font-inter bg-gray-50 text-dark overflow-x-hidden">
+<body class="bg-secondary overflow-hidden">
     <div class="flex h-screen">
         <!-- 左侧导航区 -->
         <div th:replace="sidebar :: nav"></div>
@@ -66,37 +32,11 @@
             <div th:replace="header :: header"></div>
 
             <!-- 页面内容 -->
-            <div id="mainContent" class="flex-1 overflow-y-auto p-6">
+            <div id="mainContent" class="p-5 flex-1 overflow-y-auto">
                 <div th:replace="index/list :: index"></div>
             </div>
         </main>
     </div>
 </body>
-<script th:if="${enableCDN}" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/jquery/jquery-1.11.3.min.js}"></script>
-<!-- 配置Tailwind主题 -->
-<script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                colors: {
-                    primary: '#165DFF',
-                    secondary: '#36CFC9',
-                    success: '#52C41A',
-                    warning: '#FAAD14',
-                    danger: '#FF4D4F',
-                    info: '#40A9FF',
-                    dark: '#1D2129',
-                    'light-gray': '#F2F3F5',
-                    'mid-gray': '#C9CDD4',
-                    'dark-gray': '#86909C'
-                },
-                fontFamily: {
-                    inter: ['Inter', 'system-ui', 'sans-serif'],
-                },
-            }
-        }
-    }
-</script>
 <script th:src="@{/js/framework.js}"></script>
 </html>
