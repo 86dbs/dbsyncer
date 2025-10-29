@@ -228,11 +228,19 @@ $(function () {
     // 新导航链接点击事件
     $('.sidebar-item[url]').on('click', function(e) {
         e.preventDefault();
-        const url = $(this).attr('url');
         // 更新活动状态
         $('.sidebar-item').removeClass('active');
         $(this).addClass('active');
         // 加载页面
-        doLoader(url);
+        doLoader($(this).attr('url'));
+    });
+
+    // 下拉菜单
+    $(".dropdown button").on('click', function (){
+        event.stopPropagation();
+        $(this).siblings().toggleClass("hidden");
+    });
+    $(document).on('click', function(event) {
+        $(".dropdown .dropdown-menu").addClass("hidden");
     });
 });

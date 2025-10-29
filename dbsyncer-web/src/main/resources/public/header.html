@@ -15,13 +15,13 @@
             <span id="effectiveContent" class="license-info-item">还剩10个月8天</span>
         </div>
         <div class="dropdown flex items-center gap-3">
-            <button id="data-user-dropdown" class="flex items-center gap-3 text-gray-500" data-toggle>
+            <button class="flex items-center gap-3 text-gray-500" data-toggle>
                 <img draggable="false" th:src="@{'/img/logo.png'}" alt="用户头像" class="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm">
                 <span id="currentUser" class="md:inline font-medium">admin</span>
                 <i class="fa fa-angle-down"></i>
             </button>
             <!-- 用户下拉菜单 -->
-            <ul class="dropdown-menu">
+            <ul class="dropdown-menu hidden">
                 <li><a href="javascript:void(0);" id="edit_personal"><i class="fa fa-pencil"></i> 修改</a></li>
                 <li><a href="javascript:void(0);" id="nav_logout"><i class="fa fa-power-off"></i> 注销</a></li>
             </ul>
