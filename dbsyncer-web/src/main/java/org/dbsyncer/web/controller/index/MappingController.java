@@ -20,6 +20,10 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
+/**
+ * 驱动
+ * @author cdeluser
+ */
 @Controller
 @RequestMapping("/mapping")
 public class MappingController extends BaseController {
@@ -42,11 +46,23 @@ public class MappingController extends BaseController {
     }
 
     @GetMapping("/page/{page}")
-    public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id, Integer exclude) {
+    public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id, Integer classOn, Integer exclude) {
         model.put("mapping", mappingService.getMapping(id, exclude));
+        model.put("classOn", classOn);
         model.put("tableGroups", tableGroupService.getTableGroupAll(id));
         initConfig(model);
         return "mapping/" + page;
+    }
+
+    @GetMapping("/get")
+    @ResponseBody
+    public RestResult get(@RequestParam(value = "id") String id) {
+        try {
+            return RestResult.restSuccess(mappingService.getMapping(id));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
     }
 
     @PostMapping("/copy")

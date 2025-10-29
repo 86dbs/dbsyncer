@@ -1,0 +1,10 @@
+.tab-content .tab-pane{border-left:1px solid #ddd !important;border-right:1px solid #ddd !important;border-bottom:1px solid #ddd !important;padding:15px;box-sizing:border-box !important;width:100% !important;margin:0 !important}
+#progressChart{width:100px;height:100px;margin:0 auto}
+#progressText{font-size:1.2em;font-weight:bold;color:#333;margin-top:10px}
+.highlight-number{font-size:2.1em;font-weight:bold;margin:30px;padding:0}
+.progress-color{color:#3498db}
+.total-color{color:#529de2}
+.success-color{color:#27ae60}
+.error-color{color:#e74c3c}
+.task-status{text-align:left;padding:5px 0}
+.data-item{text-align:left;padding:5px 0}

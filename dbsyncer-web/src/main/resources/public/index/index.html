@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <!-- ProjectGroup Connector Mapping -->
 <div class="container-fluid">
@@ -48,14 +47,6 @@
                                 <input type="hidden" th:value="${projectGroupId}" th:name="projectGroup" id="projectGroup">
                             </div>
                         </div>
-<!--                        <div th:if="${not #strings.isEmpty(projectGroupId) }">-->
-<!--                            <button type="button" class="btn btn-primary btn-block" id="editProjectGroupBtn">-->
-<!--                                <span class="fa fa-pencil"></span>修改-->
-<!--                            </button>-->
-<!--                            <button type="button" class="btn btn-default btn-block" id="removeProjectGroupBtn">-->
-<!--                                <span class="fa fa-times"></span>删除-->
-<!--                            </button>-->
-<!--                        </div>-->
                     </div>
                 </div>
             </div>
@@ -150,8 +141,8 @@
                                                     </div>
 
                                                     <!--中间图标 -->
-                                                    <div class="col-md-2">
-                                                        <div class="line">
+                                                    <div class="col-md-2" >
+                                                        <div class="line" id="stateId">
                                                             <span th:if="${m?.meta?.state eq 1}" class="running-through-rate well-sign-green">✔</span>
                                                             <span th:if="${m?.meta?.state eq 0}" class="running-state label label-info">未运行</span>
                                                             <span th:if="${m?.meta?.state eq 1}" class="running-state label label-success">运行中</span>
@@ -179,10 +170,10 @@
                                                 </div>
 
                                                 <div class="row">
-                                                    <table class="table table-hover"　id="processDiv">
+                                                    <table class="table table-hover " >
                                                         <tbody th:with="model=${m?.model},total=${m?.meta?.total},success=${m?.meta?.success},fail=${m?.meta?.fail},beginTime=${m?.meta?.beginTime},updateTime=${m?.meta?.updateTime}">
                                                         <tr>
-                                                            <td class="text-left">
+                                                            <td class="text-left" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;  max-width: 0; width: 100%;">
                                                                 [[${m?.meta?.model}]]同步>总数:[[${total}]]
                                                                 <span th:if="${m?.meta?.syncPhase.code eq 0}">
                                                                     <span th:if="${m?.meta?.counting}">(正在统计中)</span>

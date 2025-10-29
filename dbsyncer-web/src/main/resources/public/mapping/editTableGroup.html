@@ -7,6 +7,14 @@
         <form id="tableGroupModifyForm" class="form-horizontal" role="form" method="post">
             <!-- 标题 -->
             <div class="row text-center">
+                <div class="text-right" style="position: relative; width: 100%;">
+                    <button id="tableGroupBackBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-default">
+                        <span class="fa fa-reply"></span>返回
+                    </button>
+                    <button id="tableGroupSubmitBtn" th:onclick="doTableGroupSubmit()" th:mappingId="${mapping?.id}" type="button" class="btn btn-primary">
+                        <span class="fa fa-save"></span>保存
+                    </button>
+                </div>
                 <h3>[[${mapping?.name}]]</h3>
                 <p>[[${tableGroup?.id}]]</p>
             </div>
@@ -51,134 +59,143 @@
                 </div>
             </div>
 
-            <!-- 驱动配置操作 -->
-            <div class="form-group">
-                <div class="row">
-                    <div class="col-sm-10"></div>
-                    <div class="col-md-2 text-right">
-                        <button id="tableGroupBackBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-default">
-                            <span class="fa fa-reply"></span>返回
-                        </button>
-                        <button id="tableGroupSubmitBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-primary">
-                            <span class="fa fa-save"></span>保存
-                        </button>
-                    </div>
-                </div>
-            </div>
 
-            <!-- 映射关系区域 -->
+            <!-- Tab菜单 -->
             <div class="row">
-                <div class="panel-group">
-                    <div class="panel panel-success">
-                        <div class="panel-heading">
-                            <h4 class="panel-title">
-                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#tableGroupBaseConfig">映射关系</u>
-                            </h4>
-                        </div>
-                        <div id="tableGroupBaseConfig" class="panel-body panel-collapse collapse in">
-                            <div class="row">
-                                <!-- 数据源表字段配置 -->
-                                <div class="col-md-5">
-                                    <label class="col-sm-3 control-label text-right">数据源表字段</label>
-                                    <div class="col-sm-9">
-                                        <select id="sourceTableField" class="form-control select-control-table" multiple="multiple">
-                                            <option th:each="c,s:${tableGroup?.sourceTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')' + (${c?.pk} ? ' [主键]' : '')" th:data-pk="${c?.pk}" />
-                                        </select>
-                                    </div>
-                                </div>
-                                <!-- 中间图标 -->
-                                <div class="col-md-2 text-center">
-                                    <span class="fa fa-angle-double-right fa-2x"></span>
-                                </div>
-                                <!-- 目标源表字段配置 -->
-                                <div class="col-md-5">
-                                    <div class="form-group">
-                                        <label class="col-sm-3 control-label text-right">目标源表字段</label>
-                                        <div class="col-sm-9">
-                                            <select id="targetTableField" class="form-control select-control-table" multiple="multiple">
-                                                <option th:each="c,s:${tableGroup?.targetTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')' + (${c?.pk} ? ' [主键]' : '')" th:data-pk="${c?.pk}" />
-                                            </select>
+                <ul class="nav nav-tabs" role="tablist">
+                    <li role="presentation" class="active">
+                        <a href="#mappingRelation" aria-controls="mappingRelation" role="tab" data-toggle="tab">
+                            映射关系
+                            <small class="text-muted" title="该配置使所有映射关系都生效">（明细）</small>
+                        </a>
+                    </li>
+                    <li role="presentation">
+                        <a href="#advancedConfig" aria-controls="advancedConfig" role="tab" data-toggle="tab">
+                            高级配置
+                            <small class="text-muted" title="该配置使所有映射关系都生效">（明细）</small>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Tab内容区域 -->
+                <div class="tab-content">
+                    <!-- 映射关系Tab -->
+                    <div role="tabpanel" class="tab-pane active" id="mappingRelation">
+                        <div class="panel-group">
+                            <div class="panel panel-success">
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <!-- 数据源表字段配置 -->
+                                        <div class="col-md-5">
+                                            <label class="col-sm-3 control-label text-right">数据源表字段</label>
+                                            <div class="col-sm-9">
+                                                <select id="sourceTableField" class="form-control select-control-table" multiple="multiple">
+                                                    <option th:each="c,s:${tableGroup?.sourceTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')' + (${c?.pk} ? ' [主键]' : '')" th:data-pk="${c?.pk}" />
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <!-- 中间图标 -->
+                                        <div class="col-md-2 text-center">
+                                            <span class="fa fa-angle-double-right fa-2x"></span>
+                                        </div>
+                                        <!-- 目标源表字段配置 -->
+                                        <div class="col-md-5">
+                                            <div class="form-group">
+                                                <label class="col-sm-3 control-label text-right">目标源表字段</label>
+                                                <div class="col-sm-9">
+                                                    <select id="targetTableField" class="form-control select-control-table" multiple="multiple">
+                                                        <option th:each="c,s:${tableGroup?.targetTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')' + (${c?.pk} ? ' [主键]' : '')" th:data-pk="${c?.pk}" />
+                                                    </select>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
 
-                            <div class="form-group">
-                                <div class="row">
-                                    <div class="col-md-2">&nbsp;
-                                        <button id="refreshTableFieldBtn" type="button" class="btn btn-default" th:title="刷新数据源和目标源表字段" th:tableGroupId="${tableGroup?.id}">
-                                            <span class="fa fa-refresh"></span>刷新字段
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-md-2">
+                                                <button id="refreshTableFieldBtn" type="button" class="btn btn-default" th:title="刷新数据源和目标源表字段" th:tableGroupId="${tableGroup?.id}">
+                                                    <span class="fa fa-refresh"></span>刷新字段
+                                                </button>
+                                            </div>
+                                            <div class="col-md-8"></div>
+                                            <div class="col-md-2 text-right">
+                                                <button id="fieldMappingDelBtn" type="button" class="btn btn-default" disabled="disabled">
+                                                    <span class="fa fa-remove"></span>删除
+                                                </button>
+                                                <button id="fieldMappingAddBtn" type="button" class="btn btn-primary">
+                                                    <span class="fa fa-plus"></span>添加
+                                                </button>&nbsp;
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <table id="fieldMappingTable" class="table table-hover hidden">
+                                            <thead>
+                                            <tr>
+                                                <th>数据源表字段</th>
+                                                <th>目标源表字段</th>
+                                                <th>目标源主键</th>
+                                                <th><input type="checkbox" class="fieldMappingDeleteCheckboxAll" /></th>
+                                            </tr>
+                                            </thead>
+                                            <tbody id="fieldMappingList">
+                                            <tr th:id="'fieldMapping_'+${s.index + 1}" title='双击设置/取消主键' th:each="f,s:${tableGroup?.fieldMapping}">
+                                                <td>[[${f?.source?.name}]]</td>
+                                                <td>[[${f?.target?.name}]]</td>
+                                                <td><i th:if="${f?.target?.pk}" title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i></td>
+                                                <td><input type="checkbox" class="fieldMappingDeleteCheckbox" /></td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+
+                                    <div class="row text-right">
+                                        <button id="nextToMappingBtn" type="button"  th:onclick="nextToMapping('advancedConfig')" class="btn btn-primary">
+                                            <span class="fa fa-arrow-right"></span> 下一步
                                         </button>
                                     </div>
-                                    <div class="col-md-8"></div>
-                                    <div class="col-md-2 text-right">
-                                        <button id="fieldMappingDelBtn" type="button" class="btn btn-default" disabled="disabled">
-                                            <span class="fa fa-remove"></span>删除
-                                        </button>
-                                        <button id="fieldMappingAddBtn" type="button" class="btn btn-primary">
-                                            <span class="fa fa-plus"></span>添加
-                                        </button>&nbsp;
+                                    <!-- 隐藏表单值 -->
+                                    <div class="form-group hidden">
+                                        <input name="id" class="form-control" type="text" th:value="${tableGroup?.id}"/>
+                                        <input id="fieldMapping" name="fieldMapping" class="form-control" type="text"/>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="form-group">
-                                <table id="fieldMappingTable" class="table table-hover hidden">
-                                    <thead>
-                                    <tr>
-                                        <th>数据源表字段</th>
-                                        <th>目标源表字段</th>
-                                        <th>目标源主键</th>
-                                        <th><input type="checkbox" class="fieldMappingDeleteCheckboxAll" /></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="fieldMappingList">
-                                    <tr th:id="'fieldMapping_'+${s.index + 1}" title='双击设置/取消主键' th:each="f,s:${tableGroup?.fieldMapping}">
-                                        <td>[[${f?.source?.name}]]</td>
-                                        <td>[[${f?.target?.name}]]</td>
-                                        <td><i th:if="${f?.target?.pk}" title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i></td>
-                                        <td><input type="checkbox" class="fieldMappingDeleteCheckbox" /></td>
-                                    </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- 隐藏表单值 -->
-                            <div class="form-group hidden">
-                                <input name="id" class="form-control" type="text" th:value="${tableGroup?.id}"/>
-                                <input id="fieldMapping" name="fieldMapping" class="form-control" type="text"/>
-                            </div>
                         </div>
-
                     </div>
-                </div>
-            </div>
 
-            <!-- 高级配置区域 -->
-            <div class="row">
-                <div class="panel-group">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <h4 class="panel-title">
-                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#tableGroupSuperConfig" title="该配置只对当前映射关系生效, 上一级的高级配置将失效">高级配置</u>
-                            </h4>
-                        </div>
-                        <div id="tableGroupSuperConfig" class="panel-body panel-collapse collapse in">
-                            <!-- 参数配置 -->
-                            <div th:replace="mapping/editParameter :: content"></div>
+                    <!-- 高级配置Tab -->
+                    <div role="tabpanel" class="tab-pane" id="advancedConfig">
+                        <div class="panel-group">
+                            <div class="panel panel-default">
+                                <div class="panel-body">
+                                    <!-- 参数配置 -->
+                                    <div th:replace="mapping/editParameter :: content"></div>
 
-                            <!-- 过滤条件 -->
-                            <div th:replace="mapping/editFilter :: content"></div>
+                                    <!-- 过滤条件 -->
+                                    <div th:replace="mapping/editFilter :: content"></div>
 
-                            <!-- 转换配置 -->
-                            <div th:replace="mapping/editConvert :: content"></div>
+                                    <!-- 转换配置 -->
+                                    <div th:replace="mapping/editConvert :: content"></div>
 
-                            <!-- 插件配置 -->
-                            <div th:replace="mapping/editPlugin :: content"></div>
+                                    <!-- 插件配置 -->
+                                    <div th:replace="mapping/editPlugin :: content"></div>
+                                    <div class="row text-right">
+                                        <button type="button"  th:onclick="nextToMapping('mappingRelation')" class="btn btn-default">
+                                            <span class="fa fa-arrow-left"></span> 上一步
+                                        </button>
+                                        <button type="button"  th:onclick="doTableGroupSubmit()" class="btn btn-primary">
+                                            <span class="fa fa-save"></span>保存
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </form>
     </div>

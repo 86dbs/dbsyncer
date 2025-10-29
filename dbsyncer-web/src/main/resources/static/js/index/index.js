@@ -91,7 +91,7 @@ function bindAddMapping() {
 function bindEditMapping() {
     $(".mappingList .dbsyncer_block").click(function () {
         var $id = $(this).attr("id");
-        doLoader('/mapping/page/edit?id=' + $id);
+        doLoader('/mapping/page/edit?classOn=0&id=' + $id);
     });
 }
 
@@ -179,7 +179,8 @@ function doPost(url) {
     doPoster(url, null, function (data) {
         if (data.success == true) {
             // 显示主页
-            backIndexPage();
+            var projectGroup = $("#projectGroup").val() || '';
+            backIndexPage(projectGroup);
             bootGrowl(data.resultValue, "success");
         } else {
             bootGrowl(data.resultValue, "danger");
@@ -231,6 +232,7 @@ function refreshMappingList($projectGroupSelect) {
                                    if(Array.isArray(datalist) ){
                                       // 遍历数组并拼接 div 字符串
                                         $.each(datalist, function(index, m) {
+
                                           var htmlContent = '';
                                           // 安全访问对象属性
                                           var mid = m && m.id ? m.id : '';
@@ -254,10 +256,24 @@ function refreshMappingList($projectGroupSelect) {
                                           var counting = meta.counting || false;
                                           var errorMessage = meta.errorMessage || '';
                                           var id = meta.id || '';
+                                         var stateVal = meta.state != null && meta.state !== '' ? parseInt(meta.state) : 0;
+
+                                           var stateHtmlContent = '';
+                                           if(stateVal == 0){
+                                                stateHtmlContent += '<span class="running-state label label-info">未运行</span>';
+                                           }else if(stateVal == 1){
+                                                stateHtmlContent += '<span class="running-state label label-success">运行中</span>';
+                                           }else if(stateVal == 2){
+                                                stateHtmlContent += '<span class="running-state label label-warning">停止中</span>';
+                                           }else if(stateVal == 3){
+                                                stateHtmlContent += '<span class="running-state label label-danger">异常</span>';
+                                                stateHtmlContent += '<span title=" '+errorMessage +' " class="mapping-error-sign" data-toggle="tooltip" data-placement="top"><i class="fa fa-exclamation-triangle"></i></span>';
+                                           }
+
 
                                           htmlContent += '<tbody>';
                                           htmlContent += '<tr>';
-                                          htmlContent += '<td class="text-left">';
+                                          htmlContent += '<td class="text-left" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;  max-width: 0; width: 100%;">';
                                           htmlContent += modelname + '同步>总数:' + total;
 
                                           // 检查同步阶段是否为0（正在统计中）
@@ -308,11 +324,12 @@ function refreshMappingList($projectGroupSelect) {
                                           htmlContent += '</tr>';
                                           htmlContent += '</tbody>';
                                           $("#"+mid).find(".table-hover").html(htmlContent);
+                                          $("#"+mid).find("#stateId").html(stateHtmlContent);
                                        });
                                    }
                                },
                                error: function() {
-                                   alert('刷新失败');
+                                  // alert('刷新失败');
                                }
                            });
                     }, data.resultValue * 1000);
@@ -329,6 +346,23 @@ function groupShow(id){
     var projectGroupId = (typeof id === 'string') ? id : '';
     timerLoad("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
     $("#projectGroup").val(projectGroupId);
+}
+
+function nextToMapping(str){
+
+    // 获取映射关系标签页及对应链接
+    const $baseConfigTab = $('#'+str);
+    const $baseConfigLink = $('a[href="#' + str + '"]');
+
+    if ($baseConfigTab.length && $baseConfigLink.length) {
+        // 移除所有tab-pane的active类，再为目标标签页添加active
+        $('.tab-pane').removeClass('active');
+        $('.nav-tabs li').removeClass('active');
+        $baseConfigTab.addClass('active');
+
+        // 激活对应的tab链接及其父元素（通常是li）
+        $baseConfigLink.addClass('active').parent().addClass('active');
+    }
 }
 
 $(function () {

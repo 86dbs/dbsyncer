@@ -1,12 +1,22 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <link type="text/css" rel="stylesheet" th:href="@{/css/mapping/edit.css}">
+</head>
 
 <div class="container-fluid">
     <div class="container">
         <form id="mappingModifyForm" class="form-horizontal" role="form" method="post">
             <!-- 标题 -->
             <div class="row text-center">
+                <div class="text-right"  style="position: relative; width: 100%;" >
+                    <button id="mappingBackBtn" type="button" class="btn btn-default">
+                        <span class="fa fa-reply"></span>返回
+                    </button>
+                    <button id="mappingSubmitBtn" th:onclick="doMappingSubmit()"  th:attr="disabled=${mapping?.meta?.state eq 1}" type="button" class="btn btn-primary">
+                        <span class="fa fa-save"></span>保存
+                    </button>
+                </div>
                 <h3>
                     <span id="mappingModifyName">[[${mapping?.name}]]</span>&nbsp;
                     <i th:onclick="mappingModifyName()" th:title="点击修改名称" class="fa fa-edit well-sign-green dbsyncer_pointer"></i>
@@ -17,7 +27,12 @@
             <!-- 隐藏表单值 -->
             <div class="form-group hidden">
                 <input id="mappingId" name="id" type="text" th:value="${mapping?.id}"/>
+                <input id="metaModelHidden"  type="hidden" th:value="${mapping?.meta?.total}"/>
+                <input id="successHidden"  type="hidden" th:value="${mapping?.meta?.success}"/>
+                <input id="failHidden" type="hidden" th:value="${mapping?.meta?.fail}"/>
                 <input name="name" type="text" th:value="${mapping?.name}"/>
+                <input name="state" type="text" th:value="${mapping?.meta?.state}"/>
+                <input type="hidden" id="mappingShow" th:value="${classOn}" />
             </div>
 
             <!-- 驱动信息面板 -->
@@ -57,95 +72,181 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- 驱动配置切换操作 -->
-            <div class="form-group" id="mappingModelChange">
-                <div class="row">
-                    <div class="col-sm-2">
-                        <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}" /> 全量同步
-                    </div>
-                    <div class="col-sm-2">
-                        <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" /> 增量同步
-                    </div>
-                    <div class="col-sm-2">
-                        <input type="radio" name="model" value="fullIncrement" th:checked="${'fullIncrement' eq mapping?.model}" /> 全量+增量
-                    </div>
-                    <div class="col-sm-4"></div>
-                    <div class="col-md-2 text-right">
-                        <button id="mappingBackBtn" type="button" class="btn btn-default">
-                            <span class="fa fa-reply"></span>返回
-                        </button>
-                        <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
-                            <span class="fa fa-save"></span>保存
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 映射关系区域 -->
-            <div class="row">
-                <div class="panel-group">
-                    <div class="panel panel-success">
-                        <div class="panel-heading">
-                            <h4 class="panel-title">
-                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#mappingBaseConfig">映射关系</u>
-                            </h4>
-                        </div>
-                        <div id="mappingBaseConfig" class="panel-body panel-collapse collapse in">
-                            <!-- 表映射 -->
-                            <div th:replace="mapping/editTable :: content"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 高级配置区域 -->
-            <div class="row">
-                <div class="panel-group">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <h4 class="panel-title">
-                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#mappingSuperConfig" title="该配置使所有映射关系都生效">高级配置</u>
-                            </h4>
-                        </div>
-                        <div id="mappingSuperConfig" class="panel-body panel-collapse collapse in">
-                            <!-- 通用配置 -->
-                            <div th:replace="mapping/editCommon :: content"></div>
-
-                            <!-- 全量配置 -->
-                            <div th:id="mappingFullConfig" class="hidden" th:fragment="content">
-                                <div th:replace="mapping/editFull :: content"></div>
+                <div class="panel panel-default">
+                    <div class="panel-body" th:with="model=${mapping?.model},total=${mapping?.meta?.total},success=${mapping?.meta?.success},fail=${mapping?.meta?.fail},beginTime=${mapping?.meta?.beginTime},updateTime=${mapping?.meta?.updateTime}">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <div  class="text-left" id ="mappingState">
+                                    <p>任务状态：</p>
+                                    <span th:if="${mapping?.meta?.state eq 0}" class="highlight-number total-color">未运行</span>
+                                    <span th:if="${mapping?.meta?.state eq 1}" class="highlight-number success-color">运行中</span>
+                                    <span th:if="${mapping?.meta?.state eq 2}" class="highlight-number error-color">停止中</span>
+                                    <span th:if="${mapping?.meta?.state eq 3}" class="highlight-number error-color">异常</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3" id="metaPercent">
+                                <div class="text-left">
+                                    <p>数据同步进度:</p>
+                                    <span th:if="${mapping?.meta?.counting}">(正在统计中)</span>
+                                    <span th:unless="${mapping?.meta?.counting}">
+                                            <span th:if="${total gt 0 and (success + fail) gt 0}" class="highlight-number">
+                                                [[${#numbers.formatPercent(((success + fail) / total), 1, 2)}]]
+                                            </span>
+                                            <span th:unless="${total gt 0 and (success + fail) gt 0}" class="highlight-number" >0%</span>
+                                        </span>
+                                    <!--环状图-->
+<!--                                    <canvas id="progressChart" width="100" height="100" style="display: block; margin: 0 auto;"></canvas>-->
+                                    <!--   <p id="progressText" style="font-size: 1.2em; font-weight: bold; color: #333;">0%</p>-->
+                                </div>
                             </div>
 
-                            <!-- 增量配置 -->
-                            <div th:id="mappingIncrementConfig" class="hidden" th:fragment="content">
-                                <div th:replace="mapping/editIncrement :: content"></div>
+                            <div class="col-md-3">
+                                <div  class="text-left" id ="metaModel">
+<!--                                    <p>[[${mapping?.meta?.model}]]同步</p>-->
+                                    <p>总数:</p>
+                                    <span class="highlight-number total-color">[[${total}]]</span>
+                                </div>
                             </div>
 
-                            <!-- 过滤条件 -->
-                            <div th:replace="mapping/editFilter :: content"></div>
+                            <div class="col-md-2">
+                                <div id="metaSuccess">
+                                    <p>成功:</p>
+                                    <span class="highlight-number success-color">[[${success}]]</span>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-left" id="metaError">
+                                    <p>失败:</p>
+                                    <span class="highlight-number error-color">[[${fail}]]</span>
+                                </div>
+                            </div>
 
-                            <!-- 转换配置 -->
-                            <div th:replace="mapping/editConvert :: content"></div>
-
-                            <!-- 策略配置 -->
-                            <div th:replace="mapping/editParameter :: content"></div>
-
-                            <!-- 插件配置 -->
-                            <div th:replace="mapping/editPlugin :: content"></div>
                         </div>
                     </div>
                 </div>
+            </div>
 
+            <!-- Tab菜单 -->
+            <div class="row">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li role="presentation"  class="active">
+                        <a href="#modelType" aria-controls="modelType" role="tab" data-toggle="tab">同步类型</a>
+                    </li>
+                    <li role="presentation" >
+                        <a href="#mappingBaseConfig" aria-controls="mappingBaseConfig" role="tab" data-toggle="tab">
+                            映射关系
+                            <small class="text-muted" title="该配置使所有映射关系都生效">（全局）</small>
+                        </a>
+                    </li>
+                    <li role="presentation">
+                        <a href="#mappingSuperConfig" aria-controls="mappingSuperConfig" role="tab" data-toggle="tab">
+                            高级配置
+                            <small class="text-muted" title="该配置使所有映射关系都生效">（全局）</small>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Tab内容区域 -->
+                <div class="tab-content" style="margin-top: 15px;">
+
+                    <!-- 同步类Tab面板 -->
+                    <div role="tabpanel" class="tab-pane active" id="modelType">
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="form-group" id="mappingModelChange">
+                                        <div class="row">
+                                            <div class="col-sm-4">
+                                                <label class="radio-inline">
+                                                    <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}" /> 全量同步
+                                                </label>
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <label class="radio-inline">
+                                                    <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" /> 增量同步
+                                                </label>
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <label class="radio-inline">
+                                                    <input type="radio" name="model" value="fullIncrement" th:checked="${'fullIncrement' eq mapping?.model}" /> 全量+增量
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 下一步按钮 -->
+                            <div class="row text-right">
+                                <button id="nextToMappingBtn" type="button"  th:onclick="nextToMapping('mappingBaseConfig')" class="btn btn-primary">
+                                    <span class="fa fa-arrow-right"></span> 下一步
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 映射关系Tab面板 -->
+                    <div role="tabpanel" class="tab-pane" id="mappingBaseConfig">
+                        <!-- 表映射 -->
+                        <div th:replace="mapping/editTable :: content"></div>
+                        <!-- 下一步按钮 -->
+                        <div class="row text-right">
+                            <button type="button"  th:onclick="nextToMapping('modelType')" class="btn btn-default">
+                                <span class="fa fa-arrow-left"></span> 上一步
+                            </button>
+                            <button type="button"  th:onclick="nextToMapping('mappingSuperConfig')" class="btn btn-primary">
+                                <span class="fa fa-arrow-right"></span> 下一步
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 高级配置Tab面板 -->
+                    <div role="tabpanel" class="tab-pane" id="mappingSuperConfig">
+                        <!-- 通用配置 -->
+                        <div th:replace="mapping/editCommon :: content"></div>
+
+                        <!-- 全量配置 -->
+                        <div th:id="mappingFullConfig" class="hidden" th:fragment="content">
+                            <div th:replace="mapping/editFull :: content"></div>
+                        </div>
+
+                        <!-- 增量配置 -->
+                        <div th:id="mappingIncrementConfig" class="hidden" th:fragment="content">
+                            <div th:replace="mapping/editIncrement :: content"></div>
+                        </div>
+
+                        <!-- 过滤条件 -->
+                        <div th:replace="mapping/editFilter :: content"></div>
+
+                        <!-- 转换配置 -->
+                        <div th:replace="mapping/editConvert :: content"></div>
+
+                        <!-- 策略配置 -->
+                        <div th:replace="mapping/editParameter :: content"></div>
+
+                        <!-- 插件配置 -->
+                        <div th:replace="mapping/editPlugin :: content"></div>
+                        <div class="row text-right">
+                            <button type="button"  th:onclick="nextToMapping('mappingBaseConfig')" class="btn btn-default">
+                                <span class="fa fa-arrow-left"></span> 上一步
+                            </button>
+                            <button type="button" th:attr="disabled=${mapping?.meta?.state eq 1}" th:onclick="doMappingSubmit()" class="btn btn-primary">
+                                <span class="fa fa-save"></span>保存
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </form>
     </div>
 </div>
 
+<script th:src="@{/js/mapping/chart.js}"></script>
 <script th:src="@{/js/mapping/edit.js}"></script>
 <script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
 <script th:src="@{/js/mapping/editIncrement.js}"></script>
 <script th:src="@{/js/mapping/editPlugin.js}"></script>
+
+
 </html>
