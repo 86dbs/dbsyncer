@@ -1,6 +1,7 @@
 -- SQL Server测试数据
--- 创建测试表
-CREATE TABLE employee (
+
+-- 源表
+CREATE TABLE ddlTestEmployee (
     id INT IDENTITY(1,1) PRIMARY KEY,
     first_name NVARCHAR(50) NOT NULL,
     last_name NVARCHAR(50),
@@ -8,21 +9,25 @@ CREATE TABLE employee (
     created_at DATETIME2 DEFAULT GETDATE()
 );
 
--- 插入测试数据
-INSERT INTO employee (first_name, last_name, department) VALUES 
-(N'张三', N'张', N'技术部'),
-(N'李四', N'李', N'市场部'),
-(N'王五', N'王', N'人事部');
+-- 目标表 (从源表同步)
+CREATE TABLE ddlTestEmployee (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    first_name NVARCHAR(50) NOT NULL,
+    last_name NVARCHAR(50),
+    department NVARCHAR(100),
+    created_at DATETIME2 DEFAULT GETDATE()
+);
 
--- 测试DDL语句
--- 新增字段
-ALTER TABLE employee ADD salary DECIMAL(10,2);
+-- SQL Server到SQL Server的DDL测试语句
 
--- 修改字段
-ALTER TABLE employee ALTER COLUMN first_name NVARCHAR(100);
+-- ADD COLUMN
+ALTER TABLE ddlTestEmployee ADD salary DECIMAL(10,2);
 
--- 重命名字段 (使用sp_rename存储过程)
-EXEC sp_rename 'employee.last_name', 'surname', 'COLUMN';
+-- DROP COLUMN
+ALTER TABLE ddlTestEmployee DROP COLUMN department;
 
--- 删除字段
-ALTER TABLE employee DROP COLUMN created_at;
+-- ALTER COLUMN
+ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(100);
+
+-- CHANGE COLUMN (重命名字段，使用标准SQL语法)
+ALTER TABLE ddlTestEmployee CHANGE COLUMN last_name surname NVARCHAR(50);

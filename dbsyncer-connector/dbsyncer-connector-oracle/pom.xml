@@ -30,7 +30,6 @@
             <artifactId>orai18n</artifactId>
         </dependency>
 
-        <!-- sqlserver-driver -->
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
@@ -40,7 +39,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <scope>provided</scope>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>

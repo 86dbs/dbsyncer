@@ -74,11 +74,7 @@ int identity   .merge()           (Integer)         .convert()
 
 ## DDL 同步
 
-- 只存在于增量同步
-- 算法 
-  - 从缓存里拉取数据
-  - 以表名为 key 放入 分区
-  - 
+[DDL 同步流程](ddl-processing-flow.md)
 
 ## 包依赖关系
 

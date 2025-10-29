@@ -1,7 +1,7 @@
 {
   "testTables": [
     {
-      "name": "user_info",
+      "name": "ddlTestUserInfo",
       "schema": "test_db",
       "fields": [
         {
@@ -25,7 +25,7 @@
       ]
     },
     {
-      "name": "employee",
+      "name": "ddlTestEmployee",
       "schema": "dbo",
       "fields": [
         {
@@ -55,7 +55,7 @@
       ]
     },
     {
-      "name": "employee_sqlserver",
+      "name": "ddlTestEmployeeSQLServer",
       "schema": "dbo",
       "fields": [
         {
@@ -90,7 +90,7 @@
       ]
     },
     {
-      "name": "employee_mysql",
+      "name": "ddlTestEmployeeMySQL",
       "schema": "test_db",
       "fields": [
         {
