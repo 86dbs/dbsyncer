@@ -76,17 +76,17 @@ public class DDLParserImpl implements DDLParser {
             }
             // 替换成目标表名
             alter.getTable().setName(quotedTableName);
-
+            
             // 设置源和目标连接器类型
             // 从TableGroup中获取ProfileComponent，再获取源和目标连接器配置
             Mapping mapping = tableGroup.profileComponent.getMapping(tableGroup.getMappingId());
             ConnectorConfig sourceConnectorConfig = tableGroup.profileComponent.getConnector(mapping.getSourceConnectorId()).getConfig();
             String sourceConnectorType = sourceConnectorConfig.getConnectorType();
             String targetConnectorType = connectorService.getConnectorType();
-
+            
             ddlConfig.setSourceConnectorType(sourceConnectorType);
             ddlConfig.setTargetConnectorType(targetConnectorType);
-
+            
             // 对于异构数据库，进行DDL语法转换
             String targetSql = alter.toString();
             // 如果是异构数据库，尝试进行转换
@@ -95,22 +95,19 @@ public class DDLParserImpl implements DDLParser {
                 if (heterogeneousDDLConverter == null) {
                     throw new IllegalArgumentException("异构DDL转换器未初始化，无法进行异构数据库DDL同步");
                 }
-
+                
                 // 检查是否支持转换
                 if (!heterogeneousDDLConverter.supports(sourceConnectorType, targetConnectorType)) {
                     throw new IllegalArgumentException(
-                            String.format("不支持从 %s 到 %s 的DDL转换", sourceConnectorType, targetConnectorType));
+                        String.format("不支持从 %s 到 %s 的DDL转换", sourceConnectorType, targetConnectorType));
                 }
-
-                // 1. 源DDL转中间表示
-                org.dbsyncer.parser.ddl.ir.DDLIntermediateRepresentation ir =
-                        heterogeneousDDLConverter.parseToIR(sourceConnectorType, alter);
-                // 2. 中间表示转目标DDL
-                targetSql = heterogeneousDDLConverter.generateFromIR(targetConnectorType, ir);
+                
+                // 直接转换源DDL到目标DDL
+                targetSql = heterogeneousDDLConverter.convert(sourceConnectorType, targetConnectorType, alter);
             }
-
+            
             ddlConfig.setSql(targetSql);
-
+            
             for (AlterExpression expression : alter.getAlterExpressions()) {
                 STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy) -> {
                     strategy.parse(expression, ddlConfig);

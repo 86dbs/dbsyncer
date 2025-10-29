@@ -15,6 +15,7 @@
 - 遵循奥卡姆剃刀原则，最小化不必要的复杂性
 - 复用现有基础设施，避免重复造轮子
 - 保证类型转换的一致性和准确性
+- 高内聚低耦合，隐藏实现细节
 
 ## 3. 技术架构
 
@@ -31,7 +32,7 @@ DDLConfig → 目标连接器执行DDL → 添加防循环标识 → 返回执�
 ### 3.2 异构DDL同步架构（中间表示方案）
 ```
 DDLChangedEvent → DDLParser解析SQL → 表名替换 → 操作类型识别 → 
-源数据库DDL → [源ToIRConverter] → 中间表示(IR) → [IRTo目标Converter] → 目标数据库DDL → 生成DDLConfig → 
+源数据库DDL → [HeterogeneousDDLConverter] → 目标数据库DDL → 生成DDLConfig → 
 目标连接器执行DDL → 返回执行结果
 ```
 
@@ -72,9 +73,8 @@ if (mapping.getListener().isEnableDDL()) {
 在[DDLParserImpl](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/impl/DDLParserImpl.java#L46-L222)中增加异构数据库语法转换逻辑：
 
 1. 识别源数据库类型
-2. 将源DDL转换为中间表示(IR)
-3. 将中间表示(IR)转换为目标数据库DDL
-4. 利用SchemaResolver进行类型映射转换
+2. 将源DDL转换为目标数据库DDL
+3. 利用SchemaResolver进行类型映射转换
 
 ### 5.3 中间表示转换策略
 针对不同数据库间的语法差异，实现转换策略：
@@ -117,7 +117,7 @@ if (mapping.getListener().isEnableDDL()) {
 2. 实现IR到各数据库的转换器
    - [IRToMySQLConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/IRToMySQLConverter.java#L22-L161)
    - [IRToSQLServerConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/IRToSQLServerConverter.java#L22-L163)
-3. 集成到[DDLParserImpl](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/impl/DDLParserImpl.java#L46-L222)
+3. 集成到[HeterogeneousDDLConverterImpl](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/impl/HeterogeneousDDLConverterImpl.java#L14-L76)
 
 ### 6.3 第三阶段：类型映射实现
 1. 利用现有[SchemaResolver](file:///E:/github/dbsyncer/dbsyncer-sdk/src/main/java/org/dbsyncer/sdk/schema/SchemaResolver.java#L12-L51)实现类型转换
@@ -170,6 +170,7 @@ if (mapping.getListener().isEnableDDL()) {
 2. **遵循单一职责原则**：转换器专注于流程控制，SQL生成委托给对应的SqlTemplate
 3. **提高代码复用性**：避免在多个地方重复实现相同的SQL生成逻辑
 4. **修复方法调用错误**：修复了转换器中调用SQL Template方法时的参数错误
+5. **隐藏内部实现**：将中间表示(IR)对外部隐藏，提供更简洁的接口
 
 ### 8.5 设计模式应用
 1. **策略模式**：不同数据库的转换策略独立实现
@@ -239,5 +240,3 @@ if (mapping.getListener().isEnableDDL()) {
 ### 12.2 升级注意事项
 1. 确保向后兼容性
 2. 提供升级文档和迁移指南
-3. 监控升级后的运行状态
-

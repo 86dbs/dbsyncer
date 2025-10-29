@@ -49,7 +49,27 @@ public class HeterogeneousDDLConverterImpl implements HeterogeneousDDLConverter 
     }
 
     @Override
-    public DDLIntermediateRepresentation parseToIR(String sourceConnectorType, Alter alter) {
+    public String convert(String sourceConnectorType, String targetConnectorType, Alter alter) {
+        // 1. 源DDL转中间表示
+        DDLIntermediateRepresentation ir = parseToIR(sourceConnectorType, alter);
+        // 2. 中间表示转目标DDL
+        return generateFromIR(targetConnectorType, ir);
+    }
+
+    @Override
+    public boolean supports(String sourceConnectorType, String targetConnectorType) {
+        String key = sourceConnectorType + "->" + targetConnectorType;
+        return converterMap.containsKey(key);
+    }
+    
+    /**
+     * 将源数据库DDL转换为中间表示
+     *
+     * @param sourceConnectorType 源数据库连接器类型
+     * @param alter               源DDL语句解析对象
+     * @return 中间表示
+     */
+    private DDLIntermediateRepresentation parseToIR(String sourceConnectorType, Alter alter) {
         if ("MySQL".equals(sourceConnectorType)) {
             return mySQLToIRConverter.convert(alter);
         } else if ("SqlServer".equals(sourceConnectorType)) {
@@ -59,8 +79,14 @@ public class HeterogeneousDDLConverterImpl implements HeterogeneousDDLConverter 
         return new DDLIntermediateRepresentation();
     }
 
-    @Override
-    public String generateFromIR(String targetConnectorType, DDLIntermediateRepresentation ir) {
+    /**
+     * 将中间表示转换为目标数据库DDL
+     *
+     * @param targetConnectorType 目标数据库连接器类型
+     * @param ir                  中间表示
+     * @return 目标数据库DDL语句
+     */
+    private String generateFromIR(String targetConnectorType, DDLIntermediateRepresentation ir) {
         if ("MySQL".equals(targetConnectorType)) {
             return irToMySQLConverter.convert(ir);
         } else if ("SqlServer".equals(targetConnectorType)) {
@@ -68,11 +94,5 @@ public class HeterogeneousDDLConverterImpl implements HeterogeneousDDLConverter 
         }
         // 默认返回空字符串
         return "";
-    }
-
-    @Override
-    public boolean supports(String sourceConnectorType, String targetConnectorType) {
-        String key = sourceConnectorType + "->" + targetConnectorType;
-        return converterMap.containsKey(key);
     }
 }
