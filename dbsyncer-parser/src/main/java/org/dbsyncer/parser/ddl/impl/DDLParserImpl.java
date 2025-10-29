@@ -25,6 +25,7 @@ import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,25 +79,29 @@ public class DDLParserImpl implements DDLParser {
             }
             // 替换成目标表名
             alter.getTable().setName(quotedTableName);
-
+            
             // 设置源和目标连接器类型
             // 注意：这里需要从上下文获取真实的连接器类型
             // 为演示目的，我们使用占位符值
             ddlConfig.setSourceConnectorType("MySQL"); // 需要从TableGroup或Mapping中获取
             ddlConfig.setTargetConnectorType(connectorService.getConnectorType());
-
+            
             // 对于异构数据库，进行DDL语法转换
             String targetSql = alter.toString();
             // 如果是异构数据库，尝试进行转换
             if (heterogeneousDDLConverter != null && ddlConfig.getSourceConnectorType() != null && ddlConfig.getTargetConnectorType() != null) {
                 // 检查是否支持转换
                 if (heterogeneousDDLConverter.supports(ddlConfig.getSourceConnectorType(), ddlConfig.getTargetConnectorType())) {
-                    targetSql = heterogeneousDDLConverter.convert(ddlConfig.getSourceConnectorType(), ddlConfig.getTargetConnectorType(), alter, ddlConfig);
+                    // 1. 源DDL转中间表示
+                    org.dbsyncer.parser.ddl.ir.DDLIntermediateRepresentation ir = 
+                        heterogeneousDDLConverter.parseToIR(ddlConfig.getSourceConnectorType(), alter);
+                    // 2. 中间表示转目标DDL
+                    targetSql = heterogeneousDDLConverter.generateFromIR(ddlConfig.getTargetConnectorType(), ir);
                 }
             }
-
+            
             ddlConfig.setSql(targetSql);
-
+            
             for (AlterExpression expression : alter.getAlterExpressions()) {
                 STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy) -> {
                     strategy.parse(expression, ddlConfig);

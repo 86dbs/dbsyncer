@@ -4,6 +4,7 @@
 package org.dbsyncer.parser.ddl;
 
 import net.sf.jsqlparser.statement.alter.Alter;
+import org.dbsyncer.parser.ddl.ir.DDLIntermediateRepresentation;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
 
@@ -17,15 +18,22 @@ import org.dbsyncer.sdk.spi.ConnectorService;
 public interface HeterogeneousDDLConverter {
 
     /**
-     * 转换异构数据库DDL语句
+     * 将源数据库DDL转换为中间表示
      *
      * @param sourceConnectorType 源数据库连接器类型
-     * @param targetConnectorType 目标数据库连接器类型
      * @param alter               源DDL语句解析对象
-     * @param ddlConfig           DDL配置对象
-     * @return 转换后的DDL语句
+     * @return 中间表示
      */
-    String convert(String sourceConnectorType, String targetConnectorType, Alter alter, DDLConfig ddlConfig);
+    DDLIntermediateRepresentation parseToIR(String sourceConnectorType, Alter alter);
+    
+    /**
+     * 将中间表示转换为目标数据库DDL
+     *
+     * @param targetConnectorType 目标数据库连接器类型
+     * @param ir                  中间表示
+     * @return 目标数据库DDL语句
+     */
+    String generateFromIR(String targetConnectorType, DDLIntermediateRepresentation ir);
     
     /**
      * 检查是否支持指定数据库类型的转换

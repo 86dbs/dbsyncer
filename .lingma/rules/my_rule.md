@@ -15,3 +15,4 @@ trigger: always_on
 - 逻辑闭环
 - 严谨的生命周期管理
 
+不要在代码文件中附加 @Author @Date @Version 等注解。
