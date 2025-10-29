@@ -32,7 +32,7 @@ DDLConfig → 目标连接器执行DDL → 添加防循环标识 → 返回执�
 ### 3.2 异构DDL同步架构（中间表示方案）
 ```
 DDLChangedEvent → DDLParser解析SQL → 表名替换 → 操作类型识别 → 
-源数据库DDL → [HeterogeneousDDLConverter] → 目标数据库DDL → 生成DDLConfig → 
+源数据库DDL → [异构DDL转换逻辑] → 目标数据库DDL → 生成DDLConfig → 
 目标连接器执行DDL → 返回执行结果
 ```
 
@@ -117,7 +117,7 @@ if (mapping.getListener().isEnableDDL()) {
 2. 实现IR到各数据库的转换器
    - [IRToMySQLConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/IRToMySQLConverter.java#L22-L161)
    - [IRToSQLServerConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/IRToSQLServerConverter.java#L22-L163)
-3. 集成到[HeterogeneousDDLConverterImpl](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/impl/HeterogeneousDDLConverterImpl.java#L14-L76)
+3. 集成到[DDLParserImpl](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/impl/DDLParserImpl.java#L46-L222)
 
 ### 6.3 第三阶段：类型映射实现
 1. 利用现有[SchemaResolver](file:///E:/github/dbsyncer/dbsyncer-sdk/src/main/java/org/dbsyncer/sdk/schema/SchemaResolver.java#L12-L51)实现类型转换
@@ -132,12 +132,10 @@ if (mapping.getListener().isEnableDDL()) {
 ## 7. 已实现功能
 
 ### 7.1 核心组件
-1. [HeterogeneousDDLConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/HeterogeneousDDLConverter.java#L12-L37)接口：定义异构DDL转换器规范
-2. [HeterogeneousDDLConverterImpl](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/impl/HeterogeneousDDLConverterImpl.java#L14-L76)：异构DDL转换器实现
-3. [MySQLToIRConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/MySQLToIRConverter.java#L34-L171)：MySQL到中间表示的转换器
-4. [SQLServerToIRConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/SQLServerToIRConverter.java#L33-L169)：SQL Server到中间表示的转换器
-5. [IRToMySQLConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/IRToMySQLConverter.java#L22-L161)：中间表示到MySQL的转换器
-6. [IRToSQLServerConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/IRToSQLServerConverter.java#L22-L163)：中间表示到SQL Server的转换器
+1. [MySQLToIRConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/MySQLToIRConverter.java#L34-L171)：MySQL到中间表示的转换器
+2. [SQLServerToIRConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/SQLServerToIRConverter.java#L33-L169)：SQL Server到中间表示的转换器
+3. [IRToMySQLConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/IRToMySQLConverter.java#L22-L161)：中间表示到MySQL的转换器
+4. [IRToSQLServerConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/IRToSQLServerConverter.java#L22-L163)：中间表示到SQL Server的转换器
 
 ### 7.2 功能增强
 1. [DDLConfig](file:///E:/github/dbsyncer/dbsyncer-sdk/src/main/java/org/dbsyncer/sdk/config/DDLConfig.java#L9-L73)扩展：增加源和目标连接器类型字段

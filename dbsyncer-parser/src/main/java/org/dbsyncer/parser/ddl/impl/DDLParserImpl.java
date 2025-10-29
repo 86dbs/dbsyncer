@@ -13,15 +13,12 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ddl.AlterStrategy;
 import org.dbsyncer.parser.ddl.DDLParser;
-import org.dbsyncer.parser.ddl.HeterogeneousDDLConverter;
 import org.dbsyncer.parser.ddl.alter.AddStrategy;
 import org.dbsyncer.parser.ddl.alter.ChangeStrategy;
 import org.dbsyncer.parser.ddl.alter.DropStrategy;
 import org.dbsyncer.parser.ddl.alter.ModifyStrategy;
-import org.dbsyncer.parser.ddl.converter.MySQLToIRConverter;
-import org.dbsyncer.parser.ddl.converter.SQLServerToIRConverter;
-import org.dbsyncer.parser.ddl.converter.IRToMySQLConverter;
-import org.dbsyncer.parser.ddl.converter.IRToSQLServerConverter;
+import org.dbsyncer.parser.ddl.converter.*;
+import org.dbsyncer.parser.ddl.ir.DDLIntermediateRepresentation;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
@@ -55,17 +52,14 @@ public class DDLParserImpl implements DDLParser {
     private final Map<AlterOperation, AlterStrategy> STRATEGIES = new ConcurrentHashMap();
 
     @Autowired
-    private HeterogeneousDDLConverter heterogeneousDDLConverter;
-    
-    @Autowired
     private MySQLToIRConverter mySQLToIRConverter;
-    
+
     @Autowired
     private SQLServerToIRConverter sqlServerToIRConverter;
-    
+
     @Autowired
     private IRToMySQLConverter irToMySQLConverter;
-    
+
     @Autowired
     private IRToSQLServerConverter irToSQLServerConverter;
 
@@ -78,7 +72,8 @@ public class DDLParserImpl implements DDLParser {
     }
 
     @Override
-    public DDLConfig parse(ConnectorService connectorService, TableGroup tableGroup, String sql) throws JSQLParserException {
+    public DDLConfig parse(ConnectorService connectorService, TableGroup tableGroup, String sql)
+            throws JSQLParserException {
         DDLConfig ddlConfig = new DDLConfig();
         logger.info("ddl:{}", sql);
         Statement statement = CCJSqlParserUtil.parse(sql);
@@ -92,45 +87,43 @@ public class DDLParserImpl implements DDLParser {
             }
             // 替换成目标表名
             alter.getTable().setName(quotedTableName);
-            
+
             // 设置源和目标连接器类型
             // 从TableGroup中获取ProfileComponent，再获取源和目标连接器配置
             Mapping mapping = tableGroup.profileComponent.getMapping(tableGroup.getMappingId());
-            ConnectorConfig sourceConnectorConfig = tableGroup.profileComponent.getConnector(mapping.getSourceConnectorId()).getConfig();
+            ConnectorConfig sourceConnectorConfig = tableGroup.profileComponent
+                    .getConnector(mapping.getSourceConnectorId()).getConfig();
             String sourceConnectorType = sourceConnectorConfig.getConnectorType();
             String targetConnectorType = connectorService.getConnectorType();
-            
+
             ddlConfig.setSourceConnectorType(sourceConnectorType);
             ddlConfig.setTargetConnectorType(targetConnectorType);
-            
+
             // 对于异构数据库，进行DDL语法转换
             String targetSql = alter.toString();
             // 如果是异构数据库，尝试进行转换
             if (!StringUtil.equals(sourceConnectorType, targetConnectorType)) {
-                // 只有在源和目标连接器类型不同时才进行异构转换
-                if (heterogeneousDDLConverter == null) {
-                    throw new IllegalArgumentException("异构DDL转换器未初始化，无法进行异构数据库DDL同步");
-                }
-                
                 // 获取相应的转换器
-                Object sourceToIRConverter = getSourceToIRConverter(sourceConnectorType);
-                Object irToTargetConverter = getIRToTargetConverter(targetConnectorType);
-                
+                SourceToIRConverter sourceToIRConverter = getSourceToIRConverter(sourceConnectorType);
+                IRToTargetConverter irToTargetConverter = getIRToTargetConverter(targetConnectorType);
+
                 // 检查转换器是否有效
                 if (sourceToIRConverter == null || irToTargetConverter == null) {
                     throw new IllegalArgumentException(
-                        String.format("无法获取从 %s 到 %s 的转换器", sourceConnectorType, targetConnectorType));
+                            String.format("无法获取从 %s 到 %s 的转换器", sourceConnectorType, targetConnectorType));
                 }
-                
+
                 // 直接转换源DDL到目标DDL
-                targetSql = heterogeneousDDLConverter.convert(
-                    (org.dbsyncer.parser.ddl.converter.SourceToIRConverter) sourceToIRConverter,
-                    (org.dbsyncer.parser.ddl.converter.IRToTargetConverter) irToTargetConverter,
-                    alter);
+
+                // 1. 源DDL转中间表示
+                DDLIntermediateRepresentation ir = sourceToIRConverter.convert(alter);
+                // 2. 中间表示转目标DDL
+                targetSql = irToTargetConverter.convert(ir);
+
             }
-            
+
             ddlConfig.setSql(targetSql);
-            
+
             for (AlterExpression expression : alter.getAlterExpressions()) {
                 STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy) -> {
                     strategy.parse(expression, ddlConfig);
@@ -140,8 +133,8 @@ public class DDLParserImpl implements DDLParser {
         }
         return ddlConfig;
     }
-    
-    private Object getSourceToIRConverter(String sourceConnectorType) {
+
+    private SourceToIRConverter getSourceToIRConverter(String sourceConnectorType) {
         if ("MySQL".equals(sourceConnectorType)) {
             return mySQLToIRConverter;
         } else if ("SqlServer".equals(sourceConnectorType)) {
@@ -150,8 +143,8 @@ public class DDLParserImpl implements DDLParser {
         // 默认返回null，表示不支持的转换
         return null;
     }
-    
-    private Object getIRToTargetConverter(String targetConnectorType) {
+
+    private IRToTargetConverter getIRToTargetConverter(String targetConnectorType) {
         if ("MySQL".equals(targetConnectorType)) {
             return irToMySQLConverter;
         } else if ("SqlServer".equals(targetConnectorType)) {
@@ -182,8 +175,10 @@ public class DDLParserImpl implements DDLParser {
     }
 
     private void updateFieldMapping(TableGroup tableGroup, List<String> modifiedFieldNames) {
-        Map<String, Field> sourceFiledMap = tableGroup.getSourceTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
-        Map<String, Field> targetFiledMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> sourceFiledMap = tableGroup.getSourceTable().getColumn().stream()
+                .collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> targetFiledMap = tableGroup.getTargetTable().getColumn().stream()
+                .collect(Collectors.toMap(Field::getName, filed -> filed));
         for (FieldMapping fieldMapping : tableGroup.getFieldMapping()) {
             Field source = fieldMapping.getSource();
             Field target = fieldMapping.getTarget();
@@ -212,8 +207,10 @@ public class DDLParserImpl implements DDLParser {
             return;
         }
 
-        Map<String, Field> sourceFiledMap = tableGroup.getSourceTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
-        Map<String, Field> targetFiledMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> sourceFiledMap = tableGroup.getSourceTable().getColumn().stream()
+                .collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> targetFiledMap = tableGroup.getTargetTable().getColumn().stream()
+                .collect(Collectors.toMap(Field::getName, filed -> filed));
 
         for (String addedFieldName : addedFieldNames) {
             Field source = sourceFiledMap.get(addedFieldName);
@@ -229,8 +226,10 @@ public class DDLParserImpl implements DDLParser {
             return;
         }
 
-        Map<String, Field> sourceFiledMap = tableGroup.getSourceTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
-        Map<String, Field> targetFiledMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> sourceFiledMap = tableGroup.getSourceTable().getColumn().stream()
+                .collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> targetFiledMap = tableGroup.getTargetTable().getColumn().stream()
+                .collect(Collectors.toMap(Field::getName, filed -> filed));
 
         Set<Map.Entry<String, String>> entries = changedFieldNames.entrySet();
         Iterator<FieldMapping> iterator = tableGroup.getFieldMapping().iterator();
