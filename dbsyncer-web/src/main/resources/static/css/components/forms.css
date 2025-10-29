@@ -35,6 +35,147 @@ select.form-control, select.dbsyncer-input, .select-control {
   border-radius: 8px;
 }
 
+/* 统一下拉选择 */
+.form-select-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.form-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  font-size: var(--font-size-sm);
+  padding: 8px 40px 8px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(22, 93, 255, 0.18);
+  background: linear-gradient(135deg, #f7f9ff 0%, #eef2ff 100%);
+  color: var(--text-secondary);
+  min-width: 160px;
+  transition: border var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+  cursor: pointer;
+}
+
+.form-select:hover {
+  border-color: rgba(22, 93, 255, 0.32);
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: rgba(22, 93, 255, 0.55);
+  box-shadow: 0 6px 16px rgba(22, 93, 255, 0.15);
+  background: linear-gradient(135deg, #f2f7ff 0%, #e3edff 100%);
+  color: var(--text-primary);
+}
+
+.form-select-wrapper::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid rgba(11, 36, 86, 0.5);
+  border-bottom: 2px solid rgba(11, 36, 86, 0.5);
+  transform: rotate(45deg);
+  pointer-events: none;
+  transition: border var(--transition-fast);
+}
+
+.form-select-wrapper:focus-within::after {
+  border-color: rgba(22, 93, 255, 0.7);
+}
+
+/* 自定义选择器（替代原生展示） */
+.dbsyncer-select {
+  position: relative;
+  min-width: 160px;
+}
+
+.dbsyncer-select-trigger {
+  width: 100%;
+  padding: 8px 42px 8px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(22, 93, 255, 0.16);
+  background: linear-gradient(135deg, #f8faff 0%, #edf2ff 100%);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  transition: border var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.dbsyncer-select-trigger:hover {
+  border-color: rgba(22, 93, 255, 0.32);
+}
+
+.dbsyncer-select.open .dbsyncer-select-trigger {
+  border-color: rgba(22, 93, 255, 0.55);
+  box-shadow: 0 8px 20px rgba(22, 93, 255, 0.18);
+  background: linear-gradient(135deg, #f1f6ff 0%, #e3ebff 100%);
+  color: var(--text-primary);
+}
+
+.dbsyncer-select-arrow {
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid rgba(11, 36, 86, 0.5);
+  border-bottom: 2px solid rgba(11, 36, 86, 0.5);
+  transform: rotate(45deg);
+  transition: transform var(--transition-fast), border var(--transition-fast);
+}
+
+.dbsyncer-select.open .dbsyncer-select-arrow {
+  transform: rotate(225deg);
+  border-color: rgba(22, 93, 255, 0.7);
+}
+
+.dbsyncer-select-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 18px 42px rgba(15, 39, 95, 0.16);
+  border: 1px solid rgba(22, 93, 255, 0.12);
+  padding: 6px;
+  display: none;
+  z-index: var(--z-dropdown);
+}
+
+.dbsyncer-select.open .dbsyncer-select-panel {
+  display: block;
+}
+
+.dbsyncer-select-option {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), padding var(--transition-fast);
+}
+
+.dbsyncer-select-option:hover {
+  background: rgba(22, 93, 255, 0.08);
+  color: var(--primary-color);
+  padding-left: 14px;
+}
+
+.dbsyncer-select-option.active {
+  background: linear-gradient(135deg, rgba(22, 93, 255, 0.16) 0%, rgba(22, 93, 255, 0.05) 100%);
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
 textarea.form-control, textarea.dbsyncer-input { min-height: 80px; line-height: 1.5; }
 
 /* 行内表单布局辅助 */

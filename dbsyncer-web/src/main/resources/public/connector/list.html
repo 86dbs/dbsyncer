@@ -13,17 +13,24 @@
                 <input type="text" class="dbsyncer-table-search-input" placeholder="搜索数据源名称..." id="searchInput">
             </div>
             <div class="dbsyncer-table-filter">
-                <select class="dbsyncer-table-filter-select" id="typeFilter">
-                    <option value="">全部类型</option>
-                    <option value="mysql">MySQL</option>
-                    <option value="oracle">Oracle</option>
-                    <option value="postgresql">PostgreSQL</option>
-                    <option value="sqlserver">SQL Server</option>
-                    <option value="sqlite">SQLite</option>
-                    <option value="elasticsearch">Elasticsearch</option>
-                    <option value="kafka">Kafka</option>
-                    <option value="file">文件</option>
-                </select>
+                <div class="dbsyncer-select" data-select>
+                    <button type="button" class="dbsyncer-select-trigger" data-select-trigger>
+                        <span class="dbsyncer-select-text" data-select-text>全部类型</span>
+                        <span class="dbsyncer-select-arrow"></span>
+                    </button>
+                    <div class="dbsyncer-select-panel" data-select-panel>
+                        <button type="button" class="dbsyncer-select-option active" data-select-option data-value="">全部类型</button>
+                        <button type="button" class="dbsyncer-select-option" data-select-option data-value="mysql">MySQL</button>
+                        <button type="button" class="dbsyncer-select-option" data-select-option data-value="oracle">Oracle</button>
+                        <button type="button" class="dbsyncer-select-option" data-select-option data-value="postgresql">PostgreSQL</button>
+                        <button type="button" class="dbsyncer-select-option" data-select-option data-value="sqlserver">SQL Server</button>
+                        <button type="button" class="dbsyncer-select-option" data-select-option data-value="sqlite">SQLite</button>
+                        <button type="button" class="dbsyncer-select-option" data-select-option data-value="elasticsearch">Elasticsearch</button>
+                        <button type="button" class="dbsyncer-select-option" data-select-option data-value="kafka">Kafka</button>
+                        <button type="button" class="dbsyncer-select-option" data-select-option data-value="file">文件</button>
+                    </div>
+                </div>
+                <input type="hidden" id="typeFilter" value="">
             </div>
         </div>
         <div class="dbsyncer-table-toolbar-right">
@@ -330,12 +337,10 @@ function initConnectorListPage() {
         filterConnectors(query);
     });
 
-    $('#typeFilter').on('change', function() {
-        filterConnectors();
-    });
-
     // 绑定表格行事件
     bindTableRowEvents();
+
+    initConnectorSelect();
 }
 
 // 提交连接器表单
@@ -457,10 +462,56 @@ $(document).ready(function() {
     });
 
     // 筛选器变化事件
-    $('#typeFilter, #statusFilter').on('change', function() {
-        filterConnectors();
-    });
+    initConnectorSelect();
 });
+
+function initConnectorSelect() {
+    var selects = document.querySelectorAll('[data-select]');
+    if (!selects.length) { return; }
+    var hidden = document.getElementById('typeFilter');
+    var closeAll = function(){ selects.forEach(function(sel){ sel.classList.remove('open'); }); };
+
+    selects.forEach(function(select){
+        var trigger = select.querySelector('[data-select-trigger]');
+        var text = select.querySelector('[data-select-text]');
+        var options = select.querySelectorAll('[data-select-option]');
+        var panel = select.querySelector('[data-select-panel]');
+
+        if (trigger) {
+            trigger.addEventListener('click', function(e){
+                e.stopPropagation();
+                var isOpen = select.classList.contains('open');
+                closeAll();
+                if (!isOpen) {
+                    select.classList.add('open');
+                }
+            });
+        }
+
+        if (panel) {
+            panel.addEventListener('click', function(e){ e.stopPropagation(); });
+        }
+
+        options.forEach(function(option){
+            option.addEventListener('click', function(e){
+                e.stopPropagation();
+                options.forEach(function(o){ o.classList.remove('active'); });
+                option.classList.add('active');
+                if (text) {
+                    text.textContent = option.textContent.trim();
+                }
+                if (hidden) {
+                    hidden.value = option.dataset.value || '';
+                }
+                closeAll();
+                filterConnectors();
+            });
+        });
+    });
+
+    document.addEventListener('click', closeAll, { once: false });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') { closeAll(); } });
+}
 
 /**
  * 编辑数据源 - 动态加载编辑页面
