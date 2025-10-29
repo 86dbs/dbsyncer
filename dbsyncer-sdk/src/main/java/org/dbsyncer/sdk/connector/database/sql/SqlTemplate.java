@@ -250,6 +250,62 @@ public interface SqlTemplate {
                 .collect(java.util.stream.Collectors.joining(", "));
     }
 
+    // DDL相关方法 - 列变更操作
+    /**
+     * 构建添加列的SQL语句
+     *
+     * @param tableName 表名
+     * @param field     字段信息
+     * @return 添加列的SQL语句
+     */
+    default String buildAddColumnSql(String tableName, Field field) {
+        return "";
+    }
+
+    /**
+     * 构建修改列的SQL语句
+     *
+     * @param tableName 表名
+     * @param field     字段信息
+     * @return 修改列的SQL语句
+     */
+    default String buildModifyColumnSql(String tableName, Field field) {
+        return "";
+    }
+
+    /**
+     * 构建重命名列的SQL语句
+     *
+     * @param tableName    表名
+     * @param oldFieldName 原字段名
+     * @param newField     新字段信息
+     * @return 重命名列的SQL语句
+     */
+    default String buildRenameColumnSql(String tableName, String oldFieldName, Field newField) {
+        return "";
+    }
+
+    /**
+     * 构建删除列的SQL语句
+     *
+     * @param tableName 表名
+     * @param fieldName 字段名
+     * @return 删除列的SQL语句
+     */
+    default String buildDropColumnSql(String tableName, String fieldName) {
+        return "";
+    }
+
+    /**
+     * 将中间表示的字段类型转换为数据库特定的类型
+     *
+     * @param column 字段信息
+     * @return 数据库特定的类型字符串
+     */
+    default String convertToDatabaseType(Field column) {
+        return "";
+    }
+
     // Helper methods for building SQL parts (from DefaultSqlTemplate)
     default String buildQueryStreamSql(String schemaTable, String fieldList, String queryFilter, List<String> primaryKeys) {
         String orderByClause = buildOrderByClause(primaryKeys);

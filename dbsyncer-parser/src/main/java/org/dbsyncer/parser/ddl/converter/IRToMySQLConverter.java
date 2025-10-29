@@ -45,8 +45,7 @@ public class IRToMySQLConverter {
                 result.append(", ");
             }
             Field column = columns.get(i);
-            result.append("ALTER TABLE ").append(tableName).append(" ADD COLUMN ")
-                    .append(column.getName()).append(" ").append(mysqlTemplate.convertToMySQLType(column));
+            result.append(mysqlTemplate.buildAddColumnSql(tableName, column));
         }
         return result.toString();
     }
@@ -58,8 +57,7 @@ public class IRToMySQLConverter {
                 result.append(", ");
             }
             Field column = columns.get(i);
-            result.append("ALTER TABLE ").append(tableName).append(" MODIFY COLUMN ")
-                    .append(column.getName()).append(" ").append(mysqlTemplate.convertToMySQLType(column));
+            result.append(mysqlTemplate.buildModifyColumnSql(tableName, column));
         }
         return result.toString();
     }
@@ -71,9 +69,8 @@ public class IRToMySQLConverter {
                 result.append(", ");
             }
             Field column = columns.get(i);
-            result.append("ALTER TABLE ").append(tableName).append(" CHANGE COLUMN ")
-                    .append(column.getName()).append(" ").append(column.getName()).append(" ")
-                    .append(mysqlTemplate.convertToMySQLType(column));
+            // 对于CHANGE操作，我们假设字段名不变，仅类型改变
+            result.append(mysqlTemplate.buildRenameColumnSql(tableName, column.getName(), column));
         }
         return result.toString();
     }
@@ -85,7 +82,7 @@ public class IRToMySQLConverter {
                 result.append(", ");
             }
             Field column = columns.get(i);
-            result.append("ALTER TABLE ").append(tableName).append(" DROP COLUMN ").append(column.getName());
+            result.append(mysqlTemplate.buildDropColumnSql(tableName, column.getName()));
         }
         return result.toString();
     }

@@ -39,77 +39,47 @@ public class MySQLTemplate implements SqlTemplate {
         return String.format("INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
                 schemaTable, fieldNames, placeholders, updateClause);
     }
-
-    /**
-     * 构建MySQL添加列的SQL语句
-     *
-     * @param tableName 表名
-     * @param field     字段信息
-     * @return 添加列的SQL语句
-     */
+    
+    @Override
     public String buildAddColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s ADD COLUMN %s %s",
-                buildQuotedTableName(tableName),
-                buildColumn(field.getName()),
-                convertToMySQLType(field));
+        return String.format("ALTER TABLE %s ADD COLUMN %s %s", 
+            buildQuotedTableName(tableName), 
+            buildColumn(field.getName()), 
+            convertToDatabaseType(field));
     }
-
-    /**
-     * 构建MySQL修改列的SQL语句
-     *
-     * @param tableName 表名
-     * @param field     字段信息
-     * @return 修改列的SQL语句
-     */
+    
+    @Override
     public String buildModifyColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s MODIFY COLUMN %s %s",
-                buildQuotedTableName(tableName),
-                buildColumn(field.getName()),
-                convertToMySQLType(field));
+        return String.format("ALTER TABLE %s MODIFY COLUMN %s %s", 
+            buildQuotedTableName(tableName), 
+            buildColumn(field.getName()), 
+            convertToDatabaseType(field));
     }
-
-    /**
-     * 构建MySQL重命名列的SQL语句
-     *
-     * @param tableName    表名
-     * @param oldFieldName 原字段名
-     * @param newField     字段信息
-     * @return 重命名列的SQL语句
-     */
-    public String buildChangeColumnSql(String tableName, String oldFieldName, Field newField) {
-        return String.format("ALTER TABLE %s CHANGE COLUMN %s %s %s",
-                buildQuotedTableName(tableName),
-                buildColumn(oldFieldName),
-                buildColumn(newField.getName()),
-                convertToMySQLType(newField));
+    
+    @Override
+    public String buildRenameColumnSql(String tableName, String oldFieldName, Field newField) {
+        return String.format("ALTER TABLE %s CHANGE COLUMN %s %s %s", 
+            buildQuotedTableName(tableName), 
+            buildColumn(oldFieldName), 
+            buildColumn(newField.getName()), 
+            convertToDatabaseType(newField));
     }
-
-    /**
-     * 构建MySQL删除列的SQL语句
-     *
-     * @param tableName 表名
-     * @param fieldName 字段名
-     * @return 删除列的SQL语句
-     */
+    
+    @Override
     public String buildDropColumnSql(String tableName, String fieldName) {
-        return String.format("ALTER TABLE %s DROP COLUMN %s",
-                buildQuotedTableName(tableName),
-                buildColumn(fieldName));
+        return String.format("ALTER TABLE %s DROP COLUMN %s", 
+            buildQuotedTableName(tableName), 
+            buildColumn(fieldName));
     }
-
-    /**
-     * 将中间表示的字段类型转换为MySQL特定的类型
-     *
-     * @param column 字段信息
-     * @return MySQL特定的类型字符串
-     */
-    public String convertToMySQLType(Field column) {
+    
+    @Override
+    public String convertToDatabaseType(Field column) {
         // 从类型名解析标准类型枚举
         DataTypeEnum standardType = DataTypeEnum.valueOf(column.getTypeName());
         if (standardType == null) {
             return "VARCHAR(255)"; // 默认类型
         }
-
+        
         switch (standardType) {
             case STRING:
                 if (column.getColumnSize() > 0) {

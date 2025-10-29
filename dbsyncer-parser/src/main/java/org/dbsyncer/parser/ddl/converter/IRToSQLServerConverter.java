@@ -45,8 +45,7 @@ public class IRToSQLServerConverter {
                 result.append(", ");
             }
             Field column = columns.get(i);
-            result.append("ALTER TABLE ").append(tableName).append(" ADD ")
-                    .append(column.getName()).append(" ").append(sqlServerTemplate.convertToSQLServerType(column));
+            result.append(sqlServerTemplate.buildAddColumnSql(tableName, column));
         }
         return result.toString();
     }
@@ -58,8 +57,7 @@ public class IRToSQLServerConverter {
                 result.append(", ");
             }
             Field column = columns.get(i);
-            result.append("ALTER TABLE ").append(tableName).append(" ALTER COLUMN ")
-                    .append(column.getName()).append(" ").append(sqlServerTemplate.convertToSQLServerType(column));
+            result.append(sqlServerTemplate.buildModifyColumnSql(tableName, column));
         }
         return result.toString();
     }
@@ -72,8 +70,9 @@ public class IRToSQLServerConverter {
                 result.append(", ");
             }
             Field column = columns.get(i);
-            result.append("EXEC sp_rename '").append(tableName).append(".").append(column.getName())
-                    .append("', '").append(column.getName()).append("', 'COLUMN'");
+            // 对于CHANGE操作，我们假设字段名不变，仅类型改变
+            // 实际应用中可能需要更复杂的处理
+            result.append(sqlServerTemplate.buildRenameColumnSql(tableName, column.getName(), column));
         }
         return result.toString();
     }
@@ -85,7 +84,7 @@ public class IRToSQLServerConverter {
                 result.append(", ");
             }
             Field column = columns.get(i);
-            result.append("ALTER TABLE ").append(tableName).append(" DROP COLUMN ").append(column.getName());
+            result.append(sqlServerTemplate.buildDropColumnSql(tableName, column.getName()));
         }
         return result.toString();
     }

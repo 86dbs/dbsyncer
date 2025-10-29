@@ -35,7 +35,7 @@ public class SqlServerTemplate implements SqlTemplate {
 
 
         if (StringUtil.isNotBlank(queryFilter)) {
-            return String.format("SELECT %s FROM %s WITH (NOLOCK) %s%s", fieldList, schemaTable, queryFilter, orderByClause);
+            return String.format("SELECT %s FROM %s WITH (NOLOCK) %s%s", fieldList, schemaTable, queryFilter,orderByClause);
         }
         return String.format("SELECT %s FROM %s WITH (NOLOCK)%s", fieldList, schemaTable, orderByClause);
     }
@@ -164,75 +164,44 @@ public class SqlServerTemplate implements SqlTemplate {
         String action = enable ? "ON" : "OFF";
         return String.format("SET IDENTITY_INSERT %s %s", schemaTable, action);
     }
-
-    /**
-     * 构建SQL Server添加列的SQL语句
-     *
-     * @param tableName 表名
-     * @param field     字段信息
-     * @return 添加列的SQL语句
-     */
+    
+    @Override
     public String buildAddColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s ADD %s %s",
-                buildQuotedTableName(tableName),
-                buildColumn(field.getName()),
-                convertToSQLServerType(field));
+        return String.format("ALTER TABLE %s ADD %s %s", 
+            buildQuotedTableName(tableName), 
+            buildColumn(field.getName()), 
+            convertToDatabaseType(field));
     }
-
-    /**
-     * 构建SQL Server修改列的SQL语句
-     *
-     * @param tableName 表名
-     * @param field     字段信息
-     * @return 修改列的SQL语句
-     */
-    public String buildAlterColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s ALTER COLUMN %s %s",
-                buildQuotedTableName(tableName),
-                buildColumn(field.getName()),
-                convertToSQLServerType(field));
+    
+    @Override
+    public String buildModifyColumnSql(String tableName, Field field) {
+        return String.format("ALTER TABLE %s ALTER COLUMN %s %s", 
+            buildQuotedTableName(tableName), 
+            buildColumn(field.getName()), 
+            convertToDatabaseType(field));
     }
-
-    /**
-     * 构建SQL Server重命名列的SQL语句
-     * 注意：SQL Server使用sp_rename存储过程进行重命名
-     *
-     * @param tableName    表名
-     * @param oldFieldName 原字段名
-     * @param newFieldName 新字段名
-     * @return 重命名列的SQL语句
-     */
-    public String buildRenameColumnSql(String tableName, String oldFieldName, String newFieldName) {
-        return String.format("EXEC sp_rename '%s.%s', '%s', 'COLUMN'",
-                tableName, oldFieldName, newFieldName);
+    
+    @Override
+    public String buildRenameColumnSql(String tableName, String oldFieldName, Field newField) {
+        return String.format("EXEC sp_rename '%s.%s', '%s', 'COLUMN'", 
+            tableName, oldFieldName, newField.getName());
     }
-
-    /**
-     * 构建SQL Server删除列的SQL语句
-     *
-     * @param tableName 表名
-     * @param fieldName 字段名
-     * @return 删除列的SQL语句
-     */
+    
+    @Override
     public String buildDropColumnSql(String tableName, String fieldName) {
-        return String.format("ALTER TABLE %s DROP COLUMN %s",
-                buildQuotedTableName(tableName),
-                buildColumn(fieldName));
+        return String.format("ALTER TABLE %s DROP COLUMN %s", 
+            buildQuotedTableName(tableName), 
+            buildColumn(fieldName));
     }
-
-    /**
-     * 将中间表示的字段类型转换为SQL Server特定的类型
-     *
-     * @param column 字段信息
-     * @return SQL Server特定的类型字符串
-     */
-    public String convertToSQLServerType(Field column) {
+    
+    @Override
+    public String convertToDatabaseType(Field column) {
         // 从类型名解析标准类型枚举
         DataTypeEnum standardType = DataTypeEnum.valueOf(column.getTypeName());
         if (standardType == null) {
             return "NVARCHAR(255)"; // 默认类型
         }
-
+        
         switch (standardType) {
             case STRING:
                 if (column.getColumnSize() > 0) {
