@@ -2,7 +2,6 @@
  * DBsyncer 主题样式
  * 整合所有设计系统组件
  */
-
 /* 导入设计系统 */
 @import url('./theme/variables.css');
 @import url('./theme/colors.css');
@@ -17,10 +16,6 @@
 @import url('./components/cards.css');
 @import url('./components/buttons.css');
 @import url('./components/tables.css');
-
-/* 导入页面样式 */
-@import url('./pages/dashboard.css');
-@import url('./pages/monitor.css');
 
 /* 全局重置和基础样式 */
 * {
