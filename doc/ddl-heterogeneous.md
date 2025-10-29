@@ -69,7 +69,7 @@ if (mapping.getListener().isEnableDDL()) {
 ```
 
 ### 5.2 增强DDL解析器
-在[DDLParserImpl](file://e:\github\dbsyncer\dbsyncer-parser\src\main\java\org\dbsyncer\parser\ddl\impl\DDLParserImpl.java#L46-L195)中增加异构数据库语法转换逻辑：
+在[DDLParserImpl](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/impl/DDLParserImpl.java#L46-L222)中增加异构数据库语法转换逻辑：
 
 1. 识别源数据库类型
 2. 将源DDL转换为中间表示(IR)
@@ -106,7 +106,7 @@ if (mapping.getListener().isEnableDDL()) {
 
 ### 6.1 第一阶段：基础设施准备
 1. 修改[GeneralBufferActuator](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/flush/impl/GeneralBufferActuator.java#L46-L286)移除同源限制
-2. 扩展[DDLConfig](file://e:\github\dbsyncer\dbsyncer-sdk\src\main\java\org\dbsyncer\sdk\config\DDLConfig.java#L9-L55)增加源数据库类型信息
+2. 扩展[DDLConfig](file:///E:/github/dbsyncer/dbsyncer-sdk/src/main/java/org/dbsyncer/sdk/config/DDLConfig.java#L9-L73)增加源数据库类型信息
 3. 创建中间表示(IR)相关类
 4. 创建异构DDL转换器接口和实现类
 
@@ -117,7 +117,7 @@ if (mapping.getListener().isEnableDDL()) {
 2. 实现IR到各数据库的转换器
    - [IRToMySQLConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/IRToMySQLConverter.java#L22-L161)
    - [IRToSQLServerConverter](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/converter/IRToSQLServerConverter.java#L22-L163)
-3. 集成到[DDLParserImpl](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/impl/DDLParserImpl.java#L46-L195)
+3. 集成到[DDLParserImpl](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/impl/DDLParserImpl.java#L46-L222)
 
 ### 6.3 第三阶段：类型映射实现
 1. 利用现有[SchemaResolver](file:///E:/github/dbsyncer/dbsyncer-sdk/src/main/java/org/dbsyncer/sdk/schema/SchemaResolver.java#L12-L51)实现类型转换
@@ -142,7 +142,7 @@ if (mapping.getListener().isEnableDDL()) {
 ### 7.2 功能增强
 1. [DDLConfig](file:///E:/github/dbsyncer/dbsyncer-sdk/src/main/java/org/dbsyncer/sdk/config/DDLConfig.java#L9-L73)扩展：增加源和目标连接器类型字段
 2. [GeneralBufferActuator](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/flush/impl/GeneralBufferActuator.java#L46-L286)修改：移除同源限制，支持异构DDL同步
-3. [DDLParserImpl](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/impl/DDLParserImpl.java#L46-L195)增强：集成异构DDL转换功能
+3. [DDLParserImpl](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/impl/DDLParserImpl.java#L46-L222)增强：集成异构DDL转换功能
 
 ## 8. 新方案改进点
 
@@ -153,7 +153,18 @@ if (mapping.getListener().isEnableDDL()) {
 4. **复用现有基础设施**：直接复用现有的Field类和DataTypeEnum枚举
 5. **维护简单**：修改某个数据库的转换逻辑不影响其他数据库
 
-### 8.2 设计模式应用
+### 8.2 SQL Template改进
+1. **SQL生成更直观**：将数据库特定的SQL生成逻辑集中到对应的Template类中
+2. **职责更清晰**：IRToXXX转换器负责流程控制，Template负责SQL生成
+3. **易于维护**：所有数据库特定的SQL生成逻辑都在一个地方维护
+
+### 8.3 DDLParserImpl修复
+1. **移除演示代码**：修复了之前硬编码"MySQL"作为源连接器类型的演示代码
+2. **正确获取连接器类型**：通过TableGroup的ProfileComponent正确获取源和目标连接器类型
+3. **增强健壮性**：确保在生产环境中能正确识别和处理异构数据库DDL
+4. **改善异常处理**：当没有converter或不支持转换时抛出明确的异常，而不是静默失败
+
+### 8.4 设计模式应用
 1. **策略模式**：不同数据库的转换策略独立实现
 2. **中介者模式**：IR作为中介者协调不同数据库间的转换
 3. **工厂模式**：通过工厂创建具体的转换器实例
@@ -228,5 +239,9 @@ if (mapping.getListener().isEnableDDL()) {
 通过以上方案，已经实现了DBSyncer对异构数据库DDL同步的支持，在保持现有架构稳定性的前提下，扩展了系统的适用范围。实现过程中重点关注了语法转换的准确性和类型映射的一致性，充分利用了现有基础设施，确保了功能的稳定性和可靠性。
 
 采用中间表示(IR)的架构设计，进一步提高了系统的可扩展性和维护性。通过将源数据库DDL转换为统一的中间表示，再将中间表示转换为目标数据库DDL，实现了高度解耦的设计。
+
+最新的改进将数据库特定的SQL生成逻辑移到了对应的SQL Template类中，使SQL生成更加直观，同时保持了中间表示的价值。这种设计使职责更加清晰，IRToXXX转换器负责流程控制，而Template负责具体的SQL生成。
+
+此外，我们还修复了[DDLParserImpl](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/ddl/impl/DDLParserImpl.java#L46-L222)中的演示代码，确保能正确从上下文中获取源和目标连接器类型，而不是硬编码为"MySQL"。同时，我们改进了异常处理机制，当没有converter或不支持转换时会抛出明确的异常，而不是静默失败。
 
 目前已完成核心功能的开发，包括异构DDL转换器接口和实现、语法转换策略、类型映射等。下一步需要完善测试用例，验证各数据库组合的DDL同步功能，并进行性能测试和异常处理验证。

@@ -19,13 +19,14 @@ import org.dbsyncer.parser.ddl.alter.ChangeStrategy;
 import org.dbsyncer.parser.ddl.alter.DropStrategy;
 import org.dbsyncer.parser.ddl.alter.ModifyStrategy;
 import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,10 +43,6 @@ import java.util.stream.Collectors;
 
 /**
  * ddl解析器, 支持类型参考：{@link DDLOperationEnum}
- *
- * @author life
- * @version 1.0.0
- * @date 2023/9/19 22:38
  */
 @Component
 public class DDLParserImpl implements DDLParser {
@@ -79,29 +76,41 @@ public class DDLParserImpl implements DDLParser {
             }
             // 替换成目标表名
             alter.getTable().setName(quotedTableName);
-            
+
             // 设置源和目标连接器类型
-            // 注意：这里需要从上下文获取真实的连接器类型
-            // 为演示目的，我们使用占位符值
-            ddlConfig.setSourceConnectorType("MySQL"); // 需要从TableGroup或Mapping中获取
-            ddlConfig.setTargetConnectorType(connectorService.getConnectorType());
-            
+            // 从TableGroup中获取ProfileComponent，再获取源和目标连接器配置
+            Mapping mapping = tableGroup.profileComponent.getMapping(tableGroup.getMappingId());
+            ConnectorConfig sourceConnectorConfig = tableGroup.profileComponent.getConnector(mapping.getSourceConnectorId()).getConfig();
+            String sourceConnectorType = sourceConnectorConfig.getConnectorType();
+            String targetConnectorType = connectorService.getConnectorType();
+
+            ddlConfig.setSourceConnectorType(sourceConnectorType);
+            ddlConfig.setTargetConnectorType(targetConnectorType);
+
             // 对于异构数据库，进行DDL语法转换
             String targetSql = alter.toString();
             // 如果是异构数据库，尝试进行转换
-            if (heterogeneousDDLConverter != null && ddlConfig.getSourceConnectorType() != null && ddlConfig.getTargetConnectorType() != null) {
-                // 检查是否支持转换
-                if (heterogeneousDDLConverter.supports(ddlConfig.getSourceConnectorType(), ddlConfig.getTargetConnectorType())) {
-                    // 1. 源DDL转中间表示
-                    org.dbsyncer.parser.ddl.ir.DDLIntermediateRepresentation ir = 
-                        heterogeneousDDLConverter.parseToIR(ddlConfig.getSourceConnectorType(), alter);
-                    // 2. 中间表示转目标DDL
-                    targetSql = heterogeneousDDLConverter.generateFromIR(ddlConfig.getTargetConnectorType(), ir);
+            if (!StringUtil.equals(sourceConnectorType, targetConnectorType)) {
+                // 只有在源和目标连接器类型不同时才进行异构转换
+                if (heterogeneousDDLConverter == null) {
+                    throw new IllegalArgumentException("异构DDL转换器未初始化，无法进行异构数据库DDL同步");
                 }
+
+                // 检查是否支持转换
+                if (!heterogeneousDDLConverter.supports(sourceConnectorType, targetConnectorType)) {
+                    throw new IllegalArgumentException(
+                            String.format("不支持从 %s 到 %s 的DDL转换", sourceConnectorType, targetConnectorType));
+                }
+
+                // 1. 源DDL转中间表示
+                org.dbsyncer.parser.ddl.ir.DDLIntermediateRepresentation ir =
+                        heterogeneousDDLConverter.parseToIR(sourceConnectorType, alter);
+                // 2. 中间表示转目标DDL
+                targetSql = heterogeneousDDLConverter.generateFromIR(targetConnectorType, ir);
             }
-            
+
             ddlConfig.setSql(targetSql);
-            
+
             for (AlterExpression expression : alter.getAlterExpressions()) {
                 STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy) -> {
                     strategy.parse(expression, ddlConfig);
