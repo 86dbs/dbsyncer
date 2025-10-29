@@ -236,9 +236,14 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             String sConnType = sConnConfig.getConnectorType();
             String tConnType = tConnConfig.getConnectorType();
             ConnectorService connectorService = connectorFactory.getConnectorService(tConnType);
+            // 传递源和目标连接器类型信息给DDL解析器
             DDLConfig targetDDLConfig = ddlParser.parse(connectorService, tableGroup, response.getSql());
-            // 1.生成目标表执行SQL(暂支持同源)
-            if (mapping.getListener().isEnableDDL() && StringUtil.equals(sConnType, tConnType)) {
+            // 设置源和目标连接器类型
+            targetDDLConfig.setSourceConnectorType(sConnType);
+            targetDDLConfig.setTargetConnectorType(tConnType);
+            
+            // 1.生成目标表执行SQL(支持异构数据库)
+            if (mapping.getListener().isEnableDDL()) {
                 ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
                 Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
                 // 2.持久化增量事件数据

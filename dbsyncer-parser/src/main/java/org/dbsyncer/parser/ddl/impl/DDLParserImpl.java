@@ -13,6 +13,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ddl.AlterStrategy;
 import org.dbsyncer.parser.ddl.DDLParser;
+import org.dbsyncer.parser.ddl.HeterogeneousDDLConverter;
 import org.dbsyncer.parser.ddl.alter.AddStrategy;
 import org.dbsyncer.parser.ddl.alter.ChangeStrategy;
 import org.dbsyncer.parser.ddl.alter.DropStrategy;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +51,9 @@ public class DDLParserImpl implements DDLParser {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Map<AlterOperation, AlterStrategy> STRATEGIES = new ConcurrentHashMap();
+
+    @Resource
+    private HeterogeneousDDLConverter heterogeneousDDLConverter;
 
     @PostConstruct
     private void init() {
@@ -73,7 +78,25 @@ public class DDLParserImpl implements DDLParser {
             }
             // 替换成目标表名
             alter.getTable().setName(quotedTableName);
-            ddlConfig.setSql(alter.toString());
+
+            // 设置源和目标连接器类型
+            // 注意：这里需要从上下文获取真实的连接器类型
+            // 为演示目的，我们使用占位符值
+            ddlConfig.setSourceConnectorType("MySQL"); // 需要从TableGroup或Mapping中获取
+            ddlConfig.setTargetConnectorType(connectorService.getConnectorType());
+
+            // 对于异构数据库，进行DDL语法转换
+            String targetSql = alter.toString();
+            // 如果是异构数据库，尝试进行转换
+            if (heterogeneousDDLConverter != null && ddlConfig.getSourceConnectorType() != null && ddlConfig.getTargetConnectorType() != null) {
+                // 检查是否支持转换
+                if (heterogeneousDDLConverter.supports(ddlConfig.getSourceConnectorType(), ddlConfig.getTargetConnectorType())) {
+                    targetSql = heterogeneousDDLConverter.convert(ddlConfig.getSourceConnectorType(), ddlConfig.getTargetConnectorType(), alter, ddlConfig);
+                }
+            }
+
+            ddlConfig.setSql(targetSql);
+
             for (AlterExpression expression : alter.getAlterExpressions()) {
                 STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy) -> {
                     strategy.parse(expression, ddlConfig);

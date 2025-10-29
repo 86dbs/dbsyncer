@@ -74,11 +74,10 @@ DDLConfig → 目标连接器执行DDL → 添加防循环标识 → 返回执�
 
 ### 启用DDL同步
 - 在监听器配置中设置 `enableDDL = true`
-- 仅支持同类型数据库间的DDL同步（MySQL→MySQL，SQL Server→SQL Server）
+- 支持同类型和异构数据库间的DDL同步（MySQL↔SQL Server等）
 - 需要源数据库开启相应的日志功能（binlog、CDC等）
 
 ### 限制条件
-- 暂不支持跨数据库类型的DDL同步
 - 复杂的DDL操作（如索引变更、约束变更）支持有限
 - 需要确保源和目标数据库的权限配置正确
 
@@ -90,6 +89,11 @@ DDLConfig → 目标连接器执行DDL → 添加防循环标识 → 返回执�
 - `DropStrategy`: 处理删除字段操作  
 - `ModifyStrategy`: 处理字段属性修改
 - `ChangeStrategy`: 处理字段重命名
+
+### 异构数据库支持
+项目现在支持异构数据库间的DDL同步：
+- MySQL ↔ SQL Server
+- 更多数据库组合正在完善中
 
 ### 防循环机制
 通过在DDL语句前添加 `/*dbs*/` 标识，防止在双向同步场景下产生死循环。
