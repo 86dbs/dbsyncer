@@ -14,10 +14,11 @@ import java.util.List;
  * 中间表示到MySQL转换器
  */
 @Component
-public class IRToMySQLConverter {
+public class IRToMySQLConverter implements IRToTargetConverter {
 
     private final MySQLTemplate mysqlTemplate = new MySQLTemplate();
 
+    @Override
     public String convert(DDLIntermediateRepresentation ir) {
         StringBuilder sql = new StringBuilder();
 

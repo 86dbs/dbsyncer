@@ -5,7 +5,6 @@ package org.dbsyncer.parser.ddl.converter;
 
 import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
-import net.sf.jsqlparser.statement.alter.AlterOperation;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ddl.ir.DDLIntermediateRepresentation;
@@ -19,14 +18,11 @@ import java.util.List;
 
 /**
  * MySQL到中间表示转换器
- *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2025-11-27 10:30
  */
 @Component
-public class MySQLToIRConverter {
+public class MySQLToIRConverter implements SourceToIRConverter {
 
+    @Override
     public DDLIntermediateRepresentation convert(Alter alter) {
         DDLIntermediateRepresentation ir = new DDLIntermediateRepresentation();
         ir.setTableName(alter.getTable().getName());
@@ -55,6 +51,7 @@ public class MySQLToIRConverter {
                     break;
             }
         }
+        
         return ir;
     }
     

@@ -5,7 +5,6 @@ package org.dbsyncer.parser.ddl.converter;
 
 import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
-import net.sf.jsqlparser.statement.alter.AlterOperation;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ddl.ir.DDLIntermediateRepresentation;
@@ -19,14 +18,11 @@ import java.util.List;
 
 /**
  * SQL Server到中间表示转换器
- *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2025-11-27 10:55
  */
 @Component
-public class SQLServerToIRConverter {
+public class SQLServerToIRConverter implements SourceToIRConverter {
 
+    @Override
     public DDLIntermediateRepresentation convert(Alter alter) {
         DDLIntermediateRepresentation ir = new DDLIntermediateRepresentation();
         ir.setTableName(alter.getTable().getName());
@@ -41,7 +37,6 @@ public class SQLServerToIRConverter {
                     ir.setOperationType(DDLOperationType.MODIFY);
                     ir.setColumns(convertColumns(expr.getColDataTypeList()));
                     break;
-                // SQL Server没有CHANGE操作，重命名需要特殊处理
                 case DROP:
                     ir.setOperationType(DDLOperationType.DROP);
                     List<Field> dropColumns = new ArrayList<>();
@@ -52,6 +47,7 @@ public class SQLServerToIRConverter {
                     break;
             }
         }
+        
         return ir;
     }
     
@@ -99,7 +95,7 @@ public class SQLServerToIRConverter {
         }
         
         String type = sqlServerDataType.toUpperCase();
-        if (type.startsWith("NVARCHAR") || type.startsWith("NCHAR") || type.startsWith("VARCHAR") || type.startsWith("CHAR")) {
+        if (type.startsWith("NVARCHAR") || type.startsWith("VARCHAR") || type.startsWith("CHAR")) {
             return DataTypeEnum.STRING;
         } else if ("INT".equals(type)) {
             return DataTypeEnum.INT;
@@ -121,9 +117,9 @@ public class SQLServerToIRConverter {
             return DataTypeEnum.BOOLEAN;
         } else if ("SMALLINT".equals(type)) {
             return DataTypeEnum.INT;
-        } else if ("NVARCHAR(MAX)".equals(type) || "NTEXT".equals(type) || "TEXT".equals(type)) {
+        } else if ("TEXT".equals(type) || "NTEXT".equals(type)) {
             return DataTypeEnum.STRING;
-        } else if ("VARBINARY(MAX)".equals(type) || "IMAGE".equals(type) || "BINARY".equals(type)) {
+        } else if ("VARBINARY".equals(type) || "BINARY".equals(type) || "IMAGE".equals(type)) {
             return DataTypeEnum.BYTES;
         }
         
@@ -132,9 +128,7 @@ public class SQLServerToIRConverter {
     
     private String removeBrackets(String name) {
         if (name != null) {
-            name = StringUtil.replace(name, "[", "");
-            name = StringUtil.replace(name, "]", "");
-            return name;
+            return StringUtil.replace(name, "[", "").replace("]", "");
         }
         return name;
     }

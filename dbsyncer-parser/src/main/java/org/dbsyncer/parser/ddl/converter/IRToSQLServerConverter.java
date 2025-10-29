@@ -14,10 +14,11 @@ import java.util.List;
  * 中间表示到SQL Server转换器
  */
 @Component
-public class IRToSQLServerConverter {
+public class IRToSQLServerConverter implements IRToTargetConverter {
 
     private final SqlServerTemplate sqlServerTemplate = new SqlServerTemplate();
 
+    @Override
     public String convert(DDLIntermediateRepresentation ir) {
         StringBuilder sql = new StringBuilder();
 
