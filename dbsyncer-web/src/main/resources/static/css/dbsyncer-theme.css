@@ -16,6 +16,9 @@
 @import url('./components/cards.css');
 @import url('./components/buttons.css');
 @import url('./components/tables.css');
+@import url('./components/dropdown.css');
+@import url('./components/forms.css');
+@import url('./components/badges.css');
 
 /* 全局重置和基础样式 */
 * {
@@ -319,102 +322,11 @@ tr:hover {
   border-right: 4px solid var(--primary-color);
 }
 
-/* 卡片组件 */
-.card, .stat-card {
-  background-color: var(--bg-primary);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-secondary);
-  overflow: hidden;
-  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
-}
+/* 卡片组件样式已迁移至 components/cards.css（保留少量工具类在该文件中） */
 
-.card:hover, .stat-card:hover {
-  box-shadow: var(--shadow-md);
-}
+/* 按钮体系已迁移至 components/buttons.css */
 
-.stat-card {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* 按钮体系 */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 500;
-  line-height: 1;
-  border: 1px solid transparent;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
-  cursor: pointer;
-  user-select: none;
-}
-
-.btn:disabled {
-  opacity: .6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background-color: var(--primary-color);
-  color: #fff;
-}
-
-.btn-primary:hover { background-color: var(--primary-hover); }
-.btn-primary:active { background-color: var(--primary-active); }
-
-.btn-outline {
-  background-color: transparent;
-  color: var(--text-primary);
-  border-color: var(--border-primary);
-}
-
-.btn-outline:hover {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-}
-
-.btn-success { background-color: var(--success-color); color: #fff; }
-.btn-warning { background-color: var(--warning-color); color: #fff; }
-.btn-error { background-color: var(--error-color); color: #fff; }
-.btn-info { background-color: var(--info-color); color: #fff; }
-
-/* 输入框 */
-.form-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid var(--border-primary);
-  border-radius: 8px;
-  transition: box-shadow var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
-  background-color: #fff;
-}
-
-.form-input:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.15);
-}
-
-/* 徽章 */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.badge-primary { background-color: rgba(24, 144, 255, 0.12); color: var(--primary-color); }
-.badge-success { background-color: rgba(82, 196, 26, 0.12); color: var(--success-color); }
-.badge-warning { background-color: rgba(250, 140, 22, 0.12); color: var(--warning-color); }
-.badge-error { background-color: rgba(245, 34, 45, 0.12); color: var(--error-color); }
-.badge-info { background-color: rgba(24, 144, 255, 0.12); color: var(--info-color); }
+/* 输入框、徽章样式已迁移至 components/forms.css 与 components/badges.css */
 
 /* 表单行与布局工具 */
 .form-row { display: flex; gap: 12px; align-items: center; }
@@ -446,13 +358,7 @@ tr:hover {
 .dot-info { background-color: var(--info-color); }
 
 /* 轻量卡片标题区 */
-.card-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border-tertiary);
-  background-color: var(--bg-primary);
-}
-
-.card-body { padding: 16px; }
+/* 卡片头部/内容已迁移至 components/cards.css */
 
 /* 表格风格微调（与截图风格接近） */
 .table-clean th {
@@ -605,87 +511,6 @@ tr:hover {
   gap: 8px;
 }
 
-/* === 下拉菜单组件 === */
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-/* 下拉触发按钮去边框、透明背景 */
-.dropdown [data-toggle] {
-  background: transparent;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-}
-.dropdown [data-toggle]:hover {
-  color: var(--text-primary);
-}
-/* 箭头旋转动画 */
-.dropdown [data-toggle] .fa-angle-down {
-  transition: transform var(--transition-fast);
-}
-.dropdown.open [data-toggle] .fa-angle-down {
-  transform: rotate(180deg);
-}
-.dropdown-menu {
-  display: block;
-  top: 20px;
-  right: -15px;
-  position: absolute;
-  background: var(--bg-primary);
-  border: 0; /* 去掉边框线条，使用阴影提升层次 */
-  border-radius: 8px;
-  box-shadow: var(--shadow-lg);
-  min-width: 110px;
-  z-index: var(--z-dropdown);
-  animation: slideDown var(--transition-fast);
-  overflow: hidden;
-  padding: 6px; /* 内边距使菜单项更通透 */
-}
-/* 菜单项优化 */
-.dropdown-item {
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  color: var(--text-primary);
-  transition: background-color var(--transition-fast), color var(--transition-fast);
-  cursor: pointer;
-}
-.dropdown-menu .dropdown-item:hover {
-  background-color: rgba(24, 144, 255, 0.06);
-  color: var(--primary-color);
-}
-
-/* 顶部右侧用户下拉菜单：竖向排列与精细样式 */
-.dropdown-menu .dropdown-item i {
-  width: 16px;
-  text-align: center;
-  color: var(--text-secondary);
-}
-
-/* 允许 <li><a> 结构直接使用，无需额外类名 */
-.dropdown-menu li > a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 6px;
-  color: var(--text-primary);
-  text-decoration: none;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
-}
-.dropdown-menu li > a i {
-  width: 16px;
-  text-align: center;
-  color: var(--text-secondary);
-}
-.dropdown-menu li > a:hover {
-  background-color: rgba(24, 144, 255, 0.06);
-  color: var(--primary-color);
-}
-
 /* === 标签页组件 === */
 .tabs {
   display: flex;
@@ -792,47 +617,6 @@ tr:hover {
   color: var(--text-tertiary);
   pointer-events: none;
 }
-
-/* === 图标按钮 === */
-.btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border-radius: 6px;
-  background: transparent;
-  border: 1px solid var(--border-primary);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.btn-icon:hover {
-  background-color: var(--bg-tertiary);
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-}
-
-/* 卡片内图标按钮与输入框的轻量风格 */
-.card button:not(.btn):not([class*='btn-']) {
-  background: transparent;
-  border: 0;
-}
-.card button:not(.btn):not([class*='btn-']):focus {
-  outline: none;
-  box-shadow: none;
-}
-.card input[type="text"], .card input[type="search"] {
-  border: 1px solid var(--border-primary);
-  border-radius: 8px;
-  padding: 8px 12px;
-  background: #fff;
-}
-
-.btn-icon-lg { width: 40px; height: 40px; }
-.btn-icon-sm { width: 24px; height: 24px; }
 
 /* === 进度条 === */
 .progress {

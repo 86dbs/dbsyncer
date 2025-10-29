@@ -1,0 +1,22 @@
+/**
+ * DBSyncer 表单组件（输入框等）
+ */
+
+/* 文本输入框（兼容 .form-input） */
+.dbsyncer-input, .form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
+  background-color: #fff;
+}
+
+.dbsyncer-input:focus, .form-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.15);
+  outline: none;
+}
+
+/* 行内表单布局辅助 */
+.form-row { display: flex; gap: 12px; align-items: center; }

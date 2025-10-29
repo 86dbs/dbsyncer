@@ -1,0 +1,53 @@
+/**
+ * DBSyncer 下拉菜单组件样式（通用）
+ */
+
+.dropdown { position: relative; }
+.dropdown [data-toggle] {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.dropdown [data-toggle]:hover { color: var(--text-primary); }
+.dropdown [data-toggle] .fa-angle-down { transition: transform var(--transition-fast); }
+.dropdown.open [data-toggle] .fa-angle-down { transform: rotate(180deg); }
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 2px);
+  list-style: none;
+  background: var(--bg-primary);
+  border: 0;
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  min-width: 110px;
+  z-index: var(--z-dropdown);
+  animation: slideDown var(--transition-fast);
+  overflow: hidden;
+  padding: 6px;
+}
+
+/* 统一菜单项 */
+.dropdown-menu > li {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--text-primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.dropdown-menu i { width: 16px; text-align: center; color: var(--text-secondary); }
+.dropdown-menu > li:hover {
+  background-color: rgba(24, 144, 255, 0.06);
+  color: var(--primary-color);
+}
+.dropdown-menu > li a {
+  color: #1D2129;
+}
+
+.dropdown-divider { height: 1px; background-color: var(--border-tertiary); margin: 4px 0; }
+
+

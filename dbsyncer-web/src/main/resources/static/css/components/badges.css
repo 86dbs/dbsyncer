@@ -1,0 +1,21 @@
+/**
+ * DBSyncer 徽章组件
+ */
+
+/* 基础徽章（兼容 .badge） */
+.dbsyncer-badge, .badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* 语义颜色（兼容 .badge-*） */
+.dbsyncer-badge-primary, .badge-primary { background-color: rgba(24, 144, 255, 0.12); color: var(--primary-color); }
+.dbsyncer-badge-success, .badge-success { background-color: rgba(82, 196, 26, 0.12); color: var(--success-color); }
+.dbsyncer-badge-warning, .badge-warning { background-color: rgba(250, 140, 22, 0.12); color: var(--warning-color); }
+.dbsyncer-badge-error, .badge-error { background-color: rgba(245, 34, 45, 0.12); color: var(--error-color); }
+.dbsyncer-badge-info, .badge-info { background-color: rgba(24, 144, 255, 0.12); color: var(--info-color); }

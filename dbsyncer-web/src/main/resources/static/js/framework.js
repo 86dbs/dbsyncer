@@ -236,11 +236,16 @@ $(function () {
     });
 
     // 下拉菜单
-    $(".dropdown button").on('click', function (){
+    const $dropdown = $(".dropdown");
+    const $$dropdownBtn = $(".dropdown button");
+    const $$dropdownMenu = $(".dropdown .dropdown-menu");
+    $$dropdownBtn.on('click', function (){
         event.stopPropagation();
-        $(this).siblings().toggleClass("hidden");
+        $dropdown.toggleClass("open");
+        $$dropdownMenu.toggleClass("hidden");
     });
     $(document).on('click', function(event) {
-        $(".dropdown .dropdown-menu").addClass("hidden");
+        $dropdown.toggleClass("open");
+        $$dropdownMenu.addClass("hidden");
     });
 });

@@ -1,10 +1,9 @@
 /**
- * DBsyncer 卡片组件样式
- * 基于截图UI风格的卡片设计
+ * DBSyncer 卡片组件样式
  */
 
 /* 基础卡片 */
-.dbsyncer-card {
+.dbsyncer-card, .card {
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
@@ -13,44 +12,63 @@
   transition: all var(--transition-fast);
 }
 
-.dbsyncer-card:hover {
+.dbsyncer-card:hover, .card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
-/* 卡片头部 */
-.dbsyncer-card-header {
+/* 卡片头部（兼容 .card-header） */
+.dbsyncer-card-header, .card-header {
   padding: var(--spacing-lg);
   border-bottom: 1px solid var(--border-secondary);
   background-color: var(--bg-primary);
 }
 
-.dbsyncer-card-title {
+/* 卡片标题（兼容 .card-title） */
+.dbsyncer-card-title, .card-title {
   font-size: var(--font-size-lg);
   font-weight: 500;
   color: var(--text-primary);
   margin: 0;
 }
 
-.dbsyncer-card-subtitle {
+/* 卡片副标题（兼容 .card-subtitle） */
+.dbsyncer-card-subtitle, .card-subtitle {
   font-size: var(--font-size-sm);
   color: var(--text-tertiary);
   margin: var(--spacing-xs) 0 0 0;
 }
 
-/* 卡片内容 */
-.dbsyncer-card-body {
+/* 卡片内容（兼容 .card-body） */
+.dbsyncer-card-body, .card-body {
   padding: var(--spacing-lg);
 }
 
-.dbsyncer-card-footer {
+/* 卡片中的轻量交互元素（从主题迁移） */
+.card button:not(.btn):not([class*='btn-']) {
+  background: transparent;
+  border: 0;
+}
+.card button:not(.btn):not([class*='btn-']):focus {
+  outline: none;
+  box-shadow: none;
+}
+.card input[type="text"], .card input[type="search"] {
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #fff;
+}
+
+/* 卡片底部（兼容 .card-footer） */
+.dbsyncer-card-footer, .card-footer {
   padding: var(--spacing-lg);
   border-top: 1px solid var(--border-secondary);
   background-color: var(--bg-secondary);
 }
 
-/* 统计卡片 */
-.dbsyncer-stat-card {
+/* 统计卡片（兼容 .stat-card） */
+.dbsyncer-stat-card, .stat-card {
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
@@ -61,7 +79,7 @@
   overflow: hidden;
 }
 
-.dbsyncer-stat-card:hover {
+.dbsyncer-stat-card:hover, .stat-card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
@@ -147,8 +165,8 @@
   font-weight: 500;
 }
 
-/* 统计卡片图标 */
-.dbsyncer-stat-icon {
+/* 统计卡片图标（兼容 .stat-icon） */
+.dbsyncer-stat-icon, .stat-icon {
   width: 48px;
   height: 48px;
   border-radius: var(--radius-lg);
@@ -173,7 +191,7 @@
 }
 
 /* 图表卡片 */
-.dbsyncer-chart-card {
+.dbsyncer-chart-card, .chart-card {
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
@@ -181,7 +199,7 @@
   overflow: hidden;
 }
 
-.dbsyncer-chart-header {
+.dbsyncer-chart-header, .chart-card-header {
   padding: var(--spacing-lg);
   border-bottom: 1px solid var(--border-secondary);
   display: flex;
@@ -189,20 +207,20 @@
   justify-content: space-between;
 }
 
-.dbsyncer-chart-title {
+.dbsyncer-chart-title, .chart-card-title {
   font-size: var(--font-size-lg);
   font-weight: 500;
   color: var(--text-primary);
   margin: 0;
 }
 
-.dbsyncer-chart-actions {
+.dbsyncer-chart-actions, .chart-card-actions {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
 }
 
-.dbsyncer-chart-action-btn {
+.dbsyncer-chart-action-btn, .chart-card-action-btn {
   width: 32px;
   height: 32px;
   border: none;
@@ -216,12 +234,12 @@
   justify-content: center;
 }
 
-.dbsyncer-chart-action-btn:hover {
+.dbsyncer-chart-action-btn:hover, .chart-card-action-btn:hover {
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
 }
 
-.dbsyncer-chart-body {
+.dbsyncer-chart-body, .chart-card-body {
   padding: var(--spacing-lg);
 }
 
@@ -231,7 +249,7 @@
 }
 
 /* 进度卡片 */
-.dbsyncer-progress-card {
+.dbsyncer-progress-card, .progress-card {
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
@@ -239,27 +257,27 @@
   border: 1px solid var(--border-secondary);
 }
 
-.dbsyncer-progress-header {
+.dbsyncer-progress-header, .progress-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--spacing-md);
 }
 
-.dbsyncer-progress-title {
+.dbsyncer-progress-title, .progress-card-title {
   font-size: var(--font-size-md);
   font-weight: 500;
   color: var(--text-primary);
   margin: 0;
 }
 
-.dbsyncer-progress-value {
+.dbsyncer-progress-value, .progress-card-value {
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.dbsyncer-progress-bar {
+.dbsyncer-progress-bar, .progress-card-bar {
   width: 100%;
   height: 8px;
   background-color: var(--bg-tertiary);
@@ -268,42 +286,42 @@
   margin-bottom: var(--spacing-sm);
 }
 
-.dbsyncer-progress-fill {
+.dbsyncer-progress-fill, .progress-card-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
   border-radius: var(--radius-sm);
   transition: width var(--transition-normal);
 }
 
-.dbsyncer-progress-fill.success {
+.dbsyncer-progress-fill.success, .progress-card-fill.success {
   background: linear-gradient(90deg, var(--success-color), #73d13d);
 }
 
-.dbsyncer-progress-fill.warning {
+.dbsyncer-progress-fill.warning, .progress-card-fill.warning {
   background: linear-gradient(90deg, var(--warning-color), #ffc53d);
 }
 
-.dbsyncer-progress-fill.error {
+.dbsyncer-progress-fill.error, .progress-card-fill.error {
   background: linear-gradient(90deg, var(--error-color), #ff4d4f);
 }
 
-.dbsyncer-progress-details {
+.dbsyncer-progress-details, .progress-card-details {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: var(--spacing-sm);
 }
 
-.dbsyncer-progress-detail {
+.dbsyncer-progress-detail, .progress-card-detail {
   text-align: center;
 }
 
-.dbsyncer-progress-detail-label {
+.dbsyncer-progress-detail-label, .progress-card-detail-label {
   font-size: var(--font-size-xs);
   color: var(--text-tertiary);
   margin-bottom: 2px;
 }
 
-.dbsyncer-progress-detail-value {
+.dbsyncer-progress-detail-value, .progress-card-detail-value {
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--text-primary);
