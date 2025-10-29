@@ -2,92 +2,148 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="dbsyncer-table-container">
-    <form id="configEditForm" class="form-horizontal" role="form">
-        <!-- 操作 -->
-        <div class="row">
-            <!-- 系统参数配置 -->
-            <div class="form-group">
-                <div class="text-right col-sm-4"></div>
-                <div class="text-right col-sm-8">
-                    <button id="updateSystemSubBtn" type="button" class="btn btn-primary">
-                        <span class="fa fa-save"></span>保存
-                    </button>
+<div class="dbsyncer-form-container">
+    <div class="dbsyncer-card-header flex-between">
+        <h3 class="dbsyncer-card-title">系统参数</h3>
+        <div class="form-actions">
+            <button id="updateSystemSubBtn" type="button" class="btn btn-primary">
+                <span class="fa fa-save"></span> 保存
+            </button>
+        </div>
+    </div>
+    <div class="dbsyncer-card-body">
+        <form id="configEditForm">
+            <div class="form-grid-2">
+                <div class="form-item">
+                    <label class="form-label">同步数据过期时间(天)<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input type="number" class="form-control" min="1" max="180" dbsyncer-valid="require" name="expireDataDays" th:value="${config?.expireDataDays}"/>
+                    </div>
                 </div>
-            </div>
-
-            <div class="form-group">
-                <label class="col-sm-2 control-label">同步数据过期时间(天)<strong class="text-primary">*</strong></label>
-                <div class="col-sm-4">
-                    <input type="number" class="form-control" min="1" max="180" dbsyncer-valid="require" name="expireDataDays" th:value="${config?.expireDataDays}"/>
+                <div class="form-item">
+                    <label class="form-label">系统日志过期时间(天)<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input type="number" class="form-control" min="1" max="180" dbsyncer-valid="require" name="expireLogDays" th:value="${config?.expireLogDays}"/>
+                    </div>
                 </div>
-                <label class="col-sm-2 control-label">系统日志过期时间(天)<strong class="text-primary">*</strong></label>
-                <div class="col-sm-4">
-                    <input type="number" class="form-control" min="1" max="180" dbsyncer-valid="require" name="expireLogDays" th:value="${config?.expireLogDays}"/>
+                <div class="form-item">
+                    <label class="form-label">CDN静态资源<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="仅限可访问公网环境下，开启cdn可以提高页面加载速度，开启后需刷新页面生效"></i></label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input class="dbsyncer_switch" name="enableCDN" th:checked="${config?.enableCDN}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <label class="col-sm-2 control-label">CDN静态资源<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="仅限可访问公网环境下，开启cdn可以提高页面加载速度，开启后需刷新页面生效"></i></label>
-                <div class="col-sm-4">
-                    <input class="dbsyncer_switch" name="enableCDN" th:checked="${config?.enableCDN}" type="checkbox" />
+                <div class="form-item">
+                    <label class="form-label">刷新监控频率(秒)<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input type="number" class="form-control" min="1" max="60" dbsyncer-valid="require" name="refreshIntervalSeconds" th:value="${config?.refreshIntervalSeconds}"/>
+                    </div>
                 </div>
-                <label class="col-sm-2 control-label">刷新监控频率(秒)<strong class="text-primary">*</strong></label>
-                <div class="col-sm-4">
-                    <input type="number" class="form-control" min="1" max="60" dbsyncer-valid="require" name="refreshIntervalSeconds" th:value="${config?.refreshIntervalSeconds}"/>
+                <div class="form-item">
+                    <label class="form-label">记录同步成功数据</label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input class="dbsyncer_switch" name="enableStorageWriteSuccess" th:checked="${config?.enableStorageWriteSuccess}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <label class="col-sm-2 control-label">记录同步成功数据</label>
-                <div class="col-sm-4">
-                    <input class="dbsyncer_switch" name="enableStorageWriteSuccess" th:checked="${config?.enableStorageWriteSuccess}" type="checkbox" />
+                <div class="form-item">
+                    <label class="form-label">记录全量数据<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="不推荐在生产环境下开启，可在源库数据量较少时使用，一般用于测试"></i></label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input class="dbsyncer_switch" name="enableStorageWriteFull" th:checked="${config?.enableStorageWriteFull}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
-                <label class="col-sm-2 control-label">记录全量数据<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="不推荐在生产环境下开启，可在源库数据量较少时使用，一般用于测试"></i></label>
-                <div class="col-sm-4">
-                    <input class="dbsyncer_switch" name="enableStorageWriteFull" th:checked="${config?.enableStorageWriteFull}" type="checkbox" />
+                <div class="form-item">
+                    <label class="form-label">记录同步失败数据</label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input id="enableStorageWriteFail" class="dbsyncer_switch" name="enableStorageWriteFail" th:checked="${config?.enableStorageWriteFail}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <label class="col-sm-2 control-label">记录同步失败数据</label>
-                <div class="col-sm-4">
-                    <input id="enableStorageWriteFail" name="enableStorageWriteFail" th:checked="${config?.enableStorageWriteFail}" type="checkbox" />
-                </div>
-                <div id="maxStorageErrorLength" class="hidden">
-                    <label class="col-sm-2 control-label">记录同步失败日志长度<strong class="text-primary">*</strong></label>
-                    <div class="col-sm-4">
+                <div id="maxStorageErrorLength" class="form-item hidden">
+                    <label class="form-label">记录同步失败日志长度<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
                         <input type="number" class="form-control" min="1024" max="8192" dbsyncer-valid="require" name="maxStorageErrorLength" th:value="${config?.maxStorageErrorLength}"/>
                     </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <label class="col-sm-2 control-label">标准数据解析器<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="开启可以支持更多异构字段类型转换，主要用于兼容异构数据库同步"></i></label>
-                <div class="col-sm-4">
-                    <input class="dbsyncer_switch" id="enableSchemaResolver" name="enableSchemaResolver" th:checked="${config?.enableSchemaResolver}" type="checkbox" />
+                <div class="form-item">
+                    <label class="form-label">标准数据解析器<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="开启可以支持更多异构字段类型转换，主要用于兼容异构数据库同步"></i></label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input class="dbsyncer_switch" id="enableSchemaResolver" name="enableSchemaResolver" th:checked="${config?.enableSchemaResolver}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
-                <label class="col-sm-2 control-label">表执行器上限数<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="每新增一张驱动表的映射关系，就会单独新开一个表执行器处理，超过此限制后，则使用通用执行器"></i><strong class="text-primary">*</strong></label>
-                <div class="col-sm-4">
-                    <input type="number" class="form-control" min="1" max="200" dbsyncer-valid="require" name="maxBufferActuatorSize" th:value="${config?.maxBufferActuatorSize}"/>
+                <div class="form-item">
+                    <label class="form-label">表执行器上限数<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="每新增一张驱动表的映射关系，就会单独新开一个表执行器处理，超过此限制后，则使用通用执行器"></i><strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input type="number" class="form-control" min="1" max="200" dbsyncer-valid="require" name="maxBufferActuatorSize" th:value="${config?.maxBufferActuatorSize}"/>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <label class="col-sm-2 control-label">水印<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="刷新页面生效"></i></label>
-                <div class="col-sm-4">
-                    <input id="enableWatermark" name="enableWatermark" th:checked="${config?.enableWatermark}" type="checkbox" />
+                <div class="form-item">
+                    <label class="form-label">水印<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="刷新页面生效"></i></label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input id="enableWatermark" class="dbsyncer_switch" name="enableWatermark" th:checked="${config?.enableWatermark}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
-                <div id="watermark" class="hidden">
-                    <label class="col-sm-2 control-label">水印内容</label>
-                    <div class="col-sm-4">
+                <div id="watermark" class="form-item">
+                    <label class="form-label">水印内容</label>
+                    <div class="form-control-area">
                         <input type="text" class="form-control" maxlength="64" name="watermark" placeholder="请输入水印(最多64个字)." th:value="${config?.watermark}"/>
                     </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <label class="col-sm-2 control-label">打印trace信息<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="仅用于排查问题，生产环境建议关闭"></i></label>
-                <div class="col-sm-4">
-                    <input id="enablePrintTraceInfo" class="dbsyncer_switch" name="enablePrintTraceInfo" th:checked="${config?.enablePrintTraceInfo}" type="checkbox" />
+                <div class="form-item">
+                    <label class="form-label">打印trace信息<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="仅用于排查问题，生产环境建议关闭"></i></label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input id="enablePrintTraceInfo" class="dbsyncer_switch" name="enablePrintTraceInfo" th:checked="${config?.enablePrintTraceInfo}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
             </div>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 
 <script th:src="@{/js/system/index.js}"></script>

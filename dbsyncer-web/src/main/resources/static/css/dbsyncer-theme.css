@@ -1,5 +1,5 @@
 /**
- * DBsyncer 主题样式
+ * DBSyncer 主题样式
  * 整合所有设计系统组件
  */
 /* 导入设计系统 */
@@ -357,10 +357,7 @@ tr:hover {
 .dot-error { background-color: var(--error-color); }
 .dot-info { background-color: var(--info-color); }
 
-/* 轻量卡片标题区 */
-/* 卡片头部/内容已迁移至 components/cards.css */
-
-/* 表格风格微调（与截图风格接近） */
+/* 表格风格微调 */
 .table-clean th {
   background: var(--bg-primary);
   color: var(--text-secondary);

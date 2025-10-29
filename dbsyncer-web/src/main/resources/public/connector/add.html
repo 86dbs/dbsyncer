@@ -2,64 +2,38 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="container-fluid">
-    <div class="container">
-        <form id="connectorAddForm" class="form-horizontal" role="form" method="post">
-            <!-- 标题 -->
-            <div class="row text-center">
-                <div class="page-header">
-                    <h3>添加连接</h3>
+<div class="dbsyncer-form-container">
+    <div class="dbsyncer-card-header flex-between">
+        <h3 class="dbsyncer-card-title">添加连接</h3>
+        <div class="form-actions">
+            <button id="connectorSubmitBtn" type="button" class="btn btn-primary">
+                <span class="fa fa-save"></span> 保存
+            </button>
+            <button id="connectorBackBtn" type="button" class="btn btn-secondary">
+                <span class="fa fa-reply"></span> 返回
+            </button>
+        </div>
+    </div>
+    <div class="dbsyncer-card-body">
+        <form id="connectorAddForm" method="post">
+            <div class="form-grid-1">
+                <div class="form-item">
+                    <label class="form-label">类型</label>
+                    <div class="form-control-area">
+                        <select id="connectorType" name="connectorType" class="form-control select-control">
+                            <option th:each="t,s:${connectorTypes}" th:value="${t}" th:text="${t}" />
+                        </select>
+                    </div>
                 </div>
-            </div>
-
-            <!-- 操作 -->
-            <div class="form-group">
-                <div class="col-md-10"></div>
-                <div class="col-md-2 text-right">
-                    <button id="connectorSubmitBtn" type="button" class="btn btn-primary">
-                        <span class="fa fa-save"></span>保存
-                    </button>
-                    <button id="connectorBackBtn" type="button" class="btn btn-default">
-                        <span class="fa fa-reply"></span>返回
-                    </button>
-                </div>
-            </div>
-
-            <!-- 配置 -->
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="panel panel-info">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">连接配置</h3>
-                        </div>
-
-                        <div class="panel-body">
-                            <!-- 连接类型 -->
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">类型</label>
-                                <div class="col-sm-10">
-                                    <select id="connectorType" name="connectorType" class="form-control select-control">
-                                        <option th:each="t,s:${connectorTypes}" th:value="${t}" th:text="${t}" />
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- 名称 -->
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">名称<strong class="text-primary">*</strong></label>
-                                <div class="col-sm-10">
-                                    <input class="form-control" name="name" type="text" maxlength="50" dbsyncer-valid="require" placeholder="名称"/>
-                                </div>
-                            </div>
-
-                            <!-- 连接配置 -->
-                            <div id="connectorConfig"></div>
-
-                        </div>
+                <div class="form-item">
+                    <label class="form-label">名称<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="name" type="text" maxlength="50" dbsyncer-valid="require" placeholder="名称"/>
                     </div>
                 </div>
             </div>
-
+            <!-- 动态连接配置区域 -->
+            <div id="connectorConfig"></div>
         </form>
     </div>
 </div>

@@ -2,8 +2,17 @@
  * DBSyncer 表单组件（输入框等）
  */
 
-/* 文本输入框（兼容 .form-input） */
-.dbsyncer-input, .form-input {
+/* 表单容器 */
+.dbsyncer-form-container {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  overflow: hidden;
+}
+
+/* 文本输入框（兼容 .form-input/.form-control） */
+.dbsyncer-input, .form-input, .form-control {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid var(--border-primary);
@@ -12,11 +21,108 @@
   background-color: #fff;
 }
 
-.dbsyncer-input:focus, .form-input:focus {
+.dbsyncer-input:focus, .form-input:focus, .form-control:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.15);
   outline: none;
 }
 
+/* 下拉与文本域 */
+select.form-control, select.dbsyncer-input, .select-control {
+  height: 36px;
+  background-color: #fff;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+}
+
+textarea.form-control, textarea.dbsyncer-input { min-height: 80px; line-height: 1.5; }
+
 /* 行内表单布局辅助 */
 .form-row { display: flex; gap: 12px; align-items: center; }
+
+/* 水平表单的间距与标签风格 */
+.form-horizontal .form-group { margin-bottom: 16px; }
+.control-label { color: var(--text-secondary); font-weight: 500; padding-top: 6px; }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* 通用表单栅格（支持 1/2 列） */
+.form-grid-1 { display: grid; grid-template-columns: 1fr; row-gap: 16px; }
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; column-gap: 32px; row-gap: 16px; }
+
+/* 单项：标签+控件布局 */
+.form-item { display: grid; grid-template-columns: 200px 1fr; align-items: center; column-gap: 16px; }
+.form-label { color: var(--text-secondary); font-weight: 500; text-align: right; padding-right: 12px; }
+.form-control-area { width: 100%; }
+.form-help { color: var(--text-tertiary); font-size: var(--font-size-xs); margin-top: 4px; }
+
+@media (max-width: 768px) {
+  .form-grid-2 { grid-template-columns: 1fr; }
+  .form-item { grid-template-columns: 1fr; row-gap: 6px; }
+}
+
+/* Switch 开关组件 */
+.form-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.form-switch input[type="checkbox"] {
+  appearance: none;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  position: absolute;
+}
+.form-switch .switch-track {
+  position: relative;
+  width: 92px;
+  height: 34px;
+  background: linear-gradient(135deg, #f1f5ff 0%, #e6ebf7 100%);
+  border: 1px solid rgba(22, 93, 255, 0.12);
+  border-radius: 999px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-items: center;
+  padding: 4px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-tertiary);
+  transition: background var(--transition-fast), border var(--transition-fast), box-shadow var(--transition-fast);
+  cursor: pointer;
+}
+.form-switch .switch-option { text-align: center; z-index: 1; transition: color var(--transition-fast), opacity var(--transition-fast); }
+.form-switch .switch-option-on { color: rgba(11, 36, 86, 0.65); }
+.form-switch .switch-option-off { color: rgba(11, 36, 86, 0.45); }
+.form-switch .switch-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #d5def0 0%, #b6c3de 100%);
+  box-shadow: 0 4px 12px rgba(20, 34, 67, 0.16);
+  transition: transform var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-switch input[type="checkbox"] + .switch-track .switch-option-on,
+.form-switch input[type="checkbox"]:checked + .switch-track .switch-option-off { opacity: 0; }
+.form-switch input[type="checkbox"]:checked + .switch-track .switch-option-on,
+.form-switch input[type="checkbox"] + .switch-track .switch-option-off { opacity: 1; }
+.form-switch input[type="checkbox"]:checked + .switch-track .switch-option-on { color: rgba(255, 255, 255, 0.95); }
+.form-switch input[type="checkbox"]:checked + .switch-track .switch-option-off { color: rgba(11, 36, 86, 0.35); }
+.form-switch input[type="checkbox"] + .switch-track .switch-option-off { color: rgba(11, 36, 86, 0.55); }
+
+.form-switch input[type="checkbox"]:checked + .switch-track {
+  background: linear-gradient(135deg, #4d8bff 0%, #99c4ff 100%);
+  border-color: rgba(22, 93, 255, 0.24);
+  box-shadow: 0 6px 14px rgba(22, 93, 255, 0.22);
+}
+.form-switch input[type="checkbox"]:checked + .switch-track .switch-thumb {
+  transform: translateX(100%);
+  background: linear-gradient(135deg, #ffffff 0%, #dbe9ff 100%);
+  box-shadow: 0 6px 16px rgba(22, 93, 255, 0.28);
+}
+.form-switch input[type="checkbox"]:focus-visible + .switch-track {
+  box-shadow: 0 0 0 2px rgba(22, 93, 255, 0.25);
+}

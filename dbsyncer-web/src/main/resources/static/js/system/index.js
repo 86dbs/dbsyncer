@@ -9,31 +9,15 @@ function submit(data) {
     });
 }
 
-// 绑定开关切换事件
-function bindToggleSwitch($switch, $toggle) {
-    let $s = $switch.bootstrapSwitch({
-        onText: "Yes",
-        offText: "No",
-        onColor: "success",
-        offColor: "info",
-        size: "normal",
-        onSwitchChange: function (event, state) {
-            if (state) {
-                $toggle.removeClass("hidden");
-            } else {
-                $toggle.addClass("hidden");
-            }
-        }
-    });
-    if ($s.bootstrapSwitch('state')) {
-        $toggle.removeClass("hidden");
-    }
-}
-
 $(function () {
-    initSwitch();
-    bindToggleSwitch($("#enableStorageWriteFail"), $("#maxStorageErrorLength"));
-    bindToggleSwitch($("#enableWatermark"), $("#watermark"));
+    $('.dbsyncer_switch').each(function () {
+        var $input = $(this);
+        $input.attr('role', 'switch');
+        $input.attr('aria-checked', $input.is(':checked'));
+        $input.on('change', function () {
+            $input.attr('aria-checked', this.checked);
+        });
+    });
     //保存
     $("#updateSystemSubBtn").click(function () {
         const $form = $("#configEditForm");
