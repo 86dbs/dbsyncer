@@ -2,100 +2,84 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
 xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="container-fluid">
-  <div class="container">
-    <form id="userEditForm" class="form-horizontal" role="form" method="post">
-      <!-- 标题 -->
-      <div class="row text-center">
-        <div class="page-header">
-          <h3>修改用户</h3>
+<div class="dbsyncer-form-container">
+    <div class="dbsyncer-card-header flex-between">
+        <h3 class="dbsyncer-card-title">修改用户</h3>
+        <div class="form-actions">
+            <button id="userSubmitBtn" type="button" class="btn btn-primary">
+                <i class="fa fa-save"></i> 保存
+            </button>
+            <button id="userBackBtn" type="button" class="btn btn-secondary">
+                <i class="fa fa-reply"></i> 返回
+            </button>
         </div>
-      </div>
+    </div>
+    <div class="dbsyncer-card-body">
+        <form id="userEditForm" method="post">
+            <div class="form-grid-1">
+                <!-- 角色 -->
+                <div class="form-item">
+                    <label class="form-label">角色</label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="roleName" type="text" readonly th:value="${currentUser?.roleName}"/>
+                    </div>
+                </div>
 
-      <!-- 操作 -->
-      <div class="form-group">
-        <div class="col-md-10"></div>
-        <div class="col-md-2 text-right">
-          <button id="userSubmitBtn" type="button" class="btn btn-primary">
-            <span class="fa fa-save"></span>保存
-          </button>
-          <button id="userBackBtn" type="button" class="btn btn-default">
-            <span class="fa fa-reply"></span>返回
-          </button>
-        </div>
-      </div>
+                <!-- 账号 -->
+                <div class="form-item">
+                    <label class="form-label">账号</label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="username" type="text" maxlength="50" readonly th:value="${currentUser?.username}"/>
+                    </div>
+                </div>
 
-      <!-- 配置 -->
-      <div class="row">
-        <div class="col-md-12">
-          <div class="panel panel-info">
-            <div class="panel-heading">
-              <h3 class="panel-title">用户配置</h3>
+                <!-- 昵称 -->
+                <div class="form-item">
+                    <label class="form-label">昵称<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="nickname" type="text" maxlength="50" required dbsyncer-valid="require" placeholder="请输入昵称" th:value="${currentUser?.nickname}"/>
+                    </div>
+                </div>
+
+                <!-- 旧密码 -->
+                <div class="form-item">
+                    <label class="form-label">旧密码</label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="oldPwd" type="password" maxlength="64" placeholder="如需修改密码请输入旧密码"/>
+                        <div class="form-help">留空表示不修改密码</div>
+                    </div>
+                </div>
+
+                <!-- 新密码 -->
+                <div class="form-item">
+                    <label class="form-label">新密码</label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="newPwd" type="password" maxlength="64" placeholder="请输入新密码"/>
+                        <div class="form-help">修改密码后需要重新登录</div>
+                    </div>
+                </div>
+
+                <!-- 邮箱 -->
+                <div class="form-item">
+                    <label class="form-label">邮箱
+                        <i class="fa fa-question-circle text-tertiary" aria-hidden="true" title="支持多个邮箱，用逗号分隔"></i>
+                    </label>
+                    <div class="form-control-area">
+                        <input type="text" class="form-control" name="email" data-role="tagsinput" th:value="${currentUser?.email}" placeholder="请输入邮箱地址"/>
+                        <div class="form-help">支持多个邮箱，按 Enter 键添加</div>
+                    </div>
+                </div>
+
+                <!-- 手机 -->
+                <div class="form-item">
+                    <label class="form-label">手机</label>
+                    <div class="form-control-area">
+                        <input type="tel" class="form-control" dbsyncer-valid="false" maxlength="13" name="phone" th:value="${currentUser?.phone}" placeholder="请输入手机号码"/>
+                    </div>
+                </div>
             </div>
-
-            <div class="panel-body">
-              <!-- 账号 -->
-              <div class="form-group">
-                <label class="col-sm-2 control-label">角色</label>
-                <div class="col-sm-10">
-                  <input class="form-control" name="roleName" type="text" readonly="true" th:value="${currentUser?.roleName}"/>
-                </div>
-              </div>
-              <!-- 账号 -->
-              <div class="form-group">
-                <label class="col-sm-2 control-label">账号</label>
-                <div class="col-sm-10">
-                  <input class="form-control" name="username" type="text" maxlength="50" placeholder="账号" readonly="true" th:value="${currentUser?.username}"/>
-                </div>
-              </div>
-
-              <!-- 昵称 -->
-              <div class="form-group">
-                <label class="col-sm-2 control-label">昵称<strong class="text-primary">*</strong></label>
-                <div class="col-sm-10">
-                  <input class="form-control" name="nickname" type="text" maxlength="50" dbsyncer-valid="require" placeholder="昵称" th:value="${currentUser?.nickname}"/>
-                </div>
-              </div>
-
-              <!-- 旧密码 -->
-              <div class="form-group">
-                <label class="col-sm-2 control-label">旧密码</label>
-                <div class="col-sm-10">
-                  <input class="form-control" name="oldPwd" type="password" maxlength="64" placeholder="密码"/>
-                </div>
-              </div>
-
-              <!-- 新密码 -->
-              <div class="form-group">
-                <label class="col-sm-2 control-label">新密码</label>
-                <div class="col-sm-10">
-                  <input class="form-control" name="newPwd" type="password" maxlength="64" placeholder="密码"/>
-                </div>
-              </div>
-
-              <!-- 邮箱 -->
-              <div class="form-group">
-                <label class="col-sm-2 control-label">邮箱<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="支持多个邮箱"></i></label>
-                <div class="col-sm-10">
-                  <input type="string" class="form-control" max="100" min="1" name="email" data-role="tagsinput" th:value="${currentUser?.email}"/>
-                </div>
-              </div>
-
-              <!-- 手机 -->
-              <div class="form-group">
-                <label class="col-sm-2 control-label">手机</label>
-                <div class="col-sm-10">
-                  <input type="number" class="form-control" dbsyncer-valid="false" maxlength="13" name="phone" th:value="${currentUser?.phone}"/>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </form>
-  </div>
+        </form>
+    </div>
 </div>
 
 <script type="text/javascript" th:inline="javascript">
@@ -103,42 +87,63 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
   // 绑定多值输入框事件
   initMultipleInputTags();
+  
   // 跳转用户管理
   function backUserIndexPage() {
     doLoader("/user?refresh=" + new Date().getTime());
   }
 
   //保存
-  $("#userSubmitBtn").click(function () {
+  $("#userSubmitBtn").on('click', function () {
     const $form = $("#userEditForm");
+    const $btn = $(this);
+    
+    // 防止重复提交
+    if ($btn.prop('disabled')) {
+        return;
+    }
+    
     if ($form.formValidate() == true) {
+      $btn.prop('disabled', true);
+      const originalText = $btn.html();
+      $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...');
+      
       const data = $form.serializeJson();
       const username = data.username;
       const newPwd = data.newPwd;
-      doPoster("/user/edit", data, function (data) {
-        if (data.success == true) {
+      
+      doPoster("/user/edit", data, function (response) {
+        $btn.prop('disabled', false);
+        $btn.html(originalText);
+        
+        if (response.success == true) {
           // 刷新个人信息
           if (currentUserName == username) {
             // 修改个人密码后需要重新登录
             if (!isBlank(newPwd)) {
-              doPoster("/logout", null, function (data) {
-                location.href = $basePath;
-              });
+              bootGrowl("密码修改成功，请重新登录", "success");
+              setTimeout(function() {
+                doPoster("/logout", null, function (data) {
+                  location.href = $basePath;
+                });
+              }, 1000);
               return;
             }
             refreshLoginUser();
           }
           bootGrowl("修改用户成功！", "success");
-          backUserIndexPage();
+          setTimeout(function() {
+            backUserIndexPage();
+          }, 500);
         } else {
-          bootGrowl(data.resultValue, "danger");
+          bootGrowl(response.resultValue || "修改失败", "danger");
         }
       });
     }
   });
 
   //返回
-  $("#userBackBtn").click(function () {
+  $("#userBackBtn").on('click', function () {
     backUserIndexPage();
   });
 </script>

@@ -2,65 +2,92 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="dbsyncer-table-container">
-    <form class="form-horizontal" role="form">
-        <div class="row text-center">
-            <div class="page-header">
-                <h3>用户管理</h3>
-            </div>
+<div class="p-6">
+    <!-- 页面标题和操作按钮 -->
+    <div class="flex-between mb-6">
+        <div>
+            <h2 class="text-xl font-semibold text-primary mb-1">用户管理</h2>
+            <p class="text-sm text-tertiary">
+                共 <span id="userCount" th:text="${users?.size()} ?: 0">0</span> 个用户
+            </p>
         </div>
-
         <!-- 管理员操作区域 -->
-        <div class="form-group" th:if="${currentUser?.roleCode eq 'admin'}">
-            <div class="row">
-                <div class="col-sm-10"></div>
-                <div class="col-md-2 text-right">
-                    <button id="addUserBtn" type="button" class="btn btn-primary">
-                        <span class="fa fa-plus"></span>添加([[${users?.size()} ?: 0]])
-                    </button>
-                </div>
-            </div>
+        <div th:if="${currentUser?.roleCode eq 'admin'}">
+            <button id="addUserBtn" type="button" class="btn btn-primary">
+                <i class="fa fa-plus"></i> 添加用户
+            </button>
         </div>
+    </div>
 
-        <!-- 操作 -->
-        <div class="row">
-            <div class="col-md-12">
-                <table class="table table-hover">
+    <!-- 用户列表卡片 -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="dbsyncer-table-wrapper">
+                <table class="dbsyncer-table">
                     <thead>
-                    <tr>
-                        <th>用户</th>
-                        <th>角色</th>
-                        <th>邮箱</th>
-                        <th>手机</th>
-                        <th>操作</th>
-                    </tr>
+                        <tr>
+                            <th width="200">用户</th>
+                            <th width="120">角色</th>
+                            <th>邮箱</th>
+                            <th width="150">手机</th>
+                            <th width="180" class="text-center">操作</th>
+                        </tr>
                     </thead>
                     <tbody id="userList">
-                    <tr th:each="u,state : ${users}">
-                        <td th:text="${u?.username + '(' + u?.nickname + ')'}"/>
-                        <td th:text="${u?.roleName}"/>
-                        <td>
-                            <span href="javascript:;" th:each="m : ${#strings.listSplit(u?.email,',')}">
-                                <span class="label label-success">[[${m}]]</span>
-                            </span>
-                        </td>
-                        <td th:text="${u?.phone}"/>
-                        <td>
-                            <!-- 管理员或本人权限 -->
-                            <button th:if="${currentUser?.roleCode eq 'admin' or currentUser?.username eq u?.username}" type="button" th:id="${u?.username}" class="btn btn-primary editUserBtn">
-                                <span class="fa fa-pencil"></span>修改
-                            </button>
-                            <!-- 管理员且非本人权限 -->
-                            <button th:if="${currentUser?.roleCode eq 'admin' and currentUser?.username != u?.username}" type="button" th:id="${u?.username}" class="btn btn-default removeUserBtn">
-                                <span class="fa fa-times"></span>删除
-                            </button>
-                        </td>
-                    </tr>
+                        <tr th:if="${users == null or users.isEmpty()}">
+                            <td colspan="5" class="text-center text-tertiary py-8">暂无用户数据</td>
+                        </tr>
+                        <tr th:each="u : ${users}">
+                            <td>
+                                <div class="flex items-center gap-2">
+                                    <div class="user-avatar">
+                                        <i class="fa fa-user-circle"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-primary" th:text="${u?.username}"></div>
+                                        <div class="text-xs text-tertiary" th:text="${u?.nickname}"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge" 
+                                      th:classappend="${u?.roleCode eq 'admin'} ? 'badge-danger' : 'badge-primary'" 
+                                      th:text="${u?.roleName}"></span>
+                            </td>
+                            <td>
+                                <div class="flex flex-wrap gap-1">
+                                    <span th:each="m : ${#strings.listSplit(u?.email, ',')}" 
+                                          class="badge badge-success" 
+                                          th:text="${m}"></span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="text-sm text-secondary" th:text="${u?.phone ?: '-'}"></span>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group-sm">
+                                    <!-- 管理员或本人可以修改 -->
+                                    <button th:if="${currentUser?.roleCode eq 'admin' or currentUser?.username eq u?.username}" 
+                                            type="button" 
+                                            th:data-username="${u?.username}" 
+                                            class="btn btn-sm btn-primary editUserBtn">
+                                        <i class="fa fa-pencil"></i> 修改
+                                    </button>
+                                    <!-- 仅管理员可以删除其他用户 -->
+                                    <button th:if="${currentUser?.roleCode eq 'admin' and currentUser?.username != u?.username}" 
+                                            type="button" 
+                                            th:data-username="${u?.username}" 
+                                            class="btn btn-sm btn-danger removeUserBtn">
+                                        <i class="fa fa-trash"></i> 删除
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
-    </form>
+    </div>
 </div>
 
 <script th:src="@{/js/user/index.js}"></script>

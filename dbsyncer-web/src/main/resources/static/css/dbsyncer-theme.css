@@ -888,6 +888,27 @@ tr:hover {
 .text-mono { font-family: 'Courier New', Courier, monospace !important; }
 .hover-underline:hover { text-decoration: underline !important; }
 
+/* 用户头像 */
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.1) 0%, rgba(24, 144, 255, 0.2) 100%);
+  color: var(--primary-color);
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+/* 按钮组 */
+.btn-group-sm {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
 /* 响应式断点（与 Tailwind 接近） */
 @media (min-width: 768px) {
   .md\:flex { display: flex !important; }
