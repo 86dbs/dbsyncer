@@ -20,6 +20,7 @@
 @import url('./components/forms.css');
 @import url('./components/badges.css');
 @import url('./components/notifications.css');
+@import url('./components/file-upload.css');
 
 /* 全局重置和基础样式 */
 * {
@@ -882,6 +883,10 @@ tr:hover {
 /* Grid 列数与栅格跨列（用于首页） */
 .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
 .lg\:col-span-2 { grid-column: span 2 / span 2; }
+
+/* 文本样式 */
+.text-mono { font-family: 'Courier New', Courier, monospace !important; }
+.hover-underline:hover { text-decoration: underline !important; }
 
 /* 响应式断点（与 Tailwind 接近） */
 @media (min-width: 768px) {
