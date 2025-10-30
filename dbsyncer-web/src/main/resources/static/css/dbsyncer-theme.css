@@ -951,6 +951,100 @@ tr:hover {
   border-radius: 50%;
 }
 
+/* 二维码悬浮提示 */
+.dbsyncer-qrcode-popover {
+  position: absolute;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+.dbsyncer-qrcode-popover.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.dbsyncer-qrcode-popover-inner {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  text-align: center;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.dbsyncer-qrcode-popover-inner img {
+  display: block;
+  width: 150px;
+  height: 150px;
+  margin: 0 auto;
+  border-radius: 4px;
+}
+
+.dbsyncer-qrcode-text {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.dbsyncer-qrcode-text .fa-wechat {
+  color: #07c160;
+  font-size: 16px;
+  margin-right: 4px;
+}
+
+/* 二维码箭头 */
+.dbsyncer-qrcode-arrow {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  transform: rotate(45deg);
+}
+
+/* 底部箭头 */
+.dbsyncer-qrcode-bottom .dbsyncer-qrcode-arrow {
+  top: -6px;
+  left: 50%;
+  margin-left: -6px;
+  border-right: none;
+  border-bottom: none;
+}
+
+/* 顶部箭头 */
+.dbsyncer-qrcode-top .dbsyncer-qrcode-arrow {
+  bottom: -6px;
+  left: 50%;
+  margin-left: -6px;
+  border-left: none;
+  border-top: none;
+}
+
+/* 左侧箭头 */
+.dbsyncer-qrcode-left .dbsyncer-qrcode-arrow {
+  right: -6px;
+  top: 50%;
+  margin-top: -6px;
+  border-right: none;
+  border-top: none;
+}
+
+/* 右侧箭头 */
+.dbsyncer-qrcode-right .dbsyncer-qrcode-arrow {
+  left: -6px;
+  top: 50%;
+  margin-top: -6px;
+  border-left: none;
+  border-bottom: none;
+}
+
 /* 响应式断点（与 Tailwind 接近） */
 @media (min-width: 768px) {
   .md\:flex { display: flex !important; }

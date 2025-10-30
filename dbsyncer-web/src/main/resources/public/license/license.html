@@ -174,12 +174,7 @@
                                 <button id="activateBtn" class="btn btn-primary" type="button">
                                     <i class="fa fa-rocket"></i> 立即激活 (首次可免费体验15天)
                                 </button>
-                                <a href="https://work.weixin.qq.com/u/vc7f073c9f993bc776?v=4.1.20.26620" 
-                                   target="_blank" 
-                                   class="btn btn-secondary ml-2"
-                                   title="联系星河同步官方">
-                                    <i class="fa fa-wechat"></i> 联系客服
-                                </a>
+                                <a href="javascript:void(0);" class="btn btn-secondary ml-2 qrcode-trigger">联系客服</a>
                             </div>
                         </div>
                     </div>
@@ -202,9 +197,8 @@
                         <li>复制下方机器码</li>
                         <li>
                             联系
-                            <a href="https://work.weixin.qq.com/u/vc7f073c9f993bc776?v=4.1.20.26620" 
-                               target="_blank" 
-                               class="text-success hover-underline">
+                            <a href="javascript:void(0);"
+                               class="text-success hover-underline qrcode-trigger">
                                 <i class="fa fa-wechat"></i> 星河同步官方
                             </a>
                             帮您生成激活码文件
@@ -256,5 +250,7 @@
     </div>
 </div>
 
+<!-- 引入 QRCode 库 -->
+<script th:if="${not #strings.isEmpty(key)}" th:src="@{/plugins/js/qrcodejs/qrcode.min.js}"></script>
 <script th:if="${not #strings.isEmpty(key)}" th:src="@{/js/license/license.js}"></script>
 </html>

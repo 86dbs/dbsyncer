@@ -1,4 +1,14 @@
 $(function () {
+    // 初始化二维码悬浮提示
+    if (window.DBSyncerTheme && DBSyncerTheme.initQRCodePopover) {
+        DBSyncerTheme.initQRCodePopover({
+            url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776?v=4.1.20.26620',
+            selector: '.qrcode-trigger',
+            size: 150,
+            position: 'bottom'
+        });
+    }
+
     // 删除激活码
     $("#removeBtn").on('click', function(){
         const $btn = $(this);
