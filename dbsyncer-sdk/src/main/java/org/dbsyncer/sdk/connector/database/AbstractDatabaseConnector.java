@@ -654,7 +654,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     private void printTraceLog(PluginContext context, String event, Map row, boolean success, String message) {
         if (success) {
             // 仅开启traceId时才输出日志
-            if (StringUtil.isNotBlank(context.getTraceId())) {
+            if (context.isEnablePrintTraceInfo()) {
                 logger.info("{} {}表事件{}, 尝试执行{}成功, {}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, row);
             }
             return;
