@@ -1,85 +1,104 @@
-function submit(data) {
+function submitConnector(data) {
     var $btn = $("#connectorSubmitBtn");
-    
-    // 防止重复提交：检查按钮是否已被禁用
+    if (!$btn.length) {
+        return;
+    }
+
     if ($btn.prop('disabled')) {
         return;
     }
-    
-    // 禁用按钮并显示加载状态
+
     var originalText = $btn.html();
     $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
-    
+
     doPoster("/connector/add", data, function (response) {
-        // 恢复按钮状态
         $btn.html(originalText).prop('disabled', false);
-        
-        if (response.success == true) {
-            bootGrowl("新增连接成功!", "success");
-            backIndexPage();
+
+        if (response.success === true) {
+            if (typeof bootGrowl === 'function') {
+                bootGrowl("新增连接成功!", "success");
+            }
+            if (typeof backIndexPage === 'function') {
+                backIndexPage();
+            }
         } else {
-            bootGrowl(response.resultValue, "danger");
+            if (typeof bootGrowl === 'function') {
+                bootGrowl(response.resultValue || '添加连接失败', "danger");
+            } else {
+                alert(response.resultValue || '添加连接失败');
+            }
         }
     });
+}
+
+window.submitConnector = submitConnector;
+
+function enhanceScope($scope) {
+    if (!$scope || !$scope.length) {
+        return;
+    }
+    if (window.DBSyncerTheme) {
+        DBSyncerTheme.enhanceSelects($scope[0]);
+    }
+    if (typeof $.fn.PlaceHolder === 'function') {
+        $scope.find('input[type="text"],input[type="password"],textarea').PlaceHolder();
+    }
 }
 
 // 绑定连接器类型切换事件
 function bindConnectorChangeEvent($select) {
+    if (!$select || !$select.length) {
+        return;
+    }
+
     changeConnectorType($select);
-    $select.on('change', function(){
+
+    $select.off('change.connector').on('change.connector', function () {
         changeConnectorType($select);
     });
 }
 
-function changeConnectorType($select){
-    //连接类型
-    var connType = $select.val();
-    //获取连接配置元素
-    var $connectorConfig = $("#connectorConfig");
-    //清空配置
-    $connectorConfig.html("");
+function changeConnectorType($select) {
+    if (!$select || !$select.length) {
+        return;
+    }
 
-    //加载页面
-    $connectorConfig.load($basePath + "/connector/page/add" + connType, function(){
-        if (window.DBSyncerTheme) {
-            DBSyncerTheme.enhanceSelects($connectorConfig[0]);
+    var connType = $select.val();
+    var $connectorConfig = $("#connectorConfig");
+    if (!$connectorConfig.length) {
+        return;
+    }
+
+    if (!connType) {
+        $connectorConfig.html('<div class="dbsyncer-empty"><div class="dbsyncer-empty-icon"><i class="fa fa-cog"></i></div><div class="dbsyncer-empty-text">请选择连接类型</div></div>');
+        return;
+    }
+
+    $connectorConfig.html('<div class="dbsyncer-loading-container"><div class="dbsyncer-loading-spinner"></div><div class="dbsyncer-loading-text">加载配置中...</div></div>');
+
+    $connectorConfig.load($basePath + "/connector/page/add" + connType, function (response, status) {
+        if (status !== 'success') {
+            $connectorConfig.html('<div class="dbsyncer-empty"><div class="dbsyncer-empty-icon"><i class="fa fa-warning"></i></div><div class="dbsyncer-empty-text">加载配置失败，请稍后重试</div></div>');
+            return;
         }
+        enhanceScope($connectorConfig);
     });
 }
 
-$(function () {
-    if (window.DBSyncerTheme) {
-        DBSyncerTheme.enhanceSelects(document);
+function setupConnectorAddForm() {
+    var $form = $("#connectorAddForm");
+    if (!$form.length) {
+        return;
     }
-    // 兼容IE PlaceHolder
-    $('input[type="text"],input[type="password"],textarea').PlaceHolder();
+
+    enhanceScope($form);
 
     var $select = $("#connectorType");
     bindConnectorChangeEvent($select);
+}
 
-    // 先解绑事件，避免重复绑定
-    $("#connectorSubmitBtn").off('click');
-    $("#connectorBackBtn").off('click');
+window.setupConnectorAddForm = setupConnectorAddForm;
 
-    //保存
-    $("#connectorSubmitBtn").click(function () {
-        var $form = $("#connectorAddForm");
-        var $btn = $(this);
-        
-        // 防止重复提交
-        if ($btn.prop('disabled')) {
-            return;
-        }
-        
-        if (window.DBSyncerTheme && DBSyncerTheme.validateForm($form)) {
-            var data = $form.serializeJson();
-            submit(data);
-        }
-    });
-
-    //返回
-    $("#connectorBackBtn").click(function () {
-        // 显示主页
-        backIndexPage();
-    });
-})
+$(function () {
+    setupConnectorAddForm();
+});

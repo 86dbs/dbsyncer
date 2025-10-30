@@ -233,7 +233,9 @@ function loadAddConnectorPageDirectly() {
             if (status === 'success') {
                 hideLoadingState();
                 // 初始化添加连接页面的脚本
-                initAddConnectorPage();
+                if (typeof window.initializeConnectorAddPage === 'function') {
+                    window.initializeConnectorAddPage();
+                }
             } else {
                 hideLoadingState();
                 alert('加载添加连接页面失败，请稍后重试');
@@ -257,32 +259,8 @@ function hideLoadingState() {
 
 // 初始化添加连接页面
 function initAddConnectorPage() {
-    // 重写backIndexPage函数，使其返回到数据源列表页面
-    window.backIndexPage = function() {
-        loadConnectorListPage();
-    };
-
-    // 绑定返回按钮事件
-    $('#connectorBackBtn').on('click', function() {
-        // 返回到数据源列表页面
-        loadConnectorListPage();
-    });
-
-    // 绑定保存按钮事件
-    $('#connectorSubmitBtn').on('click', function() {
-        submitConnectorForm();
-    });
-
-    // 初始化连接器类型选择器
-    if (typeof initSelectIndex === 'function') {
-        var $select = $("#connectorType");
-        initSelectIndex($select, 1);
-    }
-
-    // 绑定连接器类型切换事件
-    if (typeof bindConnectorChangeEvent === 'function') {
-        var $select = $("#connectorType");
-        bindConnectorChangeEvent($select);
+    if (typeof window.initializeConnectorAddPage === 'function') {
+        window.initializeConnectorAddPage();
     }
 }
 

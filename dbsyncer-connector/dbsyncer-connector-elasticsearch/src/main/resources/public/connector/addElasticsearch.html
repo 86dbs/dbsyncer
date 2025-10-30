@@ -3,24 +3,35 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <div class="form-group">
-        <label class="col-sm-2 control-label">用户名<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="username" type="text" maxlength="32" dbsyncer-valid="require" placeholder="elastic" th:value="${connector?.config?.username}"/>
+    <div class="dbsyncer-section-title">Elasticsearch 连接配置</div>
+    
+    <div class="form-grid-2">
+        <div class="form-item">
+            <label class="form-label">用户名<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="username" type="text" maxlength="32" dbsyncer-valid="require" placeholder="elastic" th:value="${connector?.config?.username}"/>
+            </div>
         </div>
-        <label class="col-sm-2 control-label">密码<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4 ">
-            <input class="form-control" name="password" type="password" maxlength="64" dbsyncer-valid="require" th:value="${connector?.config?.password}"/>
+        <div class="form-item">
+            <label class="form-label">密码<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="password" type="password" maxlength="64" dbsyncer-valid="require" placeholder="请输入密码" th:value="${connector?.config?.password}"/>
+            </div>
         </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">URL<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：http://192.168.1.100:9200,http://192.168.1.200:9200"></i><strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="url" type="text" maxlength="1024" dbsyncer-valid="require" th:value="${connector?.config?.url}?:'http://127.0.0.1:9200'"/>
+        <div class="form-item">
+            <label class="form-label">
+                URL<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：http://192.168.1.100:9200,http://192.168.1.200:9200"></i>
+                <strong class="text-primary">*</strong>
+            </label>
+            <div class="form-control-area">
+                <input class="form-control" name="url" type="text" maxlength="1024" dbsyncer-valid="require" placeholder="http://127.0.0.1:9200" th:value="${connector?.config?.url}?:'http://127.0.0.1:9200'"/>
+            </div>
         </div>
-        <label class="col-sm-2 control-label">请求超时(秒)</label>
-        <div class="col-sm-4">
-            <input class="form-control" name="timeoutSeconds" type="number" dbsyncer-valid="require" min="1" max="120" th:value="${connector?.config?.timeoutSeconds}?:10"/>
+        <div class="form-item">
+            <label class="form-label">请求超时(秒)</label>
+            <div class="form-control-area">
+                <input class="form-control" name="timeoutSeconds" type="number" dbsyncer-valid="require" min="1" max="120" placeholder="10" th:value="${connector?.config?.timeoutSeconds}?:10"/>
+            </div>
         </div>
     </div>
 </div>

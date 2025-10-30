@@ -3,38 +3,49 @@
       xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
 
 <div th:fragment="content">
-    <div class="form-group">
-        <label class="col-sm-2 control-label">主机<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="host" type="text" maxlength="32" dbsyncer-valid="require" placeholder="127.0.0.1" th:value="${connector?.config?.host}?: '127.0.0.1'"/>
+    <div class="dbsyncer-section-title">PostgreSQL 连接配置</div>
+    
+    <div class="form-grid-2">
+        <div class="form-item">
+            <label class="form-label">主机<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="host" type="text" maxlength="32" dbsyncer-valid="require" placeholder="127.0.0.1" th:value="${connector?.config?.host}?: '127.0.0.1'"/>
+            </div>
         </div>
-        <label class="col-sm-2 control-label">端口<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4 ">
-            <input class="form-control" name="port" type="number" maxlength="64" dbsyncer-valid="require" placeholder="5432" th:value="${connector?.config?.port}?: '5432'"/>
+        <div class="form-item">
+            <label class="form-label">端口<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="port" type="number" maxlength="64" dbsyncer-valid="require" placeholder="5432" th:value="${connector?.config?.port}?: '5432'"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">用户名<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" dbsyncer-valid="require" maxlength="32" name="username" placeholder="postgres"
+                       th:value="${connector?.config?.username}" type="text"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">密码<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" dbsyncer-valid="require" maxlength="64" name="password" placeholder="请输入密码" type="password" th:value="${connector?.config?.password}"/>
+            </div>
         </div>
     </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">用户名<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" dbsyncer-valid="require" maxlength="32" name="username" placeholder="postgres"
-                   th:value="${connector?.config?.username}" type="text"/>
-        </div>
-        <label class="col-sm-2 control-label">密码<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4 ">
-            <input class="form-control" dbsyncer-valid="require" maxlength="64" name="password" type="password" th:value="${connector?.config?.password}"/>
-        </div>
-    </div>
+
     <div th:replace="connector/addDataBaseProperties :: content"></div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">连接参数</label>
-        <div class="col-sm-10">
-            <textarea name="properties" class="form-control dbsyncer_textarea_resize_none" maxlength="1024" rows="5"
+    
+    <div class="form-item-full">
+        <label class="form-label">连接参数</label>
+        <div class="form-control-area">
+            <textarea name="properties" class="form-control" maxlength="1024" rows="5"
                       th:text="${connector?.config?.properties} ?: 'ssl=false&stringtype=unspecified&binaryTransfer=true&loginTimeout=10&connectTimeout=30'"></textarea>
         </div>
     </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">驱动 </label>
-        <div class="col-sm-10">
+    
+    <div class="form-item-full">
+        <label class="form-label">驱动</label>
+        <div class="form-control-area">
             <input class="form-control" name="driverClassName" readonly="true" th:value="${connector?.config?.driverClassName} ?: 'org.postgresql.Driver'" type="text"/>
         </div>
     </div>

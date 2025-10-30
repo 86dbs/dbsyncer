@@ -2,240 +2,116 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="dbsyncer-form-container">
-    <div class="dbsyncer-card-header flex-between">
-        <h3 class="dbsyncer-card-title">添加连接</h3>
-        <div class="form-actions">
-            <button id="connectorSubmitBtn" type="button" class="btn btn-primary">
-                <span class="fa fa-save"></span> 保存
-            </button>
-            <button id="connectorBackBtn" type="button" class="btn btn-secondary">
-                <span class="fa fa-reply"></span> 返回
-            </button>
-        </div>
+<div class="dbsyncer-page">
+    <div class="dbsyncer-page-header">
+        <h2 class="dbsyncer-page-title">添加连接</h2>
+        <p class="dbsyncer-page-subtitle">选择数据源类型并填写基础信息，系统会自动加载对应的配置项</p>
     </div>
-    <div class="dbsyncer-card-body">
-        <form id="connectorAddForm" method="post">
-            <div class="form-grid-1">
-                <div class="form-item">
-                    <label class="form-label">类型</label>
-                    <div class="form-control-area">
-                        <select id="connectorType" name="connectorType" class="form-control select-control">
-                            <option th:each="t,s:${connectorTypes}" th:value="${t}" th:text="${t}" />
-                        </select>
+
+    <div class="dbsyncer-form-container">
+        <div class="dbsyncer-card">
+            <div class="dbsyncer-card-header">
+                <h3 class="dbsyncer-card-title">连接基础信息</h3>
+            </div>
+            <div class="dbsyncer-card-body">
+                <form id="connectorAddForm" method="post">
+                    <div class="form-grid-2">
+                        <div class="form-item">
+                            <label class="form-label">类型</label>
+                            <div class="form-control-area">
+                                <select id="connectorType" name="connectorType" class="form-control select-control">
+                                    <option th:each="t,s:${connectorTypes}" th:value="${t}" th:text="${t}"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <label class="form-label">名称<strong class="text-primary">*</strong></label>
+                            <div class="form-control-area">
+                                <input class="form-control" name="name" type="text" maxlength="50" dbsyncer-valid="require" placeholder="请输入连接名称"/>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="form-item">
-                    <label class="form-label">名称<strong class="text-primary">*</strong></label>
-                    <div class="form-control-area">
-                        <input class="form-control" name="name" type="text" maxlength="50" dbsyncer-valid="require" placeholder="名称"/>
+
+                    <div id="connectorConfig" class="connector-advanced-section">
+                        <div class="dbsyncer-empty">
+                            <div class="dbsyncer-empty-icon"><i class="fa fa-cog"></i></div>
+                            <div class="dbsyncer-empty-text">请选择连接类型以加载对应配置</div>
+                        </div>
                     </div>
+                </form>
+            </div>
+            <div class="dbsyncer-card-footer">
+                <div class="form-actions">
+                    <button id="connectorBackBtn" type="button" class="btn btn-secondary">
+                        <span class="fa fa-reply"></span> 返回
+                    </button>
+                    <button id="connectorSubmitBtn" type="button" class="btn btn-primary">
+                        <span class="fa fa-save"></span> 保存
+                    </button>
                 </div>
             </div>
-            <!-- 动态连接配置区域 -->
-            <div id="connectorConfig"></div>
-        </form>
+        </div>
     </div>
 </div>
 
 <script th:src="@{/js/connector/add.js}"></script>
-
 <script>
-// 动态加载数据源列表页面
-function loadConnectorListPage() {
-    // 使用统一的内容区域
-    var contentDiv = $('#mainContent');
-    if (contentDiv.length) {
-        // 显示加载状态
-        showLoadingState();
-        
-        // 加载数据源列表页面内容
-        contentDiv.load('/connector/list', function(response, status, xhr) {
-            if (status === 'success') {
-                hideLoadingState();
-                // 重新初始化数据源列表页面的脚本
-                initConnectorListPage();
-            } else {
-                hideLoadingState();
-                alert('加载数据源列表页面失败，请稍后重试');
-            }
-        });
-    }
-}
-
-// 显示加载状态
-function showLoadingState() {
-    var contentDiv = $('#mainContent');
-    if (contentDiv.length) {
-        contentDiv.html('<div class="dbsyncer-loading-container"><div class="dbsyncer-loading-spinner"></div><div class="dbsyncer-loading-text">加载中...</div></div>');
-    }
-}
-
-// 初始化数据源列表页面
-function initConnectorListPage() {
-    // 重新绑定事件
-    $('#addConnectorBtn').on('click', function() {
-        loadAddConnectorPage();
-    });
-
-    $('#refreshBtn').on('click', function() {
-        loadConnectorList();
-    });
-
-    $('#searchInput').on('input', function() {
-        var query = $(this).val();
-        filterConnectors(query);
-    });
-
-    $('#typeFilter').on('change', function() {
-        filterConnectors();
-    });
-}
-
-// 动态加载添加连接页面
-function loadAddConnectorPage() {
-    // 使用统一的内容区域
-    var contentDiv = $('#mainContent');
-    if (contentDiv.length) {
-        // 显示加载状态
-        showLoadingState();
-        
-        // 加载添加连接页面内容
-        contentDiv.load('/connector/page/add', function(response, status, xhr) {
-            if (status === 'success') {
-                hideLoadingState();
-                // 初始化添加连接页面的脚本
-                initAddConnectorPage();
-            } else {
-                hideLoadingState();
-                alert('加载添加连接页面失败，请稍后重试');
-            }
-        });
-    }
-}
-
-// 初始化添加连接页面
-function initAddConnectorPage() {
-    // 重写backIndexPage函数，使其返回到数据源列表页面
-    window.backIndexPage = function() {
-        loadConnectorListPage();
-    };
-
-    // 先解绑事件，避免重复绑定
-    $('#connectorBackBtn').off('click');
-    $('#connectorSubmitBtn').off('click');
-
-    // 绑定返回按钮事件
-    $('#connectorBackBtn').on('click', function() {
-        loadConnectorListPage();
-    });
-
-    // 绑定保存按钮事件
-    $('#connectorSubmitBtn').on('click', function() {
-        submitConnectorForm();
-    });
-
-    // 初始化连接器类型选择器
-    if (typeof initSelectIndex === 'function') {
-        var $select = $("#connectorType");
-        initSelectIndex($select, 1);
+(function () {
+    function gotoConnectorList() {
+        if (typeof loadConnectorListPage === 'function') {
+            loadConnectorListPage();
+            return;
+        }
+        if (typeof doLoader === 'function') {
+            doLoader('/connector/list');
+            return;
+        }
+        window.location.href = ($basePath || '') + '/connector/list';
     }
 
-    // 绑定连接器类型切换事件
-    if (typeof bindConnectorChangeEvent === 'function') {
-        var $select = $("#connectorType");
-        bindConnectorChangeEvent($select);
-    }
-}
+    function handleSubmit() {
+        var $form = $('#connectorAddForm');
+        if (!$form.length) {
+            return;
+        }
 
-// 提交连接器表单
-function submitConnectorForm() {
-    var form = $('#connectorAddForm');
-    var submitBtn = $('#connectorSubmitBtn');
-    
-    // 防止重复提交：检查按钮是否已被禁用
-    if (submitBtn.prop('disabled')) {
-        return;
-    }
-    
-    // 使用现有的表单验证
-    if (typeof form.formValidate === 'function' && form.formValidate() === true) {
-        var data = form.serializeJson();
-        
-        // 显示提交状态并禁用按钮
-        var originalText = submitBtn.html();
-        submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
-        
-        // 使用现有的doPoster函数提交表单
-        if (typeof doPoster === 'function') {
-            doPoster("/connector/add", data, function(response) {
-                // 恢复按钮状态
-                submitBtn.html(originalText).prop('disabled', false);
-                
-                if (response.success === true) {
-                    if (typeof bootGrowl === 'function') {
-                        bootGrowl("新增连接成功!", "success");
-                    } else {
-                        alert('连接器添加成功');
-                    }
-                    // 返回到数据源列表页面
-                    loadConnectorListPage();
-                } else {
-                    if (typeof bootGrowl === 'function') {
-                        bootGrowl(response.resultValue, "danger");
-                    } else {
-                        alert('添加失败: ' + response.resultValue);
-                    }
-                }
-            });
-        } else {
-            // 如果没有doPoster函数，使用jQuery Ajax
-            $.ajax({
-                url: '/connector/add',
-                type: 'POST',
-                data: data,
-                success: function(response) {
-                    // 恢复按钮状态
-                    submitBtn.html(originalText).prop('disabled', false);
-                    
-                    if (response.success) {
-                        alert('连接器添加成功');
-                        loadConnectorListPage();
-                    } else {
-                        alert('添加失败: ' + response.message);
-                    }
-                },
-                error: function() {
-                    // 恢复按钮状态
-                    submitBtn.html(originalText).prop('disabled', false);
-                    alert('添加失败，请稍后重试');
-                }
-            });
+        var isValid = true;
+        if (window.DBSyncerTheme && typeof DBSyncerTheme.validateForm === 'function') {
+            isValid = DBSyncerTheme.validateForm($form);
+        } else if (typeof $form.formValidate === 'function') {
+            isValid = $form.formValidate();
+        }
+
+        if (!isValid) {
+            return;
+        }
+
+        var data = typeof $form.serializeJson === 'function' ? $form.serializeJson() : $form.serialize();
+        if (typeof window.submitConnector === 'function') {
+            window.submitConnector(data);
         }
     }
-}
 
-// 页面加载完成后初始化
-$(document).ready(function() {
-    // 重写backIndexPage函数，使其返回到数据源列表页面
-    window.backIndexPage = function() {
-        loadConnectorListPage();
-    };
+    function initializePage() {
+        if (typeof window.setupConnectorAddForm === 'function') {
+            window.setupConnectorAddForm();
+        }
 
-    // 先解绑事件，避免重复绑定
-    $('#connectorBackBtn').off('click');
-    $('#connectorSubmitBtn').off('click');
+        window.backIndexPage = gotoConnectorList;
 
-    // 绑定返回按钮事件
-    $('#connectorBackBtn').on('click', function() {
-        loadConnectorListPage();
-    });
+        $('#connectorBackBtn').off('click.dbsyncer').on('click.dbsyncer', gotoConnectorList);
+        $('#connectorSubmitBtn').off('click.dbsyncer').on('click.dbsyncer', handleSubmit);
+    }
 
-    // 绑定保存按钮事件
-    $('#connectorSubmitBtn').on('click', function() {
-        submitConnectorForm();
-    });
-});
+    window.initializeConnectorAddPage = initializePage;
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializePage);
+    } else {
+        initializePage();
+    }
+})();
 </script>
 
 </html>
+
