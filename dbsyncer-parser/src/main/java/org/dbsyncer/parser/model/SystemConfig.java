@@ -135,6 +135,10 @@ public class SystemConfig extends ConfigModel {
         this.enableStorageWriteFull = enableStorageWriteFull;
     }
 
+    public boolean isEnableWatermark() {
+        return enableWatermark;
+    }
+
     public void setEnableWatermark(boolean enableWatermark) {
         this.enableWatermark = enableWatermark;
     }
