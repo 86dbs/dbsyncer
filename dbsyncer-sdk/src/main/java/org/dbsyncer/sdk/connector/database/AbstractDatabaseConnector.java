@@ -702,7 +702,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             return rowNum > 0;
         } catch (Throwable e) {
             logger.error("{} 检查数据行存在异常:{}, SQL:{}, 参数:{}", context.getTraceId(), e.getMessage(), sql, args);
-            throw new SdkException(e);
+            return false;
         }
     }
 
