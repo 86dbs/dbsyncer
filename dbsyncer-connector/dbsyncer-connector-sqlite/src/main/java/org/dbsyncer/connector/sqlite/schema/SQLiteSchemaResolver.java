@@ -40,7 +40,6 @@ public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
         STANDARD_TO_TARGET_TYPE_MAP.put("FLOAT", "REAL");
         STANDARD_TO_TARGET_TYPE_MAP.put("DOUBLE", "REAL");
         STANDARD_TO_TARGET_TYPE_MAP.put("BYTES", "BLOB");
-        STANDARD_TO_TARGET_TYPE_MAP.put("ARRAY", "TEXT");
     }
 
     @Override

@@ -38,7 +38,6 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
         STANDARD_TO_TARGET_TYPE_MAP.put("FLOAT", "BINARY_FLOAT");
         STANDARD_TO_TARGET_TYPE_MAP.put("DOUBLE", "BINARY_DOUBLE");
         STANDARD_TO_TARGET_TYPE_MAP.put("BYTES", "RAW");
-        STANDARD_TO_TARGET_TYPE_MAP.put("ARRAY", "CLOB");
     }
 
     @Override

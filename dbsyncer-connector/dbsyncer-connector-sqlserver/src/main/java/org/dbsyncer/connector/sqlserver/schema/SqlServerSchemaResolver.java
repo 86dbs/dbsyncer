@@ -40,7 +40,6 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
         STANDARD_TO_TARGET_TYPE_MAP.put("FLOAT", "real");
         STANDARD_TO_TARGET_TYPE_MAP.put("DOUBLE", "float");
         STANDARD_TO_TARGET_TYPE_MAP.put("BYTES", "varbinary");
-        STANDARD_TO_TARGET_TYPE_MAP.put("ARRAY", "nvarchar(max)");
     }
 
     @Override

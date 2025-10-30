@@ -29,7 +29,5 @@ public enum DataTypeEnum {
     TIME,
     TIMESTAMP,
     /** 二进制 */
-    BYTES,
-    /** 数组 */
-    ARRAY
+    BYTES
 }

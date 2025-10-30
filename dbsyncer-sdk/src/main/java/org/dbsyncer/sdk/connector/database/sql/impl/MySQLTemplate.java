@@ -39,53 +39,57 @@ public class MySQLTemplate implements SqlTemplate {
         return String.format("INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
                 schemaTable, fieldNames, placeholders, updateClause);
     }
-    
+
     @Override
     public String buildAddColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s ADD COLUMN %s %s", 
-            buildQuotedTableName(tableName), 
-            buildColumn(field.getName()), 
-            convertToDatabaseType(field));
+        return String.format("ALTER TABLE %s ADD COLUMN %s %s",
+                buildQuotedTableName(tableName),
+                buildColumn(field.getName()),
+                convertToDatabaseType(field));
     }
-    
+
     @Override
     public String buildModifyColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s MODIFY COLUMN %s %s", 
-            buildQuotedTableName(tableName), 
-            buildColumn(field.getName()), 
-            convertToDatabaseType(field));
+        return String.format("ALTER TABLE %s MODIFY COLUMN %s %s",
+                buildQuotedTableName(tableName),
+                buildColumn(field.getName()),
+                convertToDatabaseType(field));
     }
-    
+
     @Override
     public String buildRenameColumnSql(String tableName, String oldFieldName, Field newField) {
-        return String.format("ALTER TABLE %s CHANGE COLUMN %s %s %s", 
-            buildQuotedTableName(tableName), 
-            buildColumn(oldFieldName), 
-            buildColumn(newField.getName()), 
-            convertToDatabaseType(newField));
+        return String.format("ALTER TABLE %s CHANGE COLUMN %s %s %s",
+                buildQuotedTableName(tableName),
+                buildColumn(oldFieldName),
+                buildColumn(newField.getName()),
+                convertToDatabaseType(newField));
     }
-    
+
     @Override
     public String buildDropColumnSql(String tableName, String fieldName) {
-        return String.format("ALTER TABLE %s DROP COLUMN %s", 
-            buildQuotedTableName(tableName), 
-            buildColumn(fieldName));
+        return String.format("ALTER TABLE %s DROP COLUMN %s",
+                buildQuotedTableName(tableName),
+                buildColumn(fieldName));
     }
-    
+
     @Override
     public String convertToDatabaseType(Field column) {
         // 从类型名解析标准类型枚举
         DataTypeEnum standardType = DataTypeEnum.valueOf(column.getTypeName());
         if (standardType == null) {
-            return "VARCHAR(255)"; // 默认类型
+            throw new IllegalArgumentException("Unsupported type: " + column.getTypeName());
         }
-        
+
         switch (standardType) {
             case STRING:
                 if (column.getColumnSize() > 0) {
                     return "VARCHAR(" + column.getColumnSize() + ")";
                 }
-                return "VARCHAR(255)";
+                throw new IllegalArgumentException("should give size for column: " + column.getTypeName());
+            case BYTE:
+                return "TINYINT";
+            case SHORT:
+                return "SMALLINT";
             case INT:
                 return "INT";
             case LONG:
@@ -112,7 +116,7 @@ public class MySQLTemplate implements SqlTemplate {
             case BYTES:
                 return "LONGBLOB";
             default:
-                return "VARCHAR(255)"; // 默认类型
+                throw new IllegalArgumentException("Unsupported type: " + column.getTypeName());
         }
     }
 }

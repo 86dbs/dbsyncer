@@ -49,7 +49,6 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
         STANDARD_TO_TARGET_TYPE_MAP.put("FLOAT", "real");
         STANDARD_TO_TARGET_TYPE_MAP.put("DOUBLE", "double precision");
         STANDARD_TO_TARGET_TYPE_MAP.put("BYTES", "bytea");
-        STANDARD_TO_TARGET_TYPE_MAP.put("ARRAY", "text[]");
     }
 
     @Override

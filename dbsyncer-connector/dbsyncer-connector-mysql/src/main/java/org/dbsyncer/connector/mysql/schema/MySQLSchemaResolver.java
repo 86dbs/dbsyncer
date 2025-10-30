@@ -41,7 +41,6 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
         STANDARD_TO_TARGET_TYPE_MAP.put("FLOAT", "FLOAT");
         STANDARD_TO_TARGET_TYPE_MAP.put("DOUBLE", "DOUBLE");
         STANDARD_TO_TARGET_TYPE_MAP.put("BYTES", "VARBINARY");
-        STANDARD_TO_TARGET_TYPE_MAP.put("ARRAY", "JSON");
     }
 
     @Override

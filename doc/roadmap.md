@@ -13,6 +13,7 @@
 
 ## 问题池
 
+- XML, JSON 等标准类型的支持。
 - 增量-定时 重构
   - 增量定时-移除 AbstractDatabaseConnector.reader, 与 Listener 中重复定义, 但 Reader 语义更好。
 - AbstractDatabaseConnector.filterColumn 这个应该在编辑时处理，而不是在运行时处理

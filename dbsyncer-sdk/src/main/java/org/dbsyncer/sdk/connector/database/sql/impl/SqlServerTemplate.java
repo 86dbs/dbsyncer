@@ -35,7 +35,7 @@ public class SqlServerTemplate implements SqlTemplate {
 
 
         if (StringUtil.isNotBlank(queryFilter)) {
-            return String.format("SELECT %s FROM %s WITH (NOLOCK) %s%s", fieldList, schemaTable, queryFilter,orderByClause);
+            return String.format("SELECT %s FROM %s WITH (NOLOCK) %s%s", fieldList, schemaTable, queryFilter, orderByClause);
         }
         return String.format("SELECT %s FROM %s WITH (NOLOCK)%s", fieldList, schemaTable, orderByClause);
     }
@@ -164,50 +164,54 @@ public class SqlServerTemplate implements SqlTemplate {
         String action = enable ? "ON" : "OFF";
         return String.format("SET IDENTITY_INSERT %s %s", schemaTable, action);
     }
-    
+
     @Override
     public String buildAddColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s ADD %s %s", 
-            buildQuotedTableName(tableName), 
-            buildColumn(field.getName()), 
-            convertToDatabaseType(field));
+        return String.format("ALTER TABLE %s ADD %s %s",
+                buildQuotedTableName(tableName),
+                buildColumn(field.getName()),
+                convertToDatabaseType(field));
     }
-    
+
     @Override
     public String buildModifyColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s ALTER COLUMN %s %s", 
-            buildQuotedTableName(tableName), 
-            buildColumn(field.getName()), 
-            convertToDatabaseType(field));
+        return String.format("ALTER TABLE %s ALTER COLUMN %s %s",
+                buildQuotedTableName(tableName),
+                buildColumn(field.getName()),
+                convertToDatabaseType(field));
     }
-    
+
     @Override
     public String buildRenameColumnSql(String tableName, String oldFieldName, Field newField) {
-        return String.format("EXEC sp_rename '%s.%s', '%s', 'COLUMN'", 
-            tableName, oldFieldName, newField.getName());
+        return String.format("EXEC sp_rename '%s.%s', '%s', 'COLUMN'",
+                tableName, oldFieldName, newField.getName());
     }
-    
+
     @Override
     public String buildDropColumnSql(String tableName, String fieldName) {
-        return String.format("ALTER TABLE %s DROP COLUMN %s", 
-            buildQuotedTableName(tableName), 
-            buildColumn(fieldName));
+        return String.format("ALTER TABLE %s DROP COLUMN %s",
+                buildQuotedTableName(tableName),
+                buildColumn(fieldName));
     }
-    
+
     @Override
     public String convertToDatabaseType(Field column) {
         // 从类型名解析标准类型枚举
         DataTypeEnum standardType = DataTypeEnum.valueOf(column.getTypeName());
         if (standardType == null) {
-            return "NVARCHAR(255)"; // 默认类型
+            throw new IllegalArgumentException("Unsupported type: " + column.getTypeName());
         }
-        
+
         switch (standardType) {
             case STRING:
                 if (column.getColumnSize() > 0) {
                     return "NVARCHAR(" + column.getColumnSize() + ")";
                 }
-                return "NVARCHAR(255)";
+                throw new IllegalArgumentException("should give size for column: " + column.getTypeName());
+            case BYTE:
+                return "TINYINT";
+            case SHORT:
+                return "SMALLINT";
             case INT:
                 return "INT";
             case LONG:
@@ -234,7 +238,7 @@ public class SqlServerTemplate implements SqlTemplate {
             case BYTES:
                 return "VARBINARY(MAX)";
             default:
-                return "NVARCHAR(255)"; // 默认类型
+                throw new IllegalArgumentException("Unsupported type: " + column.getTypeName());
         }
     }
 }
