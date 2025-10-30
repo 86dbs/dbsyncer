@@ -951,6 +951,140 @@ tr:hover {
   border-radius: 50%;
 }
 
+/* 标签输入框（Tagsinput）*/
+.dbsyncer-tagsinput {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: text;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dbsyncer-tagsinput:hover {
+  border-color: var(--primary-color);
+}
+
+.dbsyncer-tagsinput:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.dbsyncer-tagsinput-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0 6px 10px;
+}
+
+/* 当没有标签时，隐藏标签容器的 padding */
+.dbsyncer-tagsinput-tags:empty {
+  padding: 0;
+}
+
+.dbsyncer-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: #1890ff;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.4;
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.dbsyncer-tag:hover {
+  background: #40a9ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.4);
+}
+
+.dbsyncer-tag-text {
+  margin-right: 6px;
+  font-weight: 500;
+}
+
+.dbsyncer-tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 10px;
+  transition: all 0.2s ease;
+}
+
+.dbsyncer-tag-remove:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.dbsyncer-tagsinput-input {
+  flex: 1;
+  min-width: 120px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.dbsyncer-tagsinput-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* 标签颜色变体 */
+.dbsyncer-tag.tag-primary {
+  background: #1890ff;
+}
+
+.dbsyncer-tag.tag-primary:hover {
+  background: #40a9ff;
+}
+
+.dbsyncer-tag.tag-success {
+  background: #52c41a;
+}
+
+.dbsyncer-tag.tag-success:hover {
+  background: #73d13d;
+}
+
+.dbsyncer-tag.tag-warning {
+  background: #faad14;
+}
+
+.dbsyncer-tag.tag-warning:hover {
+  background: #ffc53d;
+}
+
+.dbsyncer-tag.tag-danger {
+  background: #ff4d4f;
+}
+
+.dbsyncer-tag.tag-danger:hover {
+  background: #ff7875;
+}
+
+.dbsyncer-tag.tag-info {
+  background: #13c2c2;
+}
+
+.dbsyncer-tag.tag-info:hover {
+  background: #36cfc9;
+}
+
 /* 二维码悬浮提示 */
 .dbsyncer-qrcode-popover {
   position: absolute;

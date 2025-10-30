@@ -151,8 +151,7 @@
                                 <i class="fa fa-question-circle text-tertiary" title="支持多个邮箱，用逗号分隔"></i>
                             </label>
                             <div class="form-control-area">
-                                <input class="form-control" type="text" name="email" data-role="tagsinput" th:value="${userInfo?.email}" placeholder="请输入邮箱地址"/>
-                                <div class="form-help">支持多个邮箱，使用英文,拼接</div>
+                                <input class="form-control" type="text" name="email" data-role="tagsinput" th:value="${userInfo?.email}" placeholder="请输入邮箱地址，支持多个邮箱"/>
                             </div>
                         </div>
 
@@ -213,7 +212,7 @@
                     <div class="flex gap-2">
                         <input id="licenseKey" 
                                type="text" 
-                               class="form-control flex-1 text-mono text-primary font-medium" 
+                               class="form-control flex-1 text-mono font-medium"
                                readonly 
                                th:value="${key}">
                         <button id="copyBtn" class="btn btn-secondary" type="button" title="复制机器码">

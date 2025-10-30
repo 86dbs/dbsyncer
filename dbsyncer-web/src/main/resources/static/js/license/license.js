@@ -1,4 +1,9 @@
 $(function () {
+    // 初始化标签输入框
+    if (window.initMultipleInputTags) {
+        initMultipleInputTags();
+    }
+    
     // 初始化二维码悬浮提示
     if (window.DBSyncerTheme && DBSyncerTheme.initQRCodePopover) {
         DBSyncerTheme.initQRCodePopover({
