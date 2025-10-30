@@ -108,7 +108,7 @@ if (mapping.getListener().isEnableDDL()) {
 1. 修改[GeneralBufferActuator](file:///E:/github/dbsyncer/dbsyncer-parser/src/main/java/org/dbsyncer/parser/flush/impl/GeneralBufferActuator.java#L46-L286)移除同源限制
 2. 扩展[DDLConfig](file:///E:/github/dbsyncer/dbsyncer-sdk/src/main/java/org/dbsyncer/sdk/config/DDLConfig.java#L9-L73)增加源数据库类型信息
 3. 创建中间表示(IR)相关类
-4. 创建异构DDL转换器接口和实现类
+4. 定义标准转换器接口(SourceToIRConverter和IRToTargetConverter)
 
 ### 6.2 第二阶段：中间表示转换实现
 1. 实现各数据库到IR的转换器

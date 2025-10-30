@@ -16,3 +16,5 @@ trigger: always_on
 - 严谨的生命周期管理
 
 不要在代码文件中附加 @Author @Date @Version 等注解。
+
+agent 请使用 powershell 指令，不要使用 linux 指令。

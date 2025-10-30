@@ -18,75 +18,78 @@ import java.sql.Statement;
  * @Date 2025-10-28
  */
 public class TestDatabaseManager {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(TestDatabaseManager.class);
-    
+
     private DatabaseConnectorInstance sourceConnectorInstance;
     private DatabaseConnectorInstance targetConnectorInstance;
-    
+
     public TestDatabaseManager(DatabaseConfig sourceConfig, DatabaseConfig targetConfig) {
         this.sourceConnectorInstance = new DatabaseConnectorInstance(sourceConfig);
         this.targetConnectorInstance = new DatabaseConnectorInstance(targetConfig);
     }
-    
+
     /**
      * 初始化测试数据库环境
+     *
      * @param sourceInitSql 初始化源数据库的SQL脚本
      * @param targetInitSql 初始化目标数据库的SQL脚本
      */
     public void initializeTestEnvironment(String sourceInitSql, String targetInitSql) {
         logger.info("开始初始化测试数据库环境");
-        
+
         try {
             // 初始化源数据库
             executeSql(sourceConnectorInstance, sourceInitSql);
-            
+
             // 初始化目标数据库
             executeSql(targetConnectorInstance, targetInitSql);
-            
+
             logger.info("测试数据库环境初始化完成");
         } catch (Exception e) {
             logger.error("初始化测试数据库环境失败", e);
             throw new RuntimeException("初始化测试数据库环境失败", e);
         }
     }
-    
+
     /**
      * 清理测试数据库环境
+     *
      * @param sourceCleanupSql 清理源数据库的SQL脚本
      * @param targetCleanupSql 清理目标数据库的SQL脚本
      */
     public void cleanupTestEnvironment(String sourceCleanupSql, String targetCleanupSql) {
         logger.info("开始清理测试数据库环境");
-        
+
         try {
             // 清理源数据库
             executeSql(sourceConnectorInstance, sourceCleanupSql);
-            
+
             // 清理目标数据库
             executeSql(targetConnectorInstance, targetCleanupSql);
-            
+
             logger.info("测试数据库环境清理完成");
         } catch (Exception e) {
             logger.error("清理测试数据库环境失败", e);
             // 不抛出异常，因为测试可能已经完成，清理失败不应影响测试结果
         }
     }
-    
+
     /**
      * 执行SQL脚本
+     *
      * @param connectorInstance 数据库连接实例
-     * @param sql 要执行的SQL脚本
+     * @param sql               要执行的SQL脚本
      */
     private void executeSql(DatabaseConnectorInstance connectorInstance, String sql) {
         if (sql == null || sql.trim().isEmpty()) {
             return;
         }
-        
+
         connectorInstance.execute(databaseTemplate -> {
             try (Connection connection = databaseTemplate.getSimpleConnection().getConnection();
                  Statement statement = connection.createStatement()) {
-                
+
                 // 按分号分割SQL语句并逐个执行
                 String[] sqlStatements = sql.split(";");
                 for (String sqlStatement : sqlStatements) {
@@ -101,7 +104,7 @@ public class TestDatabaseManager {
                         }
                     }
                 }
-                
+
                 return null;
             } catch (SQLException e) {
                 logger.error("执行SQL失败: {}", sql, e);

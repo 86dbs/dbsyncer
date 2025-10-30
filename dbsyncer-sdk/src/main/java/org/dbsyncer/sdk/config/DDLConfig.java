@@ -13,12 +13,6 @@ public class DDLConfig {
 
     private DDLOperationEnum ddlOperationEnum;
     
-    // 源连接器类型
-    private String sourceConnectorType;
-    
-    // 目标连接器类型
-    private String targetConnectorType;
-
     private List<String> addedFieldNames = new LinkedList<>();
 
     private List<String> modifiedFieldNames = new LinkedList<>();
@@ -27,22 +21,6 @@ public class DDLConfig {
 
     private Map<String, String> changedFieldNames = new LinkedHashMap<>();
     
-    public String getSourceConnectorType() {
-        return sourceConnectorType;
-    }
-    
-    public void setSourceConnectorType(String sourceConnectorType) {
-        this.sourceConnectorType = sourceConnectorType;
-    }
-    
-    public String getTargetConnectorType() {
-        return targetConnectorType;
-    }
-    
-    public void setTargetConnectorType(String targetConnectorType) {
-        this.targetConnectorType = targetConnectorType;
-    }
-
     public String getSql() {
         return sql;
     }

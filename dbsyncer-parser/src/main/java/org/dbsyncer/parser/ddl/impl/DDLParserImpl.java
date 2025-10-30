@@ -89,9 +89,6 @@ public class DDLParserImpl implements DDLParser {
             String sourceConnectorType = sourceConnectorConfig.getConnectorType();
             String targetConnectorType = connectorService.getConnectorType();
 
-            ddlConfig.setSourceConnectorType(sourceConnectorType);
-            ddlConfig.setTargetConnectorType(targetConnectorType);
-
             // 对于异构数据库，进行DDL语法转换
             String targetSql = alter.toString();
             // 如果是异构数据库，尝试进行转换
