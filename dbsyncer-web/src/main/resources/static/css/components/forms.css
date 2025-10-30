@@ -217,18 +217,60 @@ select.form-control.is-invalid,
 .form-error-msg i { font-size: 12px; }
 
 /* 通用表单栅格（支持 1/2 列） */
-.form-grid-1 { display: grid; grid-template-columns: 1fr; row-gap: 16px; }
-.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; column-gap: 32px; row-gap: 16px; }
+.form-grid-1 { 
+  display: grid; 
+  grid-template-columns: 1fr; 
+  row-gap: 20px;
+  margin-bottom: 24px;
+}
+
+.form-grid-2 { 
+  display: grid; 
+  grid-template-columns: 1fr 1fr; 
+  column-gap: 32px; 
+  row-gap: 20px;
+  margin-bottom: 24px;
+}
 
 /* 单项：标签+控件布局 */
-.form-item { display: grid; grid-template-columns: 200px 1fr; align-items: center; column-gap: 16px; }
-.form-label { color: var(--text-secondary); font-weight: 500; text-align: right; padding-right: 12px; }
-.form-control-area { width: 100%; }
-.form-help { color: var(--text-tertiary); font-size: var(--font-size-xs); margin-top: 4px; }
+.form-item { 
+  display: grid; 
+  grid-template-columns: 120px 1fr; 
+  align-items: center; 
+  column-gap: 16px; 
+}
+
+.form-label { 
+  color: var(--text-secondary); 
+  font-weight: 500; 
+  text-align: right; 
+  padding-right: 12px;
+  font-size: 14px;
+}
+
+.form-control-area { 
+  width: 100%; 
+}
+
+.form-help { 
+  color: var(--text-tertiary); 
+  font-size: var(--font-size-xs); 
+  margin-top: 4px; 
+}
 
 @media (max-width: 768px) {
-  .form-grid-2 { grid-template-columns: 1fr; }
-  .form-item { grid-template-columns: 1fr; row-gap: 6px; }
+  .form-grid-2 { 
+    grid-template-columns: 1fr; 
+  }
+  
+  .form-item { 
+    grid-template-columns: 1fr; 
+    row-gap: 6px; 
+  }
+  
+  .form-label {
+    text-align: left;
+  }
 }
 
 /* Switch 开关组件 */
@@ -296,4 +338,55 @@ select.form-control.is-invalid,
 }
 .form-switch input[type="checkbox"]:focus-visible + .switch-track {
   box-shadow: 0 0 0 2px rgba(22, 93, 255, 0.25);
+}
+
+/* 高级配置区域 */
+.connector-advanced-section { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 0;
+  margin-top: 8px;
+}
+
+/* 分隔线 */
+.dbsyncer-divider { 
+  height: 1px; 
+  background-color: var(--border-secondary); 
+  margin: 24px 0; 
+}
+
+/* 配置区域标题 */
+.dbsyncer-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--primary-color);
+  display: inline-block;
+}
+
+/* 全宽表单项 */
+.form-item-full {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: start;
+  column-gap: 16px;
+  margin-top: 20px;
+}
+
+.form-item-full .form-label {
+  padding-top: 8px;
+}
+
+@media (max-width: 768px) {
+  .form-item-full {
+    grid-template-columns: 1fr;
+    row-gap: 6px;
+  }
+  
+  .form-item-full .form-label {
+    text-align: left;
+    padding-top: 0;
+  }
 }

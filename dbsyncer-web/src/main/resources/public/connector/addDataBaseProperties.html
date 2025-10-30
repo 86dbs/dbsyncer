@@ -3,14 +3,20 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <div class="form-group">
-        <label class="col-sm-2 control-label">最大连接数<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="maxActive" type="number" dbsyncer-valid="require" min="1" max="512" th:value="${connector?.config?.maxActive}?:128"/>
+    <div class="form-grid-2">
+        <div class="form-item">
+            <label class="form-label">最大连接数<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="maxActive" type="number" dbsyncer-valid="require" min="1" max="512" 
+                       th:value="${connector?.config?.maxActive}?:128" placeholder="默认128"/>
+            </div>
         </div>
-        <label class="col-sm-2 control-label">有效期(毫秒)<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="keepAlive" type="number" dbsyncer-valid="require" min="10000" max="120000" th:value="${connector?.config?.keepAlive}?:60000"/>
+        <div class="form-item">
+            <label class="form-label">有效期(毫秒)<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="keepAlive" type="number" dbsyncer-valid="require" min="10000" max="120000" 
+                       th:value="${connector?.config?.keepAlive}?:60000" placeholder="默认60000"/>
+            </div>
         </div>
     </div>
 </div>

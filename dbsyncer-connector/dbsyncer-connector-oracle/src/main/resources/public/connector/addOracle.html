@@ -3,36 +3,47 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <div class="form-group">
-        <label class="col-sm-2 control-label">主机<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="host" type="text" maxlength="32" dbsyncer-valid="require" placeholder="127.0.0.1" th:value="${connector?.config?.host}?: '127.0.0.1'"/>
+    <div class="dbsyncer-section-title">Oracle 连接配置</div>
+    
+    <div class="form-grid-2">
+        <div class="form-item">
+            <label class="form-label">主机<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="host" type="text" maxlength="32" dbsyncer-valid="require" placeholder="127.0.0.1" th:value="${connector?.config?.host}?: '127.0.0.1'"/>
+            </div>
         </div>
-        <label class="col-sm-2 control-label">端口<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4 ">
-            <input class="form-control" name="port" type="number" maxlength="64" dbsyncer-valid="require" placeholder="1521" th:value="${connector?.config?.port}?: '1521'"/>
+        <div class="form-item">
+            <label class="form-label">端口<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="port" type="number" maxlength="64" dbsyncer-valid="require" placeholder="1521" th:value="${connector?.config?.port}?: '1521'"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">服务名称<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="serviceName" type="text" maxlength="32" dbsyncer-valid="require" placeholder="ORCL" th:value="${connector?.config?.serviceName}?: 'ORCL'"/>
+            </div>
+        </div>
+        <div class="form-item"></div>
+        <div class="form-item">
+            <label class="form-label">用户名<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="username" type="text" maxlength="32" dbsyncer-valid="require" placeholder="sys" th:value="${connector?.config?.username}"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">密码<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="password" type="password" maxlength="64" dbsyncer-valid="require" placeholder="请输入密码" th:value="${connector?.config?.password}"/>
+            </div>
         </div>
     </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">服务名称<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="serviceName" type="text" maxlength="32" dbsyncer-valid="require" placeholder="ORCL" th:value="${connector?.config?.serviceName}?: 'ORCL'"/>
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">用户名<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="username" type="text" maxlength="32" dbsyncer-valid="require" placeholder="sys" th:value="${connector?.config?.username}"/>
-        </div>
-        <label class="col-sm-2 control-label">密码<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4 ">
-            <input class="form-control" name="password" type="password" maxlength="64" dbsyncer-valid="require" th:value="${connector?.config?.password}"/>
-        </div>
-    </div>
+    
     <div th:replace="connector/addDataBaseProperties :: content"></div>
-    <div class="form-group">
-        <label class="col-sm-2 control-label">驱动 </label>
-        <div class="col-sm-10">
+    
+    <div class="form-item-full">
+        <label class="form-label">驱动</label>
+        <div class="form-control-area">
             <input class="form-control" readonly="true" name="driverClassName" type="text"
                    th:value="${connector?.config?.driverClassName} ?: 'oracle.jdbc.OracleDriver'"/>
         </div>

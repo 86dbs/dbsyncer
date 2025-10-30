@@ -4,9 +4,6 @@
 
 <div th:fragment="content">
     <!-- SQL配置 -->
-    <div class="page-header"></div>
-
-    <!-- 已添加的SQL配置 -->
     <div class="form-group">
         <label class="col-sm-2 control-label">SQL表</label>
         <div class="col-sm-4">
@@ -15,9 +12,15 @@
             </select>
         </div>
         <div class="col-sm-6 text-right">
-            <button id="delSqlTableBtn" type="button" class="btn btn-default hidden"> <span class="fa fa-remove"></span>删除</button>
-            <button id="editSqlTableBtn" type="button" class="btn btn-default hidden"> <span class="fa fa-pencil"></span>修改</button>
-            <button id="addSqlTableBtn" type="button" class="btn btn-primary"> <span class="fa fa-plus"></span>添加(<span id="sqlTableCount">[[${connector?.config?.sqlTables?.size()} ?: 0]]</span>)</button>
+            <button id="delSqlTableBtn" type="button" class="btn btn-secondary hidden">
+                <span class="fa fa-remove"></span> 删除
+            </button>
+            <button id="editSqlTableBtn" type="button" class="btn btn-secondary hidden">
+                <span class="fa fa-pencil"></span> 修改
+            </button>
+            <button id="addSqlTableBtn" type="button" class="btn btn-primary">
+                <span class="fa fa-plus"></span> 添加(<span id="sqlTableCount">[[${connector?.config?.sqlTables?.size()} ?: 0]]</span>)
+            </button>
         </div>
         <input type="hidden" id="sqlTables" name="sqlTables"/>
     </div>
@@ -34,7 +37,9 @@
     </div>
     <div class="form-group">
         <div class="col-sm-12 text-right">
-            <a href="javascript:beautifySql();"><span class="fa fa-magic fa-1x fa-flip-horizontal dbsyncer_pointer" title="美化SQL"></span>美化SQL</a>
+            <a href="javascript:beautifySql();" class="dbsyncer-link">
+                <span class="fa fa-magic fa-1x fa-flip-horizontal dbsyncer_pointer" title="美化SQL"></span> 美化SQL
+            </a>
         </div>
     </div>
 
