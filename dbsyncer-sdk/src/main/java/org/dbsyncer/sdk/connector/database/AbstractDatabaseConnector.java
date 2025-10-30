@@ -23,6 +23,8 @@ import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.*;
+import org.dbsyncer.sdk.parser.ddl.converter.IRToTargetConverter;
+import org.dbsyncer.sdk.parser.ddl.converter.SourceToIRConverter;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
@@ -56,6 +58,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     public SqlTemplate sqlTemplate;
+
+    public SourceToIRConverter sourceToIRConverter;
+
+    public IRToTargetConverter irToTargetConverter;
 
     /**
      * 是否为DQL连接器
@@ -729,4 +735,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return result;
     }
 
+    @Override
+    public SourceToIRConverter getSourceToIRConverter() {
+        return this.sourceToIRConverter;
+    }
+
+    @Override
+    public IRToTargetConverter getIRToTargetConverter() {
+        return this.irToTargetConverter;
+    }
 }

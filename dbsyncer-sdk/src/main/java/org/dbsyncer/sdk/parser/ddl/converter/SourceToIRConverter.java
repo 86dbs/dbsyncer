@@ -1,10 +1,10 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.parser.ddl.converter;
+package org.dbsyncer.sdk.parser.ddl.converter;
 
 import net.sf.jsqlparser.statement.alter.Alter;
-import org.dbsyncer.parser.ddl.ir.DDLIntermediateRepresentation;
+import org.dbsyncer.sdk.parser.ddl.ir.DDLIntermediateRepresentation;
 
 /**
  * 源数据库到中间表示转换器接口

@@ -1,18 +1,12 @@
-/**
- * DBSyncer Copyright 2020-2025 All Rights Reserved.
- */
-package org.dbsyncer.parser.ddl.ir;
+package org.dbsyncer.sdk.parser.ddl.ir;
 
 import org.dbsyncer.sdk.model.Field;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * DDL中间表示
- *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2025-11-27 10:00
  */
 public class DDLIntermediateRepresentation {
 

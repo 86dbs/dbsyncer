@@ -9,6 +9,8 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.sqlserver.bulk.SqlServerBulkCopyUtil;
 import org.dbsyncer.connector.sqlserver.cdc.Lsn;
 import org.dbsyncer.connector.sqlserver.cdc.SqlServerListener;
+import org.dbsyncer.connector.sqlserver.converter.IRToSQLServerConverter;
+import org.dbsyncer.connector.sqlserver.converter.SQLServerToIRConverter;
 import org.dbsyncer.connector.sqlserver.schema.SqlServerSchemaResolver;
 import org.dbsyncer.connector.sqlserver.validator.SqlServerConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
@@ -36,10 +38,6 @@ import java.util.stream.Collectors;
 
 /**
  * SqlServer连接器实现
- *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2022-05-22 22:56
  */
 public class SqlServerConnector extends AbstractDatabaseConnector {
 
@@ -51,9 +49,12 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
 
     private final SqlServerSchemaResolver schemaResolver = new SqlServerSchemaResolver();
 
+
     public SqlServerConnector() {
         sqlTemplate = new SqlServerTemplate();
         configValidator = new SqlServerConfigValidator();
+        sourceToIRConverter = new SQLServerToIRConverter();
+        irToTargetConverter = new IRToSQLServerConverter();
     }
 
     @Override
@@ -133,6 +134,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     // 重要说明 mssql-jdbc 9 +  useBulkCopyForBatchInsert=true 原生驱动 Buck insert 无效，性能非常慢，需要定制实现
+
     /**
      * 重写 insert 方法，对 SQL Server 使用批量复制优化
      */

@@ -11,14 +11,13 @@ import net.sf.jsqlparser.statement.alter.AlterExpression;
 import net.sf.jsqlparser.statement.alter.AlterOperation;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ddl.AlterStrategy;
 import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.ddl.alter.AddStrategy;
 import org.dbsyncer.parser.ddl.alter.ChangeStrategy;
 import org.dbsyncer.parser.ddl.alter.DropStrategy;
 import org.dbsyncer.parser.ddl.alter.ModifyStrategy;
-import org.dbsyncer.parser.ddl.converter.*;
-import org.dbsyncer.parser.ddl.ir.DDLIntermediateRepresentation;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
@@ -28,13 +27,16 @@ import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.parser.ddl.converter.IRToTargetConverter;
+import org.dbsyncer.sdk.parser.ddl.converter.SourceToIRConverter;
+import org.dbsyncer.sdk.parser.ddl.ir.DDLIntermediateRepresentation;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -51,17 +53,8 @@ public class DDLParserImpl implements DDLParser {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Map<AlterOperation, AlterStrategy> STRATEGIES = new ConcurrentHashMap();
 
-    @Autowired
-    private MySQLToIRConverter mySQLToIRConverter;
-
-    @Autowired
-    private SQLServerToIRConverter sqlServerToIRConverter;
-
-    @Autowired
-    private IRToMySQLConverter irToMySQLConverter;
-
-    @Autowired
-    private IRToSQLServerConverter irToSQLServerConverter;
+    @Resource
+    private ConnectorFactory connectorFactory;
 
     @PostConstruct
     private void init() {
@@ -103,9 +96,12 @@ public class DDLParserImpl implements DDLParser {
             String targetSql = alter.toString();
             // 如果是异构数据库，尝试进行转换
             if (!StringUtil.equals(sourceConnectorType, targetConnectorType)) {
-                // 获取相应的转换器
-                SourceToIRConverter sourceToIRConverter = getSourceToIRConverter(sourceConnectorType);
-                IRToTargetConverter irToTargetConverter = getIRToTargetConverter(targetConnectorType);
+                // 从源连接器获取源到IR转换器
+                ConnectorService sourceConnectorService = connectorFactory.getConnectorService(sourceConnectorConfig);
+                SourceToIRConverter sourceToIRConverter = sourceConnectorService.getSourceToIRConverter();
+
+                // 从目标连接器获取IR到目标转换器
+                IRToTargetConverter irToTargetConverter = connectorService.getIRToTargetConverter();
 
                 // 检查转换器是否有效
                 if (sourceToIRConverter == null || irToTargetConverter == null) {
@@ -114,12 +110,10 @@ public class DDLParserImpl implements DDLParser {
                 }
 
                 // 直接转换源DDL到目标DDL
-
                 // 1. 源DDL转中间表示
                 DDLIntermediateRepresentation ir = sourceToIRConverter.convert(alter);
                 // 2. 中间表示转目标DDL
                 targetSql = irToTargetConverter.convert(ir);
-
             }
 
             ddlConfig.setSql(targetSql);
@@ -132,26 +126,6 @@ public class DDLParserImpl implements DDLParser {
             }
         }
         return ddlConfig;
-    }
-
-    private SourceToIRConverter getSourceToIRConverter(String sourceConnectorType) {
-        if ("MySQL".equals(sourceConnectorType)) {
-            return mySQLToIRConverter;
-        } else if ("SqlServer".equals(sourceConnectorType)) {
-            return sqlServerToIRConverter;
-        }
-        // 默认返回null，表示不支持的转换
-        return null;
-    }
-
-    private IRToTargetConverter getIRToTargetConverter(String targetConnectorType) {
-        if ("MySQL".equals(targetConnectorType)) {
-            return irToMySQLConverter;
-        } else if ("SqlServer".equals(targetConnectorType)) {
-            return irToSQLServerConverter;
-        }
-        // 默认返回null，表示不支持的转换
-        return null;
     }
 
     @Override

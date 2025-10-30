@@ -1,17 +1,17 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.parser.ddl.converter;
+package org.dbsyncer.connector.mysql.converter;
 
 import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ddl.ir.DDLIntermediateRepresentation;
-import org.dbsyncer.parser.ddl.ir.DDLOperationType;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
-import org.springframework.stereotype.Component;
+import org.dbsyncer.sdk.parser.ddl.converter.SourceToIRConverter;
+import org.dbsyncer.sdk.parser.ddl.ir.DDLIntermediateRepresentation;
+import org.dbsyncer.sdk.parser.ddl.ir.DDLOperationType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,14 +19,13 @@ import java.util.List;
 /**
  * MySQL到中间表示转换器
  */
-@Component
 public class MySQLToIRConverter implements SourceToIRConverter {
 
     @Override
     public DDLIntermediateRepresentation convert(Alter alter) {
         DDLIntermediateRepresentation ir = new DDLIntermediateRepresentation();
         ir.setTableName(alter.getTable().getName());
-        
+
         for (AlterExpression expr : alter.getAlterExpressions()) {
             switch (expr.getOperation()) {
                 case ADD:
@@ -51,10 +50,10 @@ public class MySQLToIRConverter implements SourceToIRConverter {
                     break;
             }
         }
-        
+
         return ir;
     }
-    
+
     private List<Field> convertColumns(List<AlterExpression.ColumnDataType> columnDataTypes) {
         List<Field> columns = new ArrayList<>();
         if (columnDataTypes != null) {
@@ -67,7 +66,7 @@ public class MySQLToIRConverter implements SourceToIRConverter {
                     DataTypeEnum standardType = convertToStandardType(colDataType.getDataType());
                     column.setTypeName(standardType.name());
                     column.setType(standardType.ordinal());
-                    
+
                     // 处理长度和精度
                     List<String> args = colDataType.getArgumentsStringList();
                     if (args != null && !args.isEmpty()) {
@@ -92,12 +91,12 @@ public class MySQLToIRConverter implements SourceToIRConverter {
         }
         return columns;
     }
-    
+
     private DataTypeEnum convertToStandardType(String mysqlDataType) {
         if (mysqlDataType == null) {
             return DataTypeEnum.STRING; // 默认类型
         }
-        
+
         String type = mysqlDataType.toUpperCase();
         if (type.startsWith("VARCHAR") || type.startsWith("CHAR")) {
             return DataTypeEnum.STRING;
@@ -126,10 +125,10 @@ public class MySQLToIRConverter implements SourceToIRConverter {
         } else if ("BLOB".equals(type) || "TINYBLOB".equals(type) || "MEDIUMBLOB".equals(type) || "LONGBLOB".equals(type)) {
             return DataTypeEnum.BYTES;
         }
-        
+
         return DataTypeEnum.STRING; // 默认返回字符串类型
     }
-    
+
     private String removeBackQuotes(String name) {
         if (name != null) {
             return StringUtil.replace(name, "`", "");

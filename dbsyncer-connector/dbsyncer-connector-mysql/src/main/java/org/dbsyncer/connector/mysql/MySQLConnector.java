@@ -4,6 +4,8 @@
 package org.dbsyncer.connector.mysql;
 
 import org.dbsyncer.connector.mysql.cdc.MySQLListener;
+import org.dbsyncer.connector.mysql.converter.IRToMySQLConverter;
+import org.dbsyncer.connector.mysql.converter.MySQLToIRConverter;
 import org.dbsyncer.connector.mysql.schema.MySQLDateValueMapper;
 import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
 import org.dbsyncer.connector.mysql.storage.MySQLStorageService;
@@ -25,10 +27,6 @@ import java.util.Map;
 
 /**
  * MySQL连接器实现
- *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2021-11-22 23:55
  */
 public class MySQLConnector extends AbstractDatabaseConnector {
 
@@ -37,10 +35,13 @@ public class MySQLConnector extends AbstractDatabaseConnector {
 
     private final MySQLSchemaResolver schemaResolver = new MySQLSchemaResolver();
 
+
     public MySQLConnector() {
         sqlTemplate = new MySQLTemplate();
         VALUE_MAPPERS.put(Types.DATE, new MySQLDateValueMapper());
         configValidator = new MySQLConfigValidator();
+        sourceToIRConverter = new MySQLToIRConverter();
+        irToTargetConverter = new IRToMySQLConverter();
     }
 
     @Override
@@ -95,6 +96,4 @@ public class MySQLConnector extends AbstractDatabaseConnector {
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
     }
-
-
 }

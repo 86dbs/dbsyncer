@@ -1,19 +1,18 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.parser.ddl.converter;
+package org.dbsyncer.connector.mysql.converter;
 
-import org.dbsyncer.parser.ddl.ir.DDLIntermediateRepresentation;
 import org.dbsyncer.sdk.connector.database.sql.impl.MySQLTemplate;
 import org.dbsyncer.sdk.model.Field;
-import org.springframework.stereotype.Component;
+import org.dbsyncer.sdk.parser.ddl.converter.IRToTargetConverter;
+import org.dbsyncer.sdk.parser.ddl.ir.DDLIntermediateRepresentation;
 
 import java.util.List;
 
 /**
  * 中间表示到MySQL转换器
  */
-@Component
 public class IRToMySQLConverter implements IRToTargetConverter {
 
     private final MySQLTemplate mysqlTemplate = new MySQLTemplate();
