@@ -390,3 +390,42 @@ select.form-control.is-invalid,
     padding-top: 0;
   }
 }
+
+/* 配置分组区块（用于复杂配置页面如 Kafka） */
+.dbsyncer-config-section {
+  margin-top: 32px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.dbsyncer-config-section-header {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f7f9ff 0%, #eef2ff 100%);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.dbsyncer-config-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dbsyncer-config-section-body {
+  padding: 24px 20px;
+  background-color: #fff;
+}
+
+/* 配置分组中的表单项间距调整 */
+.dbsyncer-config-section-body .form-item-full:first-child,
+.dbsyncer-config-section-body .form-grid-2:first-child {
+  margin-top: 0;
+}
+
+.dbsyncer-config-section-body .form-item-full + .form-grid-2,
+.dbsyncer-config-section-body .form-grid-2 + .form-item-full,
+.dbsyncer-config-section-body .form-grid-2 + .form-grid-2 {
+  margin-top: 20px;
+}
