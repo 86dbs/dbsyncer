@@ -7,6 +7,7 @@ import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.parser.ddl.converter.SourceToIRConverter;
@@ -20,6 +21,9 @@ import java.util.List;
  * MySQL到中间表示转换器
  */
 public class MySQLToIRConverter implements SourceToIRConverter {
+
+    // 复用MySQLSchemaResolver的类型转换逻辑
+    private final MySQLSchemaResolver schemaResolver = new MySQLSchemaResolver();
 
     @Override
     public DDLIntermediateRepresentation convert(Alter alter) {
@@ -62,10 +66,12 @@ public class MySQLToIRConverter implements SourceToIRConverter {
                 column.setName(removeBackQuotes(columnDataType.getColumnName()));
                 ColDataType colDataType = columnDataType.getColDataType();
                 if (colDataType != null) {
-                    // 设置标准类型名和类型编码
-                    DataTypeEnum standardType = convertToStandardType(colDataType.getDataType());
-                    column.setTypeName(standardType.name());
-                    column.setType(standardType.ordinal());
+                    // 使用MySQLSchemaResolver将MySQL特定类型转换为标准类型
+                    Field mysqlField = new Field();
+                    mysqlField.setTypeName(colDataType.getDataType());
+                    Field standardField = schemaResolver.toStandardType(mysqlField);
+                    column.setTypeName(standardField.getTypeName());
+                    column.setType(standardField.getType());
 
                     // 处理长度和精度
                     List<String> args = colDataType.getArgumentsStringList();
@@ -90,43 +96,6 @@ public class MySQLToIRConverter implements SourceToIRConverter {
             }
         }
         return columns;
-    }
-
-    private DataTypeEnum convertToStandardType(String mysqlDataType) {
-        if (mysqlDataType == null) {
-            return DataTypeEnum.STRING; // 默认类型
-        }
-
-        String type = mysqlDataType.toUpperCase();
-        if (type.startsWith("VARCHAR") || type.startsWith("CHAR")) {
-            return DataTypeEnum.STRING;
-        } else if ("INT".equals(type) || "INTEGER".equals(type)) {
-            return DataTypeEnum.INT;
-        } else if ("BIGINT".equals(type)) {
-            return DataTypeEnum.LONG;
-        } else if ("DECIMAL".equals(type) || "NUMERIC".equals(type)) {
-            return DataTypeEnum.DECIMAL;
-        } else if ("FLOAT".equals(type)) {
-            return DataTypeEnum.FLOAT;
-        } else if ("DOUBLE".equals(type)) {
-            return DataTypeEnum.DOUBLE;
-        } else if ("DATE".equals(type)) {
-            return DataTypeEnum.DATE;
-        } else if ("TIME".equals(type)) {
-            return DataTypeEnum.TIME;
-        } else if (type.startsWith("DATETIME") || "TIMESTAMP".equals(type)) {
-            return DataTypeEnum.TIMESTAMP;
-        } else if ("TINYINT".equals(type) && type.contains("1")) {
-            return DataTypeEnum.BOOLEAN;
-        } else if ("TINYINT".equals(type) || "SMALLINT".equals(type) || "MEDIUMINT".equals(type)) {
-            return DataTypeEnum.INT;
-        } else if ("TEXT".equals(type) || "TINYTEXT".equals(type) || "MEDIUMTEXT".equals(type) || "LONGTEXT".equals(type)) {
-            return DataTypeEnum.STRING;
-        } else if ("BLOB".equals(type) || "TINYBLOB".equals(type) || "MEDIUMBLOB".equals(type) || "LONGBLOB".equals(type)) {
-            return DataTypeEnum.BYTES;
-        }
-
-        return DataTypeEnum.STRING; // 默认返回字符串类型
     }
 
     private String removeBackQuotes(String name) {

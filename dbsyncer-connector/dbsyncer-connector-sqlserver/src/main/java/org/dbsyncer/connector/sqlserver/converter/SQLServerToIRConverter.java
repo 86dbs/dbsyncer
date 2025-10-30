@@ -7,6 +7,7 @@ import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.sqlserver.schema.SqlServerSchemaResolver;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.parser.ddl.converter.SourceToIRConverter;
@@ -20,6 +21,9 @@ import java.util.List;
  * SQL Server到中间表示转换器
  */
 public class SQLServerToIRConverter implements SourceToIRConverter {
+
+    // 复用SqlServerSchemaResolver的类型转换逻辑
+    private final SqlServerSchemaResolver schemaResolver = new SqlServerSchemaResolver();
 
     @Override
     public DDLIntermediateRepresentation convert(Alter alter) {
@@ -58,10 +62,12 @@ public class SQLServerToIRConverter implements SourceToIRConverter {
                 column.setName(removeBrackets(columnDataType.getColumnName()));
                 ColDataType colDataType = columnDataType.getColDataType();
                 if (colDataType != null) {
-                    // 设置标准类型名和类型编码
-                    DataTypeEnum standardType = convertToStandardType(colDataType.getDataType());
-                    column.setTypeName(standardType.name());
-                    column.setType(standardType.ordinal());
+                    // 使用SqlServerSchemaResolver将SQL Server特定类型转换为标准类型
+                    Field sqlServerField = new Field();
+                    sqlServerField.setTypeName(colDataType.getDataType());
+                    Field standardField = schemaResolver.toStandardType(sqlServerField);
+                    column.setTypeName(standardField.getTypeName());
+                    column.setType(standardField.getType());
 
                     // 处理长度和精度
                     List<String> args = colDataType.getArgumentsStringList();
@@ -86,43 +92,6 @@ public class SQLServerToIRConverter implements SourceToIRConverter {
             }
         }
         return columns;
-    }
-
-    private DataTypeEnum convertToStandardType(String sqlServerDataType) {
-        if (sqlServerDataType == null) {
-            return DataTypeEnum.STRING; // 默认类型
-        }
-
-        String type = sqlServerDataType.toUpperCase();
-        if (type.startsWith("NVARCHAR") || type.startsWith("VARCHAR") || type.startsWith("CHAR")) {
-            return DataTypeEnum.STRING;
-        } else if ("INT".equals(type)) {
-            return DataTypeEnum.INT;
-        } else if ("BIGINT".equals(type)) {
-            return DataTypeEnum.LONG;
-        } else if ("DECIMAL".equals(type) || "NUMERIC".equals(type)) {
-            return DataTypeEnum.DECIMAL;
-        } else if ("REAL".equals(type)) {
-            return DataTypeEnum.FLOAT;
-        } else if ("FLOAT".equals(type)) {
-            return DataTypeEnum.DOUBLE;
-        } else if ("DATE".equals(type)) {
-            return DataTypeEnum.DATE;
-        } else if ("TIME".equals(type)) {
-            return DataTypeEnum.TIME;
-        } else if (type.startsWith("DATETIME")) {
-            return DataTypeEnum.TIMESTAMP;
-        } else if ("BIT".equals(type)) {
-            return DataTypeEnum.BOOLEAN;
-        } else if ("SMALLINT".equals(type)) {
-            return DataTypeEnum.INT;
-        } else if ("TEXT".equals(type) || "NTEXT".equals(type)) {
-            return DataTypeEnum.STRING;
-        } else if ("VARBINARY".equals(type) || "BINARY".equals(type) || "IMAGE".equals(type)) {
-            return DataTypeEnum.BYTES;
-        }
-
-        return DataTypeEnum.STRING; // 默认返回字符串类型
     }
 
     private String removeBrackets(String name) {

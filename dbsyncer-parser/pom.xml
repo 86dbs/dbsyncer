@@ -25,6 +25,21 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <!-- Connector 连接器服务 -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-mysql</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-sqlserver</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- antlr4-runtime -->
         <dependency>
             <groupId>org.antlr</groupId>
