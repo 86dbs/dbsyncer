@@ -909,6 +909,48 @@ tr:hover {
   align-items: center;
 }
 
+/* 许可证信息框 */
+.license-info-box {
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.03) 0%, rgba(24, 144, 255, 0.08) 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(24, 144, 255, 0.12);
+}
+
+/* 许可证激活步骤 */
+.license-steps {
+  margin: 0;
+  padding-left: 24px;
+  list-style: none;
+  counter-reset: step-counter;
+}
+
+.license-steps li {
+  position: relative;
+  padding-left: 8px;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  counter-increment: step-counter;
+}
+
+.license-steps li::before {
+  content: counter(step-counter);
+  position: absolute;
+  left: -24px;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 50%;
+}
+
 /* 响应式断点（与 Tailwind 接近） */
 @media (min-width: 768px) {
   .md\:flex { display: flex !important; }
