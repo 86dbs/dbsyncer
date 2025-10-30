@@ -13,13 +13,10 @@
     <meta name="author" content="AE86">
     <title>dbsyncer</title>
     <link type="image/x-icon" rel="icon" th:href="@{/img/logo.ico}"/>
-    <link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css"/>
-    <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/font-awesome.min.css}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/font-awesome.min.css}"/>
     <link type="text/css" rel="stylesheet" th:href="@{/css/dbsyncer-theme.css}">
-    <script th:if="${enableCDN}" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     <script th:src="@{/plugins/js/chartjs/chart.umd.min.js}"></script>
-    <script th:if="${enableCDN}" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
-    <script th:if="${!enableCDN}" th:src="@{/plugins/js/jquery/jquery-1.11.3.min.js}"></script>
+    <script th:src="@{/plugins/js/jquery/jquery-1.11.3.min.js}"></script>
 </head>
 <body class="bg-secondary overflow-hidden">
     <div class="flex h-screen">

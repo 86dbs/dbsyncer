@@ -55,11 +55,6 @@ public class SystemConfig extends ConfigModel {
     private boolean enableStorageWriteFull;
 
     /**
-     * 是否启用CDN加速访问静态资源(false-关闭; true-开启）
-     */
-    private boolean enableCDN;
-
-    /**
      * 是否启用水印
      */
     private boolean enableWatermark;
@@ -138,18 +133,6 @@ public class SystemConfig extends ConfigModel {
 
     public void setEnableStorageWriteFull(boolean enableStorageWriteFull) {
         this.enableStorageWriteFull = enableStorageWriteFull;
-    }
-
-    public boolean isEnableCDN() {
-        return enableCDN;
-    }
-
-    public void setEnableCDN(boolean enableCDN) {
-        this.enableCDN = enableCDN;
-    }
-
-    public boolean isEnableWatermark() {
-        return enableWatermark;
     }
 
     public void setEnableWatermark(boolean enableWatermark) {

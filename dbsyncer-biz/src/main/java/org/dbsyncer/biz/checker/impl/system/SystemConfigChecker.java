@@ -3,14 +3,12 @@
  */
 package org.dbsyncer.biz.checker.impl.system;
 
-import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.BeanUtil;
-import org.dbsyncer.common.util.NetworkUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.slf4j.Logger;
@@ -59,14 +57,6 @@ public class SystemConfigChecker extends AbstractChecker {
         params.put("enableWatermark", StringUtil.isNotBlank(params.get("enableWatermark")) ? "true" : "false");
         params.put("enableSchemaResolver", StringUtil.isNotBlank(params.get("enableSchemaResolver")) ? "true" : "false");
         params.put("enablePrintTraceInfo", StringUtil.isNotBlank(params.get("enablePrintTraceInfo")) ? "true" : "false");
-        String enableCDN = "false";
-        if (StringUtil.isNotBlank(params.get("enableCDN"))) {
-            if (!NetworkUtil.isInternetAvailable()) {
-                throw new BizException("无法访问互联网，不支持开启[CDN静态资源]");
-            }
-            enableCDN = "true";
-        }
-        params.put("enableCDN", enableCDN);
         String watermark = params.get("watermark");
         if (StringUtil.isNotBlank(watermark)) {
             Assert.isTrue(watermark.length() <= 64, "允许水印内容最多输入64个字.");

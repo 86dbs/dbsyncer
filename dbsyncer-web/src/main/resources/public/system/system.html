@@ -27,19 +27,6 @@
                     </div>
                 </div>
                 <div class="form-item">
-                    <label class="form-label">CDN静态资源<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="仅限可访问公网环境下，开启cdn可以提高页面加载速度，开启后需刷新页面生效"></i></label>
-                    <div class="form-control-area">
-                        <label class="form-switch">
-                            <input name="enableCDN" th:checked="${config?.enableCDN}" type="checkbox" />
-                            <span class="switch-track">
-                                <span class="switch-option switch-option-on">Yes</span>
-                                <span class="switch-option switch-option-off">No</span>
-                                <span class="switch-thumb"></span>
-                            </span>
-                        </label>
-                    </div>
-                </div>
-                <div class="form-item">
                     <label class="form-label">刷新监控频率(秒)<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
                         <input type="number" class="form-control" min="1" max="60" required name="refreshIntervalSeconds" th:value="${config?.refreshIntervalSeconds}"/>
@@ -139,12 +126,6 @@
                                 <span class="switch-thumb"></span>
                             </span>
                         </label>
-                    </div>
-                </div>
-                <div class="form-item">
-                    <label class="form-label">测试<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="仅用于排查问题，生产环境建议关闭"></i></label>
-                    <div class="form-control-area">
-                        <input name="test" type="text" required  />
                     </div>
                 </div>
             </div>

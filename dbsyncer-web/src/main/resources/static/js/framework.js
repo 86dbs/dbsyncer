@@ -144,7 +144,7 @@ function doLoader(url) {
         $mainContent.load($basePath + url, function (response, status, xhr) {
             hideLoading();
             if (status !== 'success') {
-                alert('页面加载失败，请稍后重试');
+                bootGrowl('页面加载失败，请稍后重试', "danger");
             }
         });
     }
@@ -155,7 +155,7 @@ function doRequest(action, data) {
     hideLoading();
     // 异常请求：302
     if (!(data instanceof Object)) {
-        alert("会话过期, 3秒后将访问登录主页...");
+        bootGrowl("会话过期, 3秒后将访问登录主页...", "danger");
         setTimeout(function () {
             location.href = $basePath;
         }, 3000);
@@ -167,7 +167,7 @@ function doRequest(action, data) {
 // 异常响应
 function doErrorResponse(xhr, status, info) {
     hideLoading();
-    alert("访问异常，请刷新或重试.");
+    bootGrowl("访问异常，请刷新或重试.", "danger");
 }
 
 // 全局Ajax post

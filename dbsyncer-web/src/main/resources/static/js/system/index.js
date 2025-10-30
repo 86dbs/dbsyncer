@@ -1,18 +1,4 @@
-function submit(data) {
-    doPoster('/system/edit', data, function (data) {
-        if (data.success == true) {
-            bootGrowl("修改成功!", "success");
-        } else {
-            bootGrowl(data.resultValue, "danger");
-        }
-        doLoader("/system");
-    });
-}
-
 $(function () {
-    if (window.DBSyncerTheme) {
-        DBSyncerTheme.enhanceSelects(document);
-    }
     $('.dbsyncer_switch').each(function () {
         var $input = $(this);
         $input.attr('role', 'switch');
@@ -25,11 +11,16 @@ $(function () {
     $("#updateSystemSubBtn").click(function () {
         const $form = $("#configEditForm");
         if (window.DBSyncerTheme && DBSyncerTheme.validateForm($form)) {
-            const data = $form.serializeJson();
-            console.log(data);
-            bootGrowl("修改成功!", "success");
-            bootGrowl("修改失败!", "danger");
-            // submit(data);
+            showLoading();
+            doPoster('/system/edit', $form.serializeJson(), function (data) {
+                hideLoading();
+                if (data.success == true) {
+                    bootGrowl("修改成功!", "success");
+                } else {
+                    bootGrowl(data.resultValue, "danger");
+                }
+                doLoader("/system");
+            });
         }
     });
 })
