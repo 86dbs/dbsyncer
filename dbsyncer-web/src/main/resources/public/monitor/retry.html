@@ -2,61 +2,74 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
 xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="container-fluid">
-  <div class="container">
-    <form id="retryDataForm" class="form-horizontal" role="form" method="post">
-      <!-- 标题 -->
-      <div class="row text-center">
-        <div class="page-header">
-          <h3>重试[[${meta?.mappingName}]]</h3>
-          <input type="hidden" name="metaId" id="metaId" th:value="${meta?.id}"/>
-          <input type="hidden" name="messageId" th:value="${message?.id}"/>
-          <input type="hidden" id="retryDataParams" name="retryDataParams"/>
+<div class="dbsyncer-form-container">
+    <form id="retryDataForm">
+        <input type="hidden" name="metaId" id="metaId" th:value="${meta?.id}"/>
+        <input type="hidden" name="messageId" th:value="${message?.id}"/>
+        <input type="hidden" id="retryDataParams" name="retryDataParams"/>
+        
+        <div class="card">
+            <!-- 标题栏 -->
+            <div class="card-header flex-between">
+                <div>
+                    <h3 class="card-title">重试数据 - [[${meta?.mappingName}]]</h3>
+                    <p class="text-xs text-tertiary mt-1">
+                        <span class="font-medium text-primary">[[${message?.sourceTableName}]]</span>
+                        <i class="fa fa-angle-double-right mx-2"></i>
+                        <span class="font-medium text-primary">[[${message?.targetTableName}]]</span>
+                    </p>
+                </div>
+                <div class="flex gap-2">
+                    <button id="retryDataSubmitBtn" type="button" class="btn btn-primary">
+                        <i class="fa fa-refresh"></i> 执行重试
+                    </button>
+                    <button id="retryDataBackBtn" type="button" class="btn btn-secondary">
+                        <i class="fa fa-reply"></i> 返回
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 数据表格 -->
+            <div class="card-body p-0">
+                <div class="px-4 py-3 bg-warning-light border-b">
+                    <i class="fa fa-info-circle text-warning"></i>
+                    <span class="text-sm text-secondary ml-2">执行前，请先检查数据。确认字段类型是否支持当前值</span>
+                </div>
+                
+                <div class="dbsyncer-table-wrapper">
+                    <table class="dbsyncer-table">
+                        <thead>
+                        <tr>
+                            <th width="60" class="text-center">#</th>
+                            <th width="250">目标表字段</th>
+                            <th width="150">值类型</th>
+                            <th>值</th>
+                            <th width="80" class="text-center">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="c,state : ${message?.columns}">
+                            <td class="text-center text-tertiary" th:text="${state.index}+1"></td>
+                            <td>
+                                <span class="font-medium" th:text="${c?.key}"></span>
+                                <span class="text-sm text-tertiary ml-1" th:text="'(' + ${c?.keyType} + ')'"></span>
+                            </td>
+                            <td>
+                                <span class="badge badge-info" th:text="${c?.valueType}"></span>
+                            </td>
+                            <td class="font-mono text-sm" th:text="${c?.value}"></td>
+                            <td class="text-center">
+                                <button type="button" th:type="${c?.key}" class="btn btn-sm btn-text retryDataModify" title="修改">
+                                    <i class="fa fa-edit text-success"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-      </div>
-
-      <!-- 操作 -->
-      <div class="form-group">
-        <div class="col-md-10"><h4>[[${message?.sourceTableName}]] <span class="fa fa-angle-double-right"></span> [[${message?.targetTableName}]]</h4></div>
-        <div class="col-md-2 text-right">
-          <button id="retryDataSubmitBtn" type="button" class="btn btn-primary">
-            <span class="fa fa-refresh"></span>执行
-          </button>
-          <button id="retryDataBackBtn" type="button" class="btn btn-default">
-            <span class="fa fa-reply"></span>返回
-          </button>
-        </div>
-      </div>
-
-      <!-- 配置 -->
-      <div class="row">
-        <div class="col-md-12">
-          <table class="table table-hover">
-            <caption>执行前，请先检查数据。字段类型是否支持当前值</caption>
-            <thead>
-            <tr>
-              <th></th>
-              <th>目标表字段</th>
-              <th>值类型</th>
-              <th>值</th>
-              <th>操作</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="c,state : ${message?.columns}">
-              <td th:text="${state.index}+1"></td>
-              <td th:text="${c?.key + '(' + c?.keyType + ')'}"/>
-              <td th:text="${c?.valueType}"/>
-              <td th:text="${c?.value}"/>
-              <td><i th:type="${c?.key}" th:title="修改" class="fa fa-edit well-sign-green dbsyncer_pointer retryDataModify"></i></td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
     </form>
-  </div>
 </div>
 
 <script th:src="@{/js/monitor/retry.js}"></script>

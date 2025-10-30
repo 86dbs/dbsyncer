@@ -2,33 +2,58 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="dbsyncer-table-container">
-    <div class="row">
-        <div class="col-md-12">
-            <!-- 插件文档 -->
-            <div class="col-md-5">
-                <blockquote>
-                    <p>插件有什么用？</p>
-                    <small class="text-muted">插件是一种可扩展全量同步和增量同步实现数据转换的技术方式。通过插件可以接收同步数据，自定义同步到目标源的行数据，也能消费数据并实现更多业务场景。</small>
-                </blockquote>
+<div class="p-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- 插件文档 -->
+        <div class="lg:col-span-5">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title">插件有什么用？</h3>
+                </div>
+                <div class="card-body">
+                    <p class="text-secondary leading-relaxed">
+                        插件是一种可扩展全量同步和增量同步实现数据转换的技术方式。通过插件可以接收同步数据，自定义同步到目标源的行数据，也能消费数据并实现更多业务场景。
+                    </p>
+                </div>
+            </div>
 
-                <p>如何开发插件？</p>
-                <ol>
-                    <li>新建java或maven工程，或者下载 <a href="https://gitee.com/ghi/dbsyncer-plugin-demo" title="提供开发者编写插件的示例项目"
-                                               target='_blank'>示例项目</a></li>
-                    <li>导入开发包：
-                        <ul>
-                            <li>方式1：导入jar
-                                <p><a onClick="downLoad('sdk')" href="javascript:;" title="下载开发包">dbsyncer-sdk-[[${version}]].jar</a></p>
-                            </li>
-                            <li>方式2：引入pom（需要安装到本地）
-                                <pre>&lt;dependency&gt;<br/>&nbsp;&nbsp;&lt;groupId>org.ghi&lt;/groupId&gt;<br/>&nbsp;&nbsp;&lt;artifactId>dbsyncer-sdk&lt;/artifactId&gt;<br/>&nbsp;&nbsp;&lt;version>[[${version}]]&lt;/version&gt;<br/>&lt;/dependency&gt;</pre>
-                            </li>
-                        </ul>
-                    </li>
-                    <li>
-                        <simple>新建一个类，比如MyPlugin，实现接口PluginService方法</simple>
-<pre>package org.test;
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">如何开发插件？</h3>
+                </div>
+                <div class="card-body">
+                    <p class="font-medium mb-3">开发步骤：</p>
+                    <ol class="plugin-steps">
+                        <li>
+                            <span class="font-medium">新建工程</span><br/>
+                            新建java或maven工程，或者下载 
+                            <a href="https://gitee.com/ghi/dbsyncer-plugin-demo" 
+                               title="提供开发者编写插件的示例项目" 
+                               target='_blank' 
+                               class="text-primary hover-underline">
+                                <i class="fa fa-external-link"></i> 示例项目
+                            </a>
+                        </li>
+                        
+                        <li>
+                            <span class="font-medium">导入开发包</span>
+                            <p class="text-sm font-medium mb-2">方式1：导入 jar</p>
+                            <p class="mb-3">
+                                <a onClick="downLoad('sdk')" href="javascript:;" class="btn btn-sm btn-primary" title="下载开发包">
+                                    <i class="fa fa-download"></i> dbsyncer-sdk-[[${version}]].jar
+                                </a>
+                            </p>
+                            <p class="text-sm font-medium mb-2">方式2：引入 pom（需要安装到本地）</p>
+                            <pre class="code-block">&lt;dependency&gt;
+    &lt;groupId&gt;org.ghi&lt;/groupId&gt;
+    &lt;artifactId&gt;dbsyncer-sdk&lt;/artifactId&gt;
+    &lt;version&gt;[[${version}]]&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+                        </li>
+                        <li>
+                            <span class="font-medium">新建插件类</span><br/>
+                            <p class="text-sm font-medium mb-2">新建一个类，比如 MyPlugin，实现接口 PluginService 方法</p>
+                            <pre class="code-block mt-2">package org.test;
 
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
@@ -124,81 +149,138 @@ public class MyPlugin implements PluginService {
         return "我的插件";
     }
 }</pre>
-                    </li>
-                    <li>
-                        <simple>/META-INF/新建services文件夹，并在services下新建一个文件，命名为org.dbsyncer.sdk.spi.PluginService，文件写入实现类路径org.test.MyPlugin，如果有多个实现就换行再写入</simple>
-                        <p><img draggable="false" th:src="@{'/img/plugin/spi.jpg'}" width="600px" height="300px" ></p>
-                    </li>
-                    <li>
-                        <simple>通过maven命令打包</simple>
-                        <pre>mvn clean compile package</pre>
-                    </li>
-                </ol>
+                        </li>
+                        
+                        <li>
+                            <span class="font-medium">配置 SPI</span><br/>
+                            在 /META-INF/ 新建 services 文件夹，并在 services 下新建一个文件，命名为 org.dbsyncer.sdk.spi.PluginService，文件写入实现类路径 org.test.MyPlugin，如果有多个实现就换行再写入
+                            <div class="mt-2">
+                                <img draggable="false" th:src="@{'/img/plugin/spi.jpg'}" class="rounded border" style="max-width: 100%; height: auto;">
+                            </div>
+                        </li>
+                        
+                        <li>
+                            <span class="font-medium">打包</span><br/>
+                            通过 maven 命令打包
+                            <pre class="code-block mt-2">mvn clean compile package</pre>
+                        </li>
+                    </ol>
+                </div>
             </div>
+        </div>
 
-            <!-- 插件列表 -->
-            <div class="col-md-7">
-                <form class="form-horizontal" role="form">
-                    <div class="page-header">
-                        <h3>上传插件 <small>只支持 "jar" 的文件扩展名.</small></h3>
+        <!-- 插件列表 -->
+        <div class="lg:col-span-7">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title">上传插件</h3>
+                        <p class="text-xs text-tertiary mt-1">
+                            <i class="fa fa-info-circle"></i> 只支持 ".jar" 的文件扩展名
+                        </p>
                     </div>
-
-                    <div class="form-group">
-                        <div class="file-loading">
-                            <input id="filePlugin" type="file" name="files" multiple="multiple" />
+                </div>
+                
+                <div class="card-body">
+                    <!-- 文件上传 -->
+                    <div id="pluginUploader" class="dbsyncer-upload-container mb-4">
+                        <div class="dbsyncer-upload-area" data-upload-area>
+                            <div class="dbsyncer-upload-icon">
+                                <i class="fa fa-plug"></i>
+                            </div>
+                            <div class="dbsyncer-upload-text">点击或拖拽 JAR 文件到此处上传</div>
+                            <div class="dbsyncer-upload-hint">
+                                支持的文件类型：.jar<br>
+                                最多上传 5 个文件
+                            </div>
+                            <div class="dbsyncer-upload-button">选择文件</div>
+                            <input type="file" 
+                                   class="dbsyncer-upload-input" 
+                                   id="filePlugin" 
+                                   accept=".jar"
+                                   multiple>
                         </div>
+                        <div class="dbsyncer-upload-list" data-upload-list></div>
                     </div>
-
-                    <div class="form-group">
-                        <table class="table table-hover">
-                            <caption>插件列表([[${plugins?.size()} ?: 0]])</caption>
+                </div>
+            </div>
+            
+            <!-- 插件列表 -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        插件列表
+                        <span class="badge badge-primary ml-2">[[${plugins?.size()} ?: 0]]</span>
+                    </h3>
+                </div>
+                <div class="card-body p-0">
+                    <div class="dbsyncer-table-wrapper">
+                        <table class="dbsyncer-table">
                             <thead>
                             <tr>
-                                <th>名称</th>
-                                <th>运行驱动</th>
+                                <th width="200">名称</th>
+                                <th width="150">运行驱动</th>
                                 <th>类名</th>
-                                <th>版本</th>
-                                <th>文件</th>
+                                <th width="100">版本</th>
+                                <th width="200">文件</th>
                             </tr>
                             </thead>
                             <tbody id="pluginList">
                             <tr th:id="${p?.name}" th:each="p,state : ${plugins}">
-                                <td th:title="内置插件" th:if="${p?.unmodifiable}"><i class="fa fa-plug fa_gray" aria-hidden="true"></i> [[${p?.name}]]</td>
-                                <td th:title="普通插件" th:if="${not p?.unmodifiable}"><i class="fa fa-star fa_blueviolet" aria-hidden="true"></i> [[${p?.name}]]</td>
+                                <td>
+                                    <div th:if="${p?.unmodifiable}" class="flex items-center" title="内置插件">
+                                        <i class="fa fa-plug text-secondary mr-2"></i>
+                                        <span class="font-medium">[[${p?.name}]]</span>
+                                        <span class="badge badge-info ml-2 text-xs">内置</span>
+                                    </div>
+                                    <div th:if="${not p?.unmodifiable}" class="flex items-center" title="普通插件">
+                                        <i class="fa fa-star text-warning mr-2"></i>
+                                        <span class="font-medium">[[${p?.name}]]</span>
+                                    </div>
+                                </td>
                                 <td th:text="${p?.mappingName}"/>
-                                <td th:text="${p?.className}"/>
-                                <td th:text="${p?.version}"/>
-                                <td th:text="${p?.fileName}"/>
+                                <td class="font-mono text-sm text-secondary" th:text="${p?.className}"/>
+                                <td>
+                                    <span class="badge badge-success" th:text="${p?.version}"></span>
+                                </td>
+                                <td class="text-sm text-secondary" th:text="${p?.fileName}"/>
                             </tr>
                             </tbody>
                         </table>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script type="text/javascript">
-    $("#filePlugin").fileinput({
-        theme: 'fas',
-        language: 'zh',
-        uploadUrl: $basePath + '/plugin/upload',
-        enctype: 'multipart/form-data',
-        removeFromPreviewOnError: true, //当选择的文件不符合规则时，例如不是指定后缀文件、大小超出配置等，选择的文件不会出现在预览框中，只会显示错误信息
-        allowedFileExtensions: ['jar'],
-        minFileCount: 0, //每次多次上载允许的最小文件数。如果设置为0，则表示文件数是可选的
-        maxFileCount: 5, //表示允许同时上传的最大文件个数 如果设置为0，则表示允许的文件数不受限制
-        showPreview: true,
-        showUpload: true,//不展示上传按钮
-        validateInitialCount: true,//是否在验证minFileCount和包含初始预览文件计数（服务器上载文件）maxFileCount
-    }).on("fileuploaded", function(event, data, previewId, index) {
-        if (!data.response.success) {
-            bootGrowl(data.response.resultValue, "danger");
+    $(function() {
+        // 初始化文件上传组件
+        if (window.DBSyncerTheme && DBSyncerTheme.initFileUpload) {
+            DBSyncerTheme.initFileUpload('#pluginUploader', {
+                uploadUrl: $basePath + '/plugin/upload',
+                maxFiles: 5,
+                maxSize: 50 * 1024 * 1024, // 50MB
+                acceptedFiles: '.jar',
+                autoUpload: true,
+                onSuccess: function(file, response) {
+                    if (response.success) {
+                        bootGrowl("插件上传成功！", "success");
+                        setTimeout(function() {
+                            doLoader("/plugin");
+                        }, 800);
+                    } else {
+                        bootGrowl(response.resultValue || "上传失败", "danger");
+                    }
+                },
+                onError: function(file, error) {
+                    bootGrowl(error || "上传失败", "danger");
+                }
+            });
         }
-        doLoader("/plugin");
     });
-
+    
     function downLoad(fileName){
         window.open($basePath + "/plugin/download?name=" + fileName);
     }

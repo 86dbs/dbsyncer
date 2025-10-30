@@ -1085,6 +1085,116 @@ tr:hover {
   background: #36cfc9;
 }
 
+/* 插件开发步骤 */
+.plugin-steps {
+  list-style: none;
+  counter-reset: plugin-step;
+  padding-left: 0;
+}
+
+.plugin-steps > li {
+  position: relative;
+  padding-left: 40px;
+  margin-bottom: 24px;
+  counter-increment: plugin-step;
+}
+
+.plugin-steps > li::before {
+  content: counter(plugin-step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 50%;
+}
+
+/* 代码块 */
+.code-block {
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 16px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  color: #24292e;
+}
+
+/* 统计卡片 */
+.stat-card {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.stat-card-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 24px;
+  color: #fff;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.stat-card-icon.bg-primary {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+}
+
+.stat-card-icon.bg-success {
+  background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+}
+
+.stat-card-icon.bg-warning {
+  background: linear-gradient(135deg, #faad14 0%, #d48806 100%);
+}
+
+.stat-card-icon.bg-danger {
+  background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
+}
+
+.stat-card-icon.bg-info {
+  background: linear-gradient(135deg, #13c2c2 0%, #08979c 100%);
+}
+
+.stat-card-content {
+  flex: 1;
+}
+
+.stat-card-label {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+.stat-card-value {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
 /* 二维码悬浮提示 */
 .dbsyncer-qrcode-popover {
   position: absolute;
