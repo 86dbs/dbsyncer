@@ -25,34 +25,36 @@ function submit(data) {
 
 // 绑定连接器类型切换事件
 function bindConnectorChangeEvent($select) {
-    // 默认渲染连接页面
-    $select.on('changed.bs.select',function(e){
-        changeConnectorType($(this));
-    });
-
     changeConnectorType($select);
+    $select.on('change', function(){
+        changeConnectorType($select);
+    });
 }
 
 function changeConnectorType($select){
     //连接类型
-    var connType = $select.selectpicker('val');
+    var connType = $select.val();
     //获取连接配置元素
     var $connectorConfig = $("#connectorConfig");
     //清空配置
     $connectorConfig.html("");
 
     //加载页面
-    $connectorConfig.load($basePath + "/connector/page/add" + connType);
+    $connectorConfig.load($basePath + "/connector/page/add" + connType, function(){
+        if (window.DBSyncerTheme) {
+            DBSyncerTheme.enhanceSelects($connectorConfig[0]);
+        }
+    });
 }
 
 $(function () {
+    if (window.DBSyncerTheme) {
+        DBSyncerTheme.enhanceSelects(document);
+    }
     // 兼容IE PlaceHolder
     $('input[type="text"],input[type="password"],textarea').PlaceHolder();
 
-    // 初始化select插件
     var $select = $("#connectorType");
-    initSelectIndex($select, 1);
-    // 绑定连接器类型切换事件
     bindConnectorChangeEvent($select);
 
     // 先解绑事件，避免重复绑定
@@ -69,7 +71,7 @@ $(function () {
             return;
         }
         
-        if ($form.formValidate() == true) {
+        if (window.DBSyncerTheme && DBSyncerTheme.validateForm($form)) {
             var data = $form.serializeJson();
             submit(data);
         }

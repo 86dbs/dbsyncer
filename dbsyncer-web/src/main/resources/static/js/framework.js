@@ -193,7 +193,10 @@ $(function () {
     window.DBSyncerTheme = {
         showLoading: showLoading,
         hideLoading: hideLoading,
-        showEmpty: showEmpty
+        showEmpty: showEmpty,
+        validateForm: validateForm,
+        notify: notify,
+        enhanceSelects: enhanceSelects
     };
 
     // // 刷新登录用户
@@ -248,4 +251,275 @@ $(function () {
         $dropdown.toggleClass("open");
         $$dropdownMenu.addClass("hidden");
     });
+    enhanceSelects();
 });
+
+function validateForm($form) {
+    if (!$form || !$form.length) { return true; }
+
+    var isValid = true;
+    $form.find('.form-error-msg').remove();
+    $form.find('.is-invalid').removeClass('is-invalid');
+
+    $form.find('[required]').each(function(){
+        var $field = $(this);
+        if ($field.is(':disabled')) { return; }
+        var value = $.trim($field.val());
+        var invalid = false;
+
+        if ($field.is(':checkbox') || $field.is(':radio')) {
+            invalid = !$field.is(':checked');
+        } else if ($field.is('select')) {
+            invalid = value === '' || value === null;
+        } else {
+            invalid = value.length === 0;
+        }
+
+        if (invalid) {
+            isValid = false;
+            var $container = $field.closest('.form-control-area');
+            if ($container.length === 0) {
+                $container = $field.parent();
+            }
+            var labelText = '';
+            var $label = $field.closest('.form-item').find('.form-label').first();
+            if ($label.length) {
+                labelText = $label.text().replace('*', '').trim();
+            } else if ($field.attr('placeholder')) {
+                labelText = $field.attr('placeholder');
+            } else {
+                labelText = '该字段';
+            }
+
+            $field.addClass('is-invalid');
+            if ($container.length) {
+                $('<div class="form-error-msg"><i class="fa fa-exclamation-circle"></i>' + labelText + '不能为空</div>').appendTo($container);
+            }
+        }
+    });
+
+    return isValid;
+}
+
+var dbsyncerSelects = [];
+var dbsyncerSelectEventsBound = false;
+
+function enhanceSelects(root) {
+    var scope = root || document;
+    var nodes = scope.querySelectorAll('select.select-control:not([data-dbs-enhanced])');
+    if (!nodes.length) { return; }
+
+    nodes.forEach(function (select) {
+        if (select.dataset.dbsEnhanced === 'true') { return; }
+        select.dataset.dbsEnhanced = 'true';
+
+        var container = document.createElement('div');
+        container.className = 'dbsyncer-select';
+
+        var trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'dbsyncer-select-trigger';
+
+        var textSpan = document.createElement('span');
+        textSpan.className = 'dbsyncer-select-text';
+        trigger.appendChild(textSpan);
+
+        var arrow = document.createElement('span');
+        arrow.className = 'dbsyncer-select-arrow';
+        trigger.appendChild(arrow);
+
+        var panel = document.createElement('div');
+        panel.className = 'dbsyncer-select-panel';
+
+        var parent = select.parentNode;
+        parent.insertBefore(container, select);
+        container.appendChild(trigger);
+        container.appendChild(panel);
+        container.appendChild(select);
+        select.classList.add('dbsyncer-select-original');
+
+        function buildOptions() {
+            panel.innerHTML = '';
+            Array.from(select.options).forEach(function (opt) {
+                var optionBtn = document.createElement('button');
+                optionBtn.type = 'button';
+                optionBtn.className = 'dbsyncer-select-option' + (opt.selected ? ' active' : '');
+                optionBtn.textContent = opt.textContent;
+                optionBtn.dataset.value = opt.value;
+                optionBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    Array.from(panel.querySelectorAll('.dbsyncer-select-option')).forEach(function (btn) {
+                        btn.classList.remove('active');
+                    });
+                    optionBtn.classList.add('active');
+                    select.value = opt.value;
+                    updateFromSelect();
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    closeAllSelects();
+                });
+                panel.appendChild(optionBtn);
+            });
+        }
+
+        function updateFromSelect() {
+            var selectedOption = select.options[select.selectedIndex];
+            textSpan.textContent = selectedOption ? selectedOption.text : (select.getAttribute('placeholder') || '请选择');
+            Array.from(panel.querySelectorAll('.dbsyncer-select-option')).forEach(function (btn) {
+                btn.classList.toggle('active', btn.dataset.value === select.value);
+            });
+            if (select.disabled) {
+                container.classList.add('disabled');
+                trigger.disabled = true;
+            } else {
+                container.classList.remove('disabled');
+                trigger.disabled = false;
+            }
+        }
+
+        buildOptions();
+        updateFromSelect();
+
+        trigger.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (container.classList.contains('disabled')) { return; }
+            var isOpen = container.classList.contains('open');
+            closeAllSelects(container);
+            if (!isOpen) {
+                container.classList.add('open');
+            } else {
+                container.classList.remove('open');
+            }
+        });
+
+        panel.addEventListener('click', function (e) { e.stopPropagation(); });
+
+        select.addEventListener('change', function () {
+            updateFromSelect();
+        });
+
+        dbsyncerSelects.push(container);
+    });
+
+    if (!dbsyncerSelectEventsBound) {
+        document.addEventListener('click', function () {
+            closeAllSelects();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeAllSelects();
+            }
+        });
+        dbsyncerSelectEventsBound = true;
+    }
+}
+
+function closeAllSelects(except) {
+    dbsyncerSelects.forEach(function (container) {
+        if (container !== except) {
+            container.classList.remove('open');
+        }
+    });
+}
+
+function ensureToastContainer() {
+    var container = document.querySelector('.dbsyncer-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'dbsyncer-toast-container';
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
+function notify(message, type, options) {
+    if (typeof message === 'object') {
+        options = message;
+        message = options.message;
+    }
+    options = options || {};
+    var cfg = {
+        message: message || '',
+        title: options.title || '',
+        type: type || options.type || 'info',
+        duration: options.duration || 3200,
+        icon: options.icon
+    };
+
+    var container = ensureToastContainer();
+    var toast = document.createElement('div');
+    toast.className = 'dbsyncer-toast dbsyncer-toast-' + cfg.type;
+
+    var iconHtml = cfg.icon;
+    if (!iconHtml) {
+        switch (cfg.type) {
+            case 'success': iconHtml = '<i class="fa fa-check"></i>'; break;
+            case 'danger': iconHtml = '<i class="fa fa-times"></i>'; break;
+            case 'warning': iconHtml = '<i class="fa fa-exclamation"></i>'; break;
+            default: iconHtml = '<i class="fa fa-info"></i>';
+        }
+    }
+
+    toast.innerHTML = '' +
+        '<div class="dbsyncer-toast-icon">' + iconHtml + '</div>' +
+        '<div class="dbsyncer-toast-content">' +
+            (cfg.title ? '<div class="dbsyncer-toast-title">' + cfg.title + '</div>' : '') +
+            '<div class="dbsyncer-toast-message">' + cfg.message + '</div>' +
+        '</div>' +
+        '<button type="button" class="dbsyncer-toast-close" aria-label="关闭">&times;</button>' +
+        '<div class="dbsyncer-toast-progress"><div class="dbsyncer-toast-progress-bar"></div></div>';
+
+    var closeBtn = toast.querySelector('.dbsyncer-toast-close');
+    closeBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        removeToast(toast);
+    });
+
+    container.appendChild(toast);
+
+    var progress = toast.querySelector('.dbsyncer-toast-progress-bar');
+    if (progress) {
+        progress.style.animationDuration = cfg.duration + 'ms';
+    }
+
+    var timer = setTimeout(function () {
+        removeToast(toast);
+    }, cfg.duration);
+
+    toast.addEventListener('mouseenter', function () {
+        clearTimeout(timer);
+        if (progress) {
+            progress.style.animationPlayState = 'paused';
+        }
+    });
+
+    toast.addEventListener('mouseleave', function () {
+        if (progress) {
+            progress.style.animationPlayState = 'running';
+        }
+        timer = setTimeout(function () {
+            removeToast(toast);
+        }, cfg.duration / 2);
+    });
+}
+
+function removeToast(toast) {
+    if (!toast) { return; }
+    toast.style.animation = 'toast-exit 0.2s ease forwards';
+    setTimeout(function () {
+        if (toast && toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 180);
+}
+
+window.bootGrowl = function (message, type, duration) {
+    notify({ message: message, type: type || 'info', duration: duration || 3200 });
+};
+
+window.initSelectIndex = function ($select) {
+    if (!$select || !$select.length) { return $select; }
+    if (window.DBSyncerTheme) {
+        DBSyncerTheme.enhanceSelects($select[0].parentNode || document);
+    }
+    return $select;
+};

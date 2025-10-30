@@ -19,6 +19,7 @@
 @import url('./components/dropdown.css');
 @import url('./components/forms.css');
 @import url('./components/badges.css');
+@import url('./components/notifications.css');
 
 /* 全局重置和基础样式 */
 * {

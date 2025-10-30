@@ -10,6 +10,9 @@ function submit(data) {
 }
 
 $(function () {
+    if (window.DBSyncerTheme) {
+        DBSyncerTheme.enhanceSelects(document);
+    }
     $('.dbsyncer_switch').each(function () {
         var $input = $(this);
         $input.attr('role', 'switch');
@@ -21,9 +24,12 @@ $(function () {
     //保存
     $("#updateSystemSubBtn").click(function () {
         const $form = $("#configEditForm");
-        if ($form.formValidate() == true) {
+        if (window.DBSyncerTheme && DBSyncerTheme.validateForm($form)) {
             const data = $form.serializeJson();
-            submit(data);
+            console.log(data);
+            bootGrowl("修改成功!", "success");
+            bootGrowl("修改失败!", "danger");
+            // submit(data);
         }
     });
 })

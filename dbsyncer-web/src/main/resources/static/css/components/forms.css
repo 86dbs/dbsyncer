@@ -92,6 +92,14 @@ select.form-control, select.dbsyncer-input, .select-control {
   min-width: 160px;
 }
 
+.dbsyncer-select-original {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
 .dbsyncer-select-trigger {
   width: 100%;
   padding: 8px 42px 8px 14px;
@@ -145,6 +153,9 @@ select.form-control, select.dbsyncer-input, .select-control {
   padding: 6px;
   display: none;
   z-index: var(--z-dropdown);
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .dbsyncer-select.open .dbsyncer-select-panel {
@@ -185,6 +196,25 @@ textarea.form-control, textarea.dbsyncer-input { min-height: 80px; line-height: 
 .form-horizontal .form-group { margin-bottom: 16px; }
 .control-label { color: var(--text-secondary); font-weight: 500; padding-top: 6px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.form-control.is-invalid,
+textarea.form-control.is-invalid,
+select.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: var(--error-color);
+  box-shadow: 0 0 0 3px rgba(245, 34, 45, 0.12);
+}
+
+.form-error-msg {
+  margin-top: 6px;
+  color: var(--error-color);
+  font-size: var(--font-size-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-error-msg i { font-size: 12px; }
 
 /* 通用表单栅格（支持 1/2 列） */
 .form-grid-1 { display: grid; grid-template-columns: 1fr; row-gap: 16px; }
