@@ -461,7 +461,14 @@ $(document).ready(function() {
         filterConnectors(query);
     });
 
-    // 筛选器变化事件
+    $('#typeFilter').on('change', function() {
+        filterConnectors();
+    });
+
+    if (window.DBSyncerTheme) {
+        DBSyncerTheme.enhanceSelects(document.querySelector('.dbsyncer-table-filter'));
+    }
+});
 
 /**
  * 编辑数据源 - 动态加载编辑页面
