@@ -4,17 +4,21 @@
 package org.dbsyncer.sdk.connector.database.sql.impl;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 
 import java.util.List;
 
 /**
  * SQL Server特定SQL模板实现
  */
-public class SqlServerTemplate implements SqlTemplate {
+public class SqlServerTemplate extends AbstractSqlTemplate {
+
+    public SqlServerTemplate(SchemaResolver schemaResolver) {
+        super(schemaResolver);
+    }
 
     @Override
     public String getLeftQuotation() {
@@ -196,49 +200,26 @@ public class SqlServerTemplate implements SqlTemplate {
 
     @Override
     public String convertToDatabaseType(Field column) {
-        // 从类型名解析标准类型枚举
-        DataTypeEnum standardType = DataTypeEnum.valueOf(column.getTypeName());
-        if (standardType == null) {
-            throw new IllegalArgumentException("Unsupported type: " + column.getTypeName());
-        }
-
-        switch (standardType) {
-            case STRING:
+        // 使用SchemaResolver进行类型转换，完全委托给SchemaResolver处理
+        Field targetField = schemaResolver.fromStandardType(column);
+        String typeName = targetField.getTypeName();
+        
+        // 处理参数（长度、精度等）
+        switch (typeName) {
+            case "NVARCHAR":
                 if (column.getColumnSize() > 0) {
-                    return "NVARCHAR(" + column.getColumnSize() + ")";
+                    return typeName + "(" + column.getColumnSize() + ")";
                 }
                 throw new IllegalArgumentException("should give size for column: " + column.getTypeName());
-            case BYTE:
-                return "TINYINT";
-            case SHORT:
-                return "SMALLINT";
-            case INT:
-                return "INT";
-            case LONG:
-                return "BIGINT";
-            case DECIMAL:
+            case "DECIMAL":
                 if (column.getColumnSize() > 0 && column.getRatio() >= 0) {
-                    return "DECIMAL(" + column.getColumnSize() + "," + column.getRatio() + ")";
+                    return typeName + "(" + column.getColumnSize() + "," + column.getRatio() + ")";
                 } else if (column.getColumnSize() > 0) {
-                    return "DECIMAL(" + column.getColumnSize() + ")";
+                    return typeName + "(" + column.getColumnSize() + ")";
                 }
                 return "DECIMAL(18,0)";
-            case FLOAT:
-                return "REAL";
-            case DOUBLE:
-                return "FLOAT";
-            case DATE:
-                return "DATE";
-            case TIME:
-                return "TIME";
-            case TIMESTAMP:
-                return "DATETIME2";
-            case BOOLEAN:
-                return "BIT";
-            case BYTES:
-                return "VARBINARY(MAX)";
             default:
-                throw new IllegalArgumentException("Unsupported type: " + column.getTypeName());
+                return typeName;
         }
     }
 }

@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.sqlserver.bulk;
 
+import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.SchemaResolver;
@@ -28,7 +29,14 @@ import java.util.Map;
 public class SqlServerBulkCopyUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(SqlServerBulkCopyUtil.class);
-    private static final SqlServerTemplate sqlTemplate = new SqlServerTemplate();
+    
+    private final SqlTemplate sqlTemplate;
+    private final SchemaResolver schemaResolver;
+
+    public SqlServerBulkCopyUtil(SqlTemplate sqlTemplate, SchemaResolver schemaResolver) {
+        this.sqlTemplate = sqlTemplate;
+        this.schemaResolver = schemaResolver;
+    }
 
     /**
      * 批次处理函数接口
@@ -36,7 +44,7 @@ public class SqlServerBulkCopyUtil {
     @FunctionalInterface
     private interface BatchProcessor {
         int process(Connection connection, String sql, List<Field> fields, 
-                   List<Map<String, Object>> batchData, SchemaResolver schemaResolver) throws SQLException;
+                   List<Map<String, Object>> batchData) throws SQLException;
     }
 
     /**
@@ -48,16 +56,15 @@ public class SqlServerBulkCopyUtil {
      * @param dataList   数据列表
      * @param schemaName schema名称
      * @param enableIdentityInsert 是否启用IDENTITY_INSERT
-     * @param schemaResolver SchemaResolver实例
      * @param operationName 操作名称（用于日志）
      * @param processor 批次处理器
      * @return 处理的记录数
      * @throws SQLException SQL异常
      */
-    private static int executeBatchOperation(Connection connection, String tableName,
+    private int executeBatchOperation(Connection connection, String tableName,
                                            List<Field> fields, List<Map<String, Object>> dataList, 
                                            String schemaName, boolean enableIdentityInsert,
-                                           SchemaResolver schemaResolver, String operationName, BatchProcessor processor) throws SQLException {
+                                           String operationName, BatchProcessor processor) throws SQLException {
         if (dataList == null || dataList.isEmpty()) {
             return 0;
         }
@@ -84,7 +91,7 @@ public class SqlServerBulkCopyUtil {
             List<Map<String, Object>> batchData = dataList.subList(startIndex, endIndex);
             
             try {
-                int batchProcessed = executeBatchWithIdentityInsert(connection, tableName, fields, batchData, schemaName, enableIdentityInsert, schemaResolver, processor);
+                int batchProcessed = executeBatchWithIdentityInsert(connection, tableName, fields, batchData, schemaName, enableIdentityInsert, processor);
                 totalProcessed += batchProcessed;
                 logger.debug("{} 批次 {}/{} 完成，处理 {} 条记录", operationName, batchIndex + 1, batchCount, batchProcessed);
             } catch (Exception e) {
@@ -106,20 +113,30 @@ public class SqlServerBulkCopyUtil {
      * @param batchData  批次数据
      * @param schemaName schema名称
      * @param enableIdentityInsert 是否启用IDENTITY_INSERT
-     * @param schemaResolver SchemaResolver实例
      * @param processor  批次处理器
      * @return 处理的记录数
      * @throws SQLException SQL异常
      */
-    private static int executeBatchWithIdentityInsert(Connection connection, String tableName,
+    private int executeBatchWithIdentityInsert(Connection connection, String tableName,
                                                      List<Field> fields, List<Map<String, Object>> batchData,
                                                      String schemaName, boolean enableIdentityInsert,
-                                                     SchemaResolver schemaResolver, BatchProcessor processor) throws SQLException {
+                                                     BatchProcessor processor) throws SQLException {
         if (enableIdentityInsert) {
             // 需要启用 IDENTITY_INSERT 的情况
             String schemaTable = sqlTemplate.buildTable(schemaName, tableName);
-            String identityInsertOn = sqlTemplate.buildIdentityInsertSql(schemaTable, true);
-            String identityInsertOff = sqlTemplate.buildIdentityInsertSql(schemaTable, false);
+            String identityInsertOn = "";
+            String identityInsertOff = "";
+            
+            // 检查sqlTemplate是否是SqlServerTemplate的实例
+            if (sqlTemplate instanceof SqlServerTemplate) {
+                SqlServerTemplate sqlServerTemplate = (SqlServerTemplate) sqlTemplate;
+                identityInsertOn = sqlServerTemplate.buildIdentityInsertSql(schemaTable, true);
+                identityInsertOff = sqlServerTemplate.buildIdentityInsertSql(schemaTable, false);
+            } else {
+                // 如果不是SqlServerTemplate，使用默认的IDENTITY_INSERT SQL
+                identityInsertOn = String.format("SET IDENTITY_INSERT %s ON", schemaTable);
+                identityInsertOff = String.format("SET IDENTITY_INSERT %s OFF", schemaTable);
+            }
             
             // 使用 Statement 执行 SET 语句，确保在同一个会话中
             try (java.sql.Statement stmt = connection.createStatement()) {
@@ -127,7 +144,7 @@ public class SqlServerBulkCopyUtil {
                 stmt.executeUpdate(identityInsertOn);
                 
                 // 2. 执行具体的批次操作
-                int result = processor.process(connection, schemaTable, fields, batchData, schemaResolver);
+                int result = processor.process(connection, schemaTable, fields, batchData);
                 
                 // 3. 关闭 IDENTITY_INSERT
                 stmt.executeUpdate(identityInsertOff);
@@ -145,7 +162,7 @@ public class SqlServerBulkCopyUtil {
         } else {
             // 不需要 IDENTITY_INSERT 的情况，直接执行
             String schemaTable = sqlTemplate.buildTable(schemaName, tableName);
-            return processor.process(connection, schemaTable, fields, batchData, schemaResolver);
+            return processor.process(connection, schemaTable, fields, batchData);
         }
     }
 
@@ -158,24 +175,21 @@ public class SqlServerBulkCopyUtil {
      * @param dataList   数据列表
      * @param schemaName schema名称
      * @param enableIdentityInsert 是否启用IDENTITY_INSERT
-     * @param schemaResolver SchemaResolver实例
      * @return 插入的记录数
      * @throws SQLException SQL异常
      */
-    public static int bulkInsert(Connection connection, String tableName,
-                                 List<Field> fields, List<Map<String, Object>> dataList, String schemaName, boolean enableIdentityInsert, 
-                                 SchemaResolver schemaResolver) throws SQLException {
+    public int bulkInsert(Connection connection, String tableName,
+                                 List<Field> fields, List<Map<String, Object>> dataList, String schemaName, boolean enableIdentityInsert) throws SQLException {
         return executeBatchOperation(connection, tableName, fields, dataList, schemaName, enableIdentityInsert, 
-                schemaResolver, "插入", SqlServerBulkCopyUtil::executeInsertBatch);
+                "插入", this::executeInsertBatch);
     }
     
     
     /**
      * 执行插入批次（简化版，不处理IDENTITY_INSERT）
      */
-    private static int executeInsertBatch(Connection connection, String schemaTable,
-                                         List<Field> fields, List<Map<String, Object>> batchData, 
-                                         SchemaResolver schemaResolver) throws SQLException {
+    private int executeInsertBatch(Connection connection, String schemaTable,
+                                         List<Field> fields, List<Map<String, Object>> batchData) throws SQLException {
         if (batchData.isEmpty()) {
             return 0;
         }
@@ -191,7 +205,7 @@ public class SqlServerBulkCopyUtil {
                 for (Field field : fields) {
                     Object value = rowData.get(field.getName());
                     // 使用SchemaResolver进行类型转换，并正确设置参数
-                    setParameterWithSchemaResolver(ps, paramIndex++, value, field, schemaResolver);
+                    setParameterWithSchemaResolver(ps, paramIndex++, value, field);
                 }
             }
             return ps.executeUpdate();
@@ -205,10 +219,9 @@ public class SqlServerBulkCopyUtil {
      * @param paramIndex 参数索引
      * @param value 原始值
      * @param field 字段信息
-     * @param schemaResolver SchemaResolver实例
      * @throws SQLException SQL异常
      */
-    private static void setParameterWithSchemaResolver(PreparedStatement ps, int paramIndex, Object value, Field field, SchemaResolver schemaResolver) throws SQLException {
+    private void setParameterWithSchemaResolver(PreparedStatement ps, int paramIndex, Object value, Field field) throws SQLException {
         try {
             // 先尝试使用SchemaResolver进行类型转换
             Object convertedValue = schemaResolver.convert(value, field);
@@ -305,25 +318,23 @@ public class SqlServerBulkCopyUtil {
      * @param primaryKeys 主键字段列表
      * @param schemaName  schema名称
      * @param enableIdentityInsert 是否启用IDENTITY_INSERT
-     * @param schemaResolver SchemaResolver实例
      * @return 处理的记录数
      * @throws SQLException SQL异常
      */
-    public static int bulkUpsert(Connection connection, String tableName,
+    public int bulkUpsert(Connection connection, String tableName,
                                  List<Field> fields, List<Map<String, Object>> dataList,
-                                 List<String> primaryKeys, String schemaName, boolean enableIdentityInsert,
-                                 SchemaResolver schemaResolver) throws SQLException {
+                                 List<String> primaryKeys, String schemaName, boolean enableIdentityInsert) throws SQLException {
         return executeBatchOperation(connection, tableName, fields, dataList, schemaName, enableIdentityInsert, 
-                schemaResolver, "UPSERT", (conn, schemaTable, flds, batchData, schemaResolverInstance) -> 
-                    executeUpsertBatch(conn, schemaTable, flds, batchData, primaryKeys, schemaResolverInstance));
+                "UPSERT", (conn, schemaTable, flds, batchData) -> 
+                    executeUpsertBatch(conn, schemaTable, flds, batchData, primaryKeys));
     }
     
     /**
      * 执行UPSERT批次（简化版，不处理IDENTITY_INSERT）
      */
-    private static int executeUpsertBatch(Connection connection, String schemaTable,
+    private int executeUpsertBatch(Connection connection, String schemaTable,
                                          List<Field> fields, List<Map<String, Object>> batchData,
-                                         List<String> primaryKeys, SchemaResolver schemaResolver) throws SQLException {
+                                         List<String> primaryKeys) throws SQLException {
         if (batchData.isEmpty()) {
             return 0;
         }
@@ -339,7 +350,7 @@ public class SqlServerBulkCopyUtil {
                 for (Field field : fields) {
                     Object value = rowData.get(field.getName());
                     // 使用SchemaResolver进行类型转换，并正确设置参数
-                    setParameterWithSchemaResolver(ps, paramIndex++, value, field, schemaResolver);
+                    setParameterWithSchemaResolver(ps, paramIndex++, value, field);
                 }
             }
 

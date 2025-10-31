@@ -6,6 +6,7 @@ package org.dbsyncer.connector.oracle;
 import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleClobValueMapper;
 import org.dbsyncer.connector.oracle.schema.OracleOtherValueMapper;
+import org.dbsyncer.connector.oracle.schema.OracleSchemaResolver;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.sql.impl.OracleTemplate;
@@ -13,6 +14,7 @@ import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +31,7 @@ import java.util.Map;
  */
 public class OracleConnector extends AbstractDatabaseConnector {
 
+    private final OracleSchemaResolver schemaResolver = new OracleSchemaResolver();
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -36,7 +39,7 @@ public class OracleConnector extends AbstractDatabaseConnector {
     public OracleConnector() {
         VALUE_MAPPERS.put(Types.OTHER, new OracleOtherValueMapper());
         VALUE_MAPPERS.put(Types.CLOB, new OracleClobValueMapper());
-        sqlTemplate = new OracleTemplate();
+        sqlTemplate = new OracleTemplate(schemaResolver);
         configValidator = new OracleConfigValidator();
     }
 
@@ -81,5 +84,10 @@ public class OracleConnector extends AbstractDatabaseConnector {
     @Override
     public String getValidationQuery() {
         return "select 1 from dual";
+    }
+
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
     }
 }

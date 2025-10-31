@@ -39,7 +39,7 @@ public class PostgreSQLConnector extends AbstractDatabaseConnector {
     public PostgreSQLConnector() {
         VALUE_MAPPERS.put(Types.BIT, new PostgreSQLBitValueMapper());
         VALUE_MAPPERS.put(Types.OTHER, new PostgreSQLOtherValueMapper());
-        sqlTemplate = new PostgreSQLTemplate();
+        sqlTemplate = new PostgreSQLTemplate(schemaResolver);
         configValidator = new PostgreSQLConfigValidator();
     }
 

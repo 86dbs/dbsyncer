@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.connector.sqlserver.converter;
 
-import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
+import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.parser.ddl.converter.IRToTargetConverter;
 import org.dbsyncer.sdk.parser.ddl.ir.DDLIntermediateRepresentation;
@@ -15,7 +15,12 @@ import java.util.List;
  */
 public class IRToSQLServerConverter implements IRToTargetConverter {
 
-    private final SqlServerTemplate sqlServerTemplate = new SqlServerTemplate();
+    private final SqlTemplate sqlServerTemplate;
+
+    public IRToSQLServerConverter(SqlTemplate sqlServerTemplate) {
+        // 构造函数，可以传入带有SchemaResolver的SqlServerTemplate
+        this.sqlServerTemplate = sqlServerTemplate;
+    }
 
     @Override
     public String convert(DDLIntermediateRepresentation ir) {

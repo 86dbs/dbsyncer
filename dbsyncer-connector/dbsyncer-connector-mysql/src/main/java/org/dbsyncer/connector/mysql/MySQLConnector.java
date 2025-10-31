@@ -37,11 +37,11 @@ public class MySQLConnector extends AbstractDatabaseConnector {
 
 
     public MySQLConnector() {
-        sqlTemplate = new MySQLTemplate();
+        sqlTemplate = new MySQLTemplate(schemaResolver);
         VALUE_MAPPERS.put(Types.DATE, new MySQLDateValueMapper());
         configValidator = new MySQLConfigValidator();
         sourceToIRConverter = new MySQLToIRConverter();
-        irToTargetConverter = new IRToMySQLConverter();
+        irToTargetConverter = new IRToMySQLConverter(sqlTemplate);
     }
 
     @Override

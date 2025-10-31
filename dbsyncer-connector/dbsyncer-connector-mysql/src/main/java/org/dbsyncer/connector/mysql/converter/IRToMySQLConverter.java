@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.connector.mysql.converter;
 
-import org.dbsyncer.sdk.connector.database.sql.impl.MySQLTemplate;
+import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.parser.ddl.converter.IRToTargetConverter;
 import org.dbsyncer.sdk.parser.ddl.ir.DDLIntermediateRepresentation;
@@ -11,11 +11,16 @@ import org.dbsyncer.sdk.parser.ddl.ir.DDLIntermediateRepresentation;
 import java.util.List;
 
 /**
- * 中间表示到MySQL转换器
+ * 中间表示到MySQL转换器，用于 DDL 处理
  */
 public class IRToMySQLConverter implements IRToTargetConverter {
 
-    private final MySQLTemplate mysqlTemplate = new MySQLTemplate();
+    private final SqlTemplate mysqlTemplate;
+
+    public IRToMySQLConverter(SqlTemplate mysqlTemplate) {
+        // 构造函数，可以传入带有SchemaResolver的MySQLTemplate
+        this.mysqlTemplate = mysqlTemplate;
+    }
 
     @Override
     public String convert(DDLIntermediateRepresentation ir) {

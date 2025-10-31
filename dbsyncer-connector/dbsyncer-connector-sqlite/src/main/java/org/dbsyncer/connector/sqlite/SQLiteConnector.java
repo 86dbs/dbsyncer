@@ -16,6 +16,8 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.connector.sqlite.schema.SQLiteSchemaResolver;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,13 +32,14 @@ import java.util.stream.Collectors;
  * @Date 2023-11-28 16:22
  */
 public class SQLiteConnector extends AbstractDatabaseConnector {
-
-
+    
+    private final SQLiteSchemaResolver schemaResolver = new SQLiteSchemaResolver();
+    
     private final String QUERY_VIEW = "SELECT name FROM sqlite_master WHERE type = 'view'";
     private final String QUERY_TABLE = "SELECT name FROM sqlite_master WHERE type='table'";
 
     public SQLiteConnector() {
-        sqlTemplate = new SQLiteTemplate();
+        sqlTemplate = new SQLiteTemplate(schemaResolver);
         configValidator = new SQLiteConfigValidator();
     }
 
@@ -97,5 +100,8 @@ public class SQLiteConnector extends AbstractDatabaseConnector {
         return context.getPageSize(); // 使用页面大小作为fetchSize
     }
 
-
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
+    }
 }

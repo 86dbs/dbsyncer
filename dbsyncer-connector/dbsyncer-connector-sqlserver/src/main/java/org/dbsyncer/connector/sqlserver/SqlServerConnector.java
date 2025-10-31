@@ -48,13 +48,14 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     private final String MARK_HAS_IDENTITY = "mark.hasIdentity";
 
     private final SqlServerSchemaResolver schemaResolver = new SqlServerSchemaResolver();
-
+    private final SqlServerBulkCopyUtil sqlServerBulkCopyUtil;
 
     public SqlServerConnector() {
-        sqlTemplate = new SqlServerTemplate();
+        sqlTemplate = new SqlServerTemplate(schemaResolver);
         configValidator = new SqlServerConfigValidator();
         sourceToIRConverter = new SQLServerToIRConverter();
-        irToTargetConverter = new IRToSQLServerConverter();
+        irToTargetConverter = new IRToSQLServerConverter(sqlTemplate);
+        sqlServerBulkCopyUtil = new SqlServerBulkCopyUtil(sqlTemplate, schemaResolver);
     }
 
     @Override
@@ -222,7 +223,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
             typedData.add((Map<String, Object>) map);
         }
 
-        int insertedCount = SqlServerBulkCopyUtil.bulkInsert(connection, tableName, targetFields, typedData, schemaName, enableIdentityInsert, getSchemaResolver());
+        int insertedCount = sqlServerBulkCopyUtil.bulkInsert(connection, tableName, targetFields, typedData, schemaName, enableIdentityInsert);
 
         // 设置成功数据
         result.addSuccessData(data);
@@ -258,7 +259,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
             typedData.add((Map<String, Object>) map);
         }
 
-        int processedCount = SqlServerBulkCopyUtil.bulkUpsert(connection, tableName, targetFields, typedData, primaryKeys, schemaName, enableIdentityInsert, getSchemaResolver());
+        int processedCount = sqlServerBulkCopyUtil.bulkUpsert(connection, tableName, targetFields, typedData, primaryKeys, schemaName, enableIdentityInsert);
 
         // 设置成功数据
         result.addSuccessData(data);

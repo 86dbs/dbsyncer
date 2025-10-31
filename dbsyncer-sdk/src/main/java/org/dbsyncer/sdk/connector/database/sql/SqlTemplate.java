@@ -126,8 +126,8 @@ public interface SqlTemplate {
      * @param primaryKeys 主键列表
      * @return 构建后的SQL（包含?占位符）
      */
-    default String buildUpsertSql(String schemaTable, List<Field> fields, List<String> primaryKeys){
-        return "";
+    default String buildUpsertSql(String schemaTable, List<Field> fields, List<String> primaryKeys) {
+        throw new UnsupportedOperationException("Need to overwrite this function");
     }
 
     /**
@@ -251,6 +251,7 @@ public interface SqlTemplate {
     }
 
     // DDL相关方法 - 列变更操作
+
     /**
      * 构建添加列的SQL语句
      *
@@ -259,7 +260,7 @@ public interface SqlTemplate {
      * @return 添加列的SQL语句
      */
     default String buildAddColumnSql(String tableName, Field field) {
-        return "";
+        throw new UnsupportedOperationException("Need to overwrite this function");
     }
 
     /**
@@ -270,7 +271,7 @@ public interface SqlTemplate {
      * @return 修改列的SQL语句
      */
     default String buildModifyColumnSql(String tableName, Field field) {
-        return "";
+        throw new UnsupportedOperationException("Need to overwrite this function");
     }
 
     /**
@@ -282,7 +283,7 @@ public interface SqlTemplate {
      * @return 重命名列的SQL语句
      */
     default String buildRenameColumnSql(String tableName, String oldFieldName, Field newField) {
-        return "";
+        throw new UnsupportedOperationException("Need to overwrite this function");
     }
 
     /**
@@ -293,17 +294,7 @@ public interface SqlTemplate {
      * @return 删除列的SQL语句
      */
     default String buildDropColumnSql(String tableName, String fieldName) {
-        return "";
-    }
-
-    /**
-     * 将中间表示的字段类型转换为数据库特定的类型
-     *
-     * @param column 字段信息
-     * @return 数据库特定的类型字符串
-     */
-    default String convertToDatabaseType(Field column) {
-        return "";
+        throw new UnsupportedOperationException("Need to overwrite this function");
     }
 
     // Helper methods for building SQL parts (from DefaultSqlTemplate)
@@ -410,19 +401,6 @@ public interface SqlTemplate {
     }
 
     /**
-     * 构建带引号的schema名称
-     *
-     * @param schema schema名称
-     * @return 带引号的schema名称，如果schema为空则返回空字符串
-     */
-    default String buildSchema(String schema) {
-        if (schema == null || schema.isEmpty()) {
-            return "";
-        }
-        return getLeftQuotation() + schema + getRightQuotation();
-    }
-
-    /**
      * 构建带引号的字段名称列表
      *
      * @param fieldNames 字段名称列表
@@ -448,11 +426,11 @@ public interface SqlTemplate {
         return buildQuotedFieldList(fieldNames, ", ");
     }
 
-    default String buildBatchInsertSql(String schemaTable, List<Field> fields, int rowCount){
-        return "";
+    default String buildBatchInsertSql(String schemaTable, List<Field> fields, int rowCount) {
+        throw new UnsupportedOperationException("Need to overwrite this function");
     }
 
-    default String buildBatchUpsertSql(String schemaTable, List<Field> fields, int rowCount, List<String> primaryKeys){
-        return "";
+    default String buildBatchUpsertSql(String schemaTable, List<Field> fields, int rowCount, List<String> primaryKeys) {
+        throw new UnsupportedOperationException("Need to overwrite this function");
     }
 }
