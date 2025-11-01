@@ -3,19 +3,19 @@
 xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div class="form-container">
-    <div class="card-header flex-between">
-        <h3 class="card-title">修改用户</h3>
+    <div class="card-header">
+        <h3 class="card-title text-center">修改用户</h3>
         <div class="form-actions">
-            <button id="userSubmitBtn" type="button" class="btn btn-primary">
+            <button id="user-btn-submit" type="button" class="btn btn-primary">
                 <i class="fa fa-save"></i> 保存
             </button>
-            <button id="userBackBtn" type="button" class="btn btn-secondary">
+            <button id="user-btn-back" type="button" class="btn btn-outline">
                 <i class="fa fa-reply"></i> 返回
             </button>
         </div>
     </div>
     <div class="card-body">
-        <form id="userEditForm" method="post">
+        <form id="user-form-edit" method="post">
             <div class="form-grid-1">
                 <!-- 角色 -->
                 <div class="form-item">
@@ -37,7 +37,7 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 <div class="form-item">
                     <label class="form-label">昵称<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <input class="form-control" name="nickname" type="text" maxlength="50" required dbsyncer-valid="require" placeholder="请输入昵称" th:value="${currentUser?.nickname}"/>
+                        <input class="form-control" name="nickname" type="text" maxlength="50" required placeholder="请输入昵称" th:value="${currentUser?.nickname}"/>
                     </div>
                 </div>
 
@@ -71,7 +71,7 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 <div class="form-item">
                     <label class="form-label">手机</label>
                     <div class="form-control-area">
-                        <input type="tel" class="form-control" dbsyncer-valid="false" maxlength="13" name="phone" th:value="${currentUser?.phone}" placeholder="请输入手机号码"/>
+                        <input type="tel" class="form-control" maxlength="13" name="phone" th:value="${currentUser?.phone}" placeholder="请输入手机号码"/>
                     </div>
                 </div>
             </div>
@@ -84,64 +84,52 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
   // 绑定多值输入框事件
   initMultipleInputTags();
-  
-  // 跳转用户管理
-  function backUserIndexPage() {
-    doLoader("/user?refresh=" + new Date().getTime());
-  }
 
   //保存
-  $("#userSubmitBtn").on('click', function () {
-    const $form = $("#userEditForm");
-    const $btn = $(this);
-    
-    // 防止重复提交
-    if ($btn.prop('disabled')) {
-        return;
-    }
-    
-    if ($form.formValidate() == true) {
+  $("#user-btn-submit").on('click', function () {
+      const $form = $("#user-form-edit");
+      const $btn = $(this);
+      // 防止重复提交
+      if ($btn.prop('disabled')) {
+          return;
+      }
+      if (!DBSyncerTheme.validateForm($form)) {
+          bootGrowl("保存失败，请检查表单", "warning");
+          return;
+      }
+
       $btn.prop('disabled', true);
       const originalText = $btn.html();
       $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...');
-      
       const data = $form.serializeJson();
-      const username = data.username;
-      const newPwd = data.newPwd;
-      
       doPoster("/user/edit", data, function (response) {
-        $btn.prop('disabled', false);
-        $btn.html(originalText);
-        
-        if (response.success == true) {
-          // 刷新个人信息
-          if (currentUserName == username) {
-            // 修改个人密码后需要重新登录
-            if (!isBlank(newPwd)) {
-              bootGrowl("密码修改成功，请重新登录", "success");
-              setTimeout(function() {
-                doPoster("/logout", null, function (data) {
-                  location.href = $basePath;
-                });
-              }, 1000);
+          $btn.prop('disabled', false);
+          $btn.html(originalText);
+          if (response.success !== true) {
+              bootGrowl(response.resultValue || "修改失败", "danger");
               return;
-            }
-            refreshLoginUser();
           }
-          bootGrowl("修改用户成功！", "success");
-          setTimeout(function() {
-            backUserIndexPage();
-          }, 500);
-        } else {
-          bootGrowl(response.resultValue || "修改失败", "danger");
-        }
+          // 刷新个人信息
+          if (currentUserName === data.username) {
+              // 修改个人密码后需要重新登录
+              if (!isBlank(data.newPwd)) {
+                  bootGrowl("重置密码成功，3秒后将跳转至登录页面", "success");
+                  setTimeout(function () {
+                      doPoster("/logout", null, function (data) {
+                          location.href = $basePath;
+                      });
+                  }, 3000);
+                  return;
+              }
+          }
+          bootGrowl("修改成功！", "success");
+          doLoader("/user?refresh=" + new Date().getTime());
       });
-    }
   });
 
   //返回
-  $("#userBackBtn").on('click', function () {
-    backUserIndexPage();
+  $("#user-btn-back").on('click', function () {
+      doLoader("/user?refresh=" + new Date().getTime());
   });
 </script>
 </html>

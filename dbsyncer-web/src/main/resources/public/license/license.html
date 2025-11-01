@@ -2,251 +2,248 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="p-6">
-    <!-- 社区版提示 -->
-    <div th:if="${#strings.isEmpty(key)}" class="card">
-        <div class="card-body text-center py-12">
-            <div class="mb-6">
-                <img draggable="false" th:src="@{'/img/license/enterprise.png'}" alt="企业版" style="max-width: 400px;">
-            </div>
-            <h3 class="text-xl font-semibold text-primary mb-3">社区版暂未开放</h3>
-            <p class="text-secondary mb-6">
-                请下载
-                <a href="https://gitee.com/ghi/dbsyncer/releases" 
-                   class="text-primary hover-underline font-medium" 
-                   title="下载专业版 dbsyncer-enterprise-x.x.x-bin.zip" 
-                   target="_blank">
-                   <i class="fa fa-download"></i> 专业版
-                </a>
-            </p>
+<!-- 社区版提示 -->
+<div th:if="${#strings.isEmpty(key)}" class="card">
+    <div class="card-body text-center py-12">
+        <div class="mb-6">
+            <img draggable="false" th:src="@{'/img/license/enterprise.png'}" alt="企业版" style="max-width: 400px;">
         </div>
+        <h3 class="text-xl font-semibold text-primary mb-3">社区版暂未开放</h3>
+        <p class="text-secondary mb-6">
+            请下载
+            <a href="https://gitee.com/ghi/dbsyncer/releases"
+               class="text-primary hover-underline font-medium"
+               title="下载专业版 dbsyncer-enterprise-x.x.x-bin.zip"
+               target="_blank">
+               <i class="fa fa-download"></i> 专业版
+            </a>
+        </p>
     </div>
+</div>
 
-    <!-- 许可证已激活 -->
-    <div th:if="${not #strings.isEmpty(key)}">
-        <!-- 授权信息卡片 -->
-        <div class="card mb-6" th:if="${productInfo?.products?.size() gt 0}">
-            <div class="card-header flex-between">
-                <h3 class="card-title">授权信息</h3>
-                <button id="removeBtn" class="btn btn-sm btn-danger" type="button">
-                    <i class="fa fa-trash"></i> 删除激活码
-                </button>
-            </div>
-            <div class="card-body">
-                <!-- 授权详情 -->
-                <div class="license-info-box mb-4">
-                    <div class="flex items-start gap-3 mb-3">
-                        <i class="fa fa-building text-primary" style="font-size: 20px; margin-top: 2px;"></i>
+<!-- 许可证已激活 -->
+<div th:if="${not #strings.isEmpty(key)}">
+    <!-- 授权信息卡片 -->
+    <div class="card mb-6" th:if="${productInfo?.products?.size() gt 0}">
+        <div class="card-header flex-between">
+            <h3 class="card-title">授权信息</h3>
+            <button id="removeBtn" class="btn btn-sm btn-danger" type="button">
+                <i class="fa fa-trash"></i> 删除激活码
+            </button>
+        </div>
+        <div class="card-body">
+            <!-- 授权详情 -->
+            <div class="license-info-box mb-4">
+                <div class="flex items-start gap-3 mb-3">
+                    <i class="fa fa-building text-primary"></i>
+                    <div>
+                        <div class="text-sm text-tertiary">公司名称</div>
+                        <div class="font-semibold text-primary" th:text="${productInfo?.company}"></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="flex items-start gap-2">
+                        <i class="fa fa-user text-secondary"></i>
                         <div>
-                            <div class="text-sm text-tertiary">公司名称</div>
-                            <div class="font-semibold text-primary" th:text="${productInfo?.company}"></div>
+                            <div class="text-xs text-tertiary">申请人</div>
+                            <div class="text-sm font-medium" th:text="${productInfo?.owner}"></div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="flex items-start gap-2">
-                            <i class="fa fa-user text-secondary"></i>
-                            <div>
-                                <div class="text-xs text-tertiary">申请人</div>
-                                <div class="text-sm font-medium" th:text="${productInfo?.owner}"></div>
-                            </div>
+                    <div class="flex items-start gap-2">
+                        <i class="fa fa-clock-o text-secondary"></i>
+                        <div>
+                            <div class="text-xs text-tertiary">授权时间</div>
+                            <div class="text-sm font-medium" th:text="${#dates.format(productInfo?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></div>
                         </div>
-                        <div class="flex items-start gap-2">
-                            <i class="fa fa-clock-o text-secondary"></i>
-                            <div>
-                                <div class="text-xs text-tertiary">授权时间</div>
-                                <div class="text-sm font-medium" th:text="${#dates.format(productInfo?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></div>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-2">
-                            <i class="fa fa-comment text-secondary"></i>
-                            <div>
-                                <div class="text-xs text-tertiary">备注</div>
-                                <div class="text-sm font-medium" th:text="${productInfo?.remark ?: '-'}"></div>
-                            </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <i class="fa fa-comment text-secondary"></i>
+                        <div>
+                            <div class="text-xs text-tertiary">备注</div>
+                            <div class="text-sm font-medium" th:text="${productInfo?.remark ?: '-'}"></div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- 产品列表表格 -->
-                <div class="table-wrapper">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th width="60" class="text-center">#</th>
-                                <th>产品名称</th>
-                                <th width="200">有效期限</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr th:each="p,state : ${productInfo?.products}">
-                                <td class="text-center text-tertiary" th:text="${state.index + 1}"></td>
-                                <!-- 正常有效 -->
-                                <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 864000000 > ${#dates.createNow()?.time}">
-                                    <span class="font-medium" th:text="${p?.name}"></span>
-                                    <span class="badge badge-success ml-2">
-                                        <i class="fa fa-check-circle"></i> 正常
-                                    </span>
-                                </td>
-                                <!-- 即将过期 -->
-                                <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 864000000 <= ${#dates.createNow()?.time}">
-                                    <span class="font-medium" th:text="${p?.name}"></span>
-                                    <span class="badge badge-warning ml-2" title="即将过期, 请联系星河同步官方续期">
-                                        <i class="fa fa-exclamation-triangle"></i> 即将过期
-                                    </span>
-                                </td>
-                                <!-- 已过期 -->
-                                <td th:if="${#dates.createNow()?.time} > ${p?.effectiveTime}">
-                                    <span class="font-medium" th:text="${p?.name}"></span>
-                                    <span class="badge badge-danger ml-2" title="已过期, 请联系星河同步官方续期">
-                                        <i class="fa fa-times-circle"></i> 已过期
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="text-sm text-secondary" th:text="${#dates.format(p?.effectiveTime, 'yyyy-MM-dd HH:mm:ss')}"></span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <!-- 产品列表表格 -->
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th width="60" class="text-center">#</th>
+                            <th>产品名称</th>
+                            <th width="200">有效期限</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="p,state : ${productInfo?.products}">
+                            <td class="text-center text-tertiary" th:text="${state.index + 1}"></td>
+                            <!-- 正常有效 -->
+                            <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 864000000 > ${#dates.createNow()?.time}">
+                                <span class="font-medium" th:text="${p?.name}"></span>
+                                <span class="badge badge-success ml-2">
+                                    <i class="fa fa-check-circle"></i> 正常
+                                </span>
+                            </td>
+                            <!-- 即将过期 -->
+                            <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 864000000 <= ${#dates.createNow()?.time}">
+                                <span class="font-medium" th:text="${p?.name}"></span>
+                                <span class="badge badge-warning ml-2" title="即将过期, 请联系星河同步官方续期">
+                                    <i class="fa fa-exclamation-triangle"></i> 即将过期
+                                </span>
+                            </td>
+                            <!-- 已过期 -->
+                            <td th:if="${#dates.createNow()?.time} > ${p?.effectiveTime}">
+                                <span class="font-medium" th:text="${p?.name}"></span>
+                                <span class="badge badge-danger ml-2" title="已过期, 请联系星河同步官方续期">
+                                    <i class="fa fa-times-circle"></i> 已过期
+                                </span>
+                            </td>
+                            <td>
+                                <span class="text-sm text-secondary" th:text="${#dates.format(p?.effectiveTime, 'yyyy-MM-dd HH:mm:ss')}"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-
-        <!-- 在线激活表单 -->
-        <div class="card mb-6">
-            <div class="card-header">
-                <h3 class="card-title">在线激活</h3>
-                <p class="text-xs text-tertiary mt-1">首次可免费体验 15 天</p>
-            </div>
-            <div class="card-body">
-                <form id="licenseForm">
-                    <div class="form-grid-1">
-                        <!-- 公司名称 -->
-                        <div class="form-item">
-                            <label class="form-label">公司名称<strong class="text-primary">*</strong></label>
-                            <div class="form-control-area">
-                                <input class="form-control" type="text" name="company" maxlength="64" required placeholder="请输入公司名称"/>
-                            </div>
-                        </div>
-
-                        <!-- 申请人 -->
-                        <div class="form-item">
-                            <label class="form-label">申请人<strong class="text-primary">*</strong></label>
-                            <div class="form-control-area">
-                                <input class="form-control" type="text" name="owner" maxlength="32" required placeholder="请输入申请人姓名"/>
-                            </div>
-                        </div>
-
-                        <!-- 手机号 -->
-                        <div class="form-item">
-                            <label class="form-label">手机号<strong class="text-primary">*</strong></label>
-                            <div class="form-control-area">
-                                <input class="form-control" type="tel" name="phone" maxlength="11" required th:value="${userInfo?.phone}" placeholder="请输入手机号"/>
-                                <div class="form-help">便于通过短信提前通知您授权情况</div>
-                            </div>
-                        </div>
-
-                        <!-- 邮箱 -->
-                        <div class="form-item">
-                            <label class="form-label">邮箱
-                                <i class="fa fa-question-circle text-tertiary" title="支持多个邮箱，用逗号分隔"></i>
-                            </label>
-                            <div class="form-control-area">
-                                <input class="form-control" type="text" name="email" data-role="tagsinput" th:value="${userInfo?.email}" placeholder="请输入邮箱地址，支持多个邮箱"/>
-                            </div>
-                        </div>
-
-                        <!-- 备注 -->
-                        <div class="form-item">
-                            <label class="form-label">备注</label>
-                            <div class="form-control-area">
-                                <textarea name="remark" class="form-control" maxlength="64" rows="3" placeholder="请输入备注信息"></textarea>
-                                <div class="form-help">
-                                    <i class="fa fa-lock text-success"></i> 填写的信息会严格保密，我们不会向其他人共享您的信息
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 提交按钮 -->
-                        <div class="form-item">
-                            <label class="form-label"></label>
-                            <div class="form-control-area">
-                                <button id="activateBtn" class="btn btn-primary" type="button">
-                                    <i class="fa fa-rocket"></i> 立即激活 (首次可免费体验15天)
-                                </button>
-                                <a href="javascript:void(0);" class="btn btn-secondary ml-2 qrcode-trigger">联系客服</a>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- 离线激活 -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">离线激活</h3>
-                <p class="text-xs text-tertiary mt-1">无法访问互联网时使用</p>
-            </div>
-            <div class="card-body">
-                <div class="mb-4">
-                    <h4 class="text-sm font-semibold text-primary mb-3">
-                        <i class="fa fa-info-circle"></i> 激活步骤
-                    </h4>
-                    <ol class="license-steps">
-                        <li>复制下方机器码</li>
-                        <li>
-                            联系
-                            <a href="javascript:void(0);"
-                               class="text-success hover-underline qrcode-trigger">
-                                <i class="fa fa-wechat"></i> 星河同步官方
-                            </a>
-                            帮您生成激活码文件
-                        </li>
-                        <li>上传激活码文件</li>
-                    </ol>
-                </div>
-
-                <!-- 机器码 -->
-                <div class="mb-4">
-                    <label class="text-sm font-medium text-secondary mb-2 block">机器码</label>
-                    <div class="flex gap-2">
-                        <input id="licenseKey" 
-                               type="text" 
-                               class="form-control flex-1 text-mono font-medium"
-                               readonly 
-                               th:value="${key}">
-                        <button id="copyBtn" class="btn btn-secondary" type="button" title="复制机器码">
-                            <i class="fa fa-copy"></i> 复制
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 文件上传 -->
-                <div>
-                    <label class="text-sm font-medium text-secondary mb-2 block">上传激活码文件</label>
-                    <div id="licenseUploader" class="upload-container">
-                        <div class="upload-area" data-upload-area>
-                            <div class="upload-icon">
-                                <i class="fa fa-key"></i>
-                            </div>
-                            <div class="upload-text">点击或拖拽激活码文件到此处上传</div>
-                            <div class="upload-hint">
-                                支持的文件类型：激活码文件<br>
-                                最多上传 1 个文件
-                            </div>
-                            <div class="upload-button">选择文件</div>
-                            <input type="file" 
-                                   class="upload-input" 
-                                   id="fileLicense">
-                        </div>
-                        <div class="upload-list" data-upload-list></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="qrcode" class="hidden"></div>
     </div>
+
+    <!-- 在线激活表单 -->
+    <div class="card mb-6">
+        <div class="card-header">
+            <h3 class="card-title">在线激活</h3>
+            <p class="text-xs text-tertiary mt-1">首次可免费体验 15 天</p>
+        </div>
+        <div class="card-body">
+            <form id="licenseForm">
+                <div class="form-grid-1">
+                    <!-- 公司名称 -->
+                    <div class="form-item">
+                        <label class="form-label">公司名称<strong class="text-primary">*</strong></label>
+                        <div class="form-control-area">
+                            <input class="form-control" type="text" name="company" maxlength="64" required placeholder="请输入公司名称"/>
+                        </div>
+                    </div>
+
+                    <!-- 申请人 -->
+                    <div class="form-item">
+                        <label class="form-label">申请人<strong class="text-primary">*</strong></label>
+                        <div class="form-control-area">
+                            <input class="form-control" type="text" name="owner" maxlength="32" required placeholder="请输入申请人姓名"/>
+                        </div>
+                    </div>
+
+                    <!-- 手机号 -->
+                    <div class="form-item">
+                        <label class="form-label">手机号<strong class="text-primary">*</strong></label>
+                        <div class="form-control-area">
+                            <input class="form-control" type="tel" name="phone" maxlength="11" required th:value="${userInfo?.phone}" placeholder="请输入手机号"/>
+                            <div class="form-help">便于通过短信提前通知您授权情况</div>
+                        </div>
+                    </div>
+
+                    <!-- 邮箱 -->
+                    <div class="form-item">
+                        <label class="form-label">邮箱
+                            <i class="fa fa-question-circle text-tertiary" title="支持多个邮箱，用逗号分隔"></i>
+                        </label>
+                        <div class="form-control-area">
+                            <input class="form-control" type="text" name="email" data-role="tagsinput" th:value="${userInfo?.email}" placeholder="请输入邮箱地址，支持多个邮箱"/>
+                        </div>
+                    </div>
+
+                    <!-- 备注 -->
+                    <div class="form-item">
+                        <label class="form-label">备注</label>
+                        <div class="form-control-area">
+                            <textarea name="remark" class="form-control" maxlength="64" rows="3" placeholder="请输入备注信息"></textarea>
+                            <div class="form-help">
+                                <i class="fa fa-lock text-success"></i> 填写的信息会严格保密，我们不会向其他人共享您的信息
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 提交按钮 -->
+                    <div class="form-item">
+                        <label class="form-label"></label>
+                        <div class="form-control-area">
+                            <button id="activateBtn" class="btn btn-primary" type="button">
+                                <i class="fa fa-rocket"></i> 立即激活 (首次可免费体验15天)
+                            </button>
+                            <a href="javascript:void(0);" class="btn btn-text hover-underline ml-2 qrcode-trigger">联系客服</a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 离线激活 -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">离线激活</h3>
+            <p class="text-xs text-tertiary mt-1">无法访问互联网时使用</p>
+        </div>
+        <div class="card-body">
+            <div class="mb-4">
+                <h4 class="text-sm font-semibold text-primary mb-3">
+                    <i class="fa fa-info-circle"></i> 激活步骤
+                </h4>
+                <ol class="license-steps">
+                    <li>复制下方机器码</li>
+                    <li>
+                        联系
+                        <a href="javascript:void(0);"
+                           class="text-success hover-underline qrcode-trigger">
+                            <i class="fa fa-wechat"></i> 星河同步官方
+                        </a>
+                        帮您生成激活码文件
+                    </li>
+                    <li>上传激活码文件</li>
+                </ol>
+            </div>
+
+            <!-- 机器码 -->
+            <div class="mb-4">
+                <label class="text-sm font-medium text-secondary mb-2 block">机器码</label>
+                <div class="flex gap-2">
+                    <input id="licenseKey"
+                           type="text"
+                           class="form-control flex-1 text-mono font-medium"
+                           readonly
+                           th:value="${key}">
+                    <button id="copyBtn" class="btn btn-secondary" type="button" title="复制机器码">
+                        <i class="fa fa-copy"></i> 复制
+                    </button>
+                </div>
+            </div>
+
+            <!-- 文件上传 -->
+            <div>
+                <label class="text-sm font-medium text-secondary mb-2 block">上传激活码文件</label>
+                <div id="licenseUploader" class="upload-container">
+                    <div class="upload-area" data-upload-area>
+                        <div class="upload-icon">
+                            <i class="fa fa-key"></i>
+                        </div>
+                        <div class="upload-text">点击或拖拽激活码文件到此处上传</div>
+                        <div class="upload-hint">
+                            支持的文件类型：激活码文件<br>
+                            最多上传 1 个文件
+                        </div>
+                        <div class="upload-button">选择文件</div>
+                        <input type="file"
+                               class="upload-input"
+                               id="fileLicense">
+                    </div>
+                    <div class="upload-list" data-upload-list></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <!-- 引入 QRCode 库 -->

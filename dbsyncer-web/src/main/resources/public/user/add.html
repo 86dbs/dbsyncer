@@ -1,27 +1,28 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
-xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div class="form-container">
-    <div class="card-header flex-between">
-        <h3 class="card-title">添加用户</h3>
+    <div class="card-header">
+        <h3 class="card-title text-center">添加用户</h3>
         <div class="form-actions">
             <button id="userSubmitBtn" type="button" class="btn btn-primary">
                 <i class="fa fa-save"></i> 保存
             </button>
-            <button id="userBackBtn" type="button" class="btn btn-secondary">
+            <button id="userBackBtn" type="button" class="btn btn-outline">
                 <i class="fa fa-reply"></i> 返回
             </button>
         </div>
     </div>
     <div class="card-body">
-        <form id="userAddForm" method="post">
+        <form id="user-form-add" method="post">
             <div class="form-grid-1">
                 <!-- 账号 -->
                 <div class="form-item">
                     <label class="form-label">账号<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <input class="form-control" name="username" type="text" maxlength="50" required dbsyncer-valid="require" placeholder="请输入账号"/>
+                        <input class="form-control" name="username" type="text" maxlength="50" required
+                               placeholder="请输入账号"/>
                     </div>
                 </div>
 
@@ -29,7 +30,8 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 <div class="form-item">
                     <label class="form-label">昵称<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <input class="form-control" name="nickname" type="text" maxlength="50" required dbsyncer-valid="require" placeholder="请输入昵称"/>
+                        <input class="form-control" name="nickname" type="text" maxlength="50" required
+                               placeholder="请输入昵称"/>
                     </div>
                 </div>
 
@@ -37,17 +39,20 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 <div class="form-item">
                     <label class="form-label">密码<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <input class="form-control" name="password" type="password" maxlength="64" required dbsyncer-valid="require" placeholder="请输入密码"/>
+                        <input class="form-control" name="password" type="password" maxlength="64" required
+                               placeholder="请输入密码"/>
                     </div>
                 </div>
 
                 <!-- 邮箱 -->
                 <div class="form-item">
                     <label class="form-label">邮箱
-                        <i class="fa fa-question-circle text-tertiary" aria-hidden="true" title="支持多个邮箱，用逗号分隔"></i>
+                        <i class="fa fa-question-circle text-tertiary" aria-hidden="true"
+                           title="支持多个邮箱，用逗号分隔"></i>
                     </label>
                     <div class="form-control-area">
-                        <input type="text" class="form-control" name="email" dbsyncer-valid="false" data-role="tagsinput" placeholder="请输入邮箱地址"/>
+                        <input type="text" class="form-control" name="email"
+                               data-role="tagsinput" placeholder="请输入邮箱地址"/>
                         <div class="form-help">支持多个邮箱，按 Enter 键添加</div>
                     </div>
                 </div>
@@ -56,7 +61,8 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 <div class="form-item">
                     <label class="form-label">手机</label>
                     <div class="form-control-area">
-                        <input type="tel" class="form-control" dbsyncer-valid="false" maxlength="13" name="phone" placeholder="请输入手机号码"/>
+                        <input type="tel" class="form-control" maxlength="13" name="phone"
+                               placeholder="请输入手机号码"/>
                     </div>
                 </div>
             </div>
@@ -65,49 +71,40 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 </div>
 
 <script type="text/javascript">
-  // 绑定多值输入框事件
-  initMultipleInputTags();
-  
-  // 跳转用户管理
-  function backUserIndexPage() {
-    doLoader("/user?refresh=" + new Date().getTime());
-  }
+    // 绑定多值输入框事件
+    initMultipleInputTags();
 
-  //保存
-  $("#userSubmitBtn").on('click', function () {
-    const $form = $("#userAddForm");
-    const $btn = $(this);
-    
-    // 防止重复提交
-    if ($btn.prop('disabled')) {
-        return;
-    }
-    
-    if ($form.formValidate() == true) {
-      $btn.prop('disabled', true);
-      const originalText = $btn.html();
-      $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...');
-      
-      const data = $form.serializeJson();
-      doPoster("/user/add", data, function (response) {
-        $btn.prop('disabled', false);
-        $btn.html(originalText);
-        
-        if (response.success == true) {
-          bootGrowl("新增用户成功！", "success");
-          setTimeout(function() {
-            backUserIndexPage();
-          }, 500);
-        } else {
-          bootGrowl(response.resultValue || "新增失败", "danger");
+    //保存
+    $("#userSubmitBtn").on('click', function () {
+        const $form = $("#user-form-add");
+        const $btn = $(this);
+        // 防止重复提交
+        if ($btn.prop('disabled')) {
+            return;
         }
-      });
-    }
-  });
+        if (!DBSyncerTheme.validateForm($form)) {
+            bootGrowl("保存失败，请检查表单", "warning");
+            return;
+        }
 
-  //返回
-  $("#userBackBtn").on('click', function () {
-    backUserIndexPage();
-  });
+        $btn.prop('disabled', true);
+        const originalText = $btn.html();
+        $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...');
+        doPoster("/user/add", $form.serializeJson(), function (response) {
+            $btn.prop('disabled', false);
+            $btn.html(originalText);
+            if (response.success === true) {
+                bootGrowl("新增用户成功！", "success");
+                doLoader("/user?refresh=" + new Date().getTime());
+            } else {
+                bootGrowl(response.resultValue || "新增失败", "danger");
+            }
+        });
+    });
+
+    //返回
+    $("#userBackBtn").on('click', function () {
+        doLoader("/user?refresh=" + new Date().getTime());
+    });
 </script>
 </html>

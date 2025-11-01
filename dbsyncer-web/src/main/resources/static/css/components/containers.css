@@ -10,14 +10,6 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* ========== 表单容器 ========== */
-.form-container {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-}
-
 /* ========== 无背景容器（仅用于分组） ========== */
 .container-no-bg {
   padding: 0;
@@ -52,10 +44,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.table-wrapper {
-  overflow-x: auto;
 }
 
 /* ========== 卡片容器 ========== */

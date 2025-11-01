@@ -395,7 +395,7 @@ function initQRCodePopover(options) {
                 <div class="qrcode-arrow"></div>
                 <div class="qrcode-inner">
                     <img src="${qrcodeDataUrl}" alt="微信扫码" />
-                    <div class="qrcode-text">
+                    <div class="qrcode-text text-center text-success">
                         <i class="fa fa-wechat"></i> 微信扫码联系
                     </div>
                 </div>

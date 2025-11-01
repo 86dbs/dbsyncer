@@ -2,8 +2,8 @@
  * DBSyncer 按钮组件样式
  */
 
-/* 基础按钮样式（兼容旧类名 .btn） */
-.dbsyncer-btn, .btn {
+/* 基础按钮样式 */
+.btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -22,139 +22,126 @@
   white-space: nowrap;
   min-height: 32px;
 }
-
-.dbsyncer-btn:focus, .btn:focus {
+.btn:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
 }
-
-.dbsyncer-btn:disabled, .btn:disabled {
+.btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   pointer-events: none;
 }
 
 /* 按钮尺寸 */
-.dbsyncer-btn-sm, .btn-sm {
+.btn-sm {
   padding: var(--spacing-xs) var(--spacing-sm);
   font-size: var(--font-size-xs);
   min-height: 24px;
 }
-
-.dbsyncer-btn-lg, .btn-lg {
+.btn-lg {
   padding: var(--spacing-md) var(--spacing-lg);
   font-size: var(--font-size-md);
   min-height: 40px;
 }
-
-.dbsyncer-btn-xl, .btn-xl {
+.btn-xl {
   padding: var(--spacing-lg) var(--spacing-xl);
   font-size: var(--font-size-lg);
   min-height: 48px;
 }
 
-/* 主要按钮（兼容 .btn-primary） */
-.dbsyncer-btn-primary, .btn-primary {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
+/* 主要按钮 */
+.btn-primary {
+  background-color: var(--primary-active);
+  border-color: var(--primary-active);
   color: var(--bg-primary);
 }
-
-.dbsyncer-btn-primary:hover, .btn-primary:hover {
+.btn-primary:hover {
   background-color: var(--primary-hover);
   border-color: var(--primary-hover);
   color: var(--bg-primary);
 }
-
-.dbsyncer-btn-primary:active, .btn-primary:active {
+.btn-primary:active {
   background-color: var(--primary-active);
   border-color: var(--primary-active);
 }
 
-/* 次要/描边按钮（兼容 .btn-outline / .btn-secondary） */
-.dbsyncer-btn-secondary, .btn-outline, .btn-secondary {
+/* 默认按钮 */
+.btn-outline {
   background-color: var(--bg-primary);
   border-color: var(--border-primary);
   color: var(--text-primary);
 }
-
-.dbsyncer-btn-secondary:hover, .btn-outline:hover, .btn-secondary:hover {
+.btn-outline:hover {
   background-color: var(--bg-tertiary);
   border-color: var(--primary-color);
   color: var(--primary-color);
 }
-
-.dbsyncer-btn-secondary:active, .btn-outline:active, .btn-secondary:active {
+.btn-outline:active {
   background-color: var(--bg-quaternary);
 }
 
 /* 成功按钮（兼容 .btn-success） */
-.dbsyncer-btn-success, .btn-success {
+.btn-success {
   background-color: var(--success-color);
   border-color: var(--success-color);
   color: var(--bg-primary);
 }
-
-.dbsyncer-btn-success:hover, .btn-success:hover {
+.btn-success:hover {
   background-color: #73d13d;
   border-color: #73d13d;
   color: var(--bg-primary);
 }
 
-/* 警告按钮（兼容 .btn-warning） */
-.dbsyncer-btn-warning, .btn-warning {
+/* 警告按钮 */
+.btn-warning {
   background-color: var(--warning-color);
   border-color: var(--warning-color);
   color: var(--bg-primary);
 }
-
-.dbsyncer-btn-warning:hover, .btn-warning:hover {
+.btn-warning:hover {
   background-color: #ffc53d;
   border-color: #ffc53d;
   color: var(--bg-primary);
 }
 
-/* 危险按钮（兼容 .btn-error/.btn-danger） */
-.dbsyncer-btn-danger, .btn-error, .btn-danger {
+/* 危险按钮 */
+.btn-danger {
   background-color: var(--error-color);
   border-color: var(--error-color);
   color: var(--bg-primary);
 }
-
-.dbsyncer-btn-danger:hover, .btn-error:hover, .btn-danger:hover {
+.btn-danger:hover {
   background-color: #ff4d4f;
   border-color: #ff4d4f;
   color: var(--bg-primary);
 }
-/* 信息按钮（兼容 .btn-info） */
-.dbsyncer-btn-info, .btn-info {
+
+/* 信息按钮 */
+.btn-info {
   background-color: var(--info-color);
   border-color: var(--info-color);
   color: var(--bg-primary);
 }
-
-.dbsyncer-btn-info:hover, .btn-info:hover {
+.btn-info:hover {
   background-color: #69b1ff;
   border-color: #69b1ff;
   color: var(--bg-primary);
 }
 
-
-/* 文本按钮（兼容 .btn-text） */
-.dbsyncer-btn-text, .btn-text {
+/* 文本按钮 */
+.btn-text {
   background-color: transparent;
   border-color: transparent;
   color: var(--primary-color);
   padding: var(--spacing-xs) var(--spacing-sm);
 }
-
-.dbsyncer-btn-text:hover, .btn-text:hover {
+.btn-text:hover {
   background-color: rgba(24, 144, 255, 0.1);
   color: var(--primary-hover);
 }
 
-/* 链接按钮（兼容 .btn-link） */
-.dbsyncer-btn-link, .btn-link {
+/* 链接按钮 */
+.btn-link {
   background-color: transparent;
   border-color: transparent;
   color: var(--primary-color);
@@ -162,83 +149,17 @@
   padding: 0;
   min-height: auto;
 }
-
-.dbsyncer-btn-link:hover, .btn-link:hover {
+.btn-link:hover {
   color: var(--primary-hover);
   text-decoration: underline;
 }
 
-/* 幽灵按钮（兼容 .btn-ghost） */
-.dbsyncer-btn-ghost, .btn-ghost {
-  background-color: transparent;
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-}
-
-.dbsyncer-btn-ghost:hover, .btn-ghost:hover {
-  background-color: var(--primary-color);
-  color: var(--bg-primary);
-}
-
-/* 按钮组（兼容 .btn-group） */
-.dbsyncer-btn-group, .btn-group {
-  display: inline-flex;
-  vertical-align: middle;
-}
-
-.dbsyncer-btn-group .dbsyncer-btn, .btn-group .btn {
-  position: relative;
-  flex: 1 1 auto;
-}
-
-.dbsyncer-btn-group .dbsyncer-btn:not(:first-child), .btn-group .btn:not(:first-child) {
-  margin-left: -1px;
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
-.dbsyncer-btn-group .dbsyncer-btn:not(:last-child), .btn-group .btn:not(:last-child) {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-.dbsyncer-btn-group .dbsyncer-btn:hover,
-.dbsyncer-btn-group .dbsyncer-btn:focus,
-.dbsyncer-btn-group .dbsyncer-btn:active,
-.btn-group .btn:hover,
-.btn-group .btn:focus,
-.btn-group .btn:active {
-  z-index: 1;
-}
-
-/* 图标按钮（兼容 .btn-icon） */
-.dbsyncer-btn-icon, .btn-icon {
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dbsyncer-btn-icon-sm, .btn-icon-sm {
-  width: 24px;
-  height: 24px;
-}
-
-.dbsyncer-btn-icon-lg, .btn-icon-lg {
-  width: 40px;
-  height: 40px;
-}
-
-/* 加载状态（兼容 .btn-loading） */
-.dbsyncer-btn-loading, .btn-loading {
+/* 加载状态 */
+.btn-loading {
   position: relative;
   pointer-events: none;
 }
-
-.dbsyncer-btn-loading::before {
+.btn-loading::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -247,111 +168,48 @@
   height: 16px;
   margin: -8px 0 0 -8px;
   border: 2px solid transparent;
-  border-top: 2px solid currentColor;
   border-radius: var(--radius-round);
-  animation: dbsyncer-btn-spin 1s linear infinite;
+  animation: btn-spin 1s linear infinite;
 }
-
-.dbsyncer-btn-loading .dbsyncer-btn-text {
+.btn-loading .btn-text {
   opacity: 0;
 }
 
-@keyframes dbsyncer-btn-spin {
+@keyframes btn-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
 /* 按钮图标 */
-.dbsyncer-btn-icon-left {
+.btn-icon-left {
   margin-right: var(--spacing-xs);
 }
-
-.dbsyncer-btn-icon-right {
+.btn-icon-right {
   margin-left: var(--spacing-xs);
-}
-
-/* 圆形按钮 */
-.dbsyncer-btn-circle {
-  border-radius: var(--radius-round);
-  width: 32px;
-  height: 32px;
-  padding: 0;
-}
-
-.dbsyncer-btn-circle-sm {
-  width: 24px;
-  height: 24px;
-}
-
-.dbsyncer-btn-circle-lg {
-  width: 40px;
-  height: 40px;
-}
-
-/* 块级按钮 */
-.dbsyncer-btn-block {
-  display: flex;
-  width: 100%;
 }
 
 /* 响应式按钮 */
 @media (max-width: 768px) {
-  .dbsyncer-btn {
+  .btn {
     min-height: 36px;
     padding: var(--spacing-sm) var(--spacing-md);
   }
-  
-  .dbsyncer-btn-sm {
+  .btn-sm {
     min-height: 28px;
   }
-  
-  .dbsyncer-btn-lg {
+  .btn-lg {
     min-height: 44px;
   }
 }
 
 /* 按钮状态 */
-.dbsyncer-btn.active {
+.btn.active {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
   color: var(--bg-primary);
 }
 
-.dbsyncer-btn.active:hover {
+.btn.active:hover {
   background-color: var(--primary-hover);
   border-color: var(--primary-hover);
-}
-
-/* 按钮组合 */
-.dbsyncer-btn-combo {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.dbsyncer-btn-combo .dbsyncer-btn {
-  flex-shrink: 0;
-}
-
-/* 特殊按钮样式 */
-.dbsyncer-btn-float {
-  position: fixed;
-  bottom: var(--spacing-xl);
-  right: var(--spacing-xl);
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-round);
-  background-color: var(--primary-color);
-  border: none;
-  color: var(--bg-primary);
-  font-size: var(--font-size-xl);
-  box-shadow: var(--shadow-lg);
-  z-index: var(--z-fixed);
-  transition: all var(--transition-fast);
-}
-
-.dbsyncer-btn-float:hover {
-  background-color: var(--primary-hover);
-  transform: scale(1.1);
-  box-shadow: var(--shadow-xl);
 }

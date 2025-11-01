@@ -320,26 +320,11 @@ table {
   font-size: 14px;
 }
 
-/* 用户头像 */
-.user-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--primary-color);
-  color: #fff;
-  font-weight: 600;
-  font-size: 14px;
-}
-
 /* 按钮组 */
 .btn-group-sm {
   display: inline-flex;
   gap: 8px;
 }
-
 .btn-group-sm .btn {
   padding: 4px 12px;
   font-size: 13px;

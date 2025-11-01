@@ -227,7 +227,7 @@ header.bg-white {
   width: 32px;
   height: 32px;
   border-radius: var(--radius-round);
-  background-color: var(--primary-color);
+  background-color: var(--info-color);
   display: flex;
   align-items: center;
   justify-content: center;
