@@ -13,20 +13,11 @@ function submitConnector(data) {
 
     doPoster("/connector/add", data, function (response) {
         $btn.html(originalText).prop('disabled', false);
-
         if (response.success === true) {
-            if (typeof bootGrowl === 'function') {
-                bootGrowl("新增连接成功!", "success");
-            }
-            if (typeof backIndexPage === 'function') {
-                backIndexPage();
-            }
+            bootGrowl("新增连接成功!", "success");
+            backIndexPage();
         } else {
-            if (typeof bootGrowl === 'function') {
-                bootGrowl(response.resultValue || '添加连接失败', "danger");
-            } else {
-                alert(response.resultValue || '添加连接失败');
-            }
+            bootGrowl(response.resultValue || '添加连接失败', "danger");
         }
     });
 }

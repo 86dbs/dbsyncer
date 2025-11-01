@@ -1042,7 +1042,7 @@
             }
 
             // 使用 JSON 格式发送请求体
-            $.loadingT(true);
+            showLoading();
             $.ajax({
                 url: $basePath + "/task/add",
                 type: "POST",
@@ -1053,7 +1053,7 @@
                     json: JSON.stringify(config)
                 }),
                 success: function (result) {
-                    $.loadingT(false);
+                    hideLoading();
                     if (result.success == true) {
                         bootGrowl("创建任务成功！", "success");
                         backTaskIndexPage();
@@ -1062,7 +1062,7 @@
                     }
                 },
                 error: function (xhr, status, info) {
-                    $.loadingT(false);
+                    hideLoading();
                     bootGrowl("访问异常，请刷新或重试.", "danger");
                 }
             });

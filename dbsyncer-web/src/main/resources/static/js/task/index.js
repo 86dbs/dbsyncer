@@ -18,24 +18,10 @@ function loadTaskList(pageNum, pageSize) {
         pageNum: pageNum + "",
         pageSize: pageSize + ""
     };
-
-    // 使用 JSON 格式发送请求体
-    $.loadingT(true);
-    $.ajax({
-        url: $basePath + "/task/list",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(params),
-        success: function (data) {
-            $.loadingT(false);
-            if (data) {
-                renderTaskList(data.data);
-                renderPagination(data.total, pageNum, pageSize);
-            }
-        },
-        error: function (xhr, status, info) {
-            $.loadingT(false);
-            bootGrowl("访问异常，请刷新或重试.", "danger");
+    doPoster("/task/list", params, function (data) {
+        if (data.success == true) {
+            renderTaskList(data.resultValue);
+            renderPagination(data.total, pageNum, pageSize);
         }
     });
 }

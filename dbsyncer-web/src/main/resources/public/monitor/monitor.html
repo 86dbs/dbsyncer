@@ -197,34 +197,25 @@
         <h3 class="card-title">查询数据</h3>
     </div>
     <div class="card-body">
-        <!-- 查询表单 -->
-        <div class="flex flex-wrap items-center gap-3 mb-4">
-            <!-- 驱动下拉 -->
-            <div class="flex-1 min-w-200">
-                <select id="searchMetaData" class="form-control">
+        <!-- 表格工具栏 -->
+            <div class="dbsyncer-table-toolbar-left">
+                <select id="searchMetaData" class="select-control">
                     <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
                 </select>
-            </div>
 
-            <!-- 数据状态 -->
-            <div style="min-width: 100px;">
                 <select id="searchDataStatus" class="form-control">
                     <option value="" selected="selected">无</option>
                     <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq dataStatus}"/>
                 </select>
-            </div>
 
-            <!-- 关键字搜索 -->
-            <div class="flex-1 min-w-200">
                 <input id="searchDataKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入异常关键字(最多32个字)" />
             </div>
 
-            <!-- 操作按钮 -->
-            <div class="flex gap-2">
-                <button id="queryDataBtn" type="button" class="btn btn-primary">
+            <div class="dbsyncer-table-toolbar-right">
+                <button id="queryDataBtn" class="dbsyncer-btn dbsyncer-btn-primary">
                     <i class="fa fa-search"></i> 查询数据
                 </button>
-                <button th:id="${metaId}" type="button" class="btn btn-danger clearDataBtn">
+                <button th:id="${metaId}" class="dbsyncer-btn dbsyncer-btn-danger">
                     <i class="fa fa-trash"></i> 清空数据
                 </button>
             </div>
@@ -295,7 +286,7 @@
         <!-- 查询表单 -->
         <div class="flex flex-wrap items-center gap-3 mb-4">
             <!-- 关键字搜索 -->
-            <div class="flex-1 min-w-300">
+            <div class="flex-1">
                 <input id="searchLogKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)" />
             </div>
 

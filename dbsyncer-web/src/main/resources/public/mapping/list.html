@@ -178,9 +178,7 @@ function refreshMappingListData(silent) {
     var searchQuery = $('#searchInput').val();
     
     // 使用全局加载提示（如果可用且非静默模式）
-    if (!silent && typeof $.loadingT === 'function') {
-        $.loadingT(true);
-    }
+    showLoading();
     
     // 通过AJAX获取最新的同步任务列表数据
     $.ajax({
@@ -188,9 +186,7 @@ function refreshMappingListData(silent) {
         type: 'GET',
         success: function(response) {
             // 隐藏加载提示
-            if (!silent && typeof $.loadingT === 'function') {
-                $.loadingT(false);
-            }
+            hideLoading();
             
             // 解析响应内容，提取表格数据
             var $response = $(response);
@@ -217,7 +213,7 @@ function refreshMappingListData(silent) {
                 }
                 
                 // 显示成功提示（仅非静默模式）
-                if (!silent && typeof bootGrowl === 'function') {
+                if (!silent) {
                     bootGrowl('数据刷新成功', 'success');
                 }
             } else {
@@ -229,12 +225,12 @@ function refreshMappingListData(silent) {
         },
         error: function() {
             // 隐藏加载提示
-            if (!silent && typeof $.loadingT === 'function') {
-                $.loadingT(false);
+            if (!silent) {
+               hideLoading();
             }
             
             // 显示错误提示（仅非静默模式）
-            if (!silent && typeof bootGrowl === 'function') {
+            if (!silent) {
                 bootGrowl('数据刷新失败，请稍后重试', 'danger');
             }
         }
@@ -306,21 +302,17 @@ function loadAddMappingPageDirectly() {
     var contentDiv = $('#mainContent');
     if (contentDiv.length) {
         // 显示加载状态
-        if (typeof $.loadingT === 'function') {
-            $.loadingT(true);
-        }
+        showLoading();
         
         // 加载添加任务页面内容
         contentDiv.load('/mapping/pageAdd', function(response, status, xhr) {
-            if (typeof $.loadingT === 'function') {
-                $.loadingT(false);
-            }
+            hideLoading();
             
             if (status === 'success') {
                 // 初始化添加任务页面的脚本
                 initAddMappingPage();
             } else {
-                alert('加载添加任务页面失败，请稍后重试');
+                bootGrowl('加载添加任务页面失败，请稍后重试', 'danger');
             }
         });
     }
@@ -364,22 +356,17 @@ function loadMappingListPage() {
     // 使用统一的内容区域
     var contentDiv = $('#mainContent');
     if (contentDiv.length) {
-        // 显示加载状态
-        if (typeof $.loadingT === 'function') {
-            $.loadingT(true);
-        }
+        showLoading();
         
         // 加载同步任务列表页面内容
         contentDiv.load('/mapping/list', function(response, status, xhr) {
-            if (typeof $.loadingT === 'function') {
-                $.loadingT(false);
-            }
+            hideLoading();
             
             if (status === 'success') {
                 // 重新初始化同步任务列表页面的脚本
                 initMappingListPage();
             } else {
-                alert('加载同步任务列表页面失败，请稍后重试');
+                bootGrowl('加载同步任务列表页面失败，请稍后重试', 'danger');
             }
         });
     }
@@ -788,26 +775,17 @@ function editMapping(id) {
     // 使用统一的内容区域
     var contentDiv = $('#mainContent');
     if (contentDiv.length) {
-        // 显示加载状态
-        if (typeof $.loadingT === 'function') {
-            $.loadingT(true);
-        }
+        showLoading();
         
         // 加载编辑页面内容
         contentDiv.load('/mapping/page/edit?id=' + id, function(response, status, xhr) {
-            if (typeof $.loadingT === 'function') {
-                $.loadingT(false);
-            }
+            hideLoading();
             
             if (status === 'success') {
                 // 初始化编辑页面的脚本
                 initMappingEditPage();
             } else {
-                if (typeof bootGrowl === 'function') {
-                    bootGrowl('加载编辑页面失败，请稍后重试', 'danger');
-                } else {
-                    alert('加载编辑页面失败，请稍后重试');
-                }
+                bootGrowl('加载编辑页面失败，请稍后重试', 'danger');
             }
         });
     }

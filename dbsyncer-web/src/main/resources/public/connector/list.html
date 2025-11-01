@@ -145,56 +145,21 @@ function refreshCurrentPage() {
 // 刷新数据源列表数据（不重新加载整个页面）
 function refreshConnectorListData() {
     // 使用全局加载提示（如果可用）
-    if (typeof $.loadingT === 'function') {
-        $.loadingT(true);
-    }
-    
-    // 通过AJAX获取最新的数据源列表数据
-    $.ajax({
-        url: '/connector/list',
-        type: 'GET',
-        success: function(response) {
-            // 隐藏加载提示
-            if (typeof $.loadingT === 'function') {
-                $.loadingT(false);
-            }
-            
-            // 解析响应内容，提取表格数据
-            var $response = $(response);
-            var tableBody = $response.find('#connectorTableBody');
-            
-            if (tableBody.length) {
-                // 更新表格内容
-                $('#connectorTableBody').html(tableBody.html());
-                
-                // 重新绑定事件
-                bindTableRowEvents();
-                
-                // 更新分页信息
-                updatePaginationInfo();
-                
-                // 显示成功提示
-                if (typeof bootGrowl === 'function') {
-                    bootGrowl('数据刷新成功', 'success');
-                }
-            } else {
-                // 如果无法解析响应，回退到重新加载整个页面
-                loadConnectorListPage();
-            }
-        },
-        error: function() {
-            // 隐藏加载提示
-            if (typeof $.loadingT === 'function') {
-                $.loadingT(false);
-            }
-            
-            // 显示错误提示
-            if (typeof bootGrowl === 'function') {
-                bootGrowl('数据刷新失败，请稍后重试', 'danger');
-            }
-            
-            // 如果AJAX失败，回退到重新加载整个页面
-            // loadConnectorListPage();
+    showLoading();
+    doPoster('/connector/list', {}, function(data){
+        if (data.success == true) {
+            renderTaskList(data.resultValue);
+            // 更新表格内容
+            $('#connectorTableBody').html('');
+
+            // 重新绑定事件
+            bindTableRowEvents();
+
+            // 更新分页信息
+            updatePaginationInfo();
+            bootGrowl('数据刷新成功', 'success');
+        } else {
+            bootGrowl('数据刷新失败，请稍后重试', 'danger');
         }
     });
 }
@@ -238,7 +203,7 @@ function loadAddConnectorPageDirectly() {
                 }
             } else {
                 hideLoadingState();
-                alert('加载添加连接页面失败，请稍后重试');
+                bootGrowl('加载添加连接页面失败，请稍后重试', "danger");
             }
         });
     }
@@ -456,25 +421,16 @@ function editConnector(id) {
     var contentDiv = $('#mainContent');
     if (contentDiv.length) {
         // 显示加载状态
-        if (typeof $.loadingT === 'function') {
-            $.loadingT(true);
-        }
+        showLoading();
         
         // 加载编辑页面内容
         contentDiv.load('/connector/page/edit?id=' + id, function(response, status, xhr) {
-            if (typeof $.loadingT === 'function') {
-                $.loadingT(false);
-            }
-            
+            hideLoading();
             if (status === 'success') {
                 // 初始化编辑页面的脚本
                 initConnectorEditPage();
             } else {
-                if (typeof bootGrowl === 'function') {
-                    bootGrowl('加载编辑页面失败，请稍后重试', 'danger');
-                } else {
-                    alert('加载编辑页面失败，请稍后重试');
-                }
+                bootGrowl('加载编辑页面失败，请稍后重试', 'danger');
             }
         });
     }
