@@ -9,11 +9,11 @@
     </div>
 
     <div class="dbsyncer-form-container">
-        <div class="dbsyncer-card">
-            <div class="dbsyncer-card-header">
-                <h3 class="dbsyncer-card-title">连接信息</h3>
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">连接信息</h3>
             </div>
-            <div class="dbsyncer-card-body">
+            <div class="card-body">
                 <form id="connectorModifyForm" method="post">
                     <input type="hidden" name="id" th:value="${connector?.id}" />
                     
@@ -39,7 +39,7 @@
                     </div>
                 </form>
             </div>
-            <div class="dbsyncer-card-footer">
+            <div class="card-footer">
                 <div class="form-actions">
                     <button id="connectorBackBtn" type="button" class="btn btn-secondary">
                         <span class="fa fa-reply"></span> 返回

@@ -3,8 +3,8 @@
 xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div class="dbsyncer-form-container">
-    <div class="dbsyncer-card-header flex-between">
-        <h3 class="dbsyncer-card-title">修改用户</h3>
+    <div class="card-header flex-between">
+        <h3 class="card-title">修改用户</h3>
         <div class="form-actions">
             <button id="userSubmitBtn" type="button" class="btn btn-primary">
                 <i class="fa fa-save"></i> 保存
@@ -14,7 +14,7 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
             </button>
         </div>
     </div>
-    <div class="dbsyncer-card-body">
+    <div class="card-body">
         <form id="userEditForm" method="post">
             <div class="form-grid-1">
                 <!-- 角色 -->
@@ -46,7 +46,6 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                     <label class="form-label">旧密码</label>
                     <div class="form-control-area">
                         <input class="form-control" name="oldPwd" type="password" maxlength="64" placeholder="如需修改密码请输入旧密码"/>
-                        <div class="form-help">留空表示不修改密码</div>
                     </div>
                 </div>
 
@@ -55,7 +54,6 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                     <label class="form-label">新密码</label>
                     <div class="form-control-area">
                         <input class="form-control" name="newPwd" type="password" maxlength="64" placeholder="请输入新密码"/>
-                        <div class="form-help">修改密码后需要重新登录</div>
                     </div>
                 </div>
 
@@ -65,8 +63,7 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                         <i class="fa fa-question-circle text-tertiary" aria-hidden="true" title="支持多个邮箱，用逗号分隔"></i>
                     </label>
                     <div class="form-control-area">
-                        <input type="text" class="form-control" name="email" data-role="tagsinput" th:value="${currentUser?.email}" placeholder="请输入邮箱地址"/>
-                        <div class="form-help">支持多个邮箱，按 Enter 键添加</div>
+                        <input type="text" class="form-control" name="email" data-role="tagsinput" th:value="${currentUser?.email}" placeholder="请输入邮箱地址，支持多个邮箱"/>
                     </div>
                 </div>
 

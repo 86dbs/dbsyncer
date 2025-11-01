@@ -15,7 +15,7 @@
 .text-disabled { color: var(--text-disabled) !important; }
 
 /* 背景色类 */
-.bg-primary { background-color: var(--primary-color) !important; }
+.bg-primary { background-color: var(--bg-primary) !important; }
 .bg-secondary { background-color: var(--bg-secondary) !important; }
 .bg-tertiary { background-color: var(--bg-tertiary) !important; }
 .bg-quaternary { background-color: var(--bg-quaternary) !important; }

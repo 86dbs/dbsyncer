@@ -79,7 +79,8 @@ public class LicenseController extends BaseController {
 
     @RequestMapping("")
     public String index(ModelMap model) {
-        model.put("key", licenseService.getKey());
+//        model.put("key", licenseService.getKey());
+        model.put("key", "aaaaaa");
         model.put("userInfo", getUserInfo());
         model.put("productInfo", licenseService.getProductInfo());
         return "license/license";

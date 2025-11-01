@@ -2,8 +2,8 @@
  * DBSyncer 卡片组件样式
  */
 
-/* 基础卡片 */
-.dbsyncer-card, .card {
+/* ========== 基础卡片 ========== */
+.card {
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
@@ -12,35 +12,35 @@
   transition: all var(--transition-fast);
 }
 
-.dbsyncer-card:hover, .card:hover {
+.card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
-/* 卡片头部（兼容 .card-header） */
-.dbsyncer-card-header, .card-header {
+/* ========== 卡片头部 ========== */
+.card-header {
   padding: var(--spacing-lg);
   border-bottom: 1px solid var(--border-secondary);
   background-color: var(--bg-primary);
 }
 
-/* 卡片标题（兼容 .card-title） */
-.dbsyncer-card-title, .card-title {
+/* ========== 卡片标题 ========== */
+.card-title {
   font-size: var(--font-size-lg);
   font-weight: 500;
   color: var(--text-primary);
   margin: 0;
 }
 
-/* 卡片副标题（兼容 .card-subtitle） */
-.dbsyncer-card-subtitle, .card-subtitle {
+/* ========== 卡片副标题 ========== */
+.card-subtitle {
   font-size: var(--font-size-sm);
   color: var(--text-tertiary);
   margin: var(--spacing-xs) 0 0 0;
 }
 
-/* 卡片内容（兼容 .card-body） */
-.dbsyncer-card-body, .card-body {
+/* ========== 卡片内容 ========== */
+.card-body {
   padding: var(--spacing-lg);
 }
 
@@ -60,15 +60,15 @@
   background: #fff;
 }
 
-/* 卡片底部（兼容 .card-footer） */
-.dbsyncer-card-footer, .card-footer {
+/* ========== 卡片底部 ========== */
+.card-footer {
   padding: var(--spacing-lg);
   border-top: 1px solid var(--border-secondary);
   background-color: var(--bg-secondary);
 }
 
-/* 统计卡片（兼容 .stat-card） */
-.dbsyncer-stat-card, .stat-card {
+/* ========== 统计卡片 ========== */
+.stat-card {
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
@@ -79,12 +79,12 @@
   overflow: hidden;
 }
 
-.dbsyncer-stat-card:hover, .stat-card:hover {
+.stat-card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
-.dbsyncer-stat-card::before {
+.stat-card::before {
   content: '';
   position: absolute;
   top: 0;
@@ -94,30 +94,30 @@
   background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
 }
 
-.dbsyncer-stat-card.success::before {
+.stat-card.success::before {
   background: linear-gradient(90deg, var(--success-color), #73d13d);
 }
 
-.dbsyncer-stat-card.warning::before {
+.stat-card.warning::before {
   background: linear-gradient(90deg, var(--warning-color), #ffc53d);
 }
 
-.dbsyncer-stat-card.error::before {
+.stat-card.error::before {
   background: linear-gradient(90deg, var(--error-color), #ff4d4f);
 }
 
-/* 统计卡片内容 */
-.dbsyncer-stat-content {
+/* ========== 统计卡片内容 ========== */
+.stat-content {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
 }
 
-.dbsyncer-stat-info {
+.stat-info {
   flex: 1;
 }
 
-.dbsyncer-stat-value {
+.stat-value {
   font-size: var(--font-size-xxxl);
   font-weight: 600;
   color: var(--text-primary);
@@ -125,48 +125,48 @@
   margin-bottom: var(--spacing-sm);
 }
 
-.dbsyncer-stat-label {
+.stat-label {
   font-size: var(--font-size-sm);
   color: var(--text-tertiary);
   margin-bottom: var(--spacing-xs);
 }
 
-.dbsyncer-stat-description {
+.stat-description {
   font-size: var(--font-size-xs);
   color: var(--text-tertiary);
   line-height: var(--line-height-md);
 }
 
-.dbsyncer-stat-change {
+.stat-change {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
   margin-top: var(--spacing-sm);
 }
 
-.dbsyncer-stat-change.positive {
+.stat-change.positive {
   color: var(--success-color);
 }
 
-.dbsyncer-stat-change.negative {
+.stat-change.negative {
   color: var(--error-color);
 }
 
-.dbsyncer-stat-change.neutral {
+.stat-change.neutral {
   color: var(--text-tertiary);
 }
 
-.dbsyncer-stat-change-icon {
+.stat-change-icon {
   font-size: var(--font-size-xs);
 }
 
-.dbsyncer-stat-change-text {
+.stat-change-text {
   font-size: var(--font-size-xs);
   font-weight: 500;
 }
 
-/* 统计卡片图标（兼容 .stat-icon） */
-.dbsyncer-stat-icon, .stat-icon {
+/* ========== 统计卡片图标 ========== */
+.stat-icon {
   width: 48px;
   height: 48px;
   border-radius: var(--radius-lg);
@@ -178,20 +178,20 @@
   background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
 }
 
-.dbsyncer-stat-icon.success {
+.stat-icon.success {
   background: linear-gradient(135deg, var(--success-color), #73d13d);
 }
 
-.dbsyncer-stat-icon.warning {
+.stat-icon.warning {
   background: linear-gradient(135deg, var(--warning-color), #ffc53d);
 }
 
-.dbsyncer-stat-icon.error {
+.stat-icon.error {
   background: linear-gradient(135deg, var(--error-color), #ff4d4f);
 }
 
-/* 图表卡片 */
-.dbsyncer-chart-card, .chart-card {
+/* ========== 图表卡片 ========== */
+.chart-card {
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
@@ -199,7 +199,7 @@
   overflow: hidden;
 }
 
-.dbsyncer-chart-header, .chart-card-header {
+.chart-card-header {
   padding: var(--spacing-lg);
   border-bottom: 1px solid var(--border-secondary);
   display: flex;
@@ -207,20 +207,20 @@
   justify-content: space-between;
 }
 
-.dbsyncer-chart-title, .chart-card-title {
+.chart-card-title {
   font-size: var(--font-size-lg);
   font-weight: 500;
   color: var(--text-primary);
   margin: 0;
 }
 
-.dbsyncer-chart-actions, .chart-card-actions {
+.chart-card-actions {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
 }
 
-.dbsyncer-chart-action-btn, .chart-card-action-btn {
+.chart-card-action-btn {
   width: 32px;
   height: 32px;
   border: none;
@@ -234,22 +234,22 @@
   justify-content: center;
 }
 
-.dbsyncer-chart-action-btn:hover, .chart-card-action-btn:hover {
+.chart-card-action-btn:hover {
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
 }
 
-.dbsyncer-chart-body, .chart-card-body {
+.chart-card-body {
   padding: var(--spacing-lg);
 }
 
-.dbsyncer-chart-container {
+.chart-container {
   height: 300px;
   position: relative;
 }
 
-/* 进度卡片 */
-.dbsyncer-progress-card, .progress-card {
+/* ========== 进度卡片 ========== */
+.progress-card {
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
@@ -257,27 +257,27 @@
   border: 1px solid var(--border-secondary);
 }
 
-.dbsyncer-progress-header, .progress-card-header {
+.progress-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--spacing-md);
 }
 
-.dbsyncer-progress-title, .progress-card-title {
+.progress-card-title {
   font-size: var(--font-size-md);
   font-weight: 500;
   color: var(--text-primary);
   margin: 0;
 }
 
-.dbsyncer-progress-value, .progress-card-value {
+.progress-card-value {
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.dbsyncer-progress-bar, .progress-card-bar {
+.progress-card-bar {
   width: 100%;
   height: 8px;
   background-color: var(--bg-tertiary);
@@ -286,66 +286,66 @@
   margin-bottom: var(--spacing-sm);
 }
 
-.dbsyncer-progress-fill, .progress-card-fill {
+.progress-card-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
   border-radius: var(--radius-sm);
   transition: width var(--transition-normal);
 }
 
-.dbsyncer-progress-fill.success, .progress-card-fill.success {
+.progress-card-fill.success {
   background: linear-gradient(90deg, var(--success-color), #73d13d);
 }
 
-.dbsyncer-progress-fill.warning, .progress-card-fill.warning {
+.progress-card-fill.warning {
   background: linear-gradient(90deg, var(--warning-color), #ffc53d);
 }
 
-.dbsyncer-progress-fill.error, .progress-card-fill.error {
+.progress-card-fill.error {
   background: linear-gradient(90deg, var(--error-color), #ff4d4f);
 }
 
-.dbsyncer-progress-details, .progress-card-details {
+.progress-card-details {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: var(--spacing-sm);
 }
 
-.dbsyncer-progress-detail, .progress-card-detail {
+.progress-card-detail {
   text-align: center;
 }
 
-.dbsyncer-progress-detail-label, .progress-card-detail-label {
+.progress-card-detail-label {
   font-size: var(--font-size-xs);
   color: var(--text-tertiary);
   margin-bottom: 2px;
 }
 
-.dbsyncer-progress-detail-value, .progress-card-detail-value {
+.progress-card-detail-value {
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--text-primary);
 }
 
-/* 响应式设计 */
+/* ========== 响应式设计 ========== */
 @media (max-width: 768px) {
-  .dbsyncer-stat-content {
+  .stat-content {
     flex-direction: column;
     align-items: center;
     text-align: center;
   }
   
-  .dbsyncer-stat-icon {
+  .stat-icon {
     margin-bottom: var(--spacing-md);
   }
   
-  .dbsyncer-progress-details {
+  .progress-card-details {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 480px) {
-  .dbsyncer-progress-details {
+  .progress-card-details {
     grid-template-columns: 1fr;
   }
 }
