@@ -18,6 +18,7 @@ import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.TaskService;
+import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
@@ -46,7 +48,7 @@ import java.util.Map;
 
 @Controller
 @RequestMapping("/task")
-public class TaskController {
+public class TaskController extends BaseController {
 
 
     private static final Logger log = LoggerFactory.getLogger(TaskController.class);
@@ -133,8 +135,9 @@ public class TaskController {
      */
     @PostMapping("/list")
     @ResponseBody
-    public Paging list(@RequestBody Map<String, String> params) {
+    public Paging list(HttpServletRequest request) {
         try {
+            Map<String, String> params = getParams(request);
             Paging list = taskService.list(params);
             return list;
 
