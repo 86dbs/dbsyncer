@@ -49,7 +49,7 @@ $(function () {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 cutout: '75%',
                 plugins: {
                     legend: {
@@ -116,7 +116,7 @@ $(function () {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 interaction: {
                     intersect: false,
                     mode: 'index'
@@ -181,7 +181,7 @@ $(function () {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 interaction: {
                     intersect: false,
                     mode: 'index'
@@ -268,7 +268,7 @@ $(function () {
         // 折线图
         charts.tps = initAreaChart('tpsChart');
         charts.cpu = initLineChart('cpuChart', 'CPU使用率', 'rgba(82, 196, 26, 1)', 100);
-        charts.memory = initLineChart('memoryChart', '内存使用', 'rgba(250, 173, 20, 1)', 1000);
+        charts.memory = initLineChart('memoryChart', '内存使用', 'rgba(24, 144, 255, 1)', 1000);
     }
     
     /**

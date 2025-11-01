@@ -9,7 +9,6 @@
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-secondary);
   overflow: hidden;
-  min-height: 600px;
 }
 
 /* 表格头部 */

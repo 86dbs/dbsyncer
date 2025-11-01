@@ -6,49 +6,62 @@
 <!-- 图表和任务列表 -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
     <!-- 同步趋势图表 -->
-    <div class="card lg:col-span-2 p-5">
-        <div class="flex items-center justify-between mb-5">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-
-                <div class="flex items-center justify-between">
-                    <span class="badge bg-primary text-primary">共计</span>9999999909999999
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="badge bg-primary text-primary">成功</span>9999999909999999
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="badge bg-primary text-primary">失败</span>9999999909999999
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="badge bg-primary text-primary">新增</span>9999999909999999
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="badge bg-primary text-primary">修改</span>9999999909999999
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="badge bg-primary text-primary">删除</span>9999999909999999
-                </div>
-
+    <div class="dbsyncer-form-container lg:col-span-2 p-5">
+        <!-- 统计数据区域 -->
+        <div class="monitor-stats-grid mb-6">
+            <div class="monitor-stat-item">
+                <span class="monitor-stat-label">共计</span>
+                <span class="monitor-stat-number" id="totalSpan">9999999909999999</span>
+            </div>
+            <div class="monitor-stat-item">
+                <span class="monitor-stat-label">成功</span>
+                <span class="monitor-stat-number" id="successSpan">9999999909999999</span>
+            </div>
+            <div class="monitor-stat-item">
+                <span class="monitor-stat-label">失败</span>
+                <span class="monitor-stat-number" id="failSpan">9999999909999999</span>
+            </div>
+            <div class="monitor-stat-item">
+                <span class="monitor-stat-label">新增</span>
+                <span class="monitor-stat-number" id="insertSpan">9999999909999999</span>
+            </div>
+            <div class="monitor-stat-item">
+                <span class="monitor-stat-label">修改</span>
+                <span class="monitor-stat-number" id="updateSpan">9999999909999999</span>
+            </div>
+            <div class="monitor-stat-item">
+                <span class="monitor-stat-label">删除</span>
+                <span class="monitor-stat-number" id="deleteSpan">9999999909999999</span>
             </div>
         </div>
 
-        <!-- 下部：CPU & 内存折线图 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- 中部：TPS & 堆积图 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title text-center">执行器TPS</h3>
                 </div>
-                <div class="card-body h-64 mb-4">
-                    <canvas id="tpsChart" height="200"></canvas>
+                <div class="card-body mb-4">
+                    <canvas id="tpsChart" height="100"></canvas>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title text-center">堆积数据</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title text-center">堆积数据</h3>
+                    </div>
+                    <div class="card-body mb-4 flex items-center justify-center">
+                        <canvas id="queueChart" height="100"></canvas>
+                    </div>
                 </div>
-                <div class="card-body h-64 mb-4">
-                    <canvas id="queueChart" height="100"></canvas>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title text-center">持久化</h3>
+                    </div>
+                    <div class="card-body mb-4 flex items-center justify-center">
+                        <canvas id="storageChart" height="100"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -76,7 +89,7 @@
     </div>
 
     <!-- 任务状态分布 -->
-    <div class="card p-5">
+    <div class="dbsyncer-form-container p-5">
         <!-- CPU使用率 -->
         <div class="monitor-progress-card mb-3">
             <div class="monitor-progress-header">
@@ -123,14 +136,6 @@
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title text-center">持久化</h3>
-            </div>
-            <div class="card-body h-64 mb-4">
-                <canvas id="storageChart" height="100"></canvas>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -290,7 +295,7 @@
 </div>
 
 <!-- 查询日志 -->
-<div class="card">
+<div class="dbsyncer-form-container">
     <div class="card-header">
         <h3 class="card-title">查询日志</h3>
     </div>

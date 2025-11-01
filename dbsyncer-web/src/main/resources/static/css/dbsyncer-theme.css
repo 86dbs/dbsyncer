@@ -1121,6 +1121,46 @@ tr:hover {
   line-height: 1;
 }
 
+/* 监控统计数据网格 */
+.monitor-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .monitor-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.monitor-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.monitor-stat-item .monitor-stat-label {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--primary-color);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+.monitor-stat-item .monitor-stat-number {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: 'Courier New', monospace;
+}
+
 /* 监控进度条卡片 */
 .monitor-progress-card {
   background: #fff;
