@@ -2,6 +2,128 @@
  * DBSyncer 左侧边栏样式
  */
 
+/* ========== 侧边栏容器（HTML中使用的是普通aside） ========== */
+aside.bg-white {
+  width: 240px;
+  background: #fff;
+  border-right: 1px solid #e8e8e8;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ========== 品牌标识区域 ========== */
+aside.bg-white > div:first-child {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+aside.bg-white > div:first-child h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ========== 导航菜单区域 ========== */
+aside.bg-white nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+/* ========== 侧边栏菜单项样式（与原样式兼容） ========== */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: var(--text-secondary);
+  border-radius: var(--radius-lg);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  cursor: pointer;
+  margin-bottom: 4px;
+  user-select: none;
+}
+
+.sidebar-item:hover {
+  background-color: rgba(22, 93, 255, 0.05);
+  color: var(--primary-color);
+}
+
+.sidebar-item.active {
+  background-color: rgba(22, 93, 255, 0.1);
+  color: var(--primary-color);
+  font-weight: 500;
+  border-right: 4px solid var(--primary-color);
+}
+
+.sidebar-item i {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sidebar-item span {
+  font-size: 14px;
+  flex: 1;
+}
+
+/* ========== 版权信息区域 ========== */
+aside.bg-white > div:last-child {
+  padding: 16px 20px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+aside.bg-white > div:last-child p {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+/* ========== 滚动条样式 ========== */
+aside.bg-white nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+aside.bg-white nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+aside.bg-white nav::-webkit-scrollbar-thumb {
+  background-color: #d9d9d9;
+  border-radius: 2px;
+}
+
+aside.bg-white nav::-webkit-scrollbar-thumb:hover {
+  background-color: #bfbfbf;
+}
+
+/* ========== 响应式设计 ========== */
+@media (max-width: 768px) {
+  aside.bg-white {
+    width: 100%;
+    max-width: 280px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  aside.bg-white.mobile-open {
+    transform: translateX(0);
+  }
+}
+
+/* ========== 原有的 dbsyncer-sidebar 样式（保留兼容） ========== */
 /* 侧边栏容器 */
 .dbsyncer-sidebar {
   position: fixed;

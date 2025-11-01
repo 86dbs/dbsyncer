@@ -1,0 +1,100 @@
+/**
+ * 容器组件样式
+ * 统一管理各种容器样式
+ */
+
+/* ========== 基础容器 ========== */
+.dbsyncer-container-base {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ========== 表单容器 ========== */
+.dbsyncer-form-container {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+}
+
+/* 无背景容器（仅用于分组） */
+.dbsyncer-container-no-bg {
+  padding: 0;
+  background: transparent;
+}
+
+/* ========== 表格容器 ========== */
+.dbsyncer-table-container {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.dbsyncer-table-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dbsyncer-table-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dbsyncer-table-toolbar-left,
+.dbsyncer-table-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dbsyncer-table-wrapper {
+  overflow-x: auto;
+}
+
+/* ========== 卡片容器 ========== */
+.card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-body {
+  padding: 20px;
+}
+
+/* 无内边距的卡片体 */
+.card-body-no-padding {
+  padding: 0;
+}
+
+/* ========== 响应式容器 ========== */
+@media (max-width: 768px) {
+  .dbsyncer-form-container,
+  .card-body {
+    padding: 16px;
+  }
+  
+  .dbsyncer-table-header {
+    padding: 12px 16px;
+  }
+}
+

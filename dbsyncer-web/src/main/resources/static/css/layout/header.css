@@ -1,4 +1,100 @@
-/* 顶部导航栏容器 */
+/* ========== 顶部导航栏容器（HTML中使用的是普通header） ========== */
+header.bg-white {
+  height: 56px;
+  background-color: #fff;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: relative;
+  z-index: 1000;
+}
+
+/* ========== 许可证信息样式 ========== */
+.license-info-item {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* ========== 下拉菜单样式 ========== */
+.dropdown {
+  position: relative;
+}
+
+.dropdown button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+
+.dropdown button:hover {
+  color: var(--text-primary);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  min-width: 160px;
+  background: #fff;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  padding: 4px 0;
+  list-style: none;
+  margin: 0;
+}
+
+.dropdown-menu li {
+  margin: 0;
+}
+
+.dropdown-menu a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.dropdown-menu a:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--primary-color);
+}
+
+.dropdown-menu a i {
+  width: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: var(--border-tertiary);
+  margin: 4px 0;
+}
+
+.dropdown.open .dropdown-menu {
+  display: block;
+}
+
+.dropdown .dropdown-menu.hidden {
+  display: none;
+}
+
+/* ========== 原有的 dbsyncer-header 样式（保留兼容） ========== */
 .dbsyncer-header {
   position: fixed;
   top: 0;

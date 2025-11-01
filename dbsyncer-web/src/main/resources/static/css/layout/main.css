@@ -2,6 +2,51 @@
  * DBSyncer 主内容区样式
  */
 
+/* ========== 主内容区布局（HTML中使用的是flex布局） ========== */
+main.flex-col {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+/* flex-1 确保 main 容器占满剩余空间 */
+main.flex-1 {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* mainContent 内容区域样式 */
+#mainContent {
+  flex: 1;
+  min-height: 0; /* 关键：允许flex子元素收缩，使其能够滚动 */
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--bg-secondary);
+  /* padding 由 HTML 中的 p-4 类提供 */
+}
+
+/* 确保mainContent可以正确滚动 */
+#mainContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+#mainContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#mainContent::-webkit-scrollbar-thumb {
+  background-color: #d9d9d9;
+  border-radius: 3px;
+}
+
+#mainContent::-webkit-scrollbar-thumb:hover {
+  background-color: #bfbfbf;
+}
+
+/* ========== 原有的 dbsyncer-main 样式（保留兼容） ========== */
 /* 主内容区容器 */
 .dbsyncer-main {
   margin-left: var(--sidebar-width);
