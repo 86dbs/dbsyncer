@@ -354,28 +354,28 @@ console.log(formData.get('tags')); // "标签1,标签2,标签3"
 ### 工作原理
 
 1. **查找元素**：
-   - 查找所有带有 `data-role="tagsinput"` 的 `<input>` 元素
+    - 查找所有带有 `data-role="tagsinput"` 的 `<input>` 元素
 
 2. **创建结构**：
-   - 创建标签容器（`.dbsyncer-tagsinput`）
-   - 创建标签列表（`.dbsyncer-tagsinput-tags`）
-   - 创建新标签输入框（`.dbsyncer-tagsinput-input`）
-   - 隐藏原始输入框
+    - 创建标签容器（`.dbsyncer-tagsinput`）
+    - 创建标签列表（`.dbsyncer-tagsinput-tags`）
+    - 创建新标签输入框（`.dbsyncer-tagsinput-input`）
+    - 隐藏原始输入框
 
 3. **初始化值**：
-   - 读取原始输入框的 `value` 或 `value` 属性
-   - 按逗号分隔，去除空格
-   - 为每个值创建标签
+    - 读取原始输入框的 `value` 或 `value` 属性
+    - 按逗号分隔，去除空格
+    - 为每个值创建标签
 
 4. **事件绑定**：
-   - 监听新标签输入框的键盘事件（Enter、逗号、退格键）
-   - 监听失焦事件（添加未完成的标签）
-   - 监听容器点击事件（聚焦到输入框）
-   - 监听标签删除按钮点击事件
+    - 监听新标签输入框的键盘事件（Enter、逗号、退格键）
+    - 监听失焦事件（添加未完成的标签）
+    - 监听容器点击事件（聚焦到输入框）
+    - 监听标签删除按钮点击事件
 
 5. **数据同步**：
-   - 每次添加或删除标签时，更新原始输入框的值
-   - 用逗号拼接所有标签值
+    - 每次添加或删除标签时，更新原始输入框的值
+    - 用逗号拼接所有标签值
 
 ### HTML 转义
 
@@ -446,7 +446,7 @@ doLoader("/some-page", function() {
 
 ### Q5: 如何获取所有标签的数组？
 
-**A**: 
+**A**:
 ```javascript
 const tagsString = $('input[name="tags"]').val();
 const tagsArray = tagsString ? tagsString.split(',').map(tag => tag.trim()) : [];
