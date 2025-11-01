@@ -4,13 +4,13 @@
 
 :root {
   /* 主色调 */
-  --primary-color: #1890ff;
+  --primary-color: #165DFF;
   --primary-hover: #40a9ff;
   --primary-active: #096dd9;
   
   /* 状态色 */
   --success-color: #52c41a;
-  --warning-color: #fa8c16;
+  --warning-color: #ffc53d;
   --error-color: #f5222d;
   --info-color: #1890ff;
   

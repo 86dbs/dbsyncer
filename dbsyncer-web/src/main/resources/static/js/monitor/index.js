@@ -94,9 +94,12 @@ $(function () {
     /**
      * 初始化折线图（TPS、CPU、内存）
      */
-    function initLineChart(canvasId, label, color, suggestedMax) {
+    function initLineChart(canvasId, label, color, suggestedMax, solidFill) {
         const ctx = document.getElementById(canvasId);
         if (!ctx) return null;
+        
+        // 如果是实心填充，使用不透明颜色；否则使用半透明
+        const bgColor = solidFill ? color.replace('1)', '0.6)') : color.replace('1)', '0.1)');
         
         return new Chart(ctx, {
             type: 'line',
@@ -106,7 +109,7 @@ $(function () {
                     label: label,
                     data: [],
                     borderColor: color,
-                    backgroundColor: color.replace('1)', '0.1)'),
+                    backgroundColor: bgColor,
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4,
@@ -150,68 +153,6 @@ $(function () {
                         padding: 12,
                         titleColor: '#fff',
                         bodyColor: '#fff'
-                    }
-                }
-            }
-        });
-    }
-    
-    /**
-     * 初始化面积图（TPS）
-     */
-    function initAreaChart(canvasId) {
-        const ctx = document.getElementById(canvasId);
-        if (!ctx) return null;
-        
-        return new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'TPS',
-                    data: [],
-                    borderColor: 'rgba(24, 144, 255, 1)',
-                    backgroundColor: 'rgba(24, 144, 255, 0.2)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    pointHoverRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                },
-                scales: {
-                    x: {
-                        display: true,
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            maxTicksLimit: 10
-                        }
-                    },
-                    y: {
-                        display: true,
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        enabled: true,
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12
                     }
                 }
             }
@@ -266,9 +207,9 @@ $(function () {
         charts.storage = initGaugeChart('storageChart', '持久化', 50000);
         
         // 折线图
-        charts.tps = initAreaChart('tpsChart');
-        charts.cpu = initLineChart('cpuChart', 'CPU使用率', 'rgba(82, 196, 26, 1)', 100);
-        charts.memory = initLineChart('memoryChart', '内存使用', 'rgba(24, 144, 255, 1)', 1000);
+        charts.tps = initLineChart('tpsChart', 'TPS', 'rgba(245, 108, 108, 1)', 1000, false);
+        charts.cpu = initLineChart('cpuChart', 'CPU使用率', 'rgba(82, 196, 26, 1)', 100, false);
+        charts.memory = initLineChart('memoryChart', '内存使用', 'rgba(24, 144, 255, 1)', 1000, true);
     }
     
     /**

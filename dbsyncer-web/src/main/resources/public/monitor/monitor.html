@@ -10,48 +10,47 @@
         <!-- 统计数据区域 -->
         <div class="monitor-stats-grid mb-6">
             <div class="monitor-stat-item">
-                <span class="monitor-stat-label">共计</span>
-                <span class="monitor-stat-number" id="totalSpan">9999999909999999</span>
-            </div>
-            <div class="monitor-stat-item">
-                <span class="monitor-stat-label">成功</span>
+                <span class="monitor-stat-label bg-primary">成功</span>
                 <span class="monitor-stat-number" id="successSpan">9999999909999999</span>
             </div>
             <div class="monitor-stat-item">
-                <span class="monitor-stat-label">失败</span>
+                <span class="monitor-stat-label bg-error">失败</span>
                 <span class="monitor-stat-number" id="failSpan">9999999909999999</span>
             </div>
+            <div class="monitor-stat-item"></div>
             <div class="monitor-stat-item">
-                <span class="monitor-stat-label">新增</span>
+                <span class="monitor-stat-label bg-success">新增</span>
                 <span class="monitor-stat-number" id="insertSpan">9999999909999999</span>
             </div>
             <div class="monitor-stat-item">
-                <span class="monitor-stat-label">修改</span>
+                <span class="monitor-stat-label bg-info">修改</span>
                 <span class="monitor-stat-number" id="updateSpan">9999999909999999</span>
             </div>
             <div class="monitor-stat-item">
-                <span class="monitor-stat-label">删除</span>
+                <span class="monitor-stat-label bg-warning">删除</span>
                 <span class="monitor-stat-number" id="deleteSpan">9999999909999999</span>
             </div>
         </div>
 
-        <!-- 中部：TPS & 堆积图 -->
+        <!-- 中部：图表区域 -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- TPS图表 -->
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title text-center">执行器TPS</h3>
                 </div>
-                <div class="card-body mb-4">
+                <div class="card-body">
                     <canvas id="tpsChart" height="100"></canvas>
                 </div>
             </div>
 
+            <!-- 堆积数据 & 持久化 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title text-center">堆积数据</h3>
                     </div>
-                    <div class="card-body mb-4 flex items-center justify-center">
+                    <div class="card-body flex items-center justify-center">
                         <canvas id="queueChart" height="100"></canvas>
                     </div>
                 </div>
@@ -59,37 +58,36 @@
                     <div class="card-header">
                         <h3 class="card-title text-center">持久化</h3>
                     </div>
-                    <div class="card-body mb-4 flex items-center justify-center">
+                    <div class="card-body flex items-center justify-center">
                         <canvas id="storageChart" height="100"></canvas>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 下部：CPU & 内存折线图 -->
+        <!-- 下部：CPU & 内存 -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title text-center">CPU(%)</h3>
                 </div>
-                <div class="card-body p-4">
+                <div class="card-body">
                     <canvas id="cpuChart" height="100"></canvas>
                 </div>
             </div>
-
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title text-center">内存(MB)</h3>
                 </div>
-                <div class="card-body p-4">
+                <div class="card-body">
                     <canvas id="memoryChart" height="100"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 任务状态分布 -->
-    <div class="dbsyncer-form-container p-5">
+    <!-- 右侧：系统状态 -->
+    <div class="dbsyncer-container-no-bg">
         <!-- CPU使用率 -->
         <div class="monitor-progress-card mb-3">
             <div class="monitor-progress-header">
@@ -136,31 +134,43 @@
             </div>
         </div>
 
+        <!-- 应用状态 -->
+        <div class="dbsyncer-table-wrapper mb-3">
+            <table class="dbsyncer-table">
+                <tbody>
+                <tr>
+                    <td>[应用线程]</td>
+                    <td>活跃:48 峰值:55</td>
+                </tr>
+                <tr>
+                    <td>[调度线程池]</td>
+                    <td>堆积:11/1000 线程:0/16 完成:0</td>
+                </tr>
+                <tr>
+                    <td>[GC]</td>
+                    <td>2次，耗时:0.14秒，最长:0秒</td>
+                </tr>
+                <tr>
+                    <td>[通用执行器]</td>
+                    <td>堆积:0/50000 线程:0/16 完成:3</td>
+                </tr>
+                <tr>
+                    <td>[持久化执行器]</td>
+                    <td>堆积:0/50000 线程:0/8 完成:0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
-<!-- 数据源列表表格 -->
-<div class="dbsyncer-table-container mb-5">
-
-    <!-- 表格工具栏 -->
-    <div class="dbsyncer-table-header">
-        <div class="dbsyncer-table-toolbar-left">
-            <h3>同步任务明细</h3>
-        </div>
+<div class="dbsyncer-form-container mb-4">
+    <div class="card-header">
+        <h3 class="card-title">查询执行器任务</h3>
     </div>
-
-    <!-- 表格主体 -->
-    <div class="dbsyncer-table-wrapper">
-        <table class="dbsyncer-table" id="connectorTable">
-            <thead>
-            <tr>
-                <th>序号</th>
-                <th>同步任务</th>
-                <th>状态</th>
-            </tr>
-            </thead>
+    <div class="dbsyncer-table-wrapper mb-3">
+        <table class="dbsyncer-table">
             <tbody>
-            <!-- 动态数据 -->
             <tr>
                 <td>1</td>
                 <td>[阿里云同步星河]xhtb_license_customer_product</td>
@@ -179,28 +189,10 @@
             </tbody>
         </table>
     </div>
-
-    <!-- 分页组件 -->
-    <div class="dbsyncer-pagination" th:if="${connectors != null and !connectors.isEmpty()}">
-        <div class="dbsyncer-pagination-info">
-            共 <span id="totalCount" th:text="${connectors.size()}">0</span> 条记录，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页
-        </div>
-        <div class="dbsyncer-pagination-controls">
-            <button class="dbsyncer-pagination-btn" id="prevBtn" disabled>
-                <i class="fa fa-chevron-left"></i>
-            </button>
-            <div class="dbsyncer-pagination-page">
-                <button class="dbsyncer-pagination-page-btn active">1</button>
-            </div>
-            <button class="dbsyncer-pagination-btn" id="nextBtn" disabled>
-                <i class="fa fa-chevron-right"></i>
-            </button>
-        </div>
-    </div>
 </div>
 
 <!-- 查询数据 -->
-<div th:if="${meta?.size() gt 0}" class="card mb-6">
+<div class="dbsyncer-form-container mb-4">
     <div class="card-header">
         <h3 class="card-title">查询数据</h3>
     </div>
@@ -242,13 +234,13 @@
             <table class="dbsyncer-table metaDataList">
                 <thead>
                 <tr>
-                    <th width="60" class="text-center">#</th>
-                    <th width="180">目标表</th>
-                    <th width="100">事件</th>
-                    <th width="80">结果</th>
+                    <th>序号</th>
+                    <th>目标表</th>
+                    <th>事件</th>
+                    <th>结果</th>
                     <th>异常</th>
-                    <th width="180">时间</th>
-                    <th width="150">操作</th>
+                    <th>时间</th>
+                    <th>操作</th>
                 </tr>
                 </thead>
                 <tbody id="dataList">
@@ -322,9 +314,9 @@
             <table class="dbsyncer-table">
                 <thead>
                 <tr>
-                    <th width="60" class="text-center">#</th>
+                    <th>序号</th>
                     <th>内容</th>
-                    <th width="180">时间</th>
+                    <th>时间</th>
                 </tr>
                 </thead>
                 <tbody id="logList">

@@ -11,6 +11,12 @@
   overflow: hidden;
 }
 
+.dbsyncer-container-no-bg {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
 /* 文本输入框（兼容 .form-input/.form-control） */
 .dbsyncer-input, .form-input, .form-control {
   width: 100%;
