@@ -3,271 +3,343 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <!-- Monitor -->
-<div class="p-6">
-    <!-- 统计卡片 -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <!-- 总共 -->
-        <div class="stat-card">
-            <div class="stat-card-icon bg-info">
-                <i class="fa fa-database"></i>
-            </div>
-            <div class="stat-card-content">
-                <div class="stat-card-label">总共</div>
-                <div class="stat-card-value" id="totalSpan">0</div>
-            </div>
-        </div>
-        
-        <!-- 成功 -->
-        <div class="stat-card">
-            <div class="stat-card-icon bg-success">
-                <i class="fa fa-check-circle"></i>
-            </div>
-            <div class="stat-card-content">
-                <div class="stat-card-label">成功</div>
-                <div class="stat-card-value" id="successSpan">0</div>
-            </div>
-        </div>
-        
-        <!-- 失败 -->
-        <div class="stat-card">
-            <div class="stat-card-icon bg-warning">
-                <i class="fa fa-exclamation-triangle"></i>
-            </div>
-            <div class="stat-card-content">
-                <div class="stat-card-label">失败</div>
-                <div class="stat-card-value" id="failSpan">0</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 事件统计 -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <!-- 新增 -->
-        <div class="stat-card">
-            <div class="stat-card-icon bg-primary">
-                <i class="fa fa-plus-circle"></i>
-            </div>
-            <div class="stat-card-content">
-                <div class="stat-card-label">新增</div>
-                <div class="stat-card-value" id="insertSpan">0</div>
-            </div>
-        </div>
-        
-        <!-- 修改 -->
-        <div class="stat-card">
-            <div class="stat-card-icon bg-primary">
-                <i class="fa fa-edit"></i>
-            </div>
-            <div class="stat-card-content">
-                <div class="stat-card-label">修改</div>
-                <div class="stat-card-value" id="updateSpan">0</div>
-            </div>
-        </div>
-        
-        <!-- 删除 -->
-        <div class="stat-card">
-            <div class="stat-card-icon bg-primary">
-                <i class="fa fa-trash"></i>
-            </div>
-            <div class="stat-card-content">
-                <div class="stat-card-label">删除</div>
-                <div class="stat-card-value" id="deleteSpan">0</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
-        <!-- 图表区域 -->
-        <div class="lg:col-span-7">
-            <div class="card mb-4">
-                <div class="card-body p-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div id="tpsChart" style="height: 260px;"></div>
-                        <div class="grid grid-rows-2 gap-4">
-                            <div id="queueChart" style="height: 118px;"></div>
-                            <div id="storageChart" style="height: 118px;"></div>
-                        </div>
-                    </div>
+<!-- 图表和任务列表 -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <!-- 同步趋势图表 -->
+    <div class="card lg:col-span-2 p-5">
+        <div class="flex items-center justify-between mb-5">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+
+                <div class="flex items-center justify-between">
+                    <span class="badge bg-primary text-primary">共计</span>9999999909999999
                 </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-body p-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div id="cpuChart" style="height: 260px;"></div>
-                        <div id="memoryChart" style="height: 260px;"></div>
-                    </div>
+                <div class="flex items-center justify-between">
+                    <span class="badge bg-primary text-primary">成功</span>9999999909999999
                 </div>
+                <div class="flex items-center justify-between">
+                    <span class="badge bg-primary text-primary">失败</span>9999999909999999
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="badge bg-primary text-primary">新增</span>9999999909999999
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="badge bg-primary text-primary">修改</span>9999999909999999
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="badge bg-primary text-primary">删除</span>9999999909999999
+                </div>
+
             </div>
         </div>
-        
-        <!-- 指标表格 -->
-        <div class="lg:col-span-5">
+
+        <!-- 下部：CPU & 内存折线图 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">系统指标</h3>
+                    <h3 class="card-title text-center">执行器TPS</h3>
                 </div>
-                <div class="card-body p-0">
-                    <table id="metricTable" class="dbsyncer-table">
-                        <tbody>
-                        <tr th:each="m,s : ${metrics}">
-                            <td class="text-center text-tertiary" style="width:5%;" th:text="${s.index}+1"></td>
-                            <td class="font-medium" th:text="${'['+ m?.group + '] ' + m?.metricName}"></td>
-                            <td class="text-secondary" th:text="${m?.detail}"></td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- 查询数据 -->
-    <div th:if="${meta?.size() gt 0}" class="card mb-6">
-        <div class="card-header">
-            <h3 class="card-title">查询数据</h3>
-        </div>
-        <div class="card-body">
-            <!-- 查询表单 -->
-            <div class="flex flex-wrap items-center gap-3 mb-4">
-                <!-- 驱动下拉 -->
-                <div class="flex-1 min-w-200">
-                    <select id="searchMetaData" class="form-control">
-                        <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
-                    </select>
-                </div>
-                
-                <!-- 数据状态 -->
-                <div style="min-width: 100px;">
-                    <select id="searchDataStatus" class="form-control">
-                        <option value="" selected="selected">无</option>
-                        <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq dataStatus}"/>
-                    </select>
-                </div>
-                
-                <!-- 关键字搜索 -->
-                <div class="flex-1 min-w-200">
-                    <input id="searchDataKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入异常关键字(最多32个字)" />
-                </div>
-                
-                <!-- 操作按钮 -->
-                <div class="flex gap-2">
-                    <button id="queryDataBtn" type="button" class="btn btn-primary">
-                        <i class="fa fa-search"></i> 查询
-                    </button>
-                    <button th:id="${metaId}" type="button" class="btn btn-danger clearDataBtn">
-                        <i class="fa fa-trash"></i> 清空数据
-                    </button>
+                <div class="card-body h-64 mb-4">
+                    <canvas id="tpsChart" height="200"></canvas>
                 </div>
             </div>
 
-            <div class="dbsyncer-table-wrapper">
-                <table class="dbsyncer-table metaDataList">
-                    <thead>
-                    <tr>
-                        <th width="60" class="text-center">#</th>
-                        <th width="120">目标表</th>
-                        <th width="80">事件</th>
-                        <th width="80">结果</th>
-                        <th>异常</th>
-                        <th width="180">时间</th>
-                        <th width="150">操作</th>
-                    </tr>
-                    </thead>
-                    <tbody id="dataList">
-                    <tr th:each="d,s : ${pagingData?.data}">
-                        <td class="text-center text-tertiary" th:text="${s.index}+1" />
-                        <td class="font-medium" th:text="${d?.targetTableName}" />
-                        <td th:text="${d?.event}" />
-                        <td>
-                            <span th:if="${d?.success == 1}" class="badge badge-success">成功</span>
-                            <span th:if="${d?.success == 0}" class="badge badge-warning">失败</span>
-                        </td>
-                        <td class="text-ellipsis" style="max-width: 300px;">
-                            <a href="javascript:;" class="text-secondary hover-underline queryError" th:text="${d?.error}"></a>
-                        </td>
-                        <td class="text-sm text-secondary" th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}" />
-                        <td>
-                            <div class="flex gap-2">
-                                <a th:json="${d?.json}" href="javascript:;" class="btn btn-sm btn-info queryData">
-                                    <i class="fa fa-eye"></i> 查看
-                                </a>
-                                <a th:if="${d?.success == 0}" th:id="${d?.id}" href="javascript:;" class="btn btn-sm btn-warning retryData">
-                                    <i class="fa fa-refresh"></i> 重试
-                                </a>
-                            </div>
-                            <div class="hidden" th:text="${d?.json}"></div>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-                
-                <!-- 分页信息 -->
-                <div class="flex items-center justify-between px-4 py-3 border-t">
-                    <div class="text-sm text-secondary">
-                        共计: <span id="dataTotal" class="font-medium text-primary">[[${pagingData?.total}]]</span> 条
-                    </div>
-                    <div>
-                        <a href="javascript:void(0);" id="queryDataMore" num="1" class="text-primary hover-underline">
-                            显示更多 <i class="fa fa-angle-double-down"></i>
-                        </a>
-                    </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title text-center">堆积数据</h3>
+                </div>
+                <div class="card-body h-64 mb-4">
+                    <canvas id="queueChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 下部：CPU & 内存折线图 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title text-center">CPU(%)</h3>
+                </div>
+                <div class="card-body p-4">
+                    <canvas id="cpuChart" height="100"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title text-center">内存(MB)</h3>
+                </div>
+                <div class="card-body p-4">
+                    <canvas id="memoryChart" height="100"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 查询日志 -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">查询日志</h3>
+    <!-- 任务状态分布 -->
+    <div class="card p-5">
+        <!-- CPU使用率 -->
+        <div class="monitor-progress-card mb-3">
+            <div class="monitor-progress-header">
+                <span class="monitor-progress-title">CPU使用率</span>
+                <span class="monitor-progress-value" id="cpuPercentValue">68%</span>
+            </div>
+            <div class="monitor-progress-bar">
+                <div class="monitor-progress-fill" id="cpuProgressBar" style="width: 68%"></div>
+            </div>
+            <div class="monitor-progress-detail">
+                <span>核心数 <strong id="cpuCores">8</strong></span>
+                <span>用户态 <strong id="cpuUser">45%</strong></span>
+                <span>系统态 <strong id="cpuSystem">23%</strong></span>
+            </div>
         </div>
-        <div class="card-body">
-            <!-- 查询表单 -->
-            <div class="flex flex-wrap items-center gap-3 mb-4">
-                <!-- 关键字搜索 -->
-                <div class="flex-1 min-w-300">
-                    <input id="searchLogKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)" />
-                </div>
-                
-                <!-- 操作按钮 -->
-                <div class="flex gap-2">
-                    <button id="queryLogBtn" type="button" class="btn btn-primary">
-                        <i class="fa fa-search"></i> 查询
-                    </button>
-                    <button th:id="${metaId}" type="button" class="btn btn-danger clearLogBtn">
-                        <i class="fa fa-trash"></i> 清空日志
-                    </button>
-                </div>
+
+        <!-- 内存使用率 -->
+        <div class="monitor-progress-card mb-3">
+            <div class="monitor-progress-header">
+                <span class="monitor-progress-title">内存使用率</span>
+                <span class="monitor-progress-value monitor-progress-value-warning" id="memoryPercentValue">72%</span>
+            </div>
+            <div class="monitor-progress-bar">
+                <div class="monitor-progress-fill warning" id="memoryProgressBar" style="width: 72%"></div>
+            </div>
+            <div class="monitor-progress-detail">
+                <span>总内存 <strong id="memoryTotal">32 GB</strong></span>
+                <span>已使用 <strong id="memoryUsed">23 GB</strong></span>
+            </div>
+        </div>
+
+        <!-- 磁盘使用率 -->
+        <div class="monitor-progress-card mb-3">
+            <div class="monitor-progress-header">
+                <span class="monitor-progress-title">磁盘使用率</span>
+                <span class="monitor-progress-value monitor-progress-value-success" id="diskPercentValue">35%</span>
+            </div>
+            <div class="monitor-progress-bar">
+                <div class="monitor-progress-fill" id="diskProgressBar" style="width: 35%"></div>
+            </div>
+            <div class="monitor-progress-detail">
+                <span>总容量 <strong id="diskTotal">1.2 TB</strong></span>
+                <span>已使用 <strong id="diskUsed">420 GB</strong></span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title text-center">持久化</h3>
+            </div>
+            <div class="card-body h-64 mb-4">
+                <canvas id="storageChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据源列表表格 -->
+<div class="dbsyncer-table-container mb-5">
+
+    <!-- 表格工具栏 -->
+    <div class="dbsyncer-table-header">
+        <div class="dbsyncer-table-toolbar-left">
+            <h3>同步任务明细</h3>
+        </div>
+    </div>
+
+    <!-- 表格主体 -->
+    <div class="dbsyncer-table-wrapper">
+        <table class="dbsyncer-table" id="connectorTable">
+            <thead>
+            <tr>
+                <th>序号</th>
+                <th>同步任务</th>
+                <th>状态</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- 动态数据 -->
+            <tr>
+                <td>1</td>
+                <td>[阿里云同步星河]xhtb_license_customer_product</td>
+                <td>堆积:8907/10000 线程:1/1 完成:999</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>[阿里云同步星河]xhtb_license_customer</td>
+                <td>堆积:5677/10000 线程:1/1 完成:111</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>[阿里云同步星河]xhtb_product</td>
+                <td>堆积:0/10000 线程:0/1 完成:0</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 分页组件 -->
+    <div class="dbsyncer-pagination" th:if="${connectors != null and !connectors.isEmpty()}">
+        <div class="dbsyncer-pagination-info">
+            共 <span id="totalCount" th:text="${connectors.size()}">0</span> 条记录，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页
+        </div>
+        <div class="dbsyncer-pagination-controls">
+            <button class="dbsyncer-pagination-btn" id="prevBtn" disabled>
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <div class="dbsyncer-pagination-page">
+                <button class="dbsyncer-pagination-page-btn active">1</button>
+            </div>
+            <button class="dbsyncer-pagination-btn" id="nextBtn" disabled>
+                <i class="fa fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 查询数据 -->
+<div th:if="${meta?.size() gt 0}" class="card mb-6">
+    <div class="card-header">
+        <h3 class="card-title">查询数据</h3>
+    </div>
+    <div class="card-body">
+        <!-- 查询表单 -->
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+            <!-- 驱动下拉 -->
+            <div class="flex-1 min-w-200">
+                <select id="searchMetaData" class="form-control">
+                    <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
+                </select>
             </div>
 
-            <div class="dbsyncer-table-wrapper">
-                <table class="dbsyncer-table">
-                    <thead>
-                    <tr>
-                        <th width="60" class="text-center">#</th>
-                        <th>内容</th>
-                        <th width="180">时间</th>
-                    </tr>
-                    </thead>
-                    <tbody id="logList">
-                    <tr th:each="l,s : ${pagingLog?.data}">
-                        <td class="text-center text-tertiary" th:text="${s.index}+1"></td>
-                        <td class="font-mono text-sm" th:text="${l?.json}"></td>
-                        <td class="text-sm text-secondary" th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
-                    </tr>
-                    </tbody>
-                </table>
-                
-                <!-- 分页信息 -->
-                <div class="flex items-center justify-between px-4 py-3 border-t">
-                    <div class="text-sm text-secondary">
-                        共计: <span id="logTotal" class="font-medium text-primary">[[${pagingLog?.total}]]</span> 条
-                    </div>
-                    <div>
-                        <a href="javascript:void(0);" id="queryLogMore" num="1" class="text-primary hover-underline">
-                            显示更多 <i class="fa fa-angle-double-down"></i>
-                        </a>
-                    </div>
+            <!-- 数据状态 -->
+            <div style="min-width: 100px;">
+                <select id="searchDataStatus" class="form-control">
+                    <option value="" selected="selected">无</option>
+                    <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq dataStatus}"/>
+                </select>
+            </div>
+
+            <!-- 关键字搜索 -->
+            <div class="flex-1 min-w-200">
+                <input id="searchDataKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入异常关键字(最多32个字)" />
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button id="queryDataBtn" type="button" class="btn btn-primary">
+                    <i class="fa fa-search"></i> 查询数据
+                </button>
+                <button th:id="${metaId}" type="button" class="btn btn-danger clearDataBtn">
+                    <i class="fa fa-trash"></i> 清空数据
+                </button>
+            </div>
+        </div>
+
+        <div class="dbsyncer-table-wrapper">
+            <table class="dbsyncer-table metaDataList">
+                <thead>
+                <tr>
+                    <th width="60" class="text-center">#</th>
+                    <th width="180">目标表</th>
+                    <th width="100">事件</th>
+                    <th width="80">结果</th>
+                    <th>异常</th>
+                    <th width="180">时间</th>
+                    <th width="150">操作</th>
+                </tr>
+                </thead>
+                <tbody id="dataList">
+                <tr th:each="d,s : ${pagingData?.data}">
+                    <td class="text-center text-tertiary" th:text="${s.index}+1" />
+                    <td class="font-medium" th:text="${d?.targetTableName}" />
+                    <td th:text="${d?.event}" />
+                    <td>
+                        <span th:if="${d?.success == 1}" class="badge badge-success">成功</span>
+                        <span th:if="${d?.success == 0}" class="badge badge-warning">失败</span>
+                    </td>
+                    <td class="text-ellipsis" style="max-width: 300px;">
+                        <a href="javascript:;" class="text-secondary hover-underline queryError" th:text="${d?.error}"></a>
+                    </td>
+                    <td class="text-sm text-secondary" th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}" />
+                    <td>
+                        <div class="flex gap-2">
+                            <a th:json="${d?.json}" href="javascript:;" class="btn btn-sm btn-info queryData">
+                                <i class="fa fa-eye"></i> 查看数据
+                            </a>
+                            <a th:if="${d?.success == 0}" th:id="${d?.id}" href="javascript:;" class="btn btn-sm btn-warning retryData">
+                                <i class="fa fa-refresh"></i> 重试
+                            </a>
+                        </div>
+                        <div class="hidden" th:text="${d?.json}"></div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <!-- 分页信息 -->
+            <div class="flex items-center justify-between px-4 py-3 border-t">
+                <div class="text-sm text-secondary">
+                    共计: <span id="dataTotal" class="font-medium text-primary">[[${pagingData?.total}]]</span> 条
+                </div>
+                <div>
+                    <a href="javascript:void(0);" id="queryDataMore" num="1" class="text-primary hover-underline">
+                        显示更多 <i class="fa fa-angle-double-down"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 查询日志 -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">查询日志</h3>
+    </div>
+    <div class="card-body">
+        <!-- 查询表单 -->
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+            <!-- 关键字搜索 -->
+            <div class="flex-1 min-w-300">
+                <input id="searchLogKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)" />
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+                <button id="queryLogBtn" type="button" class="btn btn-primary">
+                    <i class="fa fa-search"></i> 查询日志
+                </button>
+                <button th:id="${metaId}" type="button" class="btn btn-danger clearLogBtn">
+                    <i class="fa fa-trash"></i> 清空日志
+                </button>
+            </div>
+        </div>
+
+        <div class="dbsyncer-table-wrapper">
+            <table class="dbsyncer-table">
+                <thead>
+                <tr>
+                    <th width="60" class="text-center">#</th>
+                    <th>内容</th>
+                    <th width="180">时间</th>
+                </tr>
+                </thead>
+                <tbody id="logList">
+                <tr th:each="l,s : ${pagingLog?.data}">
+                    <td class="text-center text-tertiary" th:text="${s.index}+1"></td>
+                    <td class="font-mono text-sm" th:text="${l?.json}"></td>
+                    <td class="text-sm text-secondary" th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                </tr>
+                </tbody>
+            </table>
+
+            <!-- 分页信息 -->
+            <div class="flex items-center justify-between px-4 py-3 border-t">
+                <div class="text-sm text-secondary">
+                    共计: <span id="logTotal" class="font-medium text-primary">[[${pagingLog?.total}]]</span> 条
+                </div>
+                <div>
+                    <a href="javascript:void(0);" id="queryLogMore" num="1" class="text-primary hover-underline">
+                        显示更多 <i class="fa fa-angle-double-down"></i>
+                    </a>
                 </div>
             </div>
         </div>

@@ -1085,6 +1085,158 @@ tr:hover {
   background: #36cfc9;
 }
 
+/* 监控统计卡片 */
+.monitor-stat-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border-left: 4px solid #8c8c8c;
+}
+
+.monitor-stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.monitor-stat-card.monitor-stat-success {
+  border-left-color: #52c41a;
+}
+
+.monitor-stat-card.monitor-stat-warning {
+  border-left-color: #faad14;
+}
+
+.monitor-stat-label {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+.monitor-stat-value {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+/* 监控进度条卡片 */
+.monitor-progress-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.monitor-progress-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.monitor-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.monitor-progress-title {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.monitor-progress-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.monitor-progress-value-success {
+  color: #52c41a;
+}
+
+.monitor-progress-value-warning {
+  color: #faad14;
+}
+
+.monitor-progress-value-danger {
+  color: #ff4d4f;
+}
+
+.monitor-progress-bar {
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.monitor-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1890ff 0%, #40a9ff 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.monitor-progress-fill.success {
+  background: linear-gradient(90deg, #52c41a 0%, #73d13d 100%);
+}
+
+.monitor-progress-fill.warning {
+  background: linear-gradient(90deg, #faad14 0%, #ffc53d 100%);
+}
+
+.monitor-progress-fill.danger {
+  background: linear-gradient(90deg, #ff4d4f 0%, #ff7875 100%);
+}
+
+.monitor-progress-detail {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.monitor-progress-detail strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* 监控指标表格 */
+.monitor-metrics-table {
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.monitor-metrics-table::-webkit-scrollbar {
+  width: 6px;
+}
+
+.monitor-metrics-table::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.monitor-metrics-table::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+.monitor-metrics-table .dbsyncer-table {
+  margin: 0;
+}
+
+.monitor-metrics-table .dbsyncer-table tbody tr td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.monitor-metrics-table .dbsyncer-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 /* 插件开发步骤 */
 .plugin-steps {
   list-style: none;
