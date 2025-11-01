@@ -2,8 +2,8 @@
  * DBSyncer 表单组件（输入框等）
  */
 
-/* 表单容器 */
-.dbsyncer-form-container {
+/* ========== 表单容器 ========== */
+.form-container {
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
@@ -11,14 +11,14 @@
   overflow: hidden;
 }
 
-.dbsyncer-container-no-bg {
+.container-no-bg {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
-/* 文本输入框（兼容 .form-input/.form-control） */
-.dbsyncer-input, .form-input, .form-control {
+/* ========== 文本输入框 ========== */
+.form-input, .form-control {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid var(--border-primary);
@@ -27,14 +27,14 @@
   background-color: #fff;
 }
 
-.dbsyncer-input:focus, .form-input:focus, .form-control:focus {
+.form-input:focus, .form-control:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.15);
   outline: none;
 }
 
-/* 下拉与文本域 */
-select.form-control, select.dbsyncer-input, .select-control {
+/* ========== 下拉与文本域 ========== */
+select.form-control, .select-control {
   height: 36px;
   background-color: #fff;
   border: 1px solid var(--border-primary);
@@ -92,13 +92,13 @@ select.form-control, select.dbsyncer-input, .select-control {
   border-color: rgba(22, 93, 255, 0.7);
 }
 
-/* 自定义选择器（替代原生展示） */
-.dbsyncer-select {
+/* ========== 自定义选择器（替代原生展示） ========== */
+.select-wrapper {
   position: relative;
   min-width: 160px;
 }
 
-.dbsyncer-select-original {
+.select-original {
   position: absolute;
   opacity: 0;
   pointer-events: none;
@@ -106,7 +106,7 @@ select.form-control, select.dbsyncer-input, .select-control {
   height: 0;
 }
 
-.dbsyncer-select-trigger {
+.select-trigger {
   width: 100%;
   padding: 8px 42px 8px 14px;
   border-radius: 10px;
@@ -122,18 +122,18 @@ select.form-control, select.dbsyncer-input, .select-control {
   transition: border var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 }
 
-.dbsyncer-select-trigger:hover {
+.select-trigger:hover {
   border-color: rgba(22, 93, 255, 0.32);
 }
 
-.dbsyncer-select.open .dbsyncer-select-trigger {
+.select-wrapper.open .select-trigger {
   border-color: rgba(22, 93, 255, 0.55);
   box-shadow: 0 8px 20px rgba(22, 93, 255, 0.18);
   background: linear-gradient(135deg, #f1f6ff 0%, #e3ebff 100%);
   color: var(--text-primary);
 }
 
-.dbsyncer-select-arrow {
+.select-arrow {
   width: 10px;
   height: 10px;
   border-right: 2px solid rgba(11, 36, 86, 0.5);
@@ -142,12 +142,12 @@ select.form-control, select.dbsyncer-input, .select-control {
   transition: transform var(--transition-fast), border var(--transition-fast);
 }
 
-.dbsyncer-select.open .dbsyncer-select-arrow {
+.select-wrapper.open .select-arrow {
   transform: rotate(225deg);
   border-color: rgba(22, 93, 255, 0.7);
 }
 
-.dbsyncer-select-panel {
+.select-panel {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
@@ -164,11 +164,11 @@ select.form-control, select.dbsyncer-input, .select-control {
   overscroll-behavior: contain;
 }
 
-.dbsyncer-select.open .dbsyncer-select-panel {
+.select-wrapper.open .select-panel {
   display: block;
 }
 
-.dbsyncer-select-option {
+.select-option {
   width: 100%;
   padding: 8px 10px;
   border-radius: 8px;
@@ -181,19 +181,19 @@ select.form-control, select.dbsyncer-input, .select-control {
   transition: background var(--transition-fast), color var(--transition-fast), padding var(--transition-fast);
 }
 
-.dbsyncer-select-option:hover {
+.select-option:hover {
   background: rgba(22, 93, 255, 0.08);
   color: var(--primary-color);
   padding-left: 14px;
 }
 
-.dbsyncer-select-option.active {
+.select-option.active {
   background: linear-gradient(135deg, rgba(22, 93, 255, 0.16) 0%, rgba(22, 93, 255, 0.05) 100%);
   color: var(--primary-color);
   font-weight: 500;
 }
 
-textarea.form-control, textarea.dbsyncer-input { min-height: 80px; line-height: 1.5; }
+textarea.form-control { min-height: 80px; line-height: 1.5; }
 
 /* 行内表单布局辅助 */
 .form-row { display: flex; gap: 12px; align-items: center; }
@@ -354,15 +354,15 @@ select.form-control.is-invalid,
   margin-top: 8px;
 }
 
-/* 分隔线 */
-.dbsyncer-divider { 
+/* ========== 分隔线 ========== */
+.divider { 
   height: 1px; 
   background-color: var(--border-secondary); 
   margin: 24px 0; 
 }
 
-/* 配置区域标题 */
-.dbsyncer-section-title {
+/* ========== 配置区域标题 ========== */
+.section-title {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
@@ -397,8 +397,8 @@ select.form-control.is-invalid,
   }
 }
 
-/* 配置分组区块（用于复杂配置页面如 Kafka） */
-.dbsyncer-config-section {
+/* ========== 配置分组区块 ========== */
+.config-section {
   margin-top: 32px;
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
@@ -406,32 +406,32 @@ select.form-control.is-invalid,
   overflow: hidden;
 }
 
-.dbsyncer-config-section-header {
+.config-section-header {
   padding: 16px 20px;
   background: linear-gradient(135deg, #f7f9ff 0%, #eef2ff 100%);
   border-bottom: 1px solid var(--border-secondary);
 }
 
-.dbsyncer-config-section-title {
+.config-section-title {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
 }
 
-.dbsyncer-config-section-body {
+.config-section-body {
   padding: 24px 20px;
   background-color: #fff;
 }
 
 /* 配置分组中的表单项间距调整 */
-.dbsyncer-config-section-body .form-item-full:first-child,
-.dbsyncer-config-section-body .form-grid-2:first-child {
+.config-section-body .form-item-full:first-child,
+.config-section-body .form-grid-2:first-child {
   margin-top: 0;
 }
 
-.dbsyncer-config-section-body .form-item-full + .form-grid-2,
-.dbsyncer-config-section-body .form-grid-2 + .form-item-full,
-.dbsyncer-config-section-body .form-grid-2 + .form-grid-2 {
+.config-section-body .form-item-full + .form-grid-2,
+.config-section-body .form-grid-2 + .form-item-full,
+.config-section-body .form-grid-2 + .form-grid-2 {
   margin-top: 20px;
 }

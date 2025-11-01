@@ -2,7 +2,7 @@
  * DBSyncer 通知组件（Growl 风格）
  */
 
-.dbsyncer-toast-container {
+.toast-container {
   position: fixed;
   top: 24px;
   right: 24px;
@@ -13,7 +13,7 @@
   pointer-events: none;
 }
 
-.dbsyncer-toast {
+.toast {
   min-width: 280px;
   max-width: 360px;
   background: var(--bg-primary);
@@ -34,7 +34,7 @@
   animation: toast-enter 0.25s ease forwards;
 }
 
-.dbsyncer-toast-icon {
+.toast-icon {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -45,21 +45,21 @@
   color: #fff;
 }
 
-.dbsyncer-toast-content {
+.toast-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.dbsyncer-toast-title {
+.toast-title {
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.dbsyncer-toast-message { line-height: 1.45; }
+.toast-message { line-height: 1.45; }
 
-.dbsyncer-toast-close {
+.toast-close {
   background: transparent;
   border: none;
   color: var(--text-tertiary);
@@ -68,9 +68,9 @@
   transition: color var(--transition-fast);
 }
 
-.dbsyncer-toast-close:hover { color: var(--text-secondary); }
+.toast-close:hover { color: var(--text-secondary); }
 
-.dbsyncer-toast-progress {
+.toast-progress {
   grid-column: 1 / span 3;
   height: 3px;
   border-radius: 999px;
@@ -79,7 +79,7 @@
   position: relative;
 }
 
-.dbsyncer-toast-progress-bar {
+.toast-progress-bar {
   position: absolute;
   top: 0;
   left: 0;
@@ -91,21 +91,21 @@
 }
 
 /* 类型色彩 */
-.dbsyncer-toast-success .dbsyncer-toast-icon { background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%); }
-.dbsyncer-toast-success { border-color: rgba(82, 196, 26, 0.15); }
-.dbsyncer-toast-success .dbsyncer-toast-progress-bar { background: #52c41a; }
+.toast-success .toast-icon { background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%); }
+.toast-success { border-color: rgba(82, 196, 26, 0.15); }
+.toast-success .toast-progress-bar { background: #52c41a; }
 
-.dbsyncer-toast-danger .dbsyncer-toast-icon { background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%); }
-.dbsyncer-toast-danger { border-color: rgba(255, 77, 79, 0.18); }
-.dbsyncer-toast-danger .dbsyncer-toast-progress-bar { background: #ff4d4f; }
+.toast-danger .toast-icon { background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%); }
+.toast-danger { border-color: rgba(255, 77, 79, 0.18); }
+.toast-danger .toast-progress-bar { background: #ff4d4f; }
 
-.dbsyncer-toast-warning .dbsyncer-toast-icon { background: linear-gradient(135deg, #faad14 0%, #ffd666 100%); }
-.dbsyncer-toast-warning { border-color: rgba(250, 173, 20, 0.2); }
-.dbsyncer-toast-warning .dbsyncer-toast-progress-bar { background: #faad14; }
+.toast-warning .toast-icon { background: linear-gradient(135deg, #faad14 0%, #ffd666 100%); }
+.toast-warning { border-color: rgba(250, 173, 20, 0.2); }
+.toast-warning .toast-progress-bar { background: #faad14; }
 
-.dbsyncer-toast-info .dbsyncer-toast-icon { background: linear-gradient(135deg, #1677ff 0%, #69b1ff 100%); }
-.dbsyncer-toast-info { border-color: rgba(22, 119, 255, 0.18); }
-.dbsyncer-toast-info .dbsyncer-toast-progress-bar { background: #1677ff; }
+.toast-info .toast-icon { background: linear-gradient(135deg, #1677ff 0%, #69b1ff 100%); }
+.toast-info { border-color: rgba(22, 119, 255, 0.18); }
+.toast-info .toast-progress-bar { background: #1677ff; }
 
 @keyframes toast-enter {
   from { opacity: 0; transform: translateY(-12px); }

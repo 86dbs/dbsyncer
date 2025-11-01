@@ -95,7 +95,7 @@ header.bg-white {
 }
 
 /* ========== 原有的 dbsyncer-header 样式（保留兼容） ========== */
-.dbsyncer-header {
+.header {
   position: fixed;
   top: 0;
   left: 0;
@@ -111,20 +111,20 @@ header.bg-white {
 }
 
 /* Logo区域 */
-.dbsyncer-logo {
+.logo {
   display: flex;
   align-items: center;
   margin-right: var(--spacing-xl);
 }
 
 /* 搜索框区域 */
-.dbsyncer-search {
+.search {
   flex: 1;
   max-width: 400px;
   margin-right: var(--spacing-lg);
 }
 
-.dbsyncer-search-input {
+.search-input {
   width: 100%;
   height: 36px;
   padding: 0 var(--spacing-md) 0 40px;
@@ -136,22 +136,22 @@ header.bg-white {
   transition: all var(--transition-fast);
 }
 
-.dbsyncer-search-input:focus {
+.search-input:focus {
   outline: none;
   border-color: var(--primary-color);
   background-color: var(--bg-primary);
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
 }
 
-.dbsyncer-search-input::placeholder {
+.search-input::placeholder {
   color: var(--text-tertiary);
 }
 
-.dbsyncer-search-wrapper {
+.search-wrapper {
   position: relative;
 }
 
-.dbsyncer-search-icon {
+.search-icon {
   position: absolute;
   left: var(--spacing-md);
   top: 50%;
@@ -161,13 +161,13 @@ header.bg-white {
 }
 
 /* 右侧操作区域 */
-.dbsyncer-header-actions {
+.header-actions {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
 }
 
-.dbsyncer-header-btn {
+.header-btn {
   position: relative;
   width: 36px;
   height: 36px;
@@ -182,22 +182,22 @@ header.bg-white {
   justify-content: center;
 }
 
-.dbsyncer-header-btn:hover {
+.header-btn:hover {
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
 }
 
-.dbsyncer-header-btn.active {
+.header-btn.active {
   background-color: var(--primary-color);
   color: var(--bg-primary);
 }
 
 /* 通知按钮 */
-.dbsyncer-notification-btn {
+.notification-btn {
   position: relative;
 }
 
-.dbsyncer-notification-badge {
+.notification-badge {
   position: absolute;
   top: 6px;
   right: 6px;
@@ -209,7 +209,7 @@ header.bg-white {
 }
 
 /* 用户信息区域 */
-.dbsyncer-user-info {
+.user-info {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
@@ -219,11 +219,11 @@ header.bg-white {
   transition: all var(--transition-fast);
 }
 
-.dbsyncer-user-info:hover {
+.user-info:hover {
   background-color: var(--bg-tertiary);
 }
 
-.dbsyncer-user-avatar {
+.user-avatar {
   width: 32px;
   height: 32px;
   border-radius: var(--radius-round);
@@ -236,44 +236,44 @@ header.bg-white {
   font-weight: 500;
 }
 
-.dbsyncer-user-name {
+.user-name {
   font-size: var(--font-size-sm);
   color: var(--text-primary);
   font-weight: 500;
 }
 
-.dbsyncer-user-dropdown {
+.user-dropdown {
   color: var(--text-tertiary);
   font-size: var(--font-size-xs);
   transition: transform var(--transition-fast);
 }
 
-.dbsyncer-user-info:hover .dbsyncer-user-dropdown {
+.user-info:hover .user-dropdown {
   transform: rotate(180deg);
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .dbsyncer-header {
+  .header {
     padding: 0 var(--spacing-md);
   }
   
-  .dbsyncer-search {
+  .search {
     max-width: 200px;
     margin-right: var(--spacing-md);
   }
   
-  .dbsyncer-user-name {
+  .user-name {
     display: none;
   }
 }
 
 @media (max-width: 480px) {
-  .dbsyncer-search {
+  .search {
     display: none;
   }
   
-  .dbsyncer-header-actions {
+  .header-actions {
     gap: var(--spacing-sm);
   }
 }

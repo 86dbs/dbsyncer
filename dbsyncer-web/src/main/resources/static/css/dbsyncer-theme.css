@@ -167,7 +167,7 @@ table {
 /* ========== 特殊组件样式（保留少量必要的） ========== */
 
 /* 标签输入组件 */
-.dbsyncer-tagsinput {
+.tagsinput {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -181,18 +181,18 @@ table {
   transition: border-color var(--transition-fast);
 }
 
-.dbsyncer-tagsinput:focus-within {
+.tagsinput:focus-within {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
 }
 
-.dbsyncer-tagsinput-tags {
+.tagsinput-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.dbsyncer-tag {
+.tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -204,26 +204,26 @@ table {
   transition: all 0.2s ease;
 }
 
-.dbsyncer-tag:hover {
+.tag:hover {
   background: #40a9ff;
 }
 
-.dbsyncer-tag-text {
+.tag-text {
   line-height: 1;
 }
 
-.dbsyncer-tag-remove {
+.tag-remove {
   cursor: pointer;
   font-size: 12px;
   opacity: 0.8;
   transition: opacity 0.2s;
 }
 
-.dbsyncer-tag-remove:hover {
+.tag-remove:hover {
   opacity: 1;
 }
 
-.dbsyncer-tagsinput-input {
+.tagsinput-input {
   flex: 1;
   min-width: 120px;
   border: none;
@@ -234,12 +234,12 @@ table {
   background: transparent;
 }
 
-.dbsyncer-tagsinput-input:focus {
+.tagsinput-input:focus {
   border-bottom-color: var(--primary-color);
 }
 
 /* 二维码悬浮提示 */
-.dbsyncer-qrcode-popover {
+.qrcode-popover {
   position: absolute;
   z-index: 1000;
   padding: 12px;
@@ -252,30 +252,30 @@ table {
   transition: opacity 0.3s, visibility 0.3s;
 }
 
-.dbsyncer-qrcode-popover.show {
+.qrcode-popover.show {
   opacity: 1;
   visibility: visible;
 }
 
-.dbsyncer-qrcode-popover canvas {
+.qrcode-popover canvas {
   display: block;
 }
 
 /* 二维码箭头 */
-.dbsyncer-qrcode-popover::after {
+.qrcode-popover::after {
   content: '';
   position: absolute;
   border: 6px solid transparent;
 }
 
-.dbsyncer-qrcode-popover.bottom::after {
+.qrcode-popover.bottom::after {
   top: -12px;
   left: 50%;
   transform: translateX(-50%);
   border-bottom-color: #fff;
 }
 
-.dbsyncer-qrcode-popover.top::after {
+.qrcode-popover.top::after {
   bottom: -12px;
   left: 50%;
   transform: translateX(-50%);

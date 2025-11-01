@@ -125,7 +125,7 @@ aside.bg-white nav::-webkit-scrollbar-thumb:hover {
 
 /* ========== 原有的 dbsyncer-sidebar 样式（保留兼容） ========== */
 /* 侧边栏容器 */
-.dbsyncer-sidebar {
+.sidebar {
   position: fixed;
   top: var(--header-height);
   left: 0;
@@ -139,16 +139,16 @@ aside.bg-white nav::-webkit-scrollbar-thumb:hover {
 }
 
 /* 侧边栏内容 */
-.dbsyncer-sidebar-content {
+.sidebar-content {
   padding: var(--spacing-lg) 0;
 }
 
 /* 导航菜单组 */
-.dbsyncer-nav-group {
+.nav-group {
   margin-bottom: var(--spacing-xl);
 }
 
-.dbsyncer-nav-group-title {
+.nav-group-title {
   padding: 0 var(--spacing-lg) var(--spacing-sm);
   font-size: var(--font-size-xs);
   font-weight: 500;
@@ -158,13 +158,13 @@ aside.bg-white nav::-webkit-scrollbar-thumb:hover {
 }
 
 /* 导航菜单项 */
-.dbsyncer-nav-item {
+.nav-item {
   margin: 0 var(--spacing-md);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
 
-.dbsyncer-nav-link {
+.nav-link {
   display: flex;
   align-items: center;
   padding: var(--spacing-md) var(--spacing-lg);
@@ -175,18 +175,18 @@ aside.bg-white nav::-webkit-scrollbar-thumb:hover {
   position: relative;
 }
 
-.dbsyncer-nav-link:hover {
+.nav-link:hover {
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
   text-decoration: none;
 }
 
-.dbsyncer-nav-link.active {
+.nav-link.active {
   background-color: var(--primary-color);
   color: var(--bg-primary);
 }
 
-.dbsyncer-nav-link.active::before {
+.nav-link.active::before {
   content: '';
   position: absolute;
   left: 0;
@@ -197,7 +197,7 @@ aside.bg-white nav::-webkit-scrollbar-thumb:hover {
 }
 
 /* 导航图标 */
-.dbsyncer-nav-icon {
+.nav-icon {
   width: 20px;
   height: 20px;
   margin-right: var(--spacing-md);
@@ -207,26 +207,26 @@ aside.bg-white nav::-webkit-scrollbar-thumb:hover {
   font-size: var(--font-size-md);
 }
 
-.dbsyncer-nav-text {
+.nav-text {
   font-size: var(--font-size-sm);
   font-weight: 500;
   flex: 1;
 }
 
 /* 子菜单 */
-.dbsyncer-nav-submenu {
+.nav-submenu {
   margin-left: var(--spacing-lg);
   border-left: 1px solid var(--border-tertiary);
   padding-left: var(--spacing-md);
 }
 
-.dbsyncer-nav-submenu .dbsyncer-nav-link {
+.nav-submenu .nav-link {
   padding: var(--spacing-sm) var(--spacing-md);
   font-size: var(--font-size-xs);
 }
 
 /* 底部用户信息 */
-.dbsyncer-sidebar-footer {
+.sidebar-footer {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -236,7 +236,7 @@ aside.bg-white nav::-webkit-scrollbar-thumb:hover {
   background-color: var(--bg-primary);
 }
 
-.dbsyncer-sidebar-user {
+.sidebar-user {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
@@ -246,11 +246,11 @@ aside.bg-white nav::-webkit-scrollbar-thumb:hover {
   transition: all var(--transition-fast);
 }
 
-.dbsyncer-sidebar-user:hover {
+.sidebar-user:hover {
   background-color: var(--bg-tertiary);
 }
 
-.dbsyncer-sidebar-user-avatar {
+.sidebar-user-avatar {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-round);
@@ -263,19 +263,19 @@ aside.bg-white nav::-webkit-scrollbar-thumb:hover {
   font-weight: 500;
 }
 
-.dbsyncer-sidebar-user-info {
+.sidebar-user-info {
   flex: 1;
   min-width: 0;
 }
 
-.dbsyncer-sidebar-user-name {
+.sidebar-user-name {
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--text-primary);
   margin-bottom: 2px;
 }
 
-.dbsyncer-sidebar-user-email {
+.sidebar-user-email {
   font-size: var(--font-size-xs);
   color: var(--text-tertiary);
   white-space: nowrap;
@@ -283,81 +283,81 @@ aside.bg-white nav::-webkit-scrollbar-thumb:hover {
   text-overflow: ellipsis;
 }
 
-.dbsyncer-sidebar-user-action {
+.sidebar-user-action {
   color: var(--text-tertiary);
   font-size: var(--font-size-sm);
   transition: all var(--transition-fast);
 }
 
-.dbsyncer-sidebar-user:hover .dbsyncer-sidebar-user-action {
+.sidebar-user:hover .sidebar-user-action {
   color: var(--text-primary);
 }
 
 /* 侧边栏折叠状态 */
-.dbsyncer-sidebar.collapsed {
+.sidebar.collapsed {
   width: var(--sidebar-collapsed-width);
 }
 
-.dbsyncer-sidebar.collapsed .dbsyncer-nav-group-title {
+.sidebar.collapsed .nav-group-title {
   display: none;
 }
 
-.dbsyncer-sidebar.collapsed .dbsyncer-nav-text {
+.sidebar.collapsed .nav-text {
   display: none;
 }
 
-.dbsyncer-sidebar.collapsed .dbsyncer-nav-link {
+.sidebar.collapsed .nav-link {
   justify-content: center;
   padding: var(--spacing-md);
 }
 
-.dbsyncer-sidebar.collapsed .dbsyncer-nav-icon {
+.sidebar.collapsed .nav-icon {
   margin-right: 0;
 }
 
-.dbsyncer-sidebar.collapsed .dbsyncer-sidebar-user-info {
+.sidebar.collapsed .sidebar-user-info {
   display: none;
 }
 
-.dbsyncer-sidebar.collapsed .dbsyncer-sidebar-user-action {
+.sidebar.collapsed .sidebar-user-action {
   display: none;
 }
 
-.dbsyncer-sidebar.collapsed .dbsyncer-sidebar-user {
+.sidebar.collapsed .sidebar-user {
   justify-content: center;
   padding: var(--spacing-sm);
 }
 
 /* 滚动条样式 */
-.dbsyncer-sidebar::-webkit-scrollbar {
+.sidebar::-webkit-scrollbar {
   width: 4px;
 }
 
-.dbsyncer-sidebar::-webkit-scrollbar-track {
+.sidebar::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.dbsyncer-sidebar::-webkit-scrollbar-thumb {
+.sidebar::-webkit-scrollbar-thumb {
   background-color: var(--border-primary);
   border-radius: 2px;
 }
 
-.dbsyncer-sidebar::-webkit-scrollbar-thumb:hover {
+.sidebar::-webkit-scrollbar-thumb:hover {
   background-color: var(--text-tertiary);
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .dbsyncer-sidebar {
+  .sidebar {
     transform: translateX(-100%);
     transition: transform var(--transition-normal);
   }
   
-  .dbsyncer-sidebar.mobile-open {
+  .sidebar.mobile-open {
     transform: translateX(0);
   }
   
-  .dbsyncer-sidebar-footer {
+  .sidebar-footer {
     position: relative;
     border-top: none;
     padding: var(--spacing-md);
@@ -365,7 +365,7 @@ aside.bg-white nav::-webkit-scrollbar-thumb:hover {
 }
 
 /* 移动端遮罩 */
-.dbsyncer-sidebar-overlay {
+.sidebar-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -376,12 +376,12 @@ aside.bg-white nav::-webkit-scrollbar-thumb:hover {
   display: none;
 }
 
-.dbsyncer-sidebar-overlay.show {
+.sidebar-overlay.show {
   display: block;
 }
 
 @media (min-width: 769px) {
-  .dbsyncer-sidebar-overlay {
+  .sidebar-overlay {
     display: none !important;
   }
 }

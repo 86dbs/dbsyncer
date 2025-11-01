@@ -3,31 +3,31 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <!-- 同步任务列表表格 -->
-<div class="dbsyncer-table-container">
+<div class="table-container">
 
     <!-- 表格工具栏 -->
-    <div class="dbsyncer-table-toolbar">
-        <div class="dbsyncer-table-toolbar-left">
-            <div class="dbsyncer-table-search">
-                <i class="fa fa-search dbsyncer-table-search-icon"></i>
-                <input type="text" class="dbsyncer-table-search-input" placeholder="搜索名称..." id="searchInput">
+    <div class="table-toolbar">
+        <div class="table-toolbar-left">
+            <div class="table-search">
+                <i class="fa fa-search table-search-icon"></i>
+                <input type="text" class="table-search-input" placeholder="搜索名称..." id="searchInput">
             </div>
         </div>
-        <div class="dbsyncer-table-toolbar-right">
-            <button class="dbsyncer-btn dbsyncer-btn-primary" id="addMappingBtn">
-                <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
+        <div class="table-toolbar-right">
+            <button class="btn btn-primary" id="addMappingBtn">
+                <i class="fa fa-plus btn-icon-left"></i>
                 添加任务
             </button>
-            <button class="dbsyncer-btn dbsyncer-btn-secondary" id="refreshBtn">
-                <i class="fa fa-refresh dbsyncer-btn-icon-left"></i>
+            <button class="btn btn-secondary" id="refreshBtn">
+                <i class="fa fa-refresh btn-icon-left"></i>
                 刷新
             </button>
         </div>
     </div>
 
     <!-- 表格主体 -->
-    <div class="dbsyncer-table-wrapper">
-        <table class="dbsyncer-table" id="mappingTable">
+    <div class="table-wrapper">
+        <table class="table" id="mappingTable">
             <thead>
                 <tr>
                     <th style="width: 5%;">序号</th>
@@ -46,7 +46,7 @@
                     <td th:text="${iterStat.index + 1}">1</td>
                     <td>
                         <div class="d-flex align-center">
-                            <i class="fa fa-exchange dbsyncer-connector-icon" style="color: #28a745; margin-right: 8px;"></i>
+                            <i class="fa fa-exchange connector-icon" style="color: #28a745; margin-right: 8px;"></i>
                             <span th:text="${mapping.name}">名称</span>
                         </div>
                     </td>
@@ -64,21 +64,21 @@
                         <span th:if="${mapping?.meta?.fail > 0}" th:text="'失败数量:'+${mapping?.meta.fail}" class="label label-danger">失败数量</span>
                     </td>
 
-                    <td class="dbsyncer-table-actions-cell">
-                        <a href="javascript:void(0);" class="dbsyncer-action-btn" th:data-id="${mapping.id}" onclick="editMapping(this.dataset.id)">
+                    <td class="table-actions-cell">
+                        <a href="javascript:void(0);" class="action-btn" th:data-id="${mapping.id}" onclick="editMapping(this.dataset.id)">
                             <i class="fa fa-edit"></i>
                             编辑
                         </a>
                         <!-- 根据状态显示启动或停止按钮 -->
                         <a href="javascript:void(0);" 
-                           class="dbsyncer-action-btn mapping-action-btn" 
+                           class="action-btn mapping-action-btn" 
                            th:data-id="${mapping.id}"
                            th:data-state="${mapping?.meta?.state}"
                            th:data-running="${mapping?.meta?.state eq 1}">
                             <i th:class="${mapping?.meta?.state eq 1 ? 'fa fa-stop' : 'fa fa-play'}"></i>
                             <span th:text="${mapping?.meta?.state eq 1 ? '停止' : '启动'}">启动</span>
                         </a>
-                        <a href="javascript:void(0);" class="dbsyncer-action-btn danger" th:data-id="${mapping.id}" onclick="deleteMapping(this.dataset.id)">
+                        <a href="javascript:void(0);" class="action-btn danger" th:data-id="${mapping.id}" onclick="deleteMapping(this.dataset.id)">
                             <i class="fa fa-trash"></i>
                             删除
                         </a>
@@ -86,11 +86,11 @@
                 </tr>
                 <!-- 空数据提示 -->
                 <tr th:if="${mappings == null or mappings.isEmpty()}">
-                    <td colspan="9" class="dbsyncer-table-empty">
-                        <div class="dbsyncer-empty-state">
-                            <i class="fa fa-exchange dbsyncer-empty-icon"></i>
-                            <p class="dbsyncer-empty-text">暂无同步任务</p>
-                            <p class="dbsyncer-empty-subtext">点击"添加任务"按钮创建第一个同步任务</p>
+                    <td colspan="9" class="table-empty">
+                        <div class="empty-state">
+                            <i class="fa fa-exchange empty-icon"></i>
+                            <p class="empty-text">暂无同步任务</p>
+                            <p class="empty-subtext">点击"添加任务"按钮创建第一个同步任务</p>
                         </div>
                     </td>
                 </tr>
@@ -99,18 +99,18 @@
     </div>
 
     <!-- 分页组件 -->
-    <div class="dbsyncer-pagination" th:if="${mappings != null and !mappings.isEmpty()}">
-        <div class="dbsyncer-pagination-info">
+    <div class="pagination" th:if="${mappings != null and !mappings.isEmpty()}">
+        <div class="pagination-info">
             共 <span id="totalCount" th:text="${mappings.size()}">0</span> 条记录，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页
         </div>
-        <div class="dbsyncer-pagination-controls">
-            <button class="dbsyncer-pagination-btn" id="prevBtn" disabled>
+        <div class="pagination-controls">
+            <button class="pagination-btn" id="prevBtn" disabled>
                 <i class="fa fa-chevron-left"></i>
             </button>
-            <div class="dbsyncer-pagination-page">
-                <button class="dbsyncer-pagination-page-btn active">1</button>
+            <div class="pagination-page">
+                <button class="pagination-page-btn active">1</button>
             </div>
-            <button class="dbsyncer-pagination-btn" id="nextBtn" disabled>
+            <button class="pagination-btn" id="nextBtn" disabled>
                 <i class="fa fa-chevron-right"></i>
             </button>
         </div>
@@ -626,7 +626,7 @@ function updatePaginationControls() {
  * 生成页码按钮
  */
 function generatePageButtons() {
-    var $pageContainer = $('.dbsyncer-pagination-page');
+    var $pageContainer = $('.pagination-page');
     $pageContainer.empty();
     
     // 如果总页数小于等于7，显示所有页码
@@ -649,11 +649,11 @@ function generatePageButtons() {
             for (var i = startPage; i <= endPage; i++) {
                 $pageContainer.append(createPageButton(i));
             }
-            $pageContainer.append('<span class="dbsyncer-pagination-ellipsis">...</span>');
+            $pageContainer.append('<span class="pagination-ellipsis">...</span>');
             $pageContainer.append(createPageButton(totalPages));
         } else if (currentPage >= totalPages - 2) {
             // 当前页在后面，显示 1 ... 倒数5 倒数4 倒数3 倒数2 最后页
-            $pageContainer.append('<span class="dbsyncer-pagination-ellipsis">...</span>');
+            $pageContainer.append('<span class="pagination-ellipsis">...</span>');
             startPage = totalPages - 4;
             endPage = totalPages;
             for (var i = startPage; i <= endPage; i++) {
@@ -661,11 +661,11 @@ function generatePageButtons() {
             }
         } else {
             // 当前页在中间，显示 1 ... 当前页-1 当前页 当前页+1 ... 最后页
-            $pageContainer.append('<span class="dbsyncer-pagination-ellipsis">...</span>');
+            $pageContainer.append('<span class="pagination-ellipsis">...</span>');
             for (var i = currentPage - 1; i <= currentPage + 1; i++) {
                 $pageContainer.append(createPageButton(i));
             }
-            $pageContainer.append('<span class="dbsyncer-pagination-ellipsis">...</span>');
+            $pageContainer.append('<span class="pagination-ellipsis">...</span>');
             $pageContainer.append(createPageButton(totalPages));
         }
     }
@@ -677,7 +677,7 @@ function generatePageButtons() {
  * @returns {jQuery} 页码按钮元素
  */
 function createPageButton(page) {
-    var $btn = $('<button class="dbsyncer-pagination-page-btn">' + page + '</button>');
+    var $btn = $('<button class="pagination-page-btn">' + page + '</button>');
     
     // 设置当前页的激活状态
     if (page === currentPage) {
@@ -931,7 +931,7 @@ function submitMappingEditForm(data) {
  */
 function startMapping(id) {
     // 显示加载状态
-    var btn = event.target.closest('.dbsyncer-action-btn');
+    var btn = event.target.closest('.action-btn');
     var originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 启动中...';
     btn.disabled = true;
@@ -974,7 +974,7 @@ function startMapping(id) {
  */
 function stopMapping(id) {
     // 显示加载状态
-    var btn = event.target.closest('.dbsyncer-action-btn');
+    var btn = event.target.closest('.action-btn');
     var originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 停止中...';
     btn.disabled = true;

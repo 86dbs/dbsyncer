@@ -22,8 +22,8 @@
         <!-- 左侧：配置列表 -->
         <div class="card">
             <div class="card-body p-0">
-                <div class="dbsyncer-table-wrapper">
-                    <table class="dbsyncer-table">
+                <div class="table-wrapper">
+                    <table class="table">
                         <thead>
                             <tr>
                                 <th width="180">ID</th>
@@ -58,24 +58,24 @@
             </div>
             <div class="card-body">
                 <!-- 文件上传组件 -->
-                <div id="configUploader" class="dbsyncer-upload-container">
-                    <div class="dbsyncer-upload-area" data-upload-area>
-                        <div class="dbsyncer-upload-icon">
+                <div id="configUploader" class="upload-container">
+                    <div class="upload-area" data-upload-area>
+                        <div class="upload-icon">
                             <i class="fa fa-cloud-upload"></i>
                         </div>
-                        <div class="dbsyncer-upload-text">点击或拖拽文件到此处上传</div>
-                        <div class="dbsyncer-upload-hint">
+                        <div class="upload-text">点击或拖拽文件到此处上传</div>
+                        <div class="upload-hint">
                             支持扩展名：.json<br>
                             单次最多上传 5 个文件
                         </div>
-                        <div class="dbsyncer-upload-button">选择文件</div>
+                        <div class="upload-button">选择文件</div>
                         <input type="file" 
-                               class="dbsyncer-upload-input" 
+                               class="upload-input" 
                                id="fileConfig" 
                                accept=".json,application/json"
                                multiple>
                     </div>
-                    <div class="dbsyncer-upload-list" data-upload-list></div>
+                    <div class="upload-list" data-upload-list></div>
                 </div>
             </div>
         </div>

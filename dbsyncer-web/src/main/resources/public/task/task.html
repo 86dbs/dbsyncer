@@ -2,31 +2,31 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="dbsyncer-table-container">
+<div class="table-container">
 
     <!-- 表格工具栏 -->
-    <div class="dbsyncer-table-toolbar">
-        <div class="dbsyncer-table-toolbar-left">
-            <div class="dbsyncer-table-search">
-                <i class="fa fa-search dbsyncer-table-search-icon"></i>
-                <input type="text" class="dbsyncer-table-search-input" placeholder="搜索名称..." id="searchInput">
+    <div class="table-toolbar">
+        <div class="table-toolbar-left">
+            <div class="table-search">
+                <i class="fa fa-search table-search-icon"></i>
+                <input type="text" class="table-search-input" placeholder="搜索名称..." id="searchInput">
             </div>
         </div>
-        <div class="dbsyncer-table-toolbar-right">
-            <button id="addTaskBtn" class="dbsyncer-btn dbsyncer-btn-primary">
-                <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
+        <div class="table-toolbar-right">
+            <button id="addTaskBtn" class="btn btn-primary">
+                <i class="fa fa-plus btn-icon-left"></i>
                 创建任务
             </button>
-            <button class="dbsyncer-btn dbsyncer-btn-secondary" id="refreshBtn">
-                <i class="fa fa-refresh dbsyncer-btn-icon-left"></i>
+            <button class="btn btn-secondary" id="refreshBtn">
+                <i class="fa fa-refresh btn-icon-left"></i>
                 刷新
             </button>
         </div>
     </div>
 
     <!-- 任务列表 -->
-    <div class="dbsyncer-table-wrapper">
-        <table class="dbsyncer-table">
+    <div class="table-wrapper">
+        <table class="table">
             <thead>
             <tr>
                 <th>序号</th>

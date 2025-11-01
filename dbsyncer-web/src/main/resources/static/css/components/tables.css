@@ -3,7 +3,7 @@
  */
 
 /* 表格容器 */
-.dbsyncer-table-container {
+.table-container {
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
@@ -12,7 +12,7 @@
 }
 
 /* 表格头部 */
-.dbsyncer-table-header {
+.table-header {
   padding: var(--spacing-lg);
   border-bottom: 1px solid var(--border-secondary);
   display: flex;
@@ -22,21 +22,21 @@
   gap: var(--spacing-md);
 }
 
-.dbsyncer-table-title {
+.table-title {
   font-size: var(--font-size-lg);
   font-weight: 500;
   color: var(--text-primary);
   margin: 0;
 }
 
-.dbsyncer-table-actions {
+.table-actions {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
 }
 
 /* 表格工具栏 */
-.dbsyncer-table-toolbar {
+.table-toolbar {
   padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: 1px solid var(--border-secondary);
   background-color: var(--bg-secondary);
@@ -47,25 +47,25 @@
   gap: var(--spacing-md);
 }
 
-.dbsyncer-table-toolbar-left {
+.table-toolbar-left {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
 }
 
-.dbsyncer-table-toolbar-right {
+.table-toolbar-right {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
 }
 
 /* 搜索框 */
-.dbsyncer-table-search {
+.table-search {
   position: relative;
   min-width: 200px;
 }
 
-.dbsyncer-table-search-input {
+.table-search-input {
   width: 100%;
   height: 32px;
   padding: 0 var(--spacing-md) 0 32px;
@@ -77,17 +77,17 @@
   transition: all var(--transition-fast);
 }
 
-.dbsyncer-table-search-input:focus {
+.table-search-input:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
 }
 
-.dbsyncer-table-search-input::placeholder {
+.table-search-input::placeholder {
   color: var(--text-tertiary);
 }
 
-.dbsyncer-table-search-icon {
+.table-search-icon {
   position: absolute;
   left: var(--spacing-sm);
   top: 50%;
@@ -97,13 +97,13 @@
 }
 
 /* 筛选器 */
-.dbsyncer-table-filter {
+.table-filter {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
 }
 
-.dbsyncer-table-filter-select {
+.table-filter-select {
   height: 32px;
   padding: 0 var(--spacing-sm);
   border: 1px solid var(--border-primary);
@@ -115,22 +115,22 @@
   transition: all var(--transition-fast);
 }
 
-.dbsyncer-table-filter-select:hover {
+.table-filter-select:hover {
   border-color: var(--primary-color);
 }
 
 /* 表格主体 */
-.dbsyncer-table-wrapper {
+.table-wrapper {
   overflow-x: auto;
 }
 
-.dbsyncer-table {
+.table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--font-size-sm);
 }
 
-.dbsyncer-table th {
+.table th {
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
   font-weight: 500;
@@ -140,27 +140,27 @@
   white-space: nowrap;
 }
 
-.dbsyncer-table td {
+.table td {
   padding: var(--spacing-md);
   border-bottom: 1px solid var(--border-tertiary);
   color: var(--text-secondary);
   vertical-align: middle;
 }
 
-.dbsyncer-table tbody tr {
+.table tbody tr {
   transition: all var(--transition-fast);
 }
 
-.dbsyncer-table tbody tr:hover {
+.table tbody tr:hover {
   background-color: var(--bg-secondary);
 }
 
-.dbsyncer-table tbody tr:last-child td {
+.table tbody tr:last-child td {
   border-bottom: none;
 }
 
 /* 状态标签 */
-.dbsyncer-status-tag {
+.status-tag {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -171,27 +171,27 @@
   white-space: nowrap;
 }
 
-.dbsyncer-status-tag.success {
+.status-tag.success {
   background-color: rgba(82, 196, 26, 0.1);
   color: var(--success-color);
 }
 
-.dbsyncer-status-tag.warning {
+.status-tag.warning {
   background-color: rgba(250, 140, 22, 0.1);
   color: var(--warning-color);
 }
 
-.dbsyncer-status-tag.error {
+.status-tag.error {
   background-color: rgba(245, 34, 45, 0.1);
   color: var(--error-color);
 }
 
-.dbsyncer-status-tag.info {
+.status-tag.info {
   background-color: rgba(24, 144, 255, 0.1);
   color: var(--primary-color);
 }
 
-.dbsyncer-status-tag::before {
+.status-tag::before {
   content: '';
   width: 6px;
   height: 6px;
@@ -200,11 +200,11 @@
 }
 
 /* 操作按钮 */
-.dbsyncer-table-actions-cell {
+.table-actions-cell {
   white-space: nowrap;
 }
 
-.dbsyncer-action-btn {
+.action-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -219,62 +219,62 @@
   text-decoration: none;
 }
 
-.dbsyncer-action-btn:hover {
+.action-btn:hover {
   border-color: var(--primary-color);
   color: var(--primary-color);
   text-decoration: none;
 }
 
-.dbsyncer-action-btn.primary {
+.action-btn.primary {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
   color: var(--bg-primary);
 }
 
-.dbsyncer-action-btn.primary:hover {
+.action-btn.primary:hover {
   background-color: var(--primary-hover);
   border-color: var(--primary-hover);
   color: var(--bg-primary);
 }
 
-.dbsyncer-action-btn.success {
+.action-btn.success {
   background-color: var(--success-color);
   border-color: var(--success-color);
   color: var(--bg-primary);
 }
 
-.dbsyncer-action-btn.success:hover {
+.action-btn.success:hover {
   background-color: #73d13d;
   border-color: #73d13d;
   color: var(--bg-primary);
 }
 
-.dbsyncer-action-btn.warning {
+.action-btn.warning {
   background-color: var(--warning-color);
   border-color: var(--warning-color);
   color: var(--bg-primary);
 }
 
-.dbsyncer-action-btn.warning:hover {
+.action-btn.warning:hover {
   background-color: #ffc53d;
   border-color: #ffc53d;
   color: var(--bg-primary);
 }
 
-.dbsyncer-action-btn.danger {
+.action-btn.danger {
   background-color: var(--error-color);
   border-color: var(--error-color);
   color: var(--bg-primary);
 }
 
-.dbsyncer-action-btn.danger:hover {
+.action-btn.danger:hover {
   background-color: #ff4d4f;
   border-color: #ff4d4f;
   color: var(--bg-primary);
 }
 
 /* 分页组件 */
-.dbsyncer-pagination {
+.pagination {
   padding: var(--spacing-lg);
   border-top: 1px solid var(--border-secondary);
   display: flex;
@@ -284,18 +284,18 @@
   gap: var(--spacing-md);
 }
 
-.dbsyncer-pagination-info {
+.pagination-info {
   font-size: var(--font-size-sm);
   color: var(--text-tertiary);
 }
 
-.dbsyncer-pagination-controls {
+.pagination-controls {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
 }
 
-.dbsyncer-pagination-btn {
+.pagination-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -310,31 +310,31 @@
   text-decoration: none;
 }
 
-.dbsyncer-pagination-btn:hover {
+.pagination-btn:hover {
   border-color: var(--primary-color);
   color: var(--primary-color);
   text-decoration: none;
 }
 
-.dbsyncer-pagination-btn.active {
+.pagination-btn.active {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
   color: var(--bg-primary);
 }
 
-.dbsyncer-pagination-btn:disabled {
+.pagination-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
 }
 
-.dbsyncer-pagination-page {
+.pagination-page {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
 }
 
-.dbsyncer-pagination-page-btn {
+.pagination-page-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -351,20 +351,20 @@
   font-size: var(--font-size-sm);
 }
 
-.dbsyncer-pagination-page-btn:hover {
+.pagination-page-btn:hover {
   border-color: var(--primary-color);
   color: var(--primary-color);
   text-decoration: none;
 }
 
-.dbsyncer-pagination-page-btn.active {
+.pagination-page-btn.active {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
   color: var(--bg-primary);
 }
 
 /* 分页省略号 */
-.dbsyncer-pagination-ellipsis {
+.pagination-ellipsis {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -376,13 +376,13 @@
 }
 
 /* 空状态 */
-.dbsyncer-table-empty {
+.table-empty {
   padding: var(--spacing-xxl);
   text-align: center;
   color: var(--text-tertiary);
 }
 
-.dbsyncer-empty-state {
+.empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -390,51 +390,51 @@
   padding: var(--spacing-xxl);
 }
 
-.dbsyncer-empty-icon {
+.empty-icon {
   font-size: 48px;
   margin-bottom: var(--spacing-md);
   opacity: 0.3;
   color: var(--text-tertiary);
 }
 
-.dbsyncer-empty-text {
+.empty-text {
   font-size: var(--font-size-lg);
   margin-bottom: var(--spacing-sm);
   color: var(--text-secondary);
   font-weight: 500;
 }
 
-.dbsyncer-empty-subtext {
+.empty-subtext {
   font-size: var(--font-size-sm);
   color: var(--text-tertiary);
   margin: 0;
 }
 
-.dbsyncer-table-empty-icon {
+.table-empty-icon {
   font-size: var(--font-size-xxxl);
   margin-bottom: var(--spacing-md);
   opacity: 0.5;
 }
 
-.dbsyncer-table-empty-text {
+.table-empty-text {
   font-size: var(--font-size-md);
   margin-bottom: var(--spacing-sm);
 }
 
-.dbsyncer-table-empty-description {
+.table-empty-description {
   font-size: var(--font-size-sm);
   color: var(--text-tertiary);
 }
 
 /* 连接器图标 */
-.dbsyncer-connector-icon {
+.connector-icon {
   font-size: 16px;
   margin-right: var(--spacing-sm);
   color: var(--primary-color);
 }
 
 /* 加载状态容器 */
-.dbsyncer-loading-container {
+.loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -443,7 +443,7 @@
   min-height: 200px;
 }
 
-.dbsyncer-loading-spinner {
+.loading-spinner {
   width: 40px;
   height: 40px;
   border: 4px solid var(--border-primary);
@@ -453,7 +453,7 @@
   margin-bottom: var(--spacing-md);
 }
 
-.dbsyncer-loading-text {
+.loading-text {
   font-size: var(--font-size-md);
   color: var(--text-secondary);
   font-weight: 500;
@@ -465,13 +465,13 @@
 }
 
 /* 加载状态 */
-.dbsyncer-table-loading {
+.table-loading {
   padding: var(--spacing-xxl);
   text-align: center;
   color: var(--text-tertiary);
 }
 
-.dbsyncer-table-loading-spinner {
+.table-loading-spinner {
   width: 24px;
   height: 24px;
   border: 2px solid var(--border-primary);
@@ -483,46 +483,46 @@
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .dbsyncer-table-header {
+  .table-header {
     flex-direction: column;
     align-items: stretch;
   }
   
-  .dbsyncer-table-toolbar {
+  .table-toolbar {
     flex-direction: column;
     align-items: stretch;
   }
   
-  .dbsyncer-table-toolbar-left,
-  .dbsyncer-table-toolbar-right {
+  .table-toolbar-left,
+  .table-toolbar-right {
     justify-content: center;
   }
   
-  .dbsyncer-table-search {
+  .table-search {
     min-width: auto;
   }
   
-  .dbsyncer-pagination {
+  .pagination {
     flex-direction: column;
     align-items: center;
   }
   
-  .dbsyncer-pagination-controls {
+  .pagination-controls {
     order: -1;
   }
 }
 
 @media (max-width: 480px) {
-  .dbsyncer-table-wrapper {
+  .table-wrapper {
     font-size: var(--font-size-xs);
   }
   
-  .dbsyncer-table th,
-  .dbsyncer-table td {
+  .table th,
+  .table td {
     padding: var(--spacing-sm);
   }
   
-  .dbsyncer-action-btn {
+  .action-btn {
     padding: var(--spacing-xs);
     font-size: var(--font-size-xs);
   }

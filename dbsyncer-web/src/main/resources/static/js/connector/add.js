@@ -61,15 +61,15 @@ function changeConnectorType($select) {
     }
 
     if (!connType) {
-        $connectorConfig.html('<div class="dbsyncer-empty"><div class="dbsyncer-empty-icon"><i class="fa fa-cog"></i></div><div class="dbsyncer-empty-text">请选择连接类型</div></div>');
+        $connectorConfig.html('<div class="empty"><div class="empty-icon"><i class="fa fa-cog"></i></div><div class="empty-text">请选择连接类型</div></div>');
         return;
     }
 
-    $connectorConfig.html('<div class="dbsyncer-loading-container"><div class="dbsyncer-loading-spinner"></div><div class="dbsyncer-loading-text">加载配置中...</div></div>');
+    $connectorConfig.html('<div class="loading-container"><div class="loading-spinner"></div><div class="loading-text">加载配置中...</div></div>');
 
     $connectorConfig.load($basePath + "/connector/page/add" + connType, function (response, status) {
         if (status !== 'success') {
-            $connectorConfig.html('<div class="dbsyncer-empty"><div class="dbsyncer-empty-icon"><i class="fa fa-warning"></i></div><div class="dbsyncer-empty-text">加载配置失败，请稍后重试</div></div>');
+            $connectorConfig.html('<div class="empty"><div class="empty-icon"><i class="fa fa-warning"></i></div><div class="empty-text">加载配置失败，请稍后重试</div></div>');
             return;
         }
         enhanceScope($connectorConfig);

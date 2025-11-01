@@ -4,35 +4,35 @@
  */
 
 /* ========== 基础容器 ========== */
-.dbsyncer-container-base {
+.container-base {
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* ========== 表单容器 ========== */
-.dbsyncer-form-container {
+.form-container {
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 24px;
 }
 
-/* 无背景容器（仅用于分组） */
-.dbsyncer-container-no-bg {
+/* ========== 无背景容器（仅用于分组） ========== */
+.container-no-bg {
   padding: 0;
   background: transparent;
 }
 
 /* ========== 表格容器 ========== */
-.dbsyncer-table-container {
+.table-container {
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
-.dbsyncer-table-header {
+.table-header {
   padding: 16px 20px;
   border-bottom: 1px solid var(--border-primary);
   display: flex;
@@ -40,21 +40,21 @@
   justify-content: space-between;
 }
 
-.dbsyncer-table-header h3 {
+.table-header h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.dbsyncer-table-toolbar-left,
-.dbsyncer-table-toolbar-right {
+.table-toolbar-left,
+.table-toolbar-right {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.dbsyncer-table-wrapper {
+.table-wrapper {
   overflow-x: auto;
 }
 
@@ -88,12 +88,12 @@
 
 /* ========== 响应式容器 ========== */
 @media (max-width: 768px) {
-  .dbsyncer-form-container,
+  .form-container,
   .card-body {
     padding: 16px;
   }
   
-  .dbsyncer-table-header {
+  .table-header {
     padding: 12px 16px;
   }
 }

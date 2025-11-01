@@ -6,13 +6,13 @@ const $mainContent = $('#mainContent');
 
 // 工具函数
 function showLoading() {
-    $mainContent.html('<div class="dbsyncer-loading"><div class="dbsyncer-loading-spinner"></div>加载中...</div>');
+    $mainContent.html('<div class="loading"><div class="loading-spinner"></div>加载中...</div>');
 }
 function hideLoading() {
-    $mainContent.find('.dbsyncer-loading').remove();
+    $mainContent.find('.loading').remove();
 }
 function showEmpty(element, message) {
-    $(element).html('<div class="dbsyncer-empty"><div class="dbsyncer-empty-icon"><i class="fa fa-inbox"></i></div><div class="dbsyncer-empty-text">' + (message || '暂无数据') + '</div></div>');
+    $(element).html('<div class="empty"><div class="empty-icon"><i class="fa fa-inbox"></i></div><div class="empty-text">' + (message || '暂无数据') + '</div></div>');
 }
 
 /**
@@ -207,16 +207,16 @@ function initMultipleInputTags() {
         
         // 创建标签容器
         const container = document.createElement('div');
-        container.className = 'dbsyncer-tagsinput';
+        container.className = 'tagsinput';
         
         // 创建标签列表容器
         const tagsList = document.createElement('div');
-        tagsList.className = 'dbsyncer-tagsinput-tags';
+        tagsList.className = 'tagsinput-tags';
         
         // 创建新标签输入框
         const newTagInput = document.createElement('input');
         newTagInput.type = 'text';
-        newTagInput.className = 'dbsyncer-tagsinput-input';
+        newTagInput.className = 'tagsinput-input';
         newTagInput.placeholder = input.placeholder || '输入后按 Enter 添加';
         
         // 隐藏原始输入框
@@ -257,14 +257,14 @@ function initMultipleInputTags() {
             
             // 创建标签元素
             const tagElement = document.createElement('span');
-            tagElement.className = 'dbsyncer-tag';
+            tagElement.className = 'tag';
             tagElement.innerHTML = `
-                <span class="dbsyncer-tag-text">${escapeHtml(value)}</span>
-                <i class="dbsyncer-tag-remove fa fa-times"></i>
+                <span class="tag-text">${escapeHtml(value)}</span>
+                <i class="tag-remove fa fa-times"></i>
             `;
             
             // 绑定删除事件
-            tagElement.querySelector('.dbsyncer-tag-remove').addEventListener('click', function() {
+            tagElement.querySelector('.tag-remove').addEventListener('click', function() {
                 removeTag(value, tagElement);
             });
             
@@ -390,12 +390,12 @@ function initQRCodePopover(options) {
         elements.forEach(function(element) {
             // 创建悬浮提示
             const popover = document.createElement('div');
-            popover.className = 'dbsyncer-qrcode-popover';
+            popover.className = 'qrcode-popover';
             popover.innerHTML = `
-                <div class="dbsyncer-qrcode-arrow"></div>
-                <div class="dbsyncer-qrcode-inner">
+                <div class="qrcode-arrow"></div>
+                <div class="qrcode-inner">
                     <img src="${qrcodeDataUrl}" alt="微信扫码" />
-                    <div class="dbsyncer-qrcode-text">
+                    <div class="qrcode-text">
                         <i class="fa fa-wechat"></i> 微信扫码联系
                     </div>
                 </div>
@@ -413,7 +413,7 @@ function initQRCodePopover(options) {
                     const popoverRect = popover.getBoundingClientRect();
                     
                     let top, left;
-                    popover.className = 'dbsyncer-qrcode-popover dbsyncer-qrcode-' + config.position;
+                    popover.className = 'qrcode-popover qrcode-' + config.position;
 
                     switch (config.position) {
                         case 'top':
@@ -592,41 +592,41 @@ function enhanceSelects(root) {
         select.dataset.dbsEnhanced = 'true';
 
         var container = document.createElement('div');
-        container.className = 'dbsyncer-select';
+        container.className = 'select-wrapper';
 
         var trigger = document.createElement('button');
         trigger.type = 'button';
-        trigger.className = 'dbsyncer-select-trigger';
+        trigger.className = 'select-wrapper-trigger';
 
         var textSpan = document.createElement('span');
-        textSpan.className = 'dbsyncer-select-text';
+        textSpan.className = 'select-wrapper-text';
         trigger.appendChild(textSpan);
 
         var arrow = document.createElement('span');
-        arrow.className = 'dbsyncer-select-arrow';
+        arrow.className = 'select-wrapper-arrow';
         trigger.appendChild(arrow);
 
         var panel = document.createElement('div');
-        panel.className = 'dbsyncer-select-panel';
+        panel.className = 'select-wrapper-panel';
 
         var parent = select.parentNode;
         parent.insertBefore(container, select);
         container.appendChild(trigger);
         container.appendChild(panel);
         container.appendChild(select);
-        select.classList.add('dbsyncer-select-original');
+        select.classList.add('select-wrapper-original');
 
         function buildOptions() {
             panel.innerHTML = '';
             Array.from(select.options).forEach(function (opt) {
                 var optionBtn = document.createElement('button');
                 optionBtn.type = 'button';
-                optionBtn.className = 'dbsyncer-select-option' + (opt.selected ? ' active' : '');
+                optionBtn.className = 'select-wrapper-option' + (opt.selected ? ' active' : '');
                 optionBtn.textContent = opt.textContent;
                 optionBtn.dataset.value = opt.value;
                 optionBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
-                    Array.from(panel.querySelectorAll('.dbsyncer-select-option')).forEach(function (btn) {
+                    Array.from(panel.querySelectorAll('.select-wrapper-option')).forEach(function (btn) {
                         btn.classList.remove('active');
                     });
                     optionBtn.classList.add('active');
@@ -642,7 +642,7 @@ function enhanceSelects(root) {
         function updateFromSelect() {
             var selectedOption = select.options[select.selectedIndex];
             textSpan.textContent = selectedOption ? selectedOption.text : (select.getAttribute('placeholder') || '请选择');
-            Array.from(panel.querySelectorAll('.dbsyncer-select-option')).forEach(function (btn) {
+            Array.from(panel.querySelectorAll('.select-wrapper-option')).forEach(function (btn) {
                 btn.classList.toggle('active', btn.dataset.value === select.value);
             });
             if (select.disabled) {
@@ -700,10 +700,10 @@ function closeAllSelects(except) {
 }
 
 function ensureToastContainer() {
-    var container = document.querySelector('.dbsyncer-toast-container');
+    var container = document.querySelector('.toast-container');
     if (!container) {
         container = document.createElement('div');
-        container.className = 'dbsyncer-toast-container';
+        container.className = 'toast-container';
         document.body.appendChild(container);
     }
     return container;
@@ -725,7 +725,7 @@ function notify(message, type, options) {
 
     var container = ensureToastContainer();
     var toast = document.createElement('div');
-    toast.className = 'dbsyncer-toast dbsyncer-toast-' + cfg.type;
+    toast.className = 'toast toast-' + cfg.type;
 
     var iconHtml = cfg.icon;
     if (!iconHtml) {
@@ -738,15 +738,15 @@ function notify(message, type, options) {
     }
 
     toast.innerHTML = '' +
-        '<div class="dbsyncer-toast-icon">' + iconHtml + '</div>' +
-        '<div class="dbsyncer-toast-content">' +
-            (cfg.title ? '<div class="dbsyncer-toast-title">' + cfg.title + '</div>' : '') +
-            '<div class="dbsyncer-toast-message">' + cfg.message + '</div>' +
+        '<div class="toast-icon">' + iconHtml + '</div>' +
+        '<div class="toast-content">' +
+            (cfg.title ? '<div class="toast-title">' + cfg.title + '</div>' : '') +
+            '<div class="toast-message">' + cfg.message + '</div>' +
         '</div>' +
-        '<button type="button" class="dbsyncer-toast-close" aria-label="关闭">&times;</button>' +
-        '<div class="dbsyncer-toast-progress"><div class="dbsyncer-toast-progress-bar"></div></div>';
+        '<button type="button" class="toast-close" aria-label="关闭">&times;</button>' +
+        '<div class="toast-progress"><div class="toast-progress-bar"></div></div>';
 
-    var closeBtn = toast.querySelector('.dbsyncer-toast-close');
+    var closeBtn = toast.querySelector('.toast-close');
     closeBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         removeToast(toast);
@@ -754,7 +754,7 @@ function notify(message, type, options) {
 
     container.appendChild(toast);
 
-    var progress = toast.querySelector('.dbsyncer-toast-progress-bar');
+    var progress = toast.querySelector('.toast-progress-bar');
     if (progress) {
         progress.style.animationDuration = cfg.duration + 'ms';
     }
@@ -816,7 +816,7 @@ function initFileUpload(selector, options) {
 
     var uploadArea = container.querySelector('[data-upload-area]');
     var uploadList = container.querySelector('[data-upload-list]');
-    var fileInput = container.querySelector('.dbsyncer-upload-input');
+    var fileInput = container.querySelector('.upload-input');
     
     if (!uploadArea || !uploadList || !fileInput) {
         console.error('文件上传组件元素不完整');
@@ -938,21 +938,21 @@ function initFileUpload(selector, options) {
     // 渲染文件项
     function renderFileItem(fileObj) {
         var item = document.createElement('div');
-        item.className = 'dbsyncer-upload-item ' + fileObj.status;
+        item.className = 'upload-item ' + fileObj.status;
         item.setAttribute('data-file-id', fileObj.id);
         item.innerHTML = 
-            '<div class="dbsyncer-upload-item-icon">' +
+            '<div class="upload-item-icon">' +
                 '<i class="fa fa-file-o"></i>' +
             '</div>' +
-            '<div class="dbsyncer-upload-item-info">' +
-                '<div class="dbsyncer-upload-item-name" title="' + fileObj.name + '">' + fileObj.name + '</div>' +
-                '<div class="dbsyncer-upload-item-size">' + formatFileSize(fileObj.size) + '</div>' +
-                '<div class="dbsyncer-upload-item-progress" style="display:none;">' +
-                    '<div class="dbsyncer-upload-item-progress-bar" style="width:0%"></div>' +
+            '<div class="upload-item-info">' +
+                '<div class="upload-item-name" title="' + fileObj.name + '">' + fileObj.name + '</div>' +
+                '<div class="upload-item-size">' + formatFileSize(fileObj.size) + '</div>' +
+                '<div class="upload-item-progress" style="display:none;">' +
+                    '<div class="upload-item-progress-bar" style="width:0%"></div>' +
                 '</div>' +
             '</div>' +
-            '<div class="dbsyncer-upload-item-status"></div>' +
-            '<button type="button" class="dbsyncer-upload-item-remove" data-action="remove">' +
+            '<div class="upload-item-status"></div>' +
+            '<button type="button" class="upload-item-remove" data-action="remove">' +
                 '<i class="fa fa-times"></i>' +
             '</button>';
 
@@ -969,21 +969,21 @@ function initFileUpload(selector, options) {
         var item = uploadList.querySelector('[data-file-id="' + fileObj.id + '"]');
         if (!item) return;
 
-        item.className = 'dbsyncer-upload-item ' + fileObj.status;
+        item.className = 'upload-item ' + fileObj.status;
 
-        var statusEl = item.querySelector('.dbsyncer-upload-item-status');
-        var progressEl = item.querySelector('.dbsyncer-upload-item-progress');
-        var progressBar = item.querySelector('.dbsyncer-upload-item-progress-bar');
+        var statusEl = item.querySelector('.upload-item-status');
+        var progressEl = item.querySelector('.upload-item-progress');
+        var progressBar = item.querySelector('.upload-item-progress-bar');
 
         if (fileObj.status === 'uploading') {
-            statusEl.innerHTML = '<div class="dbsyncer-upload-status-icon loading"><i class="fa fa-spinner fa-spin"></i></div>';
+            statusEl.innerHTML = '<div class="upload-status-icon loading"><i class="fa fa-spinner fa-spin"></i></div>';
             progressEl.style.display = 'block';
             progressBar.style.width = fileObj.progress + '%';
         } else if (fileObj.status === 'success') {
-            statusEl.innerHTML = '<div class="dbsyncer-upload-status-icon success"><i class="fa fa-check-circle"></i></div>';
+            statusEl.innerHTML = '<div class="upload-status-icon success"><i class="fa fa-check-circle"></i></div>';
             progressEl.style.display = 'none';
         } else if (fileObj.status === 'error') {
-            statusEl.innerHTML = '<div class="dbsyncer-upload-status-icon error"><i class="fa fa-exclamation-circle"></i></div>';
+            statusEl.innerHTML = '<div class="upload-status-icon error"><i class="fa fa-exclamation-circle"></i></div>';
             progressEl.style.display = 'none';
             item.title = fileObj.error || '上传失败';
         }

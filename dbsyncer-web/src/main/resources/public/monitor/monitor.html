@@ -6,7 +6,7 @@
 <!-- 图表和任务列表 -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
     <!-- 同步趋势图表 -->
-    <div class="dbsyncer-form-container lg:col-span-2 p-5">
+    <div class="form-container lg:col-span-2 p-5">
         <!-- 统计数据区域 -->
         <div class="monitor-stats-grid mb-6">
             <div class="monitor-stat-item">
@@ -87,7 +87,7 @@
     </div>
 
     <!-- 右侧：系统状态 -->
-    <div class="dbsyncer-container-no-bg">
+    <div class="container-no-bg">
         <!-- CPU使用率 -->
         <div class="monitor-progress-card mb-3">
             <div class="monitor-progress-header">
@@ -135,8 +135,8 @@
         </div>
 
         <!-- 应用状态 -->
-        <div class="dbsyncer-table-wrapper mb-3">
-            <table class="dbsyncer-table">
+        <div class="table-wrapper mb-3">
+            <table class="table">
                 <tbody>
                 <tr>
                     <td>[应用线程]</td>
@@ -164,12 +164,12 @@
     </div>
 </div>
 
-<div class="dbsyncer-form-container mb-4">
+<div class="form-container mb-4">
     <div class="card-header">
         <h3 class="card-title">查询执行器任务</h3>
     </div>
-    <div class="dbsyncer-table-wrapper mb-3">
-        <table class="dbsyncer-table">
+    <div class="table-wrapper mb-3">
+        <table class="table">
             <tbody>
             <tr>
                 <td>1</td>
@@ -192,13 +192,13 @@
 </div>
 
 <!-- 查询数据 -->
-<div class="dbsyncer-form-container mb-4">
+<div class="form-container mb-4">
     <div class="card-header">
         <h3 class="card-title">查询数据</h3>
     </div>
     <div class="card-body">
         <!-- 表格工具栏 -->
-            <div class="dbsyncer-table-toolbar-left">
+            <div class="table-toolbar-left">
                 <select id="searchMetaData" class="select-control">
                     <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
                 </select>
@@ -211,18 +211,18 @@
                 <input id="searchDataKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入异常关键字(最多32个字)" />
             </div>
 
-            <div class="dbsyncer-table-toolbar-right">
-                <button id="queryDataBtn" class="dbsyncer-btn dbsyncer-btn-primary">
+            <div class="table-toolbar-right">
+                <button id="queryDataBtn" class="btn btn-primary">
                     <i class="fa fa-search"></i> 查询数据
                 </button>
-                <button th:id="${metaId}" class="dbsyncer-btn dbsyncer-btn-danger">
+                <button th:id="${metaId}" class="btn btn-danger">
                     <i class="fa fa-trash"></i> 清空数据
                 </button>
             </div>
         </div>
 
-        <div class="dbsyncer-table-wrapper">
-            <table class="dbsyncer-table metaDataList">
+        <div class="table-wrapper">
+            <table class="table metaDataList">
                 <thead>
                 <tr>
                     <th>序号</th>
@@ -278,7 +278,7 @@
 </div>
 
 <!-- 查询日志 -->
-<div class="dbsyncer-form-container">
+<div class="form-container">
     <div class="card-header">
         <h3 class="card-title">查询日志</h3>
     </div>
@@ -301,8 +301,8 @@
             </div>
         </div>
 
-        <div class="dbsyncer-table-wrapper">
-            <table class="dbsyncer-table">
+        <div class="table-wrapper">
+            <table class="table">
                 <thead>
                 <tr>
                     <th>序号</th>
