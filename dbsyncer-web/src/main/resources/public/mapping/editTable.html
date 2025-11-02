@@ -3,90 +3,170 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <div class="row">
-        <!-- 数据源配置 -->
-        <div class="col-md-5">
-            <label class="col-sm-3 control-label text-right">数据源表</label>
-            <div class="col-sm-9">
-                <select id="sourceTable" class="form-control select-control-table" multiple="multiple">
-                    <option th:each="t,s:${mapping?.sourceTable}" th:text="${t?.name} + ' ('+${t?.type}+')'"
-                            th:value="${t?.name}"/>
-                </select>
+    <!-- 表选择区域 - 单行布局 -->
+    <div style="margin-bottom: 24px;">
+        <div style="display: grid; grid-template-columns: 100px 1fr 32px 100px 1fr; align-items: start; gap: 16px;">
+            <!-- 数据源表标签 -->
+            <label class="form-label" style="padding-top: 8px;">
+                <i class="fa fa-database" style="color: var(--primary-color); margin-right: 4px;"></i>
+                数据源表
+            </label>
+            
+            <!-- 数据源表选择器 -->
+            <div class="form-control-area">
+                <div class="dbsyncer-multi-select" id="sourceTableWrapper">
+                    <div class="dbsyncer-multi-select-trigger">
+                        <input type="text" class="dbsyncer-multi-select-search" placeholder="搜索表..." />
+                        <span class="dbsyncer-multi-select-arrow"><i class="fa fa-chevron-down"></i></span>
+                    </div>
+                    <div class="dbsyncer-multi-select-dropdown">
+                        <div class="dbsyncer-multi-select-actions">
+                            <button type="button" class="dbsyncer-multi-select-action-btn select-all">全选</button>
+                            <button type="button" class="dbsyncer-multi-select-action-btn">取消全选</button>
+                            <button type="button" class="dbsyncer-multi-select-action-btn">取消过滤</button>
+                            <button type="button" class="dbsyncer-multi-select-action-btn">过滤</button>
+                        </div>
+                        <div class="dbsyncer-multi-select-options">
+                            <label th:each="t,s:${mapping?.sourceTable}" class="dbsyncer-multi-select-option">
+                                <input type="checkbox" th:value="${t?.name}" />
+                                <span th:text="${t?.name} + ' (' + ${t?.type} + ')'"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <select id="sourceTable" style="display: none;" multiple="multiple">
+                        <option th:each="t,s:${mapping?.sourceTable}" th:value="${t?.name}" 
+                                th:text="${t?.name} + ' ('+${t?.type}+')'"/>
+                    </select>
+                </div>
             </div>
-        </div>
-        <!-- 中间图标 -->
-        <div class="col-md-2 text-center">
-            <span class="fa fa-angle-double-right fa-2x"></span>
-        </div>
-        <!-- 目标源配置 -->
-        <div class="col-md-5">
-            <div class="form-group">
-                <label class="col-sm-3 control-label text-right">目标源表</label>
-                <div class="col-sm-9">
-                    <select id="targetTable" class="form-control select-control-table" multiple="multiple">
-                        <option th:each="t,s:${mapping?.targetTable}"
-                                th:text="${t?.name} + ' ('+${t?.type}+')'" th:value="${t?.name}"/>
+            
+            <!-- 箭头 -->
+            <div style="text-align: center; padding-top: 8px;">
+                <i class="fa fa-arrow-right" style="font-size: 20px; color: var(--primary-color);"></i>
+            </div>
+            
+            <!-- 目标源表标签 -->
+            <label class="form-label" style="padding-top: 8px;">
+                <i class="fa fa-database" style="color: var(--success-color); margin-right: 4px;"></i>
+                目标源表
+            </label>
+            
+            <!-- 目标源表选择器 -->
+            <div class="form-control-area">
+                <div class="dbsyncer-multi-select" id="targetTableWrapper">
+                    <div class="dbsyncer-multi-select-trigger">
+                        <input type="text" class="dbsyncer-multi-select-search" placeholder="搜索表..." />
+                        <span class="dbsyncer-multi-select-arrow"><i class="fa fa-chevron-down"></i></span>
+                    </div>
+                    <div class="dbsyncer-multi-select-dropdown">
+                        <div class="dbsyncer-multi-select-actions">
+                            <button type="button" class="dbsyncer-multi-select-action-btn select-all">全选</button>
+                            <button type="button" class="dbsyncer-multi-select-action-btn">取消全选</button>
+                            <button type="button" class="dbsyncer-multi-select-action-btn">取消过滤</button>
+                            <button type="button" class="dbsyncer-multi-select-action-btn">过滤</button>
+                        </div>
+                        <div class="dbsyncer-multi-select-options">
+                            <label th:each="t,s:${mapping?.targetTable}" class="dbsyncer-multi-select-option">
+                                <input type="checkbox" th:value="${t?.name}" />
+                                <span th:text="${t?.name} + ' (' + ${t?.type} + ')'"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <select id="targetTable" style="display: none;" multiple="multiple">
+                        <option th:each="t,s:${mapping?.targetTable}" th:value="${t?.name}" 
+                                th:text="${t?.name} + ' ('+${t?.type}+')'"/>
                     </select>
                 </div>
             </div>
         </div>
     </div>
-    <div class="row">
-        <!-- 数据源配置 -->
-        <div class="col-md-5">
-            <label class="col-sm-3 control-label text-right">标记主键<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="数据源表/视图没有主键，自定义一个或多个主键"></i></label>
-            <div class="col-sm-9">
-                <input id="sourceTablePK" class="form-control" type="text" data-role="tagsinput"/>
+    
+    <!-- 标记主键区域 -->
+    <div class="form-grid-2" style="margin-bottom: 24px;">
+        <!-- 数据源主键 -->
+        <div class="form-item" style="grid-template-columns: 100px 1fr;">
+            <label class="form-label">
+                <i class="fa fa-key" style="color: var(--warning-color); margin-right: 4px;"></i>
+                标记主键
+                <i class="fa fa-question-circle" style="color: var(--text-tertiary); margin-left: 4px; cursor: help;" 
+                   aria-hidden="true" title="数据源表/视图没有主键，自定义一个或多个主键"></i>
+            </label>
+            <div class="form-control-area">
+                <input id="sourceTablePK" class="form-control" type="text" data-role="tagsinput" 
+                       placeholder="输入主键字段名，按 Enter 添加"/>
             </div>
         </div>
-        <!-- 中间图标 -->
-        <div class="col-md-2 text-center">
-            <span class="fa fa-angle-double-right fa-2x"></span>
-        </div>
-        <!-- 目标源配置 -->
-        <div class="col-md-5">
-            <div class="form-group">
-                <label class="col-sm-3 control-label text-right">标记主键<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="目标源表/视图没有主键，自定义一个或多个主键"></i></label>
-                <div class="col-sm-9">
-                    <input id="targetTablePK" class="form-control" type="text" data-role="tagsinput" />
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-2">&nbsp;
-                <button id="refreshTableBtn" type="button" class="btn btn-default" th:title="刷新数据源和目标源表" th:tableGroupId="${mapping?.id}">
-                    <span class="fa fa-refresh"></span>刷新表
-                </button>
-            </div>
-            <div class="col-md-6"></div>
-            <div class="col-md-4 text-right">
-                <button id="tableGroupDelBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-default" disabled="disabled">
-                    <span class="fa fa-remove"></span>删除
-                </button>
-                <button id="tableGroupAddBtn" th:mappingId="${mapping?.id}" type="button" class="btn btn-primary">
-                    <span class="fa fa-plus"></span>添加
-                </button>&nbsp;
+        
+        <!-- 目标源主键 -->
+        <div class="form-item" style="grid-template-columns: 100px 1fr;">
+            <label class="form-label">
+                <i class="fa fa-key" style="color: var(--warning-color); margin-right: 4px;"></i>
+                标记主键
+                <i class="fa fa-question-circle" style="color: var(--text-tertiary); margin-left: 4px; cursor: help;" 
+                   aria-hidden="true" title="目标源表/视图没有主键，自定义一个或多个主键"></i>
+            </label>
+            <div class="form-control-area">
+                <input id="targetTablePK" class="form-control" type="text" data-role="tagsinput" 
+                       placeholder="输入主键字段名，按 Enter 添加"/>
             </div>
         </div>
     </div>
 
-    <div class="form-group">
-        <table th:if="${tableGroups.size() gt 0}" class="table table-hover">
+    <!-- 操作按钮区域 -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <button id="refreshTableBtn" type="button" class="dbsyncer-btn dbsyncer-btn-secondary" 
+                th:title="刷新数据源和目标源表" th:tableGroupId="${mapping?.id}">
+            <i class="fa fa-refresh dbsyncer-btn-icon-left"></i>
+            刷新表
+        </button>
+        <div style="display: flex; gap: 8px;">
+            <button id="tableGroupDelBtn" th:mappingId="${mapping?.id}" type="button" 
+                    class="dbsyncer-btn dbsyncer-btn-secondary" disabled="disabled">
+                <i class="fa fa-trash dbsyncer-btn-icon-left"></i>
+                删除
+            </button>
+            <button id="tableGroupAddBtn" th:mappingId="${mapping?.id}" type="button" 
+                    class="dbsyncer-btn dbsyncer-btn-primary">
+                <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
+                添加
+            </button>
+        </div>
+    </div>
+
+    <!-- 表映射列表 -->
+    <div class="dbsyncer-table-wrapper" style="margin-top: 16px;">
+        <table th:if="${tableGroups.size() gt 0}" class="dbsyncer-table">
             <thead>
             <tr>
-                <th>数据源表</th>
-                <th>目标源表</th>
-                <th><input type="checkbox" class="tableGroupCheckboxAll" /></th>
+                <th style="width: 40%;">
+                    <i class="fa fa-database" style="color: var(--primary-color); margin-right: 4px;"></i>
+                    数据源表
+                </th>
+                <th style="width: 40%;">
+                    <i class="fa fa-database" style="color: var(--success-color); margin-right: 4px;"></i>
+                    目标源表
+                </th>
+                <th style="width: 10%; text-align: center;">
+                    <i class="fa fa-hand-rock-o" style="color: var(--warning-color); margin-right: 4px;"></i>
+                    拖动
+                </th>
+                <th style="width: 10%; text-align: center;">
+                    <input type="checkbox" class="tableGroupCheckboxAll" style="width: 16px; height: 16px; cursor: pointer;" />
+                </th>
             </tr>
             </thead>
             <tbody id="tableGroupList">
-                <tr th:id="${t?.id}" title='点击编辑' class='dbsyncer_pointer' th:each="t,state : ${tableGroups}">
+                <tr th:id="${t?.id}" title='拖动排序 | 点击编辑' class='dbsyncer_pointer' th:each="t,state : ${tableGroups}" 
+                    style="transition: background-color 0.2s ease;">
                     <td th:text="${t?.sourceTable.name}"/>
                     <td th:text="${t?.targetTable.name}"/>
-                    <td><input th:value="${t?.id}" th:mappingId="${mapping?.id}" type="checkbox" class="tableGroupCheckbox" /></td>
+                    <td style="text-align: center;">
+                        <i class="fa fa-arrows" style="color: var(--text-tertiary); cursor: move;"></i>
+                    </td>
+                    <td style="text-align: center;">
+                        <input th:value="${t?.id}" th:mappingId="${mapping?.id}" type="checkbox" 
+                               class="tableGroupCheckbox" style="width: 16px; height: 16px; cursor: pointer;" />
+                    </td>
                 </tr>
             </tbody>
         </table>

@@ -15,16 +15,13 @@ function refresh(id){
     doLoader('/mapping/page/edit?id=' + id);
 }
 
-// 绑定修改驱动同步方式切换事件
+// 绑定修改驱动同步方式切换事件（移除 iCheck 依赖）
 function bindMappingModelChange() {
     var $mappingModelChange = $("#mappingModelChange");
     var $radio = $mappingModelChange.find('input:radio[type="radio"]');
-    // 初始化icheck插件
-    $radio.iCheck({
-        labelHover: false,
-        cursor: true,
-        radioClass: 'iradio_flat-blue',
-    }).on('ifChecked', function (event) {
+    
+    // 使用原生 change 事件替代 iCheck
+    $radio.on('change', function (event) {
         var $form = $("#mappingModifyForm");
         if ($form.formValidate() == true) {
             var data = $form.serializeJson();
@@ -52,30 +49,31 @@ function bindMappingModelChange() {
     }
 }
 
-// 绑定删除表关系复选框事件
+// 绑定删除表关系复选框事件（移除 iCheck 依赖）
 function bindMappingTableGroupCheckBoxClick(){
     var $checkboxAll = $('.tableGroupCheckboxAll');
     var $checkbox = $('.tableGroupCheckbox');
     var $delBtn = $("#tableGroupDelBtn");
-    $checkboxAll.iCheck({
-        checkboxClass: 'icheckbox_square-red',
-        labelHover: false,
-        cursor: true
-    }).on('ifChecked', function (event) {
-        $checkbox.iCheck('check');
-    }).on('ifUnchecked', function (event) {
-        $checkbox.iCheck('uncheck');
-    }).on('ifChanged', function (event) {
+    
+    // 全选复选框事件
+    $checkboxAll.on('change', function (event) {
+        var isChecked = $(this).prop('checked');
+        $checkbox.prop('checked', isChecked);
         $delBtn.prop('disabled', getCheckedBoxSize($checkbox).length < 1);
     });
 
-    // 初始化icheck插件
-    $checkbox.iCheck({
-        checkboxClass: 'icheckbox_square-red',
-        cursor: true
-    }).on('ifChanged', function (event) {
+    // 单个复选框事件
+    $checkbox.on('change', function (event) {
+        // 更新全选复选框状态
+        var allChecked = $checkbox.length === $checkbox.filter(':checked').length;
+        $checkboxAll.prop('checked', allChecked);
+        
+        // 更新删除按钮状态
         $delBtn.prop('disabled', getCheckedBoxSize($checkbox).length < 1);
     });
+    
+    // 初始化删除按钮状态
+    $delBtn.prop('disabled', getCheckedBoxSize($checkbox).length < 1);
 }
 
 // 获取选择的CheckBox[value]
@@ -89,7 +87,7 @@ function getCheckedBoxSize($checkbox){
     return checked;
 }
 
-// 绑定表关系点击事件
+// 绑定表关系点击事件（移除 tableDnD 依赖）
 function bindMappingTableGroupListClick() {
     var $tableGroupList = $("#tableGroupList");
     $tableGroupList.unbind("click");
@@ -97,41 +95,103 @@ function bindMappingTableGroupListClick() {
         doLoader('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
     });
 
-    // 绑定表格拖拽事件
-    $tableGroupList.tableDnD({
-        onDrop: function(table, row) {
+    // 使用原生 HTML5 拖拽 API 替代 tableDnD
+    var $rows = $tableGroupList.find("tr");
+    $rows.each(function() {
+        var $row = $(this);
+        $row.attr('draggable', 'true');
+        
+        // 拖拽开始
+        $row.on('dragstart', function(e) {
+            e.originalEvent.dataTransfer.effectAllowed = 'move';
+            e.originalEvent.dataTransfer.setData('text/html', this.innerHTML);
+            $(this).addClass('dragging');
+        });
+        
+        // 拖拽结束
+        $row.on('dragend', function(e) {
+            $(this).removeClass('dragging');
+            $rows.removeClass('drag-over');
+            
+            // 更新排序数据
             var newData = [];
-            var $trList = $(table).find("tr");
-            $.each($trList, function () {
+            $tableGroupList.find("tr").each(function () {
                 newData.push($(this).attr('id'));
             });
             $("#sortedTableGroupIds").val(newData.join('|'));
-        }
+        });
+        
+        // 拖拽经过
+        $row.on('dragover', function(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.originalEvent.dataTransfer.dropEffect = 'move';
+            $(this).addClass('drag-over');
+            return false;
+        });
+        
+        // 拖拽离开
+        $row.on('dragleave', function(e) {
+            $(this).removeClass('drag-over');
+        });
+        
+        // 放置
+        $row.on('drop', function(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            var $dragging = $tableGroupList.find('.dragging');
+            if ($dragging.length && $dragging[0] !== this) {
+                // 判断插入位置
+                var draggingIndex = $dragging.index();
+                var targetIndex = $(this).index();
+                
+                if (draggingIndex < targetIndex) {
+                    $(this).after($dragging);
+                } else {
+                    $(this).before($dragging);
+                }
+            }
+            
+            return false;
+        });
     });
 }
 
-// 绑定下拉选择事件自动匹配相似表事件
+// 绑定下拉选择事件自动匹配相似表事件（使用新的多选下拉框）
 function bindTableSelect(){
     const $sourceSelect = $("#sourceTable");
     const $targetSelect = $("#targetTable");
-    $sourceSelect.on('changed.bs.select',function(e){
-        $targetSelect.selectpicker('val', $(this).selectpicker('val'));
-    });
+    
+    // 初始化多选下拉框
+    if (typeof initMultiSelect === 'function') {
+        // 初始化数据源表选择器，联动到目标源表
+        initMultiSelect('sourceTableWrapper', {
+            linkTo: 'targetTableWrapper',
+            onSelectChange: function() {
+                // 选择变化时的回调
+            }
+        });
+        
+        // 初始化目标源表选择器
+        initMultiSelect('targetTableWrapper', {
+            linkTo: null,
+            onSelectChange: function() {
+                // 选择变化时的回调
+            }
+        });
+    }
+    
     bindMappingTableGroupAddClick($sourceSelect, $targetSelect);
 }
 
 // 绑定下拉过滤按钮点击事件
+// 绑定过滤按钮（新的多选下拉框已内置此功能）
 function bindMultipleSelectFilterBtnClick() {
-    $(".actions-btn").parent().append('<button type="button" class="actions-btn bs-show-all btn btn-default" title="显示所有表，包含已添加的表">取消过滤</button><button type="button" class="actions-btn bs-exclude-all btn btn-default" title="不显示已添加的表">过滤</button>');
-    $(".actions-btn").css('width', '25%');
-    $(".bs-show-all").bind("click", function () {
-        doLoader('/mapping/page/edit?id=' + $("#mappingId").val() + '&exclude=1');
-        bootGrowl("取消过滤成功!", "success");
-    });
-    $(".bs-exclude-all").bind("click", function () {
-        refresh($("#mappingId").val());
-        bootGrowl("过滤成功!", "success");
-    });
+    // 新的多选下拉框已经内置了"取消过滤"和"过滤"按钮
+    // 无需额外添加，但保留此函数以向后兼容
 }
 
 // 绑定新增表关系点击事件
@@ -141,8 +201,9 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
     $addBtn.bind('click', function () {
         let m = {};
         m.mappingId = $(this).attr("mappingId");
-        m.sourceTable = $sourceSelect.selectpicker('val');
-        m.targetTable = $targetSelect.selectpicker('val');
+        // 获取选中的值（兼容新的多选下拉框）
+        m.sourceTable = $sourceSelect.val();
+        m.targetTable = $targetSelect.val();
         if (undefined == m.sourceTable) {
             bootGrowl("请选择数据源表", "danger");
             return;

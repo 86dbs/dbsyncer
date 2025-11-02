@@ -32,13 +32,69 @@ function initFieldMappingParams(){
     $("#fieldMapping").val(JSON.stringify(row));
 }
 
-// 绑定表格拖拽事件
+// 绑定表格拖拽事件（使用原生 HTML5 拖拽 API）
 function bindFieldMappingDrop() {
-    $("#fieldMappingList").tableDnD({
-        onDrop: function(table, row) {
-            initFieldMappingParams();
-        }
+    var $tableBody = $("#fieldMappingList");
+    var rows = $tableBody.find("tr");
+    
+    rows.each(function() {
+        var row = $(this)[0];
+        row.setAttribute('draggable', 'true');
+        
+        row.addEventListener('dragstart', handleDragStart);
+        row.addEventListener('dragend', handleDragEnd);
+        row.addEventListener('dragover', handleDragOver);
+        row.addEventListener('dragleave', handleDragLeave);
+        row.addEventListener('drop', handleDrop);
     });
+    
+    var dragSrcEl = null;
+    
+    function handleDragStart(e) {
+        dragSrcEl = this;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.innerHTML);
+        this.classList.add('dragging');
+    }
+    
+    function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        var rows = $tableBody.find('tr');
+        rows.removeClass('drag-over');
+        initFieldMappingParams();
+    }
+    
+    function handleDragOver(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    }
+    
+    function handleDragLeave(e) {
+        this.classList.remove('drag-over');
+    }
+    
+    function handleDrop(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation();
+        }
+        
+        if (dragSrcEl !== this) {
+            var srcIndex = $(dragSrcEl).index();
+            var destIndex = $(this).index();
+            
+            if (srcIndex < destIndex) {
+                $(this).after(dragSrcEl);
+            } else {
+                $(this).before(dragSrcEl);
+            }
+        }
+        
+        this.classList.remove('drag-over');
+        return false;
+    }
 }
 
 // 获取选择的CheckBox[value]
@@ -66,33 +122,33 @@ function bindRefreshTableFieldsClick() {
         });
     });
 }
-// 绑定删除表字段复选框事件
+// 绑定删除表字段复选框事件（移除 iCheck 依赖）
 function bindFieldMappingCheckBoxClick(){
     let $checkboxAll = $('.fieldMappingDeleteCheckboxAll');
     let $checkbox = $('.fieldMappingDeleteCheckbox');
     let $delBtn = $("#fieldMappingDelBtn");
-    $checkboxAll.iCheck({
-        checkboxClass: 'icheckbox_square-red',
-        labelHover: false,
-        cursor: true
-    }).on('ifChecked', function (event) {
-        $checkbox.iCheck('check');
-    }).on('ifUnchecked', function (event) {
-        $checkbox.iCheck('uncheck');
-    }).on('ifChanged', function (event) {
+    
+    // 全选复选框事件
+    $checkboxAll.on('change', function (event) {
+        var isChecked = $(this).prop('checked');
+        $checkbox.prop('checked', isChecked);
         $delBtn.prop('disabled', getCheckedBoxElements($checkbox).length < 1);
     });
 
-    // 初始化icheck插件
-    $checkbox.iCheck({
-        checkboxClass: 'icheckbox_square-red',
-        cursor: true
-    }).on('ifChanged', function (event) {
+    // 普通复选框事件
+    $checkbox.on('change', function (event) {
         // 阻止tr触发click事件
         event.stopPropagation();
-        event.cancelBubble=true;
+        event.cancelBubble = true;
         $delBtn.prop('disabled', getCheckedBoxElements($checkbox).length < 1);
+        
+        // 更新全选复选框状态
+        var allChecked = $checkbox.length === $checkbox.filter(':checked').length;
+        $checkboxAll.prop('checked', allChecked);
     });
+    
+    // 初始化删除按钮状态
+    $delBtn.prop('disabled', getCheckedBoxElements($checkbox).length < 1);
 }
 // 绑定字段映射表格点击事件
 function bindFieldMappingListClick(){
@@ -112,9 +168,9 @@ function bindTableFieldSelect(){
     let $sourceSelect = $("#sourceTableField");
     let $targetSelect = $("#targetTableField");
 
-    // 绑定数据源下拉切换事件
-    $sourceSelect.on('changed.bs.select',function(e){
-        $targetSelect.selectpicker('val', $(this).selectpicker('val'));
+    // 绑定数据源下拉切换事件（使用原生 change 事件）
+    $sourceSelect.on('change',function(e){
+        $targetSelect.val($(this).val());
     });
     bindFieldMappingAddClick($sourceSelect, $targetSelect)
 }
@@ -122,8 +178,8 @@ function bindTableFieldSelect(){
 function bindFieldMappingAddClick($sourceSelect, $targetSelect){
     let $btn = $("#fieldMappingAddBtn");
     $btn.bind('click', function(){
-        let sField = $sourceSelect.selectpicker("val");
-        let tField = $targetSelect.selectpicker("val");
+        let sField = $sourceSelect.val();
+        let tField = $targetSelect.val();
         sField = sField == null ? "" : sField;
         tField = tField == null ? "" : tField;
         // 非空检查

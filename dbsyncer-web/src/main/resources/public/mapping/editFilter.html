@@ -3,118 +3,183 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <p class="text-muted">过滤条件</p>
+    <!-- 过滤条件标题 -->
+    <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-secondary);">
+        <h4 style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-secondary);">
+            <i class="fa fa-filter" style="color: var(--warning-color); margin-right: 6px;"></i>
+            过滤条件
+        </h4>
+    </div>
 
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">组合<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="sql与and,or互斥，如果切换sql，将自动删除当前的条件，反之也会删除"></i></label>
-                <div class="col-sm-9">
-                    <select id="conditionOperation" class="form-control select-control">
-                        <!-- 全局页面 -->
-                        <option th:if="${tableGroup} == null" th:each="o,s:${condition?.operation}" th:value="${o?.name}" th:text="${o?.name}" th:title="${o?.message}" th:selected="${mapping?.filter.size() gt 0 and mapping?.filter[0].operation eq 'sql'}"/>
-                        <!-- 表映射关系页面 -->
-                        <option th:if="${tableGroup} != null" th:each="o,s:${condition?.operation}" th:value="${o?.name}" th:text="${o?.name}" th:title="${o?.message}" th:selected="${tableGroup?.filter.size() gt 0 and tableGroup?.filter[0].operation eq 'sql'}"/>
-                    </select>
-                </div>
+    <!-- 第一行：组合、数据源表字段、条件 -->
+    <div class="form-grid-3" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px;">
+        <!-- 组合 -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-code-fork" style="color: var(--primary-color); margin-right: 4px;"></i>
+                组合
+                <i class="fa fa-question-circle" 
+                   style="color: var(--text-tertiary); margin-left: 4px; cursor: help;" 
+                   title="sql与and,or互斥，如果切换sql，将自动删除当前的条件，反之也会删除"></i>
+            </label>
+            <div class="form-control-area">
+                <select id="conditionOperation" class="form-control">
+                    <!-- 全局页面 -->
+                    <option th:if="${tableGroup} == null" th:each="o,s:${condition?.operation}" 
+                            th:value="${o?.name}" th:text="${o?.name}" th:title="${o?.message}" 
+                            th:selected="${mapping?.filter.size() gt 0 and mapping?.filter[0].operation eq 'sql'}"/>
+                    <!-- 表映射关系页面 -->
+                    <option th:if="${tableGroup} != null" th:each="o,s:${condition?.operation}" 
+                            th:value="${o?.name}" th:text="${o?.name}" th:title="${o?.message}" 
+                            th:selected="${tableGroup?.filter.size() gt 0 and tableGroup?.filter[0].operation eq 'sql'}"/>
+                </select>
             </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">数据源表字段</label>
-                <div class="col-sm-9">
-                    <select id="conditionSourceField" class="form-control select-control">
-                        <!-- 数据源表公共字段 -->
-                        <option th:if="${tableGroup} == null" th:each="c,s:${mapping?.sourceColumn}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+        </div>
 
-                        <!-- 数据源表字段 -->
-                        <option th:each="c,s:${tableGroup?.sourceTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
-                    </select>
-                </div>
+        <!-- 数据源表字段 -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-columns" style="color: var(--success-color); margin-right: 4px;"></i>
+                数据源表字段
+            </label>
+            <div class="form-control-area">
+                <select id="conditionSourceField" class="form-control">
+                    <!-- 数据源表公共字段 -->
+                    <option th:if="${tableGroup} == null" th:each="c,s:${mapping?.sourceColumn}" 
+                            th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+                    <!-- 数据源表字段 -->
+                    <option th:each="c,s:${tableGroup?.sourceTable?.column}" 
+                            th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+                </select>
             </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">条件</label>
-                <div class="col-sm-9">
-                    <select id="conditionFilter" class="form-control select-control">
-                        <option th:each="f,s:${condition?.filter}" th:value="${f?.name}" th:text="${f?.name}" />
-                    </select>
-                </div>
+        </div>
+
+        <!-- 条件 -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-filter" style="color: var(--warning-color); margin-right: 4px;"></i>
+                条件
+            </label>
+            <div class="form-control-area">
+                <select id="conditionFilter" class="form-control">
+                    <option th:each="f,s:${condition?.filter}" th:value="${f?.name}" th:text="${f?.name}" />
+                </select>
             </div>
         </div>
     </div>
 
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">参数</label>
-                <div class="col-sm-9">
-                    <textarea id="conditionArg" class="form-control dbsyncer_textarea_resize_none" rows="2" placeholder="请输入参数"></textarea>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">系统参数</label>
-
-                <div class="col-sm-9">
-                    <div class="dropdown">
-                        <button type="button" th:title="（仅适用于增量同步）" class="btn btn-default dropdown-toggle" id="conditionDropdown" data-toggle="dropdown">
-                            <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu" role="menu" aria-labelledby="conditionDropdown">
-                            <li role="presentation" th:each="f,s:${condition?.quartzFilter}" >
-                                <a role="menuitem" class="conditionQuartzFilter" tabindex="-1" th:text="${f?.type}" th:title="${f?.message}" href="javascript:;"></a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3"></div>
-            <div class="col-md-1">
-                <button id="conditionAdd" type="button" class="btn btn-primary">
-                    <span class="fa fa-plus"></span>添加
-                </button>
+    <!-- 第二行：参数、系统参数、添加按钮 -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 24px; align-items: end; margin-bottom: 24px;">
+        <!-- 参数 -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-edit" style="color: var(--primary-color); margin-right: 4px;"></i>
+                参数
+            </label>
+            <div class="form-control-area">
+                <textarea id="conditionArg" class="form-control" 
+                          rows="2" 
+                          placeholder="请输入参数" 
+                          style="resize: none; min-height: 70px; line-height: 1.5;"></textarea>
             </div>
         </div>
+
+        <!-- 系统参数 -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-cog" style="color: var(--success-color); margin-right: 4px;"></i>
+                系统参数
+                <span style="font-size: 11px; color: var(--text-tertiary); font-weight: normal; margin-left: 4px;">
+                    （仅适用于增量同步）
+                </span>
+            </label>
+            <div class="form-control-area">
+                <select id="conditionSourceField" class="form-control">
+                    <!-- 数据源表字段 -->
+                    <option th:each="f,s:${condition?.quartzFilter}" 
+                            th:value="${f?.type}" th:text="${f?.type}" />
+                </select>
+            </div>
+        </div>
+
+        <!-- 占位 -->
+        <div></div>
+
+        <!-- 添加按钮 -->
+        <div style="padding-bottom: 4px;">
+            <button id="conditionAdd" type="button" class="dbsyncer-btn dbsyncer-btn-primary">
+                <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
+                添加
+            </button>
+        </  · 个div>
     </div>
 
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-1"></div>
-            <div class="col-md-11">
-                <table id="conditionTable" class="table table-hover hidden">
-                    <thead>
-                        <tr>
-                            <th>组合</th>
-                            <th>数据源表字段</th>
-                            <th>条件</th>
-                            <th>参数</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="conditionList">
-                        <!-- Mapping convert -->
-                        <tr th:if="${tableGroup} == null" th:each="f,s:${mapping?.filter}">
-                            <td>[[${f?.operation}]]</td>
-                            <td>[[${f?.name}]]</td>
-                            <td>[[${f?.filter}]]</td>
-                            <td>[[${f?.value}]]</td>
-                            <td><a class='fa fa-remove fa-2x conditionDelete dbsyncer_pointer' title='删除' ></a></td>
-                        </tr>
-                        <!-- TableGroup convert -->
-                        <tr th:each="f,s:${tableGroup?.filter}">
-                            <td>[[${f?.operation}]]</td>
-                            <td>[[${f?.name}]]</td>
-                            <td>[[${f?.filter}]]</td>
-                            <td>[[${f?.value}]]</td>
-                            <td><a class='fa fa-remove fa-2x conditionDelete dbsyncer_pointer' title='删除' ></a></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <!-- 条件列表表格 -->
+    <div style="margin-top: 24px;">
+        <table id="conditionTable" class="dbsyncer-table hidden">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">组合</th>
+                    <th style="width: 25%;">数据源表字段</th>
+                    <th style="width: 15%;">条件</th>
+                    <th style="width: 35%;">参数</th>
+                    <th style="width: 10%; text-align: center;">操作</th>
+                </tr>
+            </thead>
+            <tbody id="conditionList">
+                <!-- Mapping filter -->
+                <tr th:if="${tableGroup} == null" th:each="f,s:${mapping?.filter}">
+                    <td>
+                        <span class="dbsyncer-tag dbsyncer-tag-primary">[[${f?.operation}]]</span>
+                    </td>
+                    <td>[[${f?.name}]]</td>
+                    <td>
+                        <span class="dbsyncer-tag dbsyncer-tag-warning">[[${f?.filter}]]</span>
+                    </td>
+                    <td style="word-break: break-all;">[[${f?.value}]]</td>
+                    <td style="text-align: center;">
+                        <a class="conditionDelete" 
+                           style="color: var(--danger-color); cursor: pointer; font-size: 16px;" 
+                           title="删除">
+                            <i class="fa fa-trash-o"></i>
+                        </a>
+                    </td>
+                </tr>
+                <!-- TableGroup filter -->
+                <tr th:each="f,s:${tableGroup?.filter}">
+                    <td>
+                        <span class="dbsyncer-tag dbsyncer-tag-primary">[[${f?.operation}]]</span>
+                    </td>
+                    <td>[[${f?.name}]]</td>
+                    <td>
+                        <span class="dbsyncer-tag dbsyncer-tag-warning">[[${f?.filter}]]</span>
+                    </td>
+                    <td style="word-break: break-all;">[[${f?.value}]]</td>
+                    <td style="text-align: center;">
+                        <a class="conditionDelete" 
+                           style="color: var(--danger-color); cursor: pointer; font-size: 16px;" 
+                           title="删除">
+                            <i class="fa fa-trash-o"></i>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 提示信息 -->
+    <div style="margin-top: 16px; padding: 12px 16px; background-color: var(--bg-tertiary); border-radius: 8px; border-left: 3px solid var(--warning-color);">
+        <p style="margin: 0; font-size: 12px; color: var(--text-tertiary); line-height: 1.6;">
+            <i class="fa fa-lightbulb-o" style="color: var(--warning-color); margin-right: 6px;"></i>
+            <strong>提示：</strong>过滤条件用于在同步时筛选符合条件的数据。支持多种条件组合（AND、OR、SQL），可以使用系统参数实现增量同步。
+        </p>
     </div>
 
     <!-- 隐藏表单值 -->
-    <div class="form-group hidden">
+    <div class="hidden">
         <input id="filter" name="filter" class="form-control" type="text"/>
     </div>
 
 </div>
+
 </html>

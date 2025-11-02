@@ -53,6 +53,153 @@ body {
 }
 
 /* ========== 滚动条样式 ========== */
+/* 表格拖拽样式 */
+tr[draggable="true"] {
+  cursor: move;
+  transition: all 0.3s ease;
+}
+
+tr.dragging {
+  opacity: 0.5;
+  background-color: var(--primary-color) !important;
+  color: white;
+}
+
+tr.drag-over {
+  border-top: 2px solid var(--primary-color);
+}
+
+tr[draggable="true"]:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* 多选下拉框样式 */
+.dbsyncer-multi-select {
+  position: relative;
+  width: 100%;
+}
+
+.dbsyncer-multi-select-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dbsyncer-multi-select-trigger:hover {
+  border-color: var(--primary-color);
+}
+
+.dbsyncer-multi-select.open .dbsyncer-multi-select-trigger {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+}
+
+.dbsyncer-multi-select-search {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 8px 12px;
+  font-size: 14px;
+  background: transparent;
+}
+
+.dbsyncer-multi-select-arrow {
+  padding: 0 12px;
+  color: var(--text-tertiary);
+  transition: transform 0.2s ease;
+}
+
+.dbsyncer-multi-select.open .dbsyncer-multi-select-arrow {
+  transform: rotate(180deg);
+}
+
+.dbsyncer-multi-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: none;
+  z-index: 1000;
+  max-height: 400px;
+  overflow: hidden;
+}
+
+.dbsyncer-multi-select.open .dbsyncer-multi-select-dropdown {
+  display: block;
+}
+
+.dbsyncer-multi-select-actions {
+  display: flex;
+  gap: 0;
+  padding: 8px;
+  border-bottom: 1px solid var(--border-secondary);
+  background-color: var(--bg-secondary);
+}
+
+.dbsyncer-multi-select-action-btn {
+  flex: 1;
+  padding: 6px 12px;
+  border: none;
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  margin: 0 2px;
+}
+
+.dbsyncer-multi-select-action-btn:hover {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+.dbsyncer-multi-select-options {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.dbsyncer-multi-select-option {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-radius: 4px;
+  margin: 2px 0;
+}
+
+.dbsyncer-multi-select-option:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.dbsyncer-multi-select-option input[type="checkbox"] {
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.dbsyncer-multi-select-option span {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.dbsyncer-multi-select-option.hidden {
+  display: none;
+}
+
+/* 滚动条样式 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

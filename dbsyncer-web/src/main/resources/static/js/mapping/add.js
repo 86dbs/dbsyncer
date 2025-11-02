@@ -19,27 +19,35 @@ function submit(data) {
     });
 }
 
-// 绑定开关切换事件
+// 绑定开关切换事件（适配框架原生 form-switch 组件）
 function bindToggleSwitch($switch, $toggle) {
     let $textarea = $toggle.find("textarea");
-    return $switch.bootstrapSwitch({
-        onText: "Yes",
-        offText: "No",
-        onColor: "success",
-        offColor: "info",
-        size: "normal",
-        onSwitchChange: function (event, state) {
-            if (state) {
-                $textarea.attr('tmp', $textarea.val());
-                $textarea.val('');
-                $toggle.addClass("hidden");
-            } else {
-                $textarea.val($textarea.attr('tmp'));
-                $textarea.removeAttr('tmp');
-                $toggle.removeClass("hidden");
-            }
+    
+    // 监听原生 checkbox 的 change 事件
+    $switch.on('change', function() {
+        var isChecked = $(this).prop('checked');
+        
+        if (isChecked) {
+            // 选中时：保存当前值，清空并隐藏 textarea
+            $textarea.attr('tmp', $textarea.val());
+            $textarea.val('');
+            $toggle.addClass("hidden");
+        } else {
+            // 未选中时：恢复之前的值，显示 textarea
+            $textarea.val($textarea.attr('tmp'));
+            $textarea.removeAttr('tmp');
+            $toggle.removeClass("hidden");
         }
     });
+    
+    // 初始化状态
+    if ($switch.prop('checked')) {
+        $textarea.attr('tmp', $textarea.val());
+        $textarea.val('');
+        $toggle.addClass("hidden");
+    }
+    
+    return $switch;
 }
 
 // 存储连接器类型
@@ -117,22 +125,18 @@ function updateFieldsVisibility() {
     // 源连接器需要数据库配置
     if (sourceType && sourceType.indexOf('mysql') !== -1) {
         showDatabaseGroup = true;
-        sourceDb.closest('.col-sm-4').prev('label').show();
-        sourceDb.closest('.col-sm-4').show();
+        sourceDb.closest('.form-item').show();
     } else {
-        sourceDb.closest('.col-sm-4').prev('label').hide();
-        sourceDb.closest('.col-sm-4').hide();
+        sourceDb.closest('.form-item').hide();
         sourceDb.val('');
     }
     
     // 目标连接器需要数据库配置
     if (targetType && targetType.indexOf('mysql') !== -1) {
         showDatabaseGroup = true;
-        targetDb.closest('.col-sm-4').prev('label').show();
-        targetDb.closest('.col-sm-4').show();
+        targetDb.closest('.form-item').show();
     } else {
-        targetDb.closest('.col-sm-4').prev('label').hide();
-        targetDb.closest('.col-sm-4').hide();
+        targetDb.closest('.form-item').hide();
         targetDb.val('');
     }
     
@@ -141,11 +145,9 @@ function updateFieldsVisibility() {
                        sourceType.indexOf('sqlserver') !== -1 || 
                        sourceType.indexOf('postgresql') !== -1)) {
         showSchemaGroup = true;
-        sourceSchema.closest('.col-sm-4').prev('label').show();
-        sourceSchema.closest('.col-sm-4').show();
+        sourceSchema.closest('.form-item').show();
     } else {
-        sourceSchema.closest('.col-sm-4').prev('label').hide();
-        sourceSchema.closest('.col-sm-4').hide();
+        sourceSchema.closest('.form-item').hide();
         sourceSchema.val('');
     }
     
@@ -154,11 +156,9 @@ function updateFieldsVisibility() {
                        targetType.indexOf('sqlserver') !== -1 || 
                        targetType.indexOf('postgresql') !== -1)) {
         showSchemaGroup = true;
-        targetSchema.closest('.col-sm-4').prev('label').show();
-        targetSchema.closest('.col-sm-4').show();
+        targetSchema.closest('.form-item').show();
     } else {
-        targetSchema.closest('.col-sm-4').prev('label').hide();
-        targetSchema.closest('.col-sm-4').hide();
+        targetSchema.closest('.form-item').hide();
         targetSchema.val('');
     }
     
@@ -229,8 +229,7 @@ function loadDatabaseList(connectorId, type) {
 
 $(function () {
     // 兼容IE PlaceHolder
-    $('input[type="text"],input[type="password"],textarea').PlaceHolder();
-
+ 
     // 分别初始化两个select插件，避免状态冲突
     var $sourceSelect = $("select[name='sourceConnectorId']");
     var $targetSelect = $("select[name='targetConnectorId']");

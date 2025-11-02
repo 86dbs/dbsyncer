@@ -1,14 +1,11 @@
 
-// 绑定增量策略切换事件
+// 绑定增量策略切换事件（移除 iCheck 依赖）
 function bindMappingIncrementStrategyConfigChange(){
     var $mappingIncrementStrategyConfig = $("#mappingIncrementStrategyConfig");
     var $radio = $mappingIncrementStrategyConfig.find('input:radio[type="radio"]');
-    // 初始化icheck插件
-    $radio.iCheck({
-        labelHover : false,
-        cursor : true,
-        radioClass : 'iradio_flat-blue',
-    }).on('ifChecked', function(event) {
+    
+    // 使用原生 change 事件替代 iCheck
+    $radio.on('change', function(event) {
         showIncrementStrategyConfig($(this).val());
     });
 
@@ -63,8 +60,6 @@ function createMetaSnapshotParams(){
 $(function() {
     // 绑定增量策略切换事件
     bindMappingIncrementStrategyConfigChange();
-    // 绑定开关切换事件
-    initSwitch();
     // 绑定增量点配置修改事件
     bindMappingMetaSnapshotModifyClick();
 });

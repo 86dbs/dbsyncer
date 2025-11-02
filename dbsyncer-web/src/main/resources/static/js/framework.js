@@ -133,6 +133,61 @@ $.fn.serializeJson = function () {
     return o;
 };
 
+// 表单验证扩展方法（支持 dbsyncer-valid 属性）
+$.fn.formValidate = function () {
+    var $form = $(this);
+    if (!$form || !$form.length) { return true; }
+
+    var isValid = true;
+    $form.find('.form-error-msg').remove();
+    $form.find('.is-invalid').removeClass('is-invalid');
+
+    // 检查 required 属性和 dbsyncer-valid="require" 属性
+    var $requiredFields = $form.find('[required], [dbsyncer-valid="require"]');
+    
+    $requiredFields.each(function(){
+        var $field = $(this);
+        if ($field.is(':disabled')) { return; }
+        var value = $.trim($field.val());
+        var invalid = false;
+
+        if ($field.is(':checkbox') || $field.is(':radio')) {
+            invalid = !$field.is(':checked');
+        } else if ($field.is('select')) {
+            invalid = value === '' || value === null;
+        } else {
+            invalid = value.length === 0;
+        }
+
+        if (invalid) {
+            isValid = false;
+            var $container = $field.closest('.form-control-area');
+            if ($container.length === 0) {
+                $container = $field.parent();
+            }
+            var labelText = '';
+            var $label = $field.closest('.form-item').find('.form-label').first();
+            if (!$label.length) {
+                $label = $field.closest('.form-group').find('.control-label').first();
+            }
+            if ($label.length) {
+                labelText = $label.text().replace('*', '').trim();
+            } else if ($field.attr('placeholder')) {
+                labelText = $field.attr('placeholder');
+            } else {
+                labelText = '该字段';
+            }
+
+            $field.addClass('is-invalid');
+            if ($container.length) {
+                $('<div class="form-error-msg"><i class="fa fa-exclamation-circle"></i>' + labelText + '不能为空</div>').appendTo($container);
+            }
+        }
+    });
+
+    return isValid;
+};
+
 // 全局加载页面
 function doLoader(url) {
     // 使用统一的内容区域
@@ -460,6 +515,212 @@ function initQRCodePopover(options) {
     }, 500);
 }
 
+/**
+ * 初始化多选下拉框
+ * @param {string} wrapperId - 容器 ID
+ * @param {object} options - 配置选项
+ */
+function initMultiSelect(wrapperId, options) {
+    var wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    
+    var config = {
+        linkTo: options.linkTo || null, // 联动的目标选择器ID
+        onSelectChange: options.onSelectChange || function() {}
+    };
+    
+    var trigger = wrapper.querySelector('.dbsyncer-multi-select-trigger');
+    var searchInput = wrapper.querySelector('.dbsyncer-multi-select-search');
+    var dropdown = wrapper.querySelector('.dbsyncer-multi-select-dropdown');
+    var optionsContainer = wrapper.querySelector('.dbsyncer-multi-select-options');
+    var originalSelect = wrapper.querySelector('select');
+    var actionBtns = wrapper.querySelectorAll('.dbsyncer-multi-select-action-btn');
+    
+    // 打开/关闭下拉框
+    trigger.addEventListener('click', function(e) {
+        wrapper.classList.toggle('open');
+        if (wrapper.classList.contains('open')) {
+            searchInput.focus();
+        }
+    });
+    
+    // 阻止点击下拉框内部时关闭
+    dropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+    
+    // 搜索功能
+    searchInput.addEventListener('input', function(e) {
+        var query = e.target.value.toLowerCase();
+        var options = optionsContainer.querySelectorAll('.dbsyncer-multi-select-option');
+        
+        options.forEach(function(option) {
+            var text = option.querySelector('span').textContent.toLowerCase();
+            if (text.indexOf(query) !== -1) {
+                option.classList.remove('hidden');
+            } else {
+                option.classList.add('hidden');
+            }
+        });
+    });
+    
+    // 复选框变化
+    var checkboxes = optionsContainer.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            syncToOriginalSelect();
+            updateSearchPlaceholder();
+            config.onSelectChange();
+            
+            // 联动选择：数据源表勾选/取消勾选，目标源表同步勾选/取消勾选
+            if (config.linkTo) {
+                var linkWrapper = document.getElementById(config.linkTo);
+                if (linkWrapper) {
+                    var linkCheckbox = linkWrapper.querySelector('input[value="' + checkbox.value + '"]');
+                    if (linkCheckbox) {
+                        // 同步勾选状态（避免无限递归）
+                        if (linkCheckbox.checked !== checkbox.checked && !linkCheckbox.hasAttribute('data-syncing')) {
+                            linkCheckbox.setAttribute('data-syncing', 'true');
+                            linkCheckbox.checked = checkbox.checked;
+                            
+                            // 手动触发目标源的同步逻辑
+                            var linkOptionsContainer = linkWrapper.querySelector('.dbsyncer-multi-select-options');
+                            var linkOriginalSelect = linkWrapper.querySelector('select');
+                            
+                            // 更新目标源的原始 select
+                            if (linkOriginalSelect) {
+                                var selectedValues = [];
+                                var linkCheckboxes = linkOptionsContainer.querySelectorAll('input[type="checkbox"]');
+                                linkCheckboxes.forEach(function(cb) {
+                                    if (cb.checked) {
+                                        selectedValues.push(cb.value);
+                                    }
+                                });
+                                
+                                Array.from(linkOriginalSelect.options).forEach(function(option) {
+                                    option.selected = selectedValues.indexOf(option.value) !== -1;
+                                });
+                                linkOriginalSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                            
+                            // 更新目标源的搜索框 placeholder
+                            var linkSearchInput = linkWrapper.querySelector('.dbsyncer-multi-select-search');
+                            if (linkSearchInput) {
+                                var linkCheckedCount = Array.from(linkWrapper.querySelectorAll('input[type="checkbox"]')).filter(function(cb) { 
+                                    return cb.checked; 
+                                }).length;
+                                if (linkCheckedCount > 0) {
+                                    linkSearchInput.placeholder = '已选择 ' + linkCheckedCount + ' 项';
+                                } else {
+                                    linkSearchInput.placeholder = '搜索表...';
+                                }
+                            }
+                            
+                            linkCheckbox.removeAttribute('data-syncing');
+                        }
+                    }
+                }
+            }
+        });
+    });
+    
+    // 按钮事件
+    actionBtns[0].addEventListener('click', function() { // 全选
+        checkboxes.forEach(function(cb) {
+            if (!cb.closest('.dbsyncer-multi-select-option').classList.contains('hidden')) {
+                cb.checked = true;
+            }
+        });
+        syncToOriginalSelect();
+        updateSearchPlaceholder();
+    });
+    
+    actionBtns[1].addEventListener('click', function() { // 取消全选
+        checkboxes.forEach(function(cb) {
+            cb.checked = false;
+        });
+        syncToOriginalSelect();
+        updateSearchPlaceholder();
+    });
+    
+    actionBtns[2].addEventListener('click', function() { // 取消过滤
+        var options = optionsContainer.querySelectorAll('.dbsyncer-multi-select-option');
+        options.forEach(function(option) {
+            option.style.display = '';
+            option.removeAttribute('data-filtered');
+        });
+    });
+    
+    actionBtns[3].addEventListener('click', function() { // 过滤（隐藏已添加的表）
+        var addedTables = getAddedTables();
+        var options = optionsContainer.querySelectorAll('.dbsyncer-multi-select-option');
+        
+        options.forEach(function(option) {
+            var checkbox = option.querySelector('input[type="checkbox"]');
+            if (addedTables.indexOf(checkbox.value) !== -1) {
+                option.style.display = 'none';
+                option.setAttribute('data-filtered', 'true');
+            }
+        });
+    });
+    
+    // 获取已添加的表列表
+    function getAddedTables() {
+        var tables = [];
+        var tableGroupList = document.getElementById('tableGroupList');
+        if (tableGroupList) {
+            var rows = tableGroupList.querySelectorAll('tr[data-source-name]');
+            rows.forEach(function(row) {
+                var sourceName = row.getAttribute('data-source-name');
+                if (sourceName) {
+                    tables.push(sourceName);
+                }
+            });
+        }
+        return tables;
+    }
+    
+    // 同步到原始 select
+    function syncToOriginalSelect() {
+        var selectedValues = [];
+        checkboxes.forEach(function(cb) {
+            if (cb.checked) {
+                selectedValues.push(cb.value);
+            }
+        });
+        
+        // 更新原始 select
+        if (originalSelect) {
+            Array.from(originalSelect.options).forEach(function(option) {
+                option.selected = selectedValues.indexOf(option.value) !== -1;
+            });
+            // 触发 change 事件
+            originalSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+    
+    // 更新搜索框 placeholder
+    function updateSearchPlaceholder() {
+        var checkedCount = Array.from(checkboxes).filter(function(cb) { return cb.checked; }).length;
+        if (checkedCount > 0) {
+            searchInput.placeholder = '已选择 ' + checkedCount + ' 项';
+        } else {
+            searchInput.placeholder = '搜索表...';
+        }
+    }
+    
+    // 初始化
+    syncToOriginalSelect();
+    updateSearchPlaceholder();
+    
+    // 点击外部关闭
+    document.addEventListener('click', function(e) {
+        if (!wrapper.contains(e.target)) {
+            wrapper.classList.remove('open');
+        }
+    });
+}
+
 $(function () {
     // 导出到全局
     window.DBSyncerTheme = {
@@ -471,11 +732,13 @@ $(function () {
         enhanceSelects: enhanceSelects,
         initFileUpload: initFileUpload,
         initQRCodePopover: initQRCodePopover,
-        initMultipleInputTags: initMultipleInputTags
+        initMultipleInputTags: initMultipleInputTags,
+        initMultiSelect: initMultiSelect
     };
     
     // 向后兼容
     window.initMultipleInputTags = initMultipleInputTags;
+    window.initMultiSelect = initMultiSelect;
 
     // // 刷新登录用户
     // refreshLoginUser();
