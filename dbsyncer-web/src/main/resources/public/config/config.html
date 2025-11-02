@@ -21,11 +21,10 @@
                     <table class="table">
                         <thead>
                         <tr>
-                            <th width="180">ID</th>
-                            <th width="100">类型</th>
+                            <th>ID</th>
+                            <th>类型</th>
                             <th>名称</th>
-                            <th width="150">创建时间</th>
-                            <th width="150">修改时间</th>
+                            <th>修改时间</th>
                         </tr>
                         </thead>
                         <tbody id="pluginList">
@@ -36,7 +35,6 @@
                             <td><span class="text-mono text-sm" th:text="${c?.id}"></span></td>
                             <td><span class="badge badge-primary" th:text="${c?.type}"></span></td>
                             <td><span class="font-medium" th:text="${c?.name}"></span></td>
-                            <td><span class="text-sm text-secondary" th:text="${#dates.format(c?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></span></td>
                             <td><span class="text-sm text-secondary" th:text="${#dates.format(c?.updateTime, 'yyyy-MM-dd HH:mm:ss')}"></span></td>
                         </tr>
                         </tbody>
