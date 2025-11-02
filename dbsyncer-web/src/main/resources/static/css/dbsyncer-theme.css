@@ -282,14 +282,6 @@ table {
   border-top-color: #fff;
 }
 
-/* 许可证相关样式 */
-.license-info-box {
-  padding: 16px;
-  background: #f5f5f5;
-  border-radius: 6px;
-  margin-bottom: 16px;
-}
-
 .steps {
   list-style: none;
   counter-reset: license-step;

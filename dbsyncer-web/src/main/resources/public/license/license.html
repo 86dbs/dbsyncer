@@ -30,34 +30,27 @@
         </div>
         <div class="card-body">
             <!-- 授权详情 -->
-            <div class="license-info-box mb-4">
-                <div class="flex items-start gap-3 mb-3">
-                    <i class="fa fa-building text-primary"></i>
-                    <div>
-                        <div class="text-sm text-tertiary">公司名称</div>
-                        <div class="font-semibold text-primary" th:text="${productInfo?.company}"></div>
-                    </div>
-                </div>
+            <div class="mb-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="flex items-start gap-2">
+                        <i class="fa fa-building text-secondary"></i>
+                        <div>
+                            <label class="form-label">公司名称</label>
+                            <div class="text-sm" th:text="${productInfo?.company}"></div>
+                        </div>
+                    </div>
                     <div class="flex items-start gap-2">
                         <i class="fa fa-user text-secondary"></i>
                         <div>
-                            <div class="text-xs text-tertiary">申请人</div>
-                            <div class="text-sm font-medium" th:text="${productInfo?.owner}"></div>
+                            <label class="form-label">申请人</label>
+                            <div class="text-sm" th:text="${productInfo?.owner}"></div>
                         </div>
                     </div>
                     <div class="flex items-start gap-2">
                         <i class="fa fa-clock-o text-secondary"></i>
                         <div>
-                            <div class="text-xs text-tertiary">授权时间</div>
-                            <div class="text-sm font-medium" th:text="${#dates.format(productInfo?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></div>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-2">
-                        <i class="fa fa-comment text-secondary"></i>
-                        <div>
-                            <div class="text-xs text-tertiary">备注</div>
-                            <div class="text-sm font-medium" th:text="${productInfo?.remark ?: '-'}"></div>
+                            <label class="form-label">授权时间</label>
+                            <div class="text-sm" th:text="${#dates.format(productInfo?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></div>
                         </div>
                     </div>
                 </div>
@@ -68,9 +61,9 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th width="60" class="text-center">#</th>
+                            <th></th>
                             <th>产品名称</th>
-                            <th width="200">有效期限</th>
+                            <th>有效期限</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -105,9 +98,11 @@
                 </table>
             </div>
 
-            <button id="removeBtn" class="btn btn-outline" type="button">
-                <i class="fa fa-trash"></i> 删除激活码
-            </button>
+            <div class="form-actions">
+                <button id="removeBtn" class="btn btn-outline" type="button">
+                    <i class="fa fa-trash"></i> 删除激活码
+                </button>
+            </div>
         </div>
     </div>
 
