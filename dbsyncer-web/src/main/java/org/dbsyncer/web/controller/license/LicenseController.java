@@ -50,7 +50,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
@@ -80,21 +79,8 @@ public class LicenseController extends BaseController {
 
     @RequestMapping("")
     public String index(ModelMap model) {
-//        model.put("key", licenseService.getKey());
-        model.put("key", "aaaaaa");
-        model.put("userInfo", getUserInfo());
-        ProductInfo info = new ProductInfo();
-        ArrayList<Product> list = new ArrayList<>();
-        Product product = new Product();
-        product.setName("专业版");
-        product.setEffectiveTime(System.currentTimeMillis());
-        list.add(product);
-        info.setCompany("test");
-        info.setOwner("穿云");
-        info.setLicenseKey("aaaaaa");
-        info.setCreateTime(System.currentTimeMillis());
-        info.setProducts(list);
-        model.put("productInfo", info);
+        model.put("key", licenseService.getKey());
+        model.put("productInfo", licenseService.getProductInfo());
         return "license/license";
     }
 

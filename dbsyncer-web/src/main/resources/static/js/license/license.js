@@ -39,32 +39,32 @@ $(function () {
 
     // 在线激活
     $("#activateBtn").on('click', function(){
-        const $form = $("#licenseForm");
+        const $form = $("#license-form");
         const $btn = $(this);
-        
         // 防止重复提交
         if ($btn.prop('disabled')) {
             return;
         }
-
         if (!DBSyncerTheme.validateForm($form)) {
-            $btn.prop('disabled', true);
-            const originalText = $btn.html();
-            $btn.html('<i class="fa fa-spinner fa-spin"></i> 激活中...');
-            
-            const data = $form.serializeJson();
-            doPoster("/license/activate", data, function (response) {
-                $btn.prop('disabled', false);
-                $btn.html(originalText);
-                
-                if (response.success == true) {
-                    bootGrowl("在线激活成功！", "success");
-                    doLoader("/license");
-                } else {
-                    bootGrowl(response.resultValue || "激活失败", "danger");
-                }
-            });
+            return;
         }
+
+        $btn.prop('disabled', true);
+        const originalText = $btn.html();
+        $btn.html('<i class="fa fa-spinner fa-spin"></i> 激活中...');
+
+        const data = $form.serializeJson();
+        doPoster("/license/activate", data, function (response) {
+            $btn.prop('disabled', false);
+            $btn.html(originalText);
+
+            if (response.success == true) {
+                bootGrowl("在线激活成功！", "success");
+                doLoader("/license");
+            } else {
+                bootGrowl(response.resultValue || "激活失败", "danger");
+            }
+        });
     });
 
     // 复制机器码

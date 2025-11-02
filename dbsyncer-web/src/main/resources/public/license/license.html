@@ -118,16 +118,8 @@
             <p class="text-xs text-tertiary mt-1">首次可免费体验 15 天</p>
         </div>
         <div class="card-body">
-            <form id="licenseForm">
+            <form id="license-form">
                 <div class="form-grid-1">
-                    <!-- 公司名称 -->
-                    <div class="form-item">
-                        <label class="form-label">公司名称<strong class="text-primary">*</strong></label>
-                        <div class="form-control-area">
-                            <input class="form-control" type="text" name="company" maxlength="64" required placeholder="请输入公司名称"/>
-                        </div>
-                    </div>
-
                     <!-- 申请人 -->
                     <div class="form-item">
                         <label class="form-label">申请人<strong class="text-primary">*</strong></label>
@@ -136,11 +128,19 @@
                         </div>
                     </div>
 
+                    <!-- 公司名称 -->
+                    <div class="form-item">
+                        <label class="form-label">公司名称</label>
+                        <div class="form-control-area">
+                            <input class="form-control" type="text" name="company" maxlength="64" placeholder="请输入公司名称"/>
+                        </div>
+                    </div>
+
                     <!-- 手机号 -->
                     <div class="form-item">
-                        <label class="form-label">手机号<strong class="text-primary">*</strong></label>
+                        <label class="form-label">手机号</label>
                         <div class="form-control-area">
-                            <input class="form-control" type="tel" name="phone" maxlength="11" required th:value="${userInfo?.phone}" placeholder="请输入手机号"/>
+                            <input class="form-control" type="tel" name="phone" maxlength="11" th:value="${userInfo?.phone}" placeholder="请输入手机号"/>
                             <div class="form-help">便于通过短信提前通知您授权情况</div>
                         </div>
                     </div>
