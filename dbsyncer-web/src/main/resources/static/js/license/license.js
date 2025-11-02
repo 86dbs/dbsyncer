@@ -29,9 +29,7 @@ $(function () {
                 
                 if (response.success == true) {
                     bootGrowl("删除激活码成功！", "success");
-                    setTimeout(function() {
-                        doLoader("/license");
-                    }, 500);
+                    doLoader("/license");
                 } else {
                     bootGrowl(response.resultValue || "删除失败", "danger");
                 }
@@ -48,8 +46,8 @@ $(function () {
         if ($btn.prop('disabled')) {
             return;
         }
-        
-        if ($form.formValidate() == true) {
+
+        if (!DBSyncerTheme.validateForm($form)) {
             $btn.prop('disabled', true);
             const originalText = $btn.html();
             $btn.html('<i class="fa fa-spinner fa-spin"></i> 激活中...');
@@ -61,9 +59,7 @@ $(function () {
                 
                 if (response.success == true) {
                     bootGrowl("在线激活成功！", "success");
-                    setTimeout(function() {
-                        doLoader("/license");
-                    }, 800);
+                    doLoader("/license");
                 } else {
                     bootGrowl(response.resultValue || "激活失败", "danger");
                 }
@@ -131,9 +127,7 @@ $(function () {
             onSuccess: function(file, response) {
                 if (response.success) {
                     bootGrowl("激活码上传成功！", "success");
-                    setTimeout(function() {
-                        doLoader("/license");
-                    }, 800);
+                    doLoader("/license");
                 } else {
                     bootGrowl(response.resultValue || "上传失败", "danger");
                 }

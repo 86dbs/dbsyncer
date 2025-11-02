@@ -2,80 +2,75 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="p-6">
-    <!-- 页面标题 -->
-    <div class="flex-between mb-6">
-        <div>
-            <h2 class="text-xl font-semibold text-primary mb-1">配置管理</h2>
-            <p class="text-sm text-tertiary">
-                配置列表(<span id="configCount" th:text="${config?.size()} ?: 0">0</span>)，
-                <a href="javascript:void(0);" onclick="downLoad()" class="text-primary hover-underline" 
-                   th:title="'下载文件大小 ' + ${#numbers.formatDecimal((fileSize / 1024), 0, 2)} + ' KB'">
-                    <i class="fa fa-download"></i> 下载
-                </a>
-            </p>
-        </div>
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">配置管理</h3>
     </div>
-
-    <!-- 内容区 -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- 左侧：配置列表 -->
-        <div class="card">
-            <div class="card-body p-0">
+    <div class="card-body">
+        <div class="grid grid-cols-2 lg:grid-cols-2">
+            <!-- 左侧：配置列表 -->
+            <div class="card">
+                <p class="text-sm text-tertiary p-3">
+                    配置列表(<span id="configCount" th:text="${config?.size()} ?: 0">0</span>)，
+                    <a href="javascript:void(0);" onclick="downLoad()" class="text-primary hover-underline"
+                       th:title="'下载文件大小 ' + ${#numbers.formatDecimal((fileSize / 1024), 0, 2)} + ' KB'">
+                        <i class="fa fa-download"></i> 下载
+                    </a>
+                </p>
                 <div class="table-wrapper">
                     <table class="table">
                         <thead>
-                            <tr>
-                                <th width="180">ID</th>
-                                <th width="100">类型</th>
-                                <th>名称</th>
-                                <th width="150">创建时间</th>
-                                <th width="150">修改时间</th>
-                            </tr>
+                        <tr>
+                            <th width="180">ID</th>
+                            <th width="100">类型</th>
+                            <th>名称</th>
+                            <th width="150">创建时间</th>
+                            <th width="150">修改时间</th>
+                        </tr>
                         </thead>
                         <tbody id="pluginList">
-                            <tr th:if="${config == null or config.isEmpty()}">
-                                <td colspan="5" class="text-center text-tertiary py-8">暂无配置数据</td>
-                            </tr>
-                            <tr th:id="${c?.name}" th:each="c : ${config}">
-                                <td><span class="text-mono text-sm" th:text="${c?.id}"></span></td>
-                                <td><span class="badge badge-primary" th:text="${c?.type}"></span></td>
-                                <td><span class="font-medium" th:text="${c?.name}"></span></td>
-                                <td><span class="text-sm text-secondary" th:text="${#dates.format(c?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></span></td>
-                                <td><span class="text-sm text-secondary" th:text="${#dates.format(c?.updateTime, 'yyyy-MM-dd HH:mm:ss')}"></span></td>
-                            </tr>
+                        <tr th:if="${config == null or config.isEmpty()}">
+                            <td colspan="5" class="text-center text-tertiary py-8">暂无配置数据</td>
+                        </tr>
+                        <tr th:id="${c?.name}" th:each="c : ${config}">
+                            <td><span class="text-mono text-sm" th:text="${c?.id}"></span></td>
+                            <td><span class="badge badge-primary" th:text="${c?.type}"></span></td>
+                            <td><span class="font-medium" th:text="${c?.name}"></span></td>
+                            <td><span class="text-sm text-secondary" th:text="${#dates.format(c?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></span></td>
+                            <td><span class="text-sm text-secondary" th:text="${#dates.format(c?.updateTime, 'yyyy-MM-dd HH:mm:ss')}"></span></td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-        </div>
 
-        <!-- 右侧：上传配置 -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">上传配置</h3>
-                <p class="text-xs text-tertiary mt-1">只支持 "json" 的文件扩展名</p>
-            </div>
-            <div class="card-body">
-                <!-- 文件上传组件 -->
-                <div id="configUploader" class="upload-container">
-                    <div class="upload-area" data-upload-area>
-                        <div class="upload-icon">
-                            <i class="fa fa-cloud-upload"></i>
+            <!-- 右侧：上传配置 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">上传配置</h3>
+                    <p class="text-xs text-tertiary">只支持 "json" 的文件扩展名</p>
+                </div>
+                <div class="card-body">
+                    <!-- 文件上传组件 -->
+                    <div id="configUploader" class="upload-container">
+                        <div class="upload-area" data-upload-area>
+                            <div class="upload-icon">
+                                <i class="fa fa-cloud-upload"></i>
+                            </div>
+                            <div class="upload-text">点击或拖拽文件到此处上传</div>
+                            <div class="upload-hint">
+                                支持扩展名：.json<br>
+                                单次最多上传 5 个文件
+                            </div>
+                            <div class="upload-button">选择文件</div>
+                            <input type="file"
+                                   class="upload-input"
+                                   id="fileConfig"
+                                   accept=".json,application/json"
+                                   multiple>
                         </div>
-                        <div class="upload-text">点击或拖拽文件到此处上传</div>
-                        <div class="upload-hint">
-                            支持扩展名：.json<br>
-                            单次最多上传 5 个文件
-                        </div>
-                        <div class="upload-button">选择文件</div>
-                        <input type="file" 
-                               class="upload-input" 
-                               id="fileConfig" 
-                               accept=".json,application/json"
-                               multiple>
+                        <div class="upload-list" data-upload-list></div>
                     </div>
-                    <div class="upload-list" data-upload-list></div>
                 </div>
             </div>
         </div>
@@ -93,9 +88,7 @@ $(function() {
             onSuccess: function(file, response) {
                 if (response.success) {
                     DBSyncerTheme.notify({ message: '上传成功！', type: 'success' });
-                    setTimeout(function() {
-                        doLoader("/config");
-                    }, 800);
+                    doLoader("/config");
                 } else {
                     DBSyncerTheme.notify({ message: response.resultValue || '上传失败', type: 'danger' });
                 }

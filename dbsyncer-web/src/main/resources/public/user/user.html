@@ -5,14 +5,14 @@
 <div class="form-container">
     <div class="card-header">
         <h3 class="card-title text-center">用户管理</h3>
+    </div>
+    <div class="card-body">
         <!-- 管理员操作区域 -->
-        <div class="form-actions" th:if="${currentUser?.roleCode eq 'admin'}">
+        <div class="form-actions mb-4" th:if="${currentUser?.roleCode eq 'admin'}">
             <button id="addUserBtn" type="button" class="btn btn-primary">
                 <i class="fa fa-plus"></i> 添加用户
             </button>
         </div>
-    </div>
-    <div class="card-body">
         <div class="table-wrapper">
             <table class="table">
                 <thead>
@@ -48,7 +48,7 @@
                     <td>
                         <div class="flex flex-wrap gap-1">
                             <span th:each="m : ${#strings.listSplit(u?.email, ',')}"
-                                  class="badge badge-success"
+                                  class="badge"
                                   th:text="${m}"></span>
                         </div>
                     </td>

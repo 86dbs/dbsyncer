@@ -8,8 +8,8 @@ $(function () {
         });
     });
     //保存
-    $("#updateSystemSubBtn").click(function () {
-        const $form = $("#configEditForm");
+    $("#updateSystemBtn").click(function () {
+        const $form = $("#config-form-edit");
         if (window.DBSyncerTheme && DBSyncerTheme.validateForm($form)) {
             showLoading();
             doPoster('/system/edit', $form.serializeJson(), function (data) {

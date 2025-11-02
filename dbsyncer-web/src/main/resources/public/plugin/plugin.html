@@ -2,39 +2,32 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="p-6">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- 插件文档 -->
-        <div class="lg:col-span-5">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h3 class="card-title">插件有什么用？</h3>
-                </div>
-                <div class="card-body">
-                    <p class="text-secondary leading-relaxed">
-                        插件是一种可扩展全量同步和增量同步实现数据转换的技术方式。通过插件可以接收同步数据，自定义同步到目标源的行数据，也能消费数据并实现更多业务场景。
-                    </p>
-                </div>
-            </div>
-
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">插件管理</h3>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-2 lg:grid-cols-2">
+            <!-- 左侧 -->
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">如何开发插件？</h3>
+                    <p class="text-xs text-tertiary">插件是一种可扩展全量同步和增量同步实现数据转换的技术方式。通过插件可以接收同步数据，自定义同步到目标源的行数据，也能消费数据并实现更多业务场景。</p>
                 </div>
                 <div class="card-body">
                     <p class="font-medium mb-3">开发步骤：</p>
                     <ol class="plugin-steps">
                         <li>
                             <span class="font-medium">新建工程</span><br/>
-                            新建java或maven工程，或者下载 
-                            <a href="https://gitee.com/ghi/dbsyncer-plugin-demo" 
-                               title="提供开发者编写插件的示例项目" 
-                               target='_blank' 
+                            新建java或maven工程，或者下载
+                            <a href="https://gitee.com/ghi/dbsyncer-plugin-demo"
+                               title="提供开发者编写插件的示例项目"
+                               target='_blank'
                                class="text-primary hover-underline">
                                 <i class="fa fa-external-link"></i> 示例项目
                             </a>
                         </li>
-                        
+
                         <li>
                             <span class="font-medium">导入开发包</span>
                             <p class="text-sm font-medium mb-2">方式1：导入 jar</p>
@@ -150,7 +143,7 @@ public class MyPlugin implements PluginService {
     }
 }</pre>
                         </li>
-                        
+
                         <li>
                             <span class="font-medium">配置 SPI</span><br/>
                             在 /META-INF/ 新建 services 文件夹，并在 services 下新建一个文件，命名为 org.dbsyncer.sdk.spi.PluginService，文件写入实现类路径 org.test.MyPlugin，如果有多个实现就换行再写入
@@ -158,7 +151,7 @@ public class MyPlugin implements PluginService {
                                 <img draggable="false" th:src="@{'/img/plugin/spi.jpg'}" class="rounded border" style="max-width: 100%; height: auto;">
                             </div>
                         </li>
-                        
+
                         <li>
                             <span class="font-medium">打包</span><br/>
                             通过 maven 命令打包
@@ -167,53 +160,16 @@ public class MyPlugin implements PluginService {
                     </ol>
                 </div>
             </div>
-        </div>
 
-        <!-- 插件列表 -->
-        <div class="lg:col-span-7">
-            <div class="card">
-                <div class="card-header">
-                    <div>
-                        <h3 class="card-title">上传插件</h3>
-                        <p class="text-xs text-tertiary mt-1">
-                            <i class="fa fa-info-circle"></i> 只支持 ".jar" 的文件扩展名
-                        </p>
-                    </div>
-                </div>
-                
+            <!-- 右侧 -->
+            <div class="form-container">
+
+                <!-- 插件列表 -->
                 <div class="card-body">
-                    <!-- 文件上传 -->
-                    <div id="pluginUploader" class="upload-container mb-4">
-                        <div class="upload-area" data-upload-area>
-                            <div class="upload-icon">
-                                <i class="fa fa-plug"></i>
-                            </div>
-                            <div class="upload-text">点击或拖拽 JAR 文件到此处上传</div>
-                            <div class="upload-hint">
-                                支持的文件类型：.jar<br>
-                                最多上传 5 个文件
-                            </div>
-                            <div class="upload-button">选择文件</div>
-                            <input type="file" 
-                                   class="upload-input" 
-                                   id="filePlugin" 
-                                   accept=".jar"
-                                   multiple>
-                        </div>
-                        <div class="upload-list" data-upload-list></div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 插件列表 -->
-            <div class="card mt-4">
-                <div class="card-header">
                     <h3 class="card-title">
                         插件列表
-                        <span class="badge badge-primary ml-2">[[${plugins?.size()} ?: 0]]</span>
                     </h3>
-                </div>
-                <div class="card-body p-0">
+                    <p class="text-xs text-tertiary">共计: [[${plugins?.size()} ?: 0]]</p>
                     <div class="table-wrapper">
                         <table class="table">
                             <thead>
@@ -249,7 +205,36 @@ public class MyPlugin implements PluginService {
                         </table>
                     </div>
                 </div>
+
+                <!-- 上传插件 -->
+                <div class="card-body">
+                    <h3 class="card-title">上传插件</h3>
+                    <p class="text-xs text-tertiary">
+                        <i class="fa fa-info-circle"></i> 只支持 ".jar" 的文件扩展名
+                    </p>
+                    <div id="pluginUploader" class="upload-container">
+                        <div class="upload-area" data-upload-area>
+                            <div class="upload-icon">
+                                <i class="fa fa-plug"></i>
+                            </div>
+                            <div class="upload-text">点击或拖拽 JAR 文件到此处上传</div>
+                            <div class="upload-hint">
+                                支持的文件类型：.jar<br>
+                                最多上传 5 个文件
+                            </div>
+                            <div class="upload-button">选择文件</div>
+                            <input type="file"
+                                   class="upload-input"
+                                   id="filePlugin"
+                                   accept=".jar"
+                                   multiple>
+                        </div>
+                        <div class="upload-list" data-upload-list></div>
+                    </div>
+                </div>
+
             </div>
+
         </div>
     </div>
 </div>
@@ -267,9 +252,7 @@ public class MyPlugin implements PluginService {
                 onSuccess: function(file, response) {
                     if (response.success) {
                         bootGrowl("插件上传成功！", "success");
-                        setTimeout(function() {
-                            doLoader("/plugin");
-                        }, 800);
+                        doLoader("/plugin");
                     } else {
                         bootGrowl(response.resultValue || "上传失败", "danger");
                     }
