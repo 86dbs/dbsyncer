@@ -5,6 +5,31 @@
 <div th:fragment="index">
     <!-- 统计卡片 -->
     <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
+        <!-- 统计数据区域 -->
+        <div class="monitor-stats-grid mb-6">
+            <div class="monitor-stat-item">
+                <span class="monitor-stat-label bg-primary">成功</span>
+                <span class="monitor-stat-number" id="successSpan">9999999909999999</span>
+            </div>
+            <div class="monitor-stat-item">
+                <span class="monitor-stat-label bg-error">失败</span>
+                <span class="monitor-stat-number" id="failSpan">9999999909999999</span>
+            </div>
+            <div class="monitor-stat-item"></div>
+            <div class="monitor-stat-item">
+                <span class="monitor-stat-label bg-success">新增</span>
+                <span class="monitor-stat-number" id="insertSpan">9999999909999999</span>
+            </div>
+            <div class="monitor-stat-item">
+                <span class="monitor-stat-label bg-info">修改</span>
+                <span class="monitor-stat-number" id="updateSpan">9999999909999999</span>
+            </div>
+            <div class="monitor-stat-item">
+                <span class="monitor-stat-label bg-warning">删除</span>
+                <span class="monitor-stat-number" id="deleteSpan">9999999909999999</span>
+            </div>
+        </div>
+
         <div class="stat-card">
             <div class="flex items-center justify-between">
                 <p class="text-gray-500">总任务数</p>

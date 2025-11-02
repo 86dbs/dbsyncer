@@ -133,61 +133,6 @@ $.fn.serializeJson = function () {
     return o;
 };
 
-// 表单验证扩展方法（支持 dbsyncer-valid 属性）
-$.fn.formValidate = function () {
-    var $form = $(this);
-    if (!$form || !$form.length) { return true; }
-
-    var isValid = true;
-    $form.find('.form-error-msg').remove();
-    $form.find('.is-invalid').removeClass('is-invalid');
-
-    // 检查 required 属性和 dbsyncer-valid="require" 属性
-    var $requiredFields = $form.find('[required], [dbsyncer-valid="require"]');
-    
-    $requiredFields.each(function(){
-        var $field = $(this);
-        if ($field.is(':disabled')) { return; }
-        var value = $.trim($field.val());
-        var invalid = false;
-
-        if ($field.is(':checkbox') || $field.is(':radio')) {
-            invalid = !$field.is(':checked');
-        } else if ($field.is('select')) {
-            invalid = value === '' || value === null;
-        } else {
-            invalid = value.length === 0;
-        }
-
-        if (invalid) {
-            isValid = false;
-            var $container = $field.closest('.form-control-area');
-            if ($container.length === 0) {
-                $container = $field.parent();
-            }
-            var labelText = '';
-            var $label = $field.closest('.form-item').find('.form-label').first();
-            if (!$label.length) {
-                $label = $field.closest('.form-group').find('.control-label').first();
-            }
-            if ($label.length) {
-                labelText = $label.text().replace('*', '').trim();
-            } else if ($field.attr('placeholder')) {
-                labelText = $field.attr('placeholder');
-            } else {
-                labelText = '该字段';
-            }
-
-            $field.addClass('is-invalid');
-            if ($container.length) {
-                $('<div class="form-error-msg"><i class="fa fa-exclamation-circle"></i>' + labelText + '不能为空</div>').appendTo($container);
-            }
-        }
-    });
-
-    return isValid;
-};
-
 // 全局加载页面
 function doLoader(url) {
     // 使用统一的内容区域

@@ -3,43 +3,18 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <!-- 图表和任务列表 -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-5">
     <!-- 同步趋势图表 -->
-    <div class="form-container lg:col-span-2 p-5">
-        <!-- 统计数据区域 -->
-        <div class="monitor-stats-grid mb-6">
-            <div class="monitor-stat-item">
-                <span class="monitor-stat-label bg-primary">成功</span>
-                <span class="monitor-stat-number" id="successSpan">9999999909999999</span>
-            </div>
-            <div class="monitor-stat-item">
-                <span class="monitor-stat-label bg-error">失败</span>
-                <span class="monitor-stat-number" id="failSpan">9999999909999999</span>
-            </div>
-            <div class="monitor-stat-item"></div>
-            <div class="monitor-stat-item">
-                <span class="monitor-stat-label bg-success">新增</span>
-                <span class="monitor-stat-number" id="insertSpan">9999999909999999</span>
-            </div>
-            <div class="monitor-stat-item">
-                <span class="monitor-stat-label bg-info">修改</span>
-                <span class="monitor-stat-number" id="updateSpan">9999999909999999</span>
-            </div>
-            <div class="monitor-stat-item">
-                <span class="monitor-stat-label bg-warning">删除</span>
-                <span class="monitor-stat-number" id="deleteSpan">9999999909999999</span>
-            </div>
-        </div>
-
-        <!-- 中部：图表区域 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div class="form-container-no-bg lg:col-span-2">
+        <!-- 顶部：图表区域 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <!-- TPS图表 -->
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title text-center">执行器TPS</h3>
                 </div>
                 <div class="card-body">
-                    <canvas id="tpsChart" height="100"></canvas>
+                    <canvas id="tpsChart" height="200"></canvas>
                 </div>
             </div>
 
@@ -50,7 +25,7 @@
                         <h3 class="card-title text-center">堆积数据</h3>
                     </div>
                     <div class="card-body flex items-center justify-center">
-                        <canvas id="queueChart" height="100"></canvas>
+                        <canvas id="queueChart" height="200"></canvas>
                     </div>
                 </div>
                 <div class="card">
@@ -58,7 +33,7 @@
                         <h3 class="card-title text-center">持久化</h3>
                     </div>
                     <div class="card-body flex items-center justify-center">
-                        <canvas id="storageChart" height="100"></canvas>
+                        <canvas id="storageChart" height="200"></canvas>
                     </div>
                 </div>
             </div>
@@ -71,7 +46,7 @@
                     <h3 class="card-title text-center">CPU(%)</h3>
                 </div>
                 <div class="card-body">
-                    <canvas id="cpuChart" height="100"></canvas>
+                    <canvas id="cpuChart" height="200"></canvas>
                 </div>
             </div>
             <div class="card">
@@ -79,7 +54,7 @@
                     <h3 class="card-title text-center">内存(MB)</h3>
                 </div>
                 <div class="card-body">
-                    <canvas id="memoryChart" height="100"></canvas>
+                    <canvas id="memoryChart" height="200"></canvas>
                 </div>
             </div>
         </div>
@@ -196,25 +171,31 @@
         <h3 class="card-title">查询数据</h3>
     </div>
     <div class="card-body">
+
         <!-- 表格工具栏 -->
+        <div class="table-toolbar">
             <div class="table-toolbar-left">
-                <select id="searchMetaData" class="select-control">
-                    <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
-                </select>
+                <div class="table-filter">
+                    <select id="searchMetaData" class="form-control">
+                        <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
+                    </select>
 
-                <select id="searchDataStatus" class="form-control">
-                    <option value="" selected="selected">无</option>
-                    <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq dataStatus}"/>
-                </select>
+                    <select id="searchDataStatus" class="form-control">
+                        <option value="" selected="selected">无</option>
+                        <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq dataStatus}"/>
+                    </select>
+                </div>
 
-                <input id="searchDataKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入异常关键字(最多32个字)" />
+                <div class="table-search">
+                    <i class="fa fa-search table-search-icon"></i>
+                    <input id="searchDataKeyword" class="table-search-input" type="text" maxlength="32" placeholder="请输入异常关键字(最多32个字)" />
+                </div>
             </div>
-
             <div class="table-toolbar-right">
-                <button id="queryDataBtn" class="btn btn-primary">
+                <button id="queryDataBtn" class="btn btn-info">
                     <i class="fa fa-search"></i> 查询数据
                 </button>
-                <button th:id="${metaId}" class="btn btn-danger">
+                <button th:id="${metaId}" class="btn btn-outline">
                     <i class="fa fa-trash"></i> 清空数据
                 </button>
             </div>
@@ -282,19 +263,20 @@
         <h3 class="card-title">查询日志</h3>
     </div>
     <div class="card-body">
-        <!-- 查询表单 -->
-        <div class="flex flex-wrap items-center gap-3 mb-4">
-            <!-- 关键字搜索 -->
-            <div class="flex-1">
-                <input id="searchLogKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)" />
-            </div>
 
-            <!-- 操作按钮 -->
-            <div class="flex gap-2">
-                <button id="queryLogBtn" type="button" class="btn btn-primary">
+        <!-- 表格工具栏 -->
+        <div class="table-toolbar">
+            <div class="table-toolbar-left">
+                <div class="table-search">
+                    <i class="fa fa-search table-search-icon"></i>
+                    <input id="searchLogKeyword" class="table-search-input" type="text" maxlength="32" placeholder="请输入内容关键字(最多32个字)" />
+                </div>
+            </div>
+            <div class="table-toolbar-right">
+                <button id="queryLogBtn" type="button" class="btn btn-info">
                     <i class="fa fa-search"></i> 查询日志
                 </button>
-                <button th:id="${metaId}" type="button" class="btn btn-danger clearLogBtn">
+                <button th:id="${metaId}" type="button" class="btn btn-outline clearLogBtn">
                     <i class="fa fa-trash"></i> 清空日志
                 </button>
             </div>

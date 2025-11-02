@@ -9,16 +9,14 @@
     <div class="card-body">
         <div class="grid grid-cols-2 lg:grid-cols-2">
             <!-- 左侧：配置列表 -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">配置列表</h3>
-                    <p class="text-xs text-tertiary">导出所有配置，请点击
-                        <a href="javascript:void(0);" onclick="downLoad()" class="text-primary hover-underline"
-                                                        th:title="'下载文件大小 ' + ${#numbers.formatDecimal((fileSize / 1024), 0, 2)} + ' KB'">
+            <div class="container-no-bg">
+                <h3 class="card-title">配置列表</h3>
+                <p class="text-xs text-tertiary">导出所有配置，请点击
+                    <a href="javascript:void(0);" onclick="downLoad()" class="text-primary hover-underline"
+                       th:title="'下载文件大小 ' + ${#numbers.formatDecimal((fileSize / 1024), 0, 2)} + ' KB'">
                         <i class="fa fa-download"></i> 下载
-                        </a>
-                    </p>
-                </div>
+                    </a>
+                </p>
                 <div class="table-wrapper">
                     <table class="table">
                         <thead>
@@ -45,29 +43,24 @@
             </div>
 
             <!-- 右侧：上传配置 -->
-            <div class="card">
-                <div class="card-body">
-                    <!-- 文件上传组件 -->
-                    <div id="configUploader" class="upload-container">
-                        <div class="upload-area" data-upload-area>
-                            <div class="upload-icon">
-                                <i class="fa fa-cloud-upload"></i>
-                            </div>
-                            <div class="upload-text">点击或拖拽文件到此处上传</div>
-                            <div class="upload-hint">
-                                支持扩展名：.json<br>
-                                单次最多上传 5 个文件
-                            </div>
-                            <div class="upload-button">选择文件</div>
-                            <input type="file"
-                                   class="upload-input"
-                                   id="fileConfig"
-                                   accept=".json,application/json"
-                                   multiple>
-                        </div>
-                        <div class="upload-list" data-upload-list></div>
+            <div id="configUploader" class="upload-container">
+                <div class="upload-area" data-upload-area>
+                    <div class="upload-icon">
+                        <i class="fa fa-cloud-upload"></i>
                     </div>
+                    <div class="upload-text">点击或拖拽文件到此处上传</div>
+                    <div class="upload-hint">
+                        支持扩展名：.json<br>
+                        单次最多上传 5 个文件
+                    </div>
+                    <div class="upload-button">选择文件</div>
+                    <input type="file"
+                           class="upload-input"
+                           id="fileConfig"
+                           accept=".json,application/json"
+                           multiple>
                 </div>
+                <div class="upload-list" data-upload-list></div>
             </div>
         </div>
     </div>

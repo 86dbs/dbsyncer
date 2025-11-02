@@ -37,9 +37,7 @@
 
 /* 表格工具栏 */
 .table-toolbar {
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: 1px solid var(--border-secondary);
-  background-color: var(--bg-secondary);
+  margin-bottom: var(--spacing-md);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -492,7 +490,7 @@
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .table-toolbar-left,
   .table-toolbar-right {
     justify-content: center;
