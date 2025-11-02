@@ -10,13 +10,15 @@
         <div class="grid grid-cols-2 lg:grid-cols-2">
             <!-- 左侧：配置列表 -->
             <div class="card">
-                <p class="text-sm text-tertiary p-3">
-                    配置列表(<span id="configCount" th:text="${config?.size()} ?: 0">0</span>)，
-                    <a href="javascript:void(0);" onclick="downLoad()" class="text-primary hover-underline"
-                       th:title="'下载文件大小 ' + ${#numbers.formatDecimal((fileSize / 1024), 0, 2)} + ' KB'">
+                <div class="card-header">
+                    <h3 class="card-title">配置列表</h3>
+                    <p class="text-xs text-tertiary">导出所有配置，请点击
+                        <a href="javascript:void(0);" onclick="downLoad()" class="text-primary hover-underline"
+                                                        th:title="'下载文件大小 ' + ${#numbers.formatDecimal((fileSize / 1024), 0, 2)} + ' KB'">
                         <i class="fa fa-download"></i> 下载
-                    </a>
-                </p>
+                        </a>
+                    </p>
+                </div>
                 <div class="table-wrapper">
                     <table class="table">
                         <thead>
@@ -44,10 +46,6 @@
 
             <!-- 右侧：上传配置 -->
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">上传配置</h3>
-                    <p class="text-xs text-tertiary">只支持 "json" 的文件扩展名</p>
-                </div>
                 <div class="card-body">
                     <!-- 文件上传组件 -->
                     <div id="configUploader" class="upload-container">

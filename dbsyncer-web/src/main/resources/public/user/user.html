@@ -31,7 +31,7 @@
                 <tr th:each="u : ${users}">
                     <td>
                         <div class="flex items-center gap-2">
-                            <div th:classappend="${u?.roleCode eq 'admin'} ? 'user-avatar' : ''">
+                            <div th:if="${u?.roleCode eq 'admin'}" class="user-avatar">
                                 <i class="fa fa-user-circle"></i>
                             </div>
                             <div>

@@ -290,20 +290,20 @@ table {
   margin-bottom: 16px;
 }
 
-.license-steps {
+.steps {
   list-style: none;
   counter-reset: license-step;
   padding-left: 0;
 }
 
-.license-steps > li {
+.steps > li {
   position: relative;
   padding-left: 40px;
   margin-bottom: 20px;
   counter-increment: license-step;
 }
 
-.license-steps > li::before {
+.steps > li::before {
   content: counter(license-step);
   position: absolute;
   left: 0;
@@ -320,6 +320,20 @@ table {
   font-size: 14px;
 }
 
+.steps img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-sm);
+  margin-top: var(--spacing-md);
+  transition: box-shadow var(--transition-fast);
+}
+
+.steps img:hover {
+  box-shadow: var(--shadow-md);
+}
+
 /* 按钮组 */
 .btn-group-sm {
   display: inline-flex;
@@ -328,4 +342,70 @@ table {
 .btn-group-sm .btn {
   padding: 4px 12px;
   font-size: 13px;
+}
+
+/* ========== 代码块样式（浅色背景） ========== */
+.code-block-wrapper {
+  position: relative;
+  margin: var(--spacing-md) 0;
+}
+
+.code-block {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-md);
+  margin: 0;
+  background: #f8f9fa;
+  color: var(--text-primary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-lg);
+  overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.code-block code {
+  display: block;
+  padding: 0;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  background: transparent;
+  border: none;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* 代码块复制按钮 */
+.code-copy-btn {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  padding: 4px 12px;
+  background: #fff;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+}
+.code-copy-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+.code-copy-btn i {
+  font-size: 12px;
+}
+.code-copy-btn.copied {
+  background: var(--success-color);
+  border-color: var(--success-color);
+  color: #fff;
 }

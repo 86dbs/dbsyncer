@@ -27,9 +27,6 @@
     <div class="card mb-6" th:if="${productInfo?.products?.size() gt 0}">
         <div class="card-header flex-between">
             <h3 class="card-title">授权信息</h3>
-            <button id="removeBtn" class="btn btn-sm btn-danger" type="button">
-                <i class="fa fa-trash"></i> 删除激活码
-            </button>
         </div>
         <div class="card-body">
             <!-- 授权详情 -->
@@ -107,6 +104,10 @@
                     </tbody>
                 </table>
             </div>
+
+            <button id="removeBtn" class="btn btn-outline" type="button">
+                <i class="fa fa-trash"></i> 删除激活码
+            </button>
         </div>
     </div>
 
@@ -191,56 +192,57 @@
                 <h4 class="text-sm font-semibold text-primary mb-3">
                     <i class="fa fa-info-circle"></i> 激活步骤
                 </h4>
-                <ol class="license-steps">
-                    <li>复制下方机器码</li>
+                <ol class="steps">
                     <li>
-                        联系
-                        <a href="javascript:void(0);"
-                           class="text-success hover-underline qrcode-trigger">
-                            <i class="fa fa-wechat"></i> 星河同步官方
-                        </a>
-                        帮您生成激活码文件
+                        <!-- 机器码 -->
+                        <div class="mb-4">
+                            <label class="text-sm">复制机器码</label>
+                            <div class="flex gap-2">
+                                <input id="licenseKey" type="text" class="form-control" readonly th:value="${key}">
+                                <button id="copyBtn" class="btn btn-outline" type="button" title="复制机器码">
+                                    <i class="fa fa-copy"></i> 复制
+                                </button>
+                            </div>
+                        </div>
                     </li>
-                    <li>上传激活码文件</li>
+                    <li>
+                        <div class="mb-4">
+                            <label class="text-sm">联系
+                            <a href="javascript:void(0);"
+                               class="text-success hover-underline qrcode-trigger">
+                                <i class="fa fa-wechat"></i> 星河同步官方
+                            </a>
+                            帮您生成激活码文件
+                            </label>
+                        </div>
+                    </li>
+                    <li>
+                        <!-- 文件上传 -->
+                        <div class="mb-4">
+                            <label class="text-sm">上传激活码文件</label>
+                            <div id="licenseUploader" class="upload-container">
+                                <div class="upload-area" data-upload-area>
+                                    <div class="upload-icon">
+                                        <i class="fa fa-key"></i>
+                                    </div>
+                                    <div class="upload-text">点击或拖拽激活码文件到此处上传</div>
+                                    <div class="upload-hint">
+                                        支持的文件类型：激活码文件<br>
+                                        最多上传 1 个文件
+                                    </div>
+                                    <div class="upload-button">选择文件</div>
+                                    <input type="file"
+                                           class="upload-input"
+                                           id="fileLicense">
+                                </div>
+                                <div class="upload-list" data-upload-list></div>
+                            </div>
+                        </div>
+                    </li>
                 </ol>
             </div>
 
-            <!-- 机器码 -->
-            <div class="mb-4">
-                <label class="text-sm font-medium text-secondary mb-2 block">机器码</label>
-                <div class="flex gap-2">
-                    <input id="licenseKey"
-                           type="text"
-                           class="form-control flex-1 text-mono font-medium"
-                           readonly
-                           th:value="${key}">
-                    <button id="copyBtn" class="btn btn-secondary" type="button" title="复制机器码">
-                        <i class="fa fa-copy"></i> 复制
-                    </button>
-                </div>
-            </div>
 
-            <!-- 文件上传 -->
-            <div>
-                <label class="text-sm font-medium text-secondary mb-2 block">上传激活码文件</label>
-                <div id="licenseUploader" class="upload-container">
-                    <div class="upload-area" data-upload-area>
-                        <div class="upload-icon">
-                            <i class="fa fa-key"></i>
-                        </div>
-                        <div class="upload-text">点击或拖拽激活码文件到此处上传</div>
-                        <div class="upload-hint">
-                            支持的文件类型：激活码文件<br>
-                            最多上传 1 个文件
-                        </div>
-                        <div class="upload-button">选择文件</div>
-                        <input type="file"
-                               class="upload-input"
-                               id="fileLicense">
-                    </div>
-                    <div class="upload-list" data-upload-list></div>
-                </div>
-            </div>
         </div>
     </div>
 
