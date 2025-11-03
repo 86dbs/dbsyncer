@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.ddl;
 
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ddl.impl.DDLParserImpl;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.TableGroup;
@@ -8,6 +9,7 @@ import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -39,9 +41,11 @@ public class SQLServerToSQLServerDDLSyncTest {
     private static TestDatabaseManager testDatabaseManager;
     private static DatabaseConfig sourceConfig;
     private static DatabaseConfig targetConfig;
+    private static ConnectorFactory connectorFactory;
 
     private DDLParserImpl ddlParser;
     private TableGroup testTableGroup;
+    private ConnectorService targetConnectorService;
 
     @BeforeClass
     public static void setUpClass() throws IOException {
@@ -52,6 +56,9 @@ public class SQLServerToSQLServerDDLSyncTest {
 
         // 创建测试数据库管理器
         testDatabaseManager = new TestDatabaseManager(sourceConfig, targetConfig);
+
+        // 初始化ConnectorFactory（用于DDL解析器）
+        connectorFactory = TestDDLHelper.createConnectorFactory();
 
         // 初始化测试环境
         String initSql = loadSqlScript("ddl/init-test-data.sql");
@@ -79,11 +86,16 @@ public class SQLServerToSQLServerDDLSyncTest {
     public void setUp() {
         ddlParser = new DDLParserImpl();
 
+        // 设置ConnectorFactory到DDLParserImpl
+        TestDDLHelper.setConnectorFactory(ddlParser, connectorFactory);
+
+        // 创建目标ConnectorService（用于DDL解析）
+        targetConnectorService = TestDDLHelper.createConnectorService(targetConfig);
+
         // 创建测试用的TableGroup配置
         testTableGroup = new TableGroup();
         testTableGroup.setId("sqlserver-test-tablegroup-id");
         testTableGroup.setMappingId("sqlserver-test-mapping-id");
-        // Note: TableGroup类中没有setEnableDDL方法，我们通过其他方式处理
 
         // 创建源表和目标表（SQL Server）
         Table sourceTable = new Table();
@@ -119,6 +131,11 @@ public class SQLServerToSQLServerDDLSyncTest {
         fieldMappings.add(departmentMapping);
 
         testTableGroup.setFieldMapping(fieldMappings);
+
+        // 配置TableGroup的profileComponent和Mapping信息
+        TestDDLHelper.setupTableGroup(testTableGroup, "sqlserver-test-mapping-id",
+                "sqlserver-test-source-connector-id", "sqlserver-test-target-connector-id",
+                sourceConfig, targetConfig);
 
         logger.info("SQL Server到SQL Server的DDL同步测试用例环境初始化完成");
     }
@@ -201,8 +218,8 @@ public class SQLServerToSQLServerDDLSyncTest {
         String sqlServerDDL = "ALTER TABLE ddlTestEmployee ADD salary DECIMAL(10,2)";
 
         try {
-            // 解析DDL
-            DDLConfig ddlConfig = ddlParser.parse(null, testTableGroup, sqlServerDDL);
+            // 解析DDL（使用真实的ConnectorService）
+            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, testTableGroup, sqlServerDDL);
 
             // 验证解析结果
             assert ddlConfig != null : "DDL配置不应为空";
@@ -238,8 +255,8 @@ public class SQLServerToSQLServerDDLSyncTest {
         String sqlServerDDL = "ALTER TABLE ddlTestEmployee DROP COLUMN department";
 
         try {
-            // 解析DDL
-            DDLConfig ddlConfig = ddlParser.parse(null, testTableGroup, sqlServerDDL);
+            // 解析DDL（使用真实的ConnectorService）
+            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, testTableGroup, sqlServerDDL);
 
             // 验证解析结果
             assert ddlConfig != null : "DDL配置不应为空";
@@ -274,8 +291,8 @@ public class SQLServerToSQLServerDDLSyncTest {
         String sqlServerDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(100)";
 
         try {
-            // 解析DDL
-            DDLConfig ddlConfig = ddlParser.parse(null, testTableGroup, sqlServerDDL);
+            // 解析DDL（使用真实的ConnectorService）
+            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, testTableGroup, sqlServerDDL);
 
             // 验证解析结果
             assert ddlConfig != null : "DDL配置不应为空";
@@ -311,8 +328,8 @@ public class SQLServerToSQLServerDDLSyncTest {
         String sqlServerDDL = "ALTER TABLE ddlTestEmployee CHANGE COLUMN last_name surname NVARCHAR(50)";
 
         try {
-            // 解析DDL
-            DDLConfig ddlConfig = ddlParser.parse(null, testTableGroup, sqlServerDDL);
+            // 解析DDL（使用真实的ConnectorService）
+            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, testTableGroup, sqlServerDDL);
 
             // 验证解析结果
             assert ddlConfig != null : "DDL配置不应为空";
