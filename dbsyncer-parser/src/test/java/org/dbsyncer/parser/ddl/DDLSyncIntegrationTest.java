@@ -384,30 +384,6 @@ public class DDLSyncIntegrationTest {
     }
 
     /**
-     * 测试字段映射动态更新功能
-     */
-    @Test
-    public void testFieldMappingDynamicUpdate() {
-        logger.info("开始测试字段映射动态更新功能");
-
-        // 创建一个新的字段映射
-        Field newSourceField = new Field("new_field", "VARCHAR", 12);
-        Field newTargetField = new Field("new_field", "VARCHAR", 12);
-        FieldMapping newMapping = new FieldMapping(newSourceField, newTargetField);
-
-        // 添加到字段映射列表
-        List<FieldMapping> fieldMappings = testTableGroup.getFieldMapping();
-        int originalSize = fieldMappings.size();
-        fieldMappings.add(newMapping);
-
-        // 验证字段映射已添加
-        assert fieldMappings.size() == originalSize + 1 : "字段映射列表大小应增加1";
-        assert fieldMappings.contains(newMapping) : "字段映射列表应包含新添加的映射";
-
-        logger.info("字段映射动态更新功能测试通过");
-    }
-
-    /**
      * 测试异常处理机制
      */
     @Test

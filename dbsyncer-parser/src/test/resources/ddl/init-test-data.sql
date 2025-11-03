@@ -39,7 +39,6 @@ CREATE TABLE IF NOT EXISTS ddlTestEmployee (
 CREATE TABLE IF NOT EXISTS ddlTestTable (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
-    age INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -62,7 +61,7 @@ INSERT INTO ddlTestEmployee (first_name, last_name, department) VALUES
 ('Bob', 'Johnson', 'Sales');
 
 -- 通用测试表初始数据
-INSERT INTO ddlTestTable (name, age) VALUES 
-('test_name1', 25),
-('test_name2', 30),
-('test_name3', 35);
+INSERT INTO ddlTestTable (name) VALUES 
+('test_name1'),
+('test_name2'),
+('test_name3');
