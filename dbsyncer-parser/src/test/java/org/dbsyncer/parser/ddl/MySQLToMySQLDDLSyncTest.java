@@ -1,16 +1,15 @@
 package org.dbsyncer.parser.ddl;
 
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.parser.ddl.TestDDLHelper;
 import org.dbsyncer.parser.ddl.impl.DDLParserImpl;
+import org.dbsyncer.parser.flush.impl.GeneralBufferActuator;
 import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.parser.model.WriterResponse;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.spi.ConnectorService;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -45,7 +44,7 @@ public class MySQLToMySQLDDLSyncTest {
 
     private DDLParserImpl ddlParser;
     private TableGroup testTableGroup;
-    private ConnectorService targetConnectorService;
+    private GeneralBufferActuator generalBufferActuator;
 
     @BeforeClass
     public static void setUpClass() throws IOException {
@@ -92,9 +91,6 @@ public class MySQLToMySQLDDLSyncTest {
         // 设置ConnectorFactory到DDLParserImpl
         TestDDLHelper.setConnectorFactory(ddlParser, connectorFactory);
 
-        // 创建目标ConnectorService（用于DDL解析）
-        targetConnectorService = TestDDLHelper.createConnectorService(targetConfig);
-
         // 创建测试用的TableGroup配置
         testTableGroup = new TableGroup();
         testTableGroup.setId("mysql-test-tablegroup-id");
@@ -137,6 +133,12 @@ public class MySQLToMySQLDDLSyncTest {
         TestDDLHelper.setupTableGroup(testTableGroup, "mysql-test-mapping-id",
                 "mysql-test-source-connector-id", "mysql-test-target-connector-id",
                 sourceConfig, targetConfig);
+
+        // 创建并配置GeneralBufferActuator（用于调用完整的parseDDl流程）
+        generalBufferActuator = TestDDLHelper.createGeneralBufferActuator(
+                connectorFactory,
+                testTableGroup.profileComponent,
+                ddlParser);
 
         logger.info("MySQL到MySQL的DDL同步测试用例环境初始化完成");
     }
@@ -219,22 +221,18 @@ public class MySQLToMySQLDDLSyncTest {
         String mysqlDDL = "ALTER TABLE ddlTestUserInfo ADD COLUMN phone VARCHAR(20) AFTER email";
 
         try {
-            // 解析DDL（使用真实的ConnectorService）
-            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, testTableGroup, mysqlDDL);
+            // 使用GeneralBufferActuator.parseDDl()调用完整的真实流程
+            WriterResponse response = TestDDLHelper.createWriterResponse(mysqlDDL, "ALTER", "ddlTestUserInfo");
+            Mapping mapping = TestDDLHelper.createMapping("mysql-test-mapping-id",
+                    "mysql-test-source-connector-id", "mysql-test-target-connector-id", true, "mysql-test-meta-id");
 
-            // 验证解析结果
-            assert ddlConfig != null : "DDL配置不应为空";
-            assert DDLOperationEnum.ALTER_ADD == ddlConfig.getDdlOperationEnum() : "DDL操作类型应为ALTER_ADD";
-            assert mysqlDDL.equals(ddlConfig.getSql()) : "SQL语句应匹配";
-            assert ddlConfig.getAddedFieldNames().contains("phone") : "新增字段列表应包含phone字段";
-
-            // 更新字段映射
-            ddlParser.refreshFiledMappings(testTableGroup, ddlConfig);
+            // 调用完整的DDL处理流程（解析DDL → 执行DDL → 刷新表结构 → 更新字段映射）
+            generalBufferActuator.parseDDl(response, mapping, testTableGroup);
 
             // 验证字段映射更新
             boolean foundPhoneMapping = testTableGroup.getFieldMapping().stream()
-                    .anyMatch(mapping -> mapping.getSource() != null && "phone".equals(mapping.getSource().getName()) &&
-                            mapping.getTarget() != null && "phone".equals(mapping.getTarget().getName()));
+                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null && "phone".equals(fieldMapping.getSource().getName()) &&
+                            fieldMapping.getTarget() != null && "phone".equals(fieldMapping.getTarget().getName()));
 
             assert foundPhoneMapping : "应找到phone字段的映射";
 
@@ -256,21 +254,17 @@ public class MySQLToMySQLDDLSyncTest {
         String mysqlDDL = "ALTER TABLE ddlTestUserInfo DROP COLUMN email";
 
         try {
-            // 解析DDL（使用真实的ConnectorService）
-            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, testTableGroup, mysqlDDL);
+            // 使用GeneralBufferActuator.parseDDl()调用完整的真实流程
+            WriterResponse response = TestDDLHelper.createWriterResponse(mysqlDDL, "ALTER", "ddlTestUserInfo");
+            Mapping mapping = TestDDLHelper.createMapping("mysql-test-mapping-id",
+                    "mysql-test-source-connector-id", "mysql-test-target-connector-id", true, "mysql-test-meta-id");
 
-            // 验证解析结果
-            assert ddlConfig != null : "DDL配置不应为空";
-            assert DDLOperationEnum.ALTER_DROP == ddlConfig.getDdlOperationEnum() : "DDL操作类型应为ALTER_DROP";
-            assert mysqlDDL.equals(ddlConfig.getSql()) : "SQL语句应匹配";
-            assert ddlConfig.getDroppedFieldNames().contains("email") : "删除字段列表应包含email字段";
-
-            // 更新字段映射
-            ddlParser.refreshFiledMappings(testTableGroup, ddlConfig);
+            // 调用完整的DDL处理流程
+            generalBufferActuator.parseDDl(response, mapping, testTableGroup);
 
             // 验证字段映射更新
             boolean foundEmailMapping = testTableGroup.getFieldMapping().stream()
-                    .anyMatch(mapping -> mapping.getSource() != null && "email".equals(mapping.getSource().getName()));
+                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null && "email".equals(fieldMapping.getSource().getName()));
 
             assert !foundEmailMapping : "不应找到email字段的映射";
 
@@ -292,22 +286,18 @@ public class MySQLToMySQLDDLSyncTest {
         String mysqlDDL = "ALTER TABLE ddlTestUserInfo MODIFY COLUMN username VARCHAR(100) NOT NULL";
 
         try {
-            // 解析DDL（使用真实的ConnectorService）
-            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, testTableGroup, mysqlDDL);
+            // 使用GeneralBufferActuator.parseDDl()调用完整的真实流程
+            WriterResponse response = TestDDLHelper.createWriterResponse(mysqlDDL, "ALTER", "ddlTestUserInfo");
+            Mapping mapping = TestDDLHelper.createMapping("mysql-test-mapping-id",
+                    "mysql-test-source-connector-id", "mysql-test-target-connector-id", true, "mysql-test-meta-id");
 
-            // 验证解析结果
-            assert ddlConfig != null : "DDL配置不应为空";
-            assert DDLOperationEnum.ALTER_MODIFY == ddlConfig.getDdlOperationEnum() : "DDL操作类型应为ALTER_MODIFY";
-            assert mysqlDDL.equals(ddlConfig.getSql()) : "SQL语句应匹配";
-            assert ddlConfig.getModifiedFieldNames().contains("username") : "修改字段列表应包含username字段";
-
-            // 更新字段映射
-            ddlParser.refreshFiledMappings(testTableGroup, ddlConfig);
+            // 调用完整的DDL处理流程
+            generalBufferActuator.parseDDl(response, mapping, testTableGroup);
 
             // 验证字段映射仍然存在
             boolean foundUsernameMapping = testTableGroup.getFieldMapping().stream()
-                    .anyMatch(mapping -> mapping.getSource() != null && "username".equals(mapping.getSource().getName()) &&
-                            mapping.getTarget() != null && "username".equals(mapping.getTarget().getName()));
+                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null && "username".equals(fieldMapping.getSource().getName()) &&
+                            fieldMapping.getTarget() != null && "username".equals(fieldMapping.getTarget().getName()));
 
             assert foundUsernameMapping : "应找到username字段的映射";
 
@@ -329,28 +319,22 @@ public class MySQLToMySQLDDLSyncTest {
         String mysqlDDL = "ALTER TABLE ddlTestUserInfo CHANGE COLUMN username user_name VARCHAR(50)";
 
         try {
-            // 解析DDL（使用真实的ConnectorService）
-            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, testTableGroup, mysqlDDL);
+            // 使用GeneralBufferActuator.parseDDl()调用完整的真实流程
+            WriterResponse response = TestDDLHelper.createWriterResponse(mysqlDDL, "ALTER", "ddlTestUserInfo");
+            Mapping mapping = TestDDLHelper.createMapping("mysql-test-mapping-id",
+                    "mysql-test-source-connector-id", "mysql-test-target-connector-id", true, "mysql-test-meta-id");
 
-            // 验证解析结果
-            assert ddlConfig != null : "DDL配置不应为空";
-            assert DDLOperationEnum.ALTER_CHANGE == ddlConfig.getDdlOperationEnum() : "DDL操作类型应为ALTER_CHANGE";
-            assert mysqlDDL.equals(ddlConfig.getSql()) : "SQL语句应匹配";
-            assert ddlConfig.getChangedFieldNames().containsKey("username") &&
-                    "user_name".equals(ddlConfig.getChangedFieldNames().get("username")) :
-                    "变更字段映射应包含username到user_name的映射";
-
-            // 更新字段映射
-            ddlParser.refreshFiledMappings(testTableGroup, ddlConfig);
+            // 调用完整的DDL处理流程
+            generalBufferActuator.parseDDl(response, mapping, testTableGroup);
 
             // 验证字段映射更新
             boolean foundNewMapping = testTableGroup.getFieldMapping().stream()
-                    .anyMatch(mapping -> mapping.getSource() != null && "username".equals(mapping.getSource().getName()) &&
-                            mapping.getTarget() != null && "user_name".equals(mapping.getTarget().getName()));
+                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null && "username".equals(fieldMapping.getSource().getName()) &&
+                            fieldMapping.getTarget() != null && "user_name".equals(fieldMapping.getTarget().getName()));
 
             boolean foundOldMapping = testTableGroup.getFieldMapping().stream()
-                    .anyMatch(mapping -> mapping.getSource() != null && "username".equals(mapping.getSource().getName()) &&
-                            mapping.getTarget() != null && "username".equals(mapping.getTarget().getName()));
+                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null && "username".equals(fieldMapping.getSource().getName()) &&
+                            fieldMapping.getTarget() != null && "username".equals(fieldMapping.getTarget().getName()));
 
             assert foundNewMapping : "应找到username到user_name的字段映射";
             assert !foundOldMapping : "不应找到username到username的旧字段映射";

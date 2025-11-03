@@ -228,12 +228,15 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     /**
      * 解析DDL
+     * 完整的DDL处理流程：解析DDL → 执行DDL（如果启用）→ 刷新表结构 → 更新字段映射
+     * 
+     * @param response WriterResponse，包含DDL SQL和事件信息
+     * @param mapping Mapping配置，包含源和目标连接器ID
+     * @param tableGroup TableGroup配置，包含表结构和字段映射
      */
-    private void parseDDl(WriterResponse response, Mapping mapping, TableGroup tableGroup) {
+    public void parseDDl(WriterResponse response, Mapping mapping, TableGroup tableGroup) {
         try {
-            ConnectorConfig sConnConfig = getConnectorConfig(mapping.getSourceConnectorId());
             ConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
-            String sConnType = sConnConfig.getConnectorType();
             String tConnType = tConnConfig.getConnectorType();
             ConnectorService connectorService = connectorFactory.getConnectorService(tConnType);
             // 传递源和目标连接器类型信息给DDL解析器

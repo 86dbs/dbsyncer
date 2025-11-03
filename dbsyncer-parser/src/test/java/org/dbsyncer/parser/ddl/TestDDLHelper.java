@@ -4,11 +4,19 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.connector.mysql.MySQLConnector;
 import org.dbsyncer.connector.sqlserver.SqlServerConnector;
 import org.dbsyncer.parser.ddl.impl.DDLParserImpl;
+import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
+import org.dbsyncer.parser.flush.impl.GeneralBufferActuator;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.common.model.Result;
+import org.dbsyncer.parser.model.WriterResponse;
 import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.config.ListenerConfig;
+import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
+import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,6 +146,121 @@ public class TestDDLHelper {
         // 设置TableGroup的profileComponent
         tableGroup.profileComponent = profileComponent;
         tableGroup.setMappingId(mappingId);
+    }
+
+    /**
+     * 创建测试用的WriterResponse
+     *
+     * @param sql DDL SQL语句
+     * @param event 事件类型（如"ALTER"）
+     * @param tableName 表名
+     * @return WriterResponse实例
+     */
+    public static WriterResponse createWriterResponse(String sql, String event, String tableName) {
+        WriterResponse response = new WriterResponse();
+        response.setSql(sql);
+        response.setEvent(event);
+        response.setTableName(tableName);
+        response.setTypeEnum(ChangedEventTypeEnum.DDL);
+
+        // 创建ChangedOffset
+        ChangedOffset changedOffset = new ChangedOffset();
+        changedOffset.setMetaId("test-meta-id");
+        response.setChangedOffset(changedOffset);
+        
+        return response;
+    }
+
+    /**
+     * 创建测试用的Mapping
+     *
+     * @param mappingId Mapping ID
+     * @param sourceConnectorId 源连接器ID
+     * @param targetConnectorId 目标连接器ID
+     * @param enableDDL 是否启用DDL同步
+     * @param metaId Meta ID
+     * @return Mapping实例
+     */
+    public static Mapping createMapping(String mappingId,
+                                        String sourceConnectorId,
+                                        String targetConnectorId,
+                                        boolean enableDDL,
+                                        String metaId) {
+        Mapping mapping = new Mapping();
+        mapping.setId(mappingId);
+        mapping.setSourceConnectorId(sourceConnectorId);
+        mapping.setTargetConnectorId(targetConnectorId);
+        mapping.setMetaId(metaId);
+
+        // 创建ListenerConfig
+        ListenerConfig listenerConfig = new ListenerConfig();
+        listenerConfig.setEnableDDL(enableDDL);
+        mapping.setListener(listenerConfig);
+        
+        return mapping;
+    }
+
+    /**
+     * 创建并配置GeneralBufferActuator用于测试
+     * 使用反射设置必要的依赖，对于测试中不需要的依赖使用空实现
+     *
+     * @param connectorFactory ConnectorFactory实例
+     * @param profileComponent ProfileComponent实例（从TableGroup中获取）
+     * @param ddlParser DDLParser实例
+     * @return 配置好的GeneralBufferActuator实例
+     */
+    public static GeneralBufferActuator createGeneralBufferActuator(
+            ConnectorFactory connectorFactory,
+            ProfileComponent profileComponent,
+            DDLParserImpl ddlParser) {
+        GeneralBufferActuator actuator = new GeneralBufferActuator();
+
+        try {
+            // 使用反射设置依赖
+            setField(actuator, "connectorFactory", connectorFactory);
+            setField(actuator, "profileComponent", profileComponent);
+            setField(actuator, "ddlParser", ddlParser);
+
+            // 创建空的FlushStrategy实现（测试中不需要实际持久化）
+            FlushStrategy flushStrategy = new FlushStrategy() {
+                @Override
+                public void flushFullData(String metaId, Result result, String event) {
+                    // 测试中不需要实际持久化
+                }
+
+                @Override
+                public void flushIncrementData(String metaId, Result result, String event) {
+                    // 测试中不需要实际持久化
+                }
+            };
+            setField(actuator, "flushStrategy", flushStrategy);
+
+            // BufferActuatorRouter是final类，直接创建实例即可（测试中refreshOffset方法不会真正执行刷新逻辑，因为meta为null）
+            BufferActuatorRouter bufferActuatorRouter = new BufferActuatorRouter();
+            // 使用反射设置profileComponent（refreshOffset需要用到，但如果meta为null会直接返回，不会报错）
+            setField(bufferActuatorRouter, "profileComponent", profileComponent);
+            setField(actuator, "bufferActuatorRouter", bufferActuatorRouter);
+
+            // PluginFactory有@PostConstruct方法，需要避免初始化，使用null即可（parseDDl不会调用pluginFactory）
+            // 如果需要的话，可以创建一个空的实现，但测试中parseDDl不会用到pluginFactory
+            setField(actuator, "pluginFactory", null);
+
+            logger.info("GeneralBufferActuator配置完成");
+        } catch (Exception e) {
+            logger.error("配置GeneralBufferActuator失败", e);
+            throw new RuntimeException("无法配置GeneralBufferActuator", e);
+        }
+
+        return actuator;
+    }
+
+    /**
+     * 使用反射设置字段值
+     */
+    private static void setField(Object target, String fieldName, Object value) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(target, value);
     }
 
     /**

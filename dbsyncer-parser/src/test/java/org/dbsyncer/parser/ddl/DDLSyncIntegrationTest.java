@@ -1,10 +1,12 @@
 package org.dbsyncer.parser.ddl;
 
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.parser.ddl.TestDDLHelper;
 import org.dbsyncer.parser.ddl.impl.DDLParserImpl;
+import org.dbsyncer.parser.flush.impl.GeneralBufferActuator;
 import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.WriterResponse;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
@@ -47,6 +49,7 @@ public class DDLSyncIntegrationTest {
     private DDLParserImpl ddlParser;
     private TableGroup testTableGroup;
     private ConnectorService targetConnectorService;
+    private GeneralBufferActuator generalBufferActuator;
 
     @BeforeClass
     public static void setUpClass() throws IOException {
@@ -139,6 +142,12 @@ public class DDLSyncIntegrationTest {
                 "test-source-connector-id", "test-target-connector-id",
                 sourceConfig, targetConfig);
 
+        // 创建并配置GeneralBufferActuator（用于调用完整的parseDDl流程）
+        generalBufferActuator = TestDDLHelper.createGeneralBufferActuator(
+                connectorFactory,
+                testTableGroup.profileComponent,
+                ddlParser);
+
         logger.info("DDL同步集成测试用例环境初始化完成");
     }
 
@@ -216,25 +225,23 @@ public class DDLSyncIntegrationTest {
     public void testDDLSyncEndToEnd_AddColumn() {
         logger.info("开始测试DDL同步端到端流程 - 新增字段");
 
-        // 模拟源数据库执行的DDL语句
         String sourceDDL = "ALTER TABLE ddlTestTable ADD COLUMN age INT";
 
         try {
-            // 1. 解析源DDL（使用真实的ConnectorService）
-            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, testTableGroup, sourceDDL);
+            // 使用GeneralBufferActuator.parseDDl()调用完整的真实流程
+            WriterResponse response = TestDDLHelper.createWriterResponse(sourceDDL, "ALTER", "ddlTestTable");
+            Mapping mapping = TestDDLHelper.createMapping("test-mapping-id",
+                    "test-source-connector-id", "test-target-connector-id", true, "test-meta-id");
 
-            // 2. 验证解析结果
-            assert ddlConfig != null : "DDL配置不应为空";
-            assert DDLOperationEnum.ALTER_ADD == ddlConfig.getDdlOperationEnum() : "DDL操作类型应为ALTER_ADD";
-            assert ddlConfig.getAddedFieldNames().contains("age") : "新增字段列表应包含age字段";
+            // 调用完整的DDL处理流程（解析DDL → 执行DDL → 刷新表结构 → 更新字段映射）
+            generalBufferActuator.parseDDl(response, mapping, testTableGroup);
 
-            // 3. 更新字段映射
-            ddlParser.refreshFiledMappings(testTableGroup, ddlConfig);
+            // 验证结果：检查字段映射是否正确更新
 
-            // 4. 验证字段映射更新
+            // 验证字段映射更新
             boolean foundAgeMapping = testTableGroup.getFieldMapping().stream()
-                    .anyMatch(mapping -> mapping.getSource() != null && "age".equals(mapping.getSource().getName()) &&
-                            mapping.getTarget() != null && "age".equals(mapping.getTarget().getName()));
+                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null && "age".equals(fieldMapping.getSource().getName()) &&
+                            fieldMapping.getTarget() != null && "age".equals(fieldMapping.getTarget().getName()));
 
             assert foundAgeMapping : "应找到age字段的映射";
 
@@ -252,25 +259,20 @@ public class DDLSyncIntegrationTest {
     public void testDDLSyncEndToEnd_DropColumn() {
         logger.info("开始测试DDL同步端到端流程 - 删除字段");
 
-        // 模拟源数据库执行的DDL语句
         String sourceDDL = "ALTER TABLE ddlTestTable DROP COLUMN name";
 
         try {
-            // 1. 解析源DDL（使用真实的ConnectorService）
-            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, testTableGroup, sourceDDL);
+            // 使用GeneralBufferActuator.parseDDl()调用完整的真实流程
+            WriterResponse response = TestDDLHelper.createWriterResponse(sourceDDL, "ALTER", "ddlTestTable");
+            Mapping mapping = TestDDLHelper.createMapping("test-mapping-id",
+                    "test-source-connector-id", "test-target-connector-id", true, "test-meta-id");
 
-            // 2. 验证解析结果
-            assert ddlConfig != null : "DDL配置不应为空";
-            assert DDLOperationEnum.ALTER_DROP == ddlConfig.getDdlOperationEnum() : "DDL操作类型应为ALTER_DROP";
-            assert sourceDDL.equals(ddlConfig.getSql()) : "SQL语句应匹配";
-            assert ddlConfig.getDroppedFieldNames().contains("name") : "删除字段列表应包含name字段";
+            // 调用完整的DDL处理流程
+            generalBufferActuator.parseDDl(response, mapping, testTableGroup);
 
-            // 3. 更新字段映射
-            ddlParser.refreshFiledMappings(testTableGroup, ddlConfig);
-
-            // 4. 验证字段映射更新
+            // 验证字段映射更新
             boolean foundNameMapping = testTableGroup.getFieldMapping().stream()
-                    .anyMatch(mapping -> mapping.getSource() != null && "name".equals(mapping.getSource().getName()));
+                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null && "name".equals(fieldMapping.getSource().getName()));
 
             assert !foundNameMapping : "不应找到name字段的映射";
 
@@ -288,26 +290,21 @@ public class DDLSyncIntegrationTest {
     public void testDDLSyncEndToEnd_ModifyColumn() {
         logger.info("开始测试DDL同步端到端流程 - 修改字段");
 
-        // 模拟源数据库执行的DDL语句
         String sourceDDL = "ALTER TABLE ddlTestTable MODIFY COLUMN name VARCHAR(100)";
 
         try {
-            // 1. 解析源DDL（使用真实的ConnectorService）
-            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, testTableGroup, sourceDDL);
+            // 使用GeneralBufferActuator.parseDDl()调用完整的真实流程
+            WriterResponse response = TestDDLHelper.createWriterResponse(sourceDDL, "ALTER", "ddlTestTable");
+            Mapping mapping = TestDDLHelper.createMapping("test-mapping-id",
+                    "test-source-connector-id", "test-target-connector-id", true, "test-meta-id");
 
-            // 2. 验证解析结果
-            assert ddlConfig != null : "DDL配置不应为空";
-            assert DDLOperationEnum.ALTER_MODIFY == ddlConfig.getDdlOperationEnum() : "DDL操作类型应为ALTER_MODIFY";
-            assert sourceDDL.equals(ddlConfig.getSql()) : "SQL语句应匹配";
-            assert ddlConfig.getModifiedFieldNames().contains("name") : "修改字段列表应包含name字段";
+            // 调用完整的DDL处理流程
+            generalBufferActuator.parseDDl(response, mapping, testTableGroup);
 
-            // 3. 更新字段映射
-            ddlParser.refreshFiledMappings(testTableGroup, ddlConfig);
-
-            // 4. 验证字段映射仍然存在
+            // 验证字段映射仍然存在
             boolean foundNameMapping = testTableGroup.getFieldMapping().stream()
-                    .anyMatch(mapping -> mapping.getSource() != null && "name".equals(mapping.getSource().getName()) &&
-                            mapping.getTarget() != null && "name".equals(mapping.getTarget().getName()));
+                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null && "name".equals(fieldMapping.getSource().getName()) &&
+                            fieldMapping.getTarget() != null && "name".equals(fieldMapping.getTarget().getName()));
 
             assert foundNameMapping : "应找到name字段的映射";
 
@@ -325,32 +322,25 @@ public class DDLSyncIntegrationTest {
     public void testDDLSyncEndToEnd_ChangeColumn() {
         logger.info("开始测试DDL同步端到端流程 - 重命名字段");
 
-        // 模拟源数据库执行的DDL语句
         String sourceDDL = "ALTER TABLE ddlTestTable CHANGE COLUMN name full_name VARCHAR(50)";
 
         try {
-            // 1. 解析源DDL（使用真实的ConnectorService）
-            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, testTableGroup, sourceDDL);
+            // 使用GeneralBufferActuator.parseDDl()调用完整的真实流程
+            WriterResponse response = TestDDLHelper.createWriterResponse(sourceDDL, "ALTER", "ddlTestTable");
+            Mapping mapping = TestDDLHelper.createMapping("test-mapping-id",
+                    "test-source-connector-id", "test-target-connector-id", true, "test-meta-id");
 
-            // 2. 验证解析结果
-            assert ddlConfig != null : "DDL配置不应为空";
-            assert DDLOperationEnum.ALTER_CHANGE == ddlConfig.getDdlOperationEnum() : "DDL操作类型应为ALTER_CHANGE";
-            assert sourceDDL.equals(ddlConfig.getSql()) : "SQL语句应匹配";
-            assert ddlConfig.getChangedFieldNames().containsKey("name") &&
-                    "full_name".equals(ddlConfig.getChangedFieldNames().get("name")) :
-                    "变更字段映射应包含name到full_name的映射";
+            // 调用完整的DDL处理流程
+            generalBufferActuator.parseDDl(response, mapping, testTableGroup);
 
-            // 3. 更新字段映射
-            ddlParser.refreshFiledMappings(testTableGroup, ddlConfig);
-
-            // 4. 验证字段映射更新
+            // 验证字段映射更新
             boolean foundNewMapping = testTableGroup.getFieldMapping().stream()
-                    .anyMatch(mapping -> mapping.getSource() != null && "name".equals(mapping.getSource().getName()) &&
-                            mapping.getTarget() != null && "full_name".equals(mapping.getTarget().getName()));
+                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null && "name".equals(fieldMapping.getSource().getName()) &&
+                            fieldMapping.getTarget() != null && "full_name".equals(fieldMapping.getTarget().getName()));
 
             boolean foundOldMapping = testTableGroup.getFieldMapping().stream()
-                    .anyMatch(mapping -> mapping.getSource() != null && "name".equals(mapping.getSource().getName()) &&
-                            mapping.getTarget() != null && "name".equals(mapping.getTarget().getName()));
+                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null && "name".equals(fieldMapping.getSource().getName()) &&
+                            fieldMapping.getTarget() != null && "name".equals(fieldMapping.getTarget().getName()));
 
             assert foundNewMapping : "应找到name到full_name的字段映射";
             assert !foundOldMapping : "不应找到name到name的旧字段映射";
