@@ -460,7 +460,7 @@ table {
 }
 
 .steps img {
-  max-width: 100%;
+  max-width: 60%;
   height: auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-primary);

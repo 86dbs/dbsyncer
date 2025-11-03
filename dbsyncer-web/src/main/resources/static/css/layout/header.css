@@ -227,13 +227,10 @@ header.bg-white {
   width: 32px;
   height: 32px;
   border-radius: var(--radius-round);
-  background-color: var(--info-color);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--bg-primary);
   font-size: var(--font-size-sm);
-  font-weight: 500;
 }
 
 .user-name {

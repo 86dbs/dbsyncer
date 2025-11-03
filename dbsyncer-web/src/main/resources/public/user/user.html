@@ -10,7 +10,7 @@
         <!-- 管理员操作区域 -->
         <div class="form-actions mb-4" th:if="${currentUser?.roleCode eq 'admin'}">
             <button id="addUserBtn" type="button" class="btn btn-primary">
-                <i class="fa fa-plus"></i> 添加用户
+                <i class="fa fa-plus"></i> 添加
             </button>
         </div>
         <div class="table-wrapper">
@@ -31,7 +31,7 @@
                 <tr th:each="u : ${users}">
                     <td>
                         <div class="flex items-center gap-2">
-                            <div th:if="${u?.roleCode eq 'admin'}" class="user-avatar">
+                            <div class="user-avatar badge-primary" th:if="${u?.roleCode eq 'admin'}" >
                                 <i class="fa fa-user-circle"></i>
                             </div>
                             <div>
