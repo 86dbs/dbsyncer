@@ -22,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -102,28 +103,33 @@ public class MySQLToMySQLDDLSyncTest {
         // 创建源表和目标表（MySQL）
         Table sourceTable = new Table();
         sourceTable.setName("ddlTestUserInfo");
+        sourceTable.setColumn(new ArrayList<>());
 
         Table targetTable = new Table();
         targetTable.setName("ddlTestUserInfo");
+        targetTable.setColumn(new ArrayList<>());
 
         testTableGroup.setSourceTable(sourceTable);
         testTableGroup.setTargetTable(targetTable);
 
         // 初始化字段映射
-        FieldMapping idMapping = new FieldMapping(
-                new Field("id", "INT", 4),
-                new Field("id", "INT", 4)
-        );
+        Field idSourceField = new Field("id", "INT", 4);
+        Field idTargetField = new Field("id", "INT", 4);
+        FieldMapping idMapping = new FieldMapping(idSourceField, idTargetField);
+        sourceTable.getColumn().add(idSourceField);
+        targetTable.getColumn().add(idTargetField);
 
-        FieldMapping usernameMapping = new FieldMapping(
-                new Field("username", "VARCHAR", 12),
-                new Field("username", "VARCHAR", 12)
-        );
+        Field usernameSourceField = new Field("username", "VARCHAR", 12);
+        Field usernameTargetField = new Field("username", "VARCHAR", 12);
+        FieldMapping usernameMapping = new FieldMapping(usernameSourceField, usernameTargetField);
+        sourceTable.getColumn().add(usernameSourceField);
+        targetTable.getColumn().add(usernameTargetField);
 
-        FieldMapping emailMapping = new FieldMapping(
-                new Field("email", "VARCHAR", 12),
-                new Field("email", "VARCHAR", 12)
-        );
+        Field emailSourceField = new Field("email", "VARCHAR", 12);
+        Field emailTargetField = new Field("email", "VARCHAR", 12);
+        FieldMapping emailMapping = new FieldMapping(emailSourceField, emailTargetField);
+        sourceTable.getColumn().add(emailSourceField);
+        targetTable.getColumn().add(emailTargetField);
 
         testTableGroup.setFieldMapping(java.util.Arrays.asList(idMapping, usernameMapping, emailMapping));
 

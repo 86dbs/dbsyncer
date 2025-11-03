@@ -104,9 +104,11 @@ public class SQLServerToSQLServerDDLSyncTest {
         // 创建源表和目标表（SQL Server）
         Table sourceTable = new Table();
         sourceTable.setName("ddlTestEmployee");
+        sourceTable.setColumn(new ArrayList<>());
 
         Table targetTable = new Table();
         targetTable.setName("ddlTestEmployee");
+        targetTable.setColumn(new ArrayList<>());
 
         testTableGroup.setSourceTable(sourceTable);
         testTableGroup.setTargetTable(targetTable);
@@ -118,21 +120,29 @@ public class SQLServerToSQLServerDDLSyncTest {
         Field idTargetField = new Field("id", "INT", 4);
         FieldMapping idMapping = new FieldMapping(idSourceField, idTargetField);
         fieldMappings.add(idMapping);
+        sourceTable.getColumn().add(idSourceField);
+        targetTable.getColumn().add(idTargetField);
 
         Field firstNameSourceField = new Field("first_name", "NVARCHAR", 12);
         Field firstNameTargetField = new Field("first_name", "NVARCHAR", 12);
         FieldMapping firstNameMapping = new FieldMapping(firstNameSourceField, firstNameTargetField);
         fieldMappings.add(firstNameMapping);
+        sourceTable.getColumn().add(firstNameSourceField);
+        targetTable.getColumn().add(firstNameTargetField);
 
         Field lastNameSourceField = new Field("last_name", "NVARCHAR", 12);
         Field lastNameTargetField = new Field("last_name", "NVARCHAR", 12);
         FieldMapping lastNameMapping = new FieldMapping(lastNameSourceField, lastNameTargetField);
         fieldMappings.add(lastNameMapping);
+        sourceTable.getColumn().add(lastNameSourceField);
+        targetTable.getColumn().add(lastNameTargetField);
 
         Field departmentSourceField = new Field("department", "NVARCHAR", 12);
         Field departmentTargetField = new Field("department", "NVARCHAR", 12);
         FieldMapping departmentMapping = new FieldMapping(departmentSourceField, departmentTargetField);
         fieldMappings.add(departmentMapping);
+        sourceTable.getColumn().add(departmentSourceField);
+        targetTable.getColumn().add(departmentTargetField);
 
         testTableGroup.setFieldMapping(fieldMappings);
 

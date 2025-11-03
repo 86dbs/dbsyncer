@@ -104,9 +104,11 @@ public class DDLSyncIntegrationTest {
         // 创建源表和目标表
         Table sourceTable = new Table();
         sourceTable.setName("ddlTestTable");
+        sourceTable.setColumn(new ArrayList<>());
 
         Table targetTable = new Table();
         targetTable.setName("ddlTestTable");
+        targetTable.setColumn(new ArrayList<>());
 
         testTableGroup.setSourceTable(sourceTable);
         testTableGroup.setTargetTable(targetTable);
@@ -118,11 +120,17 @@ public class DDLSyncIntegrationTest {
         Field idTargetField = new Field("id", "INT", 4);
         FieldMapping existingMapping = new FieldMapping(idSourceField, idTargetField);
         fieldMappings.add(existingMapping);
+        // 将字段添加到表的column列表中
+        sourceTable.getColumn().add(idSourceField);
+        targetTable.getColumn().add(idTargetField);
 
         Field nameSourceField = new Field("name", "VARCHAR", 12);
         Field nameTargetField = new Field("name", "VARCHAR", 12);
         FieldMapping nameMapping = new FieldMapping(nameSourceField, nameTargetField);
         fieldMappings.add(nameMapping);
+        // 将字段添加到表的column列表中
+        sourceTable.getColumn().add(nameSourceField);
+        targetTable.getColumn().add(nameTargetField);
 
         testTableGroup.setFieldMapping(fieldMappings);
 
