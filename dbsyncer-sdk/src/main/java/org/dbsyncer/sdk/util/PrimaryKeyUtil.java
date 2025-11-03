@@ -9,12 +9,16 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class PrimaryKeyUtil {
+
+    private static final Logger logger = LoggerFactory.getLogger(PrimaryKeyUtil.class);
 
     /**
      * 返回主键名称
@@ -32,7 +36,8 @@ public abstract class PrimaryKeyUtil {
 
         // 如果存在表字段映射关系，没有配置主键则抛出异常提示
         if (!CollectionUtils.isEmpty(table.getColumn()) && CollectionUtils.isEmpty(primaryKeys)) {
-            throw new SdkException(String.format("表 %s 缺少主键.", table.getName()));
+            logger.warn("表 {} 缺少主键.", table.getName());
+            return primaryKeys;
         }
         return primaryKeys;
     }

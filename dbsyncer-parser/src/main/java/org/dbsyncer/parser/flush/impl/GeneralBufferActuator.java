@@ -136,6 +136,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         switch (response.getTypeEnum()) {
             case DDL:
+                if (!mapping.getListener().isEnableDDL()) {
+                    return;
+                }
                 tableGroupContext.update(mapping, pickers.stream().map(picker -> {
                     TableGroup tableGroup = profileComponent.getTableGroup(picker.getTableGroup().getId());
                     parseDDl(response, mapping, tableGroup);
@@ -243,15 +246,16 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             DDLConfig targetDDLConfig = ddlParser.parse(connectorService, tableGroup, response.getSql());
 
             // 1.生成目标表执行SQL(支持异构数据库)
-            if (mapping.getListener().isEnableDDL()) {
-                ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
-                Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
-                // 2.持久化增量事件数据
-                result.setTableGroupId(tableGroup.getId());
-                result.setTargetTableGroupName(tableGroup.getTargetTable().getName());
-                flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
-            }
+            ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
+            Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
+            // 2.持久化增量事件数据(含错误信息)
+            result.setTableGroupId(tableGroup.getId());
+            result.setTargetTableGroupName(tableGroup.getTargetTable().getName());
+            flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
 
+            if (!StringUtil.isBlank(result.error)     ) {
+                return;
+            }
             // 3.更新表属性字段
             MetaInfo sourceMetaInfo = connectorFactory.getMetaInfo(connectorFactory.connect(getConnectorConfig(mapping.getSourceConnectorId())), tableGroup.getSourceTable().getName());
             MetaInfo targetMetaInfo = connectorFactory.getMetaInfo(connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())), tableGroup.getTargetTable().getName());
