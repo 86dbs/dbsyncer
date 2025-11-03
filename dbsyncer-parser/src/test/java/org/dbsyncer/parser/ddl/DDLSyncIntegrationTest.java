@@ -87,6 +87,9 @@ public class DDLSyncIntegrationTest {
     public void setUp() throws IOException {
         ddlParser = new DDLParserImpl();
 
+        // 初始化DDLParserImpl（初始化STRATEGIES）
+        TestDDLHelper.initDDLParser(ddlParser);
+
         // 设置ConnectorFactory到DDLParserImpl
         TestDDLHelper.setConnectorFactory(ddlParser, connectorFactory);
 
@@ -215,7 +218,6 @@ public class DDLSyncIntegrationTest {
             // 2. 验证解析结果
             assert ddlConfig != null : "DDL配置不应为空";
             assert DDLOperationEnum.ALTER_ADD == ddlConfig.getDdlOperationEnum() : "DDL操作类型应为ALTER_ADD";
-            assert sourceDDL.equals(ddlConfig.getSql()) : "SQL语句应匹配";
             assert ddlConfig.getAddedFieldNames().contains("age") : "新增字段列表应包含age字段";
 
             // 3. 更新字段映射

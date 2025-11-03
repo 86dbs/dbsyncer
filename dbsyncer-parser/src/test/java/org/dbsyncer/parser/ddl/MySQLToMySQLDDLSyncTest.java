@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.ddl;
 
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.ddl.TestDDLHelper;
 import org.dbsyncer.parser.ddl.impl.DDLParserImpl;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.TableGroup;
@@ -83,6 +84,9 @@ public class MySQLToMySQLDDLSyncTest {
     @Before
     public void setUp() {
         ddlParser = new DDLParserImpl();
+
+        // 初始化DDLParserImpl（初始化STRATEGIES）
+        TestDDLHelper.initDDLParser(ddlParser);
 
         // 设置ConnectorFactory到DDLParserImpl
         TestDDLHelper.setConnectorFactory(ddlParser, connectorFactory);

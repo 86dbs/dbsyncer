@@ -70,6 +70,24 @@ public class TestDDLHelper {
     }
 
     /**
+     * 初始化DDLParserImpl
+     * 调用@PostConstruct的init方法初始化STRATEGIES
+     *
+     * @param ddlParser DDL解析器实例
+     */
+    public static void initDDLParser(DDLParserImpl ddlParser) {
+        try {
+            Method initMethod = DDLParserImpl.class.getDeclaredMethod("init");
+            initMethod.setAccessible(true);
+            initMethod.invoke(ddlParser);
+            logger.info("DDLParserImpl初始化完成");
+        } catch (Exception e) {
+            logger.error("初始化DDLParserImpl失败", e);
+            throw new RuntimeException("无法初始化DDLParserImpl", e);
+        }
+    }
+
+    /**
      * 设置ConnectorFactory到DDLParserImpl
      *
      * @param ddlParser DDL解析器实例
