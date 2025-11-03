@@ -32,18 +32,6 @@
 .flex-auto { flex: auto; }
 .flex-none { flex: none; }
 
-/* 快速组合 */
-.flex-center { 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-}
-.flex-between { 
-  display: flex; 
-  align-items: center; 
-  justify-content: space-between; 
-}
-
 /* Grid */
 .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
 .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -135,13 +123,6 @@
 .text-base { font-size: 1rem; }
 .text-lg { font-size: 1.125rem; }
 .text-xl { font-size: 1.25rem; }
-
-.font-normal { font-weight: 400; }
-.font-medium { font-weight: 500; }
-.font-semibold { font-weight: 600; }
-.font-bold { font-weight: 700; }
-
-.font-mono { font-family: 'Courier New', monospace; }
 
 .text-primary { color: var(--text-primary); }
 .text-secondary { color: var(--text-secondary); }

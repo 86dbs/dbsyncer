@@ -42,7 +42,7 @@
                     </td>
                     <td>
                         <span class="badge"
-                              th:classappend="${u?.roleCode eq 'admin'} ? 'badge-success' : 'badge-primary'"
+                              th:classappend="${u?.roleCode eq 'admin'} ? 'badge-success ' : ''"
                               th:text="${u?.roleName}"></span>
                     </td>
                     <td>
@@ -68,7 +68,7 @@
                             <button th:if="${currentUser?.roleCode eq 'admin' and currentUser?.username != u?.username}"
                                     type="button"
                                     th:data-username="${u?.username}"
-                                    class="btn btn-sm btn-danger removeUserBtn">
+                                    class="btn btn-sm btn-outline removeUserBtn">
                                 <i class="fa fa-trash"></i> 删除
                             </button>
                         </div>
