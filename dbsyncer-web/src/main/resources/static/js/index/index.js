@@ -54,32 +54,3 @@ const trendChart = new Chart(trendCtx, {
         }
     }
 });
-
-// 任务状态图表
-const statusCtx = document.getElementById('taskStatusChart').getContext('2d');
-const statusChart = new Chart(statusCtx, {
-    type: 'doughnut',
-    data: {
-        labels: ['运行中', '暂停中', '已失败'],
-        datasets: [{
-            data: [18, 4, 2],
-            backgroundColor: [
-                '#52C41A',
-                '#FAAD14',
-                '#FF4D4F'
-            ],
-            borderWidth: 0,
-            hoverOffset: 4
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '70%',
-        plugins: {
-            legend: {
-                display: false
-            }
-        }
-    }
-});

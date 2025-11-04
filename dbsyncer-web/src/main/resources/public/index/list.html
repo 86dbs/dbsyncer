@@ -3,27 +3,40 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="index">
-    <!-- 统计卡片 -->
-    <div class="grid grid-cols-2 lg:grid-cols-2 mb-5">
-        <div class="container-no-bg lg:col-span-1">
-            <div class="grid grid-cols-2 lg:grid-cols-2">
-                <div class="stat-card">
+
+    <!-- 同步趋势图表 -->
+    <div class="form-container lg:col-span-2 p-5 mb-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="font-bold text-lg">同步趋势</h3>
+            <div class="flex gap-2">
+                <button class="btn btn-outline text-sm">今日</button>
+                <button class="btn btn-outline text-sm text-primary">本周</button>
+                <button class="btn btn-outline text-sm">本月</button>
+            </div>
+        </div>
+        <div class="mb-5">
+            <canvas id="syncTrendChart"></canvas>
+        </div>
+        <!-- 统计卡片 -->
+        <div class="grid">
+            <div class="grid grid-cols-1 lg:grid-cols-3">
+                <div class="card px-6">
                     <div class="flex items-center justify-between">
                         <p class="text-gray-500">总任务数</p>
                         <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                             <i class="fa fa-tasks"></i>
                         </div>
                     </div>
-                    <div class="flex items-end gap-2">
+                    <div class="flex items-end gap-2 success">
                         <span class="text-3xl font-bold">24</span>
                         <span class="text-success text-sm mb-1 flex items-center">
-                <i class="fa fa-arrow-up mr-1"></i> 3 个
-            </span>
+            <i class="fa fa-arrow-up mr-1"></i> 3 个
+        </span>
                     </div>
                     <p class="text-xs text-gray-500 mt-1">较上周增长 14%</p>
                 </div>
 
-                <div class="stat-card">
+                <div class="card px-6">
                     <div class="flex items-center justify-between">
                         <p class="text-gray-500">运行中任务</p>
                         <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success">
@@ -33,16 +46,13 @@
                     <div class="flex items-end gap-2">
                         <span class="text-3xl font-bold">18</span>
                         <span class="text-success text-sm mb-1 flex items-center">
-                                    <i class="fa fa-check mr-1"></i> 正常
-                                </span>
+                                <i class="fa fa-check mr-1"></i> 正常
+                            </span>
                     </div>
                     <p class="text-xs text-gray-500 mt-1">占总任务数 75%</p>
                 </div>
-            </div>
-        </div>
-        <div class="container-no-bg lg:col-span-1">
-            <div class="grid grid-cols-2 lg:grid-cols-2">
-                <div class="stat-card">
+
+                <div class="card px-6">
                     <div class="flex items-center justify-between">
                         <p class="text-gray-500">失败任务</p>
                         <div class="w-10 h-10 rounded-full bg-danger/10 flex items-center justify-center text-error">
@@ -52,13 +62,13 @@
                     <div class="flex items-end gap-2">
                         <span class="text-3xl font-bold">2</span>
                         <span class="text-error text-sm mb-1 flex items-center">
-                                <i class="fa fa-arrow-up mr-1"></i> 1 个
-                            </span>
+                            <i class="fa fa-arrow-up mr-1"></i> 1 个
+                        </span>
                     </div>
                     <p class="text-xs text-gray-500 mt-1">需要立即处理</p>
                 </div>
 
-                <div class="stat-card">
+                <div class="card px-6">
                     <div class="flex items-center justify-between">
                         <p class="text-gray-500">同步数据量</p>
                         <div class="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center text-info">
@@ -68,8 +78,8 @@
                     <div class="flex items-end gap-2">
                         <span class="text-3xl font-bold">14.2 GB</span>
                         <span class="text-success text-sm mb-1 flex items-center">
-                                <i class="fa fa-arrow-up mr-1"></i> 23%
-                            </span>
+                            <i class="fa fa-arrow-up mr-1"></i> 23%
+                        </span>
                     </div>
                     <p class="text-xs text-gray-500 mt-1">较昨日增长</p>
                 </div>
@@ -77,71 +87,18 @@
         </div>
     </div>
 
-    <!-- 图表和任务列表 -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <!-- 同步趋势图表 -->
-        <div class="card lg:col-span-2 p-5">
-            <div class="flex items-center justify-between mb-5">
-                <h3 class="font-bold text-lg">同步趋势</h3>
-                <div class="flex gap-2">
-                    <button class="btn btn-outline text-sm">今日</button>
-                    <button class="btn btn-outline text-sm bg-primary/5 text-primary">本周</button>
-                    <button class="btn btn-outline text-sm">本月</button>
-                </div>
-            </div>
-            <div class="h-80">
-                <canvas id="syncTrendChart"></canvas>
-            </div>
-        </div>
-
-        <!-- 任务状态分布 -->
-        <div class="card p-5">
-            <div class="flex items-center justify-between mb-5">
-                <h3 class="font-bold text-lg">任务状态分布</h3>
-                <button class="text-primary hover:text-primary/80">
-                    <i class="fa fa-ellipsis-v"></i>
-                </button>
-            </div>
-            <div class="h-64 mb-4">
-                <canvas id="taskStatusChart"></canvas>
-            </div>
-            <div class="space-y-3">
-                <div class="flex items-center gap-3">
-                    <span class="w-3 h-3 rounded-full bg-success"></span>
-                    <span class="text-sm">运行中</span>
-                    <span class="ml-auto font-medium">18</span>
-                </div>
-                <div class="flex items-center gap-3">
-                    <span class="w-3 h-3 rounded-full bg-warning"></span>
-                    <span class="text-sm">暂停中</span>
-                    <span class="ml-auto font-medium">4</span>
-                </div>
-                <div class="flex items-center gap-3">
-                    <span class="w-3 h-3 rounded-full bg-error"></span>
-                    <span class="text-sm">已失败</span>
-                    <span class="ml-auto font-medium">2</span>
-                </div>
-            </div>
+    <!-- 搜索入口 -->
+    <div class="flex items-center gap-4 mb-6">
+        <div class="relative">
+            <input type="text" placeholder="搜索连接、同步任务" class="pl-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
+            <i class="fa fa-search absolute text-gray-400"></i>
         </div>
     </div>
 
-    <!-- 页面标题 -->
-    <div class="mb-6">
-        <div class="flex items-center gap-4">
-            <div class="relative">
-                <input type="text" placeholder="搜索连接、同步任务" class="pl-3 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary w-64">
-                <i class="fa fa-search absolute left-3 top-3 text-gray-400"></i>
-            </div>
-        </div>
-    </div>
-
-
-    <div class="container-no-bg">
-        <div class="grid grid-cols-1 lg:grid-cols-3">
+    <div class="grid grid-cols-1 lg:grid-cols-3 mb-6">
             <!-- 左侧：连接列表 -->
             <div class="form-container lg:col-span-1 p-5">
-                <div class="border-gray-100 flex items-center justify-between">
-                    <h3 class="font-bold text-lg">连接列表</h3>
+                <div class="border-gray-100 flex items-center mb-5">
                     <button class="btn btn-info text-sm">
                         <i class="fa fa-plus"></i>
                         <span>添加连接</span>
@@ -179,12 +136,26 @@
                         <i class="fa fa-cog"></i>
                     </div>
                 </div>
+
+                <div class="p-5 border-t border-gray-100 flex items-center justify-between">
+                    <p class="text-sm text-gray-500">共 9 条</p>
+                    <div class="flex items-center gap-2">
+                        <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 text-gray-500 border-primary text-primary" disabled>
+                            <i class="fa fa-angle-left"></i>
+                        </button>
+                        <button class="w-8 h-8 flex items-center justify-center rounded bg-primary text-white">1</button>
+                        <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 border-primary text-primary">2</button>
+                        <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 border-primary text-primary">3</button>
+                        <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 text-gray-500 border-primary text-primary">
+                            <i class="fa fa-angle-right"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- 右侧：驱动列表 -->
             <div class="form-container lg:col-span-2 p-5">
-                <div class="border-gray-100 flex items-center justify-between">
-                    <h3 class="font-bold text-lg">驱动列表</h3>
+                <div class="border-gray-100 flex items-center mb-5">
                     <button class="btn btn-info">
                         <i class="fa fa-plus"></i>
                         <span>新建驱动</span>
@@ -289,7 +260,7 @@
                 </div>
 
                 <div class="p-5 border-t border-gray-100 flex items-center justify-between">
-                    <p class="text-sm text-gray-500">显示 1 至 3 条，共 24 条</p>
+                    <p class="text-sm text-gray-500">共 24 条</p>
                     <div class="flex items-center gap-2">
                         <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 text-gray-500 border-primary text-primary" disabled>
                             <i class="fa fa-angle-left"></i>
@@ -303,9 +274,7 @@
                     </div>
                 </div>
             </div>
-
         </div>
-    </div>
 
     <script th:src="@{/js/index/index.js}"></script>
 </div>
